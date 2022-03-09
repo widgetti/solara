@@ -1,0 +1,82 @@
+<!doctype html>
+<html>
+
+<head>
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.10/vue.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.2.26/dist/vuetify.min.js"></script> -->
+    <!-- <link href="https://cdn.jsdelivr.net/npm/vuetify@2.2.26/dist/vuetify.min.css" rel="stylesheet"> -->
+    <link href='https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900|Material+Icons' rel="stylesheet">
+    <link href='https://cdn.materialdesignicons.com/4.9.95/css/materialdesignicons.min.css' rel="stylesheet">
+    <link href="/static/highlight.css" rel="stylesheet">
+    </link>
+    <link href="/static/style.css" rel="stylesheet">
+    </link>
+
+    <link href="/solara/static/index.css" rel="stylesheet">
+    </link>
+    <link href="/solara/static/theme-light.css" rel="stylesheet">
+    </link>
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>☀️</text></svg>">
+    <title>Hello from Solara ☀️</title>
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.js" crossorigin="anonymous">
+    </script>
+    <script src="/static/main.js">
+    </script>
+    <link rel='stylesheet' href='//cdn.jsdelivr.net/npm/hack-font@3.3.0/build/web/hack-subset.css'>
+
+    <script id="jupyter-config-data" type="application/json">
+    {
+        "baseUrl": "/jupyter",
+        "kernelId": "1234"
+    }
+</script>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css"
+        integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+    <link>
+
+
+    <style>
+        html,
+        body {
+            height: 100vh;
+        }
+
+        .ipywidgets-server-contents-container {
+            height: 95vh;
+            padding-top: 5vh;
+        }
+
+        #result {
+            margin-top: auto;
+            margin-bottom: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="content" style="display: flex; flex: 1 1 auto; align-items: left; justify-content: left;">
+        Loading... widget should appear here soon
+    </div>
+</body>
+<script>
+    requirejs.config({ baseUrl: '{{base_url}}voila/', waitSeconds: 30 });
+
+    // Loading classic notebook extensions.
+    {% for ext in resources.nbextensions -%}
+    requirejs(["{{base_url}}voila/nbextensions/{{ ext }}.js"],
+        function () {
+            console.log("Loaded classic notebook extension \"{{ ext }}\".");
+        },
+        function () {
+            console.error("Failed to load classic notebook extension \"{{ ext }}\".");
+        }
+    );
+    {% endfor %}
+    solaraMount("{{model_id}}")
+</script>
+
+</html>

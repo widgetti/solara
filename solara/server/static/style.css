@@ -1,0 +1,26 @@
+.jupyter-widgets code {
+    /* background-color: unset; */
+    /* padding: 10px; */
+}
+
+.jupyter-widgets code::after, .jupyter-widgets code::before {
+    content: unset !important;
+}
+
+.vuetify-styles .v-application code, .v-application code {
+    color: unset !important;
+    background-color: unset !important;
+    font-family: Hack !important;
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    box-shadow: unset !important;
+}
+
+div.highlight pre code {
+    /* box-shadow: 0 2px 1px -1px rgb(0 0 0 / 20%), 0 1px 1px 0 rgb(0 0 0 / 14%), 0 1px 3px 0 rgb(0 0 0 / 12%); */
+    border: 1px #333 solid;
+}
+
+.emojione {
+    width: 1.2em;
+}

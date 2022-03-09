@@ -1,0 +1,197 @@
+<!doctype html>
+<html>
+
+<head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.10/vue.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.2.27/dist/vuetify.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.2.27/dist/vuetify.min.css" rel="stylesheet">
+    <link href='https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900|Material+Icons' rel="stylesheet">
+    <link href='https://cdn.materialdesignicons.com/4.9.95/css/materialdesignicons.min.css' rel="stylesheet">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>☀️</text></svg>">
+
+    <link href="/static/highlight.css" rel="stylesheet">
+    </link>
+    <link href="/static/style.css" rel="stylesheet">
+    </link>
+    <link href="/solara/static/index.css" rel="stylesheet">
+    </link>
+    <link href="/solara/static/theme-light.css" rel="stylesheet">
+    </link>
+    <title>Hello from Solara ☀️</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.js" crossorigin="anonymous">
+    </script>
+    <script src="/static/main-vuetify.js"></script>
+    <script src="/static/ansi.js"></script>
+    </script>
+
+    <script id="jupyter-config-data" type="application/json">
+    {
+        "baseUrl": "/jupyter",
+        "kernelId": "1234"
+    }
+</script>
+
+
+
+    <style>
+        html,
+        body {
+            height: 100vh;
+        }
+
+        .ipywidgets-server-contents-container {
+            height: 95vh;
+            padding-top: 5vh;
+        }
+
+        #result {
+            margin-top: auto;
+            margin-bottom: auto;
+        }
+    </style>
+</head>
+
+<body>
+    {% raw -%}
+    <div id="app" style="display: none">
+        <v-app>
+            <v-slide-y-transition>
+                <v-layout v-show="loading" align-center justify-center>
+                    <v-card style="min-width: 600px">
+                        <v-progress-linear :indeterminate="loadingPercentage < 0" v-model="loadingPercentage"
+                            height="15"></v-progress-linear>
+
+                        <v-card-title primary-title class="py-8">
+                            <h1>{{ loading_text }}</h1>
+                        </v-card-title>
+                    </v-card>
+                </v-layout>
+            </v-slide-y-transition>
+            <v-slide-y-transition>
+                <v-layout v-show="!loading">
+                    <jupyter-widget-mount-point mount-id="content">
+                        A widget with mount-id="content" should go here
+                    </jupyter-widget-mount-point>
+                </v-layout>
+            </v-slide-y-transition>
+
+            <v-menu v-if="debug && voilaDebugMessages && voilaDebugMessages.length" offset-y top
+                :close-on-content-click="false">
+                <template v-slot:activator="{ on }">
+                    <v-btn text v-on="on" style="position: fixed; bottom: 8px; right: 8px">
+                        <span style="color: red">{{ voilaDebugMessages.length }}</span>
+                        <v-icon right large color="red">mdi-bug-outline</v-icon>
+                    </v-btn>
+                </template>
+                <v-sheet class="pa-2" style="overflow: auto; max-height: 80vh">
+                    <div style="display: flex" v-for="message in voilaDebugMessages" :key="message.cell" class="pa-2">
+                        <div style="width: 50px">[{{ message.cell }}]</div>
+                        <div v-if="message.traceback" class="jp-RenderedText jp-OutputArea-output"
+                            data-mime-type="application/vnd.jupyter.stderr">
+                            <pre v-html="message.traceback" class="pa-2"></pre>
+                        </div>
+                        <pre v-else><span :style="message.name === 'stderr' ? 'background-color: var(--jp-rendermime-error-background)' : ''"
+                                   class="pa-2"
+                                >{{ message.text }}</span>
+                        </pre>
+                    </div>
+                    <div class="d-flex justify-end">
+                        <v-tooltip top>
+                            <template v-slot:activator="{ on, attrs }">
+                                <v-btn icon v-bind="attrs" v-on="on" @click="voilaDebugMessages = []">
+                                    <v-icon>mdi-trash-can-outline</v-icon>
+                                </v-btn>
+                            </template>
+                            <span>Clear messages</span>
+                        </v-tooltip>
+                    </div>
+                </v-sheet>
+            </v-menu>
+
+            <v-menu v-if="debug && outputMessages && outputMessages.length" offset-y top
+                :close-on-content-click="false">
+                <template v-slot:activator="{ on }">
+                    <v-btn text v-on="on" style="position: fixed; top: 8px; right: 8px">
+                        <span style="color: #333">{{ outputMessages.length }}</span>
+                        <v-icon right large color="#333">mdi-information-outline</v-icon>
+                    </v-btn>
+                </template>
+                <v-sheet class="pa-2" style="overflow: auto; max-height: 80vh">
+                    <div style="display: flex" v-for="message in outputMessages" :key="message.cell" class="pa-2">
+                        <div style="width: 50px">[{{ message.cell }}]</div>
+                        <div v-if="message.traceback" class="jp-RenderedText jp-OutputArea-output"
+                            data-mime-type="application/vnd.jupyter.stderr">
+                            <pre v-html="message.traceback" class="pa-2"></pre>
+                        </div>
+                        <pre v-else><span :style="message.name === 'stderr' ? 'background-color: var(--jp-rendermime-error-background)' : ''"
+                                   class="pa-2"
+                                >{{ message.text }}</span>
+                        </pre>
+                    </div>
+                    <div class="d-flex justify-end">
+                        <v-tooltip top>
+                            <template v-slot:activator="{ on, attrs }">
+                                <v-btn icon v-bind="attrs" v-on="on" @click="outputMessages = []">
+                                    <v-icon>mdi-trash-can-outline</v-icon>
+                                </v-btn>
+                            </template>
+                            <span>Clear messages</span>
+                        </v-tooltip>
+                    </div>
+                </v-sheet>
+            </v-menu>
+        </v-app>
+    </div>
+    {% endraw -%}
+    <script>
+        var debug = true;
+        var app = new Vue({
+            vuetify: new Vuetify({
+                theme: { dark: themeIsdark },
+            }),
+            el: '#app',
+            mounted() {
+                document.querySelector('#app').removeAttribute("style");
+            },
+            data() {
+                return {
+                    loading_text: "Loading page ☀️",
+                    loadingPercentage: -1,
+                    loading: true,
+                    title: "No title",
+                    voilaDebugMessages: [],
+                    outputMessages: [{ name: 'stderr', text: 'lala' }],
+                }
+            }
+        });
+        requirejs.config({ baseUrl: '{{base_url}}voila/', waitSeconds: 30 });
+
+        // Loading classic notebook extensions.
+        {% if 'jupyter-vuetify/extension' in resources.nbextensions -%}
+        window.enable_nbextensions = true;
+        {% endif -%}
+        requirejs.config({
+            baseUrl: '{{resources.base_url}}voila',
+            waitSeconds: 3000,
+            map: {
+                '*': {
+                        {% if 'jupyter-vue/extension' in resources.nbextensions -%}
+        'jupyter-vue': 'nbextensions/jupyter-vue/nodeps',
+            {% endif -%}
+        {% if 'jupyter-vuetify/extension' in resources.nbextensions -%}
+        'jupyter-vuetify': 'nbextensions/jupyter-vuetify/nodeps',
+            {% endif -%}
+                    },
+                }
+            });
+        requirejs([
+            {% for ext in resources.nbextensions if ext != 'jupyter-vuetify/extension' and ext != 'jupyter-vue/extension' -%}
+        "{{resources.base_url}}voila/nbextensions/{{ ext }}.js",
+            {% endfor %}
+            ]);
+        solaraMount("{{model_id}}")
+    </script>
+
+</html>
