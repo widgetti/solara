@@ -1,3 +1,6 @@
+from . import server
+import react_ipywidgets.ipywidgets as w
+from . import app
 import contextlib
 import logging
 import sys
@@ -7,10 +10,12 @@ import time
 import playwright
 import playwright.sync_api
 import pytest
+import react_ipywidgets as react
 import requests
 from playwright.sync_api import sync_playwright
 
-from .fastapi import app
+from . import app
+from .fastapi import app as app_starlette
 
 logger = logging.getLogger('solara.server.test')
 
@@ -65,7 +70,7 @@ class Server(threading.Thread):
             asyncio.set_event_loop(loop)
 
         # uvloop will trigger a: RuntimeError: There is no current event loop in thread 'fastapi-thread'
-        config = Config(app, host=self.host, port=self.port, **self.kwargs, loop='asyncio')
+        config = Config(app_starlette, host=self.host, port=self.port, **self.kwargs, loop='asyncio')
         self.server = Server(config=config)
         self.started.set()
         try:
@@ -77,19 +82,23 @@ class Server(threading.Thread):
 
     def stop_serving(self):
         logger.debug("stopping server")
+        print("STOP IT!")
         self.server.should_exit = True
+        self.server.lifespan.should_exit = True
         if self.stopped.wait(1) is not None:
             logger.error('stopping server failed')
         logger.debug("stopped server")
 
 
-@pytest.fixture(scope="session")
-def server():
+@pytest.fixture()  # scope="module")
+def solara_server():
     webserver = Server(TEST_PORT)
     webserver.serve_threaded()
     webserver.wait_until_serving()
-    yield webserver
-    webserver.stop_serving()
+    try:
+        yield webserver
+    finally:
+        webserver.stop_serving()
 
 
 @contextlib.contextmanager
@@ -102,8 +111,8 @@ def screenshot_on_error(page, path):
         raise
 
 
-def test_docs_basics(page: playwright.sync_api.Page, server):
-    page.goto(server.base_url)
+def test_docs_basics(page: playwright.sync_api.Page, solara_server):
+    page.goto(solara_server.base_url)
     # with screenshot_on_error(page, 'tmp/test_docs_basics.png'):
     if 1:
         assert page.title() == 'Hello from Solara ☀️'
@@ -128,6 +137,24 @@ def test_docs_basics(page: playwright.sync_api.Page, server):
         page.locator("text=use_side_effect can be used").wait_for()
         page.screenshot(path="tmp/screenshot_use_effect.png")
 
+
+@react.component
+def Test():
+    count, set_count = react.use_state(0)
+    return w.Button(description=f'Clicked: {count}', on_click=set_count(count+1))
+
+
+test_app = Test()
+
+
+def test_multi_user(page: playwright.sync_api.Page, solara_server):
+    solara_server.solara_app = app.AppScript('solara.server.server_test:test_app')
+    page.goto(solara_server.base_url)
+    with screenshot_on_error(page, 'tmp/test_docs_basics.png'):
+        assert page.title() == 'Hello from Solara ☀️'
+        page.screenshot(path="tmp/screenshot_test_click.png")
+
+        # page.locator("text=Clicked: 0").click()
 
 # def test_two_clients(browser: playwright.sync_api.Browser):
 #     context1 = browser.new_context()

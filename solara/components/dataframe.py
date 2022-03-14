@@ -461,6 +461,7 @@ def DropdownCard(df, column=None):
                 filter = df[column] == value
                 # print(filter)
                 set_filter(filter)
+
     with v.Card(elevation=2, height=cardheight) as main:
         with v.CardTitle(children=['Filter out single value']):
             pass

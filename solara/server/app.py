@@ -12,6 +12,8 @@ from starlette.websockets import WebSocket
 
 from . import kernel
 
+COOKIE_KEY_CONTEXT_ID = "solara-context-id"
+
 
 @contextlib.contextmanager
 def cwd(path):
@@ -40,26 +42,34 @@ class AppContext:
         key = get_current_thread_key()
         current_context[key] = None
 
+    def close(self):
+        with self:
+            widgets.Widget.close_all()
+            # what if we reference eachother
+            # import gc
+            # gc.collect()
+
 
 contexts: Dict[str, AppContext] = {}
 # maps from thread key to AppContext, if AppContext is None, it exists, but is not set as current
 current_context: Dict[str, Optional[AppContext]] = {}
 
 
-def get_current_thread_key():
+def get_current_thread_key() -> str:
     thread = threading.currentThread()
     thread_key = repr(thread)
     return thread_key
 
 
-def get_current_context():
+def get_current_context() -> AppContext:
     thread_key = get_current_thread_key()
     if thread_key not in current_context:
         raise RuntimeError(f'Tried to get the current context for thread {thread_key}, but no known context found. This might be a bug in Solara.')
-    if current_context[thread_key] is None:
+    context = current_context[thread_key]
+    if context is None:
         raise RuntimeError(
             f'Tried to get the current context for thread {thread_key}, although the context is know, it was not set for this thread. This might be a bug in Solara.')
-    return current_context[thread_key]
+    return context
 
 
 class AppType(str, Enum):

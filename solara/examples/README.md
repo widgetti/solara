@@ -1,6 +1,7 @@
 # What is solara?
 
-lala
+
+
 Solara is a production ready way to build webapps from Python using IPywidgets and React-IPywidgets.
 
 
