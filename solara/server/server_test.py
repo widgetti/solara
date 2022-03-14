@@ -17,16 +17,22 @@ from playwright.sync_api import sync_playwright
 from . import app
 from .fastapi import app as app_starlette
 
-logger = logging.getLogger('solara.server.test')
+logger = logging.getLogger("solara.server.test")
 
 TEST_PORT = 18765
 
+# see https://github.com/microsoft/playwright-pytest/issues/23
+@pytest.fixture
+def context(context):
+    context.set_default_timeout(3000)
+    yield context
+
 
 class Server(threading.Thread):
-    def __init__(self, port, host='localhost', **kwargs):
+    def __init__(self, port, host="localhost", **kwargs):
         self.port = port
         self.host = host
-        self.base_url = f'http://{self.host}:{self.port}'
+        self.base_url = f"http://{self.host}:{self.port}"
 
         self.kwargs = kwargs
         self.started = threading.Event()
@@ -46,7 +52,7 @@ class Server(threading.Thread):
 
     def wait_until_serving(self):
         for n in range(10):
-            url = f'http://{self.host}:{self.port}/'
+            url = f"http://{self.host}:{self.port}/"
             try:
                 response = requests.get(url)
             except requests.exceptions.ConnectionError:
@@ -56,21 +62,23 @@ class Server(threading.Thread):
                     return
             time.sleep(0.05)
         else:
-            raise RuntimeError(f'Server at {url} does not seem to be running')
+            raise RuntimeError(f"Server at {url} does not seem to be running")
 
     def mainloop(self):
         logger.info("serving at http://%s:%d" % (self.host, self.port))
 
         from uvicorn.config import Config
         from uvicorn.server import Server
+
         if sys.version_info[:2] < (3, 7):
             # make python 3.6 work
             import asyncio
+
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
 
         # uvloop will trigger a: RuntimeError: There is no current event loop in thread 'fastapi-thread'
-        config = Config(app_starlette, host=self.host, port=self.port, **self.kwargs, loop='asyncio')
+        config = Config(app_starlette, host=self.host, port=self.port, **self.kwargs, loop="asyncio")
         self.server = Server(config=config)
         self.started.set()
         try:
@@ -86,7 +94,7 @@ class Server(threading.Thread):
         self.server.should_exit = True
         self.server.lifespan.should_exit = True
         if self.stopped.wait(1) is not None:
-            logger.error('stopping server failed')
+            logger.error("stopping server failed")
         logger.debug("stopped server")
 
 
@@ -107,7 +115,7 @@ def screenshot_on_error(page, path):
         yield
     except:
         page.screenshot(path=path)
-        print(f'Saved screenshot to {path}', file=sys.stderr)
+        print(f"Saved screenshot to {path}", file=sys.stderr)
         raise
 
 
@@ -115,7 +123,7 @@ def test_docs_basics(page: playwright.sync_api.Page, solara_server):
     page.goto(solara_server.base_url)
     # with screenshot_on_error(page, 'tmp/test_docs_basics.png'):
     if 1:
-        assert page.title() == 'Hello from Solara ☀️'
+        assert page.title() == "Hello from Solara ☀️"
         page.locator("text=Demo: calculator").click()
         page.locator("text=+/-").wait_for()
         page.screenshot(path="tmp/screenshot_calculator.png")
@@ -141,20 +149,91 @@ def test_docs_basics(page: playwright.sync_api.Page, solara_server):
 @react.component
 def Test():
     count, set_count = react.use_state(0)
-    return w.Button(description=f'Clicked: {count}', on_click=set_count(count+1))
+    return w.Button(description=f"Clicked: {count}", on_click=set_count(count + 1))
 
 
 test_app = Test()
 
 
 def test_multi_user(page: playwright.sync_api.Page, solara_server):
-    solara_server.solara_app = app.AppScript('solara.server.server_test:test_app')
+    solara_server.solara_app = app.AppScript("solara.server.server_test:test_app")
     page.goto(solara_server.base_url)
-    with screenshot_on_error(page, 'tmp/test_docs_basics.png'):
-        assert page.title() == 'Hello from Solara ☀️'
+    with screenshot_on_error(page, "tmp/test_docs_basics.png"):
+        assert page.title() == "Hello from Solara ☀️"
         page.screenshot(path="tmp/screenshot_test_click.png")
 
         # page.locator("text=Clicked: 0").click()
+
+
+@react.component
+def ThreadTest():
+    label, set_label = react.use_state("initial")
+    use_thread, set_use_thread = react.use_state(False)
+
+    def from_thread():
+        set_label("from thread")
+
+    def start_thread():
+        if use_thread:
+            thread = threading.Thread(target=from_thread)
+            thread.start()
+            return thread.join
+
+    react.use_side_effect(start_thread, [use_thread])
+    # we need to trigger creating a new widget, to make sure we
+    # invoke a solara.server.app.get_current_context
+    if label == "initial":
+        return w.Button(description=label, on_click=lambda: set_use_thread(True))
+    else:
+        return w.Label(value=label)
+
+
+thread_test = ThreadTest()
+
+
+def test_from_thread(page: playwright.sync_api.Page, solara_server):
+    server.solara_app = app.AppScript("solara.server.server_test:thread_test")
+    page.goto(solara_server.base_url)
+
+    assert page.title() == "Hello from Solara ☀️"
+    el = page.locator(".jupyter-widgets")
+    assert el.text_content() == "initial"
+    page.wait_for_timeout(500)
+    el.click()
+    page.locator("text=from thread").wait_for()
+
+
+def test_from_thread_two_users(browser: playwright.sync_api.Browser, solara_server):
+    server.solara_app = app.AppScript("solara.server.server_test:thread_test")
+
+    context1 = browser.new_context()
+    page1 = context1.new_page()
+    context2 = browser.new_context()
+    page2 = context2.new_page()
+
+    page1.goto(solara_server.base_url)
+
+    assert page1.title() == "Hello from Solara ☀️"
+    el1 = page1.locator(".jupyter-widgets")
+    assert el1.text_content() == "initial"
+
+    page2.goto(solara_server.base_url)
+    assert page2.title() == "Hello from Solara ☀️"
+    el2 = page2.locator(".jupyter-widgets")
+    assert el2.text_content() == "initial"
+
+    page1.wait_for_timeout(500)
+    page1.wait_for_timeout(500)
+
+    el1.click()
+    page1.locator("text=from thread").wait_for()
+
+    page2.wait_for_timeout(500)
+    assert el2.text_content() == "initial"
+
+    el2.click()
+    page2.locator("text=from thread").wait_for()
+
 
 # def test_two_clients(browser: playwright.sync_api.Browser):
 #     context1 = browser.new_context()

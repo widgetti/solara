@@ -46,10 +46,12 @@ async def read_root(context_id: Optional[str]):
     print("root", context_id)
     # context_id = None
     if context_id is None or context_id not in app.contexts:
-        kernel = Kernel.instance()
-        widgets.register_comm_target(kernel)
+        kernel = Kernel()
         context_id = str(uuid4())
         context = app.contexts[context_id] = AppContext(kernel=kernel, control_sockets=[], widgets={})
+        with context:
+            widgets.register_comm_target(kernel)
+            assert kernel is Kernel.instance()
         try:
             with context:
                 widget = run_app()
@@ -92,7 +94,7 @@ async def read_root(context_id: Optional[str]):
         # print(load_extensions.items())
         ignorelist = [
             "jupytext/index",
-            'nbextensions_configurator/config_menu/main',
+            "nbextensions_configurator/config_menu/main",
             "jupytext/index",
             "nbdime/index",
             "voila/extension",

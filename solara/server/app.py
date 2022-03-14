@@ -1,6 +1,7 @@
 import contextlib
 import dataclasses
 import importlib.util
+import logging
 import os
 import threading
 from enum import Enum
@@ -13,6 +14,9 @@ from starlette.websockets import WebSocket
 from . import kernel
 
 COOKIE_KEY_CONTEXT_ID = "solara-context-id"
+
+
+logger = logging.getLogger("solara.server.app")
 
 
 @contextlib.contextmanager
@@ -57,18 +61,31 @@ current_context: Dict[str, Optional[AppContext]] = {}
 
 def get_current_thread_key() -> str:
     thread = threading.currentThread()
-    thread_key = repr(thread)
+    return get_thread_key(thread)
+
+
+def get_thread_key(thread: threading.Thread) -> str:
+    thread_key = thread._name
     return thread_key
+
+
+def set_context_for_thread(context: AppContext, thread: threading.Thread):
+    key = get_thread_key(thread)
+    contexts[key] = context
+    current_context[key] = context
 
 
 def get_current_context() -> AppContext:
     thread_key = get_current_thread_key()
     if thread_key not in current_context:
-        raise RuntimeError(f'Tried to get the current context for thread {thread_key}, but no known context found. This might be a bug in Solara.')
-    context = current_context[thread_key]
+        raise RuntimeError(
+            f"Tried to get the current context for thread {thread_key}, but no known context found. This might be a bug in Solara. (known contexts: {list(current_context.keys())}"
+        )
+    context = current_context.get(thread_key)
     if context is None:
         raise RuntimeError(
-            f'Tried to get the current context for thread {thread_key}, although the context is know, it was not set for this thread. This might be a bug in Solara.')
+            f"Tried to get the current context for thread {thread_key}, although the context is know, it was not set for this thread. This might be a bug in Solara."
+        )
     return context
 
 

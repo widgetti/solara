@@ -76,7 +76,8 @@ def main(app, host, port, open, reload: bool, reload_dirs: typing.Optional[typin
                 break
             except Exception as e:
                 print(f"Server is not running get, will try again soon: {e}")
-            time.sleep(0.5)
+            time.sleep(1)
+
         print(f"Server is up, opening page {url}, disable this option by passing the --no-open argument to solara")
         webbrowser.open(url)
 

@@ -1,16 +1,22 @@
 import asyncio
+import logging
+import pdb
 import sys
+import threading
 import traceback
 from typing import MutableMapping
 
+import ipykernel.kernelbase
 import IPython.display
 import ipywidgets
 
-from .app import AppContext, get_current_context
+from . import app
+
+logger = logging.getLogger("solara.server.app")
 
 
 class FakeIPython:
-    def __init__(self, context: AppContext):
+    def __init__(self, context: app.AppContext):
         self.context = context
 
     def showtraceback(self):
@@ -28,19 +34,32 @@ class FakeIPython:
         asyncio.create_task(sendit())
 
 
+def kernel_instance_dispatch(cls, *args, **kwargs):
+    context = app.get_current_context()
+    return context.kernel
+
+
+def kernel_initialized_dispatch(cls):
+    try:
+        _context = app.get_current_context()
+    except RuntimeError:
+        return False
+    return True
+
+
 def display_solara(*args):
     print(args)
 
 
 def get_ipython():
-    context = get_current_context()
+    context = app.get_current_context()
     our_fake_ipython = FakeIPython(context)
     ipywidgets.widgets.widget.get_ipython = lambda: our_fake_ipython
 
 
 class context_dict(MutableMapping):
     def _get_context_dict(self) -> dict:
-        context = get_current_context()
+        context = app.get_current_context()
         return context.widgets
 
     def __delitem__(self, key) -> None:
@@ -59,7 +78,23 @@ class context_dict(MutableMapping):
         self._get_context_dict().__setitem__(key, value)
 
 
+# better to patch the ctor
+class WidgetContextAwareThread(threading.Thread):
+    def __init__(self, *args, **kwargs):
+        super(WidgetContextAwareThread, self).__init__(*args, **kwargs)
+        self.current_context = None
+        try:
+            self.current_context = app.get_current_context()
+        except RuntimeError as e:
+            logger.info(f"No context for thread {self}")
+        if self.current_context:
+            app.set_context_for_thread(self.current_context, self)
+
+
 def patch():
     IPython.display.display = display_solara
     __builtins__["display"] = display_solara
     ipywidgets.widget.Widget.widgets = context_dict()
+    threading.Thread = WidgetContextAwareThread
+    ipykernel.kernelbase.Kernel.instance = classmethod(kernel_instance_dispatch)
+    ipykernel.kernelbase.Kernel.initialized = classmethod(kernel_initialized_dispatch)

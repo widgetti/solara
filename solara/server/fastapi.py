@@ -87,14 +87,11 @@ async def kernels2(ws: WebSocket, id, name, session_id: Optional[str] = None):
     kernel = context.kernel
     kernel.shell_stream = WebsocketStreamWrapper(ws, "shell")
     kernel.control_stream = WebsocketStreamWrapper(ws, "control")
-    # showtraceback
-    import ipywidgets.widgets
 
     await ws.accept()
     # should we use excepthook ?
     kernel.session.websockets.add(ws)
-    print(threading.currentThread())
-    with context:
+    if True:
         while True:
             message = await ws.receive()
             if message["type"] == "websocket.disconnect":
@@ -111,10 +108,12 @@ async def kernels2(ws: WebSocket, id, name, session_id: Optional[str] = None):
 
                 msg_serialized = kernel.session.serialize(msg)
                 channel = msg["channel"]
-                msg_id = msg["header"]["msg_id"]
                 if channel == "shell":
                     msg = [BytesWrap(k) for k in msg_serialized]
-                    await kernel.dispatch_shell(msg)
+                    # TODO: because we use await, we probably need to use a context
+                    # manager that sets the app context in a async context, not just thread context
+                    with context:
+                        await kernel.dispatch_shell(msg)
                 else:
                     print("unknown channel", msg["channel"])
 
@@ -173,8 +172,6 @@ app.include_router(router=router)
 
 # if we add these to the router, the server_test does not run (404's)
 app.mount("/static", StaticFiles(directory=directory / "static"), name="static")
-app.mount(
-    "/solara/static", StaticFiles(directory=f"{sys.prefix}/share/jupyter/nbconvert/templates/lab/static"), name="static"
-)
+app.mount("/solara/static", StaticFiles(directory=f"{sys.prefix}/share/jupyter/nbconvert/templates/lab/static"), name="static")
 
 patch.patch()

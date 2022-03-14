@@ -21,8 +21,8 @@ def ButtonClick(label="Hi"):
 
 @react.component
 def Markdown(md: str):
-    from myst_parser.main import to_html
-    html = to_html(md)
+    import markdown
+    html = markdown.markdown(md)
     return w.HTML(value=html)
 
 
