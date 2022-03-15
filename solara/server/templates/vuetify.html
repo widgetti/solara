@@ -56,7 +56,7 @@
 <body>
     {% raw -%}
     <div id="app" style="display: none">
-        <v-app>
+        <v-app :key="forceUpdateTrigger">
             <v-slide-y-transition>
                 <v-layout v-show="loading" align-center justify-center>
                     <v-card style="min-width: 600px">
@@ -152,11 +152,19 @@
                 theme: { dark: themeIsdark },
             }),
             el: '#app',
+            created() {
+                const original_$forceUpdate = this.$forceUpdate.bind(this);
+                this.$forceUpdate = (() => {
+                    this.forceUpdateTrigger += 1;
+                    original_$forceUpdate();
+                });
+            },
             mounted() {
                 document.querySelector('#app').removeAttribute("style");
             },
             data() {
                 return {
+                    forceUpdateTrigger: 0,
                     loading_text: "Loading page ☀️",
                     loadingPercentage: -1,
                     loading: true,

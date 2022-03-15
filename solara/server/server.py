@@ -71,7 +71,8 @@ async def read_root(context_id: Optional[str]):
             import html
 
             error = html.escape(error)
-            widget = widgets.HTML(f"<pre>{error}</pre>")
+            with context:
+                widget = widgets.HTML(f"<pre>{error}</pre>")
             # raise
         context.widgets["content"] = widget
     else:
