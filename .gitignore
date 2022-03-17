@@ -78,5 +78,5 @@ bin/.idea
 # output file from the docs
 build/
 
-tmp
-examples
+./tmp
+./examples
