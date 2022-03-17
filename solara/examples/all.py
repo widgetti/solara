@@ -1,7 +1,7 @@
 from solara.kitchensink import *
-from .calculator import Calculator
-from .bqplot import Plot
 from .doc import Doc
+from .demo import Demo
+from .docutils import IncludeComponent
 from pathlib import Path
 
 directory = Path(__file__).parent
@@ -23,9 +23,7 @@ def All():
     with v.Tabs(v_model=tab, on_v_model=set_tab2) as main:
         with v.Tab(children=["What is Solara ☀️?"]):
             pass
-        with v.Tab(children=["Demo: calculator"]):
-            pass
-        with v.Tab(children=["Demo: bqplot"]):
+        with v.Tab(children=["Demo"]):
             pass
         with v.Tab(children=["Docs"]):
             pass
@@ -38,10 +36,8 @@ def All():
                 Markdown(md)
                 # w.Textarea(value=md, on_value=set_md)
             if tab == 1:
-                Calculator()
+                Demo()
             if tab == 2:
-                Plot()
-            if tab == 3:
                 Doc()
 
     return main
