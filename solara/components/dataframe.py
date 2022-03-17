@@ -5,7 +5,7 @@ import react_ipywidgets as react
 import react_ipywidgets.ipyvuetify as v
 import react_ipywidgets.ipywidgets as w
 import react_ipywidgets.bqplot as bqplot
-from solara.components.components import ui_checkbox
+from solara.components import ui_checkbox
 from solara.hooks import *
 from IPython.display import display
 import vaex

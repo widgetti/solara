@@ -169,7 +169,7 @@ def LongRunning():
     return main
 
 
-from solara.hooks.hooks import use_thread
+from solara.hooks import use_thread
 
 
 @react.component
