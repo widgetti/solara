@@ -6,9 +6,9 @@ import react_ipywidgets as react
 import react_ipywidgets.ipywidgets as w
 import react_ipywidgets.ipyvuetify as v
 import solara.widgets
+import ipyvue as vue
 
 PivotTable = react.core.ComponentWidget(solara.widgets.PivotTable)
-# GridLayoutRaw = react.core.ComponentWidget(solara.widgets.GridLayout)
 
 
 def ui_dropdown(value="foo", options=["foo", "bar"], description="", key=None, **kwargs):
@@ -20,6 +20,14 @@ def ui_dropdown(value="foo", options=["foo", "bar"], description="", key=None, *
 
     v.Select(v_model=value, label=description, items=options, on_v_model=set_value, clearable=True)
     return value
+
+
+def ui_text(value="", description="Enter text", key=None, clearable=False, hint="", **kwargs):
+    key = key or str(value) + str(description) + str(hint)
+    value, set_value = react.use_state(value, key)
+    v.TextField(v_model=value, label=description, on_v_model=set_value, clearable=clearable, hint=hint)
+    return value
+
 
 # def ui_checkbox(value="foo", options=["foo", "bar"], description="", key=None, **kwargs):
 #     key = key or str(value) + str(description) + str(options)
@@ -37,6 +45,73 @@ def ui_checkbox(value=True, description="", key=None, **kwargs):
     value, set_value = react.use_state(value, key)
     v.Checkbox(v_model=value, label=description, on_v_model=set_value)
     return value
+
+
+def ui_slider(value=1, description="", min=0, max=100, key=None, tick_labels=None, thumb_label=None, **kwargs):
+    key = key or str(value) + str(description)
+    value, set_value = react.use_state(value, key)
+    v.Slider(
+        v_model=value,
+        label=description,
+        min=min,
+        max=max,
+        on_v_model=set_value,
+        ticks=tick_labels is not None,
+        tick_labels=tick_labels,
+        thumb_label=thumb_label,
+        **kwargs,
+    )
+    return value
+
+
+@react.component
+def Text(text, layout=None):
+    return vue.Html.element(tag="span", children=[text], layout=layout)
+
+
+@react.component
+def Div(children=[], **kwargs):
+    return vue.Html.element(tag="div", children=children, **kwargs)
+
+
+@react.component
+def AltairChart(chart, on_click=None, on_hover=None):
+    import altair as alt
+
+    with alt.renderers.enable("mimetype"):
+        bundle = chart._repr_mimebundle_()[0]
+        key = "application/vnd.vegalite.v4+json"
+        if key not in bundle:
+            raise KeyError(f"{key} not in mimebundle:\n\n{bundle}")
+        spec = bundle[key]
+        return solara.widgets.VegaLite.element(
+            spec=spec, on_click=on_click, listen_to_click=on_click is not None, on_hover=on_hover, listen_to_hover=on_hover is not None
+        )
+
+
+@react.component
+def FigurePlotly(fig, on_selection=None, on_click=None, on_hover=None):
+    from plotly.graph_objs._figurewidget import FigureWidget
+
+    fig_element = FigureWidget.element(layout=fig.layout)
+
+    def update_data():
+        fig_widget: FigureWidget = react.get_widget(fig_element)
+        if on_selection:
+            fig_widget.on_selection(on_selection)
+        fig_widget.layout = fig.layout
+        length = len(fig_widget.data)
+        fig_widget.add_traces(fig.data)
+        data = list(fig_widget.data)
+        fig_widget.data = data[length:]
+        for data in fig_widget.data:
+            if on_click:
+                data.on_click(on_click)
+            if on_hover:
+                data.on_hover(on_hover)
+
+    react.use_side_effect(update_data)
+    return fig_element
 
 
 @react.component

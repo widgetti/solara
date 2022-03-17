@@ -48,6 +48,9 @@ server = [
 ]
 examples = [
     "bqplot",
+    "altair",
+    "vega_datasets",
+    "plotly",
 ]
 
 [project.urls]
