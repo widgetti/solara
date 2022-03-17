@@ -59,15 +59,14 @@ def FilterCard(df):
 
 
 @react.component
-def Table(df):
+def Table(df, n=5):
     output_c = w.Output()
 
     def output():
-        pass
         output_real = react.get_widget(output_c)
         with output_real:
             output_real.clear_output(wait=True)
-            display(df.head())
+            display(df if n is None else df.head(n=n))
     react.use_side_effect(output)
     return output_c
 
