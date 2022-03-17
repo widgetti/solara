@@ -1,3 +1,3 @@
-from .hooks import *
+from .multiple_hooks import *
 
 from .dataframe import *

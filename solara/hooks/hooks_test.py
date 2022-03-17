@@ -1,7 +1,7 @@
 import time
 
 import react_ipywidgets as react
-from .hooks import use_download, use_thread
+from .multiple_hooks import use_download, use_thread
 from react_ipywidgets import component, render_fixed, use_state
 from react_ipywidgets import ipywidgets as w
 
