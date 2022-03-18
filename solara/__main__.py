@@ -58,20 +58,19 @@ def find_all_packages_paths():
     "reload_excludes",
     multiple=True,
     help="Set glob patterns to exclude while watching for files. Includes "
-         "'.*, .py[cod], .sw.*, ~*' by default; these defaults can be overridden "
-         "with `--reload-include`. This option has no effect unless watchgod is "
-         "installed.",
+    "'.*, .py[cod], .sw.*, ~*' by default; these defaults can be overridden "
+    "with `--reload-include`. This option has no effect unless watchgod is "
+    "installed.",
 )
 @click.argument("app")
-def main(app, host, port, open, reload: bool, reload_dirs: typing.Optional[typing.List[str]], dev: bool,
-         reload_excludes: typing.List[str]):
+def main(app, host, port, open, reload: bool, reload_dirs: typing.Optional[typing.List[str]], dev: bool, reload_excludes: typing.List[str]):
     reload_dirs = reload_dirs if reload_dirs else None
     url = f"http://{host}:{port}"
 
     failed = False
     if dev:
         reload_dirs = reload_dirs if reload_dirs else []
-        reload_dirs.extend(find_all_packages_paths())
+        reload_dirs = list(reload_dirs) + list(find_all_packages_paths())
         reload = True
 
     def open_browser():
