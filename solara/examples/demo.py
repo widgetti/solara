@@ -8,7 +8,7 @@ from .altair import Altair
 
 tabs = {
     "Calulator": Calculator,
-    "bqplot": Plot,
+    "Bqplot": Plot,
     "Plotly": Plotly,
     "Altair": Altair,
 }

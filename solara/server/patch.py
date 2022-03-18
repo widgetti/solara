@@ -47,14 +47,60 @@ def kernel_initialized_dispatch(cls):
     return True
 
 
-def display_solara(*args):
-    print(args)
+def display_solara(*objs, include=None, exclude=None, metadata=None, transient=None, display_id=None, raw=False, clear=False, **kwargs):
+    from IPython.core.interactiveshell import InteractiveShell
+
+    if transient is None:
+        transient = {}
+    if metadata is None:
+        metadata = {}
+    from IPython.core.display_functions import _new_id
+
+    if display_id:
+        if display_id is True:
+            display_id = _new_id()
+        transient["display_id"] = display_id
+    if kwargs.get("update") and "display_id" not in transient:
+        raise TypeError("display_id required for update_display")
+    if transient:
+        kwargs["transient"] = transient
+
+    if not objs and display_id:
+        # if given no objects, but still a request for a display_id,
+        # we assume the user wants to insert an empty output that
+        # can be updated later
+        objs = [{}]
+        raw = True
+
+    if not raw:
+        format = InteractiveShell.instance().display_formatter.format
+
+    import pdb
+
+    pdb.set_trace()
+    if clear:
+        clear_output(wait=True)
+
+    for obj in objs:
+        if raw:
+            publish_display_data(data=obj, metadata=metadata, **kwargs)
+        else:
+            format_dict, md_dict = format(obj, include=include, exclude=exclude)
+            if not format_dict:
+                # nothing to display (e.g. _ipython_display_ took over)
+                continue
+            if metadata:
+                # kwarg-specified metadata gets precedence
+                _merge(md_dict, metadata)
+            publish_display_data(data=format_dict, metadata=md_dict, **kwargs)
+    if display_id:
+        return DisplayHandle(display_id)
 
 
 def get_ipython():
     context = app.get_current_context()
     our_fake_ipython = FakeIPython(context)
-    ipywidgets.widgets.widget.get_ipython = lambda: our_fake_ipython
+    return our_fake_ipython
 
 
 class context_dict(MutableMapping):
@@ -98,3 +144,4 @@ def patch():
     threading.Thread = WidgetContextAwareThread
     ipykernel.kernelbase.Kernel.instance = classmethod(kernel_instance_dispatch)
     ipykernel.kernelbase.Kernel.initialized = classmethod(kernel_initialized_dispatch)
+    ipywidgets.widgets.widget.get_ipython = get_ipython

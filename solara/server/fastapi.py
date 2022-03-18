@@ -28,7 +28,7 @@ directory = Path(__file__).parent
 
 
 # if asyncio.get_event_loop():
-#     asyncio.create_task(solara_app.watch_app())
+#     asyncio.create_task(server.solara_app.watch_app())
 
 
 router = APIRouter()
@@ -143,7 +143,10 @@ async def watchdog(ws: WebSocket):
             context = appmod.contexts.get(context_id)
             if context:
                 print("closed", context_id)
-                context.control_sockets.remove(ws)
+                try:
+                    context.control_sockets.remove(ws)
+                except ValueError:
+                    pass
             ok = False
             await ws.close()
 

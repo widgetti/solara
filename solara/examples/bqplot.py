@@ -19,7 +19,7 @@ def Plot(x=x0, ymax=5):
         else:
             y_scale = bqplot.LinearScale(min=0, max=ymax)
 
-        display_legend = w.checkbox(False, "Show legend")
+        display_legend = w.checkbox(True, "Show legend")
         label = ""
         if display_legend:
             label = w.text("My Label", "legend label")

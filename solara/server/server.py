@@ -25,19 +25,21 @@ jinja_env = jinja2.Environment(loader=jinja_loader, autoescape=True)
 solara_app = AppScript(os.environ.get("SOLARA_APP", "solara.examples:app"))
 
 
-def run_app():
+def run_app(app_state):
+    # app.signal_hook_install()
     main_object = solara_app.run()
+    render_context = None
 
     if isinstance(main_object, widgets.Widget):
-        return main_object
+        return main_object, render_context
     elif isinstance(main_object, Element):
         # container = widgets.VBox()
         import ipyvuetify
 
         container = ipyvuetify.Html(tag="div", style_="display: flex; flex: 0 1 auto; align-items: left; justify-content: left")
         # container = ipyvuetify.Html(tag="div")
-        render(main_object, container, handle_error=False)
-        return container
+        render_context = render(main_object, container, handle_error=False, initial_state=app_state)
+        return container, render_context
     else:
         raise ValueError(f"Main object (with name {solara_app.app_name} in {solara_app.path}) is not a Widget or Element, but {type(main_object)}")
 
@@ -47,14 +49,18 @@ async def read_root(context_id: Optional[str]):
     # context_id = None
     if context_id is None or context_id not in app.contexts:
         kernel = Kernel()
-        context_id = str(uuid4())
+        if context_id is None:
+            context_id = str(uuid4())
         context = app.contexts[context_id] = AppContext(kernel=kernel, control_sockets=[], widgets={})
         with context:
             widgets.register_comm_target(kernel)
             assert kernel is Kernel.instance()
         try:
+            app_state = app.state_load(context_id)
             with context:
-                widget = run_app()
+                widget, render_context = run_app(app_state)
+                if render_context:
+                    context.app_object = render_context
         except react_ipywidgets.core.ComponentCreateError as e:
             from rich.console import Console
 

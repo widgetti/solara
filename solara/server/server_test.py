@@ -124,13 +124,23 @@ def test_docs_basics(page: playwright.sync_api.Page, solara_server):
     # with screenshot_on_error(page, 'tmp/test_docs_basics.png'):
     if 1:
         assert page.title() == "Hello from Solara ☀️"
-        page.locator("text=Demo: calculator").click()
+        page.locator("text=Demo").click()
+
+        page.locator("text=Calculator").click()
         page.locator("text=+/-").wait_for()
         page.screenshot(path="tmp/screenshot_calculator.png")
 
-        page.locator("text=Demo: bqplot").click()
+        page.locator("text=Bqplot").click()
         page.locator("text=Line color").wait_for()
         page.screenshot(path="tmp/screenshot_bqplot.png")
+
+        page.locator("text=Plotly").click()
+        page.locator("text=plotly express").wait_for()
+        page.screenshot(path="tmp/screenshot_plotly.png")
+
+        page.locator("text=Altair").click()
+        page.locator("text=Altair is supported").wait_for()
+        page.screenshot(path="tmp/screenshot_altair.png")
 
         page.locator("text=Docs").click()
         page.screenshot(path="tmp/screenshot_debug.png")

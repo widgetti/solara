@@ -9,10 +9,6 @@ year_min = df["year"].min().item()
 year_max = df["year"].max().item()
 years = df["year"].unique().tolist()
 
-import solara.widgets
-
-solara.widgets.watch()
-
 
 @react.component
 def Plotly():

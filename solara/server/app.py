@@ -1,14 +1,17 @@
+import atexit
 import contextlib
 import dataclasses
 import importlib.util
 import logging
 import os
+import pickle
 import threading
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 import ipywidgets as widgets
+import react_ipywidgets as react
 from starlette.websockets import WebSocket
 
 from . import kernel
@@ -33,7 +36,11 @@ def cwd(path):
 class AppContext:
     kernel: kernel.Kernel
     control_sockets: List[WebSocket]
+    # this is the 'private' version of the normally global ipywidgets.Widgets.widget dict
     widgets: Dict[str, widgets.Widget]
+    # anything we need to attach to the context
+    # e.g. for a react app the render context, so that we can store/restore the state
+    app_object: Optional[Any] = None
 
     def display(self, *args):
         print(args)
@@ -177,3 +184,34 @@ class AppScript:
                     print(socket)
                     await socket.send_json(reload)
             print("send refresh!")
+
+
+state_directory = Path(".") / "states"
+state_directory.mkdir(exist_ok=True)
+
+
+def state_store_all():
+    print("Storing state:\n\n\n", list(contexts.keys()))
+    for name, context in contexts.items():
+        print(f"Storing for {name}")
+        path = state_directory / f"{name}.pickle"
+        render_context = context.app_object
+        if render_context is not None:
+            render_context = cast(react.core._RenderContext, render_context)
+            state = render_context.state_get()
+            with path.open("wb") as f:
+                pickle.dump(state, f)
+
+
+def state_load(context_name: str):
+    path = state_directory / f"{context_name}.pickle"
+    if path.exists():
+        try:
+            with path.open("rb") as f:
+                return pickle.load(f)
+                # return json.load(f)
+        except Exception:
+            logger.exception("Failed to load state for context %s", context_name)
+
+
+atexit.register(state_store_all)

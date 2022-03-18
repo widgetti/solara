@@ -6,8 +6,6 @@ from solara.kitchensink import react, sol
 
 source = data.cars()
 
-sol.widgets.watch()
-
 
 @react.component
 def Altair():

@@ -36,9 +36,9 @@ def All():
                 Markdown(md)
                 # w.Textarea(value=md, on_value=set_md)
             if tab == 1:
-                Demo()
+                Demo(__key__=tab)
             if tab == 2:
-                Doc()
+                Doc(__key__=tab)
 
     return main
 
