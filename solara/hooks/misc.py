@@ -1,12 +1,13 @@
+import json
+import logging
 import os
-from typing import Any, Callable
-import urllib.request
+import tempfile
 import threading
 import time
-import logging
+import urllib.request
+from typing import Any, Callable
 
 import react_ipywidgets as react
-
 
 logger = logging.getLogger("react-ipywidgets.extra.hooks")
 
@@ -93,4 +94,41 @@ def use_download(file_path, url, expected_size=None, delay=None):
         progress = downloaded_length / content_length
     else:
         progress = 0
-    return progress, download_is_done, error, cancel, retry
+    return progress, download_is_done & thread_is_done, error, cancel, retry
+
+
+def use_fetch(url):
+    file, filename = react.use_memo(lambda *ignore: tempfile.mkstemp(), url)()
+    progress, download_is_done, error, cancel, retry = use_download(filename, url)
+
+    @react.use_memo
+    def read_data(*ignore):
+        nonlocal error
+        if download_is_done:
+            try:
+                with open(filename, "rb") as f:
+                    data = f.read()
+                    f.close()
+                # os.close(file)
+            except Exception as e:
+                error = e
+                data = None
+            return data
+
+    data = read_data(download_is_done)
+    return data, error
+
+
+def use_json(path):
+    data, error = use_fetch(path)
+
+    @react.use_memo
+    def read_json(*ignore):
+        nonlocal error
+        if data and not error:
+            try:
+                return json.loads(data)
+            except Exception as e:
+                error = e
+
+    return read_json(data), error
