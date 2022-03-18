@@ -16,7 +16,7 @@ def list_dir(path):
         return {"name": n, "is_file": is_file, "size": humanize.naturalsize(os.stat(full_path).st_size) if is_file else None}
 
     files = [mk_item(n) for n in os.listdir(path) if not n.startswith(".")]
-    sorted_files = sorted(files, key=lambda item: ("0" if item["is_file"] else "1") + item["name"])
+    sorted_files = sorted(files, key=lambda item: ("0" if item["is_file"] else "1") + item["name"].lower())
     return sorted_files
 
 
