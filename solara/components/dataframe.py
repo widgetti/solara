@@ -71,10 +71,14 @@ def Table(df, n=5):
     output_c = w.Output()
 
     def output():
-        output_real = react.get_widget(output_c)
-        with output_real:
-            output_real.clear_output(wait=True)
-            display(df if n is None else df.head(n=n))
+        import ipywidgets as widgets
+
+        output_real: widgets.Output = react.get_widget(output_c)
+        # don't rely on display, does not work in solara yet
+        with output_real.hold_sync():
+            output_real.outputs = tuple()
+            output_real.append_display_data(df)
+
     react.use_side_effect(output)
     return output_c
 
