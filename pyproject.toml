@@ -20,7 +20,8 @@ dependencies = [
     "pygments",
     "pymdown-extensions",
     "markdown-it-py",
-    "mdit-py-plugins"
+    "mdit-py-plugins",
+    "humanize"
 ]
 
 [tool.flit.module]
