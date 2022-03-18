@@ -131,11 +131,11 @@ class AppScript:
             with open(self.path) as f:
                 ast = compile(f.read(), self.path, "exec")
                 exec(ast, local_scope)
-        elif self.type == AppType.SCRIPT:
+        elif self.type == AppType.NOTEBOOK:
             import nbformat
 
+            nb: nbformat.NotebookNode = nbformat.read(self.path, 4)
             with cwd(Path(self.path).parent):
-                nb: nbformat.NotebookNode = nbformat.read(self.path, 4)
                 for cell_index, cell in enumerate(nb.cells):
                     cell_index += 1  # used 1 based
                     if cell.cell_type == "code":
