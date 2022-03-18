@@ -65,8 +65,8 @@ def ui_slider(value=1, description="", min=0, max=100, key=None, tick_labels=Non
 
 
 @react.component
-def Text(text, layout=None):
-    return vue.Html.element(tag="span", children=[text], layout=layout)
+def Text(text):
+    return vue.Html.element(tag="span", children=[text])
 
 
 @react.component
