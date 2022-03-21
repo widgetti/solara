@@ -1,0 +1,8 @@
+ipyvuetify
+react_ipywidgets
+bqplot
+plotly
+.[server,examples]
+vega_datasets
+altair
+

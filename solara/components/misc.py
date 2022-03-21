@@ -11,43 +11,32 @@ import ipyvue as vue
 PivotTable = react.core.ComponentWidget(solara.widgets.PivotTable)
 
 
-def ui_dropdown(value="foo", options=["foo", "bar"], description="", key=None, **kwargs):
+def ui_dropdown(value="foo", options=["foo", "bar"], description="", key=None, disabled=False, **kwargs):
     key = key or str(value) + str(description) + str(options)
     value, set_value = react.use_state(value, key)
 
     def set_index(index):
         set_value(options[index])
 
-    v.Select(v_model=value, label=description, items=options, on_v_model=set_value, clearable=True)
+    v.Select(v_model=value, label=description, items=options, on_v_model=set_value, clearable=True, disabled=disabled, **kwargs)
     return value
 
 
-def ui_text(value="", description="Enter text", key=None, clearable=False, hint="", **kwargs):
+def ui_text(value="", description="Enter text", key=None, clearable=False, hint="", disabled=False, **kwargs):
     key = key or str(value) + str(description) + str(hint)
     value, set_value = react.use_state(value, key)
-    v.TextField(v_model=value, label=description, on_v_model=set_value, clearable=clearable, hint=hint)
+    v.TextField(v_model=value, label=description, on_v_model=set_value, clearable=clearable, hint=hint, disabled=disabled, **kwargs)
     return value
 
 
-# def ui_checkbox(value="foo", options=["foo", "bar"], description="", key=None, **kwargs):
-#     key = key or str(value) + str(description) + str(options)
-#     value, set_value = react.use_state(value, key)
-
-#     def set_index(index):
-#         set_value(options[index])
-
-#     v.Select(v_model=value, label=description, items=options, on_v_model=set_value, clearable=True)
-#     return value
-
-
-def ui_checkbox(value=True, description="", key=None, **kwargs):
+def ui_checkbox(value=True, description="", key=None, disabled=False, **kwargs):
     key = key or str(value) + str(description)
     value, set_value = react.use_state(value, key)
-    v.Checkbox(v_model=value, label=description, on_v_model=set_value)
+    v.Checkbox(v_model=value, label=description, on_v_model=set_value, **kwargs)
     return value
 
 
-def ui_slider(value=1, description="", min=0, max=100, key=None, tick_labels=None, thumb_label=None, **kwargs):
+def ui_slider(value=1, description="", min=0, max=100, key=None, tick_labels=None, thumb_label=None, disabled=False, **kwargs):
     key = key or str(value) + str(description)
     value, set_value = react.use_state(value, key)
     v.Slider(
@@ -59,6 +48,7 @@ def ui_slider(value=1, description="", min=0, max=100, key=None, tick_labels=Non
         ticks=tick_labels is not None,
         tick_labels=tick_labels,
         thumb_label=thumb_label,
+        disabled=disabled,
         **kwargs,
     )
     return value

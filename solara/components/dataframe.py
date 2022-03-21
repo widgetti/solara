@@ -8,7 +8,6 @@ import react_ipywidgets.bqplot as bqplot
 from solara.components import ui_checkbox
 from solara.hooks import *
 from IPython.display import display
-import vaex
 
 from solara.hooks.dataframe import use_df_pivot_data
 from solara.components import ui_dropdown, PivotTable
@@ -130,6 +129,8 @@ def HistogramCard(df, column=None):
                             column = ui_dropdown(value=column, description=f"x", options=items)
             if column:
                 log = False
+                import vaex
+
                 dfg = dff.groupby(column, agg={"count": vaex.agg.count(selection=filter)}, sort=True)
                 if len(dfg) > max_unique:
                     with v.Alert(
@@ -624,6 +625,7 @@ def PivotTableCard(df, x=[], y=[]):
                                                 else:
                                                     y.append(col)
 
+            import vaex
             data = use_df_pivot_data(dff, x, y, vaex.agg.count(selection=filter))
             PivotTable(d=data, on_selected=set_filter_from_pivot_selection)
 
