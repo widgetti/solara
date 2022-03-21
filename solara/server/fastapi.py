@@ -174,6 +174,7 @@ app = FastAPI()
 app.include_router(router=router)
 
 # if we add these to the router, the server_test does not run (404's)
+app.mount("/static/dist", StaticFiles(directory=f"{sys.prefix}/share/jupyter/voila/templates/base/static"), name="static")
 app.mount("/static", StaticFiles(directory=directory / "static"), name="static")
 app.mount("/solara/static", StaticFiles(directory=f"{sys.prefix}/share/jupyter/nbconvert/templates/lab/static"), name="static")
 

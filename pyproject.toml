@@ -46,6 +46,7 @@ server = [
     "watchgod",
     "websockets",
     "fastapi",
+    "voila",
 ]
 examples = [
     "bqplot",
