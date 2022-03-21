@@ -36,10 +36,6 @@ def FileBrowser(start_directory, on_file_name):
     scroll_pos_stack, set_scroll_pos_stack = react.use_state([])
     scroll_pos, set_scroll_pos = react.use_state(0)
 
-    @react.use_memo
-    def list_dir_memo(path):
-        return list_dir(path)
-
     def change_dir(new_dir):
         if os.access(new_dir, os.R_OK):
             set_current_dir(new_dir)
@@ -73,7 +69,7 @@ def FileBrowser(start_directory, on_file_name):
     with Div(class_="solara-file-browser") as main:
         Div(children=[current_dir])
         FileListWidget.element(
-            files=[{"name": "..", "is_file": False}] + list_dir_memo(current_dir),
+            files=[{"name": "..", "is_file": False}] + list_dir(current_dir),
             selected=selected,
             on_selected=on_selected,
             scroll_pos=scroll_pos,
