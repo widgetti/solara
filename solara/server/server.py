@@ -122,7 +122,7 @@ async def read_root(context_id: Optional[str]):
     return response, context_id
 
 
-def nbext(dir, filename):
+def nbext(dir, filename) -> Path:
     """The path to look for Javascript notebook extensions"""
     paths = jupyter_path("nbextensions")
     # FIXME: remove IPython nbextensions path after a migration period
@@ -135,6 +135,4 @@ def nbext(dir, filename):
     for path in paths:
         p = Path(path) / dir / filename
         if p.exists():
-            with open(p) as f:
-                data = f.read()
-            return data
+            return p

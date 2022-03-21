@@ -14,6 +14,7 @@ import ipywidgets as widgets
 import react_ipywidgets
 import websockets.exceptions
 from fastapi import APIRouter, FastAPI, Request, Response, WebSocket
+from starlette.responses import FileResponse
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -163,9 +164,10 @@ async def read_root(request: Request):
 
 @router.get("/voila/nbextensions/{dir}/{filename}")
 def nbext(dir, filename):
-    data = server.nbext(dir, filename)
-    if data:
-        return Response(data)
+    path = server.nbext(dir, filename)
+    if path and path.is_file:
+        stat = os.stat(path)
+        return FileResponse(path, stat_result=stat)
     else:
         return Response("not found", status_code=404)
 
