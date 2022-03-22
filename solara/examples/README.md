@@ -1,47 +1,30 @@
-# What is solara?
+# What is Solara?
 
 
+<img src="https://user-images.githubusercontent.com/1765949/159178788-2c20214d-d4fe-42cd-a28e-7097ce37c904.svg" height="200px"/>
 
-Solara is a production ready way to build webapps from Python using IPywidgets and React-IPywidgets.
+## What is it?
 
+If you only care about using Solara from the Jupyter notebook (classic or lab) or Voila, it is:
 
-
-## What does solara solve?
-
-Widgetti saves the state at the server, and the client, leading to minimal data traffic, and reloading a page will keep your web app in the same state. If you disconnect for a while, you state will be stored at the server, and will be restored at the next reconnect. You data is never lost.
-
+   * A set of composable components build on [React-IPywidgets](https://github.com/widgetti/react-ipywidgets) (e.g., Image, Markdown, FileBrowser, etcetera) to get that 'all batteries included' feeling.
 
 
-It is :smile: :heart: :thumbsup:
+If you also want to develop and deploy a more extensive application and prefer not to program in a Jupyter notebook, or care about scaling your application, Solara is also:
 
+   * An application server to make development easier:
+       * Auto reloading refreshes the page when you save your script or Jupyter notebook.
+       * Your app state is restored after reload/restart: All tabs, checkboxes, etcetera will be as you set them.
+   * An application server that:
+      * Runs on Starlette (used in FastAPI).
+      * Executes:
+         * Python scripts
+         * Python modules/packages
+         * Jupyter notebooks
+   * An alternative for Voila, for when:
+     * You only need to display widgets
+     * One kernel/process per request is becoming a bottleneck/cost issue.
+     * Only care about using Python (e.g., not Julia, R)
+     * Are ok, or even prefers, to have your application code run in the same process as your web server (e.g., FastAPI, Starlette)
 
-```python
-def foo(bar="lolz"):
-    print(bar, 1)
-```
-
-```python
-def bubble_sort(list)
-  return list if list.size <= 1 # already sorted
-  swapped = true
-  while swapped do
-    swapped = false
-    0.upto(list.size-2) do |i|
-      if list[i] > list[i+1]
-        list[i], list[i+1] = list[i+1], list[i] # swap values
-        swapped = true
-      end
-    end
-  end
-
-  list
-end
-```
-
-
-::: note
-Be sure to
-:::
-
-## Who are you?
-
+Read more at [GitHub](http://github.com/widgetti/solara/)
