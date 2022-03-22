@@ -7,8 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/vuetify@2.2.27/dist/vuetify.min.css" rel="stylesheet">
     <link href='https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900|Material+Icons' rel="stylesheet">
     <link href='https://cdn.materialdesignicons.com/4.9.95/css/materialdesignicons.min.css' rel="stylesheet">
-    <link rel="icon"
-        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>☀️</text></svg>">
+    <link rel="icon" type="image/png" href="/static/sun64.png">
 
     <link href="/static/highlight.css" rel="stylesheet">
     </link>
@@ -50,6 +49,96 @@
             margin-top: auto;
             margin-bottom: auto;
         }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(359deg);
+            }
+        }
+
+        @keyframes oscillate {
+            0% {
+                transform: scale(0.8);
+                fill: red;
+            }
+
+            50% {
+                transform: scale(1.0);
+            }
+
+            100% {
+                transform: scale(0.8);
+            }
+        }
+
+        #sun-spinner {
+            animation: spin 10s linear infinite;
+            padding: 10px;
+        }
+
+        #sun-spinner-container {
+            animation: oscillate 2s linear infinite;
+        }
+
+        @keyframes bounce-in {
+            0% {
+                transform: scale(0);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes bounce-out {
+            0% {
+                transform: scale(1);
+            }
+
+            100% {
+                transform: scale(350);
+            }
+        }
+
+        .solara-transition-enter-active {
+            transition: opacity 0.5s linear;
+            /* animation: bounce-in 0.2s linear; */
+        }
+
+        .solara-transition-leave-active {
+            transition: opacity 0.5s linear;
+            animation: bounce-out 0.5s linear;
+        }
+
+        .solara-transition-leave-active h1 {
+            visibility: hidden;
+        }
+
+        .solara-transition-enter,
+        .solara-transition-leave-to {
+            opacity: 0;
+        }
+
+
+        #loader {
+            position: absolute;
+            top: 58%;
+            /* position the top  edge of the element at the middle of the parent */
+            left: 50%;
+            /* position the left edge of the element at the middle of the parent */
+
+            position: absolute;
+            margin-left: auto;
+            margin-right: auto;
+            left: 0;
+            right: 0;
+            text-align: center;
+            z-index: 1000;
+        }
     </style>
 </head>
 
@@ -57,25 +146,21 @@
     {% raw -%}
     <div id="app" style="display: none">
         <v-app :key="forceUpdateTrigger">
-            <v-slide-y-transition>
-                <v-layout v-show="loading" align-center justify-center>
-                    <v-card style="min-width: 600px">
-                        <v-progress-linear :indeterminate="loadingPercentage < 0" v-model="loadingPercentage"
-                            height="15"></v-progress-linear>
-
-                        <v-card-title primary-title class="py-8">
-                            <h1>{{ loading_text }}</h1>
-                        </v-card-title>
-                    </v-card>
-                </v-layout>
-            </v-slide-y-transition>
-            <v-slide-y-transition>
-                <v-layout v-show="!loading">
-                    <jupyter-widget-mount-point mount-id="content">
-                        A widget with mount-id="content" should go here
-                    </jupyter-widget-mount-point>
-                </v-layout>
-            </v-slide-y-transition>
+            <transition name="solara-transition" :duration="{ enter: 500, leave: 500 }">
+                <v-container v-if="loading" id="loader" key="loader">
+                    <v-row>
+                        <v-col>
+                            <div id="sun-spinner-container">
+                                <img id="sun-spinner" height="100px" src="/static/sun.svg"></img>
+                            </div>
+                            <h1>Solara is {{ loading_text }}</h1>
+                        </v-col>
+                    </v-row>
+                </v-container>
+                <jupyter-widget-mount-point v-if="!loading" mount-id="content">
+                    A widget with mount-id="content" should go here
+                </jupyter-widget-mount-point>
+            </transition>
 
             <v-menu v-if="debug && voilaDebugMessages && voilaDebugMessages.length" offset-y top
                 :close-on-content-click="false">
@@ -165,7 +250,7 @@
             data() {
                 return {
                     forceUpdateTrigger: 0,
-                    loading_text: "Loading page ☀️",
+                    loading_text: "loading the page",
                     loadingPercentage: -1,
                     loading: true,
                     title: "No title",

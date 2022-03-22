@@ -262,7 +262,7 @@ function solaraMount(model_id) {
                 //     // window.navigator.sendBeacon(`${baseUrl}voila/api/shutdown/${kernel.id}`, data);
                 //     // kernel.dispose();
                 // });
-                app.$data.loading_text = 'Loading widgets';
+                app.$data.loading_text = 'loading widgets';
                 await widgetManager.build_widgets();
                 voila.renderMathJax();
                 await Promise.all(Object.values(widgetManager._models).map(async (modelPromise) => {
