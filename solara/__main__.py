@@ -62,8 +62,14 @@ def find_all_packages_paths():
     "with `--reload-include`. This option has no effect unless watchgod is "
     "installed.",
 )
+@click.option(
+    "--workers",
+    default=None,
+    type=int,
+    help="Number of worker processes. Defaults to the $WEB_CONCURRENCY environment" " variable if available, or 1. Not valid with --reload.",
+)
 @click.argument("app")
-def main(app, host, port, open, reload: bool, reload_dirs: typing.Optional[typing.List[str]], dev: bool, reload_excludes: typing.List[str]):
+def main(app, host, port, open, reload: bool, reload_dirs: typing.Optional[typing.List[str]], dev: bool, reload_excludes: typing.List[str], workers: int):
     reload_dirs = reload_dirs if reload_dirs else None
     url = f"http://{host}:{port}"
 
