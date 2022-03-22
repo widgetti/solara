@@ -7,6 +7,7 @@ import sys
 import traceback
 from pathlib import Path
 from typing import Optional
+import typing
 from uuid import uuid4
 
 import IPython.display
@@ -16,7 +17,7 @@ import websockets.exceptions
 from fastapi import APIRouter, FastAPI, Request, Response, WebSocket
 from starlette.responses import FileResponse
 from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
+from starlette.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.responses import JSONResponse
 
@@ -162,14 +163,20 @@ async def read_root(request: Request):
     return response
 
 
-@router.get("/voila/nbextensions/{dir}/{filename}")
-def nbext(dir, filename):
-    path = server.nbext(dir, filename)
-    if path and path.is_file:
-        stat = os.stat(path)
-        return FileResponse(path, stat_result=stat)
-    else:
-        return Response("not found", status_code=404)
+class StaticNbFiles(StaticFiles):
+    def get_directories(self, directory: os.PathLike = None, packages: typing.List[str] = None) -> typing.List[os.PathLike]:
+        all_nb_directories = []
+        from jupyter_core.paths import jupyter_path
+
+        all_nb_directories = jupyter_path("nbextensions")
+        # FIXME: remove IPython nbextensions path after a migration period
+        try:
+            from IPython.paths import get_ipython_dir
+        except ImportError:
+            pass
+        else:
+            all_nb_directories.append(os.path.join(get_ipython_dir(), "nbextensions"))
+        return [Path(k) for k in all_nb_directories]
 
 
 app = FastAPI()
@@ -179,5 +186,6 @@ app.include_router(router=router)
 app.mount("/static/dist", StaticFiles(directory=f"{sys.prefix}/share/jupyter/voila/templates/base/static"), name="static")
 app.mount("/static", StaticFiles(directory=directory / "static"), name="static")
 app.mount("/solara/static", StaticFiles(directory=f"{sys.prefix}/share/jupyter/nbconvert/templates/lab/static"), name="static")
+app.mount("/voila/nbextensions", StaticNbFiles(), name="static")
 
 patch.patch()

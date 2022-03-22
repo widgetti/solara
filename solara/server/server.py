@@ -120,19 +120,3 @@ async def read_root(context_id: Optional[str]):
     template: jinja2.Template = jinja_env.get_template(template_name)
     response = template.render(**{"model_id": model_id, "base_url": base_url, "resources": resources})
     return response, context_id
-
-
-def nbext(dir, filename) -> Path:
-    """The path to look for Javascript notebook extensions"""
-    paths = jupyter_path("nbextensions")
-    # FIXME: remove IPython nbextensions path after a migration period
-    try:
-        from IPython.paths import get_ipython_dir
-    except ImportError:
-        pass
-    else:
-        paths.append(os.path.join(get_ipython_dir(), "nbextensions"))
-    for path in paths:
-        p = Path(path) / dir / filename
-        if p.exists():
-            return p
