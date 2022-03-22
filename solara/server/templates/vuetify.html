@@ -100,27 +100,26 @@
             }
 
             100% {
-                transform: translateZ(0) scale(100);
+                transform: translateZ(0) scale(50);
             }
         }
 
         .solara-transition-enter-active {
-            transition: opacity 0.5s linear;
-            /* animation: bounce-in 0.2s linear; */
+            transition: opacity 0.5s ease;
+            /* animation: bounce-in 0.5s ease; */
         }
 
         .solara-transition-leave-active {
-            transition: opacity 0.5s linear;
+            transition: opacity 0.5s ease;
         }
 
         .solara-transition-leave-active .solara-loader {
-            animation: bounce-out 0.5s linear;
+            animation: bounce-out 0.5s ease;
         }
 
         .solara-transition-leave-active #sun-spinner-container {
             animation: unset;
         }
-
 
         .solara-transition-leave-active h1 {
             visibility: hidden;
@@ -141,6 +140,7 @@
             position: absolute;
             margin: 0;
             padding: 0;
+            z-index: 998;
         }
 
         #loader {
@@ -151,7 +151,6 @@
             left: 50%;
             /* position the left edge of the element at the middle of the parent */
 
-            position: absolute;
             margin-left: auto;
             margin-right: auto;
             left: 0;
@@ -168,11 +167,12 @@
             overflow: hidden;
             z-index: 999;
             width: 100vw;
+            height: 60vh;
             padding: 100px 0;
             background: #00b4ff;
-            background: -webkit-linear-gradient(top, #00b4ff 0%, #fff 100%);
-            background: -linear-gradient(top, #00b4ff 0%, #fff 100%);
-            background: -moz-linear-gradient(top, #00b4ff 0%, #fff 100%);
+            background: -webkit-linear-gradient(top, #00b4ff 0%, #fff0 100%);
+            background: -linear-gradient(top, #00b4ff 0%, #fff0 100%);
+            background: -moz-linear-gradient(top, #00b4ff 0%, #fff0 100%);
         }
 
         /*Time to finalise the cloud shape*/
