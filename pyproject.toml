@@ -53,6 +53,8 @@ examples = [
     "altair",
     "vega_datasets",
     "plotly",
+    "vaex-core",
+    "vaex-hdf5",
 ]
 
 [project.urls]
