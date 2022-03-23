@@ -4,17 +4,17 @@ from .calculator import Calculator
 from .bqplot import Plot
 from .plotly import Plotly
 from .altair import Altair
-from .pokemon import App as Pokemon
 
 
 tabs = {
-    "Calulator": Calculator,
-    "Pokemon": Pokemon,
+    "Bqplot": Plot,
+    "Plotly": Plotly,
+    "Altair": Altair,
 }
 
 
 @react.component
-def Demo():
+def Libraries():
     tab, set_tab = react.use_state(0, "tab")
 
     # md, set_md = use_state("")
@@ -26,3 +26,6 @@ def Demo():
         with v.TabsItems(v_model=tab):
             component(__key__=tab)
     return main
+
+
+app = Libraries()

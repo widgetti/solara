@@ -2,6 +2,8 @@ from solara.kitchensink import *
 from .doc import Doc
 from .demo import Demo
 from .docutils import IncludeComponent
+from .libraries import Libraries
+from .components import Components
 from pathlib import Path
 
 directory = Path(__file__).parent
@@ -23,7 +25,11 @@ def All():
     with v.Tabs(v_model=tab, on_v_model=set_tab2) as main:
         with v.Tab(children=["What is Solara ☀️?"]):
             pass
+        with v.Tab(children=["Supported libraries"]):
+            pass
         with v.Tab(children=["Demo"]):
+            pass
+        with v.Tab(children=["Components"]):
             pass
         with v.Tab(children=["Docs"]):
             pass
@@ -36,9 +42,13 @@ def All():
                 Markdown(md)
                 # w.Textarea(value=md, on_value=set_md)
             if tab == 1:
-                Demo(__key__=tab)
+                Libraries(__key__="libraries")
             if tab == 2:
-                Doc(__key__=tab)
+                Demo(__key__="demo")
+            if tab == 3:
+                Components(__key__="components")
+            if tab == 4:
+                Doc(__key__="doc")
 
     return main
 

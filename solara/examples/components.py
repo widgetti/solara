@@ -1,20 +1,31 @@
 from solara.kitchensink import react, v
+import solara as sol
+import solara.components.datatable
 
-from .calculator import Calculator
-from .bqplot import Plot
-from .plotly import Plotly
-from .altair import Altair
-from .pokemon import App as Pokemon
+import vaex
+
+df = vaex.datasets.titanic()
+# import ipyvue
+
+# ipyvue.watch()
+
+import solara.widgets
+
+solara.widgets.watch()
+
+
+@react.component
+def DataTableDemo():
+    return sol.components.datatable.DataTable(df)
 
 
 tabs = {
-    "Calulator": Calculator,
-    "Pokemon": Pokemon,
+    "DataTable": DataTableDemo,
 }
 
 
 @react.component
-def Demo():
+def Components():
     tab, set_tab = react.use_state(0, "tab")
 
     # md, set_md = use_state("")
@@ -26,3 +37,6 @@ def Demo():
         with v.TabsItems(v_model=tab):
             component(__key__=tab)
     return main
+
+
+app = Components()
