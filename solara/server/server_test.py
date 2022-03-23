@@ -156,17 +156,26 @@ def test_docs_basics(page: playwright.sync_api.Page, solara_server):
         page.screenshot(path="tmp/screenshot_use_effect.png")
 
 
+from solara.kitchensink import v
+
+
 @react.component
-def Test():
+def ClickButton():
     count, set_count = react.use_state(0)
-    return w.Button(description=f"Clicked: {count}", on_click=set_count(count + 1))
+    if not isinstance(count, int):
+        print("oops, state issue?")
+        count = 0
+    # return w.Button()  # description=, on_click=set_count(count + 1))
+    btn = v.Btn(children=[f"Clicked: {count}"])
+    v.use_event(btn, "click", lambda *ignore: set_count(count + 1))
+    return btn
 
 
-test_app = Test()
+click_button = ClickButton()
 
 
 def test_multi_user(page: playwright.sync_api.Page, solara_server):
-    solara_server.solara_app = app.AppScript("solara.server.server_test:test_app")
+    solara.server.server.solara_app = app.AppScript("solara.server.server_test:click_button")
     page.goto(solara_server.base_url)
     with screenshot_on_error(page, "tmp/test_docs_basics.png"):
         assert page.title() == "Hello from Solara ☀️"
@@ -199,10 +208,11 @@ def ThreadTest():
 
 
 thread_test = ThreadTest()
+# click_button = ThreadTest()
 
 
 def test_from_thread(page: playwright.sync_api.Page, solara_server):
-    server.solara_app = app.AppScript("solara.server.server_test:thread_test")
+    solara.server.server.solara_app = app.AppScript("solara.server.server_test:thread_test")
     page.goto(solara_server.base_url)
 
     assert page.title() == "Hello from Solara ☀️"
@@ -213,8 +223,29 @@ def test_from_thread(page: playwright.sync_api.Page, solara_server):
     page.locator("text=from thread").wait_for()
 
 
+def test_state(page: playwright.sync_api.Page, solara_server):
+    solara.server.server.solara_app = app.AppScript("solara.server.server_test:click_button")
+    page.goto(solara_server.base_url)
+    # with screenshot_on_error(page, "tmp/test_state.png"):
+    assert page.title() == "Hello from Solara ☀️"
+    page.locator("text=Clicked: 0").click()
+    page.locator("text=Clicked: 1").click()
+    # refresh...
+    page.goto(solara_server.base_url)
+    # and state should be restored
+    page.locator("text=Clicked: 2").wait_for()
+    # account button
+    page.locator("button >> nth=1").click()
+    # reset state button
+    page.locator('[role="menuitem"]').click()
+    # refresh manually
+    page.goto(solara_server.base_url)
+    # and state should be restored
+    page.locator("text=Clicked: 0").wait_for()
+
+
 def test_from_thread_two_users(browser: playwright.sync_api.Browser, solara_server):
-    server.solara_app = app.AppScript("solara.server.server_test:thread_test")
+    solara.server.server.solara_app = app.AppScript("solara.server.server_test:thread_test")
 
     context1 = browser.new_context()
     page1 = context1.new_page()

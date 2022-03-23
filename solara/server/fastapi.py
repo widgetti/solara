@@ -14,7 +14,7 @@ import IPython.display
 import ipywidgets as widgets
 import react_ipywidgets
 import websockets.exceptions
-from fastapi import APIRouter, FastAPI, Request, Response, WebSocket
+from fastapi import APIRouter, FastAPI, Request, Response, WebSocket, WebSocketDisconnect
 from starlette.responses import FileResponse
 from fastapi.responses import HTMLResponse
 from starlette.staticfiles import StaticFiles
@@ -133,6 +133,23 @@ async def watchdog(ws: WebSocket):
     if context:
         appmod.contexts[context_id].control_sockets.append(ws)
     ok = True
+
+    async def receive_messages():
+        while True:
+            try:
+                text = await ws.receive_text()
+            except (WebSocketDisconnect, OSError, RuntimeError) as e:
+                print("Oops", e)
+                return
+            msg = json.loads(text)
+            if msg["type"] == "state_reset":
+                logger.info(f"reset state for context {context_id}")
+                context.state_reset()
+                await ws.send_json({"type": "reload", "reason": "context id does not exist (server reload?)"})
+            else:
+                logger.error("Unknown msg: {msg}")
+
+    asyncio.create_task(receive_messages())
     while ok:
         try:
             if context_id not in appmod.contexts:
@@ -141,7 +158,7 @@ async def watchdog(ws: WebSocket):
             else:
                 await ws.send_json({"type": "ping", "reason": "check connection"})
             await asyncio.sleep(0.5)
-        except websockets.exceptions.ConnectionClosed:
+        except (websockets.exceptions.ConnectionClosed, RuntimeError):
             context = appmod.contexts.get(context_id)
             if context:
                 print("closed", context_id)
@@ -150,7 +167,10 @@ async def watchdog(ws: WebSocket):
                 except ValueError:
                     pass
             ok = False
-            await ws.close()
+            try:
+                await ws.close()
+            except RuntimeError:
+                pass  # double close?
 
 
 @router.get("/")

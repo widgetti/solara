@@ -152,7 +152,7 @@ function connectWatchdog() {
     var protocol = 'https:' == document.location.protocol ? 'wss' : 'ws';
     var WSURL = protocol + '://' + window.location.host
 
-    var wsWatchdog = new WebSocket(WSURL + '/solara/watchdog/' + path);
+    window.wsWatchdog = new WebSocket(WSURL + '/solara/watchdog/' + path);
     wsWatchdog.onopen = () => {
         console.log('connected with watchdog')
     }

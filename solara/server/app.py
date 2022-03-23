@@ -20,6 +20,8 @@ COOKIE_KEY_CONTEXT_ID = "solara-context-id"
 
 
 logger = logging.getLogger("solara.server.app")
+state_directory = Path(".") / "states"
+state_directory.mkdir(exist_ok=True)
 
 
 @contextlib.contextmanager
@@ -34,6 +36,7 @@ def cwd(path):
 
 @dataclasses.dataclass
 class AppContext:
+    id: str
     kernel: kernel.Kernel
     control_sockets: List[WebSocket]
     # this is the 'private' version of the normally global ipywidgets.Widgets.widget dict
@@ -63,6 +66,24 @@ class AppContext:
             # what if we reference eachother
             # import gc
             # gc.collect()
+
+    def state_reset(self):
+        path = state_directory / f"{self.id}.pickle"
+        path = path.absolute()
+        path.unlink(missing_ok=True)
+        del contexts[self.id]
+        key = get_current_thread_key()
+        assert current_context[key] is self
+        del current_context[key]
+
+    def state_save(self, state_directory: os.PathLike):
+        path = state_directory / f"{self.id}.pickle"
+        render_context = self.app_object
+        if render_context is not None:
+            render_context = cast(react.core._RenderContext, render_context)
+            state = render_context.state_get()
+            with path.open("wb") as f:
+                pickle.dump(state, f)
 
 
 contexts: Dict[str, AppContext] = {}
@@ -190,21 +211,11 @@ class AppScript:
             print("send refresh!")
 
 
-state_directory = Path(".") / "states"
-state_directory.mkdir(exist_ok=True)
-
-
 def state_store_all():
     print("Storing state:\n\n\n", list(contexts.keys()))
     for name, context in contexts.items():
         print(f"Storing for {name}")
-        path = state_directory / f"{name}.pickle"
-        render_context = context.app_object
-        if render_context is not None:
-            render_context = cast(react.core._RenderContext, render_context)
-            state = render_context.state_get()
-            with path.open("wb") as f:
-                pickle.dump(state, f)
+        context.state_save(state_directory=state_directory)
 
 
 def state_load(context_name: str):

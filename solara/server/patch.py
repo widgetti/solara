@@ -76,9 +76,6 @@ def display_solara(*objs, include=None, exclude=None, metadata=None, transient=N
     if not raw:
         format = InteractiveShell.instance().display_formatter.format
 
-    import pdb
-
-    pdb.set_trace()
     if clear:
         clear_output(wait=True)
 

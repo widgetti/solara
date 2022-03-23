@@ -51,7 +51,7 @@ async def read_root(context_id: Optional[str]):
         kernel = Kernel()
         if context_id is None:
             context_id = str(uuid4())
-        context = app.contexts[context_id] = AppContext(kernel=kernel, control_sockets=[], widgets={}, templates={})
+        context = app.contexts[context_id] = AppContext(id=context_id, kernel=kernel, control_sockets=[], widgets={}, templates={})
         with context:
             widgets.register_comm_target(kernel)
             assert kernel is Kernel.instance()
@@ -98,7 +98,6 @@ async def read_root(context_id: Optional[str]):
             load_extensions["jupyter-js-widgets/extension"] = False
         if "voila/extension" in load_extensions:
             load_extensions["voila/extension"] = False
-        # print(load_extensions.items())
         ignorelist = [
             "jupytext/index",
             "nbextensions_configurator/config_menu/main",

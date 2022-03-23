@@ -381,7 +381,23 @@
                 </v-sheet>
             </v-menu>
 
-            <v-menu v-if="debug && outputMessages && outputMessages.length" offset-y top
+            <v-menu offset-y top :close-on-content-click="false">
+                <template v-slot:activator="{ on }">
+                    <v-btn text v-on="on" style="position: fixed; top: 8px; right: 8px">
+                        <v-icon right large color="#333">mdi-account</v-icon>
+                    </v-btn>
+                </template>
+                <v-list>
+                    <v-list-item @click="stateReset()" link>
+                        <v-list-item-icon>
+                            <v-icon>mdi-close-box</v-icon>
+                        </v-list-item-icon>
+                        <v-list-item-title>Reset application state
+                        </v-list-item-title>
+                    </v-list-item>
+                </v-list>
+            </v-menu>
+            <!-- <v-menu v-if="debug && outputMessages && outputMessages.length" offset-y top
                 :close-on-content-click="false">
                 <template v-slot:activator="{ on }">
                     <v-btn text v-on="on" style="position: fixed; top: 8px; right: 8px">
@@ -412,7 +428,7 @@
                         </v-tooltip>
                     </div>
                 </v-sheet>
-            </v-menu>
+            </v-menu> -->
         </v-app>
     </div>
     {% endraw -%}
@@ -433,6 +449,13 @@
             mounted() {
                 document.querySelector('#app').removeAttribute("style");
             },
+            methods: {
+                stateReset() {
+                    console.log('reset')
+                    msg = { "type": "state_reset", "reason": "user command" }
+                    wsWatchdog.send(JSON.stringify(msg))
+                }
+            },
             data() {
                 return {
                     forceUpdateTrigger: 0,
@@ -441,7 +464,8 @@
                     loading: true,
                     title: "No title",
                     voilaDebugMessages: [],
-                    outputMessages: [{ name: 'stderr', text: 'lala' }],
+                    outputMessages: [],
+                    // outputMessages: [{ name: 'stderr', text: 'lala' }],
                 }
             }
         });
