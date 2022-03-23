@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import pdb
 import sys
 import threading
 import traceback
@@ -9,6 +8,8 @@ from typing import MutableMapping
 import ipykernel.kernelbase
 import IPython.display
 import ipywidgets
+import ipyvue.Template
+
 
 from . import app
 
@@ -105,8 +106,7 @@ def get_ipython():
 
 class context_dict(MutableMapping):
     def _get_context_dict(self) -> dict:
-        context = app.get_current_context()
-        return context.widgets
+        raise NotImplementedError
 
     def __delitem__(self, key) -> None:
         self._get_context_dict().__delitem__(key)
@@ -122,6 +122,18 @@ class context_dict(MutableMapping):
 
     def __setitem__(self, key, value):
         self._get_context_dict().__setitem__(key, value)
+
+
+class context_dict_widgets(context_dict):
+    def _get_context_dict(self) -> dict:
+        context = app.get_current_context()
+        return context.widgets
+
+
+class context_dict_templates(context_dict):
+    def _get_context_dict(self) -> dict:
+        context = app.get_current_context()
+        return context.templates
 
 
 # better to patch the ctor
@@ -140,7 +152,12 @@ class WidgetContextAwareThread(threading.Thread):
 def patch():
     IPython.display.display = display_solara
     __builtins__["display"] = display_solara
-    ipywidgets.widget.Widget.widgets = context_dict()
+
+    # the ipyvue.Template module cannot be accessed like ipyvue.Template
+    # because the import in ipvue overrides it
+    template_mod = sys.modules["ipyvue.Template"]
+    template_mod._template_registry = context_dict_templates()
+    ipywidgets.widget.Widget.widgets = context_dict_widgets()
     threading.Thread = WidgetContextAwareThread
     ipykernel.kernelbase.Kernel.instance = classmethod(kernel_instance_dispatch)
     ipykernel.kernelbase.Kernel.initialized = classmethod(kernel_initialized_dispatch)

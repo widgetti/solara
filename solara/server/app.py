@@ -37,7 +37,11 @@ class AppContext:
     kernel: kernel.Kernel
     control_sockets: List[WebSocket]
     # this is the 'private' version of the normally global ipywidgets.Widgets.widget dict
+    # see patch.py
     widgets: Dict[str, widgets.Widget]
+    # same, for ipyvue templates
+    # see patch.py
+    templates: Dict[str, widgets.Widget]
     # anything we need to attach to the context
     # e.g. for a react app the render context, so that we can store/restore the state
     app_object: Optional[Any] = None

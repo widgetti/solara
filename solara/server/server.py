@@ -51,7 +51,7 @@ async def read_root(context_id: Optional[str]):
         kernel = Kernel()
         if context_id is None:
             context_id = str(uuid4())
-        context = app.contexts[context_id] = AppContext(kernel=kernel, control_sockets=[], widgets={})
+        context = app.contexts[context_id] = AppContext(kernel=kernel, control_sockets=[], widgets={}, templates={})
         with context:
             widgets.register_comm_target(kernel)
             assert kernel is Kernel.instance()
