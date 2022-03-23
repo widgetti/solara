@@ -5,13 +5,6 @@ import solara.components.datatable
 import vaex
 
 df = vaex.datasets.titanic()
-# import ipyvue
-
-# ipyvue.watch()
-
-import solara.widgets
-
-solara.widgets.watch()
 
 
 @react.component
