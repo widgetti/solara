@@ -126,7 +126,7 @@ async def watchdog(ws: WebSocket):
     print("watchdog", context_id)
     await ws.accept()
     if context_id is None:
-        await ws.send_json({"type": "error", "reason": "no context id found in cookie"})
+        await ws.send_json({"type": "reload", "reason": "no context id found in cookie"})
         await ws.close()
         return
     context = appmod.contexts.get(context_id)
