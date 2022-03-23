@@ -156,7 +156,7 @@ def patch():
     # the ipyvue.Template module cannot be accessed like ipyvue.Template
     # because the import in ipvue overrides it
     template_mod = sys.modules["ipyvue.Template"]
-    template_mod._template_registry = context_dict_templates()
+    template_mod.template_registry = context_dict_templates()
     ipywidgets.widget.Widget.widgets = context_dict_widgets()
     threading.Thread = WidgetContextAwareThread
     ipykernel.kernelbase.Kernel.instance = classmethod(kernel_instance_dispatch)
