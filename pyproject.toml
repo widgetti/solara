@@ -71,3 +71,4 @@ profile = "black"
 [tool.pytest.ini_options]
 addopts = "--disable-warnings --screenshot=only-on-failure"
 timeout = 5
+python_files = "*.py"
