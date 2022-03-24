@@ -5,7 +5,7 @@ import tempfile
 import threading
 import time
 import urllib.request
-from typing import Any, Callable
+from typing import Any, Callable, Optional, cast
 
 import react_ipywidgets as react
 
@@ -17,7 +17,7 @@ def use_thread(callback=Callable[[threading.Event], Any], dependencies=[]):
         return threading.Event()
 
     cancel: threading.Event = react.use_memo(make_event)(dependencies)
-    error, set_error = react.use_state(None, "error")
+    error, set_error = react.use_state(cast(Optional[str], None), "error")
     done, set_done = react.use_state(False, "done")
     result, set_result = react.use_state(None, key="result")
 

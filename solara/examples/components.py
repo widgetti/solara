@@ -9,7 +9,44 @@ df = vaex.datasets.titanic()
 
 @react.component
 def DataTableDemo():
-    return sol.components.datatable.DataTable(df)
+    column, set_column = react.use_state(None)
+    cell, set_cell = react.use_state({})
+
+    def on_action_column(column):
+        set_column(column)
+
+    def on_action_cell(column, row_index):
+        set_cell(dict(column=column, row_index=row_index))
+
+    column_actions = [sol.ColumnAction(icon="mdi-sunglasses", name="User column action", on_click=on_action_column)]
+    cell_actions = [sol.CellAction(icon="mdi-white-balance-sunny", name="User cell action", on_click=on_action_cell)]
+    with sol.Div() as main:
+        sol.Markdown(
+            """
+# DataTable
+
+The DataTable component can render dataframes of any size due to pagination.
+
+# arguments
+
+    df: DataFrame
+
+## events
+
+### column_actions
+
+Triggered via clicking on the triple dot icon on the headers
+
+### cell_actions
+
+Tiggered via hovering over a cell.
+
+        """
+        )
+        sol.Markdown(f"Column action on: {column}")
+        sol.Markdown(f"Cell action on: {cell}")
+        sol.components.datatable.DataTable(df, column_actions=column_actions, cell_actions=cell_actions)
+    return main
 
 
 tabs = {
