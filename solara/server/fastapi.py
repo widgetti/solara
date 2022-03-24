@@ -174,7 +174,8 @@ async def watchdog(ws: WebSocket):
 
 
 @router.get("/")
-async def read_root(request: Request):
+@router.get("/{fullpath}")
+async def read_root(request: Request, fullpath: Optional[str] = ""):
     context_id = request.cookies.get(appmod.COOKIE_KEY_CONTEXT_ID)
     content, context_id = await server.read_root(context_id)
     assert context_id is not None

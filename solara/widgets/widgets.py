@@ -1,7 +1,6 @@
 import os
 import traitlets
 import ipyvuetify as v
-import copy
 
 
 class PivotTable(v.VuetifyTemplate):
@@ -48,6 +47,11 @@ class VegaLite(v.VuetifyTemplate):
     def vue_altair_hover(self, *args):
         if self.on_hover:
             self.on_hover(*args)
+
+
+class Navigator(v.VuetifyTemplate):
+    template_file = os.path.realpath(os.path.join(os.path.dirname(__file__), "vue/navigator.vue"))
+    location = traitlets.Unicode(None, allow_none=True).tag(sync=True)
 
 
 def watch():
