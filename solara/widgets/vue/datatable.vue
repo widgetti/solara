@@ -1,5 +1,6 @@
 <template>
   <v-slide-x-transition appear>
+    <div class="solara-data-table__viewport">
     <v-data-table
       dense
       hide-default-header
@@ -115,6 +116,7 @@
         </tr>
       </template>
     </v-data-table>
+    </div>
   </v-slide-x-transition>
 </template>
 
@@ -154,5 +156,16 @@
 }
 .v-data-table th:hover .solara-data-table-menu {
     visibility: unset;
+}
+
+.solara-data-table__viewport {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.solara-data-table.v-data-table,
+.solara-data-table.v-data-table table {
+  max-width: unset;
+  width: unset;
 }
 </style>
