@@ -44,7 +44,7 @@ def find_all_packages_paths():
 @click.option("--port", default=int(os.environ.get("PORT", 8765)))
 @click.option("--host", default=HOST_DEFAULT)
 @click.option("--dev/--no-devn", default=False)
-@click.option("--open/--no-open", default=True)
+@click.option("--open/--no-open", default=False)
 @click.option("--reload", is_flag=True, default=False, help="Enable auto-reload.")
 @click.option(
     "--reload-dir",
