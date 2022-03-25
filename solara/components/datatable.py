@@ -18,7 +18,6 @@ def DataTable(df, page=0, items_per_page=20, format=None, column_actions: List[C
     total_length = len(df)
     options = {"descending": False, "page": page + 1, "itemsPerPage": items_per_page, "sortBy": [], "totalItems": total_length}
     options, set_options = react.use_state(options, key="options")
-    print(options)
     format = format or format_default
     # frontend does 1 base, we use 0 based
     page = options["page"] - 1
