@@ -63,8 +63,71 @@ above a column or cell. And see the following values changes:
     return main
 
 
+@react.component
+def ColorCard(title, color):
+    with v.Card(style_=f"background-color: {color}; width: 100%; height: 100%") as main:
+        v.CardTitle(children=[title])
+    return main
+
+
+@react.component
+def GridLayoutDemo():
+    grid_layout_initial = [
+        {"h": 5, "i": "0", "moved": False, "w": 3, "x": 0, "y": 0},
+        {"h": 5, "i": "1", "moved": False, "w": 5, "x": 3, "y": 0},
+        {"h": 11, "i": "2", "moved": False, "w": 4, "x": 8, "y": 0},
+        {"h": 12, "i": "3", "moved": False, "w": 5, "x": 0, "y": 5},
+        {"h": 6, "i": "4", "moved": False, "w": 3, "x": 5, "y": 5},
+        {"h": 6, "i": "5", "moved": False, "w": 7, "x": 5, "y": 11},
+    ]
+
+    colors = "green red orange brown yellow pink".split()
+
+    # we need to store the state of the grid_layout ourselves, otherwise it will 'reset'
+    # each time we change resizable or draggable
+    grid_layout, set_grid_layout = react.use_state(grid_layout_initial)
+
+    # some placeholders
+    items = [ColorCard(title=f"Child {i}", color=colors[i]) for i in range(len(grid_layout))]
+    with sol.Div() as main:
+        sol.Markdown(
+            """
+# GridLayout
+
+Child components are layed out on a grid, which can be dragged and resized.
+"""
+        )
+        resizable = sol.ui_checkbox(True, "Allow resizing")
+        draggable = sol.ui_checkbox(True, "Allow dragging")
+        btn = v.Btn(children=["Reset to initial layout"])
+
+        def reset_layout(*ignore):
+            set_grid_layout(grid_layout_initial)
+
+        vue.use_event(btn, "click", reset_layout)
+        sol.GridLayout(items=items, grid_layout=grid_layout, resizable=resizable, draggable=draggable, on_grid_layout=set_grid_layout)
+
+        # some string kung fu to make this print nicely
+        grid_layout_formatted = pprint.pformat(grid_layout, indent=4)
+        grid_layout_formatted = textwrap.indent(grid_layout_formatted, " " * len("grid_layout = "))
+        grid_layout_formatted = grid_layout_formatted[len("grid_layout = ") :]
+        sol.MarkdownIt(
+            f"""
+# Resulting layout
+
+This layout can be copy pasted to put in your code as an initial layout:
+
+```python
+grid_layout = {grid_layout_formatted}
+```
+"""
+        )
+    return main
+
+
 tabs = {
     "DataTable": DataTableDemo,
+    "GridLayout": GridLayoutDemo,
 }
 
 

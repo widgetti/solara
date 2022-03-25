@@ -10,6 +10,7 @@ import ipyvue as vue
 
 PivotTable = react.core.ComponentWidget(solara.widgets.PivotTable)
 Navigator = react.core.ComponentWidget(solara.widgets.Navigator)
+GridLayout = react.core.ComponentWidget(solara.widgets.GridLayout)
 
 
 def ui_dropdown(value="foo", options=["foo", "bar"], description="", key=None, disabled=False, **kwargs):

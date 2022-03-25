@@ -2,6 +2,7 @@ import dataclasses
 import os
 import traitlets
 import ipyvuetify as v
+import ipywidgets
 from ..datatypes import ColumnAction, CellAction
 
 
@@ -82,6 +83,15 @@ class VegaLite(v.VuetifyTemplate):
 class Navigator(v.VuetifyTemplate):
     template_file = os.path.realpath(os.path.join(os.path.dirname(__file__), "vue/navigator.vue"))
     location = traitlets.Unicode(None, allow_none=True).tag(sync=True)
+
+
+class GridLayout(v.VuetifyTemplate):
+    template_file = os.path.join(os.path.dirname(__file__), "vue/gridlayout.vue")
+    gridlayout_loaded = traitlets.Bool(False).tag(sync=True)
+    items = traitlets.List(default_value=[]).tag(sync=True, **ipywidgets.widget_serialization)
+    grid_layout = traitlets.List(default_value=[]).tag(sync=True)
+    draggable = traitlets.CBool(True).tag(sync=True)
+    resizable = traitlets.CBool(True).tag(sync=True)
 
 
 def watch():
