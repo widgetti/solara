@@ -1,9 +1,12 @@
 from typing import List
-from ..widgets import DataTable as DataTableWidget
-from .. import ColumnAction, CellAction
+
+import react_ipywidgets as react
+
 import solara as sol
 import solara.hooks.dataframe
-import react_ipywidgets as react
+
+from .. import CellAction, ColumnAction
+from ..widgets import DataTable as DataTableWidget
 
 
 def format_default(df, column, row_index, value):
@@ -33,7 +36,6 @@ def DataTable(df, page=0, items_per_page=20, format=None, column_actions: List[C
         column_data = dfs[columns].to_dict("records")
     else:
         column_data = dfs[columns].to_records()
-    print(column_data)
     for i in range(i2 - i1):
         item = {"__row__": i + i1}  # special key for the row number
         for column in columns:

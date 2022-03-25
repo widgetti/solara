@@ -1,16 +1,20 @@
-from solara.kitchensink import react, v
-import solara as sol
-import solara.components.datatable
+import pprint
+import textwrap
+from typing import Any, Dict, Optional, cast
 
 import vaex
+
+import solara as sol
+import solara.components.datatable
+from solara.kitchensink import react, v, vue
 
 df = vaex.datasets.titanic()
 
 
 @react.component
 def DataTableDemo():
-    column, set_column = react.use_state(None)
-    cell, set_cell = react.use_state({})
+    column, set_column = react.use_state(cast(Optional[str], None))
+    cell, set_cell = react.use_state(cast(Dict[str, Any], {}))
 
     def on_action_column(column):
         set_column(column)
@@ -21,30 +25,40 @@ def DataTableDemo():
     column_actions = [sol.ColumnAction(icon="mdi-sunglasses", name="User column action", on_click=on_action_column)]
     cell_actions = [sol.CellAction(icon="mdi-white-balance-sunny", name="User cell action", on_click=on_action_cell)]
     with sol.Div() as main:
-        sol.Markdown(
-            """
+        sol.MarkdownIt(
+            f"""
 # DataTable
 
 The DataTable component can render dataframes of any size due to pagination.
 
-# arguments
+## API
 
-    df: DataFrame
+### Component signature
+```python
+@react.component
+def DataTable(df, page=0, items_per_page=20, format=None, column_actions: List[ColumnAction] = [], cell_actions: List[CellAction] = []):
+    ...
+```
 
-## events
+### arguments
 
-### column_actions
+   * `df` - `DataFrame`
 
-Triggered via clicking on the triple dot icon on the headers
+### events
 
-### cell_actions
+   * `column_actions` - Triggered via clicking on the triple dot icon on the headers (visible when hovering).
+   * `cell_actions` -  Triggered via clicking on the triple dot icon in the cell (visible when hovering).
 
-Tiggered via hovering over a cell.
+## Demo
+
+Below we show display the titanic dataset, and demonstrate a user colum and cell action. Try clicking on the triple icon when hovering
+above a column or cell. And see the following values changes:
+
+   * Column action on: `{column}`
+   * Cell action on: `{cell}`
 
         """
         )
-        sol.Markdown(f"Column action on: {column}")
-        sol.Markdown(f"Cell action on: {cell}")
         sol.components.datatable.DataTable(df, column_actions=column_actions, cell_actions=cell_actions)
     return main
 

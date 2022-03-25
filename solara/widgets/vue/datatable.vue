@@ -91,25 +91,26 @@
             v-for="header in headers"
             class="text-xs-right"
             :key="header.text"
+            style="position: relative"
             class="text-truncate text-no-wrap"
             :title="props.item[header.value]"
           >
             <v-slide-x-transition appear>
               <!-- <span @click="on_item_click([props.item.__row__, header.value])">{{ props.item[header.value] }}</span> -->
-                <span v-if="!cell_actions.length">
+                <span>
                   {{ props.item[header.value] }}
+                  <v-menu open-on-hover bottom offset-y v-if="cell_actions.length">
+                    <template v-slot:activator="{ on, attrs }">
+                      <v-icon v-bind="attrs" v-on="on" small class="solara-data-table-menu">mdi-dots-vertical</v-icon>
+                    </template>
+                    <v-list v-for="(action, index) in cell_actions" :key="index">
+                      <v-list-item link @click="on_cell_action([props.item.__row__, header.value, index])">
+                        <v-list-icon><v-icon>{{action.icon}}</v-icon></v-list-icon>
+                        <v-list-item-title>{{action.name}}</v-list-item-title>
+                      </v-list-item>
+                    </v-list>
+                  </v-menu>
                 </span>
-                <v-menu open-on-hover bottom offset-y v-if="cell_actions.length">
-                  <template v-slot:activator="{ on, attrs }">
-                    <span v-bind="attrs" v-on="on">{{ props.item[header.value] }}</span>
-                  </template>
-                  <v-list v-for="(action, index) in cell_actions" :key="index">
-                    <v-list-item link @click="on_cell_action([props.item.__row__, header.value, index])">
-                      <v-list-icon><v-icon>{{action.icon}}</v-icon></v-list-icon>
-                      <v-list-item-title>{{action.name}}</v-list-item-title>
-                    </v-list-item>
-                  </v-list>
-                </v-menu>
 
             </v-slide-x-transition>
           </td>
@@ -148,13 +149,20 @@
 }
 
 .v-data-table .solara-data-table-menu {
-    visibility: hidden;
+    /* visibility: hidden; */
     position: absolute;
     right: 2px;
     top: 8px;
     text-align: center;
 }
-.v-data-table th:hover .solara-data-table-menu {
+.v-data-table td  .solara-data-table-menu {
+    visibility: hidden;
+    position: absolute;
+    right: 2px;
+    top: 4px;
+    text-align: center;
+}
+.v-data-table th:hover .solara-data-table-menu, .v-data-table td:hover .solara-data-table-menu {
     visibility: unset;
 }
 

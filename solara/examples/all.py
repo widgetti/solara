@@ -1,10 +1,12 @@
-from solara.kitchensink import v, sol, react
-from .doc import Doc
+from pathlib import Path
+
+from solara.kitchensink import react, sol, v
+
+from .components import Components
 from .demo import Demo
+from .doc import Doc
 from .docutils import IncludeComponent
 from .libraries import Libraries
-from .components import Components
-from pathlib import Path
 
 directory = Path(__file__).parent
 
@@ -30,7 +32,6 @@ routes = [
 @react.component
 def All():
     tab, set_tab = react.use_state(0, "tab")
-    # sol.widgets.watch()
 
     route_current = routes[tab]
     path = route_current["path"]

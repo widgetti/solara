@@ -1,4 +1,4 @@
-from solara.kitchensink import *
+from solara.kitchensink import react, sol
 import plotly.express as px
 
 import pandas as pd
