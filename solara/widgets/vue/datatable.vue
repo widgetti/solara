@@ -36,8 +36,7 @@
               >
             </th>
             <v-slide-x-transition :key="header.text" v-for="header in headers">
-              <th style="position: relative">
-                <div>
+              <th class="text-no-wrap">
                   {{ header.text }}
                   <v-menu open-on-hover bottom offset-y v-if="column_actions.length">
                     <template v-slot:activator="{ on, attrs }">
@@ -50,7 +49,6 @@
                       </v-list-item>
                     </v-list>
                   </v-menu>
-                </div>
               </th>
             </v-slide-x-transition>
           </tr>
@@ -89,10 +87,8 @@
           </td>
           <td
             v-for="header in headers"
-            class="text-xs-right"
-            :key="header.text"
-            style="position: relative"
             class="text-truncate text-no-wrap"
+            :key="header.text"
             :title="props.item[header.value]"
           >
             <v-slide-x-transition appear>
@@ -148,22 +144,19 @@
   z-index: 1;
 }
 
+.solara-data-table.v-data-table th,
+.solara-data-table.v-data-table td {
+  padding-left: 4px;
+  padding-right: 0;
+}
 .v-data-table .solara-data-table-menu {
-    /* visibility: hidden; */
-    position: absolute;
-    right: 2px;
-    top: 8px;
-    text-align: center;
+  opacity: 0;
+  transition: opacity 0.5s;
 }
-.v-data-table td  .solara-data-table-menu {
-    visibility: hidden;
-    position: absolute;
-    right: 2px;
-    top: 4px;
-    text-align: center;
-}
-.v-data-table th:hover .solara-data-table-menu, .v-data-table td:hover .solara-data-table-menu {
-    visibility: unset;
+
+.v-data-table th:hover .solara-data-table-menu,
+.v-data-table td:hover .solara-data-table-menu {
+  opacity: 1;
 }
 
 .solara-data-table__viewport {
