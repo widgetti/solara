@@ -1,9 +1,10 @@
-from typing import List
+from typing import Callable, List
 
 import ipyvue as vue
 import pygments
 import react_ipywidgets as react
 import react_ipywidgets.ipyvuetify as v
+import react_ipywidgets.ipyvuetify as ipyvue
 import react_ipywidgets.ipywidgets as w
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import get_lexer_by_name
@@ -66,6 +67,22 @@ def Text(text):
 @react.component
 def Div(children=[], **kwargs):
     return vue.Html.element(tag="div", children=children, **kwargs)
+
+
+@react.component
+def Warning(text, icon="mdi-alert", children=[]):
+    return v.Alert(type="warning", text=True, prominent=True, icon="mdi-alert", children=[text, *children])
+
+
+@react.component
+def Button(text, on_click=Callable[[], None], icon_name: str = None, children: list = [], **kwargs):
+    if text:
+        children = [text] + children
+    if icon_name:
+        children = [v.Icon(left=True, children=[icon_name])] + children
+    btn = v.Btn(children=children, **kwargs)
+    ipyvue.use_event(btn, "click", lambda *_ignore: on_click and on_click())
+    return btn
 
 
 @react.component
