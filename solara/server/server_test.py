@@ -1,6 +1,3 @@
-from . import server
-import react_ipywidgets.ipywidgets as w
-from . import app
 import contextlib
 import logging
 import sys
@@ -11,8 +8,11 @@ import playwright
 import playwright.sync_api
 import pytest
 import react_ipywidgets as react
+import react_ipywidgets.ipywidgets as w
 import requests
-from playwright.sync_api import sync_playwright
+
+import solara
+from solara.kitchensink import v
 
 from . import app
 from .fastapi import app as app_starlette
@@ -20,6 +20,7 @@ from .fastapi import app as app_starlette
 logger = logging.getLogger("solara.server.test")
 
 TEST_PORT = 18765
+
 
 # see https://github.com/microsoft/playwright-pytest/issues/23
 @pytest.fixture
@@ -83,7 +84,7 @@ class Server(threading.Thread):
         self.started.set()
         try:
             self.server.run()
-        except:
+        except:  # noqa: E722
             logger.exception("Oops, server stopped unexpectedly")
         finally:
             self.stopped.set()
@@ -113,7 +114,7 @@ def solara_server():
 def screenshot_on_error(page, path):
     try:
         yield
-    except:
+    except:  # noqa: E722
         page.screenshot(path=path)
         print(f"Saved screenshot to {path}", file=sys.stderr)
         raise
@@ -154,9 +155,6 @@ def test_docs_basics(page: playwright.sync_api.Page, solara_server):
         page.locator('div[role="tab"]:has-text("use_effect")').click()
         page.locator("text=use_side_effect can be used").wait_for()
         page.screenshot(path="tmp/screenshot_use_effect.png")
-
-
-from solara.kitchensink import v
 
 
 @react.component

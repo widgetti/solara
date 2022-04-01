@@ -4,8 +4,6 @@ from vega_datasets import data
 
 from solara.kitchensink import react, sol
 
-source = data.cars()
-
 
 @react.component
 def Altair():
@@ -14,6 +12,7 @@ def Altair():
 
     if 0:
         # to bad this example doesn't work well with on_click and on_hover
+        source = data.cars()
         chart = (
             alt.Chart(source)
             .mark_circle(size=60)
@@ -27,7 +26,7 @@ def Altair():
 
     with sol.Div() as main:
         sol.MarkdownIt(
-            f"""
+            """
 Altair is supported since we can render vega lite.
 We also support on_click and on_hover events.
 ```python

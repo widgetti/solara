@@ -1,6 +1,7 @@
 """Build webapps using IPywidgets"""
 __version__ = "0.0.1"
 
+# flake8: noqa: F402
 from .components import *
 from .datatypes import *
 from .hooks import *

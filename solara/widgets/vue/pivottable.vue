@@ -39,8 +39,8 @@
         </tr>
       </table>
       </div>
-  </div>    
-</div>    
+  </div>
+</div>
 </template>
 
 <script id="pivottable-vaex">
@@ -71,7 +71,7 @@ module.exports = {
             return values;
         },
         isSelected2(values) {
-          selected_value = 
+          selected_value =
           selected = true;
           if(_.isEqual(this.selected, {})) {
             return false;

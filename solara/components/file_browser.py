@@ -1,5 +1,6 @@
 import os
 from os.path import isfile, join
+from typing import List, Optional, cast
 
 import humanize
 import ipyvuetify as vy
@@ -32,8 +33,8 @@ class FileListWidget(vy.VuetifyTemplate):
 def FileBrowser(start_directory, on_file_name):
     current_dir, set_current_dir = react.use_state(start_directory)
     selected, set_selected = react.use_state(None)
-    warning, set_warning = react.use_state(None)
-    scroll_pos_stack, set_scroll_pos_stack = react.use_state([])
+    warning, set_warning = react.use_state(cast(Optional[str], None))
+    scroll_pos_stack, set_scroll_pos_stack = react.use_state(cast(List[int], []))
     scroll_pos, set_scroll_pos = react.use_state(0)
 
     def change_dir(new_dir):

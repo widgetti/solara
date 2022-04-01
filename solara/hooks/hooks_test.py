@@ -1,9 +1,11 @@
 import time
 
 import react_ipywidgets as react
-from .misc import use_download, use_thread, use_fetch, use_json
-from react_ipywidgets import component, render_fixed, use_state
+from react_ipywidgets import component
 from react_ipywidgets import ipywidgets as w
+from react_ipywidgets import render_fixed
+
+from .misc import use_download, use_fetch, use_json, use_thread
 
 
 def test_hook_thread():
@@ -92,7 +94,7 @@ def test_hook_use_fetch():
     assert label.value == expected
 
 
-def test_hook_use_fetch():
+def test_hook_use_json():
     url = "https://jherr-pokemon.s3.us-west-1.amazonaws.com/index.json"
     pokemons = 799
 

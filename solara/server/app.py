@@ -77,7 +77,7 @@ class AppContext:
         del current_context[key]
 
     def state_save(self, state_directory: os.PathLike):
-        path = state_directory / f"{self.id}.pickle"
+        path = Path(state_directory) / f"{self.id}.pickle"
         render_context = self.app_object
         if render_context is not None:
             render_context = cast(react.core._RenderContext, render_context)
@@ -97,7 +97,7 @@ def get_current_thread_key() -> str:
 
 
 def get_thread_key(thread: threading.Thread) -> str:
-    thread_key = thread._name
+    thread_key = thread._name  # type: ignore
     return thread_key
 
 
@@ -111,12 +111,14 @@ def get_current_context() -> AppContext:
     thread_key = get_current_thread_key()
     if thread_key not in current_context:
         raise RuntimeError(
-            f"Tried to get the current context for thread {thread_key}, but no known context found. This might be a bug in Solara. (known contexts: {list(current_context.keys())}"
+            f"Tried to get the current context for thread {thread_key}, but no known context found. This might be a bug in Solara. "
+            f"(known contexts: {list(current_context.keys())}"
         )
     context = current_context.get(thread_key)
     if context is None:
         raise RuntimeError(
-            f"Tried to get the current context for thread {thread_key}, although the context is know, it was not set for this thread. This might be a bug in Solara."
+            f"Tried to get the current context for thread {thread_key}, although the context is know, it was not set for this thread. "
+            + "This might be a bug in Solara."
         )
     return context
 

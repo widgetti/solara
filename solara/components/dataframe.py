@@ -1,17 +1,16 @@
-from typing import List
-import numpy as np
+import operator
+from functools import reduce
+from typing import List, cast
 
+import numpy as np
 import react_ipywidgets as react
+import react_ipywidgets.bqplot as bqplot
 import react_ipywidgets.ipyvuetify as v
 import react_ipywidgets.ipywidgets as w
-import react_ipywidgets.bqplot as bqplot
-from solara.components import ui_checkbox
-from solara.hooks import *
-from IPython.display import display
 
+from solara.components import PivotTable, ui_checkbox, ui_dropdown
+from solara.hooks import df_unique, max_unique, use_cross_filter, use_df_column_names
 from solara.hooks.dataframe import use_df_pivot_data
-from solara.components import ui_dropdown, PivotTable
-
 
 cardheight = "100%"
 
@@ -61,7 +60,7 @@ def FilterCard(df):
         with v.CardTitle(children=["Filter"]):
             pass
         with v.CardText():
-            ExpressionEditor(df, None, on_value=set_filter)
+            ExpressionEditor(df, "", on_value=set_filter)
     return main
 
 
@@ -107,7 +106,6 @@ def TableCard(df):
 
 @react.component
 def HistogramCard(df, column=None):
-    selection = "histogram"
     filter, set_filter = use_cross_filter("filter-histogram")
     dff = df  # filter(df)
 
@@ -126,7 +124,7 @@ def HistogramCard(df, column=None):
                             pass
                         with v.CardText():
                             column = items[0] if column not in items else column
-                            column = ui_dropdown(value=column, description=f"x", options=items)
+                            column = ui_dropdown(value=column, description="x", options=items)
             if column:
                 log = False
                 import vaex
@@ -219,9 +217,8 @@ def ScatterCard(df, x=None, y=None, color=None):
                             ccol = color
                             if ccol is None:
                                 ccol = ccol if len(floats) < 3 else floats[0]
-                            ccol = ui_dropdown(value=ccol, description=f"Color", options=floats)
+                            ccol = ui_dropdown(value=ccol, description="Color", options=floats)
             if xcol and ycol:
-                log = False
                 if len(dff) > max_points:
                     v.Alert(
                         type="warning", text=True, prominent=True, icon="mdi-alert", children=[f"Too many unique values, will only show first {max_points}"]
@@ -342,7 +339,6 @@ def HeatmapCard(df, x=None, y=None, debounce=True):
     # print("unfiltered", dff is df)
 
     items = df.get_column_names()
-    max_points = 1000
     floats = [k for k in items if df[k].dtype == float]
 
     with v.Card(elevation=2, height=cardheight) as main:
@@ -370,7 +366,6 @@ def HeatmapCard(df, x=None, y=None, debounce=True):
                             crossfilter_visible = ui_checkbox(value=False, description="Cross filter visible")
 
             if xcol and ycol:
-                log = False
                 import vaex.jupyter
 
                 def updater(name):
@@ -550,6 +545,7 @@ def PivotTableCard(df, x=[], y=[]):
     dff = df
 
     def set_filter_from_pivot_selection(selection):
+        assert data is not None
         filters = []
         # print("selection", selection)
         if "x" in selection:
@@ -626,6 +622,7 @@ def PivotTableCard(df, x=[], y=[]):
                                                     y.append(col)
 
             import vaex
+
             data = use_df_pivot_data(dff, x, y, vaex.agg.count(selection=filter))
             PivotTable(d=data, on_selected=set_filter_from_pivot_selection)
 

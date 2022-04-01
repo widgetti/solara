@@ -8,13 +8,13 @@ from uuid import uuid4
 import ipywidgets as widgets
 import jinja2
 import react_ipywidgets
-from jupyter_core.paths import jupyter_config_path, jupyter_path
+from jupyter_core.paths import jupyter_config_path
 from jupyter_server.services.config import ConfigManager
 from react_ipywidgets.core import Element, render
 
 from . import app
 from .app import AppContext, AppScript
-from .kernel import BytesWrap, Kernel, WebsocketStreamWrapper
+from .kernel import Kernel
 
 # templates = Jinja2Templates(directory=str(directory / "templates"))
 directory = Path(__file__).parent

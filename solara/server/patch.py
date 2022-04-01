@@ -8,8 +8,6 @@ from typing import MutableMapping
 import ipykernel.kernelbase
 import IPython.display
 import ipywidgets
-import ipyvue.Template
-
 
 from . import app
 
@@ -42,57 +40,60 @@ def kernel_instance_dispatch(cls, *args, **kwargs):
 
 def kernel_initialized_dispatch(cls):
     try:
-        _context = app.get_current_context()
+        app.get_current_context()
     except RuntimeError:
         return False
     return True
 
 
 def display_solara(*objs, include=None, exclude=None, metadata=None, transient=None, display_id=None, raw=False, clear=False, **kwargs):
-    from IPython.core.interactiveshell import InteractiveShell
+    print(*objs)
 
-    if transient is None:
-        transient = {}
-    if metadata is None:
-        metadata = {}
-    from IPython.core.display_functions import _new_id
 
-    if display_id:
-        if display_id is True:
-            display_id = _new_id()
-        transient["display_id"] = display_id
-    if kwargs.get("update") and "display_id" not in transient:
-        raise TypeError("display_id required for update_display")
-    if transient:
-        kwargs["transient"] = transient
+# from IPython.core.interactiveshell import InteractiveShell
 
-    if not objs and display_id:
-        # if given no objects, but still a request for a display_id,
-        # we assume the user wants to insert an empty output that
-        # can be updated later
-        objs = [{}]
-        raw = True
+# if transient is None:
+#     transient = {}
+# if metadata is None:
+#     metadata = {}
+# from IPython.core.display_functions import _new_id
 
-    if not raw:
-        format = InteractiveShell.instance().display_formatter.format
+# if display_id:
+#     if display_id is True:
+#         display_id = _new_id()
+#     transient["display_id"] = display_id
+# if kwargs.get("update") and "display_id" not in transient:
+#     raise TypeError("display_id required for update_display")
+# if transient:
+#     kwargs["transient"] = transient
 
-    if clear:
-        clear_output(wait=True)
+# if not objs and display_id:
+#     # if given no objects, but still a request for a display_id,
+#     # we assume the user wants to insert an empty output that
+#     # can be updated later
+#     objs = [{}]
+#     raw = True
 
-    for obj in objs:
-        if raw:
-            publish_display_data(data=obj, metadata=metadata, **kwargs)
-        else:
-            format_dict, md_dict = format(obj, include=include, exclude=exclude)
-            if not format_dict:
-                # nothing to display (e.g. _ipython_display_ took over)
-                continue
-            if metadata:
-                # kwarg-specified metadata gets precedence
-                _merge(md_dict, metadata)
-            publish_display_data(data=format_dict, metadata=md_dict, **kwargs)
-    if display_id:
-        return DisplayHandle(display_id)
+# if not raw:
+#     format = InteractiveShell.instance().display_formatter.format
+
+# if clear:
+#     clear_output(wait=True)
+
+# for obj in objs:
+#     if raw:
+#         publish_display_data(data=obj, metadata=metadata, **kwargs)
+#     else:
+#         format_dict, md_dict = format(obj, include=include, exclude=exclude)
+#         if not format_dict:
+#             # nothing to display (e.g. _ipython_display_ took over)
+#             continue
+#         if metadata:
+#             # kwarg-specified metadata gets precedence
+#             _merge(md_dict, metadata)
+#         publish_display_data(data=format_dict, metadata=md_dict, **kwargs)
+# if display_id:
+#     return DisplayHandle(display_id)
 
 
 def get_ipython():
@@ -140,7 +141,7 @@ class WidgetContextAwareThread(threading.Thread):
         self.current_context = None
         try:
             self.current_context = app.get_current_context()
-        except RuntimeError as e:
+        except RuntimeError:
             logger.info(f"No context for thread {self}")
         if self.current_context:
             app.set_context_for_thread(self.current_context, self)
@@ -153,9 +154,9 @@ def patch():
     # the ipyvue.Template module cannot be accessed like ipyvue.Template
     # because the import in ipvue overrides it
     template_mod = sys.modules["ipyvue.Template"]
-    template_mod.template_registry = context_dict_templates()
-    ipywidgets.widget.Widget.widgets = context_dict_widgets()
-    threading.Thread = WidgetContextAwareThread
+    template_mod.template_registry = context_dict_templates()  # type: ignore
+    ipywidgets.widget.Widget.widgets = context_dict_widgets()  # type: ignore
+    threading.Thread = WidgetContextAwareThread  # type: ignore
     ipykernel.kernelbase.Kernel.instance = classmethod(kernel_instance_dispatch)
     ipykernel.kernelbase.Kernel.initialized = classmethod(kernel_initialized_dispatch)
     ipywidgets.widgets.widget.get_ipython = get_ipython

@@ -1,5 +1,5 @@
-from typing import Callable, Optional
 import dataclasses
+from typing import Callable, Optional
 
 
 @dataclasses.dataclass(frozen=True)

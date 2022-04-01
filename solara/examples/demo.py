@@ -1,11 +1,7 @@
 from solara.kitchensink import react, v
 
 from .calculator import Calculator
-from .bqplot import Plot
-from .plotly import Plotly
-from .altair import Altair
 from .pokemon import App as Pokemon
-
 
 tabs = {
     "Calulator": Calculator,
@@ -24,5 +20,5 @@ def Demo():
                 pass
         component = list(tabs.values())[tab]
         with v.TabsItems(v_model=tab):
-            component(__key__=tab)
+            component()
     return main

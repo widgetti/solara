@@ -1,6 +1,7 @@
 import react_ipywidgets as react
 import react_ipywidgets.ipyvuetify as v
-import react_ipywidgets.ipywidgets as w
+
+from solara.kitchensink import vue
 
 
 @react.component
@@ -31,13 +32,15 @@ def LayoutApp(content, left=None, right=None, open_left=False, open_right=False,
             v.ToolbarTitle(children=[title])
             v.Spacer()
             if right:
-                with v.Btn2(icon=True, on_click=lambda: set_open_right(not open_right)):
+                with v.Btn(icon=True) as btn:
+                    vue.use_event(btn, "click", lambda *_ignore: set_open_right(not open_right))
                     v.Icon(children=["mdi-settings"])
         with v.Row():
             v.Col(cols=12, children=[content])
         if right:
             with v.NavigationDrawer(absolute=True, right=True, width="min-content", v_model=open_right):
-                with v.Btn2(icon=True, on_click=lambda: set_open_right(not open_right)):
+                with v.Btn(icon=True) as btn:
+                    vue.use_event(btn, "click", lambda *_ignore: set_open_right(not open_right))
                     v.Icon(children=["mdi-settings"])
                 with v.Html(tag="div", children=[right]):
                     pass

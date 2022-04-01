@@ -1,6 +1,8 @@
-from solara.kitchensink import *
-from .docutils import *
+# flake8: noqa
 import solara as sol
+from solara.kitchensink import react, v, w
+
+from .docutils import IncludeComponent
 
 file_path = "yolov3.weights"
 url = "https://pjreddie.com/media/files/yolov3.weights"
@@ -35,7 +37,7 @@ def DownloadFile(file_path=file_path, url=url, expected_size=expected_size, on_d
 def DocUseDownload():
     with v.Container() as main:
         with w.VBox(layout={"padding": "20px", "max_width": "1024px"}):
-            MarkdownIt(
+            sol.MarkdownIt(
                 """
 # use_download
 

@@ -142,7 +142,7 @@ def Components():
                 pass
         component = list(tabs.values())[tab]
         with v.TabsItems(v_model=tab):
-            component(__key__=tab)
+            component()
     return main
 
 

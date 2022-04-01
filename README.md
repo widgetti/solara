@@ -48,7 +48,7 @@ Install and run
     $ solara myapp.py
     INFO:     Uvicorn running on http://127.0.0.1:8765 (Press CTRL+C to quit)
     INFO:     Started reloader process [50178] using watchgod
-    INFO:     Started server process [50183    
+    INFO:     Started server process [50183
 
 The browser should open http://127.0.0.1:8765
 
@@ -92,13 +92,13 @@ We use flit (`pip install flit` if you don't already have it)
 
 ## I am not interested in the server, I'm happy with Jupyter/Voila, what's in it for me?
 
-If you enjoy using 
+If you enjoy using
 
 ## Is the Solara server better than Voilà?
 
 No, they are different, and there are situations where I would recommend Voila instead of Solara.
 
-If your app is compute-heavy, and a lot of the compute is happening in pure Python, the GIL (Global Interpreter Lock) can become a bottleneck with Solara, and Voila might give you better performance per client. 
+If your app is compute-heavy, and a lot of the compute is happening in pure Python, the GIL (Global Interpreter Lock) can become a bottleneck with Solara, and Voila might give you better performance per client.
 
 If you have a lot of users with short sessions, Solara spares you from having to start up a kernel for each request. Since Solara can use multiple workers, you can still scale up using multiple processes. Voila will have one process per user, while Solara can share a process with many users.
 
@@ -111,7 +111,7 @@ Yes, this is the preferred way of using Solara. You edit a Python script, save i
 $ solara myapp.py --dev
 INFO:     Uvicorn running on http://127.0.0.1:8765 (Press CTRL+C to quit)
 INFO:     Started reloader process [50178] using watchgod
-INFO:     Started server process [50183    
+INFO:     Started server process [50183
 
 ... file change detected ...
 (server refreshes, your page will reload)

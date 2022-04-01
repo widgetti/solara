@@ -2,13 +2,13 @@
 # coding: utf-8
 
 
-import react_ipywidgets as react
-from typing import Any, Optional
-import react_ipywidgets.ipywidgets as w
-import react_ipywidgets.ipyvuetify as v
+import ast
 import dataclasses
 import operator
-import ast
+from typing import Any, Optional
+
+import react_ipywidgets as react
+import react_ipywidgets.ipyvuetify as v
 
 DEBUG = False
 operator_map = {

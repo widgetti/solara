@@ -1,14 +1,13 @@
 import os
+import site
+import sys
 import threading
-import webbrowser
 import time
 import typing
+import webbrowser
 
-import uvicorn
-import sys
 import rich_click as click
-
-import site
+import uvicorn
 
 HOST_DEFAULT = os.environ.get("HOST", "localhost")
 if "arm64-apple-darwin" in HOST_DEFAULT:  # conda activate script
@@ -25,14 +24,14 @@ def find_all_packages_paths():
         if hasattr(module, "__path__"):
             try:
                 path = module.__path__[0]
-            except:
+            except:  # noqa: E722
                 pass  # happens for namespace packages it seems
                 # print(f"Error for {name}")
-            if path:
-                skip = False
-                for sitepackage in sitepackages:
-                    if path.startswith(sitepackage):
-                        skip = True
+                # if path:
+                #     skip = False
+                #     for sitepackage in sitepackages:
+                #         if path.startswith(sitepackage):
+                #             skip = True
                 # if not skip:
                 # print(name, path, skip)
                 paths.append(str(path))

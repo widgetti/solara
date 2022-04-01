@@ -1,16 +1,14 @@
-from . import app
-from . import patch
-from . import kernel
 import ipywidgets as widgets
 
+from . import app, kernel, patch
 
 patch.patch()
 
 
 def test_widget_dict():
     kernel_shared = kernel.Kernel()
-    context1 = app.AppContext(kernel=kernel_shared, control_sockets=[], widgets={})
-    context2 = app.AppContext(kernel=kernel_shared, control_sockets=[], widgets={})
+    context1 = app.AppContext(id="1", kernel=kernel_shared, control_sockets=[], widgets={}, templates={})
+    context2 = app.AppContext(id="2", kernel=kernel_shared, control_sockets=[], widgets={}, templates={})
 
     with context1:
         btn1 = widgets.Button(description="context1")

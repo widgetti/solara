@@ -37,6 +37,8 @@ dev = [
     "mypy",
     "playwright",
     "pytest-playwright",
+    "types-requests",
+    "types-markdown",
 
 ]
 server = [

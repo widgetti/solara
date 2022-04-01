@@ -1,30 +1,22 @@
 import asyncio
-import contextlib
 import json
 import logging
 import os
 import sys
-import traceback
-from pathlib import Path
-from typing import Optional
 import typing
-from uuid import uuid4
+from pathlib import Path
+from typing import List, Optional, Union
 
-import IPython.display
-import ipywidgets as widgets
-import react_ipywidgets
 import websockets.exceptions
-from fastapi import APIRouter, FastAPI, Request, Response, WebSocket, WebSocketDisconnect
-from starlette.responses import FileResponse
+from fastapi import APIRouter, FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from starlette.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-from starlette.responses import JSONResponse
 
-from ..kitchensink import *
 from . import app as appmod
 from . import patch, server
-from .kernel import BytesWrap, Kernel, WebsocketStreamWrapper
+from .kernel import BytesWrap, WebsocketStreamWrapper
+
+logger = logging.getLogger("solara.server.fastapi")
 
 directory = Path(__file__).parent
 
@@ -144,7 +136,8 @@ async def watchdog(ws: WebSocket):
             msg = json.loads(text)
             if msg["type"] == "state_reset":
                 logger.info(f"reset state for context {context_id}")
-                context.state_reset()
+                if context:
+                    context.state_reset()
                 await ws.send_json({"type": "reload", "reason": "context id does not exist (server reload?)"})
             else:
                 logger.error("Unknown msg: {msg}")
@@ -185,7 +178,7 @@ async def read_root(request: Request, fullpath: Optional[str] = ""):
 
 
 class StaticNbFiles(StaticFiles):
-    def get_directories(self, directory: os.PathLike = None, packages: typing.List[str] = None) -> typing.List[os.PathLike]:
+    def get_directories(self, directory: Union[str, os.PathLike[str], None] = None, packages: typing.List[str] = None) -> List[Union[str, os.PathLike[str]]]:
         all_nb_directories = []
         from jupyter_core.paths import jupyter_path
 

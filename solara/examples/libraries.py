@@ -1,10 +1,10 @@
+from typing import cast
+
 from solara.kitchensink import react, v
 
-from .calculator import Calculator
+from .altair import Altair
 from .bqplot import Plot
 from .plotly import Plotly
-from .altair import Altair
-
 
 tabs = {
     "Bqplot": Plot,
@@ -22,7 +22,7 @@ def Libraries():
         for key in tabs:
             with v.Tab(children=[key]):
                 pass
-        component = list(tabs.values())[tab]
+        component = cast(react.core.Component, list(tabs.values())[tab])
         with v.TabsItems(v_model=tab):
             component(__key__=tab)
     return main

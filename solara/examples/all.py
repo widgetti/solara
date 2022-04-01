@@ -1,11 +1,11 @@
 from pathlib import Path
+from typing import cast
 
 from solara.kitchensink import react, sol, v
 
 from .components import Components
 from .demo import Demo
 from .doc import Doc
-from .docutils import IncludeComponent
 from .libraries import Libraries
 
 directory = Path(__file__).parent
@@ -48,7 +48,7 @@ def All():
             with v.Tab(children=[route["label"]]):
                 pass
         with v.TabsItems(v_model=tab):
-            component = route_current["component"]
+            component = cast(react.core.Component, route_current["component"])
             key = key = route_current["path"]
             component(__key__=key)
 

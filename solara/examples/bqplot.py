@@ -1,9 +1,9 @@
+import numpy as np
 import react_ipywidgets as react
 import react_ipywidgets.bqplot as bqplot
 import react_ipywidgets.ipywidgets as w
-from solara.components import Code
 
-import numpy as np
+from solara.components import Code
 
 x0 = np.linspace(0, 2, 100)
 

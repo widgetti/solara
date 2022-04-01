@@ -29,9 +29,9 @@
             </div>
         </grid-item>
     </grid-layout>
-       
+
     </div>
-  </div>    
+  </div>
 </template>
 
 <script>

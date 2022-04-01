@@ -1,11 +1,13 @@
 import logging
 from typing import Set
+
 import ipykernel.kernelbase
 import jupyter_client.session as session
-
 from ipykernel.comm import CommManager
-from notebook.base.zmqhandlers import serialize_binary_message
 from jupyter_client.session import json_packer
+from notebook.base.zmqhandlers import serialize_binary_message
+from starlette.websockets import WebSocket
+from zmq.eventloop.zmqstream import ZMQStream
 
 SESSION_KEY = b"solara"
 
@@ -21,9 +23,6 @@ class BytesWrap(object):
         self.bytes = bytes
 
 
-from zmq.eventloop.zmqstream import ZMQStream
-
-
 class WebsocketStreamWrapper(ZMQStream):
     def __init__(self, websocket, channel):
         self.websocket = websocket
@@ -31,9 +30,6 @@ class WebsocketStreamWrapper(ZMQStream):
 
     def flush(self, *ignore):
         pass
-
-
-from starlette.websockets import WebSocket
 
 
 class SessionWebsocket(session.Session):
@@ -97,7 +93,7 @@ class SessionWebsocket(session.Session):
                             asyncio.create_task(sendit(binary_msg))
                         except RuntimeError:
                             asyncio.run(sendit(binary_msg))
-                except:
+                except:  # noqa: E722
                     logging.exception("sending websocket")
                 # print(ws)
                 # ws.send(binary_msg)

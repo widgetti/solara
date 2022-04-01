@@ -1,12 +1,14 @@
-from pygments.lexers import get_lexer_by_name
-from pygments.formatters import HtmlFormatter
-import pygments
 from typing import List
-import react_ipywidgets as react
-import react_ipywidgets.ipywidgets as w
-import react_ipywidgets.ipyvuetify as v
-import solara.widgets
+
 import ipyvue as vue
+import pygments
+import react_ipywidgets as react
+import react_ipywidgets.ipyvuetify as v
+import react_ipywidgets.ipywidgets as w
+from pygments.formatters import HtmlFormatter
+from pygments.lexers import get_lexer_by_name
+
+import solara.widgets
 
 PivotTable = react.core.ComponentWidget(solara.widgets.PivotTable)
 Navigator = react.core.ComponentWidget(solara.widgets.Navigator)
@@ -96,11 +98,11 @@ def FigurePlotly(fig, on_selection=None, on_click=None, on_hover=None):
         fig_widget.add_traces(fig.data)
         data = list(fig_widget.data)
         fig_widget.data = data[length:]
-        for data in fig_widget.data:
+        for trace in fig_widget.trace:
             if on_click:
-                data.on_click(on_click)
+                trace.on_click(on_click)
             if on_hover:
-                data.on_hover(on_hover)
+                trace.on_hover(on_hover)
 
     react.use_side_effect(update_data)
     return fig_element
@@ -110,6 +112,7 @@ def FigurePlotly(fig, on_selection=None, on_click=None, on_hover=None):
 def Image(data):
     def data_2_png(data, format="png"):
         import io
+
         import PIL.Image
 
         im = PIL.Image.fromarray(data[::], "RGB")
@@ -134,9 +137,9 @@ def MarkdownIt(md_text: str, highlight: List[int] = []):
     # print(md, html)
 
     from markdown_it import MarkdownIt as MarkdownItMod
-    from mdit_py_plugins.front_matter import front_matter_plugin
-    from mdit_py_plugins.footnote import footnote_plugin
-    from mdit_py_plugins import container, deflist
+    from mdit_py_plugins import container, deflist  # noqa: F401
+    from mdit_py_plugins.footnote import footnote_plugin  # noqa: F401
+    from mdit_py_plugins.front_matter import front_matter_plugin  # noqa: F401
 
     def highlight_code(code, name, attrs):
         """Highlight a block of code"""

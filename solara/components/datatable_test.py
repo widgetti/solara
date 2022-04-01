@@ -1,6 +1,8 @@
-from solara.kitchensink import sol, react
 import pytest
 import vaex
+
+from solara.kitchensink import react
+
 from .datatable import DataTable, DataTableWidget
 
 df_vaex = vaex.datasets.titanic()
@@ -16,4 +18,3 @@ def test_render(df):
     widget, rc = react.render_fixed(Test(), handle_error=False)
     assert isinstance(widget, DataTableWidget)
     assert len(widget.items) == 20
-

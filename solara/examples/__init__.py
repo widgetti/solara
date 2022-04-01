@@ -1,3 +1,1 @@
-from .all import app
-
-a = 1
+from .all import app  # noqa: F401

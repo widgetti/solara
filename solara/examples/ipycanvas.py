@@ -1,8 +1,9 @@
-from react_ipywidgets import ipycanvas as c
-from react_ipywidgets import ipywidgets as w
-import react_ipywidgets as react
 import ipycanvas
 import numpy as np
+import react_ipywidgets as react
+from react_ipywidgets import ipycanvas as c
+from react_ipywidgets import ipywidgets as w
+
 
 def polygon(canvas, x, y, radius1, radius2, n_points):
     index = np.arange(n_points)
@@ -17,6 +18,7 @@ def polygon(canvas, x, y, radius1, radius2, n_points):
     canvas.fill_polygon(points)
     canvas.stroke_polygon(points)
 
+
 @react.component
 def CanvasDemo():
     width, height = 800, 800
@@ -28,20 +30,22 @@ def CanvasDemo():
         n_points = w.slider_int(5, "Points", min=1, max=8) * 2
         radius_inner = w.slider_float(30, "Inner radius", min=0, max=100)
         radius_outer = w.slider_float(80, "Outer radius", min=0, max=100)
+
         def real_drawing():
-            canvas : ipycanvas.Canvas = react.core.get_widget(canvas_element)
+            canvas: ipycanvas.Canvas = react.core.get_widget(canvas_element)
 
             with ipycanvas.hold_canvas(canvas):
                 canvas.clear()
                 canvas.fill_style = fill
                 canvas.stroke_style = stroke
                 canvas.line_width = line_width
-                radius = width // 3 
-                polygon(canvas, width//2, height//2, radius * radius_inner / 100, radius*radius_outer / 100, n_points)
+                radius = width // 3
+                polygon(canvas, width // 2, height // 2, radius * radius_inner / 100, radius * radius_outer / 100, n_points)
 
         react.use_side_effect(real_drawing, [fill, stroke, line_width, n_points, view_count, radius_inner, radius_outer])
         canvas_element = c.Canvas(width=width, height=height)
 
     return main
 
-app  = CanvasDemo()
+
+app = CanvasDemo()
