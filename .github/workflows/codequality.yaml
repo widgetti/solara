@@ -1,0 +1,29 @@
+name: Code quality
+
+on:
+  - push
+  - pull_request
+  - workflow_dispatch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.7, 3.8, 3.9]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: pip install ".[dev]"
+      - name: Test formatting
+        uses: psf/black@stable
+      - name: Run flake8
+        uses: suo/flake8-github-action@releases/v1
+      - name: mypy
+        run: mypy solara

@@ -1,0 +1,29 @@
+name: Test installation
+
+on:
+  - push
+  - pull_request
+  - workflow_dispatch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+      - name: Install flit
+        run: pip install flit
+      - name: Install
+        run: flit install
+      - name: Uninstall
+        run: pip uninstall solara -y
+      - name: Build
+        run: flit build
+      - name: Install
+        run: pip install dist/*.whl
+      - name: Test import
+        run: python -c "import solara"

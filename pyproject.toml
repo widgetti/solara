@@ -21,7 +21,8 @@ dependencies = [
     "pymdown-extensions",
     "markdown-it-py",
     "mdit-py-plugins",
-    "humanize"
+    "humanize",
+    "ipyvuetify",
 ]
 
 [tool.flit.module]
@@ -39,7 +40,8 @@ dev = [
     "pytest-playwright",
     "types-requests",
     "types-markdown",
-
+    "pytest",
+    "pytest-cov",
 ]
 server = [
     "click",
