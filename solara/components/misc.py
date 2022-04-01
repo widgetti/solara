@@ -98,7 +98,7 @@ def FigurePlotly(fig, on_selection=None, on_click=None, on_hover=None):
         fig_widget.add_traces(fig.data)
         data = list(fig_widget.data)
         fig_widget.data = data[length:]
-        for trace in fig_widget.trace:
+        for trace in fig_widget.data:
             if on_click:
                 trace.on_click(on_click)
             if on_hover:
