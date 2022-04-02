@@ -195,11 +195,11 @@ class StaticNbFiles(StaticFiles):
         return [Path(k) for k in all_nb_directories]
 
 
-app = FastAPI()
-app.include_router(router=router)
-
 # if we add these to the router, the server_test does not run (404's)
 home = sys.prefix
+
+
+prefix = ""
 
 
 def add_static(url, path):
@@ -213,9 +213,12 @@ def add_static(url, path):
         raise RuntimeError(f"{path} not found at prefixes: {prefixes}")
 
 
-add_static("/static/dist", "/share/jupyter/voila/templates/base/static")
-add_static("/solara/static", "/share/jupyter/nbconvert/templates/lab/static")
-app.mount("/static", StaticFiles(directory=directory / "static"), name="static")
-app.mount("/voila/nbextensions", StaticNbFiles(), name="static")
+app = FastAPI()
+add_static(f"{prefix}/static/dist", "/share/jupyter/voila/templates/base/static")
+app.mount(f"{prefix}/static", StaticFiles(directory=directory / "static"))
+add_static(f"{prefix}/solara/static", "/share/jupyter/nbconvert/templates/lab/static")
+app.mount(f"{prefix}/voila/nbextensions", StaticNbFiles())
+
+app.include_router(router=router, prefix=prefix)
 
 patch.patch()

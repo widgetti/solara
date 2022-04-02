@@ -39,7 +39,7 @@ def ButtonClick(label="Hi"):
     clicks, set_clicks = react.use_state(0)
     return w.Button(description=f"{label}: Clicked {clicks} times",
                     on_click=lambda: set_clicks(clicks+1))
-app = ButtonClick('My first app')
+app = ButtonClick('Ola')
 ```
 
 Install and run

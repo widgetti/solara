@@ -150,9 +150,9 @@ function connectWatchdog() {
     reloading = false;
 
     var protocol = 'https:' == document.location.protocol ? 'wss' : 'ws';
-    var WSURL = protocol + '://' + window.location.host
+    var WSURL = protocol + '://' + window.location.host + window.location.pathname
 
-    window.wsWatchdog = new WebSocket(WSURL + '/solara/watchdog/' + path);
+    window.wsWatchdog = new WebSocket(WSURL + 'solara/watchdog/' + path);
     wsWatchdog.onopen = () => {
         console.log('connected with watchdog')
     }
@@ -209,7 +209,7 @@ function solaraMount(model_id) {
     // var path = window.location.pathname.substr(14);
     console.log("will mount", model_id)
     // NOTE: this file is not transpiled, async/await is the only modern feature we use here
-    require([window.voila_js_url || '/static/dist/voila.js'], function (voila) {
+    require([window.voila_js_url || 'static/dist/voila.js'], function (voila) {
         // requirejs doesn't like to be passed an async function, so create one inside
         (async function () {
             var kernel = await voila.connectKernel('jupyter')

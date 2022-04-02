@@ -111,7 +111,7 @@ async def read_root(context_id: Optional[str]):
     else:
         nbextensions = []
 
-    base_url = "/"
+    base_url = ""
     resources = {
         "theme": "light",
         "nbextensions": nbextensions,
