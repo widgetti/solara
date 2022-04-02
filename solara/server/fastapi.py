@@ -199,9 +199,23 @@ app = FastAPI()
 app.include_router(router=router)
 
 # if we add these to the router, the server_test does not run (404's)
-app.mount("/static/dist", StaticFiles(directory=f"{sys.prefix}/share/jupyter/voila/templates/base/static"), name="static")
+home = sys.prefix
+
+
+def add_static(url, path):
+    prefixes = [sys.prefix, os.path.expanduser("~/.local")]
+    for prefix in prefixes:
+        directory = f"{prefix}{path}"
+        if Path(directory).exists():
+            app.mount(url, StaticFiles(directory=directory), name="static")
+            break
+    else:
+        raise RuntimeError(f"{path} not found at prefixes: {prefixes}")
+
+
+add_static("/static/dist", "/share/jupyter/voila/templates/base/static")
+add_static("/solara/static", "/share/jupyter/nbconvert/templates/lab/static")
 app.mount("/static", StaticFiles(directory=directory / "static"), name="static")
-app.mount("/solara/static", StaticFiles(directory=f"{sys.prefix}/share/jupyter/nbconvert/templates/lab/static"), name="static")
 app.mount("/voila/nbextensions", StaticNbFiles(), name="static")
 
 patch.patch()
