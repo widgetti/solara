@@ -178,7 +178,9 @@ async def read_root(request: Request, fullpath: Optional[str] = ""):
 
 
 class StaticNbFiles(StaticFiles):
-    def get_directories(self, directory: Union[str, os.PathLike[str], None] = None, packages: typing.List[str] = None) -> List[Union[str, os.PathLike[str]]]:
+    def get_directories(
+        self, directory: Union[str, "os.PathLike[str]", None] = None, packages: typing.List[str] = None
+    ) -> List[Union[str, "os.PathLike[str]"]]:
         all_nb_directories = []
         from jupyter_core.paths import jupyter_path
 
