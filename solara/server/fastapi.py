@@ -169,8 +169,18 @@ async def watchdog(ws: WebSocket):
 @router.get("/")
 @router.get("/{fullpath}")
 async def read_root(request: Request, fullpath: Optional[str] = ""):
+
+    root_path = request.scope.get("root_path")
+    logger.debug("root_path: %s", root_path)
+    if request.headers.get("script-name"):
+        logger.debug("override root_path using script-name header from %s to %s", root_path, request.headers.get("script-name"))
+        root_path = request.headers.get("script-name")
+    if request.headers.get("x-script-name"):
+        logger.debug("override root_path using x-script-name header from %s to %s", root_path, request.headers.get("x-script-name"))
+        root_path = request.headers.get("x-script-name")
+
     context_id = request.cookies.get(appmod.COOKIE_KEY_CONTEXT_ID)
-    content, context_id = await server.read_root(context_id)
+    content, context_id = await server.read_root(context_id, root_path)
     assert context_id is not None
     response = HTMLResponse(content=content)
     response.set_cookie(appmod.COOKIE_KEY_CONTEXT_ID, value=context_id)

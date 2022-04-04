@@ -2,6 +2,7 @@
 <html>
 
 <head>
+    <base href="https://solara.vaex.io{{base_url}}/">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.10/vue.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vuetify@2.2.27/dist/vuetify.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/vuetify@2.2.27/dist/vuetify.min.css" rel="stylesheet">
@@ -27,7 +28,7 @@
 
     <script id="jupyter-config-data" type="application/json">
     {
-        "baseUrl": "/jupyter",
+        "baseUrl": "{{base_url}}/jupyter",
         "kernelId": "1234"
     }
 </script>

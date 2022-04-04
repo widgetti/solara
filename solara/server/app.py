@@ -70,7 +70,10 @@ class AppContext:
     def state_reset(self):
         path = state_directory / f"{self.id}.pickle"
         path = path.absolute()
-        path.unlink(missing_ok=True)
+        try:
+            path.unlink()
+        except:  # noqa
+            pass
         del contexts[self.id]
         key = get_current_thread_key()
         assert current_context[key] is self

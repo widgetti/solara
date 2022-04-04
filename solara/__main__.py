@@ -140,6 +140,12 @@ def find_all_packages_paths():
     default=True,
     help="Enable/Disable access log.",
 )
+@click.option(
+    "--root-path",
+    type=str,
+    default="",
+    help="Set the ASGI 'root_path' for applications submounted below a given URL path.",
+)
 @click.argument("app")
 def main(
     app,
@@ -152,6 +158,7 @@ def main(
     reload_excludes: typing.List[str],
     workers: int,
     env_file: str,
+    root_path: str,
     log_config: str,
     log_level: str,
     log_level_uvicorn: str,

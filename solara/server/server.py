@@ -44,7 +44,7 @@ def run_app(app_state):
         raise ValueError(f"Main object (with name {solara_app.app_name} in {solara_app.path}) is not a Widget or Element, but {type(main_object)}")
 
 
-async def read_root(context_id: Optional[str]):
+async def read_root(context_id: Optional[str], base_url: str = ""):
     print("root", context_id)
     # context_id = None
     if context_id is None or context_id not in app.contexts:
@@ -111,7 +111,6 @@ async def read_root(context_id: Optional[str]):
     else:
         nbextensions = []
 
-    base_url = ""
     resources = {
         "theme": "light",
         "nbextensions": nbextensions,
