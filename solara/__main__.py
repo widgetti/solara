@@ -1,3 +1,4 @@
+import logging
 import os
 import site
 import sys
@@ -8,10 +9,48 @@ import webbrowser
 
 import rich_click as click
 import uvicorn
+from uvicorn.main import LEVEL_CHOICES, LOG_LEVELS
 
 HOST_DEFAULT = os.environ.get("HOST", "localhost")
 if "arm64-apple-darwin" in HOST_DEFAULT:  # conda activate script
     HOST_DEFAULT = "localhost"
+
+LOGGING_CONFIG: dict = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "default": {
+            "()": "uvicorn.logging.DefaultFormatter",
+            "fmt": "%(levelprefix)s %(message)s",
+            "use_colors": None,
+        },
+        "access": {
+            "()": "uvicorn.logging.AccessFormatter",
+            "fmt": '%(levelprefix)s %(client_addr)s - "%(request_line)s" %(status_code)s',  # noqa: E501
+        },
+    },
+    "handlers": {
+        "default": {
+            "formatter": "default",
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stderr",
+        },
+        "rich": {
+            "class": "rich.logging.RichHandler",
+        },
+        "access": {
+            "formatter": "access",
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stdout",
+        },
+    },
+    "loggers": {
+        "solara": {"handlers": ["rich"], "level": "INFO"},
+        "uvicorn": {"handlers": ["default"], "level": "ERROR"},
+        "uvicorn.error": {"level": "INFO"},
+        "uvicorn.access": {"handlers": ["access"], "level": "INFO", "propagate": False},
+    },
+}
 
 
 def find_all_packages_paths():
@@ -67,8 +106,57 @@ def find_all_packages_paths():
     type=int,
     help="Number of worker processes. Defaults to the $WEB_CONCURRENCY environment" " variable if available, or 1. Not valid with --reload.",
 )
+@click.option(
+    "--env-file",
+    type=click.Path(exists=True),
+    default=None,
+    help="Environment configuration file.",
+    show_default=True,
+)
+@click.option(
+    "--log-config",
+    type=click.Path(exists=True),
+    default=None,
+    help="Logging configuration file. Supported formats: .ini, .json, .yaml.",
+    show_default=True,
+)
+@click.option(
+    "--log-level",
+    type=LEVEL_CHOICES,
+    default=None,
+    help="Log level. [default: info]",
+    show_default=True,
+)
+@click.option(
+    "--log-level-uvicorn",
+    type=LEVEL_CHOICES,
+    default="error",
+    help="Log level. [default: error]",
+    show_default=True,
+)
+@click.option(
+    "--access-log/--no-access-log",
+    is_flag=True,
+    default=True,
+    help="Enable/Disable access log.",
+)
 @click.argument("app")
-def main(app, host, port, open, reload: bool, reload_dirs: typing.Optional[typing.List[str]], dev: bool, reload_excludes: typing.List[str], workers: int):
+def main(
+    app,
+    host,
+    port,
+    open,
+    reload: bool,
+    reload_dirs: typing.Optional[typing.List[str]],
+    dev: bool,
+    reload_excludes: typing.List[str],
+    workers: int,
+    env_file: str,
+    log_config: str,
+    log_level: str,
+    log_level_uvicorn: str,
+    access_log: bool,
+):
     reload_dirs = reload_dirs if reload_dirs else None
     url = f"http://{host}:{port}"
 
@@ -98,9 +186,21 @@ def main(app, host, port, open, reload: bool, reload_dirs: typing.Optional[typin
     if open:
         threading.Thread(target=open_browser, daemon=True).start()
 
+    if log_level is not None:
+        if isinstance(log_level, str):
+            log_level = LOG_LEVELS[log_level]
+        else:
+            log_level = log_level
+        logging.getLogger("uvicorn.error").setLevel(log_level)
+        logging.getLogger("uvicorn.access").setLevel(log_level)
+        logging.getLogger("uvicorn.asgi").setLevel(log_level)
+    log_level = log_level_uvicorn
+    del log_level_uvicorn
+
     kwargs = locals().copy()
     os.environ["SOLARA_APP"] = app
     kwargs["app"] = "solara.server.fastapi:app"
+    kwargs["log_config"] = LOGGING_CONFIG if log_config is None else log_config
     for item in "open_browser open url failed dev".split():
         del kwargs[item]
     try:
