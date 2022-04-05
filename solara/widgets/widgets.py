@@ -44,7 +44,9 @@ class DataTable(v.VuetifyTemplate):
     column_actions = traitlets.List(trait=traitlets.Instance(ColumnAction), default_value=[]).tag(
         sync=True, to_json=_drop_keys_from_list_of_mappings(["on_click"])
     )
+    _column_actions_callbacks = traitlets.List(trait=traitlets.Callable(), default_value=[])
     cell_actions = traitlets.List(trait=traitlets.Instance(CellAction), default_value=[]).tag(sync=True, to_json=_drop_keys_from_list_of_mappings(["on_click"]))
+    _cell_actions_callbacks = traitlets.List(trait=traitlets.Callable(), default_value=[])
     items = traitlets.Any().tag(sync=True)  # the data, a list of dict
     headers = traitlets.Any().tag(sync=True)
     headers_selections = traitlets.Any().tag(sync=True)
@@ -63,15 +65,15 @@ class DataTable(v.VuetifyTemplate):
 
     def vue_on_column_action(self, data):
         header_value, action_index = data
-        action: ColumnAction = self.column_actions[action_index]
-        if action.on_click:
-            action.on_click(header_value)
+        on_click = self._column_actions_callbacks[action_index]
+        if on_click:
+            on_click(header_value)
 
     def vue_on_cell_action(self, data):
         row, header_value, action_index = data
-        action: CellAction = self.cell_actions[action_index]
-        if action.on_click:
-            action.on_click(header_value, row)
+        on_click = self._cell_actions_callbacks[action_index]
+        if on_click:
+            on_click(header_value, row)
 
 
 class VegaLite(v.VuetifyTemplate):

@@ -1,3 +1,4 @@
+from dataclasses import replace
 from typing import List
 
 import react_ipywidgets as react
@@ -42,6 +43,10 @@ def DataTable(df, page=0, items_per_page=20, format=None, column_actions: List[C
         items.append(item)
 
     headers = [{"text": name, "value": name, "sortable": False} for name in columns]
+    column_actions_callbacks = [k.on_click for k in column_actions]
+    cell_actions_callbacks = [k.on_click for k in cell_actions]
+    column_actions = [replace(k, on_click=None) for k in column_actions]
+    cell_actions = [replace(k, on_click=None) for k in cell_actions]
 
     return DataTableWidget.element(
         total_length=total_length,
@@ -58,4 +63,6 @@ def DataTable(df, page=0, items_per_page=20, format=None, column_actions: List[C
         on_options=set_options,
         column_actions=column_actions,
         cell_actions=cell_actions,
+        _column_actions_callbacks=column_actions_callbacks,
+        _cell_actions_callbacks=cell_actions_callbacks,
     )
