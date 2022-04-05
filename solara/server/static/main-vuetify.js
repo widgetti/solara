@@ -149,7 +149,11 @@ function connectWatchdog() {
     var path = '';
     reloading = false;
 
-    var WSURL = document.baseURI.replace("https://", "wss://").replace("htts://", "ws://")
+    var base = document.baseURI
+    if (!base.startsWith('http')) {
+        base = window.location.origin + base;
+    }
+    var WSURL = base.replace("https://", "wss://").replace("http://", "ws://")
     window.wsWatchdog = new WebSocket(WSURL + 'solara/watchdog/' + path);
     wsWatchdog.onopen = () => {
         console.log('connected with watchdog')
