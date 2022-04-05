@@ -198,9 +198,7 @@ def main(
             log_level = LOG_LEVELS[log_level]
         else:
             log_level = log_level
-        logging.getLogger("uvicorn.error").setLevel(log_level)
-        logging.getLogger("uvicorn.access").setLevel(log_level)
-        logging.getLogger("uvicorn.asgi").setLevel(log_level)
+        logging.getLogger("solara").setLevel(log_level)
     log_level = log_level_uvicorn
     del log_level_uvicorn
 
