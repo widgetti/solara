@@ -75,14 +75,19 @@ def Warning(text, icon="mdi-alert", children=[]):
 
 
 @react.component
-def Button(text, on_click=Callable[[], None], icon_name: str = None, children: list = [], **kwargs):
+def Button(text: str = None, on_click=Callable[[], None], icon_name: str = None, children: list = [], click_event="click", **kwargs):
     if text:
         children = [text] + children
     if icon_name:
         children = [v.Icon(left=True, children=[icon_name])] + children
     btn = v.Btn(children=children, **kwargs)
-    ipyvue.use_event(btn, "click", lambda *_ignore: on_click and on_click())
+    ipyvue.use_event(btn, click_event, lambda *_ignore: on_click and on_click())
     return btn
+
+
+@react.component
+def IconButton(icon_name: str = None, on_click=Callable[[], None], children: list = [], click_event="click", **kwargs):
+    return Button(icon_name=icon_name, on_click=on_click, children=children, icon=True, click_event=click_event, **kwargs)
 
 
 @react.component
