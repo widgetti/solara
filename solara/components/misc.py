@@ -106,7 +106,7 @@ def AltairChart(chart, on_click=None, on_hover=None):
 
 
 @react.component
-def FigurePlotly(fig, on_selection=None, on_click=None, on_hover=None):
+def FigurePlotly(fig, on_selection=None, on_click=None, on_hover=None, dependencies=None):
     from plotly.graph_objs._figurewidget import FigureWidget
 
     fig_element = FigureWidget.element()
@@ -126,7 +126,7 @@ def FigurePlotly(fig, on_selection=None, on_click=None, on_hover=None):
             if on_hover:
                 trace.on_hover(on_hover)
 
-    react.use_side_effect(update_data, fig)
+    react.use_side_effect(update_data, dependencies or fig)
     return fig_element
 
 
