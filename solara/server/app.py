@@ -76,7 +76,6 @@ class AppContext:
             pass
         del contexts[self.id]
         key = get_current_thread_key()
-        assert current_context[key] is self
         del current_context[key]
 
     def state_save(self, state_directory: os.PathLike):
