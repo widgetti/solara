@@ -7,6 +7,7 @@ import time
 import typing
 import webbrowser
 
+import rich
 import rich_click as click
 import uvicorn
 from uvicorn.main import LEVEL_CHOICES, LOG_LEVELS
@@ -192,6 +193,7 @@ def main(
 
     if open:
         threading.Thread(target=open_browser, daemon=True).start()
+    rich.print(f"Server is starting at {url}")
 
     if log_level is not None:
         if isinstance(log_level, str):
