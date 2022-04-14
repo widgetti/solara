@@ -66,7 +66,7 @@ async def kernels(id):
 @router.websocket("/jupyter/api/kernels/{id}/{name}")
 async def kernels2(ws: WebSocket, id, name, session_id: Optional[str] = None):
     context_id = ws.cookies.get(appmod.COOKIE_KEY_CONTEXT_ID)
-    print("context_id", context_id, id, name, session_id)
+    logger.info("Solara kernel requested for context_id %s (%s, %s, %s)", context_id, id, name, session_id)
     if context_id is None:
         logging.warning(f"no context id cookie set ({appmod.COOKIE_KEY_CONTEXT_ID})")
         await ws.close()
@@ -77,7 +77,6 @@ async def kernels2(ws: WebSocket, id, name, session_id: Optional[str] = None):
         await ws.close()
         return
 
-    print("kernels api", id, name)
     kernel = context.kernel
     kernel.shell_stream = WebsocketStreamWrapper(ws, "shell")
     kernel.control_stream = WebsocketStreamWrapper(ws, "control")
@@ -115,7 +114,7 @@ async def kernels2(ws: WebSocket, id, name, session_id: Optional[str] = None):
 @router.websocket("/solara/watchdog/")
 async def watchdog(ws: WebSocket):
     context_id = ws.cookies.get(appmod.COOKIE_KEY_CONTEXT_ID)
-    print("watchdog", context_id)
+    logger.debug("Watchdog connection for context id %r", context_id)
     await ws.accept()
     if context_id is None:
         await ws.send_json({"type": "reload", "reason": "no context id found in cookie"})
@@ -130,8 +129,8 @@ async def watchdog(ws: WebSocket):
         while True:
             try:
                 text = await ws.receive_text()
-            except (WebSocketDisconnect, OSError, RuntimeError) as e:
-                print("Oops", e)
+            except (WebSocketDisconnect, OSError, RuntimeError):
+                # closed, so ignore
                 return
             msg = json.loads(text)
             if msg["type"] == "state_reset":
@@ -146,7 +145,7 @@ async def watchdog(ws: WebSocket):
     while ok:
         try:
             if context_id not in appmod.contexts:
-                print("closed", context_id)
+                logger.debug("Watchdog connection closed: context id %r does not exist", context_id)
                 await ws.send_json({"type": "reload", "reason": "context id does not exist (server reload?)"})
             else:
                 await ws.send_json({"type": "ping", "reason": "check connection"})
@@ -154,7 +153,7 @@ async def watchdog(ws: WebSocket):
         except (websockets.exceptions.ConnectionClosed, RuntimeError):
             context = appmod.contexts.get(context_id)
             if context:
-                print("closed", context_id)
+                logger.debug("Watchdog connection for context id %r", context_id)
                 try:
                     context.control_sockets.remove(ws)
                 except ValueError:
@@ -169,8 +168,7 @@ async def watchdog(ws: WebSocket):
 @router.get("/")
 @router.get("/{fullpath}")
 async def read_root(request: Request, fullpath: Optional[str] = ""):
-
-    root_path = request.scope.get("root_path")
+    root_path = request.scope.get("root_path", "")
     logger.debug("root_path: %s", root_path)
     if request.headers.get("script-name"):
         logger.debug("override root_path using script-name header from %s to %s", root_path, request.headers.get("script-name"))
