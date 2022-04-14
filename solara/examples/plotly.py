@@ -27,7 +27,7 @@ and pass it to the FigurePlotly component.
         fig = px.scatter(filtered_df, x="gdpPercap", y="lifeExp", size="pop", color="continent", hover_name="country", log_x=True, size_max=55)
         fig.update_layout(transition_duration=1500)
 
-        sol.FigurePlotly(fig)
+        sol.FigurePlotly(fig, dependencies=[selected_year])
     return main
 
 
