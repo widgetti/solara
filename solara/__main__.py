@@ -1,4 +1,3 @@
-import logging
 import os
 import site
 import sys
@@ -10,7 +9,7 @@ import webbrowser
 import rich
 import rich_click as click
 import uvicorn
-from uvicorn.main import LEVEL_CHOICES, LOG_LEVELS
+from uvicorn.main import LEVEL_CHOICES
 
 HOST_DEFAULT = os.environ.get("HOST", "localhost")
 if "arm64-apple-darwin" in HOST_DEFAULT:  # conda activate script
@@ -47,9 +46,10 @@ LOGGING_CONFIG: dict = {
     },
     "loggers": {
         "solara": {"handlers": ["rich"], "level": "INFO"},
+        # "react": {"handlers": ["rich"], "level": "DEBUG"},
         "uvicorn": {"handlers": ["default"], "level": "ERROR"},
-        "uvicorn.error": {"level": "INFO"},
-        "uvicorn.access": {"handlers": ["access"], "level": "INFO", "propagate": False},
+        "uvicorn.error": {"level": "ERROR"},
+        "uvicorn.access": {"handlers": ["access"], "level": "ERROR", "propagate": False},
     },
 }
 
@@ -174,33 +174,34 @@ def main(
         reload_dirs = list(reload_dirs) + list(find_all_packages_paths())
         reload = True
 
+    server = None
+
+    # TODO: we might want to support this, but it needs to be started from the main thread
+    # and then uvicorn needs to be started from a thread
+    # def open_webview():
+    #     import webview
+
+    #     while not failed and (server is None or not server.started):
+    #         time.sleep(0.1)
+    #     if not failed:
+    #         window = webview.create_window("Hello world", url, resizable=True)
+    #         window.on_top = True
+    #         # window.show()
+    #         webview.start(debug=True)
+
     def open_browser():
-        import socket
-
-        s = socket.socket()
-        for i in range(100):
-            if failed:
-                return
-            try:
-                s.connect((host, port))
-                break
-            except Exception as e:
-                print(f"Server is not running get, will try again soon: {e}")
-            time.sleep(1)
-
-        print(f"Server is up, opening page {url}, disable this option by passing the --no-open argument to solara")
-        webbrowser.open(url)
+        while not failed and (server is None or not server.started):
+            time.sleep(0.1)
+        if not failed:
+            webbrowser.open(url)
 
     if open:
         threading.Thread(target=open_browser, daemon=True).start()
-    rich.print(f"Server is starting at {url}")
+    rich.print(f"Solara server is starting at {url}")
 
     if log_level is not None:
-        if isinstance(log_level, str):
-            log_level = LOG_LEVELS[log_level]
-        else:
-            log_level = log_level
-        logging.getLogger("solara").setLevel(log_level)
+        LOGGING_CONFIG["loggers"]["solara"]["level"] = log_level.upper()
+
     log_level = log_level_uvicorn
     del log_level_uvicorn
 
@@ -208,12 +209,29 @@ def main(
     os.environ["SOLARA_APP"] = app
     kwargs["app"] = "solara.server.fastapi:app"
     kwargs["log_config"] = LOGGING_CONFIG if log_config is None else log_config
-    for item in "open_browser open url failed dev".split():
+    for item in "server open_browser open_webview open url failed dev".split():
         del kwargs[item]
-    try:
-        uvicorn.run(**kwargs)
-    finally:
-        failed = True
+
+    def start_server():
+        nonlocal server
+        nonlocal failed
+        try:
+            config = uvicorn.Config(**kwargs)
+            server = uvicorn.Server(config=config)
+            server.run()
+        except:  # noqa
+            failed = True
+            raise
+
+    start_server()
+
+    # TODO: if we want to use webview, it should be sth like this
+    # server_thread = threading.Thread(target=start_server)
+    # server_thread.start()
+    # if open:
+    #     # open_webview()
+    #     open_browser()
+    # server_thread.join()
 
 
 if __name__ == "__main__":
