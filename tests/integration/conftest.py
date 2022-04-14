@@ -122,12 +122,13 @@ def solara_server():
 def solara_app(solara_server):
     @contextlib.contextmanager
     def run(app: Union[solara.server.app.AppScript, str]):
+        solara.server.server.solara_app.close()
         if isinstance(app, str):
             app = solara.server.app.AppScript(app)
         solara.server.server.solara_app = app
         try:
             yield
         finally:
-            pass
+            app.close()
 
     return run

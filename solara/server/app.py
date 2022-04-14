@@ -1,3 +1,4 @@
+import asyncio
 import atexit
 import contextlib
 import dataclasses
@@ -14,10 +15,10 @@ import ipywidgets as widgets
 import react_ipywidgets as react
 from starlette.websockets import WebSocket
 
-from . import kernel
+from . import kernel, reload
 
 COOKIE_KEY_CONTEXT_ID = "solara-context-id"
-
+thread_lock = threading.Lock()
 
 logger = logging.getLogger("solara.server.app")
 state_directory = Path(".") / "states"
@@ -134,6 +135,10 @@ class AppType(str, Enum):
 class AppScript:
     def __init__(self, name, default_app_name="app"):
         self.fullname = name
+        if reload.reloader.on_change:
+            raise RuntimeError("Previous reloader still had a on_change attached, no cleanup?")
+        reload.reloader.on_change = self.on_module_change
+
         self.app_name = default_app_name
         if ":" in self.fullname:
             self.name, self.app_name = self.fullname.split(":")
@@ -142,18 +147,40 @@ class AppScript:
         self.path: Path = Path(self.name)
         if self.name.endswith(".py"):
             self.type = AppType.SCRIPT
+            # manually add the script to the watcher
+            reload.reloader.watcher.add_file(self.path)
         elif self.name.endswith(".ipynb"):
             self.type = AppType.NOTEBOOK
+            # manually add the notebook to the watcher
+            reload.reloader.watcher.add_file(self.path)
         else:
-            self.type = AppType.MODULE
-            spec = importlib.util.find_spec(self.name)
-            assert spec is not None
-            assert spec.origin is not None
-            self.path = Path(spec.origin)
+            # the module itself will be added by reloader
+            # automatically
+            with reload.reloader.watch():
+                self.type = AppType.MODULE
+                spec = importlib.util.find_spec(self.name)
+                assert spec is not None
+                assert spec.origin is not None
+                self.path = Path(spec.origin)
+
+        # this might be useful for development
+        # but requires reloading of react in solara iself
+        # for name, module in sys.modules.items():
+        #     if name.startswith("react_ipywidgets"):
+        #         file = inspect.getfile(module)
+        #         self.watcher.add_file(file)
+
+        # so we can import from the current directory
+
+    def close(self):
+        reload.reloader.on_change = None
 
     def run(self):
+        with reload.reloader.watch():
+            return self._run()
+
+    def _run(self):
         context = get_current_context()
-        # local_scope = {"display": display_solara, "__name__": "__main__", "__file__": filename, "__package__": "solara.examples"}
         local_scope = {"display": context.display, "__name__": "__main__", "__file__": self.path}
         ignore = list(local_scope)
         if self.type == AppType.SCRIPT:
@@ -190,29 +217,38 @@ class AppScript:
             else:
                 msg += " We did find: " + " or ".join(map(repr, options))
             raise NameError(msg)
+
         return app
 
-    async def watch_app(self):
-        from watchgod import awatch
+    def on_module_change(self, name):
+        logger.info("Reload requires due to change in module: %s", name)
+        self.reload()
 
-        reload = {
-            "type": "reload",
-            "reason": "app changed",
-        }
-        path = self.path
-        if str(path).endswith("__init__.py"):
-            # if a package, watch the whole directory
-            path = path.parent
-        print("Watch", path)
-        async for changes in awatch(Path(path)):
-            print("trigger reload", changes)
-            context_values = contexts.values()
+    def reload(self):
+        # if multiple files change in a short time, we want to do this
+        # not concurrently. Even better would be to do a debounce?
+        with thread_lock:
+            logger.info("Saving state...")
+            # first, we pickle, before we unload modules
+            context_values = list(contexts.values())
             contexts.clear()
             for context in context_values:
-                for socket in context.control_sockets:
-                    print(socket)
-                    await socket.send_json(reload)
-            print("send refresh!")
+                context.state_save(state_directory=state_directory)
+
+            async def send_reload():
+                reload = {
+                    "type": "reload",
+                    "reason": "app changed",
+                }
+                context_values = list(contexts.values())
+                contexts.clear()
+                for context in context_values:
+                    context.state_save(state_directory=state_directory)
+                    for socket in context.control_sockets:
+                        print(socket)
+                        await socket.send_json(reload)
+
+            asyncio.run(send_reload())
 
 
 def state_store_all():
@@ -231,6 +267,7 @@ def state_load(context_name: str):
                 # return json.load(f)
         except Exception:
             logger.exception("Failed to load state for context %s", context_name)
+            raise
 
 
 atexit.register(state_store_all)

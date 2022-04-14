@@ -12,7 +12,7 @@ from jupyter_core.paths import jupyter_config_path
 from jupyter_server.services.config import ConfigManager
 from react_ipywidgets.core import Element, render
 
-from . import app
+from . import app, reload
 from .app import AppContext, AppScript
 from .kernel import Kernel
 
@@ -28,6 +28,7 @@ solara_app = AppScript(os.environ.get("SOLARA_APP", "solara.examples:app"))
 def run_app(app_state):
     # app.signal_hook_install()
     main_object = solara_app.run()
+
     render_context = None
 
     if isinstance(main_object, widgets.Widget):
@@ -38,14 +39,18 @@ def run_app(app_state):
 
         container = ipyvuetify.Html(tag="div", style_="display: flex; flex: 0 1 auto; align-items: left; justify-content: left")
         # container = ipyvuetify.Html(tag="div")
-        render_context = render(main_object, container, handle_error=False, initial_state=app_state)
+        # support older versions of react
+        result = render(main_object, container, handle_error=False, initial_state=app_state)
+        if isinstance(result, tuple):
+            container, render_context = result
+        else:
+            render_context = result
         return container, render_context
     else:
         raise ValueError(f"Main object (with name {solara_app.app_name} in {solara_app.path}) is not a Widget or Element, but {type(main_object)}")
 
 
 async def read_root(context_id: Optional[str], base_url: str = ""):
-    print("root", context_id)
     # context_id = None
     if context_id is None or context_id not in app.contexts:
         kernel = Kernel()
@@ -56,11 +61,26 @@ async def read_root(context_id: Optional[str], base_url: str = ""):
             widgets.register_comm_target(kernel)
             assert kernel is Kernel.instance()
         try:
-            app_state = app.state_load(context_id)
             with context:
-                widget, render_context = run_app(app_state)
-                if render_context:
-                    context.app_object = render_context
+                with reload.reloader.watch():
+                    while True:
+                        # reloading might take in extra dependencies, so the reload happens first
+                        if reload.reloader.requires_reload:
+                            reload.reloader.reload()
+                        # reload before starting app, because we may load state using pickle
+                        # if we do that before reloading, the classes are not compatible:
+                        # e.g.: _pickle.PicklingError: Can't pickle <class 'testapp.Clicks'>: it's not the same object as testapp.Clicks
+                        try:
+                            app_state = app.state_load(context_id)
+                        except Exception:
+                            app_state = None
+
+                        widget, render_context = run_app(app_state)
+                        if render_context:
+                            context.app_object = render_context
+                        if not reload.reloader.requires_reload:
+                            break
+
         except react_ipywidgets.core.ComponentCreateError as e:
             from rich.console import Console
 
