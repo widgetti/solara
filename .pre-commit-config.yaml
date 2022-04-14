@@ -24,4 +24,5 @@ repos:
     rev: 'v0.942'  # Use the sha / tag you want to point at
     hooks:
     -   id: mypy
+        args: [--no-strict-optional, --ignore-missing-imports]
         additional_dependencies: [types-requests, types-markdown]
