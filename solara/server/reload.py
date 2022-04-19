@@ -101,11 +101,13 @@ class Reloader:
 
     def reload(self):
         logger.info("Reloading modules... %s", self.watched_modules)
+        # not sure if this is needed
+        importlib.invalidate_caches()
         for mod in self.watched_modules:
-            # without reload, python still does not attempt to import
-            # a package that has failed before
-            # try:
-            importlib.reload(sys.modules[mod])
+            # it could be that a second run does not import the module
+            # so we should check if it is imported
+            if mod in sys.modules:
+                del sys.modules[mod]
         # if all succesfull...
         self.requires_reload = False
 
