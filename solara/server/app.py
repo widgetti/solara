@@ -86,6 +86,7 @@ class AppContext:
             render_context = cast(react.core._RenderContext, render_context)
             state = render_context.state_get()
             with path.open("wb") as f:
+                logger.debug("State: %r", state)
                 pickle.dump(state, f)
 
 
@@ -232,9 +233,9 @@ class AppScript:
         # if multiple files change in a short time, we want to do this
         # not concurrently. Even better would be to do a debounce?
         with thread_lock:
-            logger.info("Saving state...")
             # first, we pickle, before we unload modules
             context_values = list(contexts.values())
+            logger.debug("Saving state... %r", context_values)
             contexts.clear()
             for context in context_values:
                 context.state_save(state_directory=state_directory)

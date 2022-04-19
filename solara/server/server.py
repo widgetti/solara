@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 import traceback
@@ -23,6 +24,7 @@ template_name = "vuetify.html"
 jinja_loader = jinja2.FileSystemLoader(str(directory / "templates"))
 jinja_env = jinja2.Environment(loader=jinja_loader, autoescape=True)
 solara_app = AppScript(os.environ.get("SOLARA_APP", "solara.examples:app"))
+logger = logging.getLogger("solara.server.server")
 
 
 def run_app(app_state):
@@ -72,6 +74,7 @@ async def read_root(context_id: Optional[str], base_url: str = ""):
                         # e.g.: _pickle.PicklingError: Can't pickle <class 'testapp.Clicks'>: it's not the same object as testapp.Clicks
                         try:
                             app_state = app.state_load(context_id)
+                            logger.debug("Loaded state: %r", app_state)
                         except Exception:
                             app_state = None
 
