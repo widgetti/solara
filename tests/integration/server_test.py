@@ -146,6 +146,7 @@ def test_state(page: playwright.sync_api.Page, solara_server, solara_app, extra_
         # reset state button
         page.locator('[role="menuitem"]').click()
         # refresh manually
+        page.wait_for_timeout(100)
         page.goto(solara_server.base_url)
         # and state should be restored
         page.locator("text=Clicked: 0").wait_for()

@@ -209,7 +209,7 @@ def main(
     os.environ["SOLARA_APP"] = app
     kwargs["app"] = "solara.server.fastapi:app"
     kwargs["log_config"] = LOGGING_CONFIG if log_config is None else log_config
-    for item in "server open_browser open_webview open url failed dev".split():
+    for item in "server open_browser open url failed dev".split():
         del kwargs[item]
 
     def start_server():

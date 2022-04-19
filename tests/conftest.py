@@ -8,7 +8,7 @@ import pytest
 def extra_include_path():
     @contextlib.contextmanager
     def extra_include_path(path):
-        sys.path.insert(0, path)
+        sys.path.insert(0, str(path))
         try:
             yield
         finally:
