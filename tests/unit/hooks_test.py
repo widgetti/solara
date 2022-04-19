@@ -5,7 +5,7 @@ from react_ipywidgets import component
 from react_ipywidgets import ipywidgets as w
 from react_ipywidgets import render_fixed
 
-from .misc import use_download, use_fetch, use_json, use_thread
+from solara.hooks.misc import use_download, use_fetch, use_json, use_thread
 
 
 def test_hook_thread():

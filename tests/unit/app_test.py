@@ -3,21 +3,10 @@ import sys
 
 import pytest
 
-from solara.server import kernel, reload
-from solara.server.app import AppContext, AppScript
+from solara.server import reload
+from solara.server.app import AppScript
 
 logger = logging.getLogger("solara.server.app_test")
-
-
-@pytest.fixture
-def app_context():
-    kernel_shared = kernel.Kernel()
-    context = AppContext(id="1", kernel=kernel_shared, control_sockets=[], widgets={}, templates={})
-    try:
-        with context:
-            yield context
-    finally:
-        context.close()
 
 
 def test_watch_module_reload(tmpdir, app_context, extra_include_path):

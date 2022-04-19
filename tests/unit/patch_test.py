@@ -1,6 +1,6 @@
 import ipywidgets as widgets
 
-from . import app, kernel, patch
+from solara.server import app, kernel, patch
 
 patch.patch()
 

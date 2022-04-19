@@ -1,9 +1,8 @@
 import pytest
 import vaex
 
+from solara.components.datatable import DataTable, DataTableWidget
 from solara.kitchensink import react
-
-from .datatable import DataTable, DataTableWidget
 
 df_vaex = vaex.datasets.titanic()
 df_pandas = df_vaex.to_pandas_df()

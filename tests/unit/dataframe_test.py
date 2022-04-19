@@ -4,11 +4,7 @@ import ipywidgets
 import react_ipywidgets as react
 import vaex.datasets
 
-from solara.kitchensink import sol
-
-from ..hooks.dataframe import provide_crossfilter, use_cross_filter
-from ..widgets import PivotTable
-from .dataframe import (
+from solara.components.dataframe import (
     DropdownCard,
     FilterCard,
     HeatmapCard,
@@ -18,6 +14,9 @@ from .dataframe import (
     SummaryCard,
     TableCard,
 )
+from solara.hooks.dataframe import provide_crossfilter, use_cross_filter
+from solara.kitchensink import sol
+from solara.widgets import PivotTable
 
 df = vaex.datasets.titanic()
 
@@ -39,7 +38,7 @@ def test_histogram_card():
     assert bars.x.tolist() == ["female", "male"]
     assert bars.y.tolist() == [466, 843]
     assert set_filter is not None
-    set_filter(df["survived"] is True)
+    set_filter(df["survived"] == True)  # noqa
     assert bars.x.tolist() == ["female", "male"]
     assert bars.y.tolist() == [339, 161]
     bars.selected = [0]
@@ -118,12 +117,12 @@ def testfilter_card():
     widget, rc = react.render_fixed(Test(column="sex"), handle_error=False)
     textfield = widget.children[-1].children[-1]
     assert isinstance(textfield, vw.TextField)
-    assert textfield.v_model is None
+    assert textfield.v_model == ""
     textfield.v_model = "str_equals(sex, 'female')"
     assert filter is not None
     assert df[filter].sex.unique() == ["female"]
     textfield.v_model = None
-    assert filter is None
+    assert filter == ""
     assert df.sex.unique() == ["female", "male"]
 
 
