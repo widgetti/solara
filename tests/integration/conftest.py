@@ -9,6 +9,7 @@ import pytest
 
 import solara.server.app
 import solara.server.server
+from solara.server import reload
 from solara.server.fastapi import app as app_starlette
 
 logger = logging.getLogger("solara-test.integration")
@@ -129,6 +130,10 @@ def solara_app(solara_server):
         try:
             yield
         finally:
+            if app.type == solara.server.app.AppType.MODULE:
+                del sys.modules[app.name]
+                reload.reloader.watched_modules.remove(app.name)
+
             app.close()
 
     return run

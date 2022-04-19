@@ -55,10 +55,10 @@ def test_reload_many(page: playwright.sync_api.Page, solara_server, solara_app, 
         app_path.touch()
         reload.reloader.reload_event_next.wait()
         page.locator("text=Clicked 2 times").click()
-        page.locator("text=Clicked 2 times").wait_for()
+        page.locator("text=Clicked 3 times").wait_for(state="visible")
 
         logger.info("test_reload_many:Touch app 2st time")
         app_path.touch()
         reload.reloader.reload_event_next.wait()
-        page.locator("text=Clicked 2 times").click()
-        page.locator("text=Clicked 3 times").wait_for()
+        page.locator("text=Clicked 3 times").click()
+        page.locator("text=Clicked 4 times").wait_for(state="visible")

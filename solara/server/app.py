@@ -174,6 +174,10 @@ class AppScript:
 
     def close(self):
         reload.reloader.on_change = None
+        context_values = list(contexts.values())
+        contexts.clear()
+        for context in context_values:
+            context.close()
 
     def run(self):
         with reload.reloader.watch():
@@ -234,6 +238,7 @@ class AppScript:
             contexts.clear()
             for context in context_values:
                 context.state_save(state_directory=state_directory)
+                context.close()
 
             async def send_reload():
                 reload = {
