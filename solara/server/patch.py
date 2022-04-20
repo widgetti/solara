@@ -134,17 +134,18 @@ class context_dict_templates(context_dict):
         return context.templates
 
 
-# better to patch the ctor
-class WidgetContextAwareThread(threading.Thread):
-    def __init__(self, *args, **kwargs):
-        super(WidgetContextAwareThread, self).__init__(*args, **kwargs)
-        self.current_context = None
-        try:
-            self.current_context = app.get_current_context()
-        except RuntimeError:
-            logger.info(f"No context for thread {self}")
-        if self.current_context:
-            app.set_context_for_thread(self.current_context, self)
+Thread__init__ = threading.Thread.__init__
+
+
+def WidgetContextAwareThread__init__(self, *args, **kwargs):
+    Thread__init__(self, *args, **kwargs)
+    self.current_context = None
+    try:
+        self.current_context = app.get_current_context()
+    except RuntimeError:
+        logger.info(f"No context for thread {self}")
+    if self.current_context:
+        app.set_context_for_thread(self.current_context, self)
 
 
 def patch():
@@ -156,7 +157,7 @@ def patch():
     template_mod = sys.modules["ipyvue.Template"]
     template_mod.template_registry = context_dict_templates()  # type: ignore
     ipywidgets.widget.Widget.widgets = context_dict_widgets()  # type: ignore
-    threading.Thread = WidgetContextAwareThread  # type: ignore
+    threading.Thread.__init__ = WidgetContextAwareThread__init__  # type: ignore
     ipykernel.kernelbase.Kernel.instance = classmethod(kernel_instance_dispatch)
     ipykernel.kernelbase.Kernel.initialized = classmethod(kernel_initialized_dispatch)
     ipywidgets.widgets.widget.get_ipython = get_ipython
