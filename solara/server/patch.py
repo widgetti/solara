@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import pdb
 import sys
 import threading
 import traceback
@@ -9,7 +10,7 @@ import ipykernel.kernelbase
 import IPython.display
 import ipywidgets
 
-from . import app
+from . import app, settings
 
 logger = logging.getLogger("solara.server.app")
 
@@ -19,6 +20,10 @@ class FakeIPython:
         self.context = context
 
     def showtraceback(self):
+
+        if settings.main.use_pdb:
+            logger.exception("Exception, will be handled by debugger")
+            pdb.post_mortem()
         etype, value, tb = sys.exc_info()
         traceback_string = "".join(traceback.format_exception(etype, value, tb))
         msg = {
@@ -135,6 +140,7 @@ class context_dict_templates(context_dict):
 
 
 Thread__init__ = threading.Thread.__init__
+Thread__run = threading.Thread.run
 
 
 def WidgetContextAwareThread__init__(self, *args, **kwargs):
@@ -148,6 +154,16 @@ def WidgetContextAwareThread__init__(self, *args, **kwargs):
         app.set_context_for_thread(self.current_context, self)
 
 
+def Thread_debug_run(self):
+    try:
+        Thread__run(self)
+    except Exception:
+        if settings.main.use_pdb:
+            logger.exception("Exception, will be handled by debugger")
+            pdb.post_mortem()
+        raise
+
+
 def patch():
     IPython.display.display = display_solara
     __builtins__["display"] = display_solara
@@ -158,6 +174,7 @@ def patch():
     template_mod.template_registry = context_dict_templates()  # type: ignore
     ipywidgets.widget.Widget.widgets = context_dict_widgets()  # type: ignore
     threading.Thread.__init__ = WidgetContextAwareThread__init__  # type: ignore
+    threading.Thread.run = Thread_debug_run  # type: ignore
     ipykernel.kernelbase.Kernel.instance = classmethod(kernel_instance_dispatch)
     ipykernel.kernelbase.Kernel.initialized = classmethod(kernel_initialized_dispatch)
     ipywidgets.widgets.widget.get_ipython = get_ipython

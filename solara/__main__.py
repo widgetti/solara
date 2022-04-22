@@ -11,6 +11,8 @@ import rich_click as click
 import uvicorn
 from uvicorn.main import LEVEL_CHOICES
 
+from .server import settings
+
 HOST_DEFAULT = os.environ.get("HOST", "localhost")
 if "arm64-apple-darwin" in HOST_DEFAULT:  # conda activate script
     HOST_DEFAULT = "localhost"
@@ -147,6 +149,7 @@ def find_all_packages_paths():
     default="",
     help="Set the ASGI 'root_path' for applications submounted below a given URL path.",
 )
+@click.option("--pdb/--no-pdb", "use_pdb", default=False, help="Enter debugger on error")
 @click.argument("app")
 def main(
     app,
@@ -164,6 +167,7 @@ def main(
     log_level: str,
     log_level_uvicorn: str,
     access_log: bool,
+    use_pdb: bool,
 ):
     reload_dirs = reload_dirs if reload_dirs else None
     url = f"http://{host}:{port}"
@@ -209,7 +213,8 @@ def main(
     os.environ["SOLARA_APP"] = app
     kwargs["app"] = "solara.server.fastapi:app"
     kwargs["log_config"] = LOGGING_CONFIG if log_config is None else log_config
-    for item in "server open_browser open url failed dev".split():
+    settings.main.use_pdb = use_pdb
+    for item in "use_pdb server open_browser open url failed dev".split():
         del kwargs[item]
 
     def start_server():

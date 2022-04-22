@@ -1,5 +1,6 @@
 import logging
 import os
+import pdb
 import sys
 import traceback
 from pathlib import Path
@@ -13,7 +14,7 @@ from jupyter_core.paths import jupyter_config_path
 from jupyter_server.services.config import ConfigManager
 from react_ipywidgets.core import Element, render
 
-from . import app, reload
+from . import app, reload, settings
 from .app import AppContext, AppScript
 from .kernel import Kernel
 
@@ -77,8 +78,14 @@ async def read_root(context_id: Optional[str], base_url: str = ""):
                             logger.debug("Loaded state: %r", app_state)
                         except Exception:
                             app_state = None
+                        try:
+                            widget, render_context = run_app(app_state)
+                        except Exception:
+                            if settings.main.use_pdb:
+                                logger.exception("Exception, will be handled by debugger")
+                                pdb.post_mortem()
+                            raise
 
-                        widget, render_context = run_app(app_state)
                         if render_context:
                             context.app_object = render_context
                         if not reload.reloader.requires_reload:
