@@ -160,6 +160,8 @@ class AppScript:
             with reload.reloader.watch():
                 self.type = AppType.MODULE
                 spec = importlib.util.find_spec(self.name)
+                if spec is None:
+                    raise ImportError(f"Module {self.name} cannot be found")
                 assert spec is not None
                 assert spec.origin is not None
                 self.path = Path(spec.origin)
