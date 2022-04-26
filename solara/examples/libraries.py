@@ -24,7 +24,7 @@ def Libraries():
                 pass
         component = cast(react.core.Component, list(tabs.values())[tab])
         with v.TabsItems(v_model=tab):
-            component(__key__=tab)
+            component().key(str(tab))
     return main
 
 

@@ -75,8 +75,7 @@ def FileBrowser(start_directory, on_file_name):
             on_selected=on_selected,
             scroll_pos=scroll_pos,
             on_scroll_pos=set_scroll_pos,
-            __key__="FileList",
-        )
+        ).key("FileList")
         if warning:
             Div(style_="font-weight: bold; color: red", children=[warning])
 

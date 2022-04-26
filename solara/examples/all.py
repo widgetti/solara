@@ -50,7 +50,7 @@ def All():
         with v.TabsItems(v_model=tab):
             component = cast(react.core.Component, route_current["component"])
             key = key = route_current["path"]
-            component(__key__=key)
+            component().key(f"path_{key}")
 
     return main
 
