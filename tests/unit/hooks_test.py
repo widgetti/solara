@@ -43,7 +43,7 @@ def test_hook_thread():
 
 def test_hook_download(tmpdir):
     url = "https://raw.githubusercontent.com/widgetti/react-ipywidgets/master/.gitignore"
-    content_length = 864
+    content_length = 865
 
     path = tmpdir / "file.txt"
 
@@ -76,7 +76,7 @@ def test_hook_download(tmpdir):
 
 def test_hook_use_fetch():
     url = "https://raw.githubusercontent.com/widgetti/react-ipywidgets/master/.gitignore"
-    content_length = 864
+    content_length = 865
 
     data = error = None
 
