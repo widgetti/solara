@@ -1,5 +1,7 @@
 import dataclasses
-from typing import Callable, Optional
+from typing import Callable, Generic, Optional, TypeVar
+
+T = TypeVar("T")
 
 
 @dataclasses.dataclass(frozen=True)
@@ -17,3 +19,17 @@ class ColumnAction(Action):
 @dataclasses.dataclass(frozen=True)
 class CellAction(Action):
     on_click: Optional[Callable[[str, int], None]] = None
+
+
+@dataclasses.dataclass(frozen=True)
+class Result(Generic[T]):
+    value: Optional[T] = None
+    error: Optional[Exception] = None
+    running: bool = False
+
+
+@dataclasses.dataclass(frozen=True)
+class FileContentResult(Result[T]):
+    @property
+    def exists(self):
+        return not isinstance(self.error, FileNotFoundError)

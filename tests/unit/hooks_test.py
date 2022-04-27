@@ -1,10 +1,12 @@
 import time
+from pathlib import Path
 
 import react_ipywidgets as react
 from react_ipywidgets import component
 from react_ipywidgets import ipywidgets as w
 from react_ipywidgets import render_fixed
 
+import solara as sol
 from solara.hooks.misc import use_download, use_fetch, use_json, use_thread
 
 
@@ -114,3 +116,22 @@ def test_hook_use_json():
         if label.value == expected:
             break
     assert label.value == expected
+
+
+def test_use_file_content(tmpdir: Path):
+    path = tmpdir / "test.txt"
+    path.write_text("Hi", "utf8")
+
+    @react.component
+    def Test(path):
+        result = sol.use_file_content(path)
+        if result.value is not None:
+            assert result.value == b"Hi"
+            assert result.exists
+        else:
+            assert isinstance(result.error, FileNotFoundError)
+            assert not result.exists
+        return w.Button()
+
+    react.render_fixed(Test(path))
+    react.render_fixed(Test(tmpdir / "nonexist"))

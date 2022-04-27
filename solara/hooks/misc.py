@@ -9,6 +9,8 @@ from typing import Any, Callable, Optional, cast
 
 import react_ipywidgets as react
 
+from solara.datatypes import FileContentResult
+
 logger = logging.getLogger("react-ipywidgets.extra.hooks")
 
 
@@ -132,3 +134,24 @@ def use_json(path):
                 error = e
 
     return read_json(data), error
+
+
+def use_file_content(path) -> FileContentResult[bytes]:
+    @react.use_memo
+    def read_file(*ignore):
+        try:
+            with open(path, "rb") as f:
+                return f.read()
+        except Exception as e:
+            return e
+
+    try:
+        mtime = os.path.getmtime(path)
+    except Exception as e:
+        return FileContentResult[bytes](error=e)
+
+    content = read_file(path, mtime)
+    if isinstance(content, Exception):
+        return FileContentResult[bytes](error=content)
+    else:
+        return FileContentResult[bytes](value=content)
