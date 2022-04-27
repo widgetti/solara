@@ -71,12 +71,17 @@ def Div(children=[], **kwargs):
 
 @react.component
 def Warning(text, icon="mdi-alert", children=[], **kwargs):
-    return v.Alert(type="warning", text=True, prominent=True, icon="mdi-alert", children=[text, *children], **kwargs)
+    return v.Alert(type="warning", text=True, prominent=True, icon=icon, children=[text, *children], **kwargs)
 
 
 @react.component
-def Info(text, icon="mdi-alert", children=[], **kwargs):
-    return v.Alert(type="info", text=True, prominent=True, icon="mdi-alert", children=[text, *children], **kwargs)
+def Info(text, icon="mdi-alert", children=[], progress=False, **kwargs):
+    return v.Alert(type="info", text=True, prominent=True, icon=icon, children=[text, *children], **kwargs)
+
+
+@react.component
+def Error(text, icon="mdi-alert", children=[], **kwargs):
+    return v.Alert(type="error", text=True, prominent=True, icon=icon, children=[text, *children], **kwargs)
 
 
 @react.component
