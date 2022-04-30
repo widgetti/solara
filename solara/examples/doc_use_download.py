@@ -11,23 +11,23 @@ expected_size = 248007048
 
 @react.component
 def DownloadFile(file_path=file_path, url=url, expected_size=expected_size, on_done=None):
-    progress, download_is_done, error, cancel, retry = sol.hooks.use_download(file_path, url, expected_size=expected_size)
-    print(url, progress)
-    downloaded_size = progress * expected_size
+    download = sol.hooks.use_download(file_path, url, expected_size=expected_size)
+    downloaded_size = download.progress * expected_size
     if on_done:
-        on_done(progress == 1)
-    if download_is_done:
+        on_done(download.progress == 1)
+    if download.value:
         status = "Done 🎉"
     else:
         MEGABYTES = 2.0**20.0
         status = "Downloading %s... (%6.2f/%6.2f MB)" % (file_path, downloaded_size / MEGABYTES, expected_size / MEGABYTES)
     # status = "hi"
     # return MarkdownIt(f'{status}')
+    assert download.progress is not None
     with v.Container() as main:
         # with w.VBox() as main:
         with v.Row():
             with v.Col(cols=1):
-                progressbar = v.ProgressLinear(value=progress * 100, color="primary", striped=True, height=20)
+                progressbar = v.ProgressLinear(value=download.progress * 100, color="primary", striped=True, height=20)
             # with v.Col(cols=1):
             #     MarkdownIt(f'{status}')
     return main

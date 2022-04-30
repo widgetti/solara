@@ -1,3 +1,4 @@
+from solara.hooks.misc import use_fetch
 from solara.kitchensink import react, sol, v
 
 json_url = "https://jherr-pokemon.s3.us-west-1.amazonaws.com/index.json"
@@ -19,15 +20,17 @@ def Grid(columns=4, column_gap="10px", row_gap="10px", children=[], align_items=
 
 @react.component
 def App():
-    json, error = sol.use_json(json_url)
+    data = use_fetch(json_url)
+    json = sol.use_json_load(data)
 
     with sol.Div() as main:
-        if error:
-            v.Alert(children=[f"Error {error}"])
+        if json.error:
+            v.Alert(children=[f"Error {json.error}"])
+            sol.Button("Retry", on_click=data.retry)
         else:
-            if json:
+            if json.value:
                 filter = sol.ui_text("", description="Filter pokemons by name")
-                pokemons = json
+                pokemons = json.value
                 if filter:
                     pokemons = [k for k in pokemons if filter.lower() in k["name"].lower()]
                     v.Label(children=[f"{len(pokemons)} pokemons found"])
@@ -41,7 +44,8 @@ def App():
                             v.Img(src=url, contain=True, max_height="200px")
                             v.Label(children=[name])
             else:
-                v.Alert(children=["Loading..."])
+                with v.Text(children=["Loading..."]):
+                    v.ProgressCircular(indeterminate=True, class_="solara-progress")
     return main
 
 

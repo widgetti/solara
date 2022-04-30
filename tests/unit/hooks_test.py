@@ -1,5 +1,6 @@
 import time
 from pathlib import Path
+from typing import Optional
 
 import react_ipywidgets as react
 from react_ipywidgets import component
@@ -7,6 +8,7 @@ from react_ipywidgets import ipywidgets as w
 from react_ipywidgets import render_fixed
 
 import solara as sol
+from solara.datatypes import FileContentResult
 from solara.hooks.misc import use_download, use_fetch, use_json, use_thread
 
 
@@ -29,7 +31,7 @@ def test_hook_thread():
                 set_counter(i)
                 time.sleep(0.001)
 
-        _result, _cancel, done, _error = use_thread(work)
+        use_thread(work)
         return w.Label(value=f"{a} {b} {c} {counter}")
 
     label, rc = render_fixed(DownloadFile())
@@ -49,12 +51,12 @@ def test_hook_download(tmpdir):
 
     @component
     def DownloadFile(url=url, expected_size=None):
-        progress, done, error, cancel, retry = use_download(path, url, expected_size=expected_size)
-        return w.Label(value=f"{progress} {done} {error}")
+        result = use_download(path, url, expected_size=expected_size)
+        return w.Label(value=f"{result.progress} {result.running} {result.error}")
 
     label, rc = render_fixed(DownloadFile())
     assert label.value == "0 False None"
-    expected = "1.0 True None"
+    expected = "1.0 False None"
     for i in range(200):  # max 2 second
         time.sleep(0.01)
         if label.value == expected:
@@ -78,12 +80,13 @@ def test_hook_use_fetch():
     url = "https://raw.githubusercontent.com/widgetti/react-ipywidgets/master/.gitignore"
     content_length = 865
 
-    data = error = None
+    result = None
 
     @component
     def FetchFile(url=url, expected_size=None):
-        nonlocal data, error
-        data, error = use_fetch(url)
+        nonlocal result
+        result = use_fetch(url)
+        data = result.value
         return w.Label(value=f"{len(data) if data else '-'}")
 
     label, rc = render_fixed(FetchFile())
@@ -100,12 +103,13 @@ def test_hook_use_json():
     url = "https://jherr-pokemon.s3.us-west-1.amazonaws.com/index.json"
     pokemons = 799
 
-    data = error = None
+    result = None
 
     @component
     def FetchJson(url=url, expected_size=None):
-        nonlocal data, error
-        data, error = use_json(url)
+        nonlocal result
+        result = use_json(url)
+        data = result.value
         return w.Label(value=f"{len(data) if data else '-'}")
 
     label, rc = render_fixed(FetchJson())
@@ -122,8 +126,11 @@ def test_use_file_content(tmpdir: Path):
     path = tmpdir / "test.txt"
     path.write_text("Hi", "utf8")
 
+    result: Optional[FileContentResult[bytes]] = None
+
     @react.component
     def Test(path):
+        nonlocal result
         result = sol.use_file_content(path)
         if result.value is not None:
             assert result.value == b"Hi"
@@ -131,7 +138,13 @@ def test_use_file_content(tmpdir: Path):
         else:
             assert isinstance(result.error, FileNotFoundError)
             assert not result.exists
+        # pickle.dumps(result)
         return w.Button()
 
     react.render_fixed(Test(path))
-    react.render_fixed(Test(tmpdir / "nonexist"))
+    path_non_exist = tmpdir / "nonexist"
+    react.render_fixed(Test(path_non_exist))
+    path_non_exist.write_text("Hi", "utf8")
+    assert result is not None
+    result.retry()
+    assert result.value == b"Hi"
