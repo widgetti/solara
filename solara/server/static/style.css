@@ -3,11 +3,13 @@
     /* padding: 10px; */
 }
 
-.jupyter-widgets code::after, .jupyter-widgets code::before {
+.jupyter-widgets code::after,
+.jupyter-widgets code::before {
     content: unset !important;
 }
 
-.vuetify-styles .v-application code, .v-application code {
+.vuetify-styles .v-application code,
+.v-application code {
     color: unset !important;
     background-color: unset !important;
     font-family: Hack !important;
@@ -23,4 +25,11 @@ div.highlight pre code {
 
 .emojione {
     width: 1.2em;
+}
+
+
+.solara-progress .v-progress-linear,
+.solara-progress .v-progress-circular,
+.solara-progress .v-progress-circular__overlay {
+    transition: none !important
 }
