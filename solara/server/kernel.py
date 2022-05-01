@@ -1,13 +1,51 @@
+import json
 import logging
-from typing import Set
+import struct
+from typing import Any, Set
 
 import ipykernel.kernelbase
 import jupyter_client.session as session
 from ipykernel.comm import CommManager
+from jupyter_client.jsonutil import json_default
 from jupyter_client.session import json_packer
-from notebook.base.zmqhandlers import serialize_binary_message
-from starlette.websockets import WebSocket
 from zmq.eventloop.zmqstream import ZMQStream
+
+WebSocket = Any
+
+# from notebook.base.zmqhandlers import serialize_binary_message
+# this saves us a depdendency on notebook/jupyter_server when e.g.
+# running on pyodide
+
+
+def serialize_binary_message(msg):
+    """serialize a message as a binary blob
+
+    Header:
+
+    4 bytes: number of msg parts (nbufs) as 32b int
+    4 * nbufs bytes: offset for each buffer as integer as 32b int
+
+    Offsets are from the start of the buffer, including the header.
+
+    Returns
+    -------
+
+    The message serialized to bytes.
+
+    """
+    # don't modify msg or buffer list in-place
+    msg = msg.copy()
+    buffers = list(msg.pop("buffers"))
+    bmsg = json.dumps(msg, default=json_default).encode("utf8")
+    buffers.insert(0, bmsg)
+    nbufs = len(buffers)
+    offsets = [4 * (nbufs + 1)]
+    for buf in buffers[:-1]:
+        offsets.append(offsets[-1] + len(buf))
+    offsets_buf = struct.pack("!" + "I" * (nbufs + 1), nbufs, *offsets)
+    buffers.insert(0, offsets_buf)
+    return b"".join(buffers)
+
 
 SESSION_KEY = b"solara"
 
@@ -32,6 +70,43 @@ class WebsocketStreamWrapper(ZMQStream):
         pass
 
 
+def send_websockets(websockets, binary_msg):
+    # for pyiodide/flask we can do sth like this
+    # for ws in list(self.websockets):
+    #     ws.send(binary_msg)
+    for ws in websockets:
+
+        async def sendit(binary_msg, ws=ws):
+            try:
+                await ws.send_bytes(binary_msg)
+            except Exception:
+                if ws in websockets:
+                    websockets.remove(ws)
+
+        try:
+            import asyncio
+
+            try:
+                loop = asyncio.get_event_loop()
+                had_loop = True
+            except RuntimeError:
+                had_loop = False
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+            if loop is None:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+            if not had_loop:
+                asyncio.run(sendit(binary_msg))
+            else:
+                try:
+                    asyncio.create_task(sendit(binary_msg))
+                except RuntimeError:
+                    asyncio.run(sendit(binary_msg))
+        except:  # noqa: E722
+            logging.exception("sending websocket")
+
+
 class SessionWebsocket(session.Session):
     def __init__(self, *args, **kwargs):
         super(SessionWebsocket, self).__init__(*args, **kwargs)
@@ -51,52 +126,7 @@ class SessionWebsocket(session.Session):
             # else:
             #     print(self.websockets)
             # print(msg, self.websockets)
-            for ws in list(self.websockets):
-                # if ws.closed:
-                #     self.websockets.pop(key)
-                # else:
-
-                # print('sending over wire:', binary_msg)
-                async def sendit(binary_msg, ws=ws):
-                    # print(binary_msg)
-                    # await ws.send_bytes(binary_msg)
-                    import websockets.exceptions
-
-                    try:
-                        await ws.send_bytes(binary_msg)
-                    except RuntimeError as e:
-                        print("errrorrrr", e)
-                        if ws in self.websockets:
-                            self.websockets.remove(ws)
-                    except websockets.exceptions.ConnectionClosedError as e:
-                        print("errrorrrr", e)
-                        if ws in self.websockets:
-                            self.websockets.remove(ws)
-
-                try:
-                    import asyncio
-
-                    try:
-                        loop = asyncio.get_event_loop()
-                        had_loop = True
-                    except RuntimeError:
-                        had_loop = False
-                        loop = asyncio.new_event_loop()
-                        asyncio.set_event_loop(loop)
-                    if loop is None:
-                        loop = asyncio.new_event_loop()
-                        asyncio.set_event_loop(loop)
-                    if not had_loop:
-                        asyncio.run(sendit(binary_msg))
-                    else:
-                        try:
-                            asyncio.create_task(sendit(binary_msg))
-                        except RuntimeError:
-                            asyncio.run(sendit(binary_msg))
-                except:  # noqa: E722
-                    logging.exception("sending websocket")
-                # print(ws)
-                # ws.send(binary_msg)
+            send_websockets(self.websockets, binary_msg)
         except Exception as e:
             print(e)
 

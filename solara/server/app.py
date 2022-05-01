@@ -13,9 +13,11 @@ from typing import Any, Dict, List, Optional, cast
 
 import ipywidgets as widgets
 import react_ipywidgets as react
-from starlette.websockets import WebSocket
 
 from . import kernel, reload
+
+WebSocket = Any
+
 
 COOKIE_KEY_CONTEXT_ID = "solara-context-id"
 thread_lock = threading.Lock()

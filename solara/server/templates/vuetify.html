@@ -31,7 +31,7 @@
         "baseUrl": "{{base_url}}/jupyter",
         "kernelId": "1234"
     }
-</script>
+    </script>
 
 
 
@@ -434,6 +434,11 @@
     </div>
     {% endraw -%}
     <script>
+        window.for_pyodide = false;
+        {% if for_pyodide %}
+        const solaraWorker = new Worker("./static/webworker.js");
+        window.for_pyodide = true;
+        {% endif %}
         var debug = true;
         var app = new Vue({
             vuetify: new Vuetify({
@@ -494,8 +499,13 @@
             {% for ext in resources.nbextensions if ext != 'jupyter-vuetify/extension' and ext != 'jupyter-vue/extension' -%}
         "{{resources.base_url}}voila/nbextensions/{{ ext }}.js",
             {% endfor %}
-            ]);
-        solaraMount("{{model_id}}")
+        ]);
+
+        window.solaraInitialized = solaraInit()
+        {% if not for_pyodide %}
+            solaraMount("{{model_id}}")
+        {% endif %}
+
     </script>
 
 </html>

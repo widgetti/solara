@@ -145,6 +145,44 @@ if (window.location.search) {
     }
 }
 
+class WebSocketRedirectWebWorker {
+    // redirects to webworker
+    constructor(url) {
+        console.log('connect url intercepted', url)
+        function make_default(name) {
+            return () => {
+                console.log("default ", name)
+            }
+        }
+        this.onopen = make_default('onopen')
+        this.onclose = make_default('onclose')
+        this.onmessage = make_default('onmessage')
+        setTimeout(() => this.start(), 10)
+    }
+    send(msg) {
+        // console.log('send msg', msg)
+        solaraWorker.postMessage({'type': 'send', 'value': msg})
+    }
+    start() {
+        solaraWorker.addEventListener('message', async (event) => {
+            let msg = event.data
+            if(msg.type == 'opened') {
+                this.onopen()
+            }
+            if(msg.type == 'send') {
+                this.onmessage({data: msg.value})
+            }
+            if(msg.type == 'mount') {
+                let model_id = msg.value;
+
+                await solaraMount(model_id)
+            }
+        });
+        solaraWorker.postMessage({'type': 'open'})
+    }
+}
+
+
 function connectWatchdog() {
     var path = '';
     reloading = false;
@@ -200,7 +238,7 @@ function getCookiesMap(cookiesString) {
 const COOKIE_KEY_CONTEXT_ID = 'solara-context-id'
 
 
-function solaraMount(model_id) {
+async function solaraInit() {
     define("vue", [], () => Vue);
     define("vuetify", [], { framework: app.$vuetify });
     console.log(document.cookie)
@@ -209,50 +247,53 @@ function solaraMount(model_id) {
     console.log('contextId', contextId)
     connectWatchdog()
     // var path = window.location.pathname.substr(14);
-    console.log("will mount", model_id)
     // NOTE: this file is not transpiled, async/await is the only modern feature we use here
-    require([window.voila_js_url || 'static/dist/voila.js'], function (voila) {
-        // requirejs doesn't like to be passed an async function, so create one inside
-        (async function () {
-            var kernel = await voila.connectKernel('jupyter')
-            if (!kernel) {
-                return;
-            }
-
-            const context = {
-                sessionContext: {
-                    session: {
-                        kernel,
+    return new Promise((resolve, reject) => {
+        require([window.voila_js_url || 'static/dist/voila.js'], function (voila) {
+            window.voila = voila;
+            // requirejs doesn't like to be passed an async function, so create one inside
+            (async function () {
+                if(for_pyodide) {
+                    options = {WebSocket: WebSocketRedirectWebWorker}
+                } else {
+                    options = {}
+                }
+                window.kernel = await voila.connectKernel('jupyter', null, options)
+                if (!kernel) {
+                    return;
+                }
+                const context = {
+                    sessionContext: {
+                        session: {
+                            kernel,
+                            kernelChanged: {
+                                connect: () => { }
+                            },
+                        },
+                        statusChanged: {
+                            connect: () => { }
+                        },
                         kernelChanged: {
                             connect: () => { }
                         },
+                        connectionStatusChanged: {
+                            connect: () => { }
+                        },
                     },
-                    statusChanged: {
+                    saveState: {
                         connect: () => { }
                     },
-                    kernelChanged: {
-                        connect: () => { }
-                    },
-                    connectionStatusChanged: {
-                        connect: () => { }
-                    },
-                },
-                saveState: {
-                    connect: () => { }
-                },
-            };
+                };
 
-            const settings = {
-                saveState: false
-            };
+                const settings = {
+                    saveState: false
+                };
 
-            const rendermime = new voila.RenderMimeRegistry({
-                initialFactories: voila.extendedRendererFactories
-            });
+                const rendermime = new voila.RenderMimeRegistry({
+                    initialFactories: voila.extendedRendererFactories
+                });
 
-            var widgetManager = new voila.WidgetManager(context, rendermime, settings);
-
-            async function init() {
+                window.widgetManager = new voila.WidgetManager(context, rendermime, settings);
                 // it seems if we attach this to early, it will not be called
                 const matches = document.cookie.match('\\b_xsrf=([^;]*)\\b');
                 const xsrfToken = (matches && matches[1]) || '';
@@ -267,39 +308,32 @@ function solaraMount(model_id) {
                 app.$data.loading_text = 'loading widgets';
                 await widgetManager.build_widgets();
                 voila.renderMathJax();
-                await Promise.all(Object.values(widgetManager._models).map(async (modelPromise) => {
-                    const model = await modelPromise;
-                    // console.log(model)
-                    if (model.model_id == model_id) {
-                        console.log("yeah, got it!", model_id)
-                        const view = await widgetManager.create_view(model);
-                        provideWidget('content', view);
-                        // el = document.getElementById("solara");
-                        // while (el.lastChild) {
-                        //     el.removeChild(el.lastChild);
-                        // }
-                        // el.appendChild(view.el);
-                        // requirejs(['@jupyter-widgets/base'], widgets =>
-                        // //   widgets.JupyterPhosphorWidget.attach(widgetView.pWidget, this.$el)
-                        //   widgets.JupyterPhosphorWidget.attach(view.pWidget, el)
-                        // );
-
-                        console.log('el')
-                        // provideWidget(mountId, view);
-                    }
-                }));
-                app.$data.loadingPercentage = 0;
-                app.$data.loading_text = 'Done';
-                app.$data.loading = false;
-
-            }
-
-            if (document.readyState === 'complete') {
-                init()
-            } else {
-                window.addEventListener('load', init);
-            }
-        })()
+                resolve()
+            })()
+        });
     });
+}
 
+async function solaraMount(model_id) {
+    console.log("will mount", model_id)
+    await solaraInitialized;
+
+    async function init() {
+        await Promise.all(Object.values(widgetManager._models).map(async (modelPromise) => {
+            const model = await modelPromise;
+            // console.log(model)
+            if (model.model_id == model_id) {
+                const view = await widgetManager.create_view(model);
+                provideWidget('content', view);
+            }
+        }));
+        app.$data.loadingPercentage = 0;
+        app.$data.loading_text = 'Done';
+        app.$data.loading = false;
+    }
+    if (document.readyState === 'complete') {
+        init()
+    } else {
+        window.addEventListener('load', init);
+    }
 }

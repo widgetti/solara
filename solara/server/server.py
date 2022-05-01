@@ -11,7 +11,6 @@ import ipywidgets as widgets
 import jinja2
 import react_ipywidgets
 from jupyter_core.paths import jupyter_config_path
-from jupyter_server.services.config import ConfigManager
 from react_ipywidgets.core import Element, render
 
 from . import app, reload, settings
@@ -118,6 +117,9 @@ async def read_root(context_id: Optional[str], base_url: str = ""):
 
     read_config_path = [os.path.join(p, "serverconfig") for p in jupyter_config_path()]
     read_config_path += [os.path.join(p, "nbconfig") for p in jupyter_config_path()]
+    # import inline since we don't want this dep for pyiodide
+    from jupyter_server.services.config import ConfigManager
+
     config_manager = ConfigManager(read_config_path=read_config_path)
     enable_nbextensions = True
     if enable_nbextensions:
