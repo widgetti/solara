@@ -44,6 +44,8 @@ dev = [
     "pytest-cov",
 ]
 server = [
+    "jinja2",
+    "pydantic",
     "click",
     "rich_click",
     "uvicorn",
@@ -53,6 +55,7 @@ server = [
     "voila",
 ]
 examples = [
+    "numpy",
     "bqplot",
     "altair",
     "vega_datasets",
