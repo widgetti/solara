@@ -266,7 +266,6 @@ def Markdown(md_text: str):
     import markdown
 
     html = markdown.markdown(md_text, extensions=["pymdownx.highlight", "pymdownx.superfences", "pymdownx.emoji"])
-    # return w.HTML(value=html)
     return HTML(unsafe_innerHTML=html)
 
 

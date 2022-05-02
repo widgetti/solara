@@ -71,7 +71,61 @@ def ColorCard(title, color):
 
 
 @react.component
-def GridLayoutDemo():
+def GridFixedDemo():
+    with sol.VBox() as main:
+        sol.Markdown(
+            """
+# GridFixed
+
+Lays out children in a grid with a fixed number of columns.
+        """
+        )
+
+        colors = "green red orange brown yellow pink".split()
+        with sol.GridFixed(columns=3):
+            for color in colors:
+                ColorCard(color, color)
+    return main
+
+
+@react.component
+def VBoxDemo():
+    with sol.VBox() as main:
+        sol.Markdown(
+            """
+# VBox
+
+Lays out children in a vertical direction.
+        """
+        )
+
+        colors = "green red orange brown yellow pink".split()
+        with sol.VBox():
+            for color in colors:
+                ColorCard(color, color)
+    return main
+
+
+@react.component
+def HBoxDemo():
+    with sol.VBox() as main:
+        sol.Markdown(
+            """
+# HBox
+
+Lays out children in horizontal direction.
+        """
+        )
+
+        colors = "green red orange brown yellow pink".split()
+        with sol.HBox():
+            for color in colors:
+                ColorCard(color, color)
+    return main
+
+
+@react.component
+def GridDraggableDemo():
     grid_layout_initial = [
         {"h": 5, "i": "0", "moved": False, "w": 3, "x": 0, "y": 0},
         {"h": 5, "i": "1", "moved": False, "w": 5, "x": 3, "y": 0},
@@ -89,10 +143,13 @@ def GridLayoutDemo():
 
     # some placeholders
     items = [ColorCard(title=f"Child {i}", color=colors[i]) for i in range(len(grid_layout))]
-    with sol.Div() as main:
+    # with sol.Div() as main:
+    with sol.VBox() as main:
+        # with sol.Div()
+        # with v.Card(class_="pa-4", elevation=0) as main:
         sol.Markdown(
             """
-# GridLayout
+# GridDraggable
 
 Child components are layed out on a grid, which can be dragged and resized.
 """
@@ -125,24 +182,57 @@ grid_layout = {grid_layout_formatted}
     return main
 
 
-tabs = {
+components = {
     "DataTable": DataTableDemo,
-    "GridLayout": GridLayoutDemo,
+    "GridDraggable": GridDraggableDemo,
+    "GridFixed": GridFixedDemo,
+    "VBox": VBoxDemo,
+    "HBox": HBoxDemo,
 }
 
 
 @react.component
 def Components():
     tab, set_tab = react.use_state(0, "tab")
+    selected, on_selected = react.use_state("Overview")
+    print("selected", selected)
+    with sol.HBox(grow=True) as main:
+        with v.NavigationDrawer(right=False, width="min-content", v_model=True, permanent=True):
+            with v.List(dense=True):
+                with v.ListItemGroup(v_model=selected, on_v_model=on_selected):
+                    sol.ListItem("Overview")
+                    with sol.ListItem("Input", icon_name="mdi-chevron-left-box"):
+                        sol.ListItem("Slider")
+                        sol.ListItem("Button")
+                    with sol.ListItem("Output", icon_name="mdi-chevron-right-box"):
+                        sol.ListItem("Markdown")
+                        sol.ListItem("HTML")
+                        sol.ListItem("Image")
+                        sol.ListItem("Code")
+                    with sol.ListItem("Viz", icon_name="mdi-chart-histogram"):
+                        sol.ListItem("FigurePlotly")
+                        sol.ListItem("AltairChart")
+                    with sol.ListItem("Layout", icon_name="mdi-page-layout-sidebar-left"):
+                        sol.ListItem("HBox")
+                        sol.ListItem("VBox")
+                        sol.ListItem("GridDraggable")
+                        sol.ListItem("GridFixed")
+                        sol.ListItem("App")
+                    with sol.ListItem("Data", icon_name="mdi-database"):
+                        sol.ListItem("DataTable")
+                    with sol.ListItem("Hooks", icon_name="mdi-hook"):
+                        sol.ListItem("use_fetch")
+                        sol.ListItem("use_json")
+                    with sol.ListItem("Types", icon_name="mdi-fingerprint"):
+                        sol.ListItem("Action")
+                        sol.ListItem("ColumnAction")
 
-    # md, set_md = use_state("")
-    with v.Tabs(v_model=tab, on_v_model=set_tab, vertical=True) as main:
-        for key in tabs:
-            with v.Tab(children=[key]):
-                pass
-        component = list(tabs.values())[tab]
-        with v.TabsItems(v_model=tab):
-            component()
+        # with v.Card(class_="d-flex", style_="flex-grow: 1", elevation=0) as main:
+        with sol.HBox(grow=True):
+            with sol.Padding(4):
+                if selected in components:
+                    components[selected]()
+
     return main
 
 
