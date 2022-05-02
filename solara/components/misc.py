@@ -13,7 +13,25 @@ import solara.widgets
 
 PivotTable = react.core.ComponentWidget(solara.widgets.PivotTable)
 Navigator = react.core.ComponentWidget(solara.widgets.Navigator)
-GridLayout = react.core.ComponentWidget(solara.widgets.GridLayout)
+GridDraggable = react.core.ComponentWidget(solara.widgets.GridLayout)
+# keep the old name for a while
+GridLayout = GridDraggable
+
+
+@react.component
+def ListItem(title, icon_name: str = None, children=[]):
+    if children:
+        with v.ListItem(value=title) as main:
+            v.ListItemTitle(children=[title])
+            with v.ListItemIcon():
+                v.Icon(children=[icon_name or ""])
+        return v.ListGroup(children=children, v_slots=[{"name": "activator", "children": main}], sub_group=True, value=True, append_icon=icon_name)
+    else:
+        with v.ListItem(value=title) as main:
+            with v.ListItemIcon():
+                v.Icon(children=[icon_name or ""])
+            v.ListItemTitle(children=[title])
+        return main
 
 
 def ui_dropdown(value="foo", options=["foo", "bar"], description="", key=None, disabled=False, **kwargs):
@@ -98,6 +116,49 @@ def Button(text: str = None, on_click=Callable[[], None], icon_name: str = None,
 @react.component
 def IconButton(icon_name: str = None, on_click=Callable[[], None], children: list = [], click_event="click", **kwargs):
     return Button(icon_name=icon_name, on_click=on_click, children=children, icon=True, click_event=click_event, **kwargs)
+
+
+@react.component
+def HTML(tag="div", unsafe_innerHTML=None, style: str = None, class_: str = None, **kwargs):
+    attributes = dict(style=style)
+    attributes["class"] = class_
+    attributes = {**kwargs, **attributes}
+    return solara.widgets.HTML.element(tag=tag, unsafe_innerHTML=unsafe_innerHTML, attributes=attributes)
+
+
+@react.component
+def VBox(children=[], grow=False):
+    style = "flex-direction: column;"
+    if grow:
+        style += "flex-grow: 1;"
+    return v.Card(class_="d-flex", style_=style, elevation=0, children=children)
+
+
+@react.component
+def HBox(children=[], grow=False):
+    style = "flex-direction: row;"
+    if grow:
+        style += "flex-grow: 1;"
+    return v.Card(class_="d-flex", style_=style, elevation=0, children=children)
+
+
+@react.component
+def GridFixed(columns=4, column_gap="10px", row_gap="10px", children=[], align_items="stretch", justify_items="stretch"):
+    """
+
+    See css grid spec:
+    https://css-tricks.com/snippets/css/complete-guide-grid/
+    """
+    style = (
+        f"display: grid; grid-template-columns: repeat({columns}, minmax(0, 1fr)); "
+        + f"grid-column-gap: {column_gap}; grid-row-gap: {row_gap}; align-items: {align_items}; justify-items: {justify_items}"
+    )
+    return Div(style_=style, children=children)
+
+
+@react.component
+def Padding(size, children=[], grow=False):
+    return v.Card(class_=f"pa-{size}", elevation=0, children=children)
 
 
 @react.component
@@ -197,7 +258,7 @@ def MarkdownIt(md_text: str, highlight: List[int] = []):
     html = md.render(md_text)
     # print(html)
 
-    return w.HTML(value=html)
+    return HTML(unsafe_innerHTML=html)
 
 
 @react.component
@@ -205,7 +266,8 @@ def Markdown(md_text: str):
     import markdown
 
     html = markdown.markdown(md_text, extensions=["pymdownx.highlight", "pymdownx.superfences", "pymdownx.emoji"])
-    return w.HTML(value=html)
+    # return w.HTML(value=html)
+    return HTML(unsafe_innerHTML=html)
 
 
 @react.component

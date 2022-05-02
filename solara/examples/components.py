@@ -105,7 +105,7 @@ Child components are layed out on a grid, which can be dragged and resized.
             set_grid_layout(grid_layout_initial)
 
         vue.use_event(btn, "click", reset_layout)
-        sol.GridLayout(items=items, grid_layout=grid_layout, resizable=resizable, draggable=draggable, on_grid_layout=set_grid_layout)
+        sol.GridDraggable(items=items, grid_layout=grid_layout, resizable=resizable, draggable=draggable, on_grid_layout=set_grid_layout)
 
         # some string kung fu to make this print nicely
         grid_layout_formatted = pprint.pformat(grid_layout, indent=4)

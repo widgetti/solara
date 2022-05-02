@@ -5,20 +5,6 @@ json_url = "https://jherr-pokemon.s3.us-west-1.amazonaws.com/index.json"
 
 
 @react.component
-def Grid(columns=4, column_gap="10px", row_gap="10px", children=[], align_items="stretch", justify_items="stretch"):
-    """
-
-    See css grid spec:
-    https://css-tricks.com/snippets/css/complete-guide-grid/
-    """
-    style = (
-        f"display: grid; grid-template-columns: repeat({columns}, minmax(0, 1fr)); "
-        + f"grid-column-gap: {column_gap}; grid-row-gap: {row_gap}; align-items: {align_items}; justify-items: {justify_items}"
-    )
-    return sol.Div(style_=style, children=children)
-
-
-@react.component
 def App():
     data = use_fetch(json_url)
     json = sol.use_json_load(data)
@@ -36,7 +22,7 @@ def App():
                     v.Label(children=[f"{len(pokemons)} pokemons found"])
                 else:
                     v.Label(children=[f"{len(pokemons)} pokemons in total"])
-                with Grid(align_items="end", justify_items="stretch"):
+                with sol.GridFixed(columns=4, align_items="end", justify_items="stretch"):
                     for pokemon in pokemons[:20]:
                         with sol.Div():
                             name = pokemon["name"]
