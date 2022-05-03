@@ -44,6 +44,6 @@ def FileDrop(on_total_progress, on_file, label="Drop file here"):
 
         on_file(wired_files[0])
 
-    _result, cancel, thread_is_done, error = hooks.use_thread(handle_file, [wired_files])
+    hooks.use_thread(handle_file, [wired_files])
 
     return file_drop
