@@ -9,6 +9,7 @@ import os
 import threading
 import time
 import urllib.request
+import uuid
 from typing import IO, Any, Callable, Optional, TypeVar, Union, cast
 
 import react_ipywidgets as react
@@ -25,6 +26,8 @@ __all__ = [
     "use_json_load",
     "use_json",
     "use_file_content",
+    "use_uuid4",
+    "use_unique_key",
 ]
 T = TypeVar("T")
 U = TypeVar("U")
@@ -223,3 +226,32 @@ def use_file_content(path, watch=False) -> FileContentResult[bytes]:
         return FileContentResult[bytes](error=content, retry=retry)
     else:
         return FileContentResult[bytes](value=content, retry=retry)
+
+
+def use_force_update() -> Callable[[], None]:
+    """Returns a callable that can be used to force an update of a component.
+
+    This is used when external state has change, and we need to re-render out component.
+    """
+    _counter, set_counter = react.use_state(0, "force update counter")
+
+    def updater():
+        set_counter(lambda count: count + 1)
+
+    return updater
+
+
+def use_uuid4(dependencies=[]):
+    """Generate a unique string using the uuid4 algorithm. Will only change when the dependencies change."""
+
+    @react.use_memo
+    def make_uuid(*_ignore):
+        return str(uuid.uuid4())
+
+    return make_uuid(dependencies)
+
+
+def use_unique_key(key: str = None, prefix: str = "", dependencies=[]):
+    """Generate a unique string, or use key when not None. Dependencies are forwarded to `use_uuid4`."""
+    uuid = use_uuid4(dependencies=dependencies)
+    return prefix + (key or uuid)

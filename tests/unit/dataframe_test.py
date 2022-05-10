@@ -14,7 +14,7 @@ from solara.components.dataframe import (
     SummaryCard,
     TableCard,
 )
-from solara.hooks.dataframe import provide_crossfilter, use_cross_filter
+from solara.hooks.dataframe import provide_cross_filter, use_cross_filter
 from solara.kitchensink import sol
 from solara.widgets import PivotTable
 
@@ -27,7 +27,7 @@ def test_histogram_card():
     @react.component
     def Test():
         nonlocal filter, set_filter
-        provide_crossfilter()
+        provide_cross_filter()
         filter, set_filter = use_cross_filter("test")
         return HistogramCard(df, column="sex")
 
@@ -51,7 +51,7 @@ def test_pivot_table():
     @react.component
     def Test():
         nonlocal filter, set_filter
-        provide_crossfilter()
+        provide_cross_filter()
         filter, set_filter = use_cross_filter("test")
         return PivotTableCard(df, x=["sex"], y=["survived"])
 
@@ -88,7 +88,7 @@ def test_dropdown_card():
     @react.component
     def Test(column=None):
         nonlocal filter, set_filter
-        provide_crossfilter()
+        provide_cross_filter()
         filter, set_filter = use_cross_filter("test")
         return DropdownCard(df, column=column)
 
@@ -110,7 +110,7 @@ def testfilter_card():
     @react.component
     def Test(column=None):
         nonlocal filter, set_filter
-        provide_crossfilter()
+        provide_cross_filter()
         filter, set_filter = use_cross_filter("test")
         return FilterCard(df)
 
@@ -132,7 +132,7 @@ def test_summary():
     @react.component
     def Test():
         nonlocal filter, set_filter
-        provide_crossfilter()
+        provide_cross_filter()
         filter, set_filter = use_cross_filter("test")
         return SummaryCard(df)
 
@@ -151,7 +151,7 @@ def test_table():
     @react.component
     def Test():
         nonlocal filter, set_filter
-        provide_crossfilter()
+        provide_cross_filter()
         filter, set_filter = use_cross_filter("test")
         return TableCard(df)
 
@@ -171,7 +171,7 @@ def test_heatmap():
     @react.component
     def Test():
         nonlocal filter, set_filter
-        provide_crossfilter()
+        provide_cross_filter()
         filter, set_filter = use_cross_filter("test")
         return HeatmapCard(df, x="age", y="fare", debounce=False)
 
@@ -186,7 +186,7 @@ def test_scatter():
     @react.component
     def Test():
         nonlocal filter, set_filter
-        provide_crossfilter()
+        provide_cross_filter()
         filter, set_filter = sol.use_cross_filter("test")
         return ScatterCard(df, x="age", y="fare")
 

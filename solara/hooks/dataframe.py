@@ -1,21 +1,79 @@
 import operator
 from functools import reduce
-from typing import Any, Dict, Optional, cast
+from typing import Any, Callable, Dict, List, TypeVar
 
 import numpy as np
 import react_ipywidgets as react
 
+from solara.hooks.misc import use_force_update, use_unique_key
+
 max_unique = 100
+T = TypeVar("T")
+
+__all__ = [
+    "df_type",
+    "df_unique",
+    "provide_cross_filter",
+    "use_cross_filter",
+    "use_df_pivot_data",
+    "use_df_column_names",
+    "max_unique",
+]
 
 
 def df_type(df):
     return df.__class__.__module__.split(".")[0]
 
 
-def provide_crossfilter(key: str = "crossfilter"):
-    crossfilter: Dict[str, Any]
-    crossfilter, set_crossfilter = react.use_state(cast(Dict[str, Any], {}))
-    react.provide_context(key, [crossfilter, set_crossfilter])
+class CrossFilterStore:
+    def __init__(self) -> None:
+        self.listeners: List[Callable] = []
+        self.filters: Dict[str, Any] = {}
+
+    def add(self, key, filter):
+        self.filters[key] = filter
+
+    def use(self, key):
+        # we use this state to trigger update, we could do without
+        updater = use_force_update()
+
+        filter, set_filter = react.use_state(self.filters.get(key))
+
+        def on_change():
+            set_filter(self.filters.get(key))
+            # even if we don't change our own filter, the other may change
+            updater()
+
+        def connect():
+            self.listeners.append(on_change)
+
+            def cleanup():
+                self.listeners.remove(on_change)
+                # also remove our filter, and notify the rest
+                del self.filters[key]
+                for listener in self.listeners:
+                    listener()
+
+            return cleanup
+
+        react.use_effect(connect, [key])
+
+        def setter(filter):
+            self.filters[key] = filter
+            for listener in self.listeners:
+                listener()
+
+        otherfilters = [filter for key_other, filter in self.filters.items() if key != key_other]
+        return filter, otherfilters, setter
+
+
+cross_filter_context = react.create_context(CrossFilterStore())
+
+
+def provide_cross_filter():
+    # create it once
+    cross_filter_object = react.use_memo(CrossFilterStore)()
+    cross_filter_context.provide(cross_filter_object)
 
 
 def df_unique(df, column, limit=None):
@@ -37,28 +95,22 @@ def use_df_column_names(df):
         raise TypeError(f"{type(df)} not supported")
 
 
-def use_cross_filter(filter_key: Optional[str], key: str = "crossfilter"):
-    crossfilter: Dict[str, Any]
-    crossfilter, set_crossfilter = react.use_context(key)
+def use_cross_filter(name, reducer: Callable[[T, T], T] = operator.and_):
+    """Provides cross filtering, all other filters are combined using the reducer.
 
-    def set_filter(filter):
-        crossfilter_copy = crossfilter.copy()
-        if filter_key:
-            crossfilter_copy[filter_key] = filter
-            set_crossfilter(crossfilter_copy)
-
-    otherfilters = [v for k, v in crossfilter.items() if k != filter_key and v is not None]
-    # def filter(df):
-    if 1:
-        if otherfilters:
-            #             otherfilters_expressions = [df[k] for k in otherfilters]
-            filter = reduce(operator.and_, otherfilters[1:], otherfilters[0])
-        #             print(filter)
-        # turn filter
-        else:
-            filter = None
-            # return None
-    return filter, set_filter
+    Cross filtering will collect a set of filters (from other components), and combine
+    them into a single filter, that excludes the filter we set for the current component.
+    This is often used in dashboards where a filter is defined in a visualization component,
+    but only applied to all other components.
+    """
+    key = use_unique_key(prefix=f"cross-filter-{name}-")
+    cross_filter_store = react.use_context(cross_filter_context)
+    _own_filter, otherfilters, set_filter = cross_filter_store.use(key)
+    if otherfilters:
+        cross_filter = reduce(reducer, otherfilters[1:], otherfilters[0])
+    else:
+        cross_filter = None
+    return cross_filter, set_filter
 
 
 def use_df_pivot_data(df, x, y, agg):
