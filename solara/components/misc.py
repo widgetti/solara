@@ -1,3 +1,4 @@
+import textwrap
 from typing import Callable, List
 
 import ipyvue as vue
@@ -228,6 +229,7 @@ def MarkdownIt(md_text: str, highlight: List[int] = []):
 
     # html = markdown.markdown(md, extensions=["codehilite"])
     # print(md, html)
+    md_text = textwrap.dedent(md_text)
 
     from markdown_it import MarkdownIt as MarkdownItMod
     from mdit_py_plugins import container, deflist  # noqa: F401
@@ -264,6 +266,8 @@ def MarkdownIt(md_text: str, highlight: List[int] = []):
 @react.component
 def Markdown(md_text: str):
     import markdown
+
+    md_text = textwrap.dedent(md_text)
 
     html = markdown.markdown(md_text, extensions=["pymdownx.highlight", "pymdownx.superfences", "pymdownx.emoji"])
     return HTML(unsafe_innerHTML=html)

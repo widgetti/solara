@@ -1,7 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-
 import ast
 import dataclasses
 import operator
@@ -10,6 +6,8 @@ from typing import Any, Optional
 import react_ipywidgets as react
 import react_ipywidgets.ipyvuetify as v
 
+import solara.util
+
 DEBUG = False
 operator_map = {
     "x": operator.mul,
@@ -17,6 +15,9 @@ operator_map = {
     "+": operator.add,
     "-": operator.sub,
 }
+
+
+github_url = solara.util.github_url(__file__)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -157,118 +158,5 @@ def Calculator():
     return main
 
 
+App = Calculator
 app = Calculator()
-
-# import react_ipywidgets.bqplot as bqplot
-# import react_ipywidgets as react
-# import ipywidgets as widgets
-
-# import numpy as np
-# x = np.linspace(-2, 2, 100)
-
-# @react.component_interactive(exponent=1.0, static={'x': x},
-#                            color=widgets.ColorPicker(value='red'),
-#                            line_width=widgets.FloatSlider(value=3, min=0.1, max=10),
-#                            log=True)
-# def Plot(exponent, x, color, line_width, log):
-#     y = (np.abs(x)+0.1) ** exponent
-
-#     scale_x = bqplot.LinearScale(min=-2, max=2.)
-#     if log:
-#         scale_y = bqplot.LogScale(min=0.01, max=5.)
-#     else:
-#         scale_y = bqplot.LinearScale(min=0, max=5.)
-#     lines = bqplot.Lines(x=x, y=y, scales={'x': scale_x, 'y': scale_y},
-#             stroke_width=line_width, colors=[color], display_legend=True, labels=['Line chart'])
-#     x_axis = bqplot.Axis(scale=scale_x)
-#     y_axis = bqplot.Axis(scale=scale_y, orientation="vertical")
-#     axes = [x_axis, y_axis]
-#     return bqplot.Figure(axes=axes, marks=[lines], scale_x=scale_x, scale_y=scale_y)
-
-# app = Plot
-# from bqplot import pyplot as plt
-# import ipyvuetify as v
-# import ipywidgets as widgets
-# import numpy as np
-
-# import bqplot
-# exponent = 1.2
-# x = np.arange(-2, 2, 0.01)
-# y = (np.abs(x)+0.1) ** exponent
-# log = False
-# line_width = 1.
-# color = "red"
-
-# scale_x = bqplot.LinearScale(min=-2, max=2.)
-# if log:
-#     scale_y = bqplot.LogScale(min=0.01, max=5.)
-# else:
-#     scale_y = bqplot.LinearScale(min=0, max=5.)
-# lines = bqplot.Lines(x=x, y=y, scales={'x': scale_x, 'y': scale_y},
-#         stroke_width=line_width, colors=[color], display_legend=True, labels=['Line chart'])
-# x_axis = bqplot.Axis(scale=scale_x)
-# y_axis = bqplot.Axis(scale=scale_y, orientation="vertical")
-# axes = [x_axis, y_axis]
-# app = bqplot.Figure(axes=axes, marks=[lines], scale_x=scale_x, scale_y=scale_y)
-
-
-# # generate some fake data
-# np.random.seed(0)
-# n = 2000
-# x = np.linspace(0.0, 10.0, n)
-# y = np.cumsum(np.random.randn(n)*2. - 1.)#.astype(int)
-# # print("HEY " * 100)
-# # print(y)
-
-# # create a bqplot figure
-# fig_hist = plt.figure(title='Histogram')
-# hist = plt.hist(y, bins=25)
-
-# app = fig_hist
-# # slider
-# slider = v.Slider(thumb_label='always', class_="px-4", v_model=30)
-# widgets.link((slider, 'v_model'), (hist, 'bins'))
-
-# fig_lines = plt.figure( title='Line Chart')
-# lines = plt.plot(x, y)
-
-# # even handling
-# selector = plt.brush_int_selector()
-# def update_range(*ignore):
-#     if selector.selected is not None and len(selector.selected) == 2:
-#         xmin, xmax = selector.selected
-#         mask = (x > xmin) & (x < xmax)
-#         hist.sample = y[mask]
-# selector.observe(update_range, 'selected')
-
-
-# # control for linestyle
-# line_styles = ['dashed', 'solid', 'dotted']
-# widget_line_styles = v.Select(items=line_styles, label='line style', v_model=line_styles[0])
-# widgets.link((widget_line_styles, 'v_model'), (lines, 'line_style'));
-
-# display(
-#     v.Layout(pa_4=True, _metadata={'mount_id': 'content-nav'}, column=True, children=[slider, widget_line_styles])
-# )  # use display to support the default template
-
-
-# fig_hist.layout.width = 'auto'
-# fig_hist.layout.height = 'auto'
-# fig_hist.layout.min_height = '300px' # so it still shows nicely in the notebook
-
-# fig_lines.layout.width = 'auto'
-# fig_lines.layout.height = 'auto'
-# fig_lines.layout.min_height = '300px' # so it still shows nicely in the notebook
-
-
-# app =  v.Layout(
-#                     _metadata={'mount_id': 'content-main'},
-#                     row=True, wrap=True, align_center=True, children=[
-#                     v.Flex(xs12=True, lg6=True, children=[
-#                         fig_hist
-#                     ]),
-#                     v.Flex(xs12=True, lg6=True, children=[
-#                         fig_lines
-#                     ]),
-#                 ])
-# # # display(content_main)  # since we are not in a notebook, for default template

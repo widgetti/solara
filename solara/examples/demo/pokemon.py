@@ -1,6 +1,8 @@
 from solara.hooks.misc import use_fetch
 from solara.kitchensink import react, sol, v
 
+github_url = sol.util.github_url(__file__)
+
 json_url = "https://jherr-pokemon.s3.us-west-1.amazonaws.com/index.json"
 
 
