@@ -23,6 +23,7 @@ dependencies = [
     "mdit-py-plugins",
     "humanize",
     "ipyvuetify",
+    "numpy",
 ]
 
 [tool.flit.module]
