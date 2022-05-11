@@ -1,10 +1,11 @@
+import json
 import logging
 import os
 import pdb
 import sys
 import traceback
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 from uuid import uuid4
 
 import ipywidgets as widgets
@@ -13,9 +14,9 @@ import react_ipywidgets
 from jupyter_core.paths import jupyter_config_path
 from react_ipywidgets.core import Element, render
 
-from . import app, reload, settings
+from . import app, reload, settings, websocket
 from .app import AppContext, AppScript
-from .kernel import Kernel
+from .kernel import BytesWrap, Kernel, WebsocketStreamWrapper
 
 # templates = Jinja2Templates(directory=str(directory / "templates"))
 directory = Path(__file__).parent
@@ -25,6 +26,84 @@ jinja_loader = jinja2.FileSystemLoader(str(directory / "templates"))
 jinja_env = jinja2.Environment(loader=jinja_loader, autoescape=True)
 solara_app = AppScript(os.environ.get("SOLARA_APP", "solara.examples:app"))
 logger = logging.getLogger("solara.server.server")
+
+
+async def app_loop(ws: websocket.WebsocketWrapper, context_id: Optional[str]):
+    if context_id is None:
+        logging.warning(f"no context id cookie set ({app.COOKIE_KEY_CONTEXT_ID})")
+        ws.close()
+        return
+    context = app.contexts.get(context_id)
+    if context is None:
+        logging.warning("invalid context id: %r", context_id)
+        ws.close()
+        return
+
+    kernel = context.kernel
+    kernel.shell_stream = WebsocketStreamWrapper(ws, "shell")
+    kernel.control_stream = WebsocketStreamWrapper(ws, "control")
+
+    # should we use excepthook ?
+    kernel.session.websockets.add(ws)
+    if True:
+        while True:
+            try:
+                message = ws.receive()
+            except websocket.WebSocketDisconnect:
+                logger.debug("Disconnected")
+                return
+            # print(">>> ", message)
+            if isinstance(message, str):
+                msg = json.loads(message)
+            else:
+                from jupyter_server.base.zmqhandlers import deserialize_binary_message
+
+                msg = deserialize_binary_message(message)
+
+            msg_serialized = kernel.session.serialize(msg)
+            channel = msg["channel"]
+            if channel == "shell":
+                msg = [BytesWrap(k) for k in msg_serialized]
+                # TODO: because we use await, we probably need to use a context
+                # manager that sets the app context in a async context, not just thread context
+                with context:
+                    await kernel.dispatch_shell(msg)
+            else:
+                print("unknown channel", msg["channel"])
+
+
+def control_loop(ws: websocket.WebsocketWrapper, context_id: Optional[str]):
+    if context_id is None:
+        ws.send_json({"type": "error", "reason": "no context id found in cookie"})
+        ws.close()
+        return
+    context = app.contexts.get(context_id)
+    if context:
+        app.contexts[context_id].control_sockets.append(ws)
+    ok = True
+    while ok:
+        try:
+            msg = ws.receive_json()
+            if msg["type"] == "state_reset":
+                logger.info(f"reset state for context {context_id}")
+                if context:
+                    context.state_reset()
+                ws.send_json({"type": "reload", "reason": "context id does not exist (server reload?)"})
+            else:
+                logger.error("Unknown msg: {msg}")
+        except Exception:
+            context = app.contexts.get(context_id)
+            if context:
+                try:
+                    context.control_sockets.remove(ws)
+                except ValueError:
+                    pass  # could be removed from kernel.py
+            ok = False
+            # make sure it is closed
+            try:
+                ws.close()
+            except:  # noqa
+                pass
 
 
 def run_app(app_state):
@@ -150,3 +229,32 @@ async def read_root(context_id: Optional[str], base_url: str = ""):
     template: jinja2.Template = jinja_env.get_template(template_name)
     response = template.render(**{"model_id": model_id, "base_url": base_url, "resources": resources})
     return response, context_id
+
+
+def find_prefixed_directory(path):
+    prefixes = [sys.prefix, os.path.expanduser("~/.local")]
+    for prefix in prefixes:
+        directory = f"{prefix}{path}"
+        if Path(directory).exists():
+            return directory
+    else:
+        raise RuntimeError(f"{path} not found at prefixes: {prefixes}")
+
+
+def get_nbextensions_directories() -> List[Path]:
+    from jupyter_core.paths import jupyter_path
+
+    all_nb_directories = jupyter_path("nbextensions")
+    # FIXME: remove IPython nbextensions path after a migration period
+    try:
+        from IPython.paths import get_ipython_dir
+    except ImportError:
+        pass
+    else:
+        all_nb_directories.append(Path(get_ipython_dir()) / "nbextensions")
+    return [Path(k) for k in all_nb_directories]
+
+
+nbextensions_directories = get_nbextensions_directories()
+voila_static = find_prefixed_directory("/share/jupyter/voila/templates/base/static")
+nbconvert_static = find_prefixed_directory("/share/jupyter/nbconvert/templates/lab/static")

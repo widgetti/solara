@@ -120,7 +120,7 @@ def get_current_context() -> AppContext:
             f"Tried to get the current context for thread {thread_key}, but no known context found. This might be a bug in Solara. "
             f"(known contexts: {list(current_context.keys())}"
         )
-    context = current_context.get(thread_key)
+    context = current_context[thread_key]
     if context is None:
         raise RuntimeError(
             f"Tried to get the current context for thread {thread_key}, although the context is know, it was not set for this thread. "

@@ -1,61 +1,52 @@
 import asyncio
-import json
 import logging
 import os
-import sys
 import typing
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Optional, Union, cast
 
-import websockets.exceptions
-from fastapi import APIRouter, FastAPI, Request, WebSocket, WebSocketDisconnect
+import anyio
+import starlette.websockets
+from fastapi import APIRouter, FastAPI, Request
 from fastapi.responses import HTMLResponse
 from starlette.staticfiles import StaticFiles
 
 from . import app as appmod
-from . import patch, server
-from .kernel import BytesWrap, WebsocketStreamWrapper
+from . import patch, server, websocket
 
 logger = logging.getLogger("solara.server.fastapi")
-
+# if we add these to the router, the server_test does not run (404's)
+prefix = ""
+router = APIRouter()
 directory = Path(__file__).parent
 
 
-# if asyncio.get_event_loop():
-#     asyncio.create_task(server.solara_app.watch_app())
+class WebsocketWrapper(websocket.WebsocketWrapper):
+    ws: starlette.websockets.WebSocket
 
+    def __init__(self, ws: starlette.websockets.WebSocket, portal: anyio.from_thread.BlockingPortal) -> None:
+        self.ws = ws
+        self.portal = portal
 
-router = APIRouter()
+    def close(self):
+        self.portal.call(self.close)
 
+    def send_text(self, data: str) -> None:
+        self.portal.call(self.ws.send_text, data)
 
-# _kernel_spec = {
-#     "display_name": "widgett-kernel",
-#     "language": "python",
-#     "argv": ["python", "doesnotworkthisway"],
-#     "env": {},
-#     "language": "python",
-#     "interrupt_mode": "signal",
-#     "metadata": {},
-# }
+    def send_bytes(self, data: bytes) -> None:
+        self.portal.call(self.ws.send_bytes, data)
 
-
-# @router.get("/jupyter/api/kernelspecs")
-# def kernelspecs():
-#     return {"default": "flask_kernel", "kernelspecs": {"flask_kernel": {"name": "flask_kernel", "resources": {}, "spec": _kernel_spec}}}
-
-
-# @router.get("/jupyter/api/kernels")
-# @router.post("/jupyter/api/kernels")
-# def kernels_normal(request: Request):
-#     print(request)
-#     data = {
-#         "id": "4a8a8c6c-188c-40aa-8bab-3c79500a4b26",
-#         "name": "flask_kernel",
-#         "last_activity": "2018-01-30T19:32:04.563616Z",
-#         "execution_state": "starting",
-#         "connections": 0,
-#     }
-#     return JSONResponse(data, status_code=200)
+    def receive(self):
+        message = self.portal.call(self.ws.receive)
+        if "text" in message:
+            return message["text"]
+        elif "bytes" in message:
+            return message["bytes"]
+        elif message.get("type") == "websocket.disconnect":
+            raise websocket.WebSocketDisconnect()
+        else:
+            raise RuntimeError(f"Unknown message type {message}")
 
 
 @router.get("/jupyter/api/kernels/{id}")
@@ -64,105 +55,37 @@ async def kernels(id):
 
 
 @router.websocket("/jupyter/api/kernels/{id}/{name}")
-async def kernels2(ws: WebSocket, id, name, session_id: Optional[str] = None):
+async def kernels_connection(ws: starlette.websockets.WebSocket, id, name, session_id: Optional[str] = None):
     context_id = ws.cookies.get(appmod.COOKIE_KEY_CONTEXT_ID)
     logger.info("Solara kernel requested for context_id %s (%s, %s, %s)", context_id, id, name, session_id)
-    if context_id is None:
-        logging.warning(f"no context id cookie set ({appmod.COOKIE_KEY_CONTEXT_ID})")
-        await ws.close()
-        return
-    context = appmod.contexts.get(context_id)
-    if context is None:
-        logging.warning("invalid context id: %r", context_id)
-        await ws.close()
-        return
-
-    kernel = context.kernel
-    kernel.shell_stream = WebsocketStreamWrapper(ws, "shell")
-    kernel.control_stream = WebsocketStreamWrapper(ws, "control")
-
     await ws.accept()
-    # should we use excepthook ?
-    kernel.session.websockets.add(ws)
-    if True:
-        while True:
-            message = await ws.receive()
-            if message["type"] == "websocket.disconnect":
-                return
-            else:
-                if "text" in message:
-                    msg = json.loads(message["text"])
-                else:
-                    from jupyter_server.base.zmqhandlers import (
-                        deserialize_binary_message,
-                    )
 
-                    msg = deserialize_binary_message(message["bytes"])
+    def websocket_thread_runner(ws: starlette.websockets.WebSocket, context_id: str, portal: anyio.from_thread.BlockingPortal):
+        ws_wrapper = WebsocketWrapper(ws, portal)
+        anyio.run(server.app_loop, ws_wrapper, context_id)
 
-                msg_serialized = kernel.session.serialize(msg)
-                channel = msg["channel"]
-                if channel == "shell":
-                    msg = [BytesWrap(k) for k in msg_serialized]
-                    # TODO: because we use await, we probably need to use a context
-                    # manager that sets the app context in a async context, not just thread context
-                    with context:
-                        await kernel.dispatch_shell(msg)
-                else:
-                    print("unknown channel", msg["channel"])
+    # this portal allows us to sync call the websocket calls from this current event loop we are in
+    # each websocket however, is handled from a separate thread
+    async with anyio.from_thread.BlockingPortal() as portal:
+        thread_return = anyio.to_thread.run_sync(websocket_thread_runner, ws, context_id, portal)
+        await asyncio.gather(portal.sleep_until_stopped(), thread_return)
 
 
 @router.websocket("/solara/watchdog/")
-async def watchdog(ws: WebSocket):
-    context_id = ws.cookies.get(appmod.COOKIE_KEY_CONTEXT_ID)
-    logger.debug("Watchdog connection for context id %r", context_id)
+async def watchdog(ws: starlette.websockets.WebSocket):
     await ws.accept()
-    if context_id is None:
-        await ws.send_json({"type": "reload", "reason": "no context id found in cookie"})
-        await ws.close()
-        return
-    context = appmod.contexts.get(context_id)
-    if context:
-        appmod.contexts[context_id].control_sockets.append(ws)
-    ok = True
+    context_id = ws.cookies.get(appmod.COOKIE_KEY_CONTEXT_ID)
 
-    async def receive_messages():
-        while True:
-            try:
-                text = await ws.receive_text()
-            except (WebSocketDisconnect, OSError, RuntimeError):
-                # closed, so ignore
-                return
-            msg = json.loads(text)
-            if msg["type"] == "state_reset":
-                logger.info(f"reset state for context {context_id}")
-                if context:
-                    context.state_reset()
-                await ws.send_json({"type": "reload", "reason": "context id does not exist (server reload?)"})
-            else:
-                logger.error("Unknown msg: {msg}")
+    def websocket_thread_runner(ws: starlette.websockets.WebSocket, context_id: str, portal: anyio.from_thread.BlockingPortal):
+        ws_wrapper = WebsocketWrapper(ws, portal)
+        # anyio.run(server.app_loop, ws_wrapper, context_id)
+        server.control_loop(ws_wrapper, context_id)
 
-    asyncio.create_task(receive_messages())
-    while ok:
-        try:
-            if context_id not in appmod.contexts:
-                logger.debug("Watchdog connection closed: context id %r does not exist", context_id)
-                await ws.send_json({"type": "reload", "reason": "context id does not exist (server reload?)"})
-            else:
-                await ws.send_json({"type": "ping", "reason": "check connection"})
-            await asyncio.sleep(0.5)
-        except (websockets.exceptions.ConnectionClosed, RuntimeError):
-            context = appmod.contexts.get(context_id)
-            if context:
-                logger.debug("Watchdog connection for context id %r", context_id)
-                try:
-                    context.control_sockets.remove(ws)
-                except ValueError:
-                    pass
-            ok = False
-            try:
-                await ws.close()
-            except RuntimeError:
-                pass  # double close?
+    # this portal allows us to sync call the websocket calls from this current event loop we are in
+    # each websocket however, is handled from a separate thread
+    async with anyio.from_thread.BlockingPortal() as portal:
+        thread_return = anyio.to_thread.run_sync(websocket_thread_runner, ws, context_id, portal)
+        await asyncio.gather(portal.sleep_until_stopped(), thread_return)
 
 
 @router.get("/")
@@ -189,42 +112,13 @@ class StaticNbFiles(StaticFiles):
     def get_directories(
         self, directory: Union[str, "os.PathLike[str]", None] = None, packages: typing.List[str] = None
     ) -> List[Union[str, "os.PathLike[str]"]]:
-        all_nb_directories = []
-        from jupyter_core.paths import jupyter_path
-
-        all_nb_directories = jupyter_path("nbextensions")
-        # FIXME: remove IPython nbextensions path after a migration period
-        try:
-            from IPython.paths import get_ipython_dir
-        except ImportError:
-            pass
-        else:
-            all_nb_directories.append(os.path.join(get_ipython_dir(), "nbextensions"))
-        return [Path(k) for k in all_nb_directories]
-
-
-# if we add these to the router, the server_test does not run (404's)
-home = sys.prefix
-
-
-prefix = ""
-
-
-def add_static(url, path):
-    prefixes = [sys.prefix, os.path.expanduser("~/.local")]
-    for prefix in prefixes:
-        directory = f"{prefix}{path}"
-        if Path(directory).exists():
-            app.mount(url, StaticFiles(directory=directory), name="static")
-            break
-    else:
-        raise RuntimeError(f"{path} not found at prefixes: {prefixes}")
+        return cast(List[Union[str, "os.PathLike[str]"]], server.nbextensions_directories)
 
 
 app = FastAPI()
-add_static(f"{prefix}/static/dist", "/share/jupyter/voila/templates/base/static")
+app.mount(f"{prefix}/static/dist", StaticFiles(directory=server.voila_static))
 app.mount(f"{prefix}/static", StaticFiles(directory=directory / "static"))
-add_static(f"{prefix}/solara/static", "/share/jupyter/nbconvert/templates/lab/static")
+app.mount(f"{prefix}/solara/static", StaticFiles(directory=server.nbconvert_static))
 app.mount(f"{prefix}/voila/nbextensions", StaticNbFiles())
 
 app.include_router(router=router, prefix=prefix)

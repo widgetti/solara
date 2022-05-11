@@ -1,11 +1,14 @@
 import contextlib
 import logging
+import os
 import sys
 import threading
 import time
-from typing import Union
+from http.server import HTTPServer
+from typing import Optional, Union
 
 import pytest
+import uvicorn.server
 
 import solara.server.app
 import solara.server.server
@@ -14,7 +17,13 @@ from solara.server.fastapi import app as app_starlette
 
 logger = logging.getLogger("solara-test.integration")
 
-TEST_PORT = 18765
+worker = os.environ.get("PYTEST_XDIST_WORKER", "gw0")
+TEST_PORT = 18765 + 2 + int(worker[2:])
+SERVER = os.environ.get("SOLARA_SERVER")
+if SERVER:
+    SERVERS = [SERVER]
+else:
+    SERVERS = ["flask", "starlette"]
 
 
 # see https://github.com/microsoft/playwright-pytest/issues/23
@@ -24,8 +33,8 @@ def context(context):
     yield context
 
 
-class Server(threading.Thread):
-    def __init__(self, port, host="localhost", **kwargs):
+class ServerBase(threading.Thread):
+    def __init__(self, port: int, host: str = "localhost", **kwargs):
         self.port = port
         self.host = host
         self.base_url = f"http://{self.host}:{self.port}"
@@ -33,8 +42,9 @@ class Server(threading.Thread):
         self.kwargs = kwargs
         self.started = threading.Event()
         self.stopped = threading.Event()
-        self.error = None
-        super().__init__(name="fastapi-thread")
+        self.error: Optional[BaseException] = None
+        self.server = None
+        super().__init__(name="test-server-thread")
         self.setDaemon(True)
 
     def run(self):
@@ -55,23 +65,60 @@ class Server(threading.Thread):
             raise self.error
 
     def wait_until_serving(self):
-        url = f"http://{self.host}:{self.port}/"
-        for n in range(10):
-            # try:
-            #     response = requests.get(url)
-            # except requests.exceptions.ConnectionError:
-            #     pass
-            # else:
-            #     if response.status_code == 200:
-            #         return
-            if self.server.started:
+        for n in range(30):
+            if self.has_started():
+                time.sleep(0.1)  # give some time to really start
                 return
             time.sleep(0.05)
         else:
-            raise RuntimeError(f"Server at {url} does not seem to be running")
+            raise RuntimeError(f"Server at {self.base_url} does not seem to be running")
+
+    def serve(self):
+        raise NotImplementedError
 
     def mainloop(self):
         logger.info("serving at http://%s:%d" % (self.host, self.port))
+        try:
+            self.serve()
+        except:  # noqa: E722
+            logger.exception("Oops, server stopped unexpectedly")
+        finally:
+            self.stopped.set()
+
+    def stop_serving(self):
+        logger.debug("stopping server")
+        self.signal_stop()
+        self.stopped.wait(10)
+        if not self.stopped.is_set():
+            logger.error("stopping server failed")
+        else:
+            logger.debug("stopped server")
+
+    def signal_stop(self):
+        pass
+
+    def has_started(self) -> bool:
+        return False
+
+
+class ServerStarlette(ServerBase):
+    server: uvicorn.server.Server
+
+    def has_started(self):
+        return self.server.started
+
+    def signal_stop(self):
+        self.server.should_exit = True
+        # this cause uvicorn to not wait for background tasks, e.g.:
+        # <Task pending name='Task-55'
+        #  coro=<WebSocketProtocol.run_asgi() running at
+        #  /.../uvicorn/protocols/websockets/websockets_impl.py:184>
+        # wait_for=<Future pending cb=[<TaskWakeupMethWrapper object at 0x16896aa00>()]>
+        # cb=[WebSocketProtocol.on_task_complete()]>
+        self.server.force_exit = True
+        self.server.lifespan.should_exit = True
+
+    def serve(self):
 
         from uvicorn.config import Config
         from uvicorn.server import Server
@@ -87,32 +134,56 @@ class Server(threading.Thread):
         config = Config(app_starlette, host=self.host, port=self.port, **self.kwargs, loop="asyncio")
         self.server = Server(config=config)
         self.started.set()
+        self.server.run()
+
+
+def _serve_flask_in_process(port, host):
+    from solara.server.flask import app
+
+    app.run(debug=False, port=port, host=host)
+
+
+class ServerFlask(ServerBase):
+    def has_started(self):
+        import socket
+
+        s = socket.socket()
         try:
-            self.server.run()
-        except:  # noqa: E722
-            logger.exception("Oops, server stopped unexpectedly")
-        finally:
-            self.stopped.set()
+            s.connect((self.host, self.port))
+        except ConnectionRefusedError:
+            return False
+        return True
 
-    def stop_serving(self):
-        logger.debug("stopping server")
-        print("STOP IT!")
-        self.server.should_exit = True
-        self.server.lifespan.should_exit = True
-        self.stopped.wait(10)
-        if not self.stopped.is_set():
-            logger.error("stopping server failed")
-        else:
-            logger.debug("stopped server")
+    def signal_stop(self):
+        assert isinstance(self.server, HTTPServer)
+        self.server.shutdown()  # type: ignore
+
+    def serve(self):
+        from werkzeug.serving import make_server
+
+        from solara.server.flask import app
+
+        self.server = make_server(self.host, self.port, app, threaded=True)  # type: ignore
+        assert isinstance(self.server, HTTPServer)
+        self.started.set()
+        self.server.serve_forever(poll_interval=0.05)  # type: ignore
 
 
-@pytest.fixture()  # scope="module")
-def solara_server():
+server_classes = {
+    "flask": ServerFlask,
+    "starlette": ServerStarlette,
+}
+
+
+@pytest.fixture(params=SERVERS)
+def solara_server(request):
+    server_class = server_classes[request.param]
     global TEST_PORT
-    webserver = Server(TEST_PORT)
-    webserver.serve_threaded()
-    webserver.wait_until_serving()
+    webserver = server_class(TEST_PORT)
+
     try:
+        webserver.serve_threaded()
+        webserver.wait_until_serving()
         yield webserver
     finally:
         webserver.stop_serving()

@@ -1,7 +1,7 @@
 import json
 import logging
 import struct
-from typing import Any, Set
+from typing import Set
 
 import ipykernel.kernelbase
 import jupyter_client.session as session
@@ -10,7 +10,7 @@ from jupyter_client.jsonutil import json_default
 from jupyter_client.session import json_packer
 from zmq.eventloop.zmqstream import ZMQStream
 
-WebSocket = Any
+from . import websocket
 
 # from notebook.base.zmqhandlers import serialize_binary_message
 # this saves us a depdendency on notebook/jupyter_server when e.g.
@@ -70,47 +70,19 @@ class WebsocketStreamWrapper(ZMQStream):
         pass
 
 
-def send_websockets(websockets, binary_msg):
-    # for pyiodide/flask we can do sth like this
-    # for ws in list(self.websockets):
-    #     ws.send(binary_msg)
-    for ws in websockets:
-
-        async def sendit(binary_msg, ws=ws):
-            try:
-                await ws.send_bytes(binary_msg)
-            except Exception:
-                if ws in websockets:
-                    websockets.remove(ws)
-
+def send_websockets(websockets: Set[websocket.WebsocketWrapper], binary_msg):
+    for ws in list(websockets):
         try:
-            import asyncio
-
-            try:
-                loop = asyncio.get_event_loop()
-                had_loop = True
-            except RuntimeError:
-                had_loop = False
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-            if loop is None:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-            if not had_loop:
-                asyncio.run(sendit(binary_msg))
-            else:
-                try:
-                    asyncio.create_task(sendit(binary_msg))
-                except RuntimeError:
-                    asyncio.run(sendit(binary_msg))
-        except:  # noqa: E722
-            logging.exception("sending websocket")
+            ws.send(binary_msg)
+        except:  # noqa
+            # in case of any issue, we simply remove it from the list
+            websockets.remove(ws)
 
 
 class SessionWebsocket(session.Session):
     def __init__(self, *args, **kwargs):
         super(SessionWebsocket, self).__init__(*args, **kwargs)
-        self.websockets: Set[WebSocket] = set()  # map from .. msg id to websocket?
+        self.websockets: Set[websocket.WebsocketWrapper] = set()  # map from .. msg id to websocket?
 
     def send(self, stream, msg_or_type, content=None, parent=None, ident=None, buffers=None, track=False, header=None, metadata=None):
         try:
@@ -121,11 +93,6 @@ class SessionWebsocket(session.Session):
                 binary_msg = serialize_binary_message(msg)
             else:
                 binary_msg = json_packer(msg).decode("utf8")
-            # if not self.websockets:
-            #     print("unknown", msg)
-            # else:
-            #     print(self.websockets)
-            # print(msg, self.websockets)
             send_websockets(self.websockets, binary_msg)
         except Exception as e:
             print(e)

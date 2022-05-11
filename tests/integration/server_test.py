@@ -49,18 +49,18 @@ def test_docs_basics(page: playwright.sync_api.Page, solara_server, solara_app):
         page.locator("text=Altair is supported").wait_for()
         page.screenshot(path="tmp/screenshot_altair.png")
 
-        page.locator("text=Docs").click()
-        page.screenshot(path="tmp/screenshot_debug.png")
-        page.locator('div[role="tab"]:has-text("use_state")').wait_for()
-        page.screenshot(path="tmp/screenshot_docs.png")
+        # page.locator("text=Docs").click()
+        # page.screenshot(path="tmp/screenshot_debug.png")
+        # page.locator('div[role="tab"]:has-text("use_state")').wait_for()
+        # page.screenshot(path="tmp/screenshot_docs.png")
 
-        page.locator('div[role="tab"]:has-text("use_state")').click()
-        page.locator("text=use_state can be used").wait_for()
-        page.screenshot(path="tmp/screenshot_use_state.png")
+        # page.locator('div[role="tab"]:has-text("use_state")').click()
+        # page.locator("text=use_state can be used").wait_for()
+        # page.screenshot(path="tmp/screenshot_use_state.png")
 
-        page.locator('div[role="tab"]:has-text("use_effect")').click()
-        page.locator("text=use_side_effect can be used").wait_for()
-        page.screenshot(path="tmp/screenshot_use_effect.png")
+        # page.locator('div[role="tab"]:has-text("use_effect")').click()
+        # page.locator("text=use_side_effect can be used").wait_for()
+        # page.screenshot(path="tmp/screenshot_use_effect.png")
 
 
 @react.component

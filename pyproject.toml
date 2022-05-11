@@ -55,6 +55,10 @@ server = [
     "fastapi",
     "voila",
 ]
+flask = [
+    "flask",
+    "flask-sock",
+]
 examples = [
     "numpy",
     "bqplot",
