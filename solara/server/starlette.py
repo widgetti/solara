@@ -7,8 +7,10 @@ from typing import List, Optional, Union, cast
 
 import anyio
 import starlette.websockets
-from fastapi import APIRouter, FastAPI, Request
-from fastapi.responses import HTMLResponse
+from starlette.applications import Starlette
+from starlette.requests import Request
+from starlette.responses import HTMLResponse, JSONResponse
+from starlette.routing import Mount, Route, WebSocketRoute
 from starlette.staticfiles import StaticFiles
 
 from . import app as appmod
@@ -17,7 +19,6 @@ from . import patch, server, websocket
 logger = logging.getLogger("solara.server.fastapi")
 # if we add these to the router, the server_test does not run (404's)
 prefix = ""
-router = APIRouter()
 directory = Path(__file__).parent
 
 
@@ -49,15 +50,13 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
             raise RuntimeError(f"Unknown message type {message}")
 
 
-@router.get("/jupyter/api/kernels/{id}")
 async def kernels(id):
-    return {"name": "lala", "id": "dsa"}
+    return JSONResponse({"name": "lala", "id": "dsa"})
 
 
-@router.websocket("/jupyter/api/kernels/{id}/{name}")
-async def kernels_connection(ws: starlette.websockets.WebSocket, id, name, session_id: Optional[str] = None):
+async def kernel_connection(ws: starlette.websockets.WebSocket):
     context_id = ws.cookies.get(appmod.COOKIE_KEY_CONTEXT_ID)
-    logger.info("Solara kernel requested for context_id %s (%s, %s, %s)", context_id, id, name, session_id)
+    logger.info("Solara kernel requested for context_id %s", context_id)
     await ws.accept()
 
     def websocket_thread_runner(ws: starlette.websockets.WebSocket, context_id: str, portal: anyio.from_thread.BlockingPortal):
@@ -71,7 +70,6 @@ async def kernels_connection(ws: starlette.websockets.WebSocket, id, name, sessi
         await asyncio.gather(portal.sleep_until_stopped(), thread_return)
 
 
-@router.websocket("/solara/watchdog/")
 async def watchdog(ws: starlette.websockets.WebSocket):
     await ws.accept()
     context_id = ws.cookies.get(appmod.COOKIE_KEY_CONTEXT_ID)
@@ -88,9 +86,7 @@ async def watchdog(ws: starlette.websockets.WebSocket):
         await asyncio.gather(portal.sleep_until_stopped(), thread_return)
 
 
-@router.get("/")
-@router.get("/{fullpath}")
-async def read_root(request: Request, fullpath: Optional[str] = ""):
+async def root(request: Request, fullpath: Optional[str] = ""):
     root_path = request.scope.get("root_path", "")
     logger.debug("root_path: %s", root_path)
     if request.headers.get("script-name"):
@@ -115,12 +111,16 @@ class StaticNbFiles(StaticFiles):
         return cast(List[Union[str, "os.PathLike[str]"]], server.nbextensions_directories)
 
 
-app = FastAPI()
-app.mount(f"{prefix}/static/dist", StaticFiles(directory=server.voila_static))
-app.mount(f"{prefix}/static", StaticFiles(directory=directory / "static"))
-app.mount(f"{prefix}/solara/static", StaticFiles(directory=server.nbconvert_static))
-app.mount(f"{prefix}/voila/nbextensions", StaticNbFiles())
-
-app.include_router(router=router, prefix=prefix)
-
+routes = [
+    Route("/jupyter/api/kernels/{id}", endpoint=kernels),
+    WebSocketRoute("/jupyter/api/kernels/{id}/{name}", endpoint=kernel_connection),
+    WebSocketRoute("/solara/watchdog/", endpoint=watchdog),
+    Route("/", endpoint=root),
+    Route("/{fullpath}", endpoint=root),
+    Mount(f"{prefix}/static/dist", app=StaticFiles(directory=server.voila_static)),
+    Mount(f"{prefix}/static", app=StaticFiles(directory=directory / "static")),
+    Mount(f"{prefix}/solara/static", app=StaticFiles(directory=server.nbconvert_static)),
+    Mount(f"{prefix}/voila/nbextensions", app=StaticNbFiles()),
+]
+app = Starlette(routes=routes)
 patch.patch()

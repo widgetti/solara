@@ -13,7 +13,7 @@ If you also want to develop and deploy a more extensive application and prefer n
        * Auto reloading refreshes the page when you save your script or Jupyter notebook.
        * Your app state is restored after reload/restart: All tabs, checkboxes, etcetera will be as you set them.
    * An application server that:
-      * Runs on Starlette (used in FastAPI).
+      * Runs on Starlette (and thus FastAPI) and Flask.
       * Executes:
          * Python scripts
          * Python modules/packages
@@ -22,7 +22,7 @@ If you also want to develop and deploy a more extensive application and prefer n
      * You only need to display widgets
      * One kernel/process per request is becoming a bottleneck/cost issue.
      * Only care about using Python (e.g., not Julia, R)
-     * Are ok, or even prefers, to have your application code run in the same process as your web server (e.g., FastAPI, Starlette)
+     * Are ok, or even prefers, to have your application code run in the same process as your web server (e.g., Starlette/FastAPI, Flask)
 
 
 
@@ -133,6 +133,6 @@ Yes, Solara will execute each cell, and after that will look for a variable `app
 
 
 
-## Can I use Solara in my existing FastAPI/Starlette server?
+## Can I use Solara in my existing FastAPI/Starlette/Flask server?
 
-Yes, take a look at the `solara.server.fastapi` module. The usage will change over time, so read the source and be ready to change this in the future. We do plan to provide a stable API for this in the future.
+Yes, take a look at the `solara.server.starlette`  and `solara.server.fastapi` and `solara.server.flask` module. The usage will change over time, so read the source and be ready to change this in the future. We do plan to provide a stable API for this in the future.

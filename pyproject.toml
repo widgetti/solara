@@ -52,7 +52,7 @@ server = [
     "uvicorn",
     "watchgod",
     "websockets",
-    "fastapi",
+    "starlette",
     "voila",
 ]
 flask = [

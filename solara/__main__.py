@@ -211,7 +211,7 @@ def main(
 
     kwargs = locals().copy()
     os.environ["SOLARA_APP"] = app
-    kwargs["app"] = "solara.server.fastapi:app"
+    kwargs["app"] = "solara.server.starlette:app"
     kwargs["log_config"] = LOGGING_CONFIG if log_config is None else log_config
     settings.main.use_pdb = use_pdb
     for item in "use_pdb server open_browser open url failed dev".split():

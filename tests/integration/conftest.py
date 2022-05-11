@@ -13,7 +13,7 @@ import uvicorn.server
 import solara.server.app
 import solara.server.server
 from solara.server import reload
-from solara.server.fastapi import app as app_starlette
+from solara.server.starlette import app as app_starlette
 
 logger = logging.getLogger("solara-test.integration")
 
