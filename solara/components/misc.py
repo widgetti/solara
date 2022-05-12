@@ -1,15 +1,12 @@
-import textwrap
-from typing import Callable, List
+from typing import Callable
 
 import ipyvue as vue
-import pygments
 import react_ipywidgets as react
 import react_ipywidgets.ipyvuetify as v
 import react_ipywidgets.ipyvuetify as ipyvue
 import react_ipywidgets.ipywidgets as w
-from pygments.formatters import HtmlFormatter
-from pygments.lexers import get_lexer_by_name
 
+import solara as sol
 import solara.widgets
 
 PivotTable = react.core.ComponentWidget(solara.widgets.PivotTable)
@@ -219,67 +216,11 @@ def Image(data):
 
 
 @react.component
-def MarkdownIt(md_text: str, highlight: List[int] = []):
-    # # from myst_parser.main import to_html
-
-    # # html = to_html(md)
-    # import markdown
-
-    # # from ipywidgets import HTML
-
-    # html = markdown.markdown(md, extensions=["codehilite"])
-    # print(md, html)
-    md_text = textwrap.dedent(md_text)
-
-    from markdown_it import MarkdownIt as MarkdownItMod
-    from mdit_py_plugins import container, deflist  # noqa: F401
-    from mdit_py_plugins.footnote import footnote_plugin  # noqa: F401
-    from mdit_py_plugins.front_matter import front_matter_plugin  # noqa: F401
-
-    def highlight_code(code, name, attrs):
-        """Highlight a block of code"""
-        hl_lines = highlight
-        if attrs:
-            print(f"Ignoring {attrs}")
-
-        if name:
-            lexer = get_lexer_by_name(name)
-            formatter = HtmlFormatter(hl_lines=hl_lines)  # linenos=True)
-            return pygments.highlight(code, lexer, formatter)
-
-    md = MarkdownItMod(
-        "js-default",
-        {
-            # "linkify": True,
-            "html": True,
-            "typographer": True,
-            "highlight": highlight_code,
-        },
-    )
-    # tokens = md.parse(md)
-    md = md.use(container.container_plugin, name="note")
-    html = md.render(md_text)
-    # print(html)
-
-    return HTML(unsafe_innerHTML=html)
-
-
-@react.component
-def Markdown(md_text: str):
-    import markdown
-
-    md_text = textwrap.dedent(md_text)
-
-    html = markdown.markdown(md_text, extensions=["pymdownx.highlight", "pymdownx.superfences", "pymdownx.emoji"])
-    return HTML(unsafe_innerHTML=html)
-
-
-@react.component
 def Code(path, path_header=None):
     path_header = path_header or path
     with open(path) as f:
         code = f.read()
-    md = Markdown(
+    md = sol.Markdown(
         f"""
 ### {path_header}
 
