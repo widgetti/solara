@@ -208,7 +208,7 @@ def LongRunningEasier():
         else:
             set_state("Done")
 
-    result, _cancel, _done, _error = use_thread(work, [work_dependency])
+    use_thread(work, [work_dependency])
     with w.VBox() as main:
         w.Label(value=status)
         w.FloatProgress(value=progress)

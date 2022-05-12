@@ -33,7 +33,7 @@ if not os.path.exists(filename):
 
 conn = sqlite3.connect(filename)
 conn.row_factory = sqlite3.Row
-table_names = [k[0] for k in conn.execute("SELECT name FROM sqlite_schema WHERE type='table' ORDER BY name").fetchall()]
+table_names = [k[0] for k in conn.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").fetchall()]
 print(table_names)
 table_hints = {table_name: conn.execute(f"SELECT * from {table_name} LIMIT 1").fetchone().keys() for table_name in table_names}
 
