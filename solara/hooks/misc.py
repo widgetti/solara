@@ -46,7 +46,7 @@ def use_retry(*actions: Callable[[], Any]):
     return counter, retry
 
 
-def use_thread(callback=Callable[[threading.Event], Any], dependencies=[]):
+def use_thread(callback=Callable[[threading.Event], T], dependencies=[]) -> Result[T]:
     def make_event(*_ignore_dependencies):
         return threading.Event()
 
@@ -60,8 +60,6 @@ def use_thread(callback=Callable[[threading.Event], Any], dependencies=[]):
     counter, retry = use_retry(lambda: set_error(None))
 
     def run():
-        if error:
-            return
         result.current = None
         set_running(False)
         set_error(None)
@@ -94,7 +92,7 @@ def use_thread(callback=Callable[[threading.Event], Any], dependencies=[]):
 
     react.use_side_effect(run, dependencies + [counter])
     # return result, cancel.set, done, error
-    return Result(value=result.current, error=error, cancel=cancel.set, cancelled=cancelled, retry=retry)
+    return Result[T](value=result.current, error=error, cancel=cancel.set, cancelled=cancelled, retry=retry)
 
 
 def use_download(
@@ -146,7 +144,7 @@ def use_download(
                     set_downloaded_length(bytes_read)
         return bytes_read
 
-    result = use_thread(download, [f, url])
+    result: Result[Any] = use_thread(download, [f, url])
     # maybe we wanna check this
     # download_is_done = downloaded_length == content_length
 
