@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import os
 import typing
@@ -59,13 +58,27 @@ async def kernel_connection(ws: starlette.websockets.WebSocket):
 
     def websocket_thread_runner(ws: starlette.websockets.WebSocket, context_id: str, portal: anyio.from_thread.BlockingPortal):
         ws_wrapper = WebsocketWrapper(ws, portal)
-        anyio.run(server.app_loop, ws_wrapper, context_id)
+
+        async def run():
+            try:
+                await server.app_loop(ws_wrapper, context_id)
+            except:  # noqa
+                await portal.stop(cancel_remaining=True)
+                raise
+
+        anyio.run(run)
 
     # this portal allows us to sync call the websocket calls from this current event loop we are in
     # each websocket however, is handled from a separate thread
-    async with anyio.from_thread.BlockingPortal() as portal:
-        thread_return = anyio.to_thread.run_sync(websocket_thread_runner, ws, context_id, portal)
-        await asyncio.gather(portal.sleep_until_stopped(), thread_return)
+    try:
+        async with anyio.from_thread.BlockingPortal() as portal:
+            thread_return = anyio.to_thread.run_sync(websocket_thread_runner, ws, context_id, portal)
+            await thread_return
+    finally:
+        try:
+            await ws.close()
+        except:  # noqa
+            pass
 
 
 async def watchdog(ws: starlette.websockets.WebSocket):
@@ -74,14 +87,27 @@ async def watchdog(ws: starlette.websockets.WebSocket):
 
     def websocket_thread_runner(ws: starlette.websockets.WebSocket, context_id: str, portal: anyio.from_thread.BlockingPortal):
         ws_wrapper = WebsocketWrapper(ws, portal)
-        # anyio.run(server.app_loop, ws_wrapper, context_id)
-        server.control_loop(ws_wrapper, context_id)
+
+        async def run():
+            try:
+                server.control_loop(ws_wrapper, context_id)
+            except:  # noqa
+                await portal.stop(cancel_remaining=True)
+                raise
+
+        anyio.run(run)
 
     # this portal allows us to sync call the websocket calls from this current event loop we are in
     # each websocket however, is handled from a separate thread
-    async with anyio.from_thread.BlockingPortal() as portal:
-        thread_return = anyio.to_thread.run_sync(websocket_thread_runner, ws, context_id, portal)
-        await asyncio.gather(portal.sleep_until_stopped(), thread_return)
+    try:
+        async with anyio.from_thread.BlockingPortal() as portal:
+            thread_return = anyio.to_thread.run_sync(websocket_thread_runner, ws, context_id, portal)
+            await thread_return
+    finally:
+        try:
+            await ws.close()
+        except:  # noqa
+            pass
 
 
 async def root(request: Request, fullpath: Optional[str] = ""):

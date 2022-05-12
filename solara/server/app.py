@@ -1,4 +1,3 @@
-import asyncio
 import atexit
 import contextlib
 import dataclasses
@@ -245,20 +244,18 @@ class AppScript:
                 context.state_save(state_directory=state_directory)
                 context.close()
 
-            async def send_reload():
+            def send_reload():
                 reload = {
                     "type": "reload",
                     "reason": "app changed",
                 }
-                context_values = list(contexts.values())
-                contexts.clear()
                 for context in context_values:
                     context.state_save(state_directory=state_directory)
                     for socket in context.control_sockets:
                         print(socket)
-                        await socket.send_json(reload)
+                        socket.send_json(reload)
 
-            asyncio.run(send_reload())
+            send_reload()
 
 
 def state_store_all():

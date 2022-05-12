@@ -87,8 +87,7 @@ else:
 
         def on_modified(self, event):
             super(WatcherWatchdog, self).on_modified(event)
-            logger.info("Watch event: %s", event)
-            print("EVENT", event)
+            logger.debug("Watch event: %s", event)
             if not event.is_directory:
                 if event.src_path in self.files:
                     mtime_new = os.path.getmtime(event.src_path)

@@ -3,6 +3,7 @@ import logging
 import os
 import pdb
 import sys
+import time
 import traceback
 from pathlib import Path
 from typing import List, Optional
@@ -31,12 +32,14 @@ logger = logging.getLogger("solara.server.server")
 async def app_loop(ws: websocket.WebsocketWrapper, context_id: Optional[str]):
     if context_id is None:
         logging.warning(f"no context id cookie set ({app.COOKIE_KEY_CONTEXT_ID})")
-        ws.close()
+        # to avoid very fast reconnects (we are in a thread anyway)
+        time.sleep(0.5)
         return
     context = app.contexts.get(context_id)
     if context is None:
         logging.warning("invalid context id: %r", context_id)
-        ws.close()
+        # to avoid very fast reconnects (we are in a thread anyway)
+        time.sleep(0.5)
         return
 
     kernel = context.kernel
@@ -52,7 +55,6 @@ async def app_loop(ws: websocket.WebsocketWrapper, context_id: Optional[str]):
             except websocket.WebSocketDisconnect:
                 logger.debug("Disconnected")
                 return
-            # print(">>> ", message)
             if isinstance(message, str):
                 msg = json.loads(message)
             else:
@@ -64,8 +66,6 @@ async def app_loop(ws: websocket.WebsocketWrapper, context_id: Optional[str]):
             channel = msg["channel"]
             if channel == "shell":
                 msg = [BytesWrap(k) for k in msg_serialized]
-                # TODO: because we use await, we probably need to use a context
-                # manager that sets the app context in a async context, not just thread context
                 with context:
                     await kernel.dispatch_shell(msg)
             else:
@@ -74,13 +74,16 @@ async def app_loop(ws: websocket.WebsocketWrapper, context_id: Optional[str]):
 
 def control_loop(ws: websocket.WebsocketWrapper, context_id: Optional[str]):
     if context_id is None:
-        ws.send_json({"type": "error", "reason": "no context id found in cookie"})
+        ws.send_json({"type": "reload", "reason": "no context id found in cookie"})
         ws.close()
         return
     context = app.contexts.get(context_id)
+    if context is None:
+        ws.send_json({"type": "reload", "reason": "context does not exist (server reload?)"})
     if context:
         app.contexts[context_id].control_sockets.append(ws)
     ok = True
+
     while ok:
         try:
             msg = ws.receive_json()

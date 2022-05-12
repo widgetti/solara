@@ -149,7 +149,7 @@ def WidgetContextAwareThread__init__(self, *args, **kwargs):
     try:
         self.current_context = app.get_current_context()
     except RuntimeError:
-        logger.info(f"No context for thread {self}")
+        logger.debug(f"No context for thread {self}")
     if self.current_context:
         app.set_context_for_thread(self.current_context, self)
 
