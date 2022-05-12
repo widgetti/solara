@@ -1,3 +1,5 @@
+from typing import Dict, List
+
 import ipyvue
 import react_ipywidgets as react
 import traitlets
@@ -13,5 +15,5 @@ class SqlCodeWidget(ipyvue.VueTemplate):
 
 
 @react.component
-def SqlCode(label="Query", query=None, tables=None, on_query=None, height="180px"):
+def SqlCode(label="Query", query: str = None, tables: Dict[str, List[str]] = None, on_query=None, height="180px"):
     return SqlCodeWidget.element(label=label, query=query, tables=tables, on_query=on_query, height=height)
