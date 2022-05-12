@@ -2,7 +2,6 @@ import asyncio
 import logging
 import os
 import typing
-from pathlib import Path
 from typing import List, Optional, Union, cast
 
 import anyio
@@ -19,7 +18,6 @@ from . import patch, server, websocket
 logger = logging.getLogger("solara.server.fastapi")
 # if we add these to the router, the server_test does not run (404's)
 prefix = ""
-directory = Path(__file__).parent
 
 
 class WebsocketWrapper(websocket.WebsocketWrapper):
@@ -118,7 +116,7 @@ routes = [
     Route("/", endpoint=root),
     Route("/{fullpath}", endpoint=root),
     Mount(f"{prefix}/static/dist", app=StaticFiles(directory=server.voila_static)),
-    Mount(f"{prefix}/static", app=StaticFiles(directory=directory / "static")),
+    Mount(f"{prefix}/static", app=StaticFiles(directory=server.solara_static)),
     Mount(f"{prefix}/solara/static", app=StaticFiles(directory=server.nbconvert_static)),
     Mount(f"{prefix}/voila/nbextensions", app=StaticNbFiles()),
 ]
