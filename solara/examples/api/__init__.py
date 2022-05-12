@@ -2,7 +2,17 @@ import inspect
 
 from solara.kitchensink import react, sol, v
 
-from . import button, datatable, griddraggable, gridfixed, hbox, html, markdown, vbox
+from . import (
+    button,
+    datatable,
+    griddraggable,
+    gridfixed,
+    hbox,
+    html,
+    markdown,
+    sql_code,
+    vbox,
+)
 
 modules = {
     "Button": button,
@@ -13,14 +23,13 @@ modules = {
     "HBox": hbox,
     "Markdown": markdown,
     "HTML": html,
+    "SqlCode": sql_code,
 }
 
 
 @react.component
 def API():
-    tab, set_tab = react.use_state(0, "tab")
     selected, on_selected = react.use_state("Overview")
-    print("selected", selected)
     with sol.HBox(grow=True) as main:
         with v.NavigationDrawer(right=False, width="min-content", v_model=True, permanent=True):
             with v.List(dense=True):
@@ -34,6 +43,7 @@ def API():
                         sol.ListItem("HTML")
                         sol.ListItem("Image")
                         sol.ListItem("Code")
+                        sol.ListItem("SqlCode")
                     with sol.ListItem("Viz", icon_name="mdi-chart-histogram"):
                         sol.ListItem("FigurePlotly")
                         sol.ListItem("AltairChart")
@@ -79,7 +89,7 @@ def WithCode(module):
 """
                 )
         # It renders code better
-        sol.MarkdownIt(module.__doc__)
+        sol.MarkdownIt(module.__doc__ or "# no docs yet")
         sol.Button("Show code", on_click=lambda: set_show_code(True), class_="ma-4")
         component()
     return main
