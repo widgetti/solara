@@ -15,8 +15,8 @@ md = open(directory / "README.md").read()
 
 @react.component
 def Home():
-    with sol.Div() as main:
-        sol.Markdown(md)
+    with sol.Div(style_="padding: 10px") as main:
+        sol.MarkdownIt(md)
     return main
 
 
