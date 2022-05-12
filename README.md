@@ -25,6 +25,7 @@ If you only care about using Solara from the Jupyter notebook (classic or lab) o
 
 
 If you also want to develop and deploy a more extensive application and prefer not to program in a Jupyter notebook, or care about scaling your application, Solara is also:
+
    * An application server with a good Developer eXperience (DX):
        * Auto reloading refreshes the page when you save your script or Jupyter notebook.
        * Your app state is restored after reload/restart: All tabs, checkboxes, etcetera will be as you set them.
