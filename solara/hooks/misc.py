@@ -86,7 +86,10 @@ def use_thread(callback=Callable[[threading.Event], T], dependencies=[]) -> Resu
 
         def cleanup():
             cancel.set()  # cleanup for use effect
-            thread.join()
+            try:
+                thread.join()
+            except:  # noqa, can fail if the thread is already done
+                pass
 
         return cleanup
 
