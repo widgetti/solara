@@ -104,12 +104,12 @@ def Error(text, icon="mdi-alert", children=[], **kwargs):
 
 
 @react.component
-def Button(text: str = None, on_click=Callable[[], None], icon_name: str = None, children: list = [], click_event="click", **kwargs):
+def Button(text: str = None, on_click=Callable[[], None], icon_name: str = None, children: list = [], click_event="click", disabled=False, **kwargs):
     if text:
         children = [text] + children
     if icon_name:
         children = [v.Icon(left=True, children=[icon_name])] + children
-    btn = v.Btn(children=children, **kwargs)
+    btn = v.Btn(children=children, **kwargs, disabled=disabled)
     ipyvue.use_event(btn, click_event, lambda *_ignore: on_click and on_click())
     return btn
 
