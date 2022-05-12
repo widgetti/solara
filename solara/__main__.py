@@ -5,11 +5,15 @@ import threading
 import time
 import typing
 import webbrowser
+from pathlib import Path
 
+import react_ipywidgets
 import rich
 import rich_click as click
 import uvicorn
 from uvicorn.main import LEVEL_CHOICES
+
+import solara.server
 
 from .server import settings
 
@@ -174,8 +178,18 @@ def main(
 
     failed = False
     if dev:
-        reload_dirs = reload_dirs if reload_dirs else []
-        reload_dirs = list(reload_dirs) + list(find_all_packages_paths())
+        solara_root = Path(solara.__file__).parent
+
+        reload_dirs = list(reload_dirs if reload_dirs else [])
+
+        # we restart the server when solara or react changes, in priciple we should do
+        # that for all dependencies of the server, but these are changing most often
+        # during development
+        # We exclude exampes, that will be handled by solara/server/reload.py
+        reload_dirs = [str(solara_root), str(Path(react_ipywidgets.__file__).parent)]
+        reload_excludes = reload_excludes if reload_excludes else []
+        reload_excludes = [str(solara_root / "examples")]
+        del solara_root
         reload = True
 
     server = None
@@ -221,9 +235,18 @@ def main(
         nonlocal server
         nonlocal failed
         try:
+            # we manually create the server instead of calling uvicorn.run
+            # because we can then access the server variable and check if it is
+            # running.
             config = uvicorn.Config(**kwargs)
             server = uvicorn.Server(config=config)
-            server.run()
+            if reload:
+                sock = config.bind_socket()
+                from uvicorn.supervisors import ChangeReload
+
+                ChangeReload(config, target=server.run, sockets=[sock]).run()
+            else:
+                server.run()
         except:  # noqa
             failed = True
             raise
