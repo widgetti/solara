@@ -242,9 +242,10 @@ def MarkdownIt(md_text: str, highlight: List[int] = []):
         if attrs:
             print(f"Ignoring {attrs}")
 
-        lexer = get_lexer_by_name(name)
-        formatter = HtmlFormatter(hl_lines=hl_lines)  # linenos=True)
-        return pygments.highlight(code, lexer, formatter)
+        if name:
+            lexer = get_lexer_by_name(name)
+            formatter = HtmlFormatter(hl_lines=hl_lines)  # linenos=True)
+            return pygments.highlight(code, lexer, formatter)
 
     md = MarkdownItMod(
         "js-default",
