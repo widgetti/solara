@@ -259,9 +259,8 @@ class AppScript:
 
 
 def state_store_all():
-    print("Storing state:\n\n\n", list(contexts.keys()))
-    for name, context in contexts.items():
-        print(f"Storing for {name}")
+    logger.info("Storing context state to disk")
+    for context in contexts.values():
         context.state_save(state_directory=state_directory)
 
 
