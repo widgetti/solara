@@ -33,3 +33,9 @@ div.highlight pre code {
 .solara-progress .v-progress-circular__overlay {
     transition: none !important
 }
+
+
+/* see https://github.com/mariobuikhuizen/voila-vuetify/commit/70441763d9039dff2fe044f61a7651769a2151d4 */
+.v-application * {
+    box-sizing: border-box;
+}
