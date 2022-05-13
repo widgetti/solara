@@ -28,11 +28,14 @@
     </script>
     <script>
         var themeIsdark = {{ dark|tojson|safe }}
-        console.log('dark', themeIsdark)
         const themeIsdarkInStorage = JSON.parse(localStorage.getItem('vuetify.theme.dark'));
         if(themeIsdarkInStorage !== null)
             themeIsdark = themeIsdarkInStorage;
-        console.log('dark', themeIsdark)
+        if(themeIsdark == null) {
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+               themeIsdark = true;
+            }
+        }
         if ('{{resources.theme}}' === 'dark') {
             themeIsdark = true;
         }
@@ -178,6 +181,10 @@
             },
             mounted() {
                 document.querySelector('#app').removeAttribute("style");
+                // listen to change in preferred color scheme (e.g if choosing dark in OSX)
+                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+                     this.$vuetify.theme.dark = event.matches;
+                });
             },
             methods: {
                 stateReset() {

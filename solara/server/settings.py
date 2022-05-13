@@ -1,10 +1,12 @@
+from typing import Optional
+
 import pydantic
 
 
 class MainSettings(pydantic.BaseSettings):
     use_pdb: bool = False
     loader: str = "solara"
-    dark: bool = False
+    dark: Optional[bool] = None
 
     class Config:
         env_prefix = "solara_"
