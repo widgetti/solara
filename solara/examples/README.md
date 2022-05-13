@@ -46,7 +46,7 @@ If you also want to develop and deploy a more extensive application and prefer n
 
 If you are already using [Panel](https://panel.holoviz.org/), you can [embed Solara components in their dashboard server](#panel).
 
-
+To make it easier to use Solara, without directly having to use React-IPyWidgets, or Solara components, [we can also render regular IPyWidgets](#usage)
 
 # Example
 
