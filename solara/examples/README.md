@@ -82,6 +82,10 @@ The browser should open http://127.0.0.1:8765
 
 Use `solara --help` for help on extra arguments.
 
+## Notebook support
+
+We also support notebooks, simply assign to the app variable in a code cell, save your notebook, and run `$ solara myapp.ipynb`
+
 # Deployment
 
 Solara runs on several web frameworks, such as
