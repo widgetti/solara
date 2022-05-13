@@ -125,19 +125,19 @@ def HTML(tag="div", unsafe_innerHTML=None, style: str = None, class_: str = None
 
 
 @react.component
-def VBox(children=[], grow=False):
-    style = "flex-direction: column;"
+def VBox(children=[], grow=True, align_items="stretch"):
+    style = f"flex-direction: column; align-items: {align_items};"
     if grow:
         style += "flex-grow: 1;"
-    return v.Card(class_="d-flex", style_=style, elevation=0, children=children)
+    return v.Sheet(class_="d-flex", style_=style, elevation=0, children=children)
 
 
 @react.component
-def HBox(children=[], grow=False):
-    style = "flex-direction: row;"
+def HBox(children=[], grow=True, align_items="stretch"):
+    style = f"flex-direction: row; align-items: {align_items}; "
     if grow:
         style += "flex-grow: 1;"
-    return v.Card(class_="d-flex", style_=style, elevation=0, children=children)
+    return v.Sheet(class_="d-flex", style_=style, elevation=0, children=children)
 
 
 @react.component
@@ -155,8 +155,11 @@ def GridFixed(columns=4, column_gap="10px", row_gap="10px", children=[], align_i
 
 
 @react.component
-def Padding(size, children=[], grow=False):
-    return v.Card(class_=f"pa-{size}", elevation=0, children=children)
+def Padding(size, children=[], grow=True):
+    style = "flex-direction: row;"
+    if grow:
+        style += "flex-grow: 1;"
+    return v.Sheet(class_=f"pa-{size}", style_=style, elevation=0, children=children)
 
 
 @react.component

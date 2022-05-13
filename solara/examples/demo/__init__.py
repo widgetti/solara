@@ -19,8 +19,10 @@ def Demo():
                 pass
         module = list(tabs.values())[tab]
         with v.TabsItems(v_model=tab):
-            with v.Sheet():
-                github_url = sol.util.github_url(module.__file__)
-                sol.Button("View on GitHub", icon_name="mdi-github", href=github_url, class_="ma-2", target="_blank")
-                module.App()
+            with sol.HBox(grow=False):
+                with sol.VBox(grow=False):
+                    github_url = sol.util.github_url(module.__file__)
+                    with sol.HBox():
+                        sol.Button("View on GitHub", icon_name="mdi-github", href=github_url, class_="ma-2", target="_blank")
+                    module.App()
     return main
