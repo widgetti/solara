@@ -101,9 +101,9 @@ def Error(text, icon="mdi-alert", children=[], **kwargs):
 
 
 @react.component
-def Button(text: str = None, on_click=Callable[[], None], icon_name: str = None, children: list = [], click_event="click", disabled=False, **kwargs):
-    if text:
-        children = [text] + children
+def Button(label: str = None, on_click=Callable[[], None], icon_name: str = None, children: list = [], click_event="click", disabled=False, **kwargs):
+    if label:
+        children = [label] + children
     if icon_name:
         children = [v.Icon(left=True, children=[icon_name])] + children
     btn = v.Btn(children=children, **kwargs, disabled=disabled)

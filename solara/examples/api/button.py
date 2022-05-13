@@ -14,7 +14,7 @@ def ButtonDemo():
 
     with sol.VBox() as main:
         with sol.HBox():
-            sol.Button(text=f"Clicked {count} times", on_click=increment, icon_name="mdi-thumb-up")
+            sol.Button(label=f"Clicked {count} times", on_click=increment, icon_name="mdi-thumb-up")
     return main
 
 
