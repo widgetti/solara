@@ -67,7 +67,7 @@ app = ButtonClick('Ola')
 Install and run
 
     $ pip install solara[server]
-    $ solara myapp.py
+    $ solara run myapp.py
     INFO:     Uvicorn running on http://127.0.0.1:8765 (Press CTRL+C to quit)
     INFO:     Started reloader process [50178] using watchgod
     INFO:     Started server process [50183
@@ -78,13 +78,13 @@ The browser should open http://127.0.0.1:8765
 # Usage
 
    * Create a Python script or module and assign an IPywidget instance, or [React-IPywidgets](https://github.com/widgetti/react-ipywidgets) element to the `app` variable.
-   * Run the server `$ solara myapp.py`
+   * Run the server `$ solara run myapp.py`
 
 Use `solara --help` for help on extra arguments.
 
 ## Notebook support
 
-We also support notebooks, simply assign to the app variable in a code cell, save your notebook, and run `$ solara myapp.ipynb`
+We also support notebooks, simply assign to the app variable in a code cell, save your notebook, and run `$ solara run myapp.ipynb`
 
 # Deployment
 

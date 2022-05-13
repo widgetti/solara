@@ -85,7 +85,12 @@ def find_all_packages_paths():
     return paths
 
 
-@click.command()
+@click.group()
+def cli():
+    pass
+
+
+@cli.command()
 @click.option("--port", default=int(os.environ.get("PORT", 8765)))
 @click.option("--host", default=HOST_DEFAULT)
 @click.option("--dev/--no-devn", default=False)
@@ -155,7 +160,7 @@ def find_all_packages_paths():
 )
 @click.option("--pdb/--no-pdb", "use_pdb", default=False, help="Enter debugger on error")
 @click.argument("app")
-def main(
+def run(
     app,
     host,
     port,
@@ -260,6 +265,13 @@ def main(
     #     # open_webview()
     #     open_browser()
     # server_thread.join()
+
+
+cli.add_command(run)
+
+
+def main():
+    cli()
 
 
 if __name__ == "__main__":
