@@ -20,7 +20,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
-        run: pip install ".[dev]"
+        run: pip install ".[dev]" mypy==0.940
       - name: Test formatting
         uses: psf/black@stable
       - name: Run flake8

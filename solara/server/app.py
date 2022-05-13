@@ -189,7 +189,7 @@ class AppScript:
 
     def _run(self):
         context = get_current_context()
-        local_scope = {"display": context.display, "__name__": "__main__", "__file__": self.path}
+        local_scope = {"display": context.display, "__name__": "__main__", "__file__": str(self.path)}
         ignore = list(local_scope)
         if self.type == AppType.SCRIPT:
             with open(self.path) as f:

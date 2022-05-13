@@ -35,6 +35,11 @@ name = "solara"
 dev = [
     "pyproject-flake8",
     "flake8",
+    "bqplot",
+    "bqplot-image-gl",
+    "vaex-core",
+    "vaex-hdf5",
+    "vaex-jupyter",
     "black",
     "mypy",
     "playwright",
