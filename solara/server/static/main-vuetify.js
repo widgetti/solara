@@ -161,24 +161,24 @@ class WebSocketRedirectWebWorker {
     }
     send(msg) {
         // console.log('send msg', msg)
-        solaraWorker.postMessage({'type': 'send', 'value': msg})
+        solaraWorker.postMessage({ 'type': 'send', 'value': msg })
     }
     start() {
         solaraWorker.addEventListener('message', async (event) => {
             let msg = event.data
-            if(msg.type == 'opened') {
+            if (msg.type == 'opened') {
                 this.onopen()
             }
-            if(msg.type == 'send') {
-                this.onmessage({data: msg.value})
+            if (msg.type == 'send') {
+                this.onmessage({ data: msg.value })
             }
-            if(msg.type == 'mount') {
+            if (msg.type == 'mount') {
                 let model_id = msg.value;
 
                 await solaraMount(model_id)
             }
         });
-        solaraWorker.postMessage({'type': 'open'})
+        solaraWorker.postMessage({ 'type': 'open' })
     }
 }
 
@@ -205,7 +205,7 @@ function connectWatchdog() {
             if (!reloading) {
                 reloading = true
                 setTimeout(() => {
-                    location.href = location.href;
+                    location.reload();
                 }, timeout)
             }
         } else if (msg.type == "exception") {
@@ -253,8 +253,8 @@ async function solaraInit() {
             window.voila = voila;
             // requirejs doesn't like to be passed an async function, so create one inside
             (async function () {
-                if(for_pyodide) {
-                    options = {WebSocket: WebSocketRedirectWebWorker}
+                if (for_pyodide) {
+                    options = { WebSocket: WebSocketRedirectWebWorker }
                 } else {
                     options = {}
                 }
