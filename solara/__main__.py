@@ -158,6 +158,17 @@ def cli():
     default="",
     help="Set the ASGI 'root_path' for applications submounted below a given URL path.",
 )
+@click.option(
+    "--loader",
+    type=str,
+    help=f"Loader to use when the app is not yet shown to the user. [default: {settings.main.loader!r}]",
+)
+@click.option(
+    "--dark/--no-dark",
+    type=bool,
+    default=None,
+    help=f"Use dark mode by default. [default: {settings.main.dark}]",
+)
 @click.option("--pdb/--no-pdb", "use_pdb", default=False, help="Enter debugger on error")
 @click.argument("app")
 def run(
@@ -177,6 +188,8 @@ def run(
     log_level_uvicorn: str,
     access_log: bool,
     use_pdb: bool,
+    loader: str,
+    dark: bool,
 ):
     reload_dirs = reload_dirs if reload_dirs else None
     url = f"http://{host}:{port}"
@@ -233,7 +246,11 @@ def run(
     kwargs["app"] = "solara.server.starlette:app"
     kwargs["log_config"] = LOGGING_CONFIG if log_config is None else log_config
     settings.main.use_pdb = use_pdb
-    for item in "use_pdb server open_browser open url failed dev".split():
+    if loader is not None:
+        settings.main.loader = loader
+    if dark is not None:
+        settings.main.dark = dark
+    for item in "loader dark use_pdb server open_browser open url failed dev".split():
         del kwargs[item]
 
     def start_server():

@@ -1,0 +1,28 @@
+{% raw -%}
+<transition name="solara-transition" :duration="{ enter: 500, leave: 500 }">
+    <div v-if="loading" id="loader-container">
+        <div id="clouds" key="clouds" class="solara-clouds">
+            <div class="cloud x1"></div>
+            <!-- Time for multiple clouds to dance around -->
+            <div class="cloud x2"></div>
+            <div class="cloud x3"></div>
+            <div class="cloud x4"></div>
+            <div class="cloud x5"></div>
+        </div>
+        <v-container id="loader" key="loader" class="solara-loader">
+            <v-row>
+                <v-col>
+                    <div id="sun-spinner-container">
+                        <img id="sun-spinner" height="100px" src="static/sun.svg" />
+                    </div>
+                    <h1>Solara is {{ loading_text }}</h1>
+
+                </v-col>
+            </v-row>
+        </v-container>
+    </div>
+    <jupyter-widget-mount-point v-if="!loading" mount-id="content">
+        A widget with mount-id="content" should go here
+    </jupyter-widget-mount-point>
+</transition>
+{% endraw -%}

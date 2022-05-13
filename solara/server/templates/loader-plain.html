@@ -1,0 +1,18 @@
+{% raw -%}
+<v-fade-y-transition name="solara-transition">
+    <div v-if="loading" id="loader-container">
+        <v-card style="width: 600px">
+            <v-progress-linear :indeterminate="loadingPercentage < 0" v-model="loadingPercentage" height="15"
+                color="#2d71c7">
+            </v-progress-linear>
+
+            <v-card-title primary-title class="py-8">
+                <h1>{{ loading_text }}</h1>
+            </v-card-title>
+        </v-card>
+    </div>
+    <jupyter-widget-mount-point v-if="!loading" mount-id="content">
+        A widget with mount-id="content" should go here
+    </jupyter-widget-mount-point>
+</v-fade-y-transition>
+{% endraw -%}

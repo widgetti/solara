@@ -133,17 +133,6 @@ function injectDebugMessageInterceptor(kernel) {
     })
 }
 
-var themeIsdark;
-if ('{{resources.theme}}' === 'dark') {
-    themeIsdark = true;
-}
-if (window.location.search) {
-    if (window.location.search.includes('theme=dark')) {
-        themeIsdark = true;
-    } else if (window.location.search.includes('theme=light')) {
-        themeIsdark = false;
-    }
-}
 
 class WebSocketRedirectWebWorker {
     // redirects to webworker
@@ -305,7 +294,7 @@ async function solaraInit() {
                 //     // window.navigator.sendBeacon(`${baseUrl}voila/api/shutdown/${kernel.id}`, data);
                 //     // kernel.dispose();
                 // });
-                app.$data.loading_text = 'loading widgets';
+                app.$data.loading_text = 'Loading app';
                 await widgetManager.build_widgets();
                 voila.renderMathJax();
                 resolve()

@@ -19,9 +19,8 @@ from . import app, reload, settings, websocket
 from .app import AppContext, AppScript
 from .kernel import BytesWrap, Kernel, WebsocketStreamWrapper
 
-# templates = Jinja2Templates(directory=str(directory / "templates"))
 directory = Path(__file__).parent
-template_name = "vuetify.html"
+template_name = "solara.html.j2"
 
 jinja_loader = jinja2.FileSystemLoader(str(directory / "templates"))
 jinja_env = jinja2.Environment(loader=jinja_loader, autoescape=True)
@@ -230,7 +229,15 @@ async def read_root(context_id: Optional[str], base_url: str = ""):
         "nbextensions": nbextensions,
     }
     template: jinja2.Template = jinja_env.get_template(template_name)
-    response = template.render(**{"model_id": model_id, "base_url": base_url, "resources": resources})
+    render_settings = {
+        "model_id": model_id,
+        "base_url": base_url,
+        "resources": resources,
+        "loader": settings.main.loader,
+        "dark": settings.main.dark,
+    }
+    logger.info("Render setting for template: %r", render_settings)
+    response = template.render(**render_settings)
     return response, context_id
 
 
