@@ -16,6 +16,9 @@
  * [Development](#development)
  * [FAQ](#faq)
 
+# Live demo
+[Live demo running Heroku](https://solara-demo.herokuapp.com/)
+
 # What it is?
 
 If you only care about using Solara from the Jupyter notebook (classic or lab) or Voila, it is:
