@@ -120,7 +120,6 @@ def IconButton(icon_name: str = None, on_click=Callable[[], None], children: lis
 def HTML(tag="div", unsafe_innerHTML=None, style: str = None, class_: str = None, **kwargs):
     attributes = dict(style=style)
     attributes["class"] = class_
-    attributes = {**kwargs, **attributes}
     return solara.widgets.HTML.element(tag=tag, unsafe_innerHTML=unsafe_innerHTML, attributes=attributes)
 
 

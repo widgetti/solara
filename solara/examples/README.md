@@ -1,6 +1,6 @@
 # Making IPywidgets based web applications simple and fun
 
-<img src="https://user-images.githubusercontent.com/1765949/159178788-2c20214d-d4fe-42cd-a28e-7097ce37c904.svg" height="200px"/>
+![logo](https://user-images.githubusercontent.com/1765949/159178788-2c20214d-d4fe-42cd-a28e-7097ce37c904.svg)
 
  * [What it is?](#what-it-is?)
  * [Example](#example)
@@ -16,7 +16,10 @@
  * [Development](#development)
  * [FAQ](#faq)
 
-## What it is?
+# Live demo
+[Live demo running Heroku](https://solara-demo.herokuapp.com/)
+
+# What it is?
 
 If you only care about using Solara from the Jupyter notebook (classic or lab) or Voila, it is:
 
@@ -48,10 +51,23 @@ If you are already using [Panel](https://panel.holoviz.org/), you can [embed Sol
 
 To make it easier to use Solara, without directly having to use React-IPyWidgets, or Solara components, [we can also render regular IPyWidgets](#usage)
 
+
+## How does Solara fit into the big picture?
+
+By now, you maybe understand that Solara is actually two things. A server part that takes care of getting the widgets into the browser and a UI part, consisting of react components and hooks.
+
+The UI parts is build on top of [React-IPywidgets](https://github.com/widgetti/react-ipywidgets) which is using the existing IPyWidgets stack.
+
+If you use Jupyter, then you probably use the Jupyter notebook, Lab, of Voila to get your widgets into the browser.
+
+If you don't use Jupyter, or don't know what it is, or are a ML Ops, Dev Ops, or Sys Admin, you are probably more interested in the Solara server.
+
+![Solara stack](https://user-images.githubusercontent.com/1765949/168669118-da9410bf-e838-481c-925d-4754efa01b7b.png)
+
 # Example
 
+Lets start with a small example app by creating a file `myapp.py`:
 
-Create a file `myapp.py`:
 ```python
 import react_ipywidgets as react
 import react_ipywidgets.ipywidgets as w

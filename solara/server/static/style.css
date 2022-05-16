@@ -39,3 +39,8 @@ div.highlight pre code {
 .v-application * {
     box-sizing: border-box;
 }
+
+
+.solara-markdown img {
+    max-width: 100%;
+}
