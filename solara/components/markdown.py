@@ -61,4 +61,4 @@ def Markdown(md_text: str):
     md_text = textwrap.dedent(md_text)
 
     html = markdown.markdown(md_text, extensions=["pymdownx.highlight", "pymdownx.superfences", "pymdownx.emoji", "toc"])
-    return sol.HTML(unsafe_innerHTML=html, class_="solara-markdown")
+    return sol.HTML(unsafe_innerHTML=html, class_="solara-markdown", style="max-width: 1024px;")
