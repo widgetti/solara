@@ -252,8 +252,10 @@ class AppScript:
                 for context in context_values:
                     context.state_save(state_directory=state_directory)
                     for socket in context.control_sockets:
-                        print(socket)
-                        socket.send_json(reload)
+                        try:
+                            socket.send_json(reload)
+                        except:  # noqa
+                            pass  # ignore disconnected clients
 
             send_reload()
 

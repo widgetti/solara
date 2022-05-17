@@ -33,7 +33,11 @@ class FakeIPython:
 
         async def sendit():
             for socket in self.context.control_sockets:
-                await socket.send_json(msg)
+                try:
+                    socket.send_json(msg)
+                except:  # noqa
+                    # TODO: should we remove it from the list?
+                    pass
 
         asyncio.create_task(sendit())
 
