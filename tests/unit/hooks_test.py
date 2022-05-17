@@ -1,3 +1,4 @@
+import threading
 import time
 from pathlib import Path
 from typing import Optional
@@ -16,7 +17,7 @@ def test_hook_thread():
     done = False
 
     @component
-    def DownloadFile():
+    def ThreadTest():
         nonlocal done
         a, _ = react.use_state("a")
         b, _ = react.use_state("b")
@@ -31,16 +32,42 @@ def test_hook_thread():
                 set_counter(i)
                 time.sleep(0.001)
 
-        use_thread(work)
+        use_thread(work, [])
         return w.Label(value=f"{a} {b} {c} {counter}")
 
-    label, rc = render_fixed(DownloadFile())
+    label, rc = render_fixed(ThreadTest())
     expected = "a b c 255"
     for i in range(200):  # max 2 second
         time.sleep(0.01)
         if label.value == expected:
             break
     assert label.value == expected
+
+
+def test_hook_iterator():
+    event = threading.Event()
+    result = None
+
+    @react.component
+    def Test():
+        nonlocal result
+
+        def work():
+            yield 1
+            event.wait()
+            yield 2
+
+        result = use_thread(work)
+        return w.Label(value="test")
+
+    assert result is not None
+    label, rc = react.render_fixed(Test())
+    assert isinstance(result, sol.Result)
+    assert result.value == 1
+    event.set()
+    time.sleep(0.01)
+    assert isinstance(result, sol.Result)
+    assert result.value == 2
 
 
 def test_hook_download(tmpdir):
@@ -52,11 +79,11 @@ def test_hook_download(tmpdir):
     @component
     def DownloadFile(url=url, expected_size=None):
         result = use_download(path, url, expected_size=expected_size)
-        return w.Label(value=f"{result.progress} {result.running} {result.error}")
+        return w.Label(value=f"{result.progress} {result.state} {result.error}")
 
     label, rc = render_fixed(DownloadFile())
-    assert label.value == "0 False None"
-    expected = "1.0 False None"
+    assert label.value == "0 ResultState.STARTED None"
+    expected = "1.0 ResultState.FINISHED None"
     for i in range(200):  # max 2 second
         time.sleep(0.01)
         if label.value == expected:
@@ -68,7 +95,7 @@ def test_hook_download(tmpdir):
     assert label.value == expected
 
     label, rc = render_fixed(DownloadFile(url=url + ".404"))
-    expected = "0 False HTTP Error 404: Not Found"
+    expected = "0 ResultState.ERROR HTTP Error 404: Not Found"
     for i in range(50):  # max 0.5 second
         time.sleep(0.01)
         if label.value == expected:

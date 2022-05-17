@@ -1,4 +1,5 @@
 import dataclasses
+from enum import Enum
 from typing import Any, Callable, Generic, Optional, TypeVar
 
 T = TypeVar("T")
@@ -26,15 +27,25 @@ def _fallback_retry():
     raise RuntimeError("Should not happen")
 
 
+class ResultState(Enum):
+    INITIAL = 1
+    STARTING = 2
+    WAITING = 3
+    STARTED = 4
+    ERROR = 5
+    FINISHED = 6
+    CANCELLED = 7
+
+
 @dataclasses.dataclass(frozen=True)
 class Result(Generic[T]):
     value: Optional[T] = None
     error: Optional[Exception] = None
-    running: bool = False
+    state: ResultState = ResultState.INITIAL
     progress: Optional[float] = None
+
     retry: Callable[[], Any] = lambda: None
     cancel: Callable[[], Any] = lambda: None
-    cancelled: bool = False
 
     def __or__(self, next: Callable[["Result[T]"], "Result[U]"]):
         return next(self)

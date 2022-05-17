@@ -11,6 +11,7 @@ from . import (
     html,
     markdown,
     sql_code,
+    use_thread,
     vbox,
 )
 
@@ -24,6 +25,7 @@ modules = {
     "Markdown": markdown,
     "HTML": html,
     "SqlCode": sql_code,
+    "use_thread": use_thread,
 }
 
 
@@ -58,6 +60,7 @@ def API():
                     with sol.ListItem("Hooks", icon_name="mdi-hook"):
                         sol.ListItem("use_fetch")
                         sol.ListItem("use_json")
+                        sol.ListItem("use_thread")
                     with sol.ListItem("Types", icon_name="mdi-fingerprint"):
                         sol.ListItem("Action")
                         sol.ListItem("ColumnAction")
@@ -89,7 +92,7 @@ def WithCode(module):
 """
                 )
         # It renders code better
-        sol.MarkdownIt(module.__doc__ or "# no docs yet")
+        sol.Markdown(module.__doc__ or "# no docs yet")
         sol.Button("Show code", on_click=lambda: set_show_code(True), class_="ma-4")
         component()
     return main
