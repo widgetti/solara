@@ -238,7 +238,7 @@ class AppScript:
         with thread_lock:
             # first, we pickle, before we unload modules
             context_values = list(contexts.values())
-            logger.debug("Saving state... %r", context_values)
+            logger.debug("Saving state...")
             contexts.clear()
             for context in context_values:
                 context.state_save(state_directory=state_directory)
