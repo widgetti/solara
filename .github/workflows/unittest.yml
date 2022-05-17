@@ -22,4 +22,4 @@ jobs:
       - name: Install
         run: pip install ".[dev]"
       - name: test
-        run: pytest --cov=solara tests/unit
+        run: pytest --cov=solara tests/unit --timeout=60

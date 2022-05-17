@@ -48,6 +48,7 @@ dev = [
     "types-markdown",
     "pytest",
     "pytest-cov",
+    "pytest-timeout",
 ]
 server = [
     "jinja2",
