@@ -23,9 +23,6 @@ def UseThreadDemo():
                 return False
             # make it always take ~4 seconds
             time.sleep(4 / number)
-            # try commenting out this line to see the 'WAITING' state
-            if cancelled.is_set():
-                return
         return True
 
     # work will be cancelled/restarted every time the dependency changes

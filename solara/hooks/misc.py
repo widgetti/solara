@@ -6,6 +6,7 @@ import io
 import json
 import logging
 import os
+import sys
 
 # import tempfile
 import threading
@@ -38,6 +39,12 @@ U = TypeVar("U")
 MaybeResult = Union[T, Result[T]]
 
 
+# inherit from BaseException so less change of being caught
+# in an except
+class CancelledError(BaseException):
+    pass
+
+
 def use_retry(*actions: Callable[[], Any]):
     counter, set_counter = react.use_state(0)
 
@@ -56,6 +63,7 @@ def use_thread(
         Callable[[], T],
         Iterator[Callable[[], T]],
     ],
+    intrusive_cancel=True,
     dependencies=[],
 ) -> Result[T]:
     def make_event(*_ignore_dependencies):
@@ -72,6 +80,37 @@ def use_thread(
     result = react.use_ref(cast(Optional[T], None))
     running_thread = react.use_ref(cast(Optional[threading.Thread], None))
     counter, retry = use_retry()
+
+    @contextlib.contextmanager
+    def cancel_guard():
+        if not intrusive_cancel:
+            yield
+            return
+
+        def tracefunc(frame, event, arg):
+            # this gets called at least for every line executed
+            if cancel.is_set():
+                rc = react.core._get_render_context()
+                # we do not want to cancel the rendering cycle
+                if not rc._is_rendering:
+                    # this will bubble up
+                    raise CancelledError()
+            # keep tracing:
+            return tracefunc
+
+        # see https://docs.python.org/3/library/sys.html#sys.settrace
+        # it is for the calling thread only
+        # not every Python implementation has it
+        prev = None
+        if hasattr(sys, "gettrace"):
+            prev = sys.gettrace()
+        if hasattr(sys, "settrace"):
+            sys.settrace(tracefunc)
+        try:
+            yield
+        finally:
+            if hasattr(sys, "settrace"):
+                sys.settrace(prev)
 
     def run():
         result.current = None
@@ -108,11 +147,17 @@ def use_thread(
                 f = callback
             try:
                 try:
-                    value = f()
+                    # we only use the cancel_guard context manager around
+                    # the function calls to f. We don't want to guard around
+                    # a call to react, since that might slow down rendering
+                    # during rendering
+                    with cancel_guard():
+                        value = f()
                     if inspect.isgenerator(value):
                         while True:
                             try:
-                                result.current = next(value)
+                                with cancel_guard():
+                                    result.current = next(value)
                             except StopIteration:
                                 break
                             # assigning to the ref doesn't trigger a rerender, so do it manually

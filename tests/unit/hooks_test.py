@@ -60,14 +60,44 @@ def test_hook_iterator():
         result = use_thread(work)
         return w.Label(value="test")
 
-    assert result is not None
     label, rc = react.render_fixed(Test())
+    assert result is not None
     assert isinstance(result, sol.Result)
     assert result.value == 1
     event.set()
     time.sleep(0.01)
     assert isinstance(result, sol.Result)
     assert result.value == 2
+
+
+def test_use_thread_intrusive_cancel():
+    result = None
+    last_value = 0
+
+    @react.component
+    def Test():
+        nonlocal result
+        nonlocal last_value
+
+        def work():
+            nonlocal last_value
+            for i in range(100):
+                last_value = i
+                # if not cancelled, might take 4 seconds
+                time.sleep(4 / 100)
+            return 2**42
+
+        result = use_thread(work, dependencies=[])
+        return w.Label(value="test")
+
+    label, rc = react.render_fixed(Test())
+    assert result is not None
+    assert isinstance(result, sol.Result)
+    result.cancel()
+    while result.state == sol.ResultState.STARTED:
+        time.sleep(0.1)
+    assert result.state == sol.ResultState.CANCELLED
+    assert last_value != 99
 
 
 def test_hook_download(tmpdir):

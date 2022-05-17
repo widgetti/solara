@@ -8,6 +8,7 @@ def use_thread(
         Callable[[], T],
         Iterator[Callable[[], T]],
     ],
+    intrusive_cancel=True,
     dependencies=[],
 ) -> Result[T]:
     ...
@@ -22,9 +23,13 @@ The return value of `use_thread` is a `Result[T]`, making it easy to have the UI
 
 When an iterator is passed, the state only enters the `FINISHED` state after the last element is yielded. Partial, or incremental results can be detected when the state is still in `RUNNING`, but `Result[T].value` is not None.
 
+
+
 From any state the `.cancel()` or `.retry()` may be called, which will stop the current thread, and start all over.
 Note that at no time, two threads will run, since the new thread will always wait for the previous to finish.
-Also note that a thread can not be cancelled, we only flag the `threading.Event` object passed to the user supplied function as set, and it is thus the responsibility of the user to check this flag regularly.
+
+When `intrusive_cancel=True`, a tracer is installed into the thread, which will throw a special exception to cancel the thread. This gives some runtime overhead, and a more performant way would be to set this to false and manually inspect the `threading.Event` regularly. When this is not possible (e.g. usage of an external library), this is the only way to cancel a thread while executing.
+
 
 ## State diagram
 
