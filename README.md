@@ -327,6 +327,30 @@ Install Solara in 'edit' mode. We use flit (`pip install flit` if you don't alre
 
 Now you can edit the source code in the git repository, without having to reinstall it.
 
+## Contributing
+
+If you plan to contribute, also run the following:
+
+    $ pre-commit install
+
+This will cause a test of linters/formatters and mypy to run so the code is in good quality before you git commit.
+
+    $ playwright install
+
+This will install playwright, for when you want to run the integration tests.
+
+### Test suite
+
+If you want to run the unit tests (quick run when doing development, or when you do test driven development)
+
+    $ py.test tests/unit
+
+
+If you want to run the integration tests (uses playwright to open a browser to test the live server with a real browser)
+
+    $ py.test tests/integration
+
+Pass the `--headed` flag to see what is going on, [or check out the docs](https://playwright.dev/python/docs/intro)
 
 # FAQ
 
