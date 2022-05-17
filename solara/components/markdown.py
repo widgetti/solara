@@ -2,6 +2,7 @@ import textwrap
 from typing import List
 
 import pygments
+import pymdownx.superfences
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import get_lexer_by_name
 
@@ -54,11 +55,33 @@ def MarkdownIt(md_text: str, highlight: List[int] = []):
     return sol.HTML(unsafe_innerHTML=html)
 
 
+extension_configs = {
+    "pymdownx.superfences": {
+        "custom_fences": [
+            {
+                "name": "mermaid",
+                "class": "mermaid",
+                "format": pymdownx.superfences.fence_div_format,
+            },
+        ],
+    }
+}
+
+
 @react.component
 def Markdown(md_text: str):
     import markdown
 
     md_text = textwrap.dedent(md_text)
 
-    html = markdown.markdown(md_text, extensions=["pymdownx.highlight", "pymdownx.superfences", "pymdownx.emoji", "toc"])
+    html = markdown.markdown(
+        md_text,
+        extensions=[
+            "pymdownx.highlight",
+            "pymdownx.superfences",
+            "pymdownx.emoji",
+            "toc",  # so we get anchors for h1 h2 etc
+        ],
+        extension_configs=extension_configs,
+    )
     return sol.HTML(unsafe_innerHTML=html, class_="solara-markdown", style="max-width: 1024px;")
