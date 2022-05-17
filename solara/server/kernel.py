@@ -119,3 +119,12 @@ class Kernel(ipykernel.kernelbase.Kernel):
 
     async def _flush_control_queue(self):
         pass
+
+    # these don't work from non-main thread, and we do not care about them I think
+    # TODO: it seems that if post_handler_hook is not override, the flask reload tests fails
+    # for unknown reason
+    def pre_handler_hook(self, *args):
+        pass
+
+    def post_handler_hook(self, *args):
+        pass
