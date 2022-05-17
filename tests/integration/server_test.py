@@ -30,7 +30,7 @@ def test_docs_basics(page: playwright.sync_api.Page, solara_server, solara_app):
     with solara_app("solara.examples"):
         page.goto(solara_server.base_url)
         assert page.title() == "Hello from Solara ☀️"
-        page.locator("text=Demo").click()
+        page.locator('div[role="tab"]:has-text("Demo")').click()
 
         page.locator("text=Calculator").click()
         page.locator("text=+/-").wait_for()
