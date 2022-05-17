@@ -146,7 +146,7 @@ def use_thread(
 
     react.use_side_effect(run, dependencies + [counter])
     # return result, cancel.set, done, error
-    return Result[T](value=result.current, error=error.current, state=result_state, cancel=cancel.set, retry=retry)
+    return Result[T](value=result.current, error=error.current, state=result_state, cancel=cancel.set, _retry=retry)
 
 
 def use_download(
@@ -262,12 +262,15 @@ def use_file_content(path, watch=False) -> FileContentResult[bytes]:
         except Exception as e:
             return e
 
+    print(path, counter)
     try:
         mtime = os.path.getmtime(path)
     except Exception as e:
-        result = FileContentResult[bytes](error=e, retry=retry)
+        result = FileContentResult[bytes](error=e, _retry=retry)
         # result.retry = retry
         return result
+
+    print(path, counter, mtime)
 
     content = read_file(
         path,
@@ -275,9 +278,9 @@ def use_file_content(path, watch=False) -> FileContentResult[bytes]:
         counter,
     )
     if isinstance(content, Exception):
-        return FileContentResult[bytes](error=content, retry=retry)
+        return FileContentResult[bytes](error=content, _retry=retry)
     else:
-        return FileContentResult[bytes](value=content, retry=retry)
+        return FileContentResult[bytes](value=content, _retry=retry)
 
 
 def use_force_update() -> Callable[[], None]:

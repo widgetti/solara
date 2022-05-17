@@ -44,7 +44,14 @@ class Result(Generic[T]):
     state: ResultState = ResultState.INITIAL
     progress: Optional[float] = None
 
-    retry: Callable[[], Any] = lambda: None
+    def retry(self):
+        # mypy does not like members that are callable
+        # gets confused about self argument.
+        # we wrap it to avoid hitting this error in user
+        # code
+        self._retry()  # type: ignore
+
+    _retry: Callable[[], Any] = lambda: None
     cancel: Callable[[], Any] = lambda: None
 
     def __or__(self, next: Callable[["Result[T]"], "Result[U]"]):
