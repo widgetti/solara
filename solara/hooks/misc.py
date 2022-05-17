@@ -12,7 +12,7 @@ import threading
 import time
 import urllib.request
 import uuid
-from typing import IO, Any, Callable, Iterator, Optional, TypeVar, Union, cast
+from typing import IO, Any, Callable, Iterator, Optional, Tuple, TypeVar, Union, cast
 
 import react_ipywidgets as react
 
@@ -30,6 +30,7 @@ __all__ = [
     "use_file_content",
     "use_uuid4",
     "use_unique_key",
+    "use_state_or_update",
 ]
 T = TypeVar("T")
 U = TypeVar("U")
@@ -310,3 +311,21 @@ def use_unique_key(key: str = None, prefix: str = "", dependencies=[]):
     """Generate a unique string, or use key when not None. Dependencies are forwarded to `use_uuid4`."""
     uuid = use_uuid4(dependencies=dependencies)
     return prefix + (key or uuid)
+
+
+def use_state_or_update(initial_or_updated: T, key: str = None, eq: Callable[[Any, Any], bool] = None) -> Tuple[T, Callable[[Union[T, Callable[[T], T]]], T]]:
+    """This is useful for situations where a prop can change from a parent
+    component, which should be respected, and otherwise the internal
+    state should be kept.
+
+    See sol.Details for example usage.
+    """
+    value, set_value = react.use_state(initial_or_updated, key=key, eq=eq)
+
+    def possibly_update(initial_or_updated):
+        # only gets called when initial_or_updated changes
+        # if value != initial_or_updated:
+        set_value(initial_or_updated)
+
+    react.use_memo(possibly_update)(initial_or_updated)
+    return value, set_value
