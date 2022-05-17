@@ -1,0 +1,29 @@
+name: Integration testing
+
+on:
+  - push
+  - pull_request
+  - workflow_dispatch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # just 1 version, it's heavy
+        python-version: [3.7]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install
+        run: pip install ".[dev,server,flask,examples]"
+      - name: Install playwright
+        run: playwright install
+      - name: test
+        # we also run the (cheap) unittests, to get better coverage report
+        run: pytest --cov=solara tests/integration tests/unit --timeout=20
