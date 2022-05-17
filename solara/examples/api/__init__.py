@@ -93,6 +93,7 @@ def WithCode(module):
                 )
         # It renders code better
         sol.Markdown(module.__doc__ or "# no docs yet")
+        sol.Markdown("# Example")
         sol.Button("Show code", on_click=lambda: set_show_code(True), class_="ma-4")
         component()
     return main

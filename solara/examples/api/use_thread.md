@@ -28,7 +28,7 @@ Also note that a thread can not be cancelled, we only flag the `threading.Event`
 
 ## State diagram
 
-The possible values for Result[T].state are reflected in this state diagram.
+The possible values for `Result[T].state` are reflected in this state diagram.
 
 ```mermaid
 graph TD;

@@ -1,4 +1,5 @@
 import threading
+import time
 from pathlib import Path
 from typing import Optional, cast
 
@@ -10,7 +11,7 @@ __doc__ = open(HERE / "use_thread.md").read()
 
 @react.component
 def UseThreadDemo():
-    number, set_number = react.use_state(100423093)
+    number, set_number = react.use_state(17)
     # the number that proofs it is not a prime
     proof, set_proof = react.use_state(cast(Optional[int], None))
 
@@ -20,10 +21,11 @@ def UseThreadDemo():
             if reminder == 0:
                 set_proof(i)
                 return False
+            # make it always take ~4 seconds
+            time.sleep(4 / number)
             # try commenting out this line to see the 'WAITING' state
-            if i % 1000:  # only check every now and then
-                if cancelled.is_set():
-                    return
+            if cancelled.is_set():
+                return
         return True
 
     # work will be cancelled/restarted every time the dependency changes
@@ -35,13 +37,12 @@ def UseThreadDemo():
             if result.value:
                 sol.Success(f"{number} is a prime!")
             else:
-                sol.Error(f"{number} is not a prime")
-                sol.Info(f"{number} can be divided by {proof} ")
+                sol.Error(f"{number} is not a prime, it can be divided by {proof} ")
         elif result.state == sol.ResultState.ERROR:
             sol.Error(f"Error occurred: {result.error}")
         else:
             sol.Info(f"Running... (status = {result.state})")
-            v.ProgressCircular(indeterminate=True)
+            v.ProgressLinear(indeterminate=True)
     return main
 
 
