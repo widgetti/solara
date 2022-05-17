@@ -49,6 +49,7 @@ dev = [
     "pytest",
     "pytest-cov",
     "pytest-timeout",
+    "pre-commit",
 ]
 server = [
     "jinja2",
