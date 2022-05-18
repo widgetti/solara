@@ -119,7 +119,9 @@ def Success(text, icon="mdi-alert", children=[], **kwargs):
 
 
 @react.component
-def Button(label: str = None, on_click=Callable[[], None], icon_name: str = None, children: list = [], click_event="click", disabled=False, **kwargs):
+def Button(
+    label: str = None, on_click=Callable[[], None], icon_name: str = None, children: list = [], click_event="click", disabled=False, value=None, **kwargs
+):
     if label:
         children = [label] + children
     if icon_name:
