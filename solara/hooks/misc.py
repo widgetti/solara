@@ -358,7 +358,9 @@ def use_unique_key(key: str = None, prefix: str = "", dependencies=[]):
     return prefix + (key or uuid)
 
 
-def use_state_or_update(initial_or_updated: T, key: str = None, eq: Callable[[Any, Any], bool] = None) -> Tuple[T, Callable[[Union[T, Callable[[T], T]]], T]]:
+def use_state_or_update(
+    initial_or_updated: T, key: str = None, eq: Callable[[Any, Any], bool] = None
+) -> Tuple[T, Callable[[Union[T, Callable[[T], T]]], None]]:
     """This is useful for situations where a prop can change from a parent
     component, which should be respected, and otherwise the internal
     state should be kept.
