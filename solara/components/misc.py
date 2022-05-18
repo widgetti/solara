@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, List
 
 import ipyvue as vue
 import react_ipywidgets as react
@@ -73,6 +73,19 @@ def ui_slider(value=1, description="", min=0, max=100, key=None, tick_labels=Non
         **kwargs,
     )
     return value
+
+
+@react.component
+def Card(title: str = None, elevation: int = 2, margin=2, children: List[react.core.Element] = []):
+    with v.Card(elevation=elevation, class_=f"ma-{margin}") as main:
+        if title:
+            with v.CardTitle(
+                children=[title],
+            ):
+                pass
+        with v.CardText(children=children):
+            pass
+    return main
 
 
 @react.component

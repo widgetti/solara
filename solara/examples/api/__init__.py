@@ -10,6 +10,7 @@ from . import (
     hbox,
     html,
     markdown,
+    slider,
     sql_code,
     use_thread,
     vbox,
@@ -17,6 +18,7 @@ from . import (
 
 modules = {
     "Button": button,
+    "Slider": slider,
     "DataTable": datatable,
     "GridDraggable": griddraggable,
     "GridFixed": gridfixed,
@@ -38,8 +40,8 @@ def API():
                 with v.ListItemGroup(v_model=selected, on_v_model=on_selected):
                     sol.ListItem("Overview")
                     with sol.ListItem("Input", icon_name="mdi-chevron-left-box"):
-                        # sol.ListItem("Slider")
                         sol.ListItem("Button")
+                        sol.ListItem("Slider")
                     with sol.ListItem("Output", icon_name="mdi-chevron-right-box"):
                         sol.ListItem("Markdown")
                         sol.ListItem("HTML")
