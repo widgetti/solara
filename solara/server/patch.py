@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import pdb
 import sys
@@ -31,15 +30,12 @@ class FakeIPython:
             "traceback": traceback_string,
         }
 
-        async def sendit():
-            for socket in self.context.control_sockets:
-                try:
-                    socket.send_json(msg)
-                except:  # noqa
-                    # TODO: should we remove it from the list?
-                    pass
-
-        asyncio.create_task(sendit())
+        for socket in self.context.control_sockets:
+            try:
+                socket.send_json(msg)
+            except:  # noqa
+                # TODO: should we remove it from the list?
+                pass
 
 
 def kernel_instance_dispatch(cls, *args, **kwargs):

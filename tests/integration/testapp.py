@@ -1,6 +1,6 @@
 import dataclasses
 
-from solara.kitchensink import react, w
+from solara.kitchensink import react, sol, w
 
 
 @dataclasses.dataclass
@@ -15,3 +15,14 @@ def ButtonClick():
 
 
 app = ButtonClick()
+
+
+@react.component
+def ClickBoom():
+    count, set_count = react.use_state(0)
+    if count == 1:
+        raise ValueError("I crash on 1")
+    return sol.Button("Boom", on_click=lambda: set_count(count + 1))
+
+
+clickboom = ClickBoom()
