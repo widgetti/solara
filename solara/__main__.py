@@ -5,6 +5,7 @@ import threading
 import time
 import typing
 import webbrowser
+from enum import Enum
 from pathlib import Path
 
 import react_ipywidgets
@@ -85,6 +86,12 @@ def find_all_packages_paths():
     return paths
 
 
+class EnumType(click.Choice):
+    def __init__(self, enum: typing.Type[Enum], case_sensitive=False):
+        self._enum = enum
+        super().__init__(choices=[item.name for item in enum], case_sensitive=case_sensitive)
+
+
 @click.group()
 def cli():
     pass
@@ -159,15 +166,22 @@ def cli():
     help="Set the ASGI 'root_path' for applications submounted below a given URL path.",
 )
 @click.option(
-    "--loader",
+    "--theme-loader",
     type=str,
-    help=f"Loader to use when the app is not yet shown to the user. [default: {settings.main.loader!r}]",
+    default=settings.theme.loader,
+    help=f"Loader to use when the app is not yet shown to the user. [default: {settings.theme.loader!r}]",
 )
 @click.option(
-    "--dark/--no-dark",
+    "--theme-variant",
+    type=settings.ThemeVariant,
+    default=settings.ThemeVariant.light.name,
+    help=f"Use light or dark variant, or auto detect (auto). [default: {settings.theme.variant.name}",
+)
+@click.option(
+    "--theme-variant-user-selectable/--no-theme-variant-user-selectable",
     type=bool,
-    default=None,
-    help=f"Use dark mode by default. [default: {settings.main.dark}]",
+    default=settings.theme.variant_user_selectable,
+    help=f"Can the user select the theme variant from the UI. [default: {settings.theme.variant_user_selectable}",
 )
 @click.option("--pdb/--no-pdb", "use_pdb", default=False, help="Enter debugger on error")
 @click.argument("app")
@@ -188,8 +202,9 @@ def run(
     log_level_uvicorn: str,
     access_log: bool,
     use_pdb: bool,
-    loader: str,
-    dark: bool,
+    theme_loader: str,
+    theme_variant: settings.ThemeVariant,
+    theme_variant_user_selectable: bool,
 ):
     reload_dirs = reload_dirs if reload_dirs else None
     url = f"http://{host}:{port}"
@@ -246,11 +261,10 @@ def run(
     kwargs["app"] = "solara.server.starlette:app"
     kwargs["log_config"] = LOGGING_CONFIG if log_config is None else log_config
     settings.main.use_pdb = use_pdb
-    if loader is not None:
-        settings.main.loader = loader
-    if dark is not None:
-        settings.main.dark = dark
-    for item in "loader dark use_pdb server open_browser open url failed dev".split():
+    settings.theme.loader = theme_loader
+    settings.theme.variant = theme_variant
+    settings.theme.variant_user_selectable = theme_variant_user_selectable
+    for item in "theme_variant_user_selectable theme_variant theme_loader use_pdb server open_browser open url failed dev".split():
         del kwargs[item]
 
     def start_server():

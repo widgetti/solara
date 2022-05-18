@@ -233,8 +233,7 @@ async def read_root(context_id: Optional[str], base_url: str = ""):
         "model_id": model_id,
         "base_url": base_url,
         "resources": resources,
-        "loader": settings.main.loader,
-        "dark": settings.main.dark,
+        "theme": settings.theme.dict(),
     }
     logger.info("Render setting for template: %r", render_settings)
     response = template.render(**render_settings)
