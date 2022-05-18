@@ -90,9 +90,9 @@ def use_thread(
         def tracefunc(frame, event, arg):
             # this gets called at least for every line executed
             if cancel.is_set():
-                rc = react.core._get_render_context()
+                rc = react.core._get_render_context(required=False)
                 # we do not want to cancel the rendering cycle
-                if not rc._is_rendering:
+                if rc is None or not rc._is_rendering:
                     # this will bubble up
                     raise CancelledError()
             # keep tracing:
