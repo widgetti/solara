@@ -99,6 +99,11 @@ def Div(children=[], **kwargs):
 
 
 @react.component
+def Preformatted(text, **kwargs):
+    return vue.Html.element(tag="pre", children=[text], **kwargs)
+
+
+@react.component
 def Warning(text, icon="mdi-alert", children=[], **kwargs):
     return v.Alert(type="warning", text=True, prominent=True, icon=icon, children=[text, *children], **kwargs)
 
