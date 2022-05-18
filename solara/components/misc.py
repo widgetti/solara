@@ -130,7 +130,7 @@ def Button(
     if label:
         children = [label] + children
     if icon_name:
-        children = [v.Icon(left=True, children=[icon_name])] + children
+        children = [v.Icon(left=bool(label), children=[icon_name])] + children
     btn = v.Btn(children=children, **kwargs, disabled=disabled)
     ipyvue.use_event(btn, click_event, lambda *_ignore: on_click and on_click())
     return btn
