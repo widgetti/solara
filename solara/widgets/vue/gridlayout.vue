@@ -38,12 +38,16 @@
 module.exports = {
     async created() {
       this.gridlayout_loaded = false
-        console.log('created')
-        const [GridLayoutMod] = await this.import(['https://cdn.jsdelivr.net/npm/vue-grid-layout@2.1.3/dist/vue-grid-layout.js']);
-        console.log(GridLayoutMod)
-        this.$options.components['grid-layout'] = GridLayoutMod.GridLayout;
-        this.$options.components['grid-item'] = GridLayoutMod.GridItem;
-        this.gridlayout_loaded = true;
+
+      define("vue", ['jupyter-vue'], jupyterVue => {
+        jupyterVue.default = jupyterVue.Vue
+        return jupyterVue
+      });
+
+      const {GridLayout, GridItem} = (await this.import(['https://cdn.jsdelivr.net/npm/@widgetti/vue-grid-layout@2.3.13-alpha.2/dist/vue-grid-layout.umd.js']))[0]
+      this.$options.components['grid-item'] = GridItem;
+      this.$options.components['grid-layout'] = GridLayout;
+      this.gridlayout_loaded = true;
     },
     methods: {
         resizedEvent(i, newH, newW, newHPx, newWPx) {
