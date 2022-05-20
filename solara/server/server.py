@@ -120,7 +120,7 @@ def run_app(app_state):
         # container = widgets.VBox()
         import ipyvuetify
 
-        container = ipyvuetify.Html(tag="div", style_="display: flex; flex: 0 1 auto; align-items: left; justify-content: left")
+        container = ipyvuetify.Html(tag="div")
         # container = ipyvuetify.Html(tag="div")
         # support older versions of react
         result = render(main_object, container, handle_error=False, initial_state=app_state)
