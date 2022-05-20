@@ -74,7 +74,7 @@ def use_thread(
 
     lock: threading.Lock = react.use_memo(make_lock)()
     updater = use_force_update()
-    result_state, set_result_state = react.use_state(ResultState.INITIAL, key="result_state")
+    result_state, set_result_state = react.use_state(ResultState.INITIAL)
     cancel: threading.Event = react.use_memo(make_event)(dependencies)
     error = react.use_ref(cast(Optional[Exception], None))
     result = react.use_ref(cast(Optional[T], None))
