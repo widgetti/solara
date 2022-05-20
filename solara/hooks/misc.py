@@ -63,8 +63,8 @@ def use_thread(
         Callable[[], T],
         Iterator[Callable[[], T]],
     ],
-    intrusive_cancel=True,
     dependencies=[],
+    intrusive_cancel=True,
 ) -> Result[T]:
     def make_event(*_ignore_dependencies):
         return threading.Event()
