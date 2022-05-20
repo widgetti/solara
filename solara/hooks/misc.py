@@ -75,11 +75,11 @@ def use_thread(
     lock: threading.Lock = react.use_memo(make_lock)()
     updater = use_force_update()
     result_state, set_result_state = react.use_state(ResultState.INITIAL)
-    cancel: threading.Event = react.use_memo(make_event)(dependencies)
     error = react.use_ref(cast(Optional[Exception], None))
     result = react.use_ref(cast(Optional[T], None))
     running_thread = react.use_ref(cast(Optional[threading.Thread], None))
     counter, retry = use_retry()
+    cancel: threading.Event = react.use_memo(make_event)(dependencies + [counter])
 
     @contextlib.contextmanager
     def cancel_guard():
@@ -191,7 +191,6 @@ def use_thread(
         return cleanup
 
     react.use_side_effect(run, dependencies + [counter])
-    # return result, cancel.set, done, error
     return Result[T](value=result.current, error=error.current, state=result_state, cancel=cancel.set, _retry=retry)
 
 

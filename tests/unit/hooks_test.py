@@ -73,6 +73,7 @@ def test_hook_iterator():
 def test_use_thread_intrusive_cancel():
     result = None
     last_value = 0
+    seconds = 4
 
     @react.component
     def Test():
@@ -84,13 +85,13 @@ def test_use_thread_intrusive_cancel():
             for i in range(100):
                 last_value = i
                 # if not cancelled, might take 4 seconds
-                time.sleep(4 / 100)
+                time.sleep(seconds / 100)
             return 2**42
 
         result = use_thread(work, dependencies=[])
         return w.Label(value="test")
 
-    label, rc = react.render_fixed(Test())
+    react.render_fixed(Test())
     assert result is not None
     assert isinstance(result, sol.Result)
     result.cancel()
@@ -98,6 +99,15 @@ def test_use_thread_intrusive_cancel():
         time.sleep(0.1)
     assert result.state == sol.ResultState.CANCELLED
     assert last_value != 99
+
+    # also test retry
+    seconds = 0.1
+    result.retry()
+    while result.state == sol.ResultState.CANCELLED:
+        time.sleep(0.1)
+    while result.state == sol.ResultState.RUNNING:
+        time.sleep(0.1)
+    assert last_value == 99
 
 
 def test_hook_download(tmpdir):
