@@ -39,9 +39,9 @@ The possible values for `Result[T].state` are reflected in this state diagram.
 graph TD;
     INITIAL-- "Thread.start()" -->STARTING;
     STARTING-- "previous thread running" -->WAITING;
-    STARTING-- "no previous thread" -->STARTED;
-    WAITING-- "thread.join()" -->STARTED;
-    STARTED-- "on exception" -->ERROR
-    STARTED-- "work finished" -->FINISHED
-    STARTED-- "cancel()" -->CANCELLED
+    STARTING-- "no previous thread" -->RUNNING;
+    WAITING-- "thread.join()" -->RUNNING;
+    RUNNING-- "on exception" -->ERROR
+    RUNNING-- "work finished" -->FINISHED
+    RUNNING-- "cancel()" -->CANCELLED
 ```

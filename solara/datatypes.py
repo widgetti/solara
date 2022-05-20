@@ -31,7 +31,7 @@ class ResultState(Enum):
     INITIAL = 1
     STARTING = 2
     WAITING = 3
-    STARTED = 4
+    RUNNING = 4
     ERROR = 5
     FINISHED = 6
     CANCELLED = 7

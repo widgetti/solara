@@ -138,7 +138,7 @@ def use_thread(
                     return
             error.current = None
             result.current = None
-            set_result_state(ResultState.STARTED)
+            set_result_state(ResultState.RUNNING)
 
             sig = inspect.signature(callback)
             if sig.parameters:

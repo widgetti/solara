@@ -94,7 +94,7 @@ def test_use_thread_intrusive_cancel():
     assert result is not None
     assert isinstance(result, sol.Result)
     result.cancel()
-    while result.state == sol.ResultState.STARTED:
+    while result.state == sol.ResultState.RUNNING:
         time.sleep(0.1)
     assert result.state == sol.ResultState.CANCELLED
     assert last_value != 99
@@ -112,7 +112,7 @@ def test_hook_download(tmpdir):
         return w.Label(value=f"{result.progress} {result.state} {result.error}")
 
     label, rc = render_fixed(DownloadFile())
-    assert label.value == "0 ResultState.STARTED None"
+    assert label.value == "0 ResultState.RUNNING None"
     expected = "1.0 ResultState.FINISHED None"
     for i in range(200):  # max 2 second
         time.sleep(0.01)
