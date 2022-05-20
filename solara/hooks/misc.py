@@ -308,15 +308,12 @@ def use_file_content(path, watch=False) -> FileContentResult[bytes]:
         except Exception as e:
             return e
 
-    print(path, counter)
     try:
         mtime = os.path.getmtime(path)
     except Exception as e:
         result = FileContentResult[bytes](error=e, _retry=retry)
         # result.retry = retry
         return result
-
-    print(path, counter, mtime)
 
     content = read_file(
         path,
