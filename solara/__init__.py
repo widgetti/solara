@@ -1,5 +1,5 @@
 """Build webapps using IPywidgets"""
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 # isort: skip_file
 
 from . import util
