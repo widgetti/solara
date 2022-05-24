@@ -25,6 +25,19 @@ def append(text):
             f.write(content)
 
 
+@contextlib.contextmanager
+def replace(path, text):
+    with path.open() as f:
+        content = f.read()
+    try:
+        with path.open("w") as f:
+            f.write(text)
+        yield
+    finally:
+        with path.open("w") as f:
+            f.write(content)
+
+
 def test_reload_syntax_error(page: playwright.sync_api.Page, solara_server, solara_app, extra_include_path):
     with extra_include_path(app_path.parent), solara_app("testapp:app"):
         # use as module, otherwise pickle wil not work
@@ -62,3 +75,20 @@ def test_reload_many(page: playwright.sync_api.Page, solara_server, solara_app, 
         reload.reloader.reload_event_next.wait()
         page.locator("text=Clicked 3 times").click()
         page.locator("text=Clicked 4 times").wait_for(state="visible")
+
+
+def test_reload_vue(page: playwright.sync_api.Page, solara_server, solara_app, extra_include_path):
+    with extra_include_path(app_path.parent), solara_app("testapp:vue_test_app"):
+        page.goto(solara_server.base_url)
+        assert page.title() == "Hello from Solara ☀️"
+        page.locator("text=foobar").wait_for()
+
+        vuecode = """
+<template>
+  <div>RELOADED</div>
+</template>
+        """
+        vuepath = Path(__file__).parent / "test.vue"
+        with replace(vuepath, vuecode):
+            page.locator("text=RELOADED").wait_for()
+        page.locator("text=foobar").wait_for()

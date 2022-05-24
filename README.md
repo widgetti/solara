@@ -327,6 +327,11 @@ Install Solara in 'edit' mode. We use flit (`pip install flit` if you don't alre
 
 Now you can edit the source code in the git repository, without having to reinstall it.
 
+### Reloading of .vue files
+
+The solara server automatically watches all `.vue` files that are used by vue templates (there are some used in solara.components for example).
+When a `.vue` file is saved, the widgets get updated automatically, without needing a page reload, aiding rapid development.
+
 ## Contributing
 
 If you plan to contribute, also run the following:

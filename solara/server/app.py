@@ -140,7 +140,7 @@ class AppScript:
         self.fullname = name
         if reload.reloader.on_change:
             raise RuntimeError("Previous reloader still had a on_change attached, no cleanup?")
-        reload.reloader.on_change = self.on_module_change
+        reload.reloader.on_change = self.on_file_change
 
         self.app_name = default_app_name
         if ":" in self.fullname:
@@ -232,9 +232,18 @@ class AppScript:
 
         return app
 
-    def on_module_change(self, name):
-        logger.info("Reload requires due to change in module: %s", name)
-        self.reload()
+    def on_file_change(self, name):
+        path = Path(name)
+        if path.suffix == ".vue":
+            logger.info("Vue file changed: %s", name)
+            template_content = path.read_text()
+            for context in contexts.values():
+                for filepath, widget in context.templates.items():
+                    if filepath == str(path):
+                        widget.template = template_content
+        else:
+            logger.info("Reload requires due to change in module: %s", name)
+            self.reload()
 
     def reload(self):
         # if multiple files change in a short time, we want to do this

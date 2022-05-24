@@ -1,4 +1,8 @@
 import dataclasses
+import os
+
+import ipyvue
+import traitlets
 
 from solara.kitchensink import react, sol, w
 
@@ -26,3 +30,17 @@ def ClickBoom():
 
 
 clickboom = ClickBoom()
+
+
+class TestWidget(ipyvue.VueTemplate):
+    template_file = os.path.realpath(os.path.join(os.path.dirname(__file__), "test.vue"))
+
+    value = traitlets.Any(0).tag(sync=True)
+
+
+@react.component
+def VueTestApp():
+    return TestWidget.element(value="foobar")
+
+
+vue_test_app = VueTestApp()

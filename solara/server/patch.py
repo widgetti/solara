@@ -9,7 +9,7 @@ import ipykernel.kernelbase
 import IPython.display
 import ipywidgets
 
-from . import app, settings
+from . import app, reload, settings
 
 logger = logging.getLogger("solara.server.app")
 
@@ -139,6 +139,17 @@ class context_dict_templates(context_dict):
         return context.templates
 
 
+def auto_watch_get_template(get_template):
+    """Wraps get_template and adds a file listener for automatic .vue file reloading"""
+
+    def wrapper(abs_path):
+        template = get_template(abs_path)
+        reload.reloader.watcher.add_file(abs_path)
+        return template
+
+    return wrapper
+
+
 Thread__init__ = threading.Thread.__init__
 Thread__run = threading.Thread.run
 
@@ -172,6 +183,12 @@ def patch():
     # because the import in ipvue overrides it
     template_mod = sys.modules["ipyvue.Template"]
     template_mod.template_registry = context_dict_templates()  # type: ignore
+    template_mod.get_template = auto_watch_get_template(template_mod.get_template)  # type: ignore
+
+    # this module also imports get_template
+    template_mod_vue = sys.modules["ipyvue.VueTemplateWidget"]
+    template_mod_vue.get_template = template_mod.get_template  # type: ignore
+
     ipywidgets.widget.Widget.widgets = context_dict_widgets()  # type: ignore
     threading.Thread.__init__ = WidgetContextAwareThread__init__  # type: ignore
     threading.Thread.run = Thread_debug_run  # type: ignore
