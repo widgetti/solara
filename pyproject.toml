@@ -24,6 +24,7 @@ dependencies = [
     "humanize",
     "ipyvuetify",
     "numpy",
+    "pillow",
 ]
 
 [tool.flit.module]
