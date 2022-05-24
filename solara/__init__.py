@@ -9,7 +9,6 @@ from .datatypes import *
 from .hooks import *
 from .memoize import memoize
 from .components import *
-from .widgets import watch as auto_reload_vue
 
 github_url = "https://github.com/widgetti/solara"
 git_branch = "master"

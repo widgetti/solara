@@ -5,6 +5,7 @@ import importlib.util
 import logging
 import os
 import pickle
+import sys
 import threading
 from enum import Enum
 from pathlib import Path
@@ -166,6 +167,9 @@ class AppScript:
                 assert spec is not None
                 assert spec.origin is not None
                 self.path = Path(spec.origin)
+        working_directory = str(self.path.parent)
+        if working_directory not in sys.path:
+            sys.path.insert(0, working_directory)
 
         # this might be useful for development
         # but requires reloading of react in solara iself
