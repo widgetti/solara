@@ -231,10 +231,8 @@ const COOKIE_KEY_CONTEXT_ID = 'solara-context-id'
 async function solaraInit() {
     define("vue", [], () => Vue);
     define("vuetify", [], { framework: app.$vuetify });
-    console.log(document.cookie)
     cookies = getCookiesMap(document.cookie);
     const contextId = cookies[COOKIE_KEY_CONTEXT_ID]
-    console.log('contextId', contextId)
     connectWatchdog()
     // var path = window.location.pathname.substr(14);
     // NOTE: this file is not transpiled, async/await is the only modern feature we use here
