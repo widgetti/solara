@@ -400,3 +400,14 @@ Yes, Solara will execute each cell, and after that will look for a variable `app
 ## Can I use Solara in my existing FastAPI/Starlette/Flask server?
 
 Yes, take a look at the `solara.server.starlette`  and `solara.server.fastapi` and `solara.server.flask` module. The usage will change over time, so read the source and be ready to change this in the future. We do plan to provide a stable API for this in the future.
+
+
+## How to fix: inotify watch limit reached?
+
+Add the line
+
+    fs.inotify.max_user_watches=524288
+
+To your /etc/sysctl.conf file, and run `sudo sysctl -p.`
+
+Or if you are using visual studio code, please read: https://code.visualstudio.com/docs/setup/linux#_visual-studio-code-is-unable-to-watch-for-file-changes-in-this-large-workspace-error-enospc

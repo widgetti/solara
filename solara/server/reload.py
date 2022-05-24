@@ -1,4 +1,5 @@
 import contextlib
+import errno
 import importlib
 import inspect
 import logging
@@ -81,7 +82,17 @@ else:
                 logger.debug("Watching directory %s", directory)
                 observer = Observer()
                 observer.schedule(self, directory, recursive=False)
-                observer.start()
+                try:
+                    observer.start()
+                except OSError as e:
+                    if e.errno == errno.ENOSPC:
+                        # from rich import print()
+                        from .utils import start_error
+
+                        start_error(
+                            "inotify watch limit reached", "Read https://github.com/widgetti/solara/#how-to-fix-inotify-watch-limit-reached", exception=e
+                        )
+
                 self.observers.append(observer)
                 self.directories.add(directory)
 
