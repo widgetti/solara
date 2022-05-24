@@ -17,10 +17,6 @@ jobs:
           python-version: 3.7
       - name: Install flit
         run: pip install flit
-      - name: Install
-        run: flit install
-      - name: Uninstall
-        run: pip uninstall solara -y
       - name: Build
         run: flit build
       - name: Install

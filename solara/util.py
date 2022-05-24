@@ -4,6 +4,8 @@ import sys
 import typing
 from pathlib import Path
 
+import PIL.Image
+
 import solara as sol
 
 if typing.TYPE_CHECKING:
@@ -41,8 +43,6 @@ def isinstanceof(object, spec: str):
 
 def numpy_to_image(data: "np.ndarray", format="png"):
     import io
-
-    import PIL.Image
 
     if data.ndim == 3:
         if data.shape[2] == 3:
