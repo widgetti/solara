@@ -4,7 +4,6 @@ import ipyvue as vue
 import react_ipywidgets as react
 import react_ipywidgets.ipyvuetify as v
 import react_ipywidgets.ipyvuetify as ipyvue
-import react_ipywidgets.ipywidgets as w
 
 import solara as sol
 import solara.widgets
@@ -231,22 +230,6 @@ def FigurePlotly(fig, on_selection=None, on_click=None, on_hover=None, dependenc
 
     react.use_side_effect(update_data, dependencies or fig)
     return fig_element
-
-
-@react.component
-def Image(data):
-    def data_2_png(data, format="png"):
-        import io
-
-        import PIL.Image
-
-        im = PIL.Image.fromarray(data[::], "RGB")
-        f = io.BytesIO()
-        im.save(f, format)
-        return f.getvalue()
-
-    value = data_2_png(data)
-    return w.Image(value=value)
 
 
 @react.component

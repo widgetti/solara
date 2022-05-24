@@ -9,6 +9,7 @@ from . import (
     gridfixed,
     hbox,
     html,
+    image,
     markdown,
     slider,
     sql_code,
@@ -19,6 +20,7 @@ from . import (
 
 modules = {
     "Button": button,
+    "Image": image,
     "Slider": slider,
     "ToggleButtons": togglebuttons,
     "DataTable": datatable,
