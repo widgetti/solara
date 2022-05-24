@@ -219,8 +219,19 @@ async def read_root(context_id: Optional[str], base_url: str = ""):
             "voila/extension",
             "contrib_nbextensions_help_item/main",
             "execute_time/ExecuteTime",
+            "dominocode/extension",
         ]
-        nbextensions = [name for name, enabled in load_extensions.items() if enabled and name not in ignorelist]
+        directories = get_nbextensions_directories()
+
+        def exists(name):
+            for directory in directories:
+                if (directory / (name + ".js")).exists():
+                    return True
+            logger.error(f"nbextension {name} not found")
+            return False
+
+        nbextensions = [name for name, enabled in load_extensions.items() if enabled and (name not in ignorelist) and exists(name)]
+
     else:
         nbextensions = []
 
