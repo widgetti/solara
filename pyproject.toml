@@ -61,6 +61,7 @@ server = [
     "websockets",
     "starlette",
     "voila",
+    "jupyter_client>=7.0.0",
 ]
 flask = [
     "flask",
