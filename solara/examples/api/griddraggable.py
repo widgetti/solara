@@ -31,8 +31,8 @@ def GridDraggableDemo():
     # some placeholders
     items = [ColorCard(title=f"Child {i}", color=colors[i]) for i in range(len(grid_layout))]
     with sol.VBox() as main:
-        resizable = sol.ui_checkbox(True, "Allow resizing")
-        draggable = sol.ui_checkbox(True, "Allow dragging")
+        resizable = sol.ui_checkbox("Allow resizing", value=True)
+        draggable = sol.ui_checkbox("Allow dragging", value=True)
 
         def reset_layout():
             set_grid_layout(grid_layout_initial)
