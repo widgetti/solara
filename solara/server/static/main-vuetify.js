@@ -183,7 +183,7 @@ function connectWatchdog() {
     var WSURL = base.replace("https://", "wss://").replace("http://", "ws://")
     window.wsWatchdog = new WebSocket(WSURL + 'solara/watchdog/' + path);
     wsWatchdog.onopen = () => {
-        console.log('connected with watchdog')
+        console.log('connected with control socket')
     }
     wsWatchdog.onmessage = (evt) => {
         var msg = JSON.parse(evt.data)
@@ -206,8 +206,9 @@ function connectWatchdog() {
     }
     wsWatchdog.onclose = () => {
         timeout = 100
-        console.log('disconnected watchdog, reconnecting in ', timeout / 1000, 'seconds')
+        console.log('disconnected control socket, reconnecting in ', timeout / 1000, 'seconds')
         setTimeout(() => {
+            console.log('connecting control socket...')
             connectWatchdog();
         }, timeout)
     }
