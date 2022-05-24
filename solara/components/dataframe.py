@@ -124,7 +124,7 @@ def HistogramCard(df, column=None):
                             pass
                         with v.CardText():
                             column = items[0] if column not in items else column
-                            column = ui_dropdown(value=column, description="x", options=items)
+                            column = ui_dropdown(value=column, label="x", options=items)
             if column:
                 log = False
                 import vaex
@@ -209,15 +209,15 @@ def ScatterCard(df, x=None, y=None, color=None):
                             xcol = x
                             if xcol is None:
                                 xcol = xcol if len(floats) == 0 else floats[0]
-                            xcol = ui_dropdown(value=xcol, description="x", options=floats)
+                            xcol = ui_dropdown(value=xcol, label="x", options=floats)
                             ycol = y
                             if ycol is None:
                                 ycol = ycol if len(floats) < 2 else floats[1]
-                            ycol = ui_dropdown(value=ycol, description="y", options=floats)
+                            ycol = ui_dropdown(value=ycol, label="y", options=floats)
                             ccol = color
                             if ccol is None:
                                 ccol = ccol if len(floats) < 3 else floats[0]
-                            ccol = ui_dropdown(value=ccol, description="Color", options=floats)
+                            ccol = ui_dropdown(value=ccol, label="Color", options=floats)
             if xcol and ycol:
                 if len(dff) > max_points:
                     v.Alert(
@@ -356,14 +356,14 @@ def HeatmapCard(df, x=None, y=None, debounce=True):
                             xcol = x
                             if xcol is None:
                                 xcol = xcol if len(floats) == 0 else floats[0]
-                            xcol = ui_dropdown(value=xcol, description="x", options=floats)
+                            xcol = ui_dropdown(value=xcol, label="x", options=floats)
                             ycol = y
                             if ycol is None:
                                 ycol = ycol if len(floats) == 0 else floats[1]
-                            ycol = ui_dropdown(value=ycol, description="y", options=floats)
-                            scheme = ui_dropdown(value=color_maps[0], options=color_maps)
+                            ycol = ui_dropdown(value=ycol, label="y", options=floats)
+                            scheme = ui_dropdown("Color map", value=color_maps[0], options=color_maps)
                             v.RangeSlider(v_model=contrast, on_v_model=set_contrast, label="Contrast", min=0, max=100)
-                            crossfilter_visible = ui_checkbox(value=False, description="Cross filter visible")
+                            crossfilter_visible = ui_checkbox(value=False, label="Cross filter visible")
 
             if xcol and ycol:
                 import vaex.jupyter
@@ -598,7 +598,7 @@ def PivotTableCard(df, x=[], y=[]):
                                         pass
                                     with v.CardText():
                                         for i in range(10):
-                                            col = ui_dropdown(value=x[i] if i < len(x) else None, description=f"Row {i}", options=items)
+                                            col = ui_dropdown(value=x[i] if i < len(x) else None, label=f"Row {i}", options=items)
                                             if col is None:
                                                 break
                                             else:
@@ -612,7 +612,7 @@ def PivotTableCard(df, x=[], y=[]):
                                         pass
                                     with v.CardText():
                                         for i in range(10):
-                                            col = ui_dropdown(value=y[i] if i < len(y) else None, description=f"Column {i}", options=items)
+                                            col = ui_dropdown(value=y[i] if i < len(y) else None, label=f"Column {i}", options=items)
                                             if col is None:
                                                 break
                                             else:

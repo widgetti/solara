@@ -32,37 +32,37 @@ def ListItem(title, icon_name: str = None, children=[]):
         return main
 
 
-def ui_dropdown(value="foo", options=["foo", "bar"], description="", key=None, disabled=False, **kwargs):
-    key = key or str(value) + str(description) + str(options)
+def ui_dropdown(label, value=None, options=["foo", "bar"], key=None, disabled=False, **kwargs):
+    key = key or str(value) + str(label) + str(options)
     value, set_value = react.use_state(value, key)
 
     def set_index(index):
         set_value(options[index])
 
-    v.Select(v_model=value, label=description, items=options, on_v_model=set_value, clearable=True, disabled=disabled, **kwargs)
+    v.Select(v_model=value, label=label, items=options, on_v_model=set_value, clearable=True, disabled=disabled, **kwargs)
     return value
 
 
-def ui_text(value="", description="Enter text", key=None, clearable=False, hint="", disabled=False, **kwargs):
-    key = key or str(value) + str(description) + str(hint)
+def ui_text(label, value="", key=None, clearable=False, hint="", disabled=False, **kwargs):
+    key = key or str(value) + str(label) + str(hint)
     value, set_value = react.use_state(value, key)
-    v.TextField(v_model=value, label=description, on_v_model=set_value, clearable=clearable, hint=hint, disabled=disabled, **kwargs)
+    v.TextField(v_model=value, label=label, on_v_model=set_value, clearable=clearable, hint=hint, disabled=disabled, **kwargs)
     return value
 
 
-def ui_checkbox(value=True, description="", key=None, disabled=False, **kwargs):
-    key = key or str(value) + str(description)
+def ui_checkbox(label, value=True, key=None, disabled=False, **kwargs):
+    key = key or str(value) + str(label)
     value, set_value = react.use_state(value, key)
-    v.Checkbox(v_model=value, label=description, on_v_model=set_value, **kwargs)
+    v.Checkbox(v_model=value, label=label, on_v_model=set_value, **kwargs)
     return value
 
 
-def ui_slider(value=1, description="", min=0, max=100, key=None, tick_labels=None, thumb_label=None, disabled=False, **kwargs):
-    key = key or str(value) + str(description)
+def ui_slider(value=1, label="", min=0, max=100, key=None, tick_labels=None, thumb_label=None, disabled=False, **kwargs):
+    key = key or str(value) + str(label)
     value, set_value = react.use_state(value, key)
     v.Slider(
         v_model=value,
-        label=description,
+        label=label,
         min=min,
         max=max,
         on_v_model=set_value,
