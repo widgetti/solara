@@ -1,17 +1,28 @@
 import json
+from typing import Union
 
 import ipywidgets
 import js
 
 from . import app, patch, server
 from .kernel import BytesWrap, Kernel, WebsocketStreamWrapper
+from .websocket import WebsocketWrapper
 
 context_id = "single"
 
 
-class Websocket:
-    def send(self, msg):
-        js.sendToPage(msg)
+class Websocket(WebsocketWrapper):
+    def send_text(self, data: str) -> None:
+        js.sendToPage(data)
+
+    def send_bytes(self, data: bytes) -> None:
+        js.sendToPage(data)
+
+    def close(self) -> None:
+        pass
+
+    def receive(self) -> Union[str, bytes]:
+        return b""
 
 
 ws = Websocket()
@@ -22,7 +33,6 @@ def start():
     kernel = Kernel()
     kernel.shell_stream = WebsocketStreamWrapper(ws, "shell")
     kernel.control_stream = WebsocketStreamWrapper(ws, "control")
-    kernel.session.websockets.add(ws)
     context = app.contexts[context_id] = app.AppContext(id=context_id, kernel=kernel, control_sockets=[], widgets={}, templates={})
     app_state = None
     with context:
@@ -31,6 +41,7 @@ def start():
         context.widgets["content"] = widget
     context.app_object = render_context
     model_id = context.widgets["content"].model_id
+    kernel.session.websockets.add(ws)
     return model_id
 
 
