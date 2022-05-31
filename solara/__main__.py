@@ -1,4 +1,5 @@
 import os
+import shutil
 import site
 import sys
 import threading
@@ -15,9 +16,12 @@ import uvicorn
 from uvicorn.main import LEVEL_CHOICES
 
 import solara.server
+import solara.server.patch
+import solara.server.server
 
 from .server import settings
 
+HERE = Path(__file__).parent
 HOST_DEFAULT = os.environ.get("HOST", "localhost")
 if "arm64-apple-darwin" in HOST_DEFAULT:  # conda activate script
     HOST_DEFAULT = "localhost"
@@ -298,7 +302,63 @@ def run(
     # server_thread.join()
 
 
+@cli.command()
+def staticbuild():
+    """Experimental static build"""
+    server_path = HERE / "server/static"
+
+    build_dir = Path("staticbuild")
+    build_dir.mkdir(exist_ok=True)
+
+    build_dir_static = build_dir / "static"
+    build_dir_static.mkdir(exist_ok=True)
+    for path in (
+        list(server_path.glob("*.css"))
+        + list(server_path.glob("*.js"))
+        + list(server_path.glob("*.ps"))
+        + list(server_path.glob("*.py"))
+        + list(server_path.glob("*.png"))
+        + list(server_path.glob("*.svg"))
+    ):
+        shutil.copy(path, build_dir_static)
+
+    include_nbextensions = True
+    if include_nbextensions:
+        directories = solara.server.server.get_nbextensions_directories()
+        nbextensions = solara.server.server.get_nbextensions()
+        for name in nbextensions:
+            for directory in directories:
+                if (directory / (name + ".js")).exists():
+                    src = (directory / (name + ".js")).parent
+                    dst: Path = (build_dir_static / "nbextensions" / (name + ".js")).parent
+                    dst.mkdir(parents=True, exist_ok=True)
+                    shutil.copytree(src, dst, dirs_exist_ok=True)
+
+    build_dir_wheels = build_dir / "wheels"
+    build_dir_wheels.mkdir(exist_ok=True)
+    version = solara.__version__
+    for path in [Path(f"dist/solara-{version}-py2.py3-none-any.whl")]:
+        shutil.copy(path, build_dir_wheels)
+
+    build_dir_nbconvert_static = build_dir / "static/nbconvert"
+    build_dir_nbconvert_static.mkdir(exist_ok=True, parents=True)
+    nbconvert = Path(solara.server.server.nbconvert_static)
+    for path in list(nbconvert.glob("*.js")) + list(nbconvert.glob("*.css")):
+        shutil.copy(path, build_dir_nbconvert_static)
+
+    build_dir_static_dist = build_dir / "static/dist"
+    build_dir_static_dist.mkdir(exist_ok=True)
+    voila = server_path / "dist"
+    for path in list(voila.glob("*.js")) + list(voila.glob("*.woff")):
+        shutil.copy(path, build_dir_static_dist)
+
+    solara.server.patch.patch()
+    index_html, context_id = solara.server.server.read_root("fake-context-id", "", render_kwargs={"for_pyodide": True}, use_nbextensions=True)
+    (build_dir / "index.html").write_text(index_html)
+
+
 cli.add_command(run)
+cli.add_command(staticbuild)
 
 
 def main():
