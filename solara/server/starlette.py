@@ -142,9 +142,9 @@ routes = [
     Route("/", endpoint=root),
     Route("/{fullpath}", endpoint=root),
     Mount(f"{prefix}/static/dist", app=StaticFiles(directory=server.voila_static)),
+    Mount(f"{prefix}/static/nbextensions", app=StaticNbFiles()),
+    Mount(f"{prefix}/static/nbconvert", app=StaticFiles(directory=server.nbconvert_static)),
     Mount(f"{prefix}/static", app=StaticFiles(directory=server.solara_static)),
-    Mount(f"{prefix}/solara/static", app=StaticFiles(directory=server.nbconvert_static)),
-    Mount(f"{prefix}/voila/nbextensions", app=StaticNbFiles()),
 ]
 app = Starlette(routes=routes)
 patch.patch()

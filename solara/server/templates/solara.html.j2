@@ -17,9 +17,9 @@
     </link>
     <link href="static/style.css" rel="stylesheet">
     </link>
-    <link href="solara/static/index.css" rel="stylesheet">
+    <link href="static/nbconvert/index.css" rel="stylesheet">
     </link>
-    <link href="solara/static/theme-light.css" rel="stylesheet">
+    <link href="static/nbconvert/theme-light.css" rel="stylesheet">
     </link>
     <title>Hello from Solara ☀️</title>
 
@@ -220,33 +220,34 @@
                     title: "No title",
                     voilaDebugMessages: [],
                     outputMessages: [],
+                    theme: theme,
+                    debug: debug,
                     // outputMessages: [{ name: 'stderr', text: 'lala' }],
                 }
             }
         });
-        requirejs.config({ baseUrl: '{{base_url}}voila/', waitSeconds: 30 });
 
         // Loading classic notebook extensions.
         {% if 'jupyter-vuetify/extension' in resources.nbextensions -%}
         window.enable_nbextensions = true;
         {% endif -%}
         requirejs.config({
-            baseUrl: '{{resources.base_url}}voila',
+            baseUrl: '{{resources.base_url}}static/',
             waitSeconds: 3000,
             map: {
                 '*': {
                         {% if 'jupyter-vue/extension' in resources.nbextensions -%}
-        'jupyter-vue': 'nbextensions/jupyter-vue/nodeps',
-            {% endif -%}
-        {% if 'jupyter-vuetify/extension' in resources.nbextensions -%}
-        'jupyter-vuetify': 'nbextensions/jupyter-vuetify/nodeps',
-            {% endif -%}
+                            'jupyter-vue': 'nbextensions/jupyter-vue/nodeps',
+                        {% endif -%}
+                        {% if 'jupyter-vuetify/extension' in resources.nbextensions -%}
+                            'jupyter-vuetify': 'nbextensions/jupyter-vuetify/nodeps',
+                        {% endif -%}
                     },
                 }
             });
         requirejs([
             {% for ext in resources.nbextensions if ext != 'jupyter-vuetify/extension' and ext != 'jupyter-vue/extension' -%}
-        "{{resources.base_url}}voila/nbextensions/{{ ext }}.js",
+                "{{resources.base_url}}static/nbextensions/{{ ext }}.js",
             {% endfor %}
         ]);
 

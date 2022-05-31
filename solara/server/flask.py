@@ -52,7 +52,7 @@ def watchdog(ws: simple_websocket.Server):
     server.control_loop(ws_wrapper, context_id)
 
 
-@blueprint.route("/voila/nbextensions/<dir>/<filename>")
+@blueprint.route("/static/nbextensions/<dir>/<filename>")
 def nbext(dir, filename):
     for directory in server.nbextensions_directories:
         file = directory / dir / filename
@@ -66,7 +66,7 @@ def serve_voila_static(path):
     return send_from_directory(server.voila_static, path)
 
 
-@blueprint.route("/solara/static/<path:path>")
+@blueprint.route("/static/nbconvert/<path:path>")
 def serve_nbconvert_static(path):
     return send_from_directory(server.nbconvert_static, path)
 
