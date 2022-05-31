@@ -174,6 +174,10 @@ def use_thread(
                         set_result_state(ResultState.ERROR)
                         logger.exception(e)
                     return
+                except CancelledError:
+                    pass
+                    # this means this thread is cancelled not be request, but because
+                    # a new thread is running, we can ignore this
             finally:
                 if threading.current_thread() == running_thread.current:
                     running_thread.current = None
