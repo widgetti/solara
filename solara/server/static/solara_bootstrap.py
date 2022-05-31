@@ -102,7 +102,10 @@ async def main():
     ):
         sys.modules[fake] = solara_bootstrap
 
-    await micropip.install("/static/wheels/solara-0.0.4-py2.py3-none-any.whl", keep_going=True)
+    requirements = ["pydantic", "jinja2", "bqplot", "altair", "vega_datasets", "plotly"]
+    for dep in requirements:
+        await micropip.install(dep, keep_going=True)
+    await micropip.install("/wheels/solara-0.1.2-py2.py3-none-any.whl", keep_going=True)
     import solara
 
     el = solara.Warning(text="lala")

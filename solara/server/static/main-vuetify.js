@@ -155,6 +155,7 @@ class WebSocketRedirectWebWorker {
     start() {
         solaraWorker.addEventListener('message', async (event) => {
             let msg = event.data
+            // console.log('on msg', msg)
             if (msg.type == 'opened') {
                 this.onopen()
             }
@@ -233,7 +234,8 @@ async function solaraInit() {
     define("vuetify", [], { framework: app.$vuetify });
     cookies = getCookiesMap(document.cookie);
     const contextId = cookies[COOKIE_KEY_CONTEXT_ID]
-    connectWatchdog()
+    if (!for_pyodide)
+        connectWatchdog()
     // var path = window.location.pathname.substr(14);
     // NOTE: this file is not transpiled, async/await is the only modern feature we use here
     return new Promise((resolve, reject) => {
@@ -294,7 +296,11 @@ async function solaraInit() {
                 //     // kernel.dispose();
                 // });
                 app.$data.loading_text = 'Loading app';
-                await widgetManager.build_widgets();
+                if (!for_pyodide) {
+                    // using pyodide we get the models when the app runs
+                    // this should also happen in normal solara
+                    await widgetManager.build_widgets();
+                }
                 voila.renderMathJax();
                 resolve()
             })()
@@ -309,7 +315,6 @@ async function solaraMount(model_id) {
     async function init() {
         await Promise.all(Object.values(widgetManager._models).map(async (modelPromise) => {
             const model = await modelPromise;
-            // console.log(model)
             if (model.model_id == model_id) {
                 const view = await widgetManager.create_view(model);
                 provideWidget('content', view);
