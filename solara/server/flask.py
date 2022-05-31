@@ -84,7 +84,7 @@ async def read_root(path):
         base_url = base_url[:-1]
     print(base_url)
     context_id = request.cookies.get(appmod.COOKIE_KEY_CONTEXT_ID)
-    content, context_id = await server.read_root(context_id, base_url=base_url)
+    content, context_id = server.read_root(context_id, base_url=base_url)
     assert context_id is not None
     response = flask.Response(content, mimetype="text/html")
     response.set_cookie(appmod.COOKIE_KEY_CONTEXT_ID, value=context_id)

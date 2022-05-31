@@ -121,7 +121,7 @@ async def root(request: Request, fullpath: Optional[str] = ""):
         root_path = request.headers.get("x-script-name")
 
     context_id = request.cookies.get(appmod.COOKIE_KEY_CONTEXT_ID)
-    content, context_id = await server.read_root(context_id, root_path)
+    content, context_id = server.read_root(context_id, root_path)
     assert context_id is not None
     response = HTMLResponse(content=content)
     response.set_cookie(appmod.COOKIE_KEY_CONTEXT_ID, value=context_id)
