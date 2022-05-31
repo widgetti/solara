@@ -221,6 +221,7 @@ def read_root(context_id: Optional[str], base_url: str = "", render_kwargs={}, u
         "base_url": base_url,
         "resources": resources,
         "theme": settings.theme.dict(),
+        "production": settings.main.mode == "production",
         **render_kwargs,
     }
     logger.info("Render setting for template: %r", render_settings)

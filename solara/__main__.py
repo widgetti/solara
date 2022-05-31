@@ -104,7 +104,15 @@ def cli():
 @cli.command()
 @click.option("--port", default=int(os.environ.get("PORT", 8765)))
 @click.option("--host", default=HOST_DEFAULT)
-@click.option("--dev/--no-devn", default=False)
+@click.option(
+    "--dev/--no-dev",
+    default=False,
+    help="""Tell Solara to work in production(default) or development mode.
+When in dev mode Solara will:
+  Auto reload server when the server code changes
+  Prefer non-minized js/css assets for easier debugging.
+""",
+)
 @click.option("--open/--no-open", default=False)
 @click.option("--reload", is_flag=True, default=False, help="Enable auto-reload.")
 @click.option(
@@ -228,6 +236,7 @@ def run(
         reload_excludes = [str(solara_root / "examples")]
         del solara_root
         reload = True
+        settings.main.mode = "development"
 
     server = None
 
