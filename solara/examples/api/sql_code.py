@@ -11,33 +11,32 @@ import threading
 from typing import Optional, cast
 
 import pandas as pd
-import vaex.datasets
+
+try:
+    import vaex.datasets
+except ImportError:
+    vaex = None
 
 from solara.kitchensink import react, sol, v
 
-df_iris = vaex.datasets.iris().to_pandas_df()
-df_titanic = vaex.datasets.titanic().to_pandas_df()
+if vaex is not None:
+    df_iris = vaex.datasets.iris().to_pandas_df()
+    df_titanic = vaex.datasets.titanic().to_pandas_df()
 
+    def create_db():
+        conn = sqlite3.connect(filename)
+        df_iris.to_sql("iris", conn, if_exists="replace", index=False)
+        df_titanic.to_sql("titanic", conn, if_exists="replace", index=False)
+        conn.close()
 
-def create_db():
+    filename = "solara-sql.db"
+    if not os.path.exists(filename):
+        create_db()
+
     conn = sqlite3.connect(filename)
-    df_iris.to_sql("iris", conn, if_exists="replace", index=False)
-    df_titanic.to_sql("titanic", conn, if_exists="replace", index=False)
-    conn.close()
-
-
-filename = "solara-sql.db"
-if not os.path.exists(filename):
-    create_db()
-
-
-conn = sqlite3.connect(filename)
-conn.row_factory = sqlite3.Row
-table_names = [k[0] for k in conn.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").fetchall()]
-print(table_names)
-table_hints = {table_name: conn.execute(f"SELECT * from {table_name} LIMIT 1").fetchone().keys() for table_name in table_names}
-
-print(table_hints)
+    conn.row_factory = sqlite3.Row
+    table_names = [k[0] for k in conn.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").fetchall()]
+    table_hints = {table_name: conn.execute(f"SELECT * from {table_name} LIMIT 1").fetchone().keys() for table_name in table_names}
 
 
 @react.component

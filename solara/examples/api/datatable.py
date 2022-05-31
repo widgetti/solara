@@ -25,12 +25,17 @@ def DataTable(df, page=0, items_per_page=20, format=None, column_actions: List[C
 
 from typing import Any, Dict, Optional, cast
 
-import vaex
-
+try:
+    import vaex
+except ImportError:
+    vaex = None
 import solara.components.datatable
 from solara.kitchensink import react, sol
 
-df = vaex.datasets.titanic()
+if vaex is not None:
+    df = vaex.datasets.titanic()
+else:
+    df = None
 
 
 @react.component

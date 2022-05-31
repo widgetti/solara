@@ -20,3 +20,4 @@ def ButtonDemo():
 
 Component = sol.Button
 App = ButtonDemo
+app = App()

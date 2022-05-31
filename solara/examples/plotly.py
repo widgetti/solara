@@ -3,11 +3,15 @@ import plotly.express as px
 
 from solara.kitchensink import react, sol
 
-df = pd.read_csv("https://raw.githubusercontent.com/plotly/datasets/master/gapminderDataFiveYear.csv")
+try:
+    df = pd.read_csv("https://raw.githubusercontent.com/plotly/datasets/master/gapminderDataFiveYear.csv")
+except Exception:
+    df = None
 
-year_min = df["year"].min().item()
-year_max = df["year"].max().item()
-years = df["year"].unique().tolist()
+if df is not None:
+    year_min = df["year"].min().item()
+    year_max = df["year"].max().item()
+    years = df["year"].unique().tolist()
 
 
 @react.component
