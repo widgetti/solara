@@ -133,7 +133,7 @@ def run_app(app_state):
         raise ValueError(f"Main object (with name {solara_app.app_name} in {solara_app.path}) is not a Widget or Element, but {type(main_object)}")
 
 
-def read_root(context_id: Optional[str], base_url: str = "", render_kwargs={}, enable_nbextensions=True):
+def read_root(context_id: Optional[str], base_url: str = "", render_kwargs={}, use_nbextensions=True):
     # context_id = None
     if context_id is None or context_id not in app.contexts:
         kernel = Kernel()
@@ -202,8 +202,7 @@ def read_root(context_id: Optional[str], base_url: str = "", render_kwargs={}, e
     from jupyter_server.services.config import ConfigManager
 
     config_manager = ConfigManager(read_config_path=read_config_path)
-    enable_nbextensions = True
-    if enable_nbextensions:
+    if use_nbextensions:
         notebook_config = config_manager.get("notebook")
         # except for the widget extension itself, since Voilà has its own
         load_extensions = notebook_config.get("load_extensions", {})
@@ -245,6 +244,7 @@ def read_root(context_id: Optional[str], base_url: str = "", render_kwargs={}, e
         "base_url": base_url,
         "resources": resources,
         "theme": settings.theme.dict(),
+        **render_kwargs,
     }
     logger.info("Render setting for template: %r", render_settings)
     response = template.render(**render_settings)
