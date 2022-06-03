@@ -15,6 +15,7 @@ import ipywidgets as widgets
 import react_ipywidgets as react
 
 from . import kernel, reload
+from .utils import nested_get
 
 WebSocket = Any
 
@@ -220,6 +221,7 @@ class AppScript:
             raise ValueError(self.type)
 
         app = local_scope.get(self.app_name)
+        app = nested_get(local_scope, self.app_name)
         if app is None:
             import difflib
 

@@ -140,7 +140,14 @@ def run_app(app_state):
             render_context = result
         return container, render_context
     else:
-        raise ValueError(f"Main object (with name {solara_app.app_name} in {solara_app.path}) is not a Widget or Element, but {type(main_object)}")
+        extra = ""
+        dotted = []
+        for key, value in vars(main_object).items():
+            if isinstance(value, (Element, widgets.Widget)):
+                dotted.append(f"{solara_app.app_name}.{key}")
+        if dotted:
+            extra = " We did find that sub objects that might work: " + ", ".join(dotted)
+        raise ValueError(f"Main object (with name {solara_app.app_name} in {solara_app.path}) is not a Widget or Element, but {type(main_object)}." + extra)
 
 
 def read_root(context_id: Optional[str], base_url: str = "", render_kwargs={}, use_nbextensions=True):
