@@ -15,9 +15,7 @@ import rich_click as click
 import uvicorn
 from uvicorn.main import LEVEL_CHOICES
 
-import solara.server
-import solara.server.patch
-import solara.server.server
+import solara
 
 from .server import settings
 
@@ -293,7 +291,7 @@ def run(
                 sock = config.bind_socket()
                 from uvicorn.supervisors import ChangeReload
 
-                ChangeReload(config, target=server.run, sockets=[sock]).run()
+                ChangeReload(config, target=run_with_settings(server, main=settings.main.dict(), theme=settings.theme.dict()), sockets=[sock]).run()
             else:
                 server.run()
         except:  # noqa
@@ -311,9 +309,29 @@ def run(
     # server_thread.join()
 
 
+class run_with_settings:
+    """This cross a process boundry, and takes the serialized settings with it"""
+
+    def __init__(self, server: uvicorn.Server, main: typing.Dict, theme: typing.Dict):
+        self.server = server
+        self.main = main
+        self.theme = theme
+
+    def __call__(self, *args, **kwargs):
+        # this is now in the new process, where we need to re-apply the settings
+        settings.main = settings.MainSettings(**self.main)
+        settings.theme = settings.ThemeSettings(**self.theme)
+        return self.server.run(*args, **kwargs)
+
+
 @cli.command()
 def staticbuild():
     """Experimental static build"""
+    # imports locals, otherwise .run() does not use the cli arguments
+    import solara.server
+    import solara.server.patch
+    import solara.server.server
+
     server_path = HERE / "server/static"
 
     build_dir = Path("staticbuild")
