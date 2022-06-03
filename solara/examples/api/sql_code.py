@@ -41,6 +41,8 @@ if vaex is not None:
 
 @react.component
 def SqlCodeDemo():
+    if vaex is None:
+        return sol.Error("Vaex is not installed, run pip install vaex-core vaex-hdf5")
     query, set_query = react.use_state("SELECT * from titanic")
     query_executed, set_query_executed = react.use_state(cast(Optional[str], None))
 

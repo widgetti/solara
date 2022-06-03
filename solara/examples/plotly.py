@@ -9,8 +9,8 @@ except Exception:
     df = None
 
 if df is not None:
-    year_min = df["year"].min().item()
-    year_max = df["year"].max().item()
+    year_min = df["year"].min()
+    year_max = df["year"].max()
     years = df["year"].unique().tolist()
 
 
