@@ -17,7 +17,7 @@ def App():
             sol.Button("Retry", on_click=data.retry)
         else:
             if json.value:
-                filter = sol.ui_text("", description="Filter pokemons by name")
+                filter = sol.ui_text(label="Filter pokemons by name", value="")
                 pokemons = json.value
                 if filter:
                     pokemons = [k for k in pokemons if filter.lower() in k["name"].lower()]
