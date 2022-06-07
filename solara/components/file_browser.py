@@ -69,6 +69,7 @@ def FileBrowser(
         directory = os.getcwd()  # pragma: no cover
     current_dir, set_current_dir = sol.use_state_or_update(str(directory))
     selected, set_selected = react.use_state(None)
+    double_clicked, set_double_clicked = react.use_state(None)
     warning, set_warning = react.use_state(cast(Optional[str], None))
     scroll_pos_stack, set_scroll_pos_stack = react.use_state(cast(List[int], []))
     scroll_pos, set_scroll_pos = react.use_state(0)
@@ -98,6 +99,7 @@ def FileBrowser(
                     set_scroll_pos_stack(scroll_pos_stack[:-1])
                     set_scroll_pos(last_pos)
                 set_selected(None)
+                set_double_clicked(None)
             if can_select and not double_click:
                 if on_path_select:
                     on_path_select(Path(new_dir))
@@ -116,6 +118,7 @@ def FileBrowser(
                     set_scroll_pos_stack(scroll_pos_stack + [scroll_pos])
                     set_scroll_pos(0)
             set_selected(None)
+            set_double_clicked(None)
         elif can_select and not double_click:
             if on_path_select:
                 on_path_select(Path(path))
@@ -127,6 +130,7 @@ def FileBrowser(
         on_item(item, False)
 
     def on_double_click(item):
+        set_double_clicked(item)
         if can_select:
             on_item(item, True)
         # otherwise we can ignore it, single click will handle it
@@ -138,6 +142,7 @@ def FileBrowser(
             selected=selected,
             clicked=selected,
             on_clicked=on_click,
+            double_clicked=double_clicked,
             on_double_clicked=on_double_click,
             scroll_pos=scroll_pos,
             on_scroll_pos=set_scroll_pos,

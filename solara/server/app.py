@@ -67,6 +67,9 @@ class AppContext:
 
     def close(self):
         with self:
+            import solara.server.patch
+
+            assert isinstance(widgets.Widget.widgets, solara.server.patch.context_dict_widgets)
             assert widgets.Widget.widgets._get_context_dict() is self.widgets
             widgets.Widget.close_all()
             # what if we reference eachother

@@ -15,7 +15,8 @@ def app_context():
         with context:
             yield context
     finally:
-        context.close()
+        with context:
+            context.close()
 
 
 @pytest.fixture
