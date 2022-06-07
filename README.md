@@ -327,6 +327,17 @@ Install Solara in 'edit' mode. We use flit (`pip install flit` if you don't alre
 
 Now you can edit the source code in the git repository, without having to reinstall it.
 
+### Running Solara in dev mode
+
+By passing the `--dev` flag, solara enters "dev" mode, which makes it friendlier for development
+
+    $ solara run myscript.py --dev
+
+Now, if the Solara source code is edited, the server will automatically restart. Also, this enabled the `--mode=development` which will:
+
+   * Load non-minified JS/CSS to make debugging easier
+   * Follow symlinks for the nbextensions, enabling the use of widget libraries in development mode.
+
 ### Reloading of .vue files
 
 The solara server automatically watches all `.vue` files that are used by vue templates (there are some used in solara.components for example).
