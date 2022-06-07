@@ -5,6 +5,7 @@ from solara.kitchensink import react, sol, v
 from . import (
     button,
     datatable,
+    file_browser,
     griddraggable,
     gridfixed,
     hbox,
@@ -32,6 +33,7 @@ modules = {
     "HTML": html,
     "SqlCode": sql_code,
     "use_thread": use_thread,
+    "FileBrowser": file_browser,
 }
 
 
@@ -47,6 +49,7 @@ def API():
                         sol.ListItem("Button")
                         sol.ListItem("Slider")
                         sol.ListItem("ToggleButtons")
+                        sol.ListItem("FileBrowser")
                     with sol.ListItem("Output", icon_name="mdi-chevron-right-box"):
                         sol.ListItem("Markdown")
                         sol.ListItem("HTML")

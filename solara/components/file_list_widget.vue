@@ -1,10 +1,16 @@
 <template>
-  <v-sheet class="solara-file-list" ref="scrollpane">
-    <v-list>
+  <v-sheet class="solara-file-list" ref="scrollpane"
+      @click="clicked = null"
+  >
+    <v-list
+      @click="clicked = null"
+    >
       <v-list-item
           v-for="{name, is_file, size} in files"
           :key="name + '|' + is_file"
-          @click="selected = { name, is_file }"
+          @click.stop="clicked = { name, is_file }"
+          @dblclick="double_clicked = { name, is_file }"
+          :class="(clicked && clicked.name == name) ? 'solara-file-list-selected': ''"
       >
         <v-list-item-icon>
           <v-icon>{{ name === '..' ? 'mdi-keyboard-backspace' : is_file ? 'mdi-file-document' : 'mdi-folder' }}</v-icon>
@@ -47,6 +53,11 @@ module.exports = {
 
 .solara-file-list-dir {
   font-weight: bold;
+}
+
+.solara-file-list-selected {
+  background-color: #3333;
+
 }
 
 .solara-file-list .v-list-item__icon,
