@@ -66,7 +66,7 @@ class DateSliderWidget(ipyvue.VueTemplate):
 
 @react.component
 def DateSlider(
-    label: str, value: date = date(1981, 7, 28), min: date = date(1900, 1, 1), max: date = date(3000, 12, 30), on_value: Callable[[date], None] = None
+    label: str, value: date = date(1981, 7, 28), min: date = date(1950, 1, 1), max: date = date(3000, 12, 30), on_value: Callable[[date], None] = None
 ):
     def format(d: date):
         return float(datetime(d.year, d.month, d.day).timestamp())
