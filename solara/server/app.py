@@ -49,6 +49,7 @@ class AppContext:
     # same, for ipyvue templates
     # see patch.py
     templates: Dict[str, widgets.Widget]
+    user_dicts: Dict[str, Dict] = dataclasses.field(default_factory=dict)
     # anything we need to attach to the context
     # e.g. for a react app the render context, so that we can store/restore the state
     app_object: Optional[Any] = None
@@ -66,6 +67,7 @@ class AppContext:
 
     def close(self):
         with self:
+            assert widgets.Widget.widgets._get_context_dict() is self.widgets
             widgets.Widget.close_all()
             # what if we reference eachother
             # import gc
@@ -241,10 +243,11 @@ class AppScript:
         if path.suffix == ".vue":
             logger.info("Vue file changed: %s", name)
             template_content = path.read_text()
-            for context in contexts.values():
-                for filepath, widget in context.templates.items():
-                    if filepath == str(path):
-                        widget.template = template_content
+            for context in list(contexts.values()):
+                with context:
+                    for filepath, widget in context.templates.items():
+                        if filepath == str(path):
+                            widget.template = template_content
         else:
             logger.info("Reload requires due to change in module: %s", name)
             self.reload()

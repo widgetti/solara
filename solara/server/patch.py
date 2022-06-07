@@ -139,6 +139,17 @@ class context_dict_templates(context_dict):
         return context.templates
 
 
+class context_dict_user(context_dict):
+    def __init__(self, name):
+        self.name = name
+
+    def _get_context_dict(self) -> dict:
+        context = app.get_current_context()
+        if self.name not in context.user_dicts:
+            context.user_dicts[self.name] = {}
+        return context.user_dicts[self.name]
+
+
 def auto_watch_get_template(get_template):
     """Wraps get_template and adds a file listener for automatic .vue file reloading"""
 
@@ -188,6 +199,10 @@ def patch():
     # this module also imports get_template
     template_mod_vue = sys.modules["ipyvue.VueTemplateWidget"]
     template_mod_vue.get_template = template_mod.get_template  # type: ignore
+
+    component_mod_vue = sys.modules["ipyvue.VueComponentRegistry"]
+    component_mod_vue.vue_component_registry = context_dict_user("vue_component_registry")  # type: ignore
+    component_mod_vue.vue_component_files = context_dict_user("vue_component_files")  # type: ignore
 
     ipywidgets.widget.Widget.widgets = context_dict_widgets()  # type: ignore
     threading.Thread.__init__ = WidgetContextAwareThread__init__  # type: ignore
