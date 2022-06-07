@@ -359,7 +359,7 @@ def staticbuild():
                     src = (directory / (name + ".js")).parent
                     dst: Path = (build_dir_static / "nbextensions" / (name + ".js")).parent
                     dst.mkdir(parents=True, exist_ok=True)
-                    shutil.copytree(src, dst, dirs_exist_ok=True)
+                    shutil.copytree(src, dst)
 
     build_dir_wheels = build_dir / "wheels"
     build_dir_wheels.mkdir(exist_ok=True)

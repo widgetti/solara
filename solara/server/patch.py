@@ -207,6 +207,15 @@ def patch():
     ipywidgets.widget.Widget.widgets = context_dict_widgets()  # type: ignore
     threading.Thread.__init__ = WidgetContextAwareThread__init__  # type: ignore
     threading.Thread.run = Thread_debug_run  # type: ignore
-    ipykernel.kernelbase.Kernel.instance = classmethod(kernel_instance_dispatch)
-    ipykernel.kernelbase.Kernel.initialized = classmethod(kernel_initialized_dispatch)
+    # on CI we get a mypy error:
+    # solara/server/patch.py:210: error: Cannot assign to a method
+    #  solara/server/patch.py:210: error: Incompatible types in assignment (expression has type "classmethod[Any]",\
+    #                                     variable has type "Callable[[VarArg(Any), KwArg(Any)], Any]")
+    # not sure why we cannot reproduce that locally
+    ipykernel.kernelbase.Kernel.instance = classmethod(kernel_instance_dispatch)  # type: ignore
+    # on CI we get a mypy error:
+    # solara/server/patch.py:211: error: Cannot assign to a method
+    # solara/server/patch.py:211: error: Incompatible types in assignment (expression has type "classmethod[Any]", variable has type "Callable[[], Any]")
+    # not sure why we cannot reproduce that locally
+    ipykernel.kernelbase.Kernel.initialized = classmethod(kernel_initialized_dispatch)  # type: ignore
     ipywidgets.widgets.widget.get_ipython = get_ipython

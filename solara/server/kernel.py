@@ -108,7 +108,10 @@ class Kernel(ipykernel.kernelbase.Kernel):
         self.session = SessionWebsocket(parent=self, key=SESSION_KEY)
 
         self.stream = self.iopub_socket = WebsocketStream(self.session, "iopub")
-        self.session.stream = self.iopub_socket
+        # on github action the next line gives a mypy error:
+        # solara/server/kernel.py:111: error: "SessionWebsocket" has no attribute "stream"
+        # not sure why we cannot reproduce that locally
+        self.session.stream = self.iopub_socket  # type: ignore
         self.comm_manager = CommManager(parent=self, kernel=self)
         self.shell = None
         self.log = logging.getLogger("fake")
