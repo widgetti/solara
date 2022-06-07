@@ -104,7 +104,13 @@ def WithCode(module):
         # It renders code better
         sol.Markdown(module.__doc__ or "# no docs yet")
         sol.Markdown("# Example")
-        sol.Button("Show code", on_click=lambda: set_show_code(True), class_="ma-4")
+        sol.Button("Show code", icon_name="mdi-eye", on_click=lambda: set_show_code(True), class_="ma-4")
+        code = inspect.getsource(module)
+        import urllib.parse
+
+        code_quoted = urllib.parse.quote_plus(code)
+        url = f"https://test.solara.dev/try?code={code_quoted}"
+        sol.Button("Run on solara.dev", icon_name="mdi-pencil", href=url, target="_blank")
         component()
     return main
 
