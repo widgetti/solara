@@ -124,6 +124,10 @@ else:
 class Reloader:
     def __init__(self, on_change: Callable[[str], None] = None) -> None:
         self.watched_modules: Set[str] = set()
+        # although we try to keep track of modules loaded (which we will watch)
+        # it can happen that an import is done at runtime, that we miss (could be in a thread)
+        # so we always reload all modules except the start_modules
+        self.start_modules = set(sys.modules)
         self.on_change = on_change
         self.watcher = WatcherType([], self._on_change)
         self.requires_reload = False
@@ -146,10 +150,10 @@ class Reloader:
         logger.info("Reloading modules... %s", self.watched_modules)
         # not sure if this is needed
         importlib.invalidate_caches()
-        for mod in self.watched_modules:
-            # it could be that a second run does not import the module
-            # so we should check if it is imported
-            if mod in sys.modules:
+        for mod in set(sys.modules):
+            # don't reload modules like solara.server and react
+            # that may cause issues (like 2 Element classes existing)
+            if mod not in self.start_modules:
                 del sys.modules[mod]
         # if all succesfull...
         self.requires_reload = False
