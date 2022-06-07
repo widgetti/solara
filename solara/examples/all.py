@@ -22,9 +22,9 @@ def Home():
 
 routes = [
     dict(component=Home, path="/", label="What is Solara ☀️?"),
-    dict(component=Libraries, path="/libraries", label="Supported libraries"),
     dict(component=Demo, path="/demo", label="Demo"),
     dict(component=API, path="/api", label="API"),
+    dict(component=Libraries, path="/libraries", label="Supported libraries"),
     dict(component=Doc, path="/doc", label="Docs"),
 ]
 

@@ -1,8 +1,12 @@
+import inspect
+import urllib.parse
+
 from solara.kitchensink import react, sol, v
 
-from . import calculator, pokemon
+from . import calculator, pokemon, sine
 
 tabs = {
+    "Sine": sine,
     "Calulator": calculator,
     "Pokemon": pokemon,
 }
@@ -23,6 +27,12 @@ def Demo():
                 with sol.VBox(grow=False):
                     github_url = sol.util.github_url(module.__file__)
                     with sol.HBox():
-                        sol.Button("View on GitHub", icon_name="mdi-github", href=github_url, class_="ma-2", target="_blank")
+                        sol.Button("View on GitHub", icon_name="mdi-git", href=github_url, class_="ma-2", target="_blank")
+                        code = inspect.getsource(module)
+
+                        code_quoted = urllib.parse.quote_plus(code)
+                        url = f"https://test.solara.dev/try?code={code_quoted}"
+                        sol.Button("Run on solara.dev", icon_name="mdi-pencil", href=url, class_="ma-2", target="_blank")
+
                     module.App()
     return main

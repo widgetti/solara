@@ -1,4 +1,5 @@
 import inspect
+import urllib.parse
 
 from solara.kitchensink import react, sol, v
 
@@ -106,7 +107,6 @@ def WithCode(module):
         sol.Markdown("# Example")
         sol.Button("Show code", icon_name="mdi-eye", on_click=lambda: set_show_code(True), class_="ma-4")
         code = inspect.getsource(module)
-        import urllib.parse
 
         code_quoted = urllib.parse.quote_plus(code)
         url = f"https://test.solara.dev/try?code={code_quoted}"
