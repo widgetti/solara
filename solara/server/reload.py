@@ -153,7 +153,7 @@ class Reloader:
         for mod in set(sys.modules):
             # don't reload modules like solara.server and react
             # that may cause issues (like 2 Element classes existing)
-            if mod not in self.start_modules:
+            if mod not in self.start_modules and not mod.startswith("solara.server"):
                 del sys.modules[mod]
         # if all succesfull...
         self.requires_reload = False
