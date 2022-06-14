@@ -264,7 +264,10 @@ class AppScript:
             logger.debug("Saving state...")
             contexts.clear()
             for context in context_values:
-                context.state_save(state_directory=state_directory)
+                try:
+                    context.state_save(state_directory=state_directory)
+                except:  # noqa
+                    logger.exception("Could not save state, will continue")
                 context.close()
 
             def send_reload():
@@ -273,7 +276,6 @@ class AppScript:
                     "reason": "app changed",
                 }
                 for context in context_values:
-                    context.state_save(state_directory=state_directory)
                     for socket in context.control_sockets:
                         try:
                             socket.send_json(reload)
