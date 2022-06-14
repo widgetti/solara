@@ -25,15 +25,21 @@ def test_histogram_card():
     filter = set_filter = None
 
     @react.component
-    def Test():
+    def FilterDummy():
         nonlocal filter, set_filter
-        provide_cross_filter()
         filter, set_filter = use_cross_filter("test")
-        return HistogramCard(df, column="sex")
+        return sol.Text("dummy")
 
-    widget, rc = react.render_fixed(Test(), handle_error=False)
-    figure = widget.children[-1].children[-1]
-    assert isinstance(figure, bqplot.Figure)
+    @react.component
+    def Test():
+        provide_cross_filter()
+        with sol.VBox() as main:
+            HistogramCard(df, column="sex")
+            FilterDummy()
+        return main
+
+    widget, rc = react.render(Test(), handle_error=False)
+    figure = rc._find(bqplot.Figure).widget
     bars = figure.marks[0]
     assert bars.x.tolist() == ["female", "male"]
     assert bars.y.tolist() == [466, 843]
@@ -49,15 +55,21 @@ def test_pivot_table():
     filter = set_filter = None
 
     @react.component
-    def Test():
+    def FilterDummy():
         nonlocal filter, set_filter
-        provide_cross_filter()
         filter, set_filter = use_cross_filter("test")
-        return PivotTableCard(df, x=["sex"], y=["survived"])
+        return sol.Text("dummy")
 
-    widget, rc = react.render_fixed(Test(), handle_error=False)
-    pt = widget.children[-1].children[-1]
-    assert isinstance(pt, PivotTable)
+    @react.component
+    def Test():
+        provide_cross_filter()
+        with sol.VBox() as main:
+            PivotTableCard(df, x=["sex"], y=["survived"])
+            FilterDummy()
+        return main
+
+    widget, rc = react.render(Test(), handle_error=False)
+    pt = rc._find(PivotTable).widget
     data = pt.d
     assert data["x"] == ["sex"]
     assert data["y"] == ["survived"]
@@ -86,15 +98,21 @@ def test_dropdown_card():
     filter = set_filter = None
 
     @react.component
-    def Test(column=None):
+    def FilterDummy():
         nonlocal filter, set_filter
-        provide_cross_filter()
         filter, set_filter = use_cross_filter("test")
-        return DropdownCard(df, column=column)
+        return sol.Text("dummy")
 
-    widget, rc = react.render_fixed(Test(column="sex"), handle_error=False)
-    select = widget.children[-1].children[-1]
-    assert isinstance(select, vw.Select)
+    @react.component
+    def Test(column=None):
+        provide_cross_filter()
+        with sol.VBox() as main:
+            DropdownCard(df, column=column)
+            FilterDummy()
+        return main
+
+    widget, rc = react.render(Test(column="sex"), handle_error=False)
+    select = rc._find(vw.Select)[0].widget
     result: list = select.items
     result.sort(key=lambda item: item["value"])
     assert result == [{"text": "female", "value": "female"}, {"text": "male", "value": "male"}]
@@ -110,15 +128,21 @@ def testfilter_card():
     filter = set_filter = None
 
     @react.component
-    def Test(column=None):
+    def FilterDummy():
         nonlocal filter, set_filter
-        provide_cross_filter()
         filter, set_filter = use_cross_filter("test")
-        return FilterCard(df)
+        return sol.Text("dummy")
 
-    widget, rc = react.render_fixed(Test(column="sex"), handle_error=False)
-    textfield = widget.children[-1].children[-1]
-    assert isinstance(textfield, vw.TextField)
+    @react.component
+    def Test(column=None):
+        provide_cross_filter()
+        with sol.VBox() as main:
+            FilterCard(df)
+            FilterDummy()
+        return main
+
+    widget, rc = react.render(Test(column="sex"), handle_error=False)
+    textfield = rc._find(vw.TextField).widget
     assert textfield.v_model == ""
     textfield.v_model = "str_equals(sex, 'female')"
     assert filter is not None
@@ -132,15 +156,21 @@ def test_summary():
     filter = set_filter = None
 
     @react.component
-    def Test():
+    def FilterDummy():
         nonlocal filter, set_filter
-        provide_cross_filter()
         filter, set_filter = use_cross_filter("test")
-        return SummaryCard(df)
+        return sol.Text("dummy")
 
-    widget, rc = react.render_fixed(Test(), handle_error=False)
-    html = widget.children[-1].children[-1]
-    assert isinstance(html, vw.Html)
+    @react.component
+    def Test():
+        provide_cross_filter()
+        with sol.VBox() as main:
+            SummaryCard(df)
+            FilterDummy()
+        return main
+
+    widget, rc = react.render(Test(), handle_error=False)
+    html = rc._find(vw.Html).widget
     assert html.children[0] == "1,309"
     assert set_filter is not None
     set_filter(df.sex == "female")
@@ -186,15 +216,21 @@ def test_scatter():
     filter = set_filter = None
 
     @react.component
-    def Test():
+    def FilterDummy():
         nonlocal filter, set_filter
-        provide_cross_filter()
-        filter, set_filter = sol.use_cross_filter("test")
-        return ScatterCard(df, x="age", y="fare")
+        filter, set_filter = use_cross_filter("test")
+        return sol.Text("dummy")
 
-    widget, rc = react.render_fixed(Test(), handle_error=False)
-    figure = widget.children[-1].children[-1]
-    assert isinstance(figure, bqplot.Figure)
+    @react.component
+    def Test():
+        provide_cross_filter()
+        with sol.VBox() as main:
+            ScatterCard(df, x="age", y="fare")
+            FilterDummy()
+        return main
+
+    widget, rc = react.render(Test(), handle_error=False)
+    figure = rc._find(bqplot.Figure).widget
     scatter = figure.marks[0]
     scatter.selected = [0]
     assert filter is not None
