@@ -16,6 +16,7 @@ from . import (
     slider,
     sql_code,
     togglebuttons,
+    use_state_or_update,
     use_thread,
     vbox,
 )
@@ -35,6 +36,7 @@ modules = {
     "SqlCode": sql_code,
     "use_thread": use_thread,
     "FileBrowser": file_browser,
+    "use_state_or_update": use_state_or_update,
 }
 
 
@@ -72,6 +74,7 @@ def API():
                         sol.ListItem("use_fetch")
                         sol.ListItem("use_json")
                         sol.ListItem("use_thread")
+                        sol.ListItem("use_state_or_update")
                     with sol.ListItem("Types", icon_name="mdi-fingerprint"):
                         sol.ListItem("Action")
                         sol.ListItem("ColumnAction")

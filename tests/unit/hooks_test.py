@@ -215,3 +215,23 @@ def test_use_file_content(tmpdir: Path):
     assert result is not None
     result.retry()
     assert result.value == b"Hi"
+
+
+def test_use_state_or_update():
+    values = []
+    set_value = None
+
+    @react.component
+    def Test(value):
+        nonlocal set_value
+        value, set_value = sol.use_state_or_update(value)
+        values.append(value)
+        return w.Button()
+
+    container, rc = react.render(Test(3))
+    assert set_value is not None
+    assert values == [3]
+    set_value(5)
+    assert values == [3, 5]
+    rc.render(Test(9))
+    assert values == [3, 5, 9, 9]  # we render twice, since we call set_state in or_update

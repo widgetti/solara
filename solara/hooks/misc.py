@@ -364,15 +364,15 @@ def use_state_or_update(
     """This is useful for situations where a prop can change from a parent
     component, which should be respected, and otherwise the internal
     state should be kept.
-
-    See sol.Details for example usage.
     """
     value, set_value = react.use_state(initial_or_updated, key=key, eq=eq)
 
     def possibly_update(initial_or_updated):
+        nonlocal value
         # only gets called when initial_or_updated changes
-        # if value != initial_or_updated:
         set_value(initial_or_updated)
+        # this make sure the return value gets updated directly
+        value = initial_or_updated
 
     react.use_memo(possibly_update)(initial_or_updated)
     return value, set_value
