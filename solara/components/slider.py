@@ -11,7 +11,7 @@ T = TypeVar("T")
 
 
 @react.component
-def FloatSlider(label: str, value: float = 0, min: float = 0, max: float = 0, step: float = 0.1, on_value: Callable[[float], None] = None, thumb_label=True):
+def FloatSlider(label: str, value: float = 0, min: float = 0, max: float = 10.0, step: float = 0.1, on_value: Callable[[float], None] = None, thumb_label=True):
     def set_value_cast(value):
         if on_value is None:
             return
@@ -21,7 +21,7 @@ def FloatSlider(label: str, value: float = 0, min: float = 0, max: float = 0, st
 
 
 @react.component
-def IntSlider(label: str, value: int = 0, min: int = 0, max: int = 0, step: int = 1, on_value: Callable[[int], None] = None, thumb_label=True):
+def IntSlider(label: str, value: int = 0, min: int = 0, max: int = 10, step: int = 1, on_value: Callable[[int], None] = None, thumb_label=True):
     def set_value_cast(value):
         if on_value is None:
             return
