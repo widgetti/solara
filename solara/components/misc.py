@@ -15,15 +15,17 @@ GridLayout = GridDraggable
 
 
 @react.component
-def ListItem(title, icon_name: str = None, children=[]):
+def ListItem(title, icon_name: str = None, children=[], value=None):
+    if value is None:
+        value = title
     if children:
-        with v.ListItem(value=title) as main:
+        with v.ListItem(value=value) as main:
             v.ListItemTitle(children=[title])
             with v.ListItemIcon():
                 v.Icon(children=[icon_name or ""])
         return v.ListGroup(children=children, v_slots=[{"name": "activator", "children": main}], sub_group=True, value=True, append_icon=icon_name)
     else:
-        with v.ListItem(value=title) as main:
+        with v.ListItem(value=value) as main:
             with v.ListItemIcon():
                 v.Icon(children=[icon_name or ""])
             v.ListItemTitle(children=[title])
@@ -130,13 +132,14 @@ def Button(
     click_event="click",
     disabled=False,
     value=None,
+    text=False,
     **kwargs,
 ):
     if label:
         children = [label] + children
     if icon_name:
         children = [v.Icon(left=bool(label), children=[icon_name])] + children
-    btn = v.Btn(children=children, **kwargs, disabled=disabled)
+    btn = v.Btn(children=children, **kwargs, disabled=disabled, text=text)
     ipyvue.use_event(btn, click_event, lambda *_ignore: on_click and on_click())
     return btn
 

@@ -13,6 +13,7 @@ import react_ipywidgets
 import rich
 import rich_click as click
 import uvicorn
+from rich import print as rprint
 from uvicorn.main import LEVEL_CHOICES
 
 import solara
@@ -54,7 +55,8 @@ LOGGING_CONFIG: dict = {
         },
     },
     "loggers": {
-        "solara": {"handlers": ["rich"], "level": "INFO"},
+        "solara": {"handlers": ["default"], "level": "ERROR"},
+        "react": {"handlers": ["default"], "level": "ERROR"},
         # "react": {"handlers": ["rich"], "level": "DEBUG"},
         "uvicorn": {"handlers": ["default"], "level": "ERROR"},
         "uvicorn.error": {"level": "ERROR"},
@@ -68,7 +70,6 @@ def find_all_packages_paths():
     # sitepackages = set([os.path.dirname(k) for k in site.getsitepackages()])
     sitepackages = set([k for k in site.getsitepackages()])
     paths.extend(list(sitepackages))
-    print(sitepackages)
     for name, module in sys.modules.items():
         if hasattr(module, "__path__"):
             try:
@@ -263,6 +264,7 @@ def run(
 
     if log_level is not None:
         LOGGING_CONFIG["loggers"]["solara"]["level"] = log_level.upper()
+        # LOGGING_CONFIG["loggers"]["react"]["level"] = log_level.upper()
 
     log_level = log_level_uvicorn
     del log_level_uvicorn
@@ -388,8 +390,98 @@ def staticbuild():
     (build_dir / "index.html").write_text(index_html)
 
 
+@click.group()
+def create():
+    pass
+
+
+@create.command()
+@click.argument(
+    "target",
+    type=click.Path(exists=False),
+    default="sol.py",
+    required=False,
+)
+def button(target: typing.Optional[Path]):
+    write_script("button", target)
+
+
+@create.command()
+@click.argument(
+    "target",
+    type=click.Path(exists=False),
+    default="sol.py",
+    required=False,
+)
+def markdown(target: typing.Optional[Path] = None):
+    write_script("markdown", target)
+
+
+def write_script(name: str, target: typing.Optional[Path]):
+    code = (HERE / "template" / f"{name}.py").read_text()
+    if target is None:
+        target = Path("sol.py")
+    else:
+        target = Path(target)
+    target.parent.mkdir(exist_ok=True)
+    target.write_text(code)
+    rprint(f"Wrote:  {target.resolve()}")
+    rprint(f"Run as:\n\t $ solara run {target.resolve()}")
+
+
+# recursivly copy a directory and allow for existing directories
+def copytree(src: Path, dst: Path, copy_function=shutil.copy2, ignore: typing.Callable[[Path], bool] = lambda x: False, rename=lambda x: x):
+    if not src.exists():
+        return
+    if not dst.exists():
+        dst.mkdir(parents=True, exist_ok=True)
+    for item in src.iterdir():
+        if ignore and ignore(item):
+            continue
+        if item.is_dir():
+            copytree(item, dst / rename(item).name, ignore=ignore, copy_function=copy_function, rename=rename)
+        else:
+            copy_function(item, dst / rename(item).name)
+
+
+@create.command()
+@click.argument(
+    "target",
+    type=click.Path(exists=False),
+    default="solara_portal",
+    required=False,
+)
+def portal(target: Path):
+    target = Path(target)
+    name = target.name
+    package_name = name.replace("-", "_")
+
+    def copy_function(src: Path, dst: Path):
+        dst.write_bytes(
+            src.read_bytes().replace(b"solara-portal", name.encode("utf8")).replace(b"solara_portal", package_name.encode("utf8")),
+        )
+
+    def rename(path: Path):
+        if path.name == "solara_portal":
+            return path.parent / package_name
+        else:
+            return path
+
+    copytree(
+        HERE / "template" / "portal",
+        target,
+        ignore=lambda p: p.name.startswith("__") and p.name != "__init__.py",
+        copy_function=copy_function,
+        rename=rename,
+    )
+    rprint(f"Wrote:  {target.resolve()}")
+    rprint(f"Install as:\n\t $ (cd {target}; pip install -e .)")
+    rprint(f"Run as:\n\t $ solara run {package_name}.pages")
+
+
 cli.add_command(run)
 cli.add_command(staticbuild)
+cli.add_command(create)
 
 
 def main():

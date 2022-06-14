@@ -20,7 +20,7 @@ from solara.server.starlette import app as app_starlette
 logger = logging.getLogger("solara-test.integration")
 
 worker = os.environ.get("PYTEST_XDIST_WORKER", "gw0")
-TEST_PORT = 18765 + 2 + int(worker[2:])
+TEST_PORT = 18765 + 14 + int(worker[2:])
 SERVER = os.environ.get("SOLARA_SERVER")
 if SERVER:
     SERVERS = [SERVER]
@@ -40,8 +40,10 @@ def url_checks():
     yield
     non_localhost = [url for url in urls if not url.startswith("http://localhost")]
     allow_list = [
-        "https://user-images.githubusercontent.com",
-        "https://cdnjs.cloudflare.com/ajax/libs/emojione/2.2.7",
+        "https://user-images.githubusercontent.com",  # logo in readme
+        "https://cdnjs.cloudflare.com/ajax/libs/emojione/2.2.7",  # emojione from markdown
+        "https://images.unsplash.com",  # portal
+        "https://miro.medium.com",  # portal
     ]
     non_allow_urls = [url for url in non_localhost if not any(url.startswith(allow) for allow in allow_list)]
     if non_allow_urls:
@@ -53,7 +55,7 @@ def url_checks():
 # see https://github.com/microsoft/playwright-pytest/issues/23
 @pytest.fixture
 def context(context: playwright.sync_api.BrowserContext, url_checks):
-    context.set_default_timeout(3000)
+    context.set_default_timeout(5000)
 
     def handle(route, request: playwright.sync_api.Request):
         urls.add(request.url)
@@ -233,7 +235,8 @@ def solara_app(solara_server):
         finally:
             if app.type == solara.server.app.AppType.MODULE:
                 del sys.modules[app.name]
-                reload.reloader.watched_modules.remove(app.name)
+                if app.name in reload.reloader.watched_modules:
+                    reload.reloader.watched_modules.remove(app.name)
 
             app.close()
 

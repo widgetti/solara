@@ -19,10 +19,9 @@ from solara.kitchensink import react, sol
 
 
 @react.component
-def ImageDemo():
+def Page():
 
     image_path = Path(sol.__file__).parent.resolve() / "server/static/sun64.png"
-    print(image_path, Path(sol.__file__), sol.__file__)
     image_url = "/static/sun64.png"
     image_ndarray = np.asarray(PIL.Image.open(image_path))
 
@@ -37,8 +36,3 @@ def ImageDemo():
             sol.Image(image_ndarray)
 
     return main
-
-
-Component = sol.Image
-App = ImageDemo
-app = App()

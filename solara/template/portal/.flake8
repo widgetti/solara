@@ -1,0 +1,6 @@
+[flake8]
+ignore = E203 W503
+max-line-length = 160
+per-file-ignores =
+    # line too long (170 > 160 characters)
+    ipywidgets.py: E501

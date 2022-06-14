@@ -10,7 +10,7 @@ __doc__ = open(HERE / "use_thread.md").read()
 
 
 @react.component
-def UseThreadDemo():
+def Page():
     number, set_number = react.use_state(17)
     # the number that proofs it is not a prime
     proof, set_proof = react.use_state(cast(Optional[int], None))
@@ -41,6 +41,3 @@ def UseThreadDemo():
             sol.Info(f"Running... (status = {result.state})")
             v.ProgressLinear(indeterminate=True)
     return main
-
-
-App = UseThreadDemo

@@ -1,7 +1,9 @@
 import dataclasses
 from enum import Enum
+from types import ModuleType
 from typing import Any, Callable, Dict, Generic, List, Optional, TypeVar, Union
 
+import react_ipywidgets as react
 from typing_extensions import Literal, TypedDict
 
 T = TypeVar("T")
@@ -92,3 +94,27 @@ class PivotTableData(TypedDict):
     counts_x: int
     counts_y: int
     total: str
+
+
+@dataclasses.dataclass(frozen=True)
+class Route:
+    """A declaration for routing"""
+
+    path: str
+    children: List["Route"] = dataclasses.field(default_factory=list)
+
+    # these are free to use, depending on the implementation
+    # see autorouting.py for how Solara uses them
+    module: Optional[ModuleType] = None
+
+    # in the autorouting implementation, this is the
+    # the same as module.Page (unless we are rendering a markdown)
+    component: Union[None, Callable, react.core.Component] = None
+    layout: Union[None, Callable, react.core.Component] = None
+
+    # in the autorouting implementation, this is the
+    # path of the markdown file
+    data: Any = None
+
+    # Can be used for a title and/or a tab label
+    label: Optional[str] = None

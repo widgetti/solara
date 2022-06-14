@@ -72,7 +72,7 @@ python/vaex/version.py # gets generated
 .eggs/
 bin/.idea
 *.npy
-**/__pycache__/*
+__pycache__
 .vscode
 
 # output file from the docs

@@ -1,4 +1,5 @@
 import base64
+import contextlib
 import os
 import sys
 import typing
@@ -56,3 +57,13 @@ def numpy_to_image(data: "np.ndarray", format="png"):
         return f.getvalue()
     else:
         raise ValueError(f"Expected an image with 3 dimensions (height, width, channe), not {data.shape}")
+
+
+@contextlib.contextmanager
+def cwd(path):
+    cwd = os.getcwd()
+    try:
+        os.chdir(path)
+        yield
+    finally:
+        os.chdir(cwd)

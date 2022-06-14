@@ -73,11 +73,10 @@ import react_ipywidgets as react
 import react_ipywidgets.ipywidgets as w
 
 @react.component
-def ButtonClick(label="Hi"):
+def Page():
     clicks, set_clicks = react.use_state(0)
-    return w.Button(description=f"{label}: Clicked {clicks} times",
+    return w.Button(description=f"Clicked {clicks} times",
                     on_click=lambda: set_clicks(clicks+1))
-app = ButtonClick('Ola')
 ```
 
 Install and run
@@ -93,14 +92,14 @@ The browser should open http://127.0.0.1:8765
 
 # Usage
 
-   * Create a Python script or module and assign an IPywidget instance, or [React-IPywidgets](https://github.com/widgetti/react-ipywidgets) element to the `app` variable.
+   * Create a Python script or module and assign an IPywidget instance, or [React-IPywidgets](https://github.com/widgetti/react-ipywidgets) component or element `Page` (or define a `Page` component).
    * Run the server `$ solara run myapp.py`
 
 Use `solara --help` for help on extra arguments.
 
 ## Notebook support
 
-We also support notebooks, simply assign to the app variable in a code cell, save your notebook, and run `$ solara run myapp.ipynb`
+We also support notebooks, simply assign to the `Page` variable in a code cell, save your notebook, and run `$ solara run myapp.ipynb`. If you widget or component is called differently, run like `$ solara run myapp.ipynb:myobject.nested_widget`
 
 # Deployment
 
@@ -220,10 +219,10 @@ If you use want to use Voila, [you can use those deployment options](https://voi
 Make sure you run a notebook where you display the app, e.g.
 ```python
 @react.component
-def MyApp():
+def Page():
     ...
-app = MyApp()
-display(app)
+element = Page()
+display(element)
 ```
 
 Or consider using [Voila-vuetify](https://github.com/voila-dashboards/voila-vuetify)
@@ -247,9 +246,9 @@ def ButtonClick(label="Hi"):
     return sol.Button(f"{label}: Clicked {clicks} times", on_click=increment)
 
 # this creates just an element, Panel doesn't know what to do with that
-app = ButtonClick("Solara+Panel")
+element = ButtonClick("Solara+Panel")
 # we explicitly ask React-IPyWidgets to render it, and give us the widget
-button_widget, render_context = react.render_fixed(app)
+button_widget, render_context = react.render_fixed(element)
 # mark this panel to be served by the panel server
 pn.panel(button_widget).servable()
 ```
@@ -409,7 +408,7 @@ $ solara mystartup.killerapp --dev
 
 ## Can Solara run Jupyter notebook?
 
-Yes, Solara will execute each cell, and after that will look for a variable `app`, like with a normal script. All other output, Markdown or other types of cells will be ignored.
+Yes, Solara will execute each cell, and after that will look for a variable or component called `Page`, like with a normal script. All other output, Markdown or other types of cells will be ignored.
 
 
 

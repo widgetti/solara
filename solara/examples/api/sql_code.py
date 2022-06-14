@@ -40,7 +40,7 @@ if vaex is not None:
 
 
 @react.component
-def SqlCodeDemo():
+def Page():
     if vaex is None:
         return sol.Error("Vaex is not installed, run pip install vaex-core vaex-hdf5")
     query, set_query = react.use_state("SELECT * from titanic")
@@ -80,7 +80,3 @@ def SqlCodeDemo():
             with v.Text(children=["Loading data..."]):
                 v.ProgressCircular(indeterminate=True, class_="solara-progress")
     return main
-
-
-Component = sol.SqlCode
-App = SqlCodeDemo

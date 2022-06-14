@@ -34,7 +34,7 @@ def SliderWithStateOrUpdate(value: int):
 
 
 @react.component
-def Test():
+def Page():
     parent_value, set_parent_value = react.use_state(4)
     # used to force rerenders
     rerender_counter, set_rerender_counter = react.use_state(4)
@@ -64,7 +64,3 @@ def Test():
             SliderWithState(parent_value).key(f"slider-{parent_value}")
 
     return main
-
-
-App = Test
-app = App()
