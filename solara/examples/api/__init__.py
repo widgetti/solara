@@ -16,6 +16,7 @@ from . import (
     slider,
     sql_code,
     togglebuttons,
+    use_previous,
     use_state_or_update,
     use_thread,
     vbox,
@@ -37,6 +38,7 @@ modules = {
     "use_thread": use_thread,
     "FileBrowser": file_browser,
     "use_state_or_update": use_state_or_update,
+    "use_previous": use_previous,
 }
 
 
@@ -74,6 +76,7 @@ def API():
                         sol.ListItem("use_fetch")
                         sol.ListItem("use_json")
                         sol.ListItem("use_thread")
+                        sol.ListItem("use_previous")
                         sol.ListItem("use_state_or_update")
                     with sol.ListItem("Types", icon_name="mdi-fingerprint"):
                         sol.ListItem("Action")

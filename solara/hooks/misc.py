@@ -32,6 +32,7 @@ __all__ = [
     "use_uuid4",
     "use_unique_key",
     "use_state_or_update",
+    "use_previous",
 ]
 T = TypeVar("T")
 U = TypeVar("U")
@@ -376,3 +377,13 @@ def use_state_or_update(
 
     react.use_memo(possibly_update)(initial_or_updated)
     return value, set_value
+
+
+def use_previous(value: T) -> T:
+    ref = react.use_ref(value)
+
+    def assign():
+        ref.current = value
+
+    react.use_effect(assign, [value])
+    return ref.current
