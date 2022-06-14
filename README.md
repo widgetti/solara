@@ -427,3 +427,19 @@ Add the line
 To your /etc/sysctl.conf file, and run `sudo sysctl -p.`
 
 Or if you are using visual studio code, please read: https://code.visualstudio.com/docs/setup/linux#_visual-studio-code-is-unable-to-watch-for-file-changes-in-this-large-workspace-error-enospc
+
+
+## How can I recognize if I run in Solara, Voila or Jupyter Notebook/Lab
+
+Voila and Solara set the following environment variables (based on the CGI spec):
+
+   * SERVER_SOFTWARE
+      * Solara: e.g. 'solara/1.2.3'
+      * Voila: e.g. 'voila/1.2.3'
+   * SERVER_PORT (e.g. '8765')
+   * SERVER_NAME (e.g. 'killerapp.com')
+   * SCRIPT_NAME (only Voila, e.g. 'voila/render/notebook.ipynb')
+   * PATH_TRANSLATED (only Solara e.g. '/mnt/someapp/app.py')
+
+Jupyter Notebook/Lab/Server do not set these variables. With this information,
+it should be possible to recognize in which environment you are running in.

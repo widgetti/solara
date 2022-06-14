@@ -268,7 +268,12 @@ def run(
     del log_level_uvicorn
 
     kwargs = locals().copy()
+    # cgi vars: https://datatracker.ietf.org/doc/html/rfc3875
     os.environ["SOLARA_APP"] = app
+    os.environ["SERVER_NAME"] = host
+    os.environ["SERVER_PORT"] = str(port)
+    os.environ["SERVER_SOFTWARE"] = "solara/" + str(solara.__version__)
+
     kwargs["app"] = "solara.server.starlette:app"
     kwargs["log_config"] = LOGGING_CONFIG if log_config is None else log_config
     settings.main.use_pdb = use_pdb
