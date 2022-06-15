@@ -51,6 +51,7 @@ dev = [
     "pytest-cov",
     "pytest-timeout",
     "pre-commit",
+    "bump2version",
 ]
 server = [
     "jinja2",
