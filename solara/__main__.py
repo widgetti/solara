@@ -272,7 +272,6 @@ def run(
     os.environ["SOLARA_APP"] = app
     os.environ["SERVER_NAME"] = host
     os.environ["SERVER_PORT"] = str(port)
-    os.environ["SERVER_SOFTWARE"] = "solara/" + str(solara.__version__)
 
     kwargs["app"] = "solara.server.starlette:app"
     kwargs["log_config"] = LOGGING_CONFIG if log_config is None else log_config
