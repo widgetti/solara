@@ -15,7 +15,7 @@ def format_default(df, column, row_index, value):
 
 
 @react.component
-def DataTable(df, page=0, items_per_page=20, format=None, column_actions: List[ColumnAction] = [], cell_actions: List[CellAction] = []):
+def DataTable(df, page=0, items_per_page=20, format=None, column_actions: List[ColumnAction] = [], cell_actions: List[CellAction] = [], scrollable=False):
     total_length = len(df)
     options = {"descending": False, "page": page + 1, "itemsPerPage": items_per_page, "sortBy": [], "totalItems": total_length}
     options, set_options = react.use_state(options, key="options")
@@ -59,7 +59,7 @@ def DataTable(df, page=0, items_per_page=20, format=None, column_actions: List[C
         selection_colors=[],
         selection_enabled=False,
         highlighted=None,
-        scrollable=False,
+        scrollable=scrollable,
         on_options=set_options,
         column_actions=column_actions,
         cell_actions=cell_actions,

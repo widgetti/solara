@@ -162,6 +162,7 @@
 .solara-data-table__viewport {
   overflow-x: auto;
   width: 100%;
+  max-height: 100%;
 }
 
 .solara-data-table.v-data-table,
