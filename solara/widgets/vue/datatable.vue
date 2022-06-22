@@ -44,7 +44,7 @@
                     </template>
                     <v-list v-for="(action, index) in column_actions" :key="index">
                       <v-list-item link @click="on_column_action([header.value, index])">
-                        <v-list-icon><v-icon>{{action.icon}}</v-icon></v-list-icon>
+                        <v-list-item-icon><v-icon>{{action.icon}}</v-icon></v-list-item-icon>
                         <v-list-item-title>{{action.name}}</v-list-item-title>
                       </v-list-item>
                     </v-list>
@@ -101,7 +101,7 @@
                     </template>
                     <v-list v-for="(action, index) in cell_actions" :key="index">
                       <v-list-item link @click="on_cell_action([props.item.__row__, header.value, index])">
-                        <v-list-icon><v-icon>{{action.icon}}</v-icon></v-list-icon>
+                        <v-list-item-icon><v-icon>{{action.icon}}</v-icon></v-list-item-icon>
                         <v-list-item-title>{{action.name}}</v-list-item-title>
                       </v-list-item>
                     </v-list>
