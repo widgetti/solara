@@ -1,5 +1,7 @@
 import logging
+import mimetypes
 import os
+import pathlib
 import typing
 from typing import List, Optional, Union, cast
 
@@ -7,12 +9,13 @@ import anyio
 import starlette.websockets
 from starlette.applications import Starlette
 from starlette.requests import Request
-from starlette.responses import HTMLResponse, JSONResponse
+from starlette.responses import HTMLResponse, JSONResponse, Response
 from starlette.routing import Mount, Route, WebSocketRoute
 from starlette.staticfiles import StaticFiles
 
 from . import app as appmod
 from . import patch, server, settings, websocket
+from .cdn_helper import cdn_url_path, default_cache_dir, get_data
 
 logger = logging.getLogger("solara.server.fastapi")
 # if we add these to the router, the server_test does not run (404's)
@@ -152,12 +155,21 @@ class StaticNbFiles(StaticFiles):
         raise ValueError(f"Unknown mode {settings.main.mode}")
 
 
+async def cdn(request: Request):
+    path = request.path_params["path"]
+    cache_directory = default_cache_dir
+    content = get_data(pathlib.Path(cache_directory), path)
+    mime = mimetypes.guess_type(path)
+    return Response(content, media_type=mime[0])
+
+
 routes = [
     Route("/jupyter/api/kernels/{id}", endpoint=kernels),
     WebSocketRoute("/jupyter/api/kernels/{id}/{name}", endpoint=kernel_connection),
     WebSocketRoute("/solara/watchdog/", endpoint=watchdog),
     Route("/", endpoint=root),
     Route("/{fullpath}", endpoint=root),
+    Route(f"/{cdn_url_path}/{{path:path}}", endpoint=cdn),
     Mount(f"{prefix}/static/dist", app=StaticFiles(directory=server.voila_static)),
     Mount(f"{prefix}/static/nbextensions", app=StaticNbFiles()),
     Mount(f"{prefix}/static/nbconvert", app=StaticFiles(directory=server.nbconvert_static)),

@@ -12,9 +12,9 @@
         require.config({
             map: {
                 '*': {
-                    'vega': 'https://cdn.jsdelivr.net/npm/vega@5.21.0',
-                    'vega-lite': 'https://cdn.jsdelivr.net/npm/vega-lite@5.2.0',
-                    'vega-embed': 'https://cdn.jsdelivr.net/npm/vega-embed@6.20.2',
+                    'vega': `${this.getCdn()}/vega@5.21.0`,
+                    'vega-lite': `${this.getCdn()}/vega-lite@5.2.0`,
+                    'vega-embed': `${this.getCdn()}/vega-embed@6.20.2`,
                 }
             }
         })
@@ -64,6 +64,9 @@
                 }
             })();
         });
+      },
+      getCdn() {
+        return (typeof solara_cdn !== "undefined" && solara_cdn) || `${document.body.dataset.baseUrl || '/'}_solara/cdn`;
       }
     },
   }

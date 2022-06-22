@@ -12,7 +12,7 @@
 
       if (!document.getElementById('codemirror-hint.css')) {
         const link = document.createElement('link');
-        link.href = `https://cdnjs.cloudflare.com/ajax/libs/codemirror/${cmVersion}/addon/hint/show-hint.min.css`;
+        link.href = `${this.getCdn()}/codemirror@${cmVersion}/addon/hint/show-hint.css`;
         link.type = "text/css";
         link.rel = "stylesheet";
         link.id="codemirror-hint.css";
@@ -20,9 +20,8 @@
       }
 
       requirejs.config({paths:{
-          codemirror: `https://cdnjs.cloudflare.com/ajax/libs/codemirror/${cmVersion}`,
-          'codemirror/lib': `https://cdnjs.cloudflare.com/ajax/libs/codemirror/${cmVersion}`}
-      });
+          codemirror: `${this.getCdn()}/codemirror@${cmVersion}`
+      }});
 
       requirejs(["codemirror/lib/codemirror", "codemirror/mode/sql/sql", "codemirror/addon/hint/show-hint", "codemirror/addon/hint/sql-hint"],
           (cm) => {
@@ -50,6 +49,11 @@
         if (this.myCodeMirror) {
           this.myCodeMirror.options.hintOptions.tables = value;
         }
+      }
+    },
+    methods: {
+      getCdn() {
+        return (typeof solara_cdn !== "undefined" && solara_cdn) || `${document.body.dataset.baseUrl || '/'}_solara/cdn`;
       }
     }
   }
