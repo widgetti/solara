@@ -1,9 +1,6 @@
 import logging
 import pathlib
-import shutil
-import subprocess
 import sys
-import tempfile
 
 import requests
 
@@ -55,13 +52,3 @@ def get_data(base_cache_dir: pathlib.Path, path):
     else:
         logger.warning("Could not load URL: %r", url)
         raise Exception(f"Could not load URL: {url}")
-
-
-def npm_pack(base_cache_dir: pathlib.Path, package: str, version: str):
-    with tempfile.TemporaryDirectory() as temp_dir_name:
-        subprocess.check_call(f"npm pack {package}@{version}", cwd=temp_dir_name, shell=True)
-        package_file_name = package
-        if package.startswith("@"):
-            package_file_name = package[1:].replace("/", "-")
-        subprocess.check_call(f"tar xzf {package_file_name}-{version}.tgz", cwd=temp_dir_name, shell=True)
-        shutil.move(pathlib.Path(temp_dir_name) / "package", base_cache_dir / f"{package}@{version}")

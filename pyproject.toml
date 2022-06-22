@@ -56,6 +56,9 @@ dev = [
     "pre-commit",
     "bump2version",
 ]
+assets = [
+    "solara-assets==0.4.1"
+]
 server = [
     "jinja2",
     "pydantic",
