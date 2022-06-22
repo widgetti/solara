@@ -7,7 +7,7 @@ from . import calculator, pokemon, sine
 
 tabs = {
     "Sine": sine,
-    "Calulator": calculator,
+    "Calculator": calculator,
     "Pokemon": pokemon,
 }
 
