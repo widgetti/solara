@@ -80,3 +80,4 @@ build/
 
 ./tmp
 ./examples
+node_modules

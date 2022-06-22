@@ -44,7 +44,7 @@ module.exports = {
         return jupyterVue
       });
 
-      const {GridLayout, GridItem} = (await this.import(['https://cdn.jsdelivr.net/npm/@widgetti/vue-grid-layout@2.3.13-alpha.2/dist/vue-grid-layout.umd.js']))[0]
+      const {GridLayout, GridItem} = (await this.import([`${this.getCdn()}/@widgetti/vue-grid-layout@2.3.13-alpha.2/dist/vue-grid-layout.umd.js`]))[0]
       this.$options.components['grid-item'] = GridItem;
       this.$options.components['grid-layout'] = GridLayout;
       this.gridlayout_loaded = true;
@@ -68,11 +68,14 @@ module.exports = {
           }
           return new Promise((resolve, reject) => {
             const script = document.createElement('script');
-            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js';
+            script.src = `${this.getCdn()}/requirejs@2.3.6/require.min.js`;
             script.onload = resolve;
             script.onerror = reject;
             document.head.appendChild(script);
           });
+        },
+        getCdn() {
+          return (typeof solara_cdn !== "undefined" && solara_cdn) || `${document.body.dataset.baseUrl || '/'}_solara/cdn`;
         }
     }
 }
