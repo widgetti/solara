@@ -1,12 +1,6 @@
 import hashlib
 
-from solara.server.cdn_helper import (
-    get_cdn_url,
-    get_data,
-    get_from_cache,
-    npm_pack,
-    put_in_cache,
-)
+from solara.server.cdn_helper import get_cdn_url, get_data, get_from_cache, put_in_cache
 
 path1 = "vue-grid-layout@1.0.2/dist/vue-grid-layout.min.js"
 hash1 = "4bd3c14b1fa124bd9fe4cb5f8a7cbc54"
@@ -80,18 +74,3 @@ def test_binary(tmp_path_factory):
     assert len(data) == 15436
 
     assert len((base_cache_dir / lib).read_bytes()) == 15436
-
-
-def test_npm_pack(tmp_path_factory):
-    base_cache_dir = tmp_path_factory.mktemp("cdn")
-
-    package = "@widgetti/solara-vuetify-app"
-    version = "0.0.1-alpha.1"
-    npm_pack(base_cache_dir, package, version)
-
-    some_file = base_cache_dir / f"{package}@{version}" / "dist" / "037d830416495def72b7881024c14b7b.woff2"
-    assert some_file.is_file()
-    assert len(some_file.read_bytes()) == 15436
-
-    data = get_from_cache(base_cache_dir, f"{package}@{version}/dist/037d830416495def72b7881024c14b7b.woff2")
-    assert len(data) == 15436
