@@ -8,7 +8,7 @@ logger = logging.getLogger("Solara.cdn")
 
 cdn = "https://cdn.jsdelivr.net/npm/"
 
-default_cache_dir = pathlib.Path(sys.prefix + "/share/_solara/cdn/")
+default_cache_dir = pathlib.Path(sys.prefix + "/share/solara/cdn/")
 
 cdn_url_path = "_solara/cdn"
 
