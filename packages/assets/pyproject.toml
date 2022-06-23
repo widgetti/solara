@@ -22,7 +22,7 @@ path = "solara_assets/__init__.py"
 [tool.hatch.build.hooks.custom]
 
 [tool.hatch.build.targets.wheel.shared-data]
-"cdn" = "share/_solara/cdn"
+"cdn" = "share/solara/cdn"
 
 [tool.black]
 line-length = 160
