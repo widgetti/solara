@@ -16,8 +16,8 @@ jobs:
           python-version: 3.7
       - name: Install flit
         run: pip install flit
-      - name: Install
-        run: flit install
+      - name: Test optional dependencies
+        run: flit install --deps=production --extras=flask,dev,examples,server # exclude assets, since that is not yet build
       - name: Uninstall
         run: pip uninstall solara -y
       - name: Build
@@ -37,3 +37,16 @@ jobs:
         with:
           name: distributions
           path: ./dist
+      - name: Install hatch
+        run: pip install hatch
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 14
+      - name: Build assets
+        run: (cd packages/assets; hatch build)
+      - name: Publish assets distribution to PyPI
+        env:
+          HATCH_PYPI_USER: __token__
+          HATCH_PYPI_AUTH: ${{ secrets.pypi_assets }}
+        run: |
+          (cd packages/assets; hatch publish)
