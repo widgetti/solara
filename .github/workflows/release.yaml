@@ -47,7 +47,7 @@ jobs:
         run: (cd packages/assets; hatch build)
       - name: Publish assets distribution to PyPI
         env:
-          FLIT_USERNAME: __token__
-          FLIT_PASSWORD: ${{ secrets.pypi_assets }}
+          HATCH_USERNAME: __token__
+          HATCH_PASSWORD: ${{ secrets.pypi_assets }}
         run: |
           (cd packages/assets; hatch publish)
