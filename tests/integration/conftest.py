@@ -5,13 +5,15 @@ import sys
 import threading
 import time
 from http.server import HTTPServer
-from typing import Optional, Union
+from typing import Optional, Set, Union
 
+import playwright.sync_api
 import pytest
 import uvicorn.server
 
 import solara.server.app
 import solara.server.server
+import solara.server.settings
 from solara.server import reload
 from solara.server.starlette import app as app_starlette
 
@@ -26,10 +28,38 @@ else:
     SERVERS = ["flask", "starlette"]
 
 
+urls: Set[str] = set()
+
+
+# allow symlinks on solara+starlette
+solara.server.settings.main.mode = "development"
+
+
+@pytest.fixture(scope="session")
+def url_checks():
+    yield
+    non_localhost = [url for url in urls if not url.startswith("http://localhost")]
+    allow_list = [
+        "https://user-images.githubusercontent.com",
+        "https://cdnjs.cloudflare.com/ajax/libs/emojione/2.2.7",
+    ]
+    non_allow_urls = [url for url in non_localhost if not any(url.startswith(allow) for allow in allow_list)]
+    if non_allow_urls:
+        msg = "The following URLs were not allowed (non local host, and not in allow list):\n"
+        msg += "\n".join(non_allow_urls)
+        raise AssertionError(msg)
+
+
 # see https://github.com/microsoft/playwright-pytest/issues/23
 @pytest.fixture
-def context(context):
-    context.set_default_timeout(3000)
+def context(context: playwright.sync_api.BrowserContext, url_checks):
+    context.set_default_timeout(300000)
+
+    def handle(route, request: playwright.sync_api.Request):
+        urls.add(request.url)
+        route.continue_()
+
+    context.route("**/*", handle)
     yield context
 
 
