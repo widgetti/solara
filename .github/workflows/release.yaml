@@ -47,7 +47,7 @@ jobs:
         run: (cd packages/assets; hatch build)
       - name: Publish assets distribution to PyPI
         env:
-          HATCH_USERNAME: __token__
-          HATCH_PASSWORD: ${{ secrets.pypi_assets }}
+          HATCH_PYPI_USER: __token__
+          HATCH_PYPI_AUTH: ${{ secrets.pypi_assets }}
         run: |
           (cd packages/assets; hatch publish)
