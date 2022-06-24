@@ -16,8 +16,8 @@ jobs:
           python-version: 3.7
       - name: Install flit
         run: pip install flit
-      - name: Install
-        run: flit install --deps=none --extras=flask,dev,examples,server
+      - name: Test optional dependencies
+        run: flit install --deps=production --extras=flask,dev,examples,server # exclude assets, since that is not yet build
       - name: Uninstall
         run: pip uninstall solara -y
       - name: Build
