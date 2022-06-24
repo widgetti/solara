@@ -26,18 +26,17 @@ jobs:
         run: pip install dist/*.whl
       - name: Test import
         run: python -c "import solara"
-#      - name: Publish a Python distribution to PyPI
-#        env:
-#          FLIT_USERNAME: __token__
-#          FLIT_PASSWORD: ${{ secrets.pypi_password }}
-#        run: |
-#          openssl sha256 dist/*
-#          flit publish
-#      - uses: actions/upload-artifact@v1
-#        with:
-#          name: distributions
-#          path: ./dist
-
+      - name: Publish a Python distribution to PyPI
+        env:
+          FLIT_USERNAME: __token__
+          FLIT_PASSWORD: ${{ secrets.pypi_password }}
+        run: |
+          openssl sha256 dist/*
+          flit publish
+      - uses: actions/upload-artifact@v1
+        with:
+          name: distributions
+          path: ./dist
       - name: Install hatch
         run: pip install hatch
       - uses: actions/setup-node@v3
