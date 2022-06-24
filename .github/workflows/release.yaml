@@ -17,7 +17,7 @@ jobs:
       - name: Install flit
         run: pip install flit
       - name: Install
-        run: flit install
+        run: flit install --deps=none --extras=flask,dev,examples,server
       - name: Uninstall
         run: pip uninstall solara -y
       - name: Build
