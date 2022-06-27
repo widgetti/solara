@@ -1,5 +1,11 @@
 """
 Renders markdown using https://python-markdown.github.io/
+
+Code marked with language "solara" will be executed only when the argument `unsafe_solara_execute=False` is passed.
+
+This argument is marked "unsafe" to make users aware it can be used to execute arbitrary code.
+If the markdown is fixed (such as in our own documentation) this should not pose any security risk.
+
 """
 
 
