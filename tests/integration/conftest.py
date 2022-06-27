@@ -53,7 +53,7 @@ def url_checks():
 # see https://github.com/microsoft/playwright-pytest/issues/23
 @pytest.fixture
 def context(context: playwright.sync_api.BrowserContext, url_checks):
-    context.set_default_timeout(300000)
+    context.set_default_timeout(3000)
 
     def handle(route, request: playwright.sync_api.Request):
         urls.add(request.url)
