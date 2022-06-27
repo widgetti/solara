@@ -1,13 +1,18 @@
 import asyncio
 import logging
+import os
 
 import flask
 import simple_websocket
 from flask import Blueprint, Flask, request, send_from_directory, url_for
 from flask_sock import Sock
 
+import solara
+
 from . import app as appmod
 from . import server, websocket
+
+os.environ["SERVER_SOFTWARE"] = "solara/" + str(solara.__version__)
 
 logger = logging.getLogger("solara.server.flask")
 blueprint = Blueprint("blueprint-solara", __name__)

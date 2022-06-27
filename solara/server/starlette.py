@@ -13,9 +13,13 @@ from starlette.responses import HTMLResponse, JSONResponse, Response
 from starlette.routing import Mount, Route, WebSocketRoute
 from starlette.staticfiles import StaticFiles
 
+import solara
+
 from . import app as appmod
 from . import patch, server, settings, websocket
 from .cdn_helper import cdn_url_path, default_cache_dir, get_data
+
+os.environ["SERVER_SOFTWARE"] = "solara/" + str(solara.__version__)
 
 logger = logging.getLogger("solara.server.fastapi")
 # if we add these to the router, the server_test does not run (404's)
