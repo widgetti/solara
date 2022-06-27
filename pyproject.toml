@@ -57,7 +57,7 @@ dev = [
     "bump2version",
 ]
 assets = [
-    "solara-assets==0.5.0"
+    "solara-assets==0.5.1"
 ]
 server = [
     "jinja2",

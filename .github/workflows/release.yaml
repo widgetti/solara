@@ -26,7 +26,20 @@ jobs:
         run: pip install dist/*.whl
       - name: Test import
         run: python -c "import solara"
-      - name: Publish a Python distribution to PyPI
+      - name: Install hatch
+        run: pip install hatch
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 14
+      - name: Build assets
+        run: (cd packages/assets; hatch build)
+      - name: Publish solara-assets to PyPI
+        env:
+          HATCH_PYPI_USER: __token__
+          HATCH_PYPI_AUTH: ${{ secrets.pypi_assets }}
+        run: |
+          (cd packages/assets; hatch publish)
+      - name: Publish solara to PyPI
         env:
           FLIT_USERNAME: __token__
           FLIT_PASSWORD: ${{ secrets.pypi_password }}
@@ -37,16 +50,3 @@ jobs:
         with:
           name: distributions
           path: ./dist
-      - name: Install hatch
-        run: pip install hatch
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 14
-      - name: Build assets
-        run: (cd packages/assets; hatch build)
-      - name: Publish assets distribution to PyPI
-        env:
-          HATCH_PYPI_USER: __token__
-          HATCH_PYPI_AUTH: ${{ secrets.pypi_assets }}
-        run: |
-          (cd packages/assets; hatch publish)
