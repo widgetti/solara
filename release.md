@@ -1,7 +1,14 @@
 
-# fully automated
+# Fully automated
 
-    $ ./release.sh 0.5.0
+    $ ./release.sh patch
+
+
+## Making an alpha release
+
+
+    $ ./release.sh patch --new-version 0.5.0a1
+
 
 # semi automated
 To make a new release
