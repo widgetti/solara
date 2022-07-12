@@ -35,7 +35,7 @@ def test_hook_thread():
         use_thread(work, [])
         return w.Label(value=f"{a} {b} {c} {counter}")
 
-    label, rc = render_fixed(ThreadTest())
+    label, rc = render_fixed(ThreadTest(), handle_error=False)
     expected = "a b c 255"
     for i in range(200):  # max 2 second
         time.sleep(0.01)
@@ -63,6 +63,7 @@ def test_hook_iterator():
     label, rc = react.render_fixed(Test())
     assert result is not None
     assert isinstance(result, sol.Result)
+    time.sleep(0.05)
     assert result.value == 1
     event.set()
     time.sleep(0.01)
@@ -132,6 +133,7 @@ def test_hook_download(tmpdir):
 
     # if given, content_length, we should render with done immediately
     label, rc = render_fixed(DownloadFile(expected_size=content_length))
+    time.sleep(0.05)
     assert label.value == expected
 
     label, rc = render_fixed(DownloadFile(url=url + ".404"))

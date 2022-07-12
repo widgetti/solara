@@ -72,7 +72,7 @@ cross_filter_context = react.create_context(CrossFilterStore())
 
 def provide_cross_filter():
     # create it once
-    cross_filter_object = react.use_memo(CrossFilterStore)()
+    cross_filter_object = react.use_memo(CrossFilterStore, [])
     cross_filter_context.provide(cross_filter_object)
 
 

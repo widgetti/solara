@@ -369,8 +369,7 @@ def HeatmapCard(df, x=None, y=None, debounce=True):
                 import vaex.jupyter
 
                 def updater(name):
-                    @react.use_memo
-                    def make(name):
+                    def make():
                         # def shared():  # all render functions get a shared function per 'name'
                         def setter(value):
                             def state_updater(state):
@@ -384,7 +383,7 @@ def HeatmapCard(df, x=None, y=None, debounce=True):
                             return setter
                         # return shared
 
-                    return make(name)
+                    return react.use_memo(make, [name])
 
                 update_xmin = updater("xmin")
                 update_xmax = updater("xmax")
@@ -398,36 +397,34 @@ def HeatmapCard(df, x=None, y=None, debounce=True):
                 #         update_single_debouced(name, value)
                 #     return update_single
 
-                @react.use_memo
                 def minx(x):
                     values = [k.item() for k in dff[x].minmax()]
                     update_xmin(values[0])
                     update_xmax(values[1])
 
-                minx(xcol)
+                react.use_memo(lambda: minx(xcol), [xcol])
 
-                @react.use_memo
+                # @react.use_memo
                 def miny(y):
                     values = [k.item() for k in dff[y].minmax()]
                     update_ymin(values[0])
                     update_ymax(values[1])
 
-                miny(ycol)
+                react.use_memo(lambda: miny(ycol), [ycol])
 
                 if all(limits[k] is not None for k in limit_keys):
                     # print("limits used", limits)
                     xrange = limits["xmin"], limits["xmax"]
                     yrange = limits["ymin"], limits["ymax"]
 
-                    @react.use_memo
-                    def cross_filter(crossfilter_visible, xrange, yrange):
+                    def cross_filter():
                         if crossfilter_visible:
                             visible_filter = (df[xcol] >= xrange[0]) & (df[xcol] <= xrange[1]) & (df[ycol] >= yrange[0]) & (df[ycol] <= yrange[1])
                             set_filter(visible_filter)
                         else:
                             set_filter(None)
 
-                    cross_filter(crossfilter_visible, xrange, yrange)
+                    react.use_memo(cross_filter, [crossfilter_visible, xrange, yrange])
 
                     # @react.use_memo
 

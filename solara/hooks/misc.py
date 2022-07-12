@@ -73,14 +73,14 @@ def use_thread(
     def make_lock():
         return threading.Lock()
 
-    lock: threading.Lock = react.use_memo(make_lock)()
+    lock: threading.Lock = react.use_memo(make_lock, [])
     updater = use_force_update()
     result_state, set_result_state = react.use_state(ResultState.INITIAL)
     error = react.use_ref(cast(Optional[Exception], None))
     result = react.use_ref(cast(Optional[T], None))
     running_thread = react.use_ref(cast(Optional[threading.Thread], None))
     counter, retry = use_retry()
-    cancel: threading.Event = react.use_memo(make_event)(dependencies + [counter])
+    cancel: threading.Event = react.use_memo(make_event, [*dependencies, counter])
 
     @contextlib.contextmanager
     def cancel_guard():
@@ -262,7 +262,7 @@ def use_download(
 
 def use_fetch(url, chunk_size=chunk_size_default):
     # re-use the same file like object
-    f = react.use_memo(lambda *ignore: io.BytesIO(), args=[url])
+    f = react.use_memo(io.BytesIO, [url])
     result = use_download(f, url, return_content=True, chunk_size=chunk_size)
     print(result.progress)
     return dataclasses.replace(result, value=f.getvalue() if result.progress == 1 else None)
@@ -304,7 +304,6 @@ def use_json(path):
 def use_file_content(path, watch=False) -> FileContentResult[bytes]:
     counter, retry = use_retry()
 
-    @react.use_memo
     def read_file(*ignore):
         try:
             with open(path, "rb") as f:
@@ -319,11 +318,7 @@ def use_file_content(path, watch=False) -> FileContentResult[bytes]:
         # result.retry = retry
         return result
 
-    content = read_file(
-        path,
-        mtime,
-        counter,
-    )
+    content = react.use_memo(read_file, dependencies=[path, mtime, counter])
     if isinstance(content, Exception):
         return FileContentResult[bytes](error=content, _retry=retry)
     else:
@@ -346,11 +341,10 @@ def use_force_update() -> Callable[[], None]:
 def use_uuid4(dependencies=[]):
     """Generate a unique string using the uuid4 algorithm. Will only change when the dependencies change."""
 
-    @react.use_memo
     def make_uuid(*_ignore):
         return str(uuid.uuid4())
 
-    return make_uuid(dependencies)
+    return react.use_memo(make_uuid, dependencies)
 
 
 def use_unique_key(key: str = None, prefix: str = "", dependencies=[]):
@@ -368,22 +362,23 @@ def use_state_or_update(
     """
     value, set_value = react.use_state(initial_or_updated, key=key, eq=eq)
 
-    def possibly_update(initial_or_updated):
+    def possibly_update():
         nonlocal value
         # only gets called when initial_or_updated changes
         set_value(initial_or_updated)
         # this make sure the return value gets updated directly
         value = initial_or_updated
 
-    react.use_memo(possibly_update)(initial_or_updated)
+    react.use_memo(possibly_update, [initial_or_updated])
     return value, set_value
 
 
-def use_previous(value: T) -> T:
+def use_previous(value: T, condition=True) -> T:
     ref = react.use_ref(value)
 
     def assign():
-        ref.current = value
+        if condition:
+            ref.current = value
 
     react.use_effect(assign, [value])
     return ref.current
