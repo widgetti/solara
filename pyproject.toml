@@ -14,7 +14,7 @@ packages = [
     { include = "solara" }
 ]
 dependencies = [
-    "react-ipywidgets>=0.9.0",
+    "react-ipywidgets>=0.11.0",
     "diskcache",
     "markdown",
     "pygments",
