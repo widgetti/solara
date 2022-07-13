@@ -11,3 +11,4 @@ from .togglebuttons import (  # noqa: #F401 F403
     ToggleButtonsMultiple,
     ToggleButtonsSingle,
 )
+from .pivot_table import PivotTableView, PivotTable, PivotTableCard  # noqa: #F401 F403

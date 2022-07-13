@@ -8,7 +8,6 @@ import traitlets
 from ..datatypes import CellAction, ColumnAction
 
 __all__ = [
-    "PivotTable",
     "DataTable",
     "VegaLite",
     "Navigator",
@@ -16,12 +15,6 @@ __all__ = [
     "HTML",
     "watch",
 ]
-
-
-class PivotTable(v.VuetifyTemplate):
-    template_file = os.path.realpath(os.path.join(os.path.dirname(__file__), "vue/pivottable.vue"))
-    d = traitlets.Dict(default_value={"no": "data"}).tag(sync=True)
-    selected = traitlets.Dict(default_value=[]).tag(sync=True)
 
 
 def _ensure_dict(d):

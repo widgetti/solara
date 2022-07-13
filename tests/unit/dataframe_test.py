@@ -9,14 +9,12 @@ from solara.components.dataframe import (
     FilterCard,
     HeatmapCard,
     HistogramCard,
-    PivotTableCard,
     ScatterCard,
     SummaryCard,
     TableCard,
 )
 from solara.hooks.dataframe import provide_cross_filter, use_cross_filter
 from solara.kitchensink import sol
-from solara.widgets import PivotTable
 
 df = vaex.datasets.titanic()
 
@@ -49,49 +47,6 @@ def test_histogram_card():
     assert bars.y.tolist() == [339, 161]
     bars.selected = [0]
     assert df[filter].sex.unique() == ["female"]
-
-
-def test_pivot_table():
-    filter = set_filter = None
-
-    @react.component
-    def FilterDummy():
-        nonlocal filter, set_filter
-        filter, set_filter = use_cross_filter("test")
-        return sol.Text("dummy")
-
-    @react.component
-    def Test():
-        provide_cross_filter()
-        with sol.VBox() as main:
-            PivotTableCard(df, x=["sex"], y=["survived"])
-            FilterDummy()
-        return main
-
-    widget, rc = react.render(Test(), handle_error=False)
-    pt = rc._find(PivotTable).widget
-    data = pt.d
-    assert data["x"] == ["sex"]
-    assert data["y"] == ["survived"]
-    assert data["values_x"] == ["466", "843"]
-    assert data["values_y"] == ["809", "500"]
-    assert data["values"] == [["127", "339"], ["682", "161"]]
-    assert data["total"] == f"{len(df):,}"
-    assert set_filter is not None
-    set_filter(df["pclass"] == 2)
-    data = pt.d
-    assert data["values_x"] == ["106", "171"]
-    assert data["values_y"] == ["158", "119"]
-    assert data["values"] == [["12", "94"], ["146", "25"]]
-    assert data["total"] == f"{len(df[df.pclass==2]):,}"
-    set_filter(None)
-    pt.selected = {"x": [0, 0]}  # sex, female
-    assert filter is not None
-    assert df[filter].sex.unique() == ["female"]
-
-    pt.selected = {"y": [0, 0]}  # survived, False
-    assert filter is not None
-    assert df[filter].survived.unique() == [False]
 
 
 def test_dropdown_card():

@@ -8,7 +8,6 @@ import react_ipywidgets.ipyvuetify as ipyvue
 import solara as sol
 import solara.widgets
 
-PivotTable = react.core.ComponentWidget(solara.widgets.PivotTable)
 Navigator = react.core.ComponentWidget(solara.widgets.Navigator)
 GridDraggable = react.core.ComponentWidget(solara.widgets.GridLayout)
 # keep the old name for a while

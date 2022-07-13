@@ -1,6 +1,17 @@
 import dataclasses
 from enum import Enum
-from typing import Any, Callable, Generic, Optional, TypeVar
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generic,
+    List,
+    Literal,
+    Optional,
+    TypedDict,
+    TypeVar,
+    Union,
+)
 
 T = TypeVar("T")
 U = TypeVar("U")
@@ -63,3 +74,30 @@ class FileContentResult(Result[T]):
     @property
     def exists(self):
         return not isinstance(self.error, FileNotFoundError)
+
+
+class AggregationCount(TypedDict):
+    type: Literal["count"]
+
+
+class AggregationSum(TypedDict):
+    type: Literal["sum"]
+
+
+JsonType = Union[None, int, str, bool, List[Any], Dict[str, Any]]
+
+Aggregation = Union[AggregationCount, AggregationSum]
+
+
+class PivotTableData(TypedDict):
+    x: List[str]
+    y: List[str]
+    agg: str
+    values: List[List[JsonType]]
+    values_x: List[str]
+    values_y: List[str]
+    headers_x: List[List[str]]
+    headers_y: List[List[str]]
+    counts_x: int
+    counts_y: int
+    total: str

@@ -1,5 +1,3 @@
-import operator
-from functools import reduce
 from typing import List, cast
 
 import numpy as np
@@ -8,9 +6,8 @@ import react_ipywidgets.bqplot as bqplot
 import react_ipywidgets.ipyvuetify as v
 import react_ipywidgets.ipywidgets as w
 
-from solara.components import PivotTable, ui_checkbox, ui_dropdown
+from solara.components import ui_checkbox, ui_dropdown
 from solara.hooks import df_unique, max_unique, use_cross_filter, use_df_column_names
-from solara.hooks.dataframe import use_df_pivot_data
 
 cardheight = "100%"
 
@@ -529,98 +526,5 @@ def DropdownCard(df, column=None):
             v.Select(v_model=value, items=items, on_v_model=set_value_and_filter, label=f"Choose {column} value", clearable=True, return_object=True)
             if len(uniques) > max_unique:
                 v.Alert(type="warning", text=True, prominent=True, icon="mdi-alert", children=[f"Too many unique values, will only show first {max_unique}"])
-
-    return main
-
-
-@react.component
-def PivotTableCard(df, x=[], y=[]):
-    # copy since we mutate
-    x = x.copy()
-    y = y.copy()
-    filter, set_filter = use_cross_filter("pivottable")
-    dff = df
-
-    def set_filter_from_pivot_selection(selection):
-        assert data is not None
-        filters = []
-        # print("selection", selection)
-        if "x" in selection:
-            sel = selection["x"]
-            for level in range(sel[0] + 1):
-                value = data["headers"]["x"][level][sel[1]]
-                column = data["x"][level]
-                if value is None:
-                    filters.append(df[column].ismissing())
-                else:
-                    filters.append(df[column] == value)
-
-        if "y" in selection:
-            sel = selection["y"]
-            for level in range(sel[0] + 1):
-                column = data["y"][level]
-                value = data["headers"]["y"][level][sel[1]]
-                if value is None:
-                    filters.append(df[column].ismissing())
-                else:
-                    filters.append(df[column] == value)
-        #         if filters:
-        #             expression = "&".join([k.expression for k in filters])
-        #         else:
-        #             expression = None
-        if filters:
-            #             otherfilters_expressions = [df[k] for k in otherfilters]
-            filter = reduce(operator.and_, filters[1:], filters[0])
-        #             return df[filter]
-        else:
-            filter = None
-        # print(filter)
-        set_filter(filter)
-
-    data = None
-    items = use_df_column_names(df)
-    with v.Card(elevation=2, style_="position: relative", height=cardheight) as main:
-        with v.CardTitle(children=["Pivot table"]):
-            pass
-        with v.CardText():
-            with v.Btn(v_on="x.on", icon=True, absolute=True, style_="right: 10px; top: 10px") as btn:
-                v.Icon(children=["mdi-settings"])
-            with v.Dialog(v_slots=[{"name": "activator", "variable": "x", "children": btn}]):
-                with v.Sheet():
-                    with v.Container(pa_4=True, ma_0=True):
-                        with v.Row():
-                            with v.Col():
-                                with v.Card(elevation=2):
-                                    with v.CardTitle(children=["Rows"]):
-                                        pass
-                                    with v.CardText():
-                                        for i in range(10):
-                                            col = ui_dropdown(value=x[i] if i < len(x) else None, label=f"Row {i}", options=items)
-                                            if col is None:
-                                                break
-                                            else:
-                                                if i < len(x):
-                                                    x[i] = col
-                                                else:
-                                                    x.append(col)
-                            with v.Col():
-                                with v.Card(elevation=2):
-                                    with v.CardTitle(children=["Columns"]):
-                                        pass
-                                    with v.CardText():
-                                        for i in range(10):
-                                            col = ui_dropdown(value=y[i] if i < len(y) else None, label=f"Column {i}", options=items)
-                                            if col is None:
-                                                break
-                                            else:
-                                                if i < len(y):
-                                                    y[i] = col
-                                                else:
-                                                    y.append(col)
-
-            import vaex
-
-            data = use_df_pivot_data(dff, x, y, vaex.agg.count(selection=filter))
-            PivotTable(d=data, on_selected=set_filter_from_pivot_selection)
 
     return main

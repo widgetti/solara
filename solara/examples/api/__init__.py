@@ -13,6 +13,7 @@ from . import (
     html,
     image,
     markdown,
+    pivot_table,
     slider,
     sql_code,
     togglebuttons,
@@ -39,6 +40,7 @@ modules = {
     "FileBrowser": file_browser,
     "use_state_or_update": use_state_or_update,
     "use_previous": use_previous,
+    "PivotTable": pivot_table,
 }
 
 
@@ -72,6 +74,7 @@ def API():
                         sol.ListItem("App")
                     with sol.ListItem("Data", icon_name="mdi-database"):
                         sol.ListItem("DataTable")
+                        sol.ListItem("PivotTable")
                     with sol.ListItem("Hooks", icon_name="mdi-hook"):
                         sol.ListItem("use_fetch")
                         sol.ListItem("use_json")
