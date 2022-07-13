@@ -1,17 +1,8 @@
 import dataclasses
 from enum import Enum
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Generic,
-    List,
-    Literal,
-    Optional,
-    TypedDict,
-    TypeVar,
-    Union,
-)
+from typing import Any, Callable, Dict, Generic, List, Optional, TypeVar, Union
+
+from typing_extensions import Literal, TypedDict
 
 T = TypeVar("T")
 U = TypeVar("U")
