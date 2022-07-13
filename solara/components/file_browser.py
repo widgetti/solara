@@ -100,6 +100,8 @@ def FileBrowser(
                     set_scroll_pos(last_pos)
                 set_selected(None)
                 set_double_clicked(None)
+                if on_path_select and can_select:
+                    on_path_select(None)
             if can_select and not double_click:
                 if on_path_select:
                     on_path_select(Path(new_dir))
@@ -117,8 +119,10 @@ def FileBrowser(
                 if change_dir(path):
                     set_scroll_pos_stack(scroll_pos_stack + [scroll_pos])
                     set_scroll_pos(0)
-            set_selected(None)
+                set_selected(None)
             set_double_clicked(None)
+            if on_path_select and can_select:
+                on_path_select(None)
         elif can_select and not double_click:
             if on_path_select:
                 on_path_select(Path(path))
