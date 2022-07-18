@@ -44,3 +44,7 @@ div.highlight pre code {
 .solara-markdown img {
     max-width: 100%;
 }
+
+.solara-markdown {
+    max-width: 1024px;
+}
