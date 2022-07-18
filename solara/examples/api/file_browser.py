@@ -22,7 +22,7 @@ from solara.kitchensink import react, sol
 
 
 @react.component
-def FileBrowserDemo():
+def Page():
     file, set_file = react.use_state(cast(Optional[Path], None))
     path, set_path = react.use_state(cast(Optional[Path], None))
     directory, set_directory = react.use_state(Path("~").expanduser())
@@ -42,8 +42,3 @@ def FileBrowserDemo():
         sol.Info(f"You selected path: {path}")
         sol.Info(f"You opened file: {file}")
     return main
-
-
-Component = sol.FileBrowser
-App = FileBrowserDemo
-app = App()

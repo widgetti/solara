@@ -29,7 +29,6 @@ try:
     import vaex
 except ImportError:
     vaex = None
-import solara.components.datatable
 from solara.kitchensink import react, sol
 
 if vaex is not None:
@@ -39,7 +38,7 @@ else:
 
 
 @react.component
-def DataTableDemo():
+def Page():
     column, set_column = react.use_state(cast(Optional[str], None))
     cell, set_cell = react.use_state(cast(Dict[str, Any], {}))
 
@@ -64,9 +63,5 @@ def DataTableDemo():
 
         """
         )
-        sol.components.datatable.DataTable(df, column_actions=column_actions, cell_actions=cell_actions)
+        sol.DataTable(df, column_actions=column_actions, cell_actions=cell_actions)
     return main
-
-
-Component = solara.components.datatable.DataTable
-App = DataTableDemo

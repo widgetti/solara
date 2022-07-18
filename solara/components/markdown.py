@@ -107,7 +107,7 @@ def Markdown(md_text: str, unsafe_solara_execute=False):
     def highlight(src, language, *args, **kwargs):
         return _highlight(src, language, unsafe_solara_execute, *args, **kwargs)
 
-    html = markdown.markdown(
+    html = markdown.markdown(  # type: ignore
         md_text,
         extensions=[
             "pymdownx.highlight",

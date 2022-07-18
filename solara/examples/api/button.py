@@ -6,7 +6,7 @@ from solara.kitchensink import react, sol
 
 
 @react.component
-def ButtonDemo():
+def Page():
     count, set_count = react.use_state(0)
 
     def increment():
@@ -16,8 +16,3 @@ def ButtonDemo():
         with sol.HBox():
             sol.Button(label=f"Clicked {count} times", on_click=increment, icon_name="mdi-thumb-up")
     return main
-
-
-Component = sol.Button
-App = ButtonDemo
-app = App()

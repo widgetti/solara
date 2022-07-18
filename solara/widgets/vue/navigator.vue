@@ -4,6 +4,7 @@
 modules.export = {
   created() {
     this.location = window.location.pathname;
+    console.log("created");
     window.addEventListener("popstate", (lala) => {
       // console.log('pop state!', lala, window.location.pathname )
       if (!window.location.href.startsWith(document.baseURI)) {
@@ -16,7 +17,7 @@ modules.export = {
   },
   watch: {
     location() {
-      // console.log('changed', this.location)
+      console.log("changed", this.location);
       // if we use the back navigation, this watch will trigger,
       // but we don't want to push the history
       // otherwise we cannot go forward
@@ -25,7 +26,7 @@ modules.export = {
       }
       const oldLocation =
         "/" + window.location.href.slice(document.baseURI.length);
-      // console.log('location changed', oldLocation, this.location)
+      console.log("location changed", oldLocation, this.location);
       if (oldLocation != this.location) {
         // we prepend with "." to make it work behind a proxy. e.g.
         // <base href="https://myserver.com/someuser/project/a/">

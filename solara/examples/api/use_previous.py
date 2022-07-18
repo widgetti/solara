@@ -14,7 +14,7 @@ from solara.kitchensink import react, sol
 
 
 @react.component
-def App():
+def Page():
     value, set_value = react.use_state(4)
     value_previous = sol.use_previous(value)
     with sol.VBox() as main:
@@ -28,6 +28,3 @@ def App():
         )
 
     return main
-
-
-app = App()

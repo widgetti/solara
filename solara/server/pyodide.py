@@ -37,7 +37,8 @@ def start():
     app_state = None
     with context:
         ipywidgets.register_comm_target(kernel)
-        widget, render_context = server.run_app(app_state)
+        # TODO: what should the default pathname be for pyodide, probably an argument to start?
+        widget, render_context = server.run_app(app_state, "")
         context.widgets["content"] = widget
     context.app_object = render_context
     model_id = context.widgets["content"].model_id

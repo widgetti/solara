@@ -13,7 +13,7 @@ from solara.kitchensink import react, sol, v
 
 
 @react.component
-def MarkdownDemo():
+def Page():
     markdown_initial = """
 # Large
 ## Smaller
@@ -43,6 +43,7 @@ graph TD;
 
 
     """.strip()
+
     markdown_text, set_markdown_text = react.use_state(markdown_initial)
     # with sol.GridFixed(columns=2) as main:
     with sol.HBox(grow=True) as main:
@@ -58,7 +59,3 @@ graph TD;
                     sol.Markdown(markdown_text)
 
     return main
-
-
-Component = sol.Markdown
-App = MarkdownDemo

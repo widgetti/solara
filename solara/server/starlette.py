@@ -3,7 +3,7 @@ import mimetypes
 import os
 import pathlib
 import typing
-from typing import List, Optional, Union, cast
+from typing import List, Union, cast
 
 import anyio
 import starlette.websockets
@@ -73,6 +73,7 @@ async def kernel_connection(ws: starlette.websockets.WebSocket):
                 await portal.stop(cancel_remaining=True)
                 raise
 
+        # sometimes throws: RuntimeError: Already running asyncio in this thread
         anyio.run(run)
 
     # this portal allows us to sync call the websocket calls from this current event loop we are in
@@ -117,7 +118,7 @@ async def watchdog(ws: starlette.websockets.WebSocket):
             pass
 
 
-async def root(request: Request, fullpath: Optional[str] = ""):
+async def root(request: Request, fullpath: str = ""):
     root_path = request.scope.get("root_path", "")
     logger.debug("root_path: %s", root_path)
     if request.headers.get("script-name"):
@@ -128,7 +129,7 @@ async def root(request: Request, fullpath: Optional[str] = ""):
         root_path = request.headers.get("x-script-name")
 
     context_id = request.cookies.get(appmod.COOKIE_KEY_CONTEXT_ID)
-    content, context_id = server.read_root(context_id, root_path)
+    content, context_id = server.read_root(context_id, fullpath, root_path)
     assert context_id is not None
     response = HTMLResponse(content=content)
     response.set_cookie(appmod.COOKIE_KEY_CONTEXT_ID, value=context_id)
@@ -178,6 +179,7 @@ routes = [
     Mount(f"{prefix}/static/nbextensions", app=StaticNbFiles()),
     Mount(f"{prefix}/static/nbconvert", app=StaticFiles(directory=server.nbconvert_static)),
     Mount(f"{prefix}/static", app=StaticFiles(directory=server.solara_static)),
+    Route("/{fullpath:path}", endpoint=root),
 ]
 app = Starlette(routes=routes)
 patch.patch()

@@ -1,5 +1,7 @@
 """Build webapps using IPywidgets"""
 __version__ = "0.5.2"
+github_url = "https://github.com/widgetti/solara"
+git_branch = "master"
 # isort: skip_file
 
 from . import util
@@ -10,5 +12,5 @@ from .hooks import *
 from .memoize import memoize
 from .components import *
 
-github_url = "https://github.com/widgetti/solara"
-git_branch = "master"
+from .routing import use_route, use_router, use_route_level, find_route, use_pathname, resolve_path
+from .autorouting import generate_routes, generate_routes_directory, RenderPage, RoutingProvider, DefaultLayout

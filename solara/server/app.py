@@ -1,5 +1,4 @@
 import atexit
-import contextlib
 import dataclasses
 import importlib.util
 import logging
@@ -14,6 +13,9 @@ from typing import Any, Dict, List, Optional, cast
 import ipywidgets as widgets
 import react_ipywidgets as react
 
+import solara as sol
+
+from ..util import cwd
 from . import kernel, reload
 from .utils import nested_get
 
@@ -26,16 +28,6 @@ thread_lock = threading.Lock()
 logger = logging.getLogger("solara.server.app")
 state_directory = Path(".") / "states"
 state_directory.mkdir(exist_ok=True)
-
-
-@contextlib.contextmanager
-def cwd(path):
-    cwd = os.getcwd()
-    try:
-        os.chdir(path)
-        yield
-    finally:
-        os.chdir(cwd)
 
 
 @dataclasses.dataclass
@@ -55,7 +47,7 @@ class AppContext:
     app_object: Optional[Any] = None
 
     def display(self, *args):
-        print(args)
+        print(args)  # noqa
 
     def __enter__(self):
         key = get_current_thread_key()
@@ -69,7 +61,7 @@ class AppContext:
         with self:
             import solara.server.patch
 
-            assert isinstance(widgets.Widget.widgets, solara.server.patch.context_dict_widgets)
+            assert isinstance(widgets.Widget.widgets, solara.server.patch.context_dict_widgets), f"Unexpected widget dict type: {type(widgets.Widget.widgets)}"
             assert widgets.Widget.widgets._get_context_dict() is self.widgets
             widgets.Widget.close_all()
             # what if we reference eachother
@@ -139,10 +131,11 @@ class AppType(str, Enum):
     SCRIPT = "script"
     NOTEBOOK = "notebook"
     MODULE = "module"
+    DIRECTORY = "directory"
 
 
 class AppScript:
-    def __init__(self, name, default_app_name="app"):
+    def __init__(self, name, default_app_name="Page"):
         self.fullname = name
         if reload.reloader.on_change:
             raise RuntimeError("Previous reloader still had a on_change attached, no cleanup?")
@@ -154,7 +147,9 @@ class AppScript:
         else:
             self.name = name
         self.path: Path = Path(self.name)
-        if self.name.endswith(".py"):
+        if self.path.is_dir():
+            self.type = AppType.DIRECTORY
+        elif self.name.endswith(".py"):
             self.type = AppType.SCRIPT
             # manually add the script to the watcher
             reload.reloader.watcher.add_file(self.path)
@@ -205,10 +200,17 @@ class AppScript:
         context = get_current_context()
         local_scope = {"display": context.display, "__name__": "__main__", "__file__": str(self.path)}
         ignore = list(local_scope)
-        if self.type == AppType.SCRIPT:
+        routes: Optional[List[sol.Route]] = None
+        if self.type == AppType.DIRECTORY:
+            routes = sol.generate_routes_directory(self.path)
+            app = sol.RenderPage()
+            return app, routes
+        elif self.type == AppType.SCRIPT:
             with open(self.path) as f:
                 ast = compile(f.read(), self.path, "exec")
                 exec(ast, local_scope)
+            app = nested_get(local_scope, self.app_name)
+            routes = cast(Optional[List[sol.Route]], local_scope.get("routes"))
         elif self.type == AppType.NOTEBOOK:
             import nbformat
 
@@ -221,14 +223,23 @@ class AppScript:
                         cell_path = f"{self.path} input cell {cell_index}"
                         ast = compile(source, cell_path, "exec")
                         exec(ast, local_scope)
+            app = nested_get(local_scope, self.app_name)
+            routes = cast(Optional[List[sol.Route]], local_scope.get("routes"))
         elif self.type == AppType.MODULE:
             mod = importlib.import_module(self.name)
+
             local_scope = mod.__dict__
+            if not hasattr(mod, "routes"):
+                routes = sol.generate_routes(mod)
+                app = sol.RenderPage()
+            else:
+                routes = mod.routes
+                app = nested_get(local_scope, self.app_name)
+                if app is None:
+                    app = sol.autorouting.RenderPage()
         else:
             raise ValueError(self.type)
 
-        app = local_scope.get(self.app_name)
-        app = nested_get(local_scope, self.app_name)
         if app is None:
             import difflib
 
@@ -240,8 +251,9 @@ class AppScript:
             else:
                 msg += " We did find: " + " or ".join(map(repr, options))
             raise NameError(msg)
-
-        return app
+        if routes is None:
+            routes = [sol.Route("/")]
+        return app, routes
 
     def on_file_change(self, name):
         path = Path(name)

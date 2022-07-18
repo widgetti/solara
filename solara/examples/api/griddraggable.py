@@ -12,7 +12,7 @@ from .common import ColorCard
 
 
 @react.component
-def GridDraggableDemo():
+def Page():
     grid_layout_initial = [
         {"h": 5, "i": "0", "moved": False, "w": 3, "x": 0, "y": 0},
         {"h": 5, "i": "1", "moved": False, "w": 5, "x": 3, "y": 0},
@@ -57,7 +57,3 @@ def GridDraggableDemo():
             """
         )
     return main
-
-
-Component = sol.GridDraggable
-App = GridDraggableDemo

@@ -11,7 +11,7 @@ from solara.kitchensink import react, sol
 
 
 @react.component
-def HTMLDemo():
+def Page():
     html = """
 <h1>Custom html</h1>
 <ul>
@@ -22,7 +22,3 @@ def HTMLDemo():
     with sol.VBox() as main:
         sol.HTML(tag="div", unsafe_innerHTML=html)
     return main
-
-
-Component = sol.HTML
-App = HTMLDemo

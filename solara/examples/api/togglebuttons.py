@@ -9,7 +9,7 @@ from solara.kitchensink import react, sol
 
 
 @react.component
-def Test():
+def Page():
     with sol.VBox() as main:
         with sol.Card("Single selection"):
             food, set_food = react.use_state("banana")
@@ -28,7 +28,3 @@ def Test():
                     sol.Button(language, value=language)
 
     return main
-
-
-App = Test
-app = App()

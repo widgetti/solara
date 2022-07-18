@@ -8,14 +8,10 @@ from .common import ColorCard
 
 
 @react.component
-def HBoxDemo():
+def Page():
     with sol.VBox() as main:
         colors = "green red orange brown yellow pink".split()
         with sol.HBox():
             for color in colors:
                 ColorCard(color, color)
     return main
-
-
-Component = sol.HBox
-App = HBoxDemo

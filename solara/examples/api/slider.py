@@ -9,7 +9,7 @@ from solara.kitchensink import react, sol
 
 
 @react.component
-def SliderDemo():
+def Page():
     with sol.VBox() as main:
         with sol.Card("Integers"):
             int_value, set_int_value = react.use_state(42)
@@ -24,7 +24,6 @@ def SliderDemo():
         with sol.Card("Values"):
             values = "Python C++ Java JavaScript TypeScript BASIC".split()
             value, set_value = react.use_state(values[0])
-            print("value", value)
             sol.ValueSlider("Language", value, values=values, on_value=set_value)
             sol.Markdown(f"**Value**: {value}")
 
@@ -34,7 +33,3 @@ def SliderDemo():
             sol.Markdown(f"**Date**: {date.strftime('%Y-%b-%d')}")
 
     return main
-
-
-App = SliderDemo
-app = App()
