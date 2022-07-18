@@ -1,17 +1,65 @@
 # Toestand state management
-Toestand is a no-boilerplate state management library that integrates well with Solara. Toestand wraps you state object in a Store object with a `.get()` and `.update(..)` which turns it into an observable object such that Solara/React-IPywidgets can listen to state changes and trigger a re-render.
+
+Toestand is a no-boilerplate, state management library that integrates well with Solara and avoids shooting yourself in the foot accidently. Toestand wraps you state object in a Store object with a `.get()` and `.update(..)` which turns it into an observable object such that Solara/React-IPywidgets can listen to state changes and trigger a re-render. It is typed where possible, so you have as little runtime problems, and can rely on mypy to spot issues.
 
 Toestand is inspired on [Zustand](https://github.com/pmndrs/zustand).  The word "toestand" means "state" in Dutch, but can also be interpreted as "hassle".
 
 We separate:
 
-   * `State` - The data interface, in memory storage.
-   * `Store` - Manages access to the data (`.get` and `.update`) and adds observability (`.subscribe`/`.unsubscribe`)
+   * `State` - The data interface, in memory storage. Optional if you don't care about type safetly.
+   * `Store` - Manages access to the data (`.get` and `.update`) and adds observability (`.subscribe`/`.unsubscribe`).
    * `Storage` - Where the data is stored (Memory, Disk, Redis?), and its scope (1 per user, connection, worker, application, ... ?).
+
+# Simplest possible example
+
+This example does not use any type safety, it just stored data in a dictionary.
+
+```py
+from solara.toestand import Store
+
+settings = Store({"bears": 2, "theme": "dark"})
+unsub = settings.subscribe(print)
+
+settings.update(theme="light")
+# prints: {"bears": 2, "theme": "light"}
+
+unsub()  # remove event listener
+
+```
+
+We can now use this in a React application:
+```py
+import react_ipywidgets as react
+import solara as sol
+
+
+@react.component
+def ThemeInfo():
+    # the lambda function here is called a selector, it 'selects' out the state you want
+    theme = settings.use(lambda state: state["theme"])
+    return sol.Info(f"Using theme {theme}")
+
+
+@react.component
+def ThemeSelector():
+    theme, set_theme = settings.use_field(settings.fields["theme"])
+    with sol.ToggleButtonsSingle(theme, on_value=set_theme) as main:
+        sol.Button("dark")
+        sol.Button("light")
+    return main
+
+
+@react.component
+def Page():
+    with sol.VBox() as main:
+        ThemeInfo()
+        ThemeSelector()
+    return main
+```
 
 # State class
 
-A user definde class with properties and types describing what you need to store.
+A user defined class with (typed) fields describing what you need to store.
 
 ```python
 
@@ -84,13 +132,13 @@ def Controls1():
     return sol.Button("add bear", on_click=bear_store.increase_population)
 ```
 
-Using the special `setter/props` combination:
+Using the special `setter/fields` combination:
 ```py
 @react.component
 def Controls2a():
-    return sol.IntSlider("set bear", on_value=bear_store.setter(bear_store.props.count))
+    return sol.IntSlider("set bear", on_value=bear_store.setter(bear_store.fields.count))
 ```
-*Note that the "setter + props" method may look a bit odd, but the only way we generate a type safe setter due to type limitations in Python*
+*Note that the "setter + fields" method may look a bit odd, but the only way we generate a type safe setter due to type limitations in Python*
 
 
 Or simply using a lambda+update:

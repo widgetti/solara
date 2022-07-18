@@ -4,6 +4,7 @@ from typing import Callable, TypeVar
 
 import ipyvuetify as v
 import react_ipywidgets as react
+from typing_extensions import TypedDict
 
 import solara as sol
 from solara.server import app, kernel
@@ -27,6 +28,18 @@ class BearStore(Store[B]):
 bear_state: BearState = BearState(type="brown", count=1)
 
 
+def test_store_bare():
+    # no need for subclasses
+    mock = unittest.mock.Mock()
+    store = Store[dict]({"string": "foo", "int": 42})
+    unsub = store.subscribe(mock)
+    mock.assert_not_called()
+    store.update(string="bar")
+    mock.assert_called_with({"string": "bar", "int": 42})
+
+    unsub()
+
+
 def test_bear_store_basics():
     mock = unittest.mock.Mock()
     bear_store = BearStore(bear_state)
@@ -38,7 +51,38 @@ def test_bear_store_basics():
     assert mock.call_count == 2
     mock.assert_called_with(BearState(type="brown", count=3))
 
-    setter = bear_store.setter(bear_store.props.count)
+    setter = bear_store.setter(bear_store.fields.count)
+    setter(5)
+    assert mock.call_count == 3
+    mock.assert_called_with(BearState(type="brown", count=5))
+
+    unsub()
+    bear_store.increase_population()
+    assert mock.call_count == 3
+
+
+def test_bear_store_basics_dict():
+    class BearState(TypedDict):
+        type: str
+        count: int
+
+    bear_state = BearState(type="brown", count=1)
+
+    class BearStore(Store[BearState]):
+        def increase_population(self):
+            self.update(count=self.get()["count"] + 1)
+
+    mock = unittest.mock.Mock()
+    bear_store = BearStore(bear_state)
+    unsub = bear_store.subscribe(mock)
+    mock.assert_not_called()
+    bear_store.increase_population()
+    mock.assert_called_with(BearState(type="brown", count=2))
+    bear_store.increase_population()
+    assert mock.call_count == 2
+    mock.assert_called_with(BearState(type="brown", count=3))
+
+    setter = bear_store.setter(bear_store.fields["count"])
     setter(5)
     assert mock.call_count == 3
     mock.assert_called_with(BearState(type="brown", count=5))
@@ -107,6 +151,62 @@ def test_bear_store_react():
         assert rc._find(v.Alert).widget.children[0] == "3 bears around here"
         rc._find(v.Btn).widget.click()
         assert rc._find(v.Alert).widget.children[0] == "4 bears around here"
+
+
+def test_simplest():
+    from solara.toestand import Store
+
+    settings = Store({"bears": 2, "theme": "dark"})
+    unsub = settings.subscribe(print)
+
+    settings.update(theme="light")
+    # prints: {"bears": 2, "theme": "light"}
+
+    unsub()  # remove event listener
+    theme_setter = settings.setter(settings.fields["theme"])
+
+    # Now use it in a React component
+
+    import react_ipywidgets as react
+
+    renders = 0
+
+    import solara as sol
+
+    @react.component
+    def ThemeInfo():
+        # the lambda function here is called a selector, it 'selects' out the state you want
+        theme = settings.use(lambda state: state["theme"])
+        return sol.Info(f"Using theme {theme}")
+
+    @react.component
+    def ThemeSelector():
+        theme, set_theme = settings.use_field(settings.fields["theme"])
+        with sol.ToggleButtonsSingle(theme, on_value=set_theme) as main:
+            sol.Button("dark")
+            sol.Button("light")
+        return main
+
+    @react.component
+    def Test():
+        nonlocal renders
+        renders += 1
+        with sol.VBox() as main:
+            ThemeInfo()
+            ThemeSelector()
+        return main
+
+    box, rc = react.render(Test(), handle_error=False)
+    assert rc._find(v.Alert).widget.children[0] == "Using theme light"
+    assert rc._find(v.BtnToggle).widget.v_model == 1
+    theme_setter("dark")
+    assert rc._find(v.Alert).widget.children[0] == "Using theme dark"
+    assert rc._find(v.BtnToggle).widget.v_model == 0
+    rc._find(v.BtnToggle).widget.v_model = 1
+    assert rc._find(v.Alert).widget.children[0] == "Using theme light"
+    renders_before = renders
+    settings.update(bears=3)
+    assert renders == renders_before
 
 
 @dataclasses.dataclass(frozen=True)

@@ -1,5 +1,6 @@
 import dataclasses
-from typing import Any, Callable, Generic, List, Set, TypeVar, Union, cast
+from operator import getitem
+from typing import Any, Callable, Generic, Set, Tuple, TypeVar, Union, cast
 
 import react_ipywidgets as react
 
@@ -189,26 +190,62 @@ class Store(Generic[S]):
         )
         return slice
 
+    def use_field(self, field: T) -> Tuple[T, Callable[[T], None]]:
+        setter = self.setter(field)
+        _field = cast(Fields, field)
+        value = self.use(lambda state: _field.get())
+        return value, setter
+
     @property
-    def props(self) -> S:
+    def fields(self) -> S:
         # we lie about the return type, but in combination with
         # setter we can make type safe setters (see docs/tests)
-        return cast(S, Prop(self, []))
+        return cast(S, Fields(self))
 
-    def setter(self, value: T) -> Callable[[T], None]:
-        prop = cast(Prop, value)
-        assert len(prop.key) == 1
+    def setter(self, field: T) -> Callable[[T], None]:
+        _field = cast(FieldBase, field)
+        # assert len(_field.key) == 1
+        assert _field._parent == self, "Can only set fields 1 level deep"
 
         def setter(new_value: T):
-            self.update(**{prop.key[0]: new_value})
+            self.update(**{_field.key: new_value})
 
         return cast(Callable[[T], None], setter)
 
 
-class Prop:
-    def __init__(self, store: Store, key: List["str"] = []):
-        self.store = store
-        self.key = key
+class FieldBase:
+    _parent: Any
 
     def __getattr__(self, key):
-        return Prop(self.store, self.key + [key])
+        if key in ["_parent"]:
+            return self.__dict__[key]
+        return FieldAttr(self._parent, key)
+
+    def __getitem__(self, key):
+        return Fieldtem(self._parent, key)
+
+
+class Fields(FieldBase):
+    def __init__(self, store: Store):
+        self._parent = store
+
+    def get(self):
+        self._qparent.get()
+
+
+class FieldAttr(FieldBase):
+    def __init__(self, parent, key: str):
+        self._parent = parent
+        self.key = key
+
+    def get(self):
+        return getattr(self._parent.get(), self.key)
+
+
+class Fieldtem(FieldBase):
+    def __init__(self, parent, key: str):
+        self._parent = parent
+        self.key = key
+
+    def get(self):
+        return getitem(self._parent.get(), self.key)
