@@ -175,7 +175,6 @@ routes = [
     Route("/", endpoint=root),
     Route("/{fullpath}", endpoint=root),
     Route(f"/{cdn_url_path}/{{path:path}}", endpoint=cdn),
-    Mount(f"{prefix}/static/dist", app=StaticFiles(directory=server.voila_static)),
     Mount(f"{prefix}/static/nbextensions", app=StaticNbFiles()),
     Mount(f"{prefix}/static/nbconvert", app=StaticFiles(directory=server.nbconvert_static)),
     Mount(f"{prefix}/static", app=StaticFiles(directory=server.solara_static)),

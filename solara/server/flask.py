@@ -68,11 +68,6 @@ def nbext(dir, filename):
     return flask.Response("not found", status=404)
 
 
-@blueprint.route("/static/dist/<path:path>")
-def serve_voila_static(path):
-    return send_from_directory(server.voila_static, path)
-
-
 @blueprint.route("/static/nbconvert/<path:path>")
 def serve_nbconvert_static(path):
     return send_from_directory(server.nbconvert_static, path)
