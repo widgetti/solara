@@ -226,15 +226,16 @@ def solara_server(request):
 def solara_app(solara_server):
     @contextlib.contextmanager
     def run(app: Union[solara.server.app.AppScript, str]):
-        solara.server.server.solara_app.close()
+        solara.server.app.apps["__default__"].close()
         if isinstance(app, str):
             app = solara.server.app.AppScript(app)
-        solara.server.server.solara_app = app
+        solara.server.app.apps["__default__"] = app
         try:
             yield
         finally:
             if app.type == solara.server.app.AppType.MODULE:
-                del sys.modules[app.name]
+                if app.name in sys.modules:
+                    del sys.modules[app.name]
                 if app.name in reload.reloader.watched_modules:
                     reload.reloader.watched_modules.remove(app.name)
 

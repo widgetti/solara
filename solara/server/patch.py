@@ -52,7 +52,7 @@ def kernel_initialized_dispatch(cls):
 
 
 def display_solara(*objs, include=None, exclude=None, metadata=None, transient=None, display_id=None, raw=False, clear=False, **kwargs):
-    print(*objs)
+    print(*objs)  # noqa
 
 
 # from IPython.core.interactiveshell import InteractiveShell
@@ -172,11 +172,11 @@ def WidgetContextAwareThread__init__(self, *args, **kwargs):
         self.current_context = app.get_current_context()
     except RuntimeError:
         logger.debug(f"No context for thread {self}")
-    if self.current_context:
-        app.set_context_for_thread(self.current_context, self)
 
 
 def Thread_debug_run(self):
+    if self.current_context:
+        app.set_context_for_thread(self.current_context, self)
     try:
         Thread__run(self)
     except Exception:

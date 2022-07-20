@@ -114,7 +114,6 @@ else:
                             logger.exception("Error while executing on change handler")
                     else:
                         logger.debug("File reported modified, but mtime did not change: %s", event.src_path)
-                        print("File reported modified, but mtime did not change: ", event.src_path)
                 else:
                     logger.debug("Ignore file modification: %s", event.src_path)
 
@@ -124,10 +123,7 @@ else:
 class Reloader:
     def __init__(self, on_change: Callable[[str], None] = None) -> None:
         self.watched_modules: Set[str] = set()
-        # although we try to keep track of modules loaded (which we will watch)
-        # it can happen that an import is done at runtime, that we miss (could be in a thread)
-        # so we always reload all modules except the start_modules
-        self.start_modules = set(sys.modules)
+        self._first = True
         self.on_change = on_change
         self.watcher = WatcherType([], self._on_change)
         self.requires_reload = False
@@ -147,13 +143,18 @@ class Reloader:
         self.watcher.close()
 
     def reload(self):
-        logger.info("Reloading modules... %s", self.watched_modules)
+        # before we did this:
+        # # don't reload modules like solara.server and react
+        # # that may cause issues (like 2 Element classes existing)
+        reload_modules = {k for k in set(sys.modules) - set(self.start_modules) if not k.startswith("solara.server")}
+        # which picks up import that are done in threads etc, but it will also reload starlette, httptools etc
+        # which causes issues with exceptions and isinstance checks.
+        # reload_modules = self.watched_modules
+        logger.info("Reloading modules... %s", reload_modules)
         # not sure if this is needed
         importlib.invalidate_caches()
-        for mod in set(sys.modules):
-            # don't reload modules like solara.server and react
-            # that may cause issues (like 2 Element classes existing)
-            if mod not in self.start_modules and not mod.startswith("solara.server"):
+        for mod in reload_modules:
+            if mod in sys.modules:
                 del sys.modules[mod]
         # if all succesfull...
         self.requires_reload = False
@@ -163,6 +164,13 @@ class Reloader:
         """Use this context manager to execute code so that we can track loaded modules and reload them when needed"""
         if self.requires_reload:
             self.reload()
+
+        if self._first:
+            # although we try to keep track of modules loaded (which we will watch)
+            # it can happen that an import is done at runtime, that we miss (could be in a thread)
+            # so we always reload all modules except the start_modules
+            self.start_modules = set(sys.modules)
+            self._first = False
 
         modules_before = set(sys.modules)
         try:

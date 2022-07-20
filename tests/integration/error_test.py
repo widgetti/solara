@@ -10,4 +10,4 @@ def test_error_in_render(page: playwright.sync_api.Page, solara_server, solara_a
     with extra_include_path(app_path.parent), solara_app("testapp:clickboom"):
         page.goto(solara_server.base_url)
         page.locator("text=Boom").click()
-        page.locator('button:has-text("1")').wait_for()
+        page.locator("text=I crash on 1").wait_for()

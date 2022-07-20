@@ -78,7 +78,7 @@ def test_reload_many(page: playwright.sync_api.Page, solara_server, solara_app, 
 
 
 def test_reload_vue(page: playwright.sync_api.Page, solara_server, solara_app, extra_include_path):
-    with extra_include_path(app_path.parent), solara_app("testapp:vue_test_app"):
+    with extra_include_path(app_path.parent), solara_app("testapp:VueTestApp"):
         page.goto(solara_server.base_url)
         assert page.title() == "Hello from Solara ☀️"
         page.locator("text=foobar").wait_for()
