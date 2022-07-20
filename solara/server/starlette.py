@@ -4,6 +4,7 @@ import os
 import pathlib
 import typing
 from typing import List, Union, cast
+from uuid import uuid4
 
 import anyio
 import starlette.websockets
@@ -60,16 +61,21 @@ async def kernels(id):
 
 
 async def kernel_connection(ws: starlette.websockets.WebSocket):
-    context_id = ws.cookies.get(appmod.COOKIE_KEY_CONTEXT_ID)
-    logger.info("Solara kernel requested for context_id %s", context_id)
+    session_id = ws.cookies.get(server.COOKIE_KEY_SESSION_ID)
+    if not session_id:
+        logger.error("no session cookie")
+        await ws.close()
+        return
+    connection_id = ws.query_params["session_id"]
+    logger.info("Solara kernel requested for session_id=%s connection_id=%s", session_id, connection_id)
     await ws.accept()
 
-    def websocket_thread_runner(ws: starlette.websockets.WebSocket, context_id: str, portal: anyio.from_thread.BlockingPortal):
+    def websocket_thread_runner(ws: starlette.websockets.WebSocket, portal: anyio.from_thread.BlockingPortal):
         ws_wrapper = WebsocketWrapper(ws, portal)
 
         async def run():
             try:
-                await server.app_loop(ws_wrapper, context_id)
+                await server.app_loop(ws_wrapper, session_id, connection_id)
             except:  # noqa
                 await portal.stop(cancel_remaining=True)
                 raise
@@ -81,7 +87,7 @@ async def kernel_connection(ws: starlette.websockets.WebSocket):
     # each websocket however, is handled from a separate thread
     try:
         async with anyio.from_thread.BlockingPortal() as portal:
-            thread_return = anyio.to_thread.run_sync(websocket_thread_runner, ws, context_id, portal)
+            thread_return = anyio.to_thread.run_sync(websocket_thread_runner, ws, portal)
             await thread_return
     finally:
         try:
@@ -90,33 +96,13 @@ async def kernel_connection(ws: starlette.websockets.WebSocket):
             pass
 
 
-async def watchdog(ws: starlette.websockets.WebSocket):
-    await ws.accept()
-    context_id = ws.cookies.get(appmod.COOKIE_KEY_CONTEXT_ID)
-
-    def websocket_thread_runner(ws: starlette.websockets.WebSocket, context_id: str, portal: anyio.from_thread.BlockingPortal):
-        ws_wrapper = WebsocketWrapper(ws, portal)
-
-        async def run():
-            try:
-                server.control_loop(ws_wrapper, context_id)
-            except:  # noqa
-                await portal.stop(cancel_remaining=True)
-                raise
-
-        anyio.run(run)
-
-    # this portal allows us to sync call the websocket calls from this current event loop we are in
-    # each websocket however, is handled from a separate thread
-    try:
-        async with anyio.from_thread.BlockingPortal() as portal:
-            thread_return = anyio.to_thread.run_sync(websocket_thread_runner, ws, context_id, portal)
-            await thread_return
-    finally:
-        try:
-            await ws.close()
-        except:  # noqa
-            pass
+async def close(request: Request):
+    connection_id = request.path_params["connection_id"]
+    if connection_id in appmod.contexts:
+        context = appmod.contexts[connection_id]
+        context.close()
+    response = HTMLResponse(content="", status_code=200)
+    return response
 
 
 async def root(request: Request, fullpath: str = ""):
@@ -129,11 +115,10 @@ async def root(request: Request, fullpath: str = ""):
         logger.debug("override root_path using x-script-name header from %s to %s", root_path, request.headers.get("x-script-name"))
         root_path = request.headers.get("x-script-name")
 
-    context_id = request.cookies.get(appmod.COOKIE_KEY_CONTEXT_ID)
-    content, context_id = server.read_root(context_id, fullpath, root_path)
-    assert context_id is not None
+    content = server.read_root(root_path)
     response = HTMLResponse(content=content)
-    response.set_cookie(appmod.COOKIE_KEY_CONTEXT_ID, value=context_id)
+    session_id = request.cookies.get(server.COOKIE_KEY_SESSION_ID) or str(uuid4())
+    response.set_cookie(server.COOKIE_KEY_SESSION_ID, value=session_id, expires="Fri, 01 Jan 2038 00:00:00 GMT")
     return response
 
 
@@ -167,7 +152,7 @@ class StaticPublic(StaticFiles):
     ) -> List[Union[str, "os.PathLike[str]"]]:
         # we only know the .directory at runtime (after startup)
         # which means we cannot pass the directory to the StaticFiles constructor
-        return cast(List[Union[str, "os.PathLike[str]"]], [server.solara_app.directory.parent / "public"])
+        return cast(List[Union[str, "os.PathLike[str]"]], [app.directory.parent / "public" for app in appmod.apps.values()])
 
 
 class StaticAssets(StaticFiles):
@@ -176,9 +161,9 @@ class StaticAssets(StaticFiles):
     ) -> List[Union[str, "os.PathLike[str]"]]:
         # we only know the .directory at runtime (after startup)
         # which means we cannot pass the directory to the StaticFiles constructor
-        override = server.solara_app.directory.parent / "assets"
+        overrides = [app.directory.parent / "assets" for app in appmod.apps.values()]
         default = server.solara_static.parent / "assets"
-        return cast(List[Union[str, "os.PathLike[str]"]], [override, default])
+        return cast(List[Union[str, "os.PathLike[str]"]], [*overrides, default])
 
 
 async def cdn(request: Request):
@@ -196,9 +181,9 @@ def on_startup():
 routes = [
     Route("/jupyter/api/kernels/{id}", endpoint=kernels),
     WebSocketRoute("/jupyter/api/kernels/{id}/{name}", endpoint=kernel_connection),
-    WebSocketRoute("/solara/watchdog/", endpoint=watchdog),
     Route("/", endpoint=root),
     Route("/{fullpath}", endpoint=root),
+    Route("/_solara/api/close/{connection_id}", endpoint=close, methods=["POST"]),
     Route(f"/{cdn_url_path}/{{path:path}}", endpoint=cdn),
     Mount(f"{prefix}/static/public", app=StaticPublic()),
     Mount(f"{prefix}/static/assets", app=StaticAssets()),

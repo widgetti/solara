@@ -4,7 +4,7 @@ from typing import Union
 import ipywidgets
 import js
 
-from . import app, patch, server
+from . import app, patch
 from .kernel import BytesWrap, Kernel, WebsocketStreamWrapper
 from .websocket import WebsocketWrapper
 
@@ -34,16 +34,16 @@ def start():
     kernel.shell_stream = WebsocketStreamWrapper(ws, "shell")
     kernel.control_stream = WebsocketStreamWrapper(ws, "control")
     context = app.contexts[context_id] = app.AppContext(id=context_id, kernel=kernel, control_sockets=[], widgets={}, templates={})
-    app_state = None
     with context:
         ipywidgets.register_comm_target(kernel)
-        # TODO: what should the default pathname be for pyodide, probably an argument to start?
-        widget, render_context = server.run_app(app_state, "")
-        context.widgets["content"] = widget
-    context.app_object = render_context
-    model_id = context.widgets["content"].model_id
-    kernel.session.websockets.add(ws)
-    return model_id
+    # TODO: re-implement this
+    #     # TODO: what should the default pathname be for pyodide, probably an argument to start?
+    #     widget, render_context = server.run_app(app_state, "")
+    #     context.widgets["content"] = widget
+    # context.app_object = render_context
+    # model_id = context.widgets["content"].model_id
+    # kernel.session.websockets.add(ws)
+    # return model_id
 
 
 async def processKernelMessage(msg):

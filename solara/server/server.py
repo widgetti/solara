@@ -2,26 +2,21 @@ import contextlib
 import json
 import logging
 import os
-import pdb
 import sys
 import time
-import traceback
 from pathlib import Path
-from typing import List, Optional, TypeVar
-from uuid import uuid4
+from typing import List, TypeVar
 
-import ipywidgets as widgets
 import jinja2
-import react_ipywidgets
-import react_ipywidgets as react
 from jupyter_core.paths import jupyter_config_path
-from react_ipywidgets.core import Element, render
 
-import solara as sol
+import solara
 
-from . import app, reload, settings, websocket
-from .app import AppContext, AppScript
+from . import app, settings, websocket
+from .app import initialize_kernel
 from .kernel import Kernel, WebsocketStreamWrapper
+
+COOKIE_KEY_SESSION_ID = "solara-session-id"
 
 T = TypeVar("T")
 
@@ -31,7 +26,6 @@ template_name = "solara.html.j2"
 
 jinja_loader = jinja2.FileSystemLoader(str(directory / "templates"))
 jinja_env = jinja2.Environment(loader=jinja_loader, autoescape=True)
-solara_app = AppScript(os.environ.get("SOLARA_APP", "solara.website.pages:Page"))
 logger = logging.getLogger("solara.server.server")
 nbextensions_ignorelist = [
     "jupytext/index",
@@ -45,15 +39,11 @@ nbextensions_ignorelist = [
 ]
 
 
-async def app_loop(ws: websocket.WebsocketWrapper, context_id: Optional[str]):
-    if context_id is None:
-        logging.warning(f"no context id cookie set ({app.COOKIE_KEY_CONTEXT_ID})")
-        # to avoid very fast reconnects (we are in a thread anyway)
-        time.sleep(0.5)
-        return
-    context = app.contexts.get(context_id)
+async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, connection_id: str):
+    initialize_kernel(connection_id)
+    context = app.contexts.get(connection_id)
     if context is None:
-        logging.warning("invalid context id: %r", context_id)
+        logging.warning("invalid context id: %r", connection_id)
         # to avoid very fast reconnects (we are in a thread anyway)
         time.sleep(0.5)
         return
@@ -127,145 +117,7 @@ async def app_loop(ws: websocket.WebsocketWrapper, context_id: Optional[str]):
             logger.error("Unsupported msg with msg_type %r", msg_type)
 
 
-def control_loop(ws: websocket.WebsocketWrapper, context_id: Optional[str]):
-    if context_id is None:
-        ws.send_json({"type": "reload", "reason": "no context id found in cookie"})
-        ws.close()
-        return
-    context = app.contexts.get(context_id)
-    if context is None:
-        ws.send_json({"type": "reload", "reason": "context does not exist (server reload?)"})
-    if context:
-        app.contexts[context_id].control_sockets.append(ws)
-    ok = True
-
-    while ok:
-        try:
-            msg = ws.receive_json()
-            if msg["type"] == "state_reset":
-                logger.info(f"reset state for context {context_id}")
-                if context:
-                    context.state_reset()
-                ws.send_json({"type": "reload", "reason": "context id does not exist (server reload?)"})
-            else:
-                logger.error("Unknown msg: {msg}")
-        except Exception:
-            context = app.contexts.get(context_id)
-            if context:
-                try:
-                    context.control_sockets.remove(ws)
-                except ValueError:
-                    pass  # could be removed from kernel.py
-            ok = False
-            # make sure it is closed
-            try:
-                ws.close()
-            except:  # noqa
-                pass
-
-
-def run_app(app_state, pathname: str):
-    # app.signal_hook_install()
-    main_object, routes = solara_app.run()
-
-    render_context = None
-
-    if isinstance(main_object, widgets.Widget):
-        return main_object, render_context
-    elif isinstance(main_object, Element) or isinstance(main_object, react.core.Component):
-        # container = widgets.VBox()
-        import ipyvuetify
-
-        container = ipyvuetify.Html(tag="div")
-        if isinstance(main_object, Element):
-            children = [main_object]
-        else:
-            children = [main_object()]
-        solara_context = sol.RoutingProvider(children=children, routes=routes, pathname=pathname)
-        # container = ipyvuetify.Html(tag="div")
-        # support older versions of react
-        result = render(solara_context, container, handle_error=False, initial_state=app_state)
-        if isinstance(result, tuple):
-            container, render_context = result
-        else:
-            render_context = result
-        return container, render_context
-    else:
-        extra = ""
-        dotted = []
-        for key, value in vars(main_object).items():
-            if isinstance(value, (Element, widgets.Widget)):
-                dotted.append(f"{solara_app.app_name}.{key}")
-        if dotted:
-            extra = " We did find that sub objects that might work: " + ", ".join(dotted)
-        raise ValueError(
-            f"Main object (with name {solara_app.app_name} in {solara_app.path}) is not a Widget, Element or Component, but {type(main_object)}." + extra
-        )
-
-
-def read_root(context_id: Optional[str], pathname: str, base_url: str = "", render_kwargs={}, use_nbextensions=True):
-    # context_id = None
-    if context_id is None or context_id not in app.contexts:
-        kernel = Kernel()
-        if context_id is None:
-            context_id = str(uuid4())
-        context = app.contexts[context_id] = AppContext(id=context_id, kernel=kernel, control_sockets=[], widgets={}, templates={})
-        with context:
-            widgets.register_comm_target(kernel)
-            assert kernel is Kernel.instance()
-        try:
-            with context:
-                with reload.reloader.watch():
-                    while True:
-                        # reloading might take in extra dependencies, so the reload happens first
-                        if reload.reloader.requires_reload:
-                            reload.reloader.reload()
-                        # reload before starting app, because we may load state using pickle
-                        # if we do that before reloading, the classes are not compatible:
-                        # e.g.: _pickle.PicklingError: Can't pickle <class 'testapp.Clicks'>: it's not the same object as testapp.Clicks
-                        try:
-                            app_state = app.state_load(context_id)
-                            logger.debug("Loaded state: %r", app_state)
-                        except Exception:
-                            app_state = None
-                        try:
-                            widget, render_context = run_app(app_state, pathname)
-                        except Exception:
-                            if settings.main.use_pdb:
-                                logger.exception("Exception, will be handled by debugger")
-                                pdb.post_mortem()
-                            raise
-
-                        if render_context:
-                            context.app_object = render_context
-                        if not reload.reloader.requires_reload:
-                            break
-
-        except react_ipywidgets.core.ComponentCreateError as e:
-            from rich.console import Console
-
-            console = Console(record=True)
-            console.print(e.rich_traceback)
-            error = console.export_html()
-            widget = widgets.HTML(f"<pre>{error}</pre>")
-            # raise
-        except Exception as e:
-            error = ""
-            error = "".join(traceback.format_exception(None, e, e.__traceback__))
-            print(error, file=sys.stdout, flush=True)  # noqa
-            # widget = widgets.Label(value="Error, see server logs")
-            import html
-
-            error = html.escape(error)
-            with context:
-                widget = widgets.HTML(f"<pre>{error}</pre>")
-            # raise
-        context.widgets["content"] = widget
-    else:
-        context = app.contexts[context_id]
-
-    model_id = context.widgets["content"].model_id
-
+def read_root(base_url: str = "", render_kwargs={}, use_nbextensions=True):
     if use_nbextensions:
         nbextensions = get_nbextensions()
     else:
@@ -277,7 +129,6 @@ def read_root(context_id: Optional[str], pathname: str, base_url: str = "", rend
     }
     template: jinja2.Template = jinja_env.get_template(template_name)
     render_settings = {
-        "model_id": model_id,
         "base_url": base_url,
         "resources": resources,
         "theme": settings.theme.dict(),
@@ -286,7 +137,7 @@ def read_root(context_id: Optional[str], pathname: str, base_url: str = "", rend
     }
     logger.debug("Render setting for template: %r", render_settings)
     response = template.render(**render_settings)
-    return response, context_id
+    return response
 
 
 def find_prefixed_directory(path):
@@ -299,6 +150,7 @@ def find_prefixed_directory(path):
         raise RuntimeError(f"{path} not found at prefixes: {prefixes}")
 
 
+@solara.memoize()
 def get_nbextensions_directories() -> List[Path]:
     from jupyter_core.paths import jupyter_path
 
@@ -313,6 +165,7 @@ def get_nbextensions_directories() -> List[Path]:
     return [Path(k) for k in all_nb_directories]
 
 
+@solara.memoize()
 def get_nbextensions() -> List[str]:
     read_config_path = [os.path.join(p, "serverconfig") for p in jupyter_config_path()]
     read_config_path += [os.path.join(p, "nbconfig") for p in jupyter_config_path()]
