@@ -374,7 +374,8 @@ def staticbuild():
                     src = (directory / (name + ".js")).parent
                     dst: Path = (build_dir_static / "nbextensions" / (name + ".js")).parent
                     dst.mkdir(parents=True, exist_ok=True)
-                    shutil.copytree(src, dst)
+                    # shutil.copytree(src, dst)
+                    copytree(src, dst)
 
     build_dir_wheels = build_dir / "wheels"
     build_dir_wheels.mkdir(exist_ok=True)
@@ -395,7 +396,7 @@ def staticbuild():
         shutil.copy(path, build_dir_static_dist)
 
     solara.server.patch.patch()
-    index_html, context_id = solara.server.server.read_root("fake-context-id", "", render_kwargs={"for_pyodide": True}, use_nbextensions=True)
+    index_html = solara.server.server.read_root("", render_kwargs={"for_pyodide": True}, use_nbextensions=True)
     (build_dir / "index.html").write_text(index_html)
 
 

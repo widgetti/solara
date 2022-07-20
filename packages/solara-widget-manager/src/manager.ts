@@ -38,6 +38,7 @@ import { MessageLoop } from '@lumino/messaging';
 
 import { Widget } from '@lumino/widgets';
 
+import { IComm } from '@jupyterlab/services/lib/kernel/kernel';
 import { requireLoader } from './loader';
 
 
@@ -46,12 +47,14 @@ const WIDGET_MIMETYPE = 'application/vnd.jupyter.widget-view+json';
 /**
  * Time (in ms) after which we consider the control comm target not responding.
  */
-export const CONTROL_COMM_TIMEOUT = 4000;
+export const CONTROL_COMM_TIMEOUT = 500;
 
 /**
  * A custom widget manager to render widgets with Voila
  */
 export class WidgetManager extends JupyterLabManager {
+  controlComm: IComm;
+  controlCommHandler: { onMsg: (msg: any) => void; onClose: () => void; };
   constructor(
     context: DocumentRegistry.IContext<INotebookModel>,
     rendermime: IRenderMimeRegistry,
@@ -68,42 +71,89 @@ export class WidgetManager extends JupyterLabManager {
     );
     this._registerWidgets();
     this._loader = requireLoader;
+    const commId = base.uuid();
+    const kernel = context.sessionContext?.session?.kernel;
+    if (!kernel) {
+      throw new Error('No current kernel');
+    }
+    this.controlComm = kernel.createComm('solara.control', commId);
+    this.controlCommHandler = {
+      onMsg: (msg) => {
+        console.error('No handler');
+      },
+      onClose: () => {
+        console.error('No handler');
+      }
+    };
+    this.controlComm.onMsg = async msg => {
+      const data = msg['content']['data'];
+      if (data.method === 'reload') {
+        this.controlComm.send({ method: 'reload' });
+      } else {
+        await this.controlCommHandler.onMsg(msg);
+      }
+    };
+    this.controlComm.onClose = async () => {
+      await this.controlCommHandler.onClose();
+    };
+    this.controlComm.open({}, {}, [])
   }
-
-  async build_widgets(): Promise<void> {
-    console.log('build_widgets');
-    await this._loadFromKernel();
-    const tags = document.body.querySelectorAll(
-      'script[type="application/vnd.jupyter.widget-view+json"]'
-    );
-
-    tags.forEach(async viewtag => {
-      if (!viewtag?.parentElement) {
-        return;
-      }
-      try {
-        const widgetViewObject = JSON.parse(viewtag.innerHTML);
-        const { model_id } = widgetViewObject;
-        const model = await this.get_model(model_id);
-        const widgetel = document.createElement('div');
-        viewtag.parentElement.insertBefore(widgetel, viewtag);
-        // TODO: fix typing
-        await this.display_model(undefined as any, model, {
-          el: widgetel
-        });
-      } catch (error) {
-        // Each widget view tag rendering is wrapped with a try-catch statement.
-        //
-        // This fixes issues with widget models that are explicitly "closed"
-        // but are still referred to in a previous cell output.
-        // Without the try-catch statement, this error interrupts the loop and
-        // prevents the rendering of further cells.
-        //
-        // This workaround may not be necessary anymore with templates that make use
-        // of progressive rendering.
-      }
+  async check() {
+    // checks if app is still valid (e.g. server restarted and lost the widget state)
+    const okPromise = new Promise((resolve, reject) => {
+      this.controlCommHandler = {
+        onMsg: (msg) => {
+          const data = msg['content']['data'];
+          if (data.method === 'finished') {
+            resolve(data.ok);
+          }
+          else {
+            reject(data.error);
+          }
+        },
+        onClose: () => {
+          console.error("closed solara control comm")
+          reject()
+        }
+      };
+      setTimeout(() => {
+        reject('timeout');
+      }, CONTROL_COMM_TIMEOUT);
     });
+    this.controlComm.send({ method: 'check' });
+    try {
+      return await okPromise;
+    } catch (e) {
+      return false;
+    }
   }
+
+  async run(appName: string) {
+    // used for routing
+    // should be similar to what we do in navigator.vue
+    const path = window.location.href.slice(document.baseURI.length);
+    const widget_id_promise = new Promise((resolve, reject) => {
+      this.controlCommHandler = {
+        onMsg: (msg) => {
+          const data = msg['content']['data'];
+          if (data.method === 'finished') {
+            resolve(data.widget_id);
+          }
+          else {
+            reject(data.error);
+          }
+        },
+        onClose: () => {
+          console.error("closed solara control comm")
+          reject()
+        }
+      };
+    });
+    this.controlComm.send({ method: 'run', path, appName: appName || null });
+    const widget_id = await widget_id_promise;
+    return widget_id;
+  }
+
 
   async display_view(msg: any, view: any, options: any): Promise<Widget> {
     if (options.el) {

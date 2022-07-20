@@ -21,8 +21,10 @@
             </v-row>
         </v-container>
     </div>
-    <jupyter-widget-mount-point v-if="!loading" mount-id="content">
-        A widget with mount-id="content" should go here
-    </jupyter-widget-mount-point>
+    <div v-if="!loading">
+        <jupyter-widget-mount-point mount-id="solara-main">
+            A widget with mount-id="solara-main" should go here
+        </jupyter-widget-mount-point>
+    </div>
 </transition>
 {% endraw -%}

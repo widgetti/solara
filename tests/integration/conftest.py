@@ -20,7 +20,7 @@ from solara.server.starlette import app as app_starlette
 logger = logging.getLogger("solara-test.integration")
 
 worker = os.environ.get("PYTEST_XDIST_WORKER", "gw0")
-TEST_PORT = 18765 + 14 + int(worker[2:])
+TEST_PORT = 18765 + 100 + int(worker[2:])
 SERVER = os.environ.get("SOLARA_SERVER")
 if SERVER:
     SERVERS = [SERVER]
@@ -56,13 +56,13 @@ def url_checks():
 # see https://github.com/microsoft/playwright-pytest/issues/23
 @pytest.fixture
 def context(context: playwright.sync_api.BrowserContext, url_checks):
-    context.set_default_timeout(5000)
+    context.set_default_timeout(50000)
 
     def handle(route, request: playwright.sync_api.Request):
         urls.add(request.url)
         route.continue_()
 
-    context.route("**/*", handle)
+    # context.route("**/*", handle)
     yield context
 
 
@@ -227,15 +227,16 @@ def solara_server(request):
 def solara_app(solara_server):
     @contextlib.contextmanager
     def run(app: Union[solara.server.app.AppScript, str]):
-        solara.server.server.solara_app.close()
+        solara.server.app.apps["__default__"].close()
         if isinstance(app, str):
             app = solara.server.app.AppScript(app)
-        solara.server.server.solara_app = app
+        solara.server.app.apps["__default__"] = app
         try:
             yield
         finally:
             if app.type == solara.server.app.AppType.MODULE:
-                del sys.modules[app.name]
+                if app.name in sys.modules:
+                    del sys.modules[app.name]
                 if app.name in reload.reloader.watched_modules:
                     reload.reloader.watched_modules.remove(app.name)
 

@@ -68,7 +68,6 @@ def ClickButton():
     if not isinstance(count, int):
         print("oops, state issue?")  # noqa
         count = 0
-    # return w.Button()  # description=, on_click=set_count(count + 1))
     btn = v.Btn(children=[f"Clicked: {count}"])
 
     def on_click(*ignore):
@@ -138,16 +137,7 @@ def test_state(page: playwright.sync_api.Page, solara_server, solara_app, extra_
         page.locator("text=Clicked: 1").click()
         # refresh...
         page.goto(solara_server.base_url)
-        # and state should be restored
-        page.locator("text=Clicked: 2").wait_for()
-        # account button
-        page.locator("button >> nth=1").click()
-        # reset state button
-        page.locator('[role="menuitem"]').click()
-        # refresh manually
-        page.wait_for_timeout(100)
-        page.goto(solara_server.base_url)
-        # and state should be restored
+        # and state should NOT be restored
         page.locator("text=Clicked: 0").wait_for()
 
 

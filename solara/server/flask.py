@@ -3,6 +3,7 @@ import logging
 import mimetypes
 import os
 from pathlib import Path
+from uuid import uuid4
 
 import flask
 import simple_websocket
@@ -47,29 +48,37 @@ async def kernels(id):
 
 @websocket_extension.route("/jupyter/api/kernels/<id>/<name>")
 def kernels_connection(ws: simple_websocket.Server, id: str, name: str):
-    context_id = request.cookies.get(appmod.COOKIE_KEY_CONTEXT_ID)
-    ws_wrapper = WebsocketWrapper(ws)
-    asyncio.run(server.app_loop(ws_wrapper, context_id=context_id))
-
-
-@websocket_extension.route("/solara/watchdog/", websocket=True)
-def watchdog(ws: simple_websocket.Server):
-    ws_wrapper = WebsocketWrapper(ws)
-    context_id = request.cookies.get(appmod.COOKIE_KEY_CONTEXT_ID)
-    server.control_loop(ws_wrapper, context_id)
+    try:
+        connection_id = request.args["session_id"]
+        session_id = request.cookies.get(server.COOKIE_KEY_SESSION_ID)
+        logger.info("Solara kernel requested for session_id=%s connection_id=%s", session_id, connection_id)
+        if session_id is None:
+            logger.error("no session cookie")
+            ws.close()
+            return
+        ws_wrapper = WebsocketWrapper(ws)
+        asyncio.run(server.app_loop(ws_wrapper, session_id=session_id, connection_id=connection_id))
+    except:  # noqa
+        logger.exception("Error in kernel handler")
+        raise
 
 
 @blueprint.route("/static/public/<path:path>")
 def public(path):
-    public_directory = server.solara_app.directory.parent / "public"
-    return send_from_directory(public_directory, path)
+    directories = [app.directory.parent / "public" for app in appmod.apps.values()]
+    for directory in directories:
+        file = directory / path
+        if file.exists():
+            return send_from_directory(directory, path)
+    return flask.Response("not found", status=404)
 
 
 @blueprint.route("/static/assets/<path:path>")
 def assets(path):
-    override = server.solara_app.directory.parent / "assets"
+    overrides = [app.directory.parent / "assets" for app in appmod.apps.values()]
     default = server.solara_static.parent / "assets"
-    for directory in [override, default]:
+    directories = [*overrides, default]
+    for directory in directories:
         file = directory / path
         if file.exists():
             return send_from_directory(directory, path)
@@ -109,11 +118,11 @@ async def read_root(path):
     base_url = url_for(".read_root")
     if base_url.endswith("/"):
         base_url = base_url[:-1]
-    context_id = request.cookies.get(appmod.COOKIE_KEY_CONTEXT_ID)
-    content, context_id = server.read_root(context_id, path, base_url=base_url)
-    assert context_id is not None
+    session_id = request.cookies.get(server.COOKIE_KEY_SESSION_ID) or str(uuid4())
+    content = server.read_root(base_url=base_url)
+    assert session_id is not None
     response = flask.Response(content, mimetype="text/html")
-    response.set_cookie(appmod.COOKIE_KEY_CONTEXT_ID, value=context_id)
+    response.set_cookie(server.COOKIE_KEY_SESSION_ID, value=session_id)
     return response
 
 

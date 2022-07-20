@@ -118,49 +118,6 @@ class WebSocketRedirectWebWorker {
 }
 
 
-function connectWatchdog() {
-    var path = '';
-    reloading = false;
-
-    var base = document.baseURI
-    if (!base.startsWith('http')) {
-        base = window.location.origin + base;
-    }
-    var WSURL = base.replace("https://", "wss://").replace("http://", "ws://")
-    window.wsWatchdog = new WebSocket(WSURL + 'solara/watchdog/' + path);
-    wsWatchdog.onopen = () => {
-        console.log('connected with control socket')
-    }
-    wsWatchdog.onmessage = (evt) => {
-        var msg = JSON.parse(evt.data)
-        if (msg.type == 'reload') {
-            var timeout = 0;
-            // if(msg.delay == 'long')
-            //     timeout = 1000;
-            if (!reloading) {
-                reloading = true
-                setTimeout(() => {
-                    location.reload();
-                }, timeout)
-            }
-        } else if (msg.type == "exception") {
-            app.$data.solaraDebugMessages.push({
-                cell: '_',
-                traceback: ansiSpan(_.escape(msg.traceback))
-            });
-        }
-    }
-    wsWatchdog.onclose = () => {
-        timeout = 100
-        console.log('disconnected control socket, reconnecting in ', timeout / 1000, 'seconds')
-        setTimeout(() => {
-            console.log('connecting control socket...')
-            connectWatchdog();
-        }, timeout)
-    }
-
-}
-
 function getCookiesMap(cookiesString) {
     return cookiesString.split(";")
         .map(function (cookieString) {
@@ -171,97 +128,113 @@ function getCookiesMap(cookiesString) {
             return acc;
         }, {});
 }
-const COOKIE_KEY_CONTEXT_ID = 'solara-context-id'
+const COOKIE_KEY_CONTEXT_ID = 'solara-session-id'
 
 
-async function solaraInit() {
+// from https://gist.github.com/outbreak/316637cde245160c2579898b21837c1c
+function generateUuid() {
+    function getRandomSymbol (symbol) {
+        var array;
+
+        if (symbol === 'y') {
+            array = ['8', '9', 'a', 'b'];
+            return array[Math.floor(Math.random() * array.length)];
+        }
+
+        array = new Uint8Array(1);
+        window.crypto.getRandomValues(array);
+        return (array[0] % 16).toString(16);
+    }
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, getRandomSymbol);
+}
+
+async function solaraInit(mountId, appName) {
+    console.log('solara init', mountId, appName);
     define("vue", [], () => Vue);
     define("vuetify", [], { framework: app.$vuetify });
     cookies = getCookiesMap(document.cookie);
-    const contextId = cookies[COOKIE_KEY_CONTEXT_ID]
-    if (!for_pyodide)
-        connectWatchdog()
-    // var path = window.location.pathname.substr(14);
-    // NOTE: this file is not transpiled, async/await is the only modern feature we use here
-    return new Promise((resolve, reject) => {
-        // require([window.solara_js_url || 'static/dist/solara.js'], function (solara) {
-        // window.solara = solara;
-        // requirejs doesn't like to be passed an async function, so create one inside
-        (async function () {
-            if (for_pyodide) {
-                options = { WebSocket: WebSocketRedirectWebWorker }
-            } else {
-                options = {}
-            }
-            window.kernel = await solara.connectKernel('jupyter', null, options)
-            if (!kernel) {
-                return;
-            }
-            const context = {
-                sessionContext: {
-                    session: {
-                        kernel,
-                        kernelChanged: {
-                            connect: () => { }
-                        },
-                    },
-                    statusChanged: {
-                        connect: () => { }
-                    },
-                    kernelChanged: {
-                        connect: () => { }
-                    },
-                    connectionStatusChanged: {
-                        connect: () => { }
-                    },
-                },
-                saveState: {
-                    connect: () => { }
-                },
-            };
-
-            const settings = {
-                saveState: false
-            };
-
-            const rendermime = new solara.RenderMimeRegistry({
-                initialFactories: solara.extendedRendererFactories
-            });
-
-            window.widgetManager = new solara.WidgetManager(context, rendermime, settings);
-            // it seems if we attach this to early, it will not be called
-            const matches = document.cookie.match('\\b_xsrf=([^;]*)\\b');
-            const xsrfToken = (matches && matches[1]) || '';
-            const configData = JSON.parse(document.getElementById('jupyter-config-data').textContent);
-            const baseUrl = 'jupyter';
-            // window.addEventListener('beforeunload', function (e) {
-            //     const data = new FormData();
-            //     data.append("_xsrf", xsrfToken);
-            //     // window.navigator.sendBeacon(`${baseUrl}solara/api/shutdown/${kernel.id}`, data);
-            //     // kernel.dispose();
-            // });
-            app.$data.loading_text = 'Loading app';
-            if (!for_pyodide) {
-                // using pyodide we get the models when the app runs
-                // this should also happen in normal solara
-                await widgetManager.build_widgets();
-            }
-            solara.renderMathJax();
-            resolve()
-        })()
+    uuid = generateUuid()
+    window.addEventListener('beforeunload', function (e) {
+        kernel.dispose()
+        window.navigator.sendBeacon(close_url);
     });
+
+    if (for_pyodide) {
+        options = { WebSocket: WebSocketRedirectWebWorker }
+    } else {
+        options = {}
+    }
+    let kernel = await solara.connectKernel('jupyter', uuid, options)
+    if (!kernel) {
+        return;
+    }
+    const close_url = document.baseURI + '_solara/api/close/' + kernel.clientId;
+    let skipReconnectedCheck = true;
+    kernel.connectionStatusChanged.connect((s) => {
+        app.$data.connectionStatus = s.connectionStatus;
+        if (s.connectionStatus == 'connected' && !skipReconnectedCheck) {
+            (async () => {
+                let ok = await widgetManager.check()
+                if (!ok) {
+                    app.$data.needsRefresh = true
+                }
+            })();
+        }
+    })
+    const context = {
+        sessionContext: {
+            session: {
+                kernel,
+                kernelChanged: {
+                    connect: () => {
+                    }
+                },
+            },
+            statusChanged: {
+                connect: () => {
+                }
+            },
+            kernelChanged: {
+                connect: () => {
+                }
+            },
+            connectionStatusChanged: {
+                connect: (s) => {
+                }
+            },
+        },
+        saveState: {
+            connect: () => {
+            }
+        },
+    };
+
+    const settings = {
+        saveState: false
+    };
+
+    const rendermime = new solara.RenderMimeRegistry({
+        initialFactories: solara.extendedRendererFactories
+    });
+
+    let widgetManager = new solara.WidgetManager(context, rendermime, settings);
+    // it seems if we attach this to early, it will not be called
+    app.$data.loading_text = 'Loading app';
+    const widgetId = await widgetManager.run(appName);
+    await solaraMount(widgetManager, mountId || 'content', widgetId);
+    skipReconnectedCheck = false;
+    solara.renderMathJax();
 }
 
-async function solaraMount(model_id) {
-    console.log("will mount", model_id)
-    await solaraInitialized;
+async function solaraMount(widgetManager, mountId, modelId) {
+    console.log(`will mount widget with id ${modelId} at mount id ${mountId}`)
 
     async function init() {
         await Promise.all(Object.values(widgetManager._models).map(async (modelPromise) => {
             const model = await modelPromise;
-            if (model.model_id == model_id) {
+            if (model.model_id == modelId) {
                 const view = await widgetManager.create_view(model);
-                provideWidget('content', view);
+                provideWidget(mountId, view);
             }
         }));
         app.$data.loadingPercentage = 0;

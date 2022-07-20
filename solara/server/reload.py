@@ -114,7 +114,6 @@ else:
                             logger.exception("Error while executing on change handler")
                     else:
                         logger.debug("File reported modified, but mtime did not change: %s", event.src_path)
-                        print("File reported modified, but mtime did not change: ", event.src_path)  # noqa
                 else:
                     logger.debug("Ignore file modification: %s", event.src_path)
 
@@ -124,28 +123,21 @@ else:
 class Reloader:
     def __init__(self, on_change: Callable[[str], None] = None) -> None:
         self.watched_modules: Set[str] = set()
-        # 1. although we try to keep track of modules loaded (which we will watch)
-        # it can happen that an import is done at runtime, that we miss (could be in a thread)
-        # so we always reload all modules except the start_modules
-        # 2. although that idea is nice, when we execute this, uvicorn is not yet running
-        # which causes us to reload httptools for instance
-        # in the future we may use this trick if we only run at the first http request
-        # 3. Using starlette, we can use the on_startup event to start the reloader
-        self.ignore_modules: Set[str] = set()
+        self._first = True
         self.on_change = on_change
         self.watcher = WatcherType([], self._on_change)
         self.requires_reload = False
+        self.ignore_modules: Set[str] = set()
         self.reload_event_next = threading.Event()
 
     def start(self):
-        # during test this might be called multiple times from starlette.py
-        # using flask we don't call this at all, this might be an issue when
-        # running the flask tests standalone, or even the flask server with reload.
-        if not self.ignore_modules:
-            current = set(sys.modules)
-            ignore = current - self.watched_modules
-            logger.info("Ignoring modules for reloading:\n%s", ignore)
-            self.ignore_modules = ignore
+        if self._first:
+            # although we try to keep track of modules loaded (which we will watch)
+            # it can happen that an import is done at runtime, that we miss (could be in a thread)
+            # so we always reload all modules except the ignore_modules
+            self.ignore_modules = set(sys.modules)
+            logger.info("Ignoring reloading modules: %s", self.ignore_modules)
+            self._first = False
 
     def _on_change(self, name):
         # used for testing
@@ -161,16 +153,23 @@ class Reloader:
         self.watcher.close()
 
     def reload(self):
-        reload_modules = set(sys.modules) - self.ignore_modules
+        # before we did this:
+        # # don't reload modules like solara.server and react
+        # # that may cause issues (like 2 Element classes existing)
+        reload_modules = {
+            k for k in set(sys.modules) - set(self.ignore_modules) if not (k.startswith("solara.server") or k.startswith("anyio") or k.startswith("plotly"))
+        }
+        # which picks up import that are done in threads etc, but it will also reload starlette, httptools etc
+        # which causes issues with exceptions and isinstance checks.
+        # reload_modules = self.watched_modules
         logger.info("Reloading modules... %s", reload_modules)
         # not sure if this is needed
         importlib.invalidate_caches()
         for mod in reload_modules:
             # don't reload modules like solara.server and react
             # that may cause issues (like 2 Element classes existing)
-            if not mod.startswith("solara.server"):
-                logger.info("Reloading module %s", mod)
-                sys.modules.pop(mod, None)
+            logger.info("Reloading module %s", mod)
+            sys.modules.pop(mod, None)
         # if all succesfull...
         self.requires_reload = False
 
