@@ -230,8 +230,11 @@ class AppScript:
 
             local_scope = mod.__dict__
             if not hasattr(mod, "routes"):
-                routes = sol.generate_routes(mod)
-                app = sol.RenderPage()
+                if self.app_name == "Page":
+                    routes = sol.generate_routes(mod)
+                    app = sol.RenderPage()
+                else:
+                    app = nested_get(local_scope, self.app_name)
             else:
                 routes = mod.routes
                 app = nested_get(local_scope, self.app_name)
