@@ -1,6 +1,8 @@
 import asyncio
 import logging
+import mimetypes
 import os
+from pathlib import Path
 
 import flask
 import simple_websocket
@@ -10,7 +12,7 @@ from flask_sock import Sock
 import solara
 
 from . import app as appmod
-from . import server, websocket
+from . import cdn_helper, server, websocket
 
 os.environ["SERVER_SOFTWARE"] = "solara/" + str(solara.__version__)
 
@@ -81,13 +83,20 @@ def serve_static(path):
     return send_from_directory(server.solara_static, path)
 
 
+@blueprint.route(f"/{cdn_helper.cdn_url_path}/<path:path>")
+def cdn(path):
+    cache_directory = cdn_helper.default_cache_dir
+    content = cdn_helper.get_data(Path(cache_directory), path)
+    mime = mimetypes.guess_type(path)
+    return flask.Response(content, mimetype=mime[0])
+
+
 @blueprint.route("/", defaults={"path": ""})
 @blueprint.route("/<path:path>")
 async def read_root(path):
     base_url = url_for(".read_root")
     if base_url.endswith("/"):
         base_url = base_url[:-1]
-    print(base_url)
     context_id = request.cookies.get(appmod.COOKIE_KEY_CONTEXT_ID)
     content, context_id = server.read_root(context_id, path, base_url=base_url)
     assert context_id is not None
