@@ -8,7 +8,6 @@ import pymdownx.highlight
 import pymdownx.superfences
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import get_lexer_by_name
-
 from solara.kitchensink import react
 
 html_no_execute_enabled = "<div><i>Solara execution is not enabled</i></div>"
@@ -30,7 +29,7 @@ def _markdown_template(html):
     return (
         """
 <template>
-    <div class="solara-markdown">"""
+    <div class="solara-markdown rendered_html jp-RenderedHTMLCommon">"""
         + html
         + """</div>
 </template>

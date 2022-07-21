@@ -47,6 +47,7 @@ def Layout(children=[], level=0):
                         add("file_browser")
                     with sol.ListItem("Output", icon_name="mdi-chevron-right-box"):
                         add("markdown")
+                        add("markdown_editor")
                         add("html")
                         add("image")
                         # add("code")
