@@ -2,7 +2,7 @@
   "name": "@widgetti/solara-vuetify-app",
   "version": "1.0.0",
   "description": "Solara Vuetify App",
-  "main": "solara-vuetify-app.js",
+  "main": "dist/solara-vuetify-app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "webpack"
