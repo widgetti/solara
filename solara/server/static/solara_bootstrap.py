@@ -105,11 +105,10 @@ async def main():
     requirements = ["pydantic", "jinja2", "bqplot", "altair", "vega_datasets", "plotly"]
     for dep in requirements:
         await micropip.install(dep, keep_going=True)
-    await micropip.install("/wheels/solara-0.5.2-py2.py3-none-any.whl", keep_going=True)
+    await micropip.install("/wheels/solara-0.6.0-py2.py3-none-any.whl", keep_going=True)
     import solara
 
     el = solara.Warning(text="lala")
-    print(el)
     import react_ipywidgets as react
 
     react.render_fixed(el)
