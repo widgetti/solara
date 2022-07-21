@@ -35,8 +35,8 @@ jobs:
         run: (cd packages/assets; hatch build)
       - name: Publish solara-assets to PyPI
         env:
-          HATCH_PYPI_USER: __token__
-          HATCH_PYPI_AUTH: ${{ secrets.pypi_assets }}
+          HATCH_INDEX_USER: __token__
+          HATCH_INDEX_AUTH: ${{ secrets.pypi_assets }}
         run: |
           (cd packages/assets; hatch publish)
       - name: Publish solara to PyPI
