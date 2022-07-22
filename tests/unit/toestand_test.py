@@ -1,6 +1,6 @@
 import dataclasses
 import unittest.mock
-from typing import Callable, TypeVar
+from typing import Callable, Dict, List, TypeVar
 
 import ipyvuetify as v
 import react_ipywidgets as react
@@ -36,6 +36,97 @@ def test_store_bare():
     mock.assert_not_called()
     store.update(string="bar")
     mock.assert_called_with({"string": "bar", "int": 42})
+
+    unsub()
+
+
+def test_store_nested():
+    @dataclasses.dataclass(frozen=True)
+    class City:
+        name: str
+        population: int
+
+    @dataclasses.dataclass(frozen=True)
+    class Person:
+        name: str
+        height: float
+
+    @dataclasses.dataclass(frozen=True)
+    class Country:
+        dicator: Person
+        name: str
+        cities: List[City] = dataclasses.field(default_factory=list)
+        people: Dict[str, Person] = dataclasses.field(default_factory=dict)
+
+    # no need for subclasses
+    mock = unittest.mock.Mock()
+    people = {"Jos": Person(name="Jos", height=1.8)}
+    people_copy = people.copy()
+    nl = Country(
+        name="Netherlands",
+        cities=[City(name="Amsterdam", population=1000000)],
+        people=people,
+        dicator=Person(name="Jos", height=1.8),
+    )
+    store = Store[Country](nl)
+    unsub = store.subscribe(mock)
+    mock.assert_not_called()
+
+    store.set_in(store.fields.cities[0].population, 10)
+    mock.assert_called_with(
+        Country(
+            name="Netherlands",
+            cities=[City(name="Amsterdam", population=10)],
+            people=people_copy,
+            dicator=Person(name="Jos", height=1.8),
+        )
+    )
+
+    store.set_in(store.fields.people["Jos"].height, 1.9)
+    assert people == people_copy
+    mock.assert_called_with(
+        Country(
+            name="Netherlands",
+            cities=[City(name="Amsterdam", population=10)],
+            people={"Jos": Person(name="Jos", height=1.9)},
+            dicator=Person(name="Jos", height=1.8),
+        )
+    )
+
+    store.update_in(store.fields.people["Jos"].height, lambda x: x + 0.1)
+    mock.assert_called_with(
+        Country(
+            name="Netherlands",
+            cities=[City(name="Amsterdam", population=10)],
+            people={"Jos": Person(name="Jos", height=2.0)},
+            dicator=Person(name="Jos", height=1.8),
+        ),
+    )
+
+    store.update_in(store.fields.people, lambda x: {**x, "Maria": Person(name="Maria", height=1.7)})
+    mock.assert_called_with(
+        Country(
+            dicator=Person(name="Jos", height=1.8),
+            name="Netherlands",
+            cities=[City(name="Amsterdam", population=10)],
+            people={
+                "Jos": Person(name="Jos", height=2.0),
+                "Maria": Person(name="Maria", height=1.7),
+            },
+        )
+    )
+    store.set_in(store.fields.dicator.height, 2.0)
+    mock.assert_called_with(
+        Country(
+            dicator=Person(name="Jos", height=2.0),
+            name="Netherlands",
+            cities=[City(name="Amsterdam", population=10)],
+            people={
+                "Jos": Person(name="Jos", height=2.0),
+                "Maria": Person(name="Maria", height=1.7),
+            },
+        )
+    )
 
     unsub()
 
@@ -157,7 +248,7 @@ def test_simplest():
     from solara.toestand import Store
 
     settings = Store({"bears": 2, "theme": "dark"})
-    unsub = settings.subscribe(print)
+    unsub = settings.subscribe(print)  # noqa
 
     settings.update(theme="light")
     # prints: {"bears": 2, "theme": "light"}
@@ -219,7 +310,7 @@ F = TypeVar("F", bound=FishState)
 
 class FishStore(Store[F]):
     def jump(self):
-        print("jump")
+        print("jump")  # noqa
 
 
 @dataclasses.dataclass(frozen=True)
