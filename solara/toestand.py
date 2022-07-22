@@ -207,24 +207,33 @@ class Store(Generic[S]):
     def setter(self, field: T) -> Callable[[T], None]:
         _field = cast(FieldBase, field)
         # assert len(_field.key) == 1
-        assert _field._parent == self, "Can only set fields 1 level deep"
+        # assert _field._parent == self, "Can only set fields 1 level deep"
 
         def setter(new_value: T):
-            self.update(**{_field.key: new_value})
+            _field.set(new_value)
+            # self.update(**{_field.key: new_value})
 
         return cast(Callable[[T], None], setter)
+
+    def set_in(self, field: T, new_value: T):
+        self.setter(field)(new_value)
+
+    def update_in(self, field: T, updater: Callable[[T], T]):
+        _field = cast(Fields, field)
+        new_value = updater(_field.get())
+        self.set_in(field, new_value)
 
 
 class FieldBase:
     _parent: Any
 
     def __getattr__(self, key):
-        if key in ["_parent"]:
+        if key in ["_parent", "set"]:
             return self.__dict__[key]
-        return FieldAttr(self._parent, key)
+        return FieldAttr(self, key)
 
     def __getitem__(self, key):
-        return Fieldtem(self._parent, key)
+        return FieldItem(self, key)
 
 
 class Fields(FieldBase):
@@ -232,7 +241,10 @@ class Fields(FieldBase):
         self._parent = store
 
     def get(self):
-        self._qparent.get()
+        return self._parent.get()
+
+    def set(self, value):
+        self._parent.set(value)
 
 
 class FieldAttr(FieldBase):
@@ -243,11 +255,30 @@ class FieldAttr(FieldBase):
     def get(self):
         return getattr(self._parent.get(), self.key)
 
+    def set(self, value):
+        parent_value = self._parent.get()
+        if isinstance(self.key, str):
+            parent_value = merge_state(parent_value, **{self.key: value})
+            self._parent.set(parent_value)
+        else:
+            raise TypeError(f"Type of key {self.key!r} is not supported")
 
-class Fieldtem(FieldBase):
+
+class FieldItem(FieldBase):
     def __init__(self, parent, key: str):
         self._parent = parent
         self.key = key
 
     def get(self):
         return getitem(self._parent.get(), self.key)
+
+    def set(self, value):
+        parent_value = self._parent.get()
+        if isinstance(self.key, int) and isinstance(parent_value, (list, tuple)):
+            parent_type = type(parent_value)
+            parent_value = parent_value.copy()
+            parent_value[self.key] = value
+            self._parent.set(parent_type(parent_value))
+        else:
+            parent_value = merge_state(parent_value, **{self.key: value})
+            self._parent.set(parent_value)
