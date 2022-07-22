@@ -1,4 +1,5 @@
 import dataclasses
+import threading
 from operator import getitem
 from typing import Any, Callable, Generic, Set, Tuple, TypeVar, Union, cast
 
@@ -152,6 +153,7 @@ class Store(Generic[S]):
     _storage: Storage[S]
 
     def __init__(self, default_value: S = None, storage: Union[Storage[S], ObservableMutableMapping] = None):
+        self.lock = threading.Lock()
         cls = type(self)
         self.storage_key = cls.__module__ + ":" + cls.__name__
         if storage is None:
