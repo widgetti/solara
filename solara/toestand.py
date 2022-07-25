@@ -1,4 +1,5 @@
 import dataclasses
+import sys
 import threading
 from operator import getitem
 from typing import Any, Callable, Generic, Set, Tuple, TypeVar, Union, cast
@@ -43,6 +44,8 @@ def use_sync_external_store_with_selector(subscribe, get_snapshot: Callable[[], 
 def merge_state(d1: S, **kwargs):
     if dataclasses.is_dataclass(d1):
         return dataclasses.replace(d1, **kwargs)
+    if "pydantic" in sys.modules and isinstance(d1, sys.modules["pydantic"].BaseModel):
+        return type(d1)(**{**d1.dict(), **kwargs})
     return cast(S, {**cast(dict, d1), **kwargs})
 
 
