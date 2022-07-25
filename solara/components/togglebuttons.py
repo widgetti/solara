@@ -1,6 +1,6 @@
 from typing import Callable, List, TypeVar
 
-from solara.kitchensink import react, v
+from solara.kitchensink import react, sol, v
 
 T = TypeVar("T")
 
@@ -17,7 +17,7 @@ def _get_button_value(button: react.core.Element):
 @react.component
 def ToggleButtonsSingle(value: T, children: List[react.core.Element] = [], on_value: Callable[[T], None] = None):
     values = [_get_button_value(button) for button in children]
-    index, set_index = react.use_state(values.index(value), key="index")
+    index, set_index = sol.use_state_or_update(values.index(value), key="index")
 
     def on_index(index):
         set_index(index)
@@ -33,7 +33,7 @@ def ToggleButtonsSingle(value: T, children: List[react.core.Element] = [], on_va
 @react.component
 def ToggleButtonsMultiple(value: List[T], children: List[react.core.Element] = [], on_value: Callable[[List[T]], None] = None):
     allvalues = [_get_button_value(button) for button in children]
-    indices, set_indices = react.use_state([allvalues.index(k) for k in value], key="index")
+    indices, set_indices = react.use_state_or_update([allvalues.index(k) for k in value], key="index")
 
     def on_indices(indices):
         set_indices(indices)
