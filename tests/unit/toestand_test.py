@@ -75,7 +75,9 @@ def test_store_nested():
     mock.assert_not_called()
     country = store.fields
     population_accessor = X(store.fields.cities[0].population)
+    assert population_accessor.get() == 1000000
     population_accessor.set(10)
+    assert population_accessor.get() == 10
 
     mock.assert_called_with(
         Country(
