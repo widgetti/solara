@@ -55,8 +55,9 @@ class Result(Generic[T]):
         # code
         self._retry()  # type: ignore
 
-    _retry: Callable[[], Any] = lambda: None
-    cancel: Callable[[], Any] = lambda: None
+    # can we avoid storing these into the dataclass?
+    _retry: Callable[[], Any] = dataclasses.field(compare=False, default=lambda: None)
+    cancel: Callable[[], Any] = dataclasses.field(compare=False, default=lambda: None)
 
     def __or__(self, next: Callable[["Result[T]"], "Result[U]"]):
         return next(self)
