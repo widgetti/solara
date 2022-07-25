@@ -223,6 +223,10 @@ class Accessor(Generic[T]):
         _field = cast(FieldBase, self.field)
         return _field.set
 
+    def get(self) -> T:
+        _field = cast(FieldBase, self.field)
+        return _field.get()
+
     def set(self, new_value: T) -> None:
         _field = cast(FieldBase, self.field)
         _field.set(new_value)
