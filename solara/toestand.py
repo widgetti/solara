@@ -192,12 +192,6 @@ class Store(Generic[S]):
         )
         return slice
 
-    def use_field(self, field: T) -> Tuple[T, Callable[[T], None]]:
-        setter = self.setter(field)
-        _field = cast(Fields, field)
-        value = self.use(lambda state: _field.get())
-        return value, setter
-
     @property
     def fields(self) -> S:
         # we lie about the return type, but in combination with
@@ -206,22 +200,46 @@ class Store(Generic[S]):
 
     def setter(self, field: T) -> Callable[[T], None]:
         _field = cast(FieldBase, field)
-        # assert len(_field.key) == 1
-        # assert _field._parent == self, "Can only set fields 1 level deep"
 
         def setter(new_value: T):
             _field.set(new_value)
-            # self.update(**{_field.key: new_value})
 
         return cast(Callable[[T], None], setter)
 
-    def set_in(self, field: T, new_value: T):
-        self.setter(field)(new_value)
 
-    def update_in(self, field: T, updater: Callable[[T], T]):
-        _field = cast(Fields, field)
+class Accessor(Generic[T]):
+    def __init__(self, field: "FieldBase"):
+        self.field = field
+        store = field._parent
+        while not isinstance(store, Store):
+            store = store._parent
+        assert isinstance(store, Store)
+        self.store = store
+
+    def setter(self) -> Callable[[T], None]:
+        _field = cast(FieldBase, self.field)
+        return _field.set
+
+    def set(self, new_value: T) -> None:
+        _field = cast(FieldBase, self.field)
+        _field.set(new_value)
+
+    def update(self, updater: Callable[[T], T]):
+        _field = cast(Fields, self.field)
         new_value = updater(_field.get())
-        self.set_in(field, new_value)
+        self.set(new_value)
+
+    def use(self) -> T:
+        return use_sync_external_store(self.store.subscribe, self.field.get)  # type: ignore
+
+    def use_state(self) -> Tuple[T, Callable[[T], None]]:
+        setter = self.setter()
+        value = self.use()
+        return value, setter
+
+
+def X(field: T) -> Accessor[T]:
+    return Accessor[T](cast(FieldBase, field))
 
 
 class FieldBase:
@@ -234,6 +252,12 @@ class FieldBase:
 
     def __getitem__(self, key):
         return FieldItem(self, key)
+
+    def get(self):
+        raise NotImplementedError
+
+    def set(self, value):
+        raise NotImplementedError
 
 
 class Fields(FieldBase):

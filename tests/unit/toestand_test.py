@@ -8,7 +8,9 @@ from typing_extensions import TypedDict
 
 import solara as sol
 from solara.server import app, kernel
-from solara.toestand import Store, SubStorageAttr, use_sync_external_store
+from solara.toestand import Store, SubStorageAttr, X, use_sync_external_store
+
+from .common import click
 
 
 @dataclasses.dataclass(frozen=True)
@@ -71,8 +73,10 @@ def test_store_nested():
     store = Store[Country](nl)
     unsub = store.subscribe(mock)
     mock.assert_not_called()
+    country = store.fields
+    population_accessor = X(store.fields.cities[0].population)
+    population_accessor.set(10)
 
-    store.set_in(store.fields.cities[0].population, 10)
     mock.assert_called_with(
         Country(
             name="Netherlands",
@@ -82,7 +86,7 @@ def test_store_nested():
         )
     )
 
-    store.set_in(store.fields.people["Jos"].height, 1.9)
+    X(country.people["Jos"].height).set(1.9)
     assert people == people_copy
     mock.assert_called_with(
         Country(
@@ -93,7 +97,7 @@ def test_store_nested():
         )
     )
 
-    store.update_in(store.fields.people["Jos"].height, lambda x: x + 0.1)
+    X(country.people["Jos"].height).update(lambda x: x + 0.1)
     mock.assert_called_with(
         Country(
             name="Netherlands",
@@ -103,7 +107,7 @@ def test_store_nested():
         ),
     )
 
-    store.update_in(store.fields.people, lambda x: {**x, "Maria": Person(name="Maria", height=1.7)})
+    X(country.people).update(lambda x: {**x, "Maria": Person(name="Maria", height=1.7)})
     mock.assert_called_with(
         Country(
             dicator=Person(name="Jos", height=1.8),
@@ -115,7 +119,7 @@ def test_store_nested():
             },
         )
     )
-    store.set_in(store.fields.dicator.height, 2.0)
+    X(country.dicator.height).set(2.0)
     mock.assert_called_with(
         Country(
             dicator=Person(name="Jos", height=2.0),
@@ -205,7 +209,7 @@ def test_bear_store_react():
     el = App()
     box, rc = react.render(el, handle_error=False)
     assert rc._find(v.Alert).widget.children[0] == "1 bears around here"
-    rc._find(v.Btn).widget.click()
+    click(rc._find(v.Btn).widget)
     assert rc._find(v.Alert).widget.children[0] == "2 bears around here"
 
     # the storage should live in the app context to support multiple users/connections
@@ -218,29 +222,29 @@ def test_bear_store_react():
             # el = App()
             # box, rc = react.render(el, handle_error=False)
             assert rc._find(v.Alert).widget.children[0] == "1 bears around here"
-            rc._find(v.Btn).widget.click()
+            click(rc._find(v.Btn).widget)
             assert rc._find(v.Alert).widget.children[0] == "2 bears around here"
 
     with context2:
         rc.render(el)
         assert rc._find(v.Alert).widget.children[0] == "2 bears around here"
-        rc._find(v.Btn).widget.click()
+        click(rc._find(v.Btn).widget)
         assert rc._find(v.Alert).widget.children[0] == "3 bears around here"
 
     with context1:
         rc.render(el)
         assert rc._find(v.Alert).widget.children[0] == "2 bears around here"
-        rc._find(v.Btn).widget.click()
+        click(rc._find(v.Btn).widget)
         assert rc._find(v.Alert).widget.children[0] == "3 bears around here"
-        rc._find(v.Btn).widget.click()
+        click(rc._find(v.Btn).widget)
         assert rc._find(v.Alert).widget.children[0] == "4 bears around here"
-        rc._find(v.Btn).widget.click()
+        click(rc._find(v.Btn).widget)
         assert rc._find(v.Alert).widget.children[0] == "5 bears around here"
 
     with context2:
         rc.render(el)
         assert rc._find(v.Alert).widget.children[0] == "3 bears around here"
-        rc._find(v.Btn).widget.click()
+        click(rc._find(v.Btn).widget)
         assert rc._find(v.Alert).widget.children[0] == "4 bears around here"
 
 
@@ -254,7 +258,7 @@ def test_simplest():
     # prints: {"bears": 2, "theme": "light"}
 
     unsub()  # remove event listener
-    theme_setter = settings.setter(settings.fields["theme"])
+    theme_accessor = X(settings.fields["theme"])
 
     # Now use it in a React component
 
@@ -267,12 +271,13 @@ def test_simplest():
     @react.component
     def ThemeInfo():
         # the lambda function here is called a selector, it 'selects' out the state you want
-        theme = settings.use(lambda state: state["theme"])
+        # theme = settings.use(lambda state: state["theme"])
+        theme = X(settings.fields["theme"]).use()
         return sol.Info(f"Using theme {theme}")
 
     @react.component
     def ThemeSelector():
-        theme, set_theme = settings.use_field(settings.fields["theme"])
+        theme, set_theme = X(settings.fields["theme"]).use_state()
         with sol.ToggleButtonsSingle(theme, on_value=set_theme) as main:
             sol.Button("dark")
             sol.Button("light")
@@ -290,7 +295,7 @@ def test_simplest():
     box, rc = react.render(Test(), handle_error=False)
     assert rc._find(v.Alert).widget.children[0] == "Using theme light"
     assert rc._find(v.BtnToggle).widget.v_model == 1
-    theme_setter("dark")
+    theme_accessor.set("dark")
     assert rc._find(v.Alert).widget.children[0] == "Using theme dark"
     assert rc._find(v.BtnToggle).widget.v_model == 0
     rc._find(v.BtnToggle).widget.v_model = 1
