@@ -114,7 +114,6 @@ def use_thread(
                 sys.settrace(prev)
 
     def run():
-        result.current = None
         set_result_state(ResultState.STARTING)
 
         def runner():
@@ -137,8 +136,9 @@ def use_thread(
                     # in case a new thread was started that also was waiting for the previous
                     # thread to st stop, we can finish this
                     return
-            error.current = None
-            result.current = None
+            # we previously set current to None, but if we do not do that, we can still render the old value
+            # while we can still show a loading indicator using the .state
+            # result.current = None
             set_result_state(ResultState.RUNNING)
 
             sig = inspect.signature(callback)
@@ -264,7 +264,6 @@ def use_fetch(url, chunk_size=chunk_size_default):
     # re-use the same file like object
     f = react.use_memo(io.BytesIO, [url])
     result = use_download(f, url, return_content=True, chunk_size=chunk_size)
-    print(result.progress)
     return dataclasses.replace(result, value=f.getvalue() if result.progress == 1 else None)
 
 

@@ -44,6 +44,41 @@ def test_hook_thread():
     assert label.value == expected
 
 
+def test_use_thread_keep_previous():
+    def set_x(x):
+        pass
+
+    @component
+    def Test():
+        nonlocal set_x
+        x, set_x = react.use_state(2)
+
+        def work():
+            time.sleep(0.1)
+            return x**2
+
+        result: sol.Result[int] = use_thread(work, dependencies=[x])
+        return w.Label(value=f"{result.value}")
+
+    label, rc = render_fixed(Test(), handle_error=False)
+    expected_2 = "4"
+    for i in range(200):  # max 2 second
+        time.sleep(0.01)
+        if label.value == expected_2:
+            break
+    assert label.value == expected_2
+
+    expected_3 = "9"
+    set_x(3)
+    for i in range(200):  # max 2 second
+        time.sleep(0.01)
+        if label.value == expected_3:
+            break
+        else:
+            assert label.value == expected_2
+    assert label.value == expected_3
+
+
 def test_hook_iterator():
     event = threading.Event()
     result = None

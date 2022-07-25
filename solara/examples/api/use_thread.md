@@ -31,6 +31,8 @@ Note that at no time, two threads will run, since the new thread will always wai
 When `intrusive_cancel=True`, a tracer is installed into the thread, which will throw a special exception to cancel the thread. This gives some runtime overhead, and a more performant way would be to set this to false and manually inspect the `threading.Event` regularly. When this is not possible (e.g. usage of an external library), this is the only way to cancel a thread while executing.
 
 
+Note that `.value` and `.error` of the result object will only be set when a new result is returned. This makes is possible for a component to render the "previous" result (or previous error) while the new job is running.
+
 ## State diagram
 
 The possible values for `Result[T].state` are reflected in this state diagram.
