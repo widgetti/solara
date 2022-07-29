@@ -1,0 +1,3 @@
+# unignore build and dist, so hatch includes these dirs in shared-data
+!build
+!dist/
