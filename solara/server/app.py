@@ -224,6 +224,9 @@ class AppScript:
                         ast = compile(source, cell_path, "exec")
                         exec(ast, local_scope)
             app = nested_get(local_scope, self.app_name)
+            if app is None:
+                # workaround for backward compatibility
+                app = nested_get(local_scope, "app")
             routes = cast(Optional[List[sol.Route]], local_scope.get("routes"))
         elif self.type == AppType.MODULE:
             mod = importlib.import_module(self.name)
