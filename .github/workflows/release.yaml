@@ -39,6 +39,8 @@ jobs:
           HATCH_INDEX_AUTH: ${{ secrets.pypi_assets }}
         run: |
           (cd packages/assets; hatch publish)
+      - name: remove assets
+        run: rm -rf packages/assets/dist
       - name: Publish solara to PyPI
         env:
           FLIT_USERNAME: __token__
