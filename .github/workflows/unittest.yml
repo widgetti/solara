@@ -1,27 +1,27 @@
-name: Unit testing
+# name: Unit testing
 
-on:
-  push:
-    branches:
-      - master
-  pull_request:
-  workflow_dispatch:
+# on:
+#   push:
+#     branches:
+#       - master
+#   pull_request:
+#   workflow_dispatch:
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: [3.7, 3.8, 3.9]
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+#     strategy:
+#       fail-fast: false
+#       matrix:
+#         python-version: [3.7, 3.8, 3.9]
 
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install
-        run: pip install ".[dev]"
-      - name: test
-        run: pytest --cov=solara tests/unit --doctest-modules solara/util.py --timeout=60
+#     steps:
+#       - uses: actions/checkout@v2
+#       - name: Set up Python ${{ matrix.python-version }}
+#         uses: actions/setup-python@v2
+#         with:
+#           python-version: ${{ matrix.python-version }}
+#       - name: Install
+#         run: pip install ".[dev]"
+#       - name: test
+#         run: pytest --cov=solara tests/unit --doctest-modules solara/util.py --timeout=60
