@@ -237,7 +237,8 @@ def solara_app(solara_server):
                 if app.name in sys.modules:
                     del sys.modules[app.name]
                 if app.name in reload.reloader.watched_modules:
-                    reload.reloader.watched_modules.remove(app.name)
+                    if app.name in reload.reloader.watched_modules:
+                        reload.reloader.watched_modules.remove(app.name)
 
             app.close()
 
