@@ -18,7 +18,6 @@ import playwright.sync_api
 
 
 def test_api_grid_draggable(page: playwright.sync_api.Page, solara_server, solara_app):
-    page.on("console", lambda msg: print(msg.text))  # noqa
     # with screenshot_on_error(page, 'tmp/test_docs_basics.png'):
     with solara_app("solara.examples"):
         page.goto(solara_server.base_url + "/api/")

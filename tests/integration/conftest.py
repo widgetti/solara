@@ -242,3 +242,9 @@ def solara_app(solara_server):
             app.close()
 
     return run
+
+
+@pytest.fixture
+def page(page: playwright.sync_api.Page):
+    page.on("console", lambda msg: print(msg.text))  # noqa
+    return page
