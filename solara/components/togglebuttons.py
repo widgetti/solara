@@ -33,7 +33,7 @@ def ToggleButtonsSingle(value: T, children: List[react.core.Element] = [], on_va
 @react.component
 def ToggleButtonsMultiple(value: List[T], children: List[react.core.Element] = [], on_value: Callable[[List[T]], None] = None):
     allvalues = [_get_button_value(button) for button in children]
-    indices, set_indices = react.use_state_or_update([allvalues.index(k) for k in value], key="index")
+    indices, set_indices = sol.use_state_or_update([allvalues.index(k) for k in value], key="index")
 
     def on_indices(indices):
         set_indices(indices)
