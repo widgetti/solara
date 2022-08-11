@@ -37,7 +37,6 @@ name = "solara"
 
 [project.optional-dependencies]
 dev = [
-    "pyproject-flake8",
     "flake8",
     "bqplot",
     "bqplot-image-gl",
