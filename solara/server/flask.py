@@ -41,7 +41,7 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
 
 
 @blueprint.route("/jupyter/api/kernels/<id>")
-async def kernels(id):
+def kernels(id):
     return {"name": "lala", "id": "dsa"}
 
 
@@ -91,7 +91,7 @@ def cdn(path):
 
 @blueprint.route("/", defaults={"path": ""})
 @blueprint.route("/<path:path>")
-async def read_root(path):
+def read_root(path):
     base_url = url_for(".read_root")
     if base_url.endswith("/"):
         base_url = base_url[:-1]

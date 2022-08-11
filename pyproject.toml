@@ -77,7 +77,6 @@ server = [
 flask = [
     "flask",
     "flask-sock",
-    "aioflask",
 ]
 examples = [
     "numpy",
