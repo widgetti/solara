@@ -46,7 +46,7 @@ dev = [
     "vaex-jupyter",
     "black",
     "mypy",
-    "playwright",
+    "playwright==1.19.0",
     "plotly",
     "pytest-playwright",
     "types-requests",
