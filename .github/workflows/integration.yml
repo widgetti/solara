@@ -29,4 +29,4 @@ jobs:
       - name: test
         # we also run the (cheap) unittests, to get better coverage report
         # run: pytest --cov=solara tests/integration tests/unit --timeout=20
-        run: pytest --cov=solara tests/integration --timeout=20
+        run: pytest --cov=solara tests/integration --timeout=20 -x
