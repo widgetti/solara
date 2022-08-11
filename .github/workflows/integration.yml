@@ -7,6 +7,9 @@ on:
   pull_request:
   workflow_dispatch:
 
+env:
+  SOLARA_SERVER: starlette
+
 jobs:
   build:
     runs-on: ubuntu-latest
