@@ -29,6 +29,7 @@ def put_in_cache(base_cache_dir: pathlib.Path, path, data: bytes):
     try:
         logger.info("Writing cache file: %s", cache_path)
         cache_path.write_bytes(data)
+        logger.info("Wrote cache file: %s", cache_path)
     except:  # noqa
         logger.exception("Failed writing cache file: %s", cache_path)
         raise
