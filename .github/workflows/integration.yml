@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 env:
-  SOLARA_SERVER: flask
+  SOLARA_SERVER: starlette
 
 jobs:
   build:
