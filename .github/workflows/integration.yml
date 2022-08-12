@@ -32,7 +32,7 @@ jobs:
       - name: test
         # we also run the (cheap) unittests, to get better coverage report
         # run: pytest --cov=solara tests/integration tests/unit --timeout=20
-        run: pytest --cov=solara tests/integration --timeout=20 --video=retain-on-failure -x -s
+        run: pytest --cov=solara tests/integration --timeout=20 --video=retain-on-failure -x -s --log-cli-level=debug
       - name: Upload Test artifacts
         if: always()
         uses: actions/upload-artifact@v2
