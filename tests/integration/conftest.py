@@ -61,7 +61,7 @@ def context(context: playwright.sync_api.BrowserContext, url_checks):
         urls.add(request.url)
         route.continue_()
 
-    context.route("**/*", handle)
+    # context.route("**/*", handle)
     yield context
 
 
