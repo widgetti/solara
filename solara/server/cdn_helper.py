@@ -1,4 +1,5 @@
 import logging
+import os
 import pathlib
 import sys
 
@@ -9,6 +10,15 @@ logger = logging.getLogger("Solara.cdn")
 cdn = "https://cdn.jsdelivr.net/npm/"
 
 default_cache_dir = pathlib.Path(sys.prefix + "/share/solara/cdn/")
+
+try:
+    os.makedirs(default_cache_dir, exist_ok=True)
+    open(default_cache_dir / "_test_write_permission", "w").close()
+except:  # noqa
+    logger.exception(
+        "Could not write to cache directory: %s, please configure the SOLARA_CDN_CACHE_PATH env var to point to a writable directory", default_cache_dir
+    )
+    sys.exit(1)
 
 cdn_url_path = "_solara/cdn"
 
