@@ -4,7 +4,7 @@
   "version": "0.3.4",
   "description": "Solara widget manager",
   "license": "MIT",
-  "main": "dist/solara.js",
+  "main": "src/index2.js",
   "browserslist": ">0.8%, not ie 11, not op_mini all, not dead",
   "dependencies": {
     "@jupyter-widgets/base": "^4.1.0",

@@ -21,10 +21,10 @@
     "vuetify": "^2.2.26"
   },
   "devDependencies": {
-    "css-loader": "^2.1.1",
-    "file-loader": "^3.0.1",
+    "css-loader": "^3.1.1",
+    "file-loader": "^5.0.1",
     "style-loader": "^0.23.1",
-    "webpack": "^4.29.3",
-    "webpack-cli": "^3.2.3"
+    "webpack": "^5.73.0",
+    "webpack-cli": "^4.10.0"
   }
 }
