@@ -1,4 +1,4 @@
-<template></template>
+<template><span></span></template>
 
 <script>
 module.exports = {

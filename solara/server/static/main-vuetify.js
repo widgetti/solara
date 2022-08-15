@@ -59,71 +59,16 @@ function requestWidget(mountId) {
     return widgetPromises[mountId];
 }
 
-function getWidgetManager(voila, kernel) {
-    try {
-        /* voila < 0.1.8 */
-        return new voila.WidgetManager(kernel);
-    } catch (e) {
-        if (e instanceof TypeError) {
-            /* voila >= 0.1.8 */
-            const context = {
-                session: {
-                    kernel,
-                    kernelChanged: {
-                        connect: () => { }
-                    },
-                    statusChanged: {
-                        connect: () => { }
-                    },
-                },
-                saveState: {
-                    connect: () => { }
-                },
-                /* voila >= 0.2.8 */
-                sessionContext: {
-                    session: {
-                        kernel
-                    },
-                    kernelChanged: {
-                        connect: () => {
-                        }
-                    },
-                    statusChanged: {
-                        connect: () => {
-                        }
-                    },
-                    connectionStatusChanged: {
-                        connect: () => {
-                        }
-                    },
-                },
-            };
-
-            const settings = {
-                saveState: false
-            };
-
-            const rendermime = new voila.RenderMimeRegistry({
-                initialFactories: voila.standardRendererFactories
-            });
-
-            return new voila.WidgetManager(context, rendermime, settings);
-        } else {
-            throw e;
-        }
-    }
-}
-
 function injectDebugMessageInterceptor(kernel) {
     const _original_handle_message = kernel._handleMessage.bind(kernel)
     kernel._handleMessage = ((msg) => {
         if (msg.msg_type === 'error') {
-            app.$data.voilaDebugMessages.push({
+            app.$data.solaraDebugMessages.push({
                 cell: '_',
                 traceback: msg.content.traceback.map(line => ansiSpan(_.escape(line)))
             });
         } else if (msg.msg_type === 'stream' && (msg.content['name'] === 'stdout' || msg.content['name'] === 'stderr')) {
-            app.$data.voilaDebugMessages.push({
+            app.$data.solaraDebugMessages.push({
                 cell: '_',
                 name: msg.content.name,
                 text: msg.content.text
@@ -199,7 +144,7 @@ function connectWatchdog() {
                 }, timeout)
             }
         } else if (msg.type == "exception") {
-            app.$data.voilaDebugMessages.push({
+            app.$data.solaraDebugMessages.push({
                 cell: '_',
                 traceback: ansiSpan(_.escape(msg.traceback))
             });
@@ -239,72 +184,71 @@ async function solaraInit() {
     // var path = window.location.pathname.substr(14);
     // NOTE: this file is not transpiled, async/await is the only modern feature we use here
     return new Promise((resolve, reject) => {
-        require([window.voila_js_url || 'static/dist/voila.js'], function (voila) {
-            window.voila = voila;
-            // requirejs doesn't like to be passed an async function, so create one inside
-            (async function () {
-                if (for_pyodide) {
-                    options = { WebSocket: WebSocketRedirectWebWorker }
-                } else {
-                    options = {}
-                }
-                window.kernel = await voila.connectKernel('jupyter', null, options)
-                if (!kernel) {
-                    return;
-                }
-                const context = {
-                    sessionContext: {
-                        session: {
-                            kernel,
-                            kernelChanged: {
-                                connect: () => { }
-                            },
-                        },
-                        statusChanged: {
-                            connect: () => { }
-                        },
+        // require([window.solara_js_url || 'static/dist/solara.js'], function (solara) {
+        // window.solara = solara;
+        // requirejs doesn't like to be passed an async function, so create one inside
+        (async function () {
+            if (for_pyodide) {
+                options = { WebSocket: WebSocketRedirectWebWorker }
+            } else {
+                options = {}
+            }
+            window.kernel = await solara.connectKernel('jupyter', null, options)
+            if (!kernel) {
+                return;
+            }
+            const context = {
+                sessionContext: {
+                    session: {
+                        kernel,
                         kernelChanged: {
                             connect: () => { }
                         },
-                        connectionStatusChanged: {
-                            connect: () => { }
-                        },
                     },
-                    saveState: {
+                    statusChanged: {
                         connect: () => { }
                     },
-                };
+                    kernelChanged: {
+                        connect: () => { }
+                    },
+                    connectionStatusChanged: {
+                        connect: () => { }
+                    },
+                },
+                saveState: {
+                    connect: () => { }
+                },
+            };
 
-                const settings = {
-                    saveState: false
-                };
+            const settings = {
+                saveState: false
+            };
 
-                const rendermime = new voila.RenderMimeRegistry({
-                    initialFactories: voila.extendedRendererFactories
-                });
+            const rendermime = new solara.RenderMimeRegistry({
+                initialFactories: solara.extendedRendererFactories
+            });
 
-                window.widgetManager = new voila.WidgetManager(context, rendermime, settings);
-                // it seems if we attach this to early, it will not be called
-                const matches = document.cookie.match('\\b_xsrf=([^;]*)\\b');
-                const xsrfToken = (matches && matches[1]) || '';
-                const configData = JSON.parse(document.getElementById('jupyter-config-data').textContent);
-                const baseUrl = 'jupyter';
-                // window.addEventListener('beforeunload', function (e) {
-                //     const data = new FormData();
-                //     data.append("_xsrf", xsrfToken);
-                //     // window.navigator.sendBeacon(`${baseUrl}voila/api/shutdown/${kernel.id}`, data);
-                //     // kernel.dispose();
-                // });
-                app.$data.loading_text = 'Loading app';
-                if (!for_pyodide) {
-                    // using pyodide we get the models when the app runs
-                    // this should also happen in normal solara
-                    await widgetManager.build_widgets();
-                }
-                voila.renderMathJax();
-                resolve()
-            })()
-        });
+            window.widgetManager = new solara.WidgetManager(context, rendermime, settings);
+            // it seems if we attach this to early, it will not be called
+            const matches = document.cookie.match('\\b_xsrf=([^;]*)\\b');
+            const xsrfToken = (matches && matches[1]) || '';
+            const configData = JSON.parse(document.getElementById('jupyter-config-data').textContent);
+            const baseUrl = 'jupyter';
+            // window.addEventListener('beforeunload', function (e) {
+            //     const data = new FormData();
+            //     data.append("_xsrf", xsrfToken);
+            //     // window.navigator.sendBeacon(`${baseUrl}solara/api/shutdown/${kernel.id}`, data);
+            //     // kernel.dispose();
+            // });
+            app.$data.loading_text = 'Loading app';
+            if (!for_pyodide) {
+                // using pyodide we get the models when the app runs
+                // this should also happen in normal solara
+                await widgetManager.build_widgets();
+            }
+            solara.renderMathJax();
+            resolve()
+        })()
     });
 }
 

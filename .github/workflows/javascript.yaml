@@ -1,0 +1,41 @@
+name: Test JavaScript packages
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'packages/**/*'
+  pull_request:
+    paths:
+      - 'packages/**/*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+      - name: Install flit
+        run: pip install flit
+      - name: Build
+        run: flit build
+      - name: Install solara Python package
+        run: pip install dist/*.whl
+      - name: Build solara widget manager
+        run: |
+          cd packages/solara-widget-manager
+          npm install
+          npm run build
+          cd ../../
+      - name: Build solara app package
+        run: |
+          cd packages/solara-vuetify-app
+          npm install
+          npm run build
+          npm run devlink

@@ -11,5 +11,8 @@ addCompiler(Vue);
 
 Vue.use(Vuetify);
 
+import * as solara from './solara';
+export { solara };
+
 export { Vue }
 export { Vuetify }
