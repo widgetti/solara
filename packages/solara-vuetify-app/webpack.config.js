@@ -22,7 +22,8 @@ module.exports = [
             rules: rules
         },
         mode: 'production',
-    }, {        entry: './src/solara-vuetify-app.js',
+    }, {
+        entry: './src/solara-vuetify-app.js',
         output: {
             filename: 'solara-vuetify-app.js',
             path: path.resolve(__dirname, 'dist'),
