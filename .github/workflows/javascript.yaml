@@ -29,9 +29,10 @@ jobs:
         run: pip install dist/*.whl
       - name: Build solara app package
         run: |
-          cd packages/widget-manager
+          cd packages/solara-widget-manager
           npm install
           npm run build
+          cd ../../
       - name: Build solara app package
         run: |
           cd packages/sola-vuetify-app

@@ -14,7 +14,7 @@
   "dependencies": {
     "@mariobuikhuizen/vue-compiler-addon": "^2.6.10-alpha.2",
     "@mdi/font": "^4.9.95",
-    "@widgetti/solara-widget-manager": "file:../widget-manager",
+    "@widgetti/solara-widget-manager": "file:../solara-widget-manager",
     "material-design-icons-iconfont": "^5.0.1",
     "typeface-roboto": "0.0.54",
     "vue": "^2.6.14",
