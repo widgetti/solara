@@ -6,7 +6,7 @@ import tempfile
 from hatchling.builders.hooks.plugin.interface import BuildHookInterface
 
 packages = [
-    ["@widgetti/solara-vuetify-app", "1.0.0"],
+    ["@widgetti/solara-vuetify-app", "1.1.0"],
     ["requirejs", "2.3.6"],
     ["mermaid", "8.6.4"],
     ["codemirror", "5.65.3"],
@@ -25,7 +25,7 @@ def npm_pack(base_cache_dir: pathlib.Path, package: str, version: str):
         if package.startswith("@"):
             package_file_name = package[1:].replace("/", "-")
         subprocess.check_call(f"tar xzf {package_file_name}-{version}.tgz", cwd=temp_dir_name, shell=True)
-        shutil.move(pathlib.Path(temp_dir_name) / "package", base_cache_dir / f"{package}@{version}")
+        shutil.move(str(pathlib.Path(temp_dir_name) / "package"), str(base_cache_dir / f"{package}@{version}"))
 
 
 def download_cdn(cache_dir):
