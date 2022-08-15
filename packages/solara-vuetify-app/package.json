@@ -1,6 +1,6 @@
 {
   "name": "@widgetti/solara-vuetify-app",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Solara Vuetify App",
   "main": "dist/solara-vuetify-app.js",
   "scripts": {
