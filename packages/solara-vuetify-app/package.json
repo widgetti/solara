@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "webpack",
     "watch": "webpack --watch --mode=development",
-    "devlink": "echo -s $PWD/packages/solara-vuetify-app/dist/ `python -c \"import sys; print(sys.prefix)\"`/share/solara/cdn/@widgetti/solara-vuetify-app@1.0.0/dist"
+    "devlink": "mkdir -p `python -c \"import sys; print(sys.prefix)\"`/share/solara/cdn/@widgetti/solara-vuetify-app@1.0.0/ && ln -sf $PWD/dist `python -c \"import sys; print(sys.prefix)\"`/share/solara/cdn/@widgetti/solara-vuetify-app@1.0.0/dist"
   },
   "author": "",
   "license": "MIT",
@@ -21,10 +21,10 @@
     "vuetify": "^2.2.26"
   },
   "devDependencies": {
-    "css-loader": "^6.0.0",
-    "file-loader": "^6.2.0",
-    "style-loader": "^3.3.1",
-    "webpack": "^5.73.0",
-    "webpack-cli": "^4.10.0"
+    "css-loader": "^2.1.1",
+    "file-loader": "^3.0.1",
+    "style-loader": "^0.23.1",
+    "webpack": "^4.29.3",
+    "webpack-cli": "^3.2.3"
   }
 }

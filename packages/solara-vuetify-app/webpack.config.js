@@ -24,4 +24,18 @@ module.exports = [
         },
         mode: 'development',
     },
+    {
+        entry: './src/solara-vuetify-app.js',
+        output: {
+            filename: 'solara-vuetify-app.min.js',
+            path: path.resolve(__dirname, 'dist'),
+            libraryTarget: 'umd',
+            publicPath: 'auto',
+            devtoolModuleFilenameTemplate: `webpack://@widgetti/solara-vuetify-app`
+        },
+        module: {
+            rules: rules
+        },
+        mode: 'production',
+    },
 ];
