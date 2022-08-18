@@ -25,7 +25,7 @@ def test_histogram_card():
     @react.component
     def FilterDummy():
         nonlocal filter, set_filter
-        filter, set_filter = use_cross_filter("test")
+        filter, set_filter = use_cross_filter(id(df), "test")
         return sol.Text("dummy")
 
     @react.component
@@ -55,7 +55,7 @@ def test_dropdown_card():
     @react.component
     def FilterDummy():
         nonlocal filter, set_filter
-        filter, set_filter = use_cross_filter("test")
+        filter, set_filter = use_cross_filter(id(df), "test")
         return sol.Text("dummy")
 
     @react.component
@@ -85,7 +85,7 @@ def testfilter_card():
     @react.component
     def FilterDummy():
         nonlocal filter, set_filter
-        filter, set_filter = use_cross_filter("test")
+        filter, set_filter = use_cross_filter(id(df), "test")
         return sol.Text("dummy")
 
     @react.component
@@ -113,7 +113,7 @@ def test_summary():
     @react.component
     def FilterDummy():
         nonlocal filter, set_filter
-        filter, set_filter = use_cross_filter("test")
+        filter, set_filter = use_cross_filter(id(df), "test")
         return sol.Text("dummy")
 
     @react.component
@@ -139,7 +139,7 @@ def test_table():
     def Test():
         nonlocal filter, set_filter
         provide_cross_filter()
-        filter, set_filter = use_cross_filter("test")
+        filter, set_filter = use_cross_filter(id(df), "test")
         return TableCard(df)
 
     widget, rc = react.render_fixed(Test(), handle_error=False)
@@ -159,7 +159,7 @@ def test_heatmap():
     def Test():
         nonlocal filter, set_filter
         provide_cross_filter()
-        filter, set_filter = use_cross_filter("test")
+        filter, set_filter = use_cross_filter(id(df), "test")
         return HeatmapCard(df, x="age", y="fare", debounce=False)
 
     widget, rc = react.render_fixed(Test(), handle_error=False)
@@ -173,7 +173,7 @@ def test_scatter():
     @react.component
     def FilterDummy():
         nonlocal filter, set_filter
-        filter, set_filter = use_cross_filter("test")
+        filter, set_filter = use_cross_filter(id(df), "test")
         return sol.Text("dummy")
 
     @react.component

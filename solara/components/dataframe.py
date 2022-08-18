@@ -51,7 +51,7 @@ def ExpressionEditor(df, value: str, label="Custom expression", on_value=None, p
 
 @react.component
 def FilterCard(df):
-    filter, set_filter = use_cross_filter("filter-custom")
+    filter, set_filter = use_cross_filter(id(df), "filter-custom")
 
     with v.Card(elevation=2, height=cardheight) as main:
         with v.CardTitle(children=["Filter"]):
@@ -80,7 +80,7 @@ def Table(df, n=5):
 
 @react.component
 def TableCard(df):
-    filter, set_filter = use_cross_filter(None)
+    filter, set_filter = use_cross_filter(id(df), None)
     dff = df
     filtered = False
     if filter is not None:
@@ -103,7 +103,7 @@ def TableCard(df):
 
 @react.component
 def HistogramCard(df, column=None):
-    filter, set_filter = use_cross_filter("filter-histogram")
+    filter, set_filter = use_cross_filter(id(df), "filter-histogram")
     dff = df  # filter(df)
 
     items = df.get_column_names()
@@ -153,7 +153,6 @@ def HistogramCard(df, column=None):
                         scale_y = bqplot.LinearScale()
 
                     def on_selected(selected):
-                        print("selected", selected)
                         if selected is not None:
                             if df[column].dtype == bool:
                                 value = [True, False][selected[0]]
@@ -182,7 +181,7 @@ def HistogramCard(df, column=None):
 
 @react.component
 def ScatterCard(df, x=None, y=None, color=None):
-    filter, set_filter = use_cross_filter("filter-scatter")
+    filter, set_filter = use_cross_filter(id(df), "filter-scatter")
     dff = df
     if filter:
         dff = df[filter]
@@ -330,7 +329,7 @@ def HeatmapCard(df, x=None, y=None, debounce=True):
     contrast, set_contrast = react.use_state([0.5, 99.5])
     # print("limits", limits)
     limits = limits.copy()
-    filter, set_filter = use_cross_filter("filter-heatmap")
+    filter, set_filter = use_cross_filter(id(df), "filter-heatmap")
     dff = df
     selection = filter
     # print("unfiltered", dff is df)
@@ -386,8 +385,6 @@ def HeatmapCard(df, x=None, y=None, debounce=True):
                 update_xmax = updater("xmax")
                 update_ymin = updater("ymin")
                 update_ymax = updater("ymax")
-
-                print("limits", limits)
 
                 # def update(name):
                 #     def update_single(value):
@@ -458,7 +455,7 @@ def HeatmapCard(df, x=None, y=None, debounce=True):
 
 @react.component
 def SummaryCard(df):
-    filter, set_filter = use_cross_filter(None)
+    filter, set_filter = use_cross_filter(id(df), None)
     dff = df
     filtered = False
     if filter is not None:
@@ -487,7 +484,7 @@ def SummaryCard(df):
 @react.component
 def DropdownCard(df, column=None):
     max_unique = 100
-    filter, set_filter = use_cross_filter("filter-dropdown")
+    filter, set_filter = use_cross_filter(id(df), "filter-dropdown")
     columns = use_df_column_names(df)
     column, set_column = react.use_state(columns[0] if column is None else column)
     uniques = df_unique(df, column, limit=max_unique + 1)

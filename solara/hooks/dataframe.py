@@ -4,6 +4,7 @@ from typing import Any, Callable, Dict, List, TypeVar
 
 import react_ipywidgets as react
 
+import solara.util
 from solara.hooks.misc import use_force_update, use_unique_key
 
 max_unique = 100
@@ -26,19 +27,21 @@ def df_type(df):
 class CrossFilterStore:
     def __init__(self) -> None:
         self.listeners: List[Callable] = []
-        self.filters: Dict[str, Any] = {}
+        self.filters: Dict[Any, Dict[str, Any]] = {}
 
-    def add(self, key, filter):
-        self.filters[key] = filter
+    def add(self, data_key, key, filter):
+        data_filters = self.filters.setdefault(data_key, {})
+        data_filters[key] = filter
 
-    def use(self, key):
+    def use(self, data_key, key, eq=None):
         # we use this state to trigger update, we could do without
         updater = use_force_update()
 
-        filter, set_filter = react.use_state(self.filters.get(key))
+        data_filters = self.filters.setdefault(data_key, {})
+        filter, set_filter = react.use_state(data_filters.get(key), eq=eq)
 
         def on_change():
-            set_filter(self.filters.get(key))
+            set_filter(data_filters.get(key))
             # even if we don't change our own filter, the other may change
             updater()
 
@@ -48,7 +51,7 @@ class CrossFilterStore:
             def cleanup():
                 self.listeners.remove(on_change)
                 # also remove our filter, and notify the rest
-                del self.filters[key]
+                del data_filters[key]
                 for listener in self.listeners:
                     listener()
 
@@ -57,11 +60,11 @@ class CrossFilterStore:
         react.use_effect(connect, [key])
 
         def setter(filter):
-            self.filters[key] = filter
+            data_filters[key] = filter
             for listener in self.listeners:
                 listener()
 
-        otherfilters = [filter for key_other, filter in self.filters.items() if key != key_other]
+        otherfilters = [filter for key_other, filter in data_filters.items() if key != key_other and filter is not None]
         return filter, otherfilters, setter
 
 
@@ -93,7 +96,7 @@ def use_df_column_names(df):
         raise TypeError(f"{type(df)} not supported")
 
 
-def use_cross_filter(name, reducer: Callable[[T, T], T] = operator.and_):
+def use_cross_filter(data_key, name: str = "no-name", reducer: Callable[[T, T], T] = operator.and_, eq=solara.util.numpy_equals):
     """Provides cross filtering, all other filters are combined using the reducer.
 
     Cross filtering will collect a set of filters (from other components), and combine
@@ -102,11 +105,9 @@ def use_cross_filter(name, reducer: Callable[[T, T], T] = operator.and_):
     but only applied to all other components.
     """
     key = use_unique_key(prefix=f"cross-filter-{name}-")
-    print("cf", key)
     cross_filter_store = react.use_context(cross_filter_context)
-    _own_filter, otherfilters, set_filter = cross_filter_store.use(key)
+    _own_filter, otherfilters, set_filter = cross_filter_store.use(data_key, key, eq=eq)
     if otherfilters:
-        print("otherfilters", otherfilters)
         cross_filter = reduce(reducer, otherfilters[1:], otherfilters[0])
     else:
         cross_filter = None

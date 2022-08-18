@@ -2,15 +2,12 @@ import base64
 import contextlib
 import os
 import sys
-import typing
 from pathlib import Path
 
+import numpy as np
 import PIL.Image
 
 import solara as sol
-
-if typing.TYPE_CHECKING:
-    import numpy as np
 
 
 def github_url(file):
@@ -67,3 +64,13 @@ def cwd(path):
         yield
     finally:
         os.chdir(cwd)
+
+
+def numpy_equals(a, b):
+    if a is b:
+        return True
+    if a is None or b is None:
+        return False
+    if np.all(a == b):
+        return True
+    return False
