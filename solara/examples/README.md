@@ -16,8 +16,8 @@
  * [Development](#development)
  * [FAQ](#faq)
 
-# Live demo
-[Live demo running Heroku](https://solara-demo.herokuapp.com/)
+# Live documentation
+[Live documentation](https://solara.dev/)
 
 # What it is?
 
@@ -73,11 +73,10 @@ import react_ipywidgets as react
 import react_ipywidgets.ipywidgets as w
 
 @react.component
-def ButtonClick(label="Hi"):
+def Page():
     clicks, set_clicks = react.use_state(0)
-    return w.Button(description=f"{label}: Clicked {clicks} times",
+    return w.Button(description=f"Clicked {clicks} times",
                     on_click=lambda: set_clicks(clicks+1))
-app = ButtonClick('Ola')
 ```
 
 Install and run

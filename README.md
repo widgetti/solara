@@ -16,8 +16,8 @@
  * [Development](#development)
  * [FAQ](#faq)
 
-# Live demo
-[Live demo running Heroku](https://solara-demo.herokuapp.com/)
+# Live documentation
+[Live documentation](https://solara.dev/)
 
 # What it is?
 
