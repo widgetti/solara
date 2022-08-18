@@ -70,6 +70,7 @@ server = [
     "websockets",
     "starlette",
     "nbconvert",
+    "jupyter_server",
     "jupyter_client>=7.0.0",
 ]
 flask = [
