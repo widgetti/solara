@@ -55,9 +55,9 @@ def test_pivot_table():
     filter = set_filter = None
 
     @react.component
-    def FilterDummy():
+    def FilterDummy(df):
         nonlocal filter, set_filter
-        filter, set_filter = sol.use_cross_filter("test")
+        filter, set_filter = sol.use_cross_filter(id(df), "test")
         return sol.Text("dummy")
 
     @react.component
@@ -65,7 +65,7 @@ def test_pivot_table():
         sol.provide_cross_filter()
         with sol.VBox() as main:
             sol.PivotTableCard(df, x=["sex"], y=["survived"])
-            FilterDummy()
+            FilterDummy(df)
         return main
 
     widget, rc = react.render(Test(), handle_error=False)

@@ -144,7 +144,7 @@ def PivotTable(
 ):
     x = x.copy()
     y = y.copy()
-    filter, set_filter = sol.use_cross_filter("pivottable")
+    filter, set_filter = sol.use_cross_filter(id(df), "pivottable")
     dff = df
     data_result = use_df_pivot_data(dff, x, y, aggregation, filter=filter)
     previous = sol.use_previous(data_result.value, condition=data_result.state == sol.ResultState.FINISHED)
