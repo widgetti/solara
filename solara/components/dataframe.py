@@ -80,7 +80,7 @@ def Table(df, n=5):
 
 @react.component
 def TableCard(df):
-    filter, set_filter = use_cross_filter(id(df), None)
+    filter, set_filter = use_cross_filter(id(df), "table")
     dff = df
     filtered = False
     if filter is not None:
@@ -455,7 +455,7 @@ def HeatmapCard(df, x=None, y=None, debounce=True):
 
 @react.component
 def SummaryCard(df):
-    filter, set_filter = use_cross_filter(id(df), None)
+    filter, set_filter = use_cross_filter(id(df), "summary")
     dff = df
     filtered = False
     if filter is not None:
