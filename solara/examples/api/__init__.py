@@ -52,8 +52,9 @@ def Layout(children=[], level=0):
                         add("image")
                         # add("code")
                         add("sql_code")
-                    # with sol.ListItem("Viz", icon_name="mdi-chart-histogram"):
-                    #     sol.ListItem("FigurePlotly")
+                    with sol.ListItem("Viz", icon_name="mdi-chart-histogram"):
+                        add("plotly")
+                        add("plotly_express")
                     #     sol.ListItem("AltairChart")
                     with sol.ListItem("Layout", icon_name="mdi-page-layout-sidebar-left"):
                         add("hbox")

@@ -1,4 +1,4 @@
-from typing import Callable, List
+from typing import Any, Callable, List
 
 import ipyvue as vue
 import react_ipywidgets as react
@@ -210,27 +210,48 @@ def AltairChart(chart, on_click=None, on_hover=None):
 
 
 @react.component
-def FigurePlotly(fig, on_selection=None, on_click=None, on_hover=None, dependencies=None):
+def FigurePlotly(
+    fig,
+    on_selection: Callable[[Any], None] = None,
+    on_deselect: Callable[[Any], None] = None,
+    on_click: Callable[[Any], None] = None,
+    on_hover: Callable[[Any], None] = None,
+    on_unhover: Callable[[Any], None] = None,
+    dependencies=None,
+):
     from plotly.graph_objs._figurewidget import FigureWidget
 
-    fig_element = FigureWidget.element()
+    def on_points_callback(data):
+        if data:
+            event_type = data["event_type"]
+            if event_type == "plotly_click":
+                if on_click:
+                    on_click(data)
+            elif event_type == "plotly_hover":
+                if on_hover:
+                    on_hover(data)
+            elif event_type == "plotly_unhover":
+                if on_unhover:
+                    on_unhover(data)
+            elif event_type == "plotly_selected":
+                if on_selection:
+                    on_selection(data)
+            elif event_type == "plotly_deselect":
+                if on_deselect:
+                    on_deselect(data)
+
+    fig_element = FigureWidget.element(on__js2py_pointsCallback=on_points_callback)
 
     def update_data():
         fig_widget: FigureWidget = react.get_widget(fig_element)
-        if on_selection:
-            fig_widget.on_selection(on_selection)
         fig_widget.layout = fig.layout
+
         length = len(fig_widget.data)
         fig_widget.add_traces(fig.data)
         data = list(fig_widget.data)
         fig_widget.data = data[length:]
-        for trace in fig_widget.data:
-            if on_click:
-                trace.on_click(on_click)
-            if on_hover:
-                trace.on_hover(on_hover)
 
-    react.use_side_effect(update_data, dependencies or fig)
+    react.use_effect(update_data, dependencies or fig)
     return fig_element
 
 
