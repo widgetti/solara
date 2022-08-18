@@ -300,16 +300,33 @@ We plan to improve this situation in the future. In the meantime, please set you
 
 
 # Installation
-## User
 
-Most users:
+## Create a virtual environment
 
-    $ pip install solara[server,examples]
+It is best to install Solara into a virtual environment unless you know what you are doing (you already have a virtual environment, or you are using conda or docker).
 
-Conda users (not yet):
+See also [The Python Packaging User Guide](https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/#creating-a-virtual-environment) for more information.
 
-    $ conda install -c conda-forge install solara
 
+### OSX/Unix/Linux
+
+    $ python -m venv solara-env
+    $ source ./solara-env/bin/activate
+    $ pip install -e ".[server,examples]" watchdog
+
+### Windows
+
+    > py -m venv solara-env
+    > solara-env\Scripts\activate
+    > pip install -e ".[server,examples]" watchdog
+
+
+## Install Solara as user
+
+
+Now install Solara using pip:
+
+    $ pip install solara[server,examples] watchdog
 
 ## Development
 
@@ -323,6 +340,7 @@ Install Solara in 'edit' mode. We use flit (`pip install flit` if you don't alre
 
     $ cd solara
     $ flit install --pth-file --deps develop --extras server,examples
+    $ pip install watchdog  # to get hot reloading
 
 Now you can edit the source code in the git repository, without having to reinstall it.
 

@@ -93,14 +93,14 @@ The browser should open http://127.0.0.1:8765
 
 # Usage
 
-   * Create a Python script or module and assign an IPywidget instance, or [React-IPywidgets](https://github.com/widgetti/react-ipywidgets) element to the `app` variable.
+   * Create a Python script or module and assign an IPywidget instance, or [React-IPywidgets](https://github.com/widgetti/react-ipywidgets) component or element `Page` (or define a `Page` component).
    * Run the server `$ solara run myapp.py`
 
 Use `solara --help` for help on extra arguments.
 
 ## Notebook support
 
-We also support notebooks, simply assign to the app variable in a code cell, save your notebook, and run `$ solara run myapp.ipynb`
+We also support notebooks, simply assign to the `Page` variable in a code cell, save your notebook, and run `$ solara run myapp.ipynb`. If you widget or component is called differently, run like `$ solara run myapp.ipynb:myobject.nested_widget`
 
 # Deployment
 
@@ -220,10 +220,10 @@ If you use want to use Voila, [you can use those deployment options](https://voi
 Make sure you run a notebook where you display the app, e.g.
 ```python
 @react.component
-def MyApp():
+def Page():
     ...
-app = MyApp()
-display(app)
+element = Page()
+display(element)
 ```
 
 Or consider using [Voila-vuetify](https://github.com/voila-dashboards/voila-vuetify)
@@ -247,9 +247,9 @@ def ButtonClick(label="Hi"):
     return sol.Button(f"{label}: Clicked {clicks} times", on_click=increment)
 
 # this creates just an element, Panel doesn't know what to do with that
-app = ButtonClick("Solara+Panel")
+element = ButtonClick("Solara+Panel")
 # we explicitly ask React-IPyWidgets to render it, and give us the widget
-button_widget, render_context = react.render_fixed(app)
+button_widget, render_context = react.render_fixed(element)
 # mark this panel to be served by the panel server
 pn.panel(button_widget).servable()
 ```
@@ -301,16 +301,33 @@ We plan to improve this situation in the future. In the meantime, please set you
 
 
 # Installation
-## User
 
-Most users:
+## Create a virtual environment
 
-    $ pip install solara[server,examples]
+It is best to install Solara into a virtual environment unless you know what you are doing (you already have a virtual environment, or you are using conda or docker).
 
-Conda users (not yet):
+See also [The Python Packaging User Guide](https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/#creating-a-virtual-environment) for more information.
 
-    $ conda install -c conda-forge install solara
 
+### OSX/Unix/Linux
+
+    $ python -m venv solara-env
+    $ source ./solara-env/bin/activate
+    $ pip install -e ".[server,examples]" watchdog
+
+### Windows
+
+    > py -m venv solara-env
+    > solara-env\Scripts\activate
+    > pip install -e ".[server,examples]" watchdog
+
+
+## Install Solara as user
+
+
+Now install Solara using pip:
+
+    $ pip install solara[server,examples] watchdog
 
 ## Development
 
@@ -324,9 +341,50 @@ Install Solara in 'edit' mode. We use flit (`pip install flit` if you don't alre
 
     $ cd solara
     $ flit install --pth-file --deps develop --extras server,examples
+    $ pip install watchdog  # to get hot reloading
 
 Now you can edit the source code in the git repository, without having to reinstall it.
 
+### Running Solara in dev mode
+
+By passing the `--dev` flag, solara enters "dev" mode, which makes it friendlier for development
+
+    $ solara run myscript.py --dev
+
+Now, if the Solara source code is edited, the server will automatically restart. Also, this enabled the `--mode=development` which will:
+
+   * Load non-minified JS/CSS to make debugging easier
+   * Follow symlinks for the nbextensions, enabling the use of widget libraries in development mode.
+
+### Reloading of .vue files
+
+The solara server automatically watches all `.vue` files that are used by vue templates (there are some used in solara.components for example).
+When a `.vue` file is saved, the widgets get updated automatically, without needing a page reload, aiding rapid development.
+
+## Contributing
+
+If you plan to contribute, also run the following:
+
+    $ pre-commit install
+
+This will cause a test of linters/formatters and mypy to run so the code is in good quality before you git commit.
+
+    $ playwright install
+
+This will install playwright, for when you want to run the integration tests.
+
+### Test suite
+
+If you want to run the unit tests (quick run when doing development, or when you do test driven development)
+
+    $ py.test tests/unit
+
+
+If you want to run the integration tests (uses playwright to open a browser to test the live server with a real browser)
+
+    $ py.test tests/integration
+
+Pass the `--headed` flag to see what is going on, [or check out the docs](https://playwright.dev/python/docs/intro)
 
 # FAQ
 
@@ -369,10 +427,37 @@ $ solara mystartup.killerapp --dev
 
 ## Can Solara run Jupyter notebook?
 
-Yes, Solara will execute each cell, and after that will look for a variable `app`, like with a normal script. All other output, Markdown or other types of cells will be ignored.
+Yes, Solara will execute each cell, and after that will look for a variable or component called `Page`, like with a normal script. All other output, Markdown or other types of cells will be ignored.
 
 
 
 ## Can I use Solara in my existing FastAPI/Starlette/Flask server?
 
 Yes, take a look at the `solara.server.starlette`  and `solara.server.fastapi` and `solara.server.flask` module. The usage will change over time, so read the source and be ready to change this in the future. We do plan to provide a stable API for this in the future.
+
+
+## How to fix: inotify watch limit reached?
+
+Add the line
+
+    fs.inotify.max_user_watches=524288
+
+To your /etc/sysctl.conf file, and run `sudo sysctl -p.`
+
+Or if you are using visual studio code, please read: https://code.visualstudio.com/docs/setup/linux#_visual-studio-code-is-unable-to-watch-for-file-changes-in-this-large-workspace-error-enospc
+
+
+## How can I recognize if I run in Solara, Voila or Jupyter Notebook/Lab
+
+Voila and Solara set the following environment variables (based on the CGI spec):
+
+   * SERVER_SOFTWARE
+      * Solara: e.g. 'solara/1.2.3'
+      * Voila: e.g. 'voila/1.2.3'
+   * SERVER_PORT (e.g. '8765')
+   * SERVER_NAME (e.g. 'killerapp.com')
+   * SCRIPT_NAME (only Voila, e.g. 'voila/render/notebook.ipynb')
+   * PATH_TRANSLATED (only Solara e.g. '/mnt/someapp/app.py')
+
+Jupyter Notebook/Lab/Server do not set these variables. With this information,
+it should be possible to recognize in which environment you are running in.
