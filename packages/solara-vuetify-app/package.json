@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "webpack",
     "watch": "webpack --watch --mode=development",
-    "devlink": "mkdir -p `python -c \"import sys; print(sys.prefix)\"`/share/solara/cdn/@widgetti/solara-vuetify-app@1.1.0/ && ln -sf $PWD/dist `python -c \"import sys; print(sys.prefix)\"`/share/solara/cdn/@widgetti/solara-vuetify-app@1.1.0/dist"
+    "devlink": "TARGET_DIR=`python -c \"import sys; print(sys.prefix)\"`/share/solara/cdn/@widgetti/solara-vuetify-app@1.1.0/; mkdir -p $TARGET_DIR && rm -rf $TARGET_DIR/dist && ln -sf $PWD/dist $TARGET_DIR/dist"
   },
   "author": "",
   "license": "MIT",
