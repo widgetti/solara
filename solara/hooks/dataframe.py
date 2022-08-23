@@ -51,7 +51,7 @@ class CrossFilterStore:
             def cleanup():
                 self.listeners.remove(on_change)
                 # also remove our filter, and notify the rest
-                del data_filters[key]
+                data_filters.pop(key, None)  # remove, ignoring key error
                 for listener in self.listeners:
                     listener()
 
@@ -75,6 +75,7 @@ def provide_cross_filter():
     # create it once
     cross_filter_object = react.use_memo(CrossFilterStore, [])
     cross_filter_context.provide(cross_filter_object)
+    return cross_filter_object
 
 
 def df_unique(df, column, limit=None):
