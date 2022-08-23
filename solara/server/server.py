@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, TypeVar
 
 import ipykernel
+import ipywidgets
 import jinja2
 import requests
 
@@ -26,6 +27,7 @@ T = TypeVar("T")
 directory = Path(__file__).parent
 template_name = "index.html.j2"
 ipykernel_major = int(ipykernel.__version__.split(".")[0])
+ipywidgets_major = int(ipywidgets.__version__.split(".")[0])
 cache_memory = solara.cache.Memory(max_items=128)
 
 # first look at the project directory, then the builtin solara directory
@@ -252,6 +254,7 @@ def read_root(path: str, root_path: str = "", render_kwargs={}, use_nbextensions
         "pre_rendered_metas": pre_rendered_metas,
         "assets": settings.assets.dict(),
         "cdn": cdn,
+        "ipywidget_major_version": ipywidgets_major,
         **render_kwargs,
     }
     response = template.render(**render_settings)

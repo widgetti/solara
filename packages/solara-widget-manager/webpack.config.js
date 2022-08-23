@@ -44,11 +44,57 @@ module.exports = [
   {
     entry: ['./lib/index.js'],
     output: {
-      filename: 'solara.js',
+      filename: 'solara-widget-manager7.js',
       libraryTarget: 'umd',
       devtoolModuleFilenameTemplate: `webpack://@widgetti/solara-widget-manager`
     },
     module: { rules: rules },
-    devtool: 'source-map'
-  }
+    devtool: 'source-map',
+    mode: 'development',
+  },
+  {
+    entry: ['./lib/index.js'],
+    output: {
+      filename: 'solara-widget-manager8.js',
+      libraryTarget: 'umd',
+      devtoolModuleFilenameTemplate: `webpack://@widgetti/solara-widget-manager`
+    },
+    resolve: {
+      alias: {
+        "@jupyter-widgets/base": "@jupyter-widgets/base8",
+        "@jupyter-widgets/controls": "@jupyter-widgets/controls8",
+        "@jupyter-widgets/jupyterlab-manager": "@jupyter-widgets/jupyterlab-manager8",
+      }
+    },
+    module: { rules: rules },
+    devtool: 'source-map',
+    mode: 'development',
+  },
+  {
+    entry: ['./lib/index.js'],
+    output: {
+      filename: 'solara-widget-manager7.min.js',
+      libraryTarget: 'umd',
+      devtoolModuleFilenameTemplate: `webpack://@widgetti/solara-widget-manager`
+    },
+    module: { rules: rules },
+    mode: 'production',
+  },
+  {
+    entry: ['./lib/index.js'],
+    output: {
+      filename: 'solara-widget-manager8.min.js',
+      libraryTarget: 'umd',
+      devtoolModuleFilenameTemplate: `webpack://@widgetti/solara-widget-manager`
+    },
+    resolve: {
+      alias: {
+        "@jupyter-widgets/base": "@jupyter-widgets/base8",
+        "@jupyter-widgets/controls": "@jupyter-widgets/controls8",
+        "@jupyter-widgets/jupyterlab-manager": "@jupyter-widgets/jupyterlab-manager8",
+      }
+    },
+    module: { rules: rules },
+    mode: 'production',
+  },
 ];
