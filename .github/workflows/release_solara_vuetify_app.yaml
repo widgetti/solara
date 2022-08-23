@@ -1,0 +1,36 @@
+name: Release solara-vuetify-app package
+
+on:
+  push:
+    tags:
+      - "@widgetti/solara-vuetify-app@*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install node
+        uses: actions/setup-node@v1
+        with:
+          node-version: "14.x"
+          registry-url: "https://registry.npmjs.org"
+      - name: Build the JS packages
+        run: |
+          cd packages
+          cd solara-widget-manager
+          npm install
+          npm run build
+          cd ..
+          cd solara-vuetify-app
+          npm install
+          npm run build
+      - name: Publish the NPM package
+        run: |
+          cd packages/solara-vuetify-app
+          echo $PRE_RELEASE
+          if [[ $PRE_RELEASE == "true" ]]; then export TAG="next"; else export TAG="latest"; fi
+          npm publish --tag ${TAG} --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          PRE_RELEASE: ${{ github.event.release.prerelease }}
