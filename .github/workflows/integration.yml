@@ -19,6 +19,7 @@ jobs:
         os: [ubuntu, windows]
         # just 1 version, it's heavy
         python-version: [3.8]
+        ipywidgets: ["7.7", "8.0"]
 
     steps:
       - uses: actions/checkout@v2
@@ -31,7 +32,7 @@ jobs:
       - name: Install
         run: |
           pip install ".[dev,server,flask,documentation]"
-          (cd packages/solara-enterprise && pip install ".[ssg]")
+          (cd packages/solara-enterprise && pip install ".[ssg]" "ipywidgets~=${{ matrix.ipywidgets }}")
       - name: Install playwright
         run: playwright install
       - name: test

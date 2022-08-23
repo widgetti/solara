@@ -349,10 +349,6 @@ class AppContext:
                     except Exception as e:
                         logger.exception("Could not close render context: %s", e)
                         # we want to continue, so we at least close all widgets
-            import solara.server.patch
-
-            assert isinstance(widgets.Widget.widgets, solara.server.patch.context_dict_widgets), f"Unexpected widget dict type: {type(widgets.Widget.widgets)}"
-            assert widgets.Widget.widgets._get_context_dict() is self.widgets
             widgets.Widget.close_all()
             # what if we reference eachother
             # import gc

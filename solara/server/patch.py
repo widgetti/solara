@@ -21,6 +21,7 @@ except:  # noqa
     patch_display = None  # type: ignore
 if patch_display is not None:
     patch_display()
+ipywidget_version_major = int(ipywidgets.__version__.split(".")[0])
 
 
 class FakeIPython:
@@ -243,7 +244,15 @@ def patch():
     component_mod_vue.vue_component_registry = context_dict_user("vue_component_registry")  # type: ignore
     component_mod_vue.vue_component_files = context_dict_user("vue_component_files")  # type: ignore
 
-    ipywidgets.widget.Widget.widgets = context_dict_widgets()  # type: ignore
+    if ipywidget_version_major < 8:
+        ipywidgets.widget.Widget.widgets = context_dict_widgets()  # type: ignore
+    else:
+        if hasattr(ipywidgets.widgets.widget, "_instances"):  # since 8.0.3
+            ipywidgets.widgets.widget._instances = context_dict_widgets()  # type: ignore
+        elif hasattr(ipywidgets.widget.Widget, "_instances"):
+            ipywidgets.widget.Widget._instances = context_dict_widgets()  # type: ignore
+        else:
+            raise RuntimeError("Could not find _instances on ipywidgets version %r" % ipywidgets.__version__)
     threading.Thread.__init__ = WidgetContextAwareThread__init__  # type: ignore
     threading.Thread.run = Thread_debug_run  # type: ignore
     # on CI we get a mypy error:
