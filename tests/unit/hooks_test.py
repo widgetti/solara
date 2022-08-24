@@ -245,9 +245,9 @@ def test_use_file_content(tmpdir: Path):
         # pickle.dumps(result)
         return w.Button()
 
-    react.render_fixed(Test(path))
+    box, rc = react.render(Test(path), handle_error=False)
     path_non_exist = tmpdir / "nonexist"
-    react.render_fixed(Test(path_non_exist))
+    rc.render(Test(path_non_exist))
     path_non_exist.write_text("Hi", "utf8")
     assert result is not None
     result.retry()

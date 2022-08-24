@@ -310,14 +310,15 @@ def use_file_content(path, watch=False) -> FileContentResult[bytes]:
         except Exception as e:
             return e
 
+    result = None
     try:
         mtime = os.path.getmtime(path)
-    except Exception as e:
-        result = FileContentResult[bytes](error=e, _retry=retry)
-        # result.retry = retry
-        return result
+    except Exception:
+        mtime = None
 
     content = react.use_memo(read_file, dependencies=[path, mtime, counter])
+    if result is not None:
+        return result
     if isinstance(content, Exception):
         return FileContentResult[bytes](error=content, _retry=retry)
     else:
