@@ -27,6 +27,18 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install
         run: pip install ".[dev,server,flask,examples]"
+      - name: Build solara widget manager
+        run: |
+          cd packages/solara-widget-manager
+          npm install
+          npm run build
+          cd ../../
+      - name: Build solara app package
+        run: |
+          cd packages/solara-vuetify-app
+          npm install
+          npm run build
+          npm run devlink
       - name: Install playwright
         run: playwright install
       - name: test
