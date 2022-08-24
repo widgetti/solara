@@ -8,6 +8,7 @@ import pymdownx.highlight
 import pymdownx.superfences
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import get_lexer_by_name
+
 from solara.kitchensink import react
 
 html_no_execute_enabled = "<div><i>Solara execution is not enabled</i></div>"
@@ -17,8 +18,14 @@ def _run_solara(code):
     ast = compile(code, "markdown", "exec")
     local_scope: Dict[Any, Any] = {}
     exec(ast, local_scope)
-    app = local_scope["app"]
-
+    app = None
+    if "app" in local_scope:
+        app = local_scope["app"]
+    if "Page" in local_scope:
+        Page = local_scope["Page"]
+        app = Page()
+    else:
+        raise NameError("No Page of app defined")
     box = v.Html(tag="div")
     box, rc = react.render(app, container=box)
     widget_id = box._model_id
