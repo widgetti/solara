@@ -126,6 +126,8 @@ def RenderPage():
         if route.component is RenderPage:
             level_max = level
     route_current = router.path_routes[level_max]
+    routes_siblings = router.path_routes_siblings[level_max]
+    routes_siblings_index = routes_siblings.index(route_current)
     # if no layouts are found, we use the default layout
     if layouts == []:
         # except when the root routes has no siblings (maybe we should include no children?)
@@ -152,10 +154,21 @@ def RenderPage():
     if isinstance(route_current.data, Path):
         path = cast(Path, route_current.data)
         if path.suffix == ".md":
+            with sol.HBox() as navigation:
+                if routes_siblings_index > 0:
+                    prev = routes_siblings[routes_siblings_index - 1]
+                    with sol.Link(prev):
+                        sol.Button(f"{prev.label}", text=True, icon_name="mdi-arrow-left")
+                rv.Spacer()
+                if routes_siblings_index < len(routes_siblings) - 1:
+                    next = routes_siblings[routes_siblings_index + 1]
+                    with sol.Link(next):
+                        sol.Button(f"{next.label}", text=True, icon_name="mdi-arrow-right")
             main = sol.Div(
                 children=[
                     sol.Title(route_current.label or "No title"),
                     sol.Markdown(path.read_text(), unsafe_solara_execute=True),
+                    navigation,
                 ]
             )
             main = wrap_in_layouts(main, layouts)
