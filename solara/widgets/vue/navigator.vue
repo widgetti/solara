@@ -3,6 +3,16 @@
 <script>
 modules.export = {
   created() {
+    if (!window.solara) {
+      window.solara = {};
+    }
+    if (!window.solara.router) {
+      window.solara.router = {};
+    }
+    window.solara.router.push = (href) => {
+      console.log("external router push", href);
+      this.location = href;
+    };
     this.location = window.location.pathname;
     console.log("created");
     window.addEventListener("popstate", (lala) => {

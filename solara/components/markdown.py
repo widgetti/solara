@@ -45,6 +45,30 @@ def _markdown_template(html):
 module.exports = {
     mounted() {
         mermaid.init()
+        this.$el.querySelectorAll("a").forEach(a => this.setupRouter(a))
+        window.md = this.$el
+    },
+    methods: {
+        setupRouter(a) {
+            let href = a.attributes['href'].value;
+            if(href.startsWith("./")) {
+                // TODO: should we really do this?
+                href = location.pathname + href.substr(1);
+                a.attributes['href'].href = href;
+            }
+            console.log("connect anchor with href=", href, "to router")
+            if(href.startsWith("./") || href.startsWith("/")) {
+                a.onclick = e => {
+                    console.log("clicked", href)
+                    if(href.startsWith("./")) {
+                        solara.router.push(href);
+                    } else {
+                        solara.router.push(href);
+                    }
+                    e.preventDefault()
+                }
+            }
+        }
     },
     updated() {
         // if the html gets update, re-run mermaid
