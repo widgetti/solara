@@ -71,8 +71,8 @@ Note that Solara will remember your state (e.g. the number of buttons clicked) w
 # What you have leared
 
    * How to create a Python script `sol.py` by running `solara create button`
-   * How to run the script with Solara server by running `solara run button.py`
-   * Your script is executed once, useful for loading data.
+   * How to run the script with Solara server by running `solara run sol.py`
+   * Your script is executed once, useful for loading data in the main body of your script only once.
    * Your script should have a component called `Page` (although element and widgets are also supported).
    * Every user has its own state (in the above example, the number of clicks)
    * If you save your script, Solara will automatically re-execute your script, and all attached users will see the changes directly (hot reloading).
