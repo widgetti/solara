@@ -30,7 +30,7 @@ template_name = "solara.html.j2"
 
 jinja_loader = jinja2.FileSystemLoader(str(directory / "templates"))
 jinja_env = jinja2.Environment(loader=jinja_loader, autoescape=True)
-solara_app = AppScript(os.environ.get("SOLARA_APP", "solara.examples:Page"))
+solara_app = AppScript(os.environ.get("SOLARA_APP", "solara.website.pages:Page"))
 logger = logging.getLogger("solara.server.server")
 nbextensions_ignorelist = [
     "jupytext/index",

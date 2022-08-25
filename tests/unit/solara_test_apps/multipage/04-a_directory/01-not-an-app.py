@@ -1,3 +1,3 @@
-import solara.examples.api.griddraggable as mod
+import solara.website.pages.api.griddraggable as mod
 
 Page = mod.Page

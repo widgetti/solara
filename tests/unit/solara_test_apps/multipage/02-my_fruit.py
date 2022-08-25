@@ -1,4 +1,4 @@
-import solara.examples.api.use_route as mod
+import solara.website.pages.api.use_route as mod
 
 routes = mod.routes
 Page = mod.Page

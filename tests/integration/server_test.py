@@ -21,27 +21,26 @@ def screenshot_on_error(page, path):
         yield
     except:  # noqa: E722
         page.screenshot(path=path)
-        print(f"Saved screenshot to {path}", file=sys.stderr)
+        print(f"Saved screenshot to {path}", file=sys.stderr)  # noqa
         raise
 
 
 def test_docs_basics(page: playwright.sync_api.Page, solara_server, solara_app):
     # with screenshot_on_error(page, 'tmp/test_docs_basics.png'):
-    with solara_app("solara.examples"):
+    with solara_app("solara.website.pages"):
         page.goto(solara_server.base_url)
         assert page.title() == "Hello from Solara ☀️"
-        page.locator('div[role="tab"]:has-text("Demo")').click()
+        page.locator('div[role="tab"]:has-text("Examples")').click()
 
         page.locator("text=Calculator").click()
         page.locator("text=+/-").wait_for()
         page.screenshot(path="tmp/screenshot_calculator.png")
 
-        page.locator("text=Supported").click()
         page.locator("text=Bqplot").click()
         page.locator("text=Line color").wait_for()
         page.screenshot(path="tmp/screenshot_bqplot.png")
 
-        page.locator("text=Plotly").click()
+        page.locator("text=Plotly").first.click()
         page.locator("text=plotly express").wait_for()
         page.screenshot(path="tmp/screenshot_plotly.png")
 
@@ -67,7 +66,7 @@ def test_docs_basics(page: playwright.sync_api.Page, solara_server, solara_app):
 def ClickButton():
     count, set_count = react.use_state(0)
     if not isinstance(count, int):
-        print("oops, state issue?")
+        print("oops, state issue?")  # noqa
         count = 0
     # return w.Button()  # description=, on_click=set_count(count + 1))
     btn = v.Btn(children=[f"Clicked: {count}"])

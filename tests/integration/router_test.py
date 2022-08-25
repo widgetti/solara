@@ -4,7 +4,7 @@ import playwright.sync_api
 
 def test_docs_basics(page: playwright.sync_api.Page, solara_server, solara_app):
     # with screenshot_on_error(page, 'tmp/test_docs_basics.png'):
-    with solara_app("solara.examples"):
+    with solara_app("solara.website.pages"):
         # page.goto(solara_server.base_url)
         # assert page.title() == "Hello from Solara ☀️"
         # page.locator('div[role="tab"]:has-text("Demo")').click()

@@ -5,10 +5,10 @@ import react_ipywidgets as react
 import react_ipywidgets.core
 
 import solara.autorouting
-import solara.examples.api.button
-import solara.examples.docs
-import solara.examples.examples
 import solara.template.portal.solara_portal.pages
+import solara.website.pages.api.button
+import solara.website.pages.docs
+import solara.website.pages.examples
 import solara.widgets
 from solara.components.title import TitleWidget
 
@@ -89,7 +89,7 @@ def test_routes_portal():
 
 def test_routes_examples_api_button():
 
-    routes = solara.autorouting.generate_routes(solara.examples.api.button)
+    routes = solara.autorouting.generate_routes(solara.website.pages.api.button)
 
     assert len(routes) == 1
     assert routes[0].path == "/"
@@ -104,7 +104,7 @@ def test_routes_examples_api_button():
 
 def test_routes_examples_docs():
 
-    routes = solara.autorouting.generate_routes(solara.examples.docs)
+    routes = solara.autorouting.generate_routes(solara.website.pages.docs)
 
     assert len(routes) == 6
     assert routes[0].path == "/"
@@ -121,7 +121,7 @@ def test_routes_examples_docs():
 # requires altair as dependency
 # def test_routes_examples_examples():
 
-#     routes = solara.autorouting.generate_routes(solara.examples)
+#     routes = solara.autorouting.generate_routes(solara.website.pages)
 
 #     assert len(routes) > 1
 

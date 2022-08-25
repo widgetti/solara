@@ -44,6 +44,7 @@ def url_checks():
         "https://cdnjs.cloudflare.com/ajax/libs/emojione/2.2.7",  # emojione from markdown
         "https://images.unsplash.com",  # portal
         "https://miro.medium.com",  # portal
+        "https://dabuttonfactory.com/",  # in markdown, probably temporary
     ]
     non_allow_urls = [url for url in non_localhost if not any(url.startswith(allow) for allow in allow_list)]
     if non_allow_urls:

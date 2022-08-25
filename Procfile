@@ -4,4 +4,4 @@
 # see https://www.uvicorn.org/deployment/
 # we do not support multiple workers yet
 # we also need to bind to 0.0.0.0 otherwise heroku cannot route to our server
-web: solara run solara.examples --port=$PORT --no-open --host=0.0.0.0 --workers 1
+web: solara run solara.website.pages --port=$PORT --no-open --host=0.0.0.0 --workers 1
