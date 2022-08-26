@@ -232,7 +232,7 @@ def run(
         # We exclude exampes, that will be handled by solara/server/reload.py
         reload_dirs = [str(solara_root), str(Path(react_ipywidgets.__file__).parent)]
         reload_excludes = reload_excludes if reload_excludes else []
-        reload_excludes = [str(solara_root / "examples")]
+        reload_excludes = [str(solara_root / "website")]
         del solara_root
         reload = True
         settings.main.mode = "development"
