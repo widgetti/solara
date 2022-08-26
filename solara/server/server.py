@@ -1,3 +1,4 @@
+import contextlib
 import json
 import logging
 import os
@@ -62,6 +63,24 @@ async def app_loop(ws: websocket.WebsocketWrapper, context_id: Optional[str]):
     session = kernel.session
     kernel.shell_stream = WebsocketStreamWrapper(ws, "shell")
     kernel.control_stream = WebsocketStreamWrapper(ws, "control")
+    kernel.iopub_stream = WebsocketStreamWrapper(ws, "iopub")
+
+    def send_status(status, parent):
+        session.send(
+            kernel.iopub_stream,
+            "status",
+            {"execution_state": status},
+            parent=parent,
+            ident=None,
+        )
+
+    @contextlib.contextmanager
+    def work(parent):
+        send_status("busy", parent=parent)
+        try:
+            yield
+        finally:
+            send_status("idle", parent=parent)
 
     # should we use excepthook ?
     kernel.session.websockets.add(ws)
@@ -89,17 +108,20 @@ async def app_loop(ws: websocket.WebsocketWrapper, context_id: Optional[str]):
                 "banner": Kernel.banner,
                 "help_links": [],
             }
-            msg = kernel.session.send(kernel.shell_stream, "kernel_info_reply", content, msg["header"], None)
+            with work(msg["header"]):
+                msg = kernel.session.send(kernel.shell_stream, "kernel_info_reply", content, msg["header"], None)
         elif msg_type in ["comm_open", "comm_msg", "comm_close"]:
-            with context:
-                getattr(comm_manager, msg_type)(kernel.shell_stream, None, msg)
+            with work(msg["header"]):
+                with context:
+                    getattr(comm_manager, msg_type)(kernel.shell_stream, None, msg)
         elif msg_type in ["comm_info_request"]:
             content = msg["content"]
             target_name = msg.get("target_name", None)
 
             comms = {k: dict(target_name=v.target_name) for (k, v) in comm_manager.comms.items() if v.target_name == target_name or target_name is None}
             reply_content = dict(comms=comms, status="ok")
-            msg = session.send(kernel.shell_stream, "comm_info_reply", reply_content, msg["header"], None)
+            with work(msg["header"]):
+                msg = session.send(kernel.shell_stream, "comm_info_reply", reply_content, msg["header"], None)
         else:
             logger.error("Unsupported msg with msg_type %r", msg_type)
 
