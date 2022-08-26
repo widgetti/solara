@@ -1,5 +1,6 @@
 import json
 import logging
+import queue
 import struct
 from typing import Set
 
@@ -10,7 +11,11 @@ from jupyter_client.jsonutil import json_default
 from jupyter_client.session import json_packer
 from zmq.eventloop.zmqstream import ZMQStream
 
+import solara
+
 from . import websocket
+
+logger = logging.getLogger("solara.server.kernel")
 
 # from notebook.base.zmqhandlers import serialize_binary_message
 # this saves us a depdendency on notebook/jupyter_server when e.g.
@@ -56,11 +61,6 @@ class WebsocketStream(object):
         self.channel = channel
 
 
-class BytesWrap(object):
-    def __init__(self, bytes):
-        self.bytes = bytes
-
-
 class WebsocketStreamWrapper(ZMQStream):
     def __init__(self, websocket, channel):
         self.websocket = websocket
@@ -95,18 +95,18 @@ class SessionWebsocket(session.Session):
                 binary_msg = json_packer(msg).decode("utf8")
             send_websockets(self.websockets, binary_msg)
         except Exception as e:
-            print(e)
+            logger.exception("Error sending message: %s", e)
 
 
 class Kernel(ipykernel.kernelbase.Kernel):
-    implementation = "ipython"
-    implementation_version = "0.1"
-    banner = "banner"
+    implementation = "solara"
+    implementation_version = solara.__version__
+    banner = "solara"
 
     def __init__(self):
         super(Kernel, self).__init__()
         self.session = SessionWebsocket(parent=self, key=SESSION_KEY)
-
+        self.msg_queue = queue.Queue()  # type: ignore
         self.stream = self.iopub_socket = WebsocketStream(self.session, "iopub")
         # on github action the next line gives a mypy error:
         # solara/server/kernel.py:111: error: "SessionWebsocket" has no attribute "stream"

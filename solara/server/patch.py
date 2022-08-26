@@ -4,6 +4,7 @@ import sys
 import threading
 import traceback
 from typing import MutableMapping
+from unittest import mock
 
 import ipykernel.kernelbase
 import IPython.display
@@ -17,6 +18,18 @@ logger = logging.getLogger("solara.server.app")
 class FakeIPython:
     def __init__(self, context: app.AppContext):
         self.context = context
+        self.kernel = context.kernel
+        self.display_pub = mock.MagicMock()
+
+    def enable_gui(self, gui):
+        logger.error("ignoring call to enable_gui(%s)", gui)
+
+    def register_post_execute(self, callback):
+        # mpl requires this
+        pass
+
+    def set_parent(self, *args):
+        pass
 
     def showtraceback(self):
         if settings.main.use_pdb:
@@ -52,7 +65,7 @@ def kernel_initialized_dispatch(cls):
 
 
 def display_solara(*objs, include=None, exclude=None, metadata=None, transient=None, display_id=None, raw=False, clear=False, **kwargs):
-    print(*objs)
+    print(*objs)  # noqa
 
 
 # from IPython.core.interactiveshell import InteractiveShell
@@ -219,3 +232,4 @@ def patch():
     # not sure why we cannot reproduce that locally
     ipykernel.kernelbase.Kernel.initialized = classmethod(kernel_initialized_dispatch)  # type: ignore
     ipywidgets.widgets.widget.get_ipython = get_ipython
+    IPython.get_ipython = get_ipython

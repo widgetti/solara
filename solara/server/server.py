@@ -20,7 +20,7 @@ import solara as sol
 
 from . import app, reload, settings, websocket
 from .app import AppContext, AppScript
-from .kernel import BytesWrap, Kernel, WebsocketStreamWrapper
+from .kernel import Kernel, WebsocketStreamWrapper
 
 T = TypeVar("T")
 
@@ -58,33 +58,50 @@ async def app_loop(ws: websocket.WebsocketWrapper, context_id: Optional[str]):
         return
 
     kernel = context.kernel
+    comm_manager = kernel.comm_manager
+    session = kernel.session
     kernel.shell_stream = WebsocketStreamWrapper(ws, "shell")
     kernel.control_stream = WebsocketStreamWrapper(ws, "control")
 
     # should we use excepthook ?
     kernel.session.websockets.add(ws)
-    if True:
-        while True:
-            try:
-                message = ws.receive()
-            except websocket.WebSocketDisconnect:
-                logger.debug("Disconnected")
-                return
-            if isinstance(message, str):
-                msg = json.loads(message)
-            else:
-                from jupyter_server.base.zmqhandlers import deserialize_binary_message
+    while True:
+        try:
+            message = ws.receive()
+        except websocket.WebSocketDisconnect:
+            logger.debug("Disconnected")
+            return
+        if isinstance(message, str):
+            msg = json.loads(message)
+        else:
+            from jupyter_server.base.zmqhandlers import deserialize_binary_message
 
-                msg = deserialize_binary_message(message)
+            msg = deserialize_binary_message(message)
 
-            msg_serialized = kernel.session.serialize(msg)
-            channel = msg["channel"]
-            if channel == "shell":
-                msg = [BytesWrap(k) for k in msg_serialized]
-                with context:
-                    await kernel.dispatch_shell(msg)
-            else:
-                print("unknown channel", msg["channel"])  # noqa
+        msg_type = msg["header"]["msg_type"]
+        if msg_type == "kernel_info_request":
+            content = {
+                "status": "ok",
+                "protocol_version": "5.3",
+                "implementation": Kernel.implementation,
+                "implementation_version": Kernel.implementation_version,
+                "language_info": {},
+                "banner": Kernel.banner,
+                "help_links": [],
+            }
+            msg = kernel.session.send(kernel.shell_stream, "kernel_info_reply", content, msg["header"], None)
+        elif msg_type in ["comm_open", "comm_msg", "comm_close"]:
+            with context:
+                getattr(comm_manager, msg_type)(kernel.shell_stream, None, msg)
+        elif msg_type in ["comm_info_request"]:
+            content = msg["content"]
+            target_name = msg.get("target_name", None)
+
+            comms = {k: dict(target_name=v.target_name) for (k, v) in comm_manager.comms.items() if v.target_name == target_name or target_name is None}
+            reply_content = dict(comms=comms, status="ok")
+            msg = session.send(kernel.shell_stream, "comm_info_reply", reply_content, msg["header"], None)
+        else:
+            logger.error("Unsupported msg with msg_type %r", msg_type)
 
 
 def control_loop(ws: websocket.WebsocketWrapper, context_id: Optional[str]):
