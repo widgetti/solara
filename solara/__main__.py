@@ -14,7 +14,7 @@ import rich
 import rich_click as click
 import uvicorn
 from rich import print as rprint
-from uvicorn.main import LEVEL_CHOICES
+from uvicorn.main import LEVEL_CHOICES, LOOP_CHOICES
 
 import solara
 
@@ -196,6 +196,13 @@ When in dev mode Solara will:
 )
 @click.option("--pdb/--no-pdb", "use_pdb", default=False, help="Enter debugger on error")
 @click.argument("app")
+@click.option(
+    "--loop",
+    type=LOOP_CHOICES,
+    default="auto",
+    help="Event loop implementation.",
+    show_default=True,
+)
 def run(
     app,
     host,
@@ -205,6 +212,7 @@ def run(
     reload_dirs: typing.Optional[typing.List[str]],
     dev: bool,
     reload_excludes: typing.List[str],
+    loop: str,
     workers: int,
     env_file: str,
     root_path: str,
@@ -277,6 +285,7 @@ def run(
 
     kwargs["app"] = "solara.server.starlette:app"
     kwargs["log_config"] = LOGGING_CONFIG if log_config is None else log_config
+    kwargs["loop"] = loop
     settings.main.use_pdb = use_pdb
     settings.theme.loader = theme_loader
     settings.theme.variant = theme_variant
