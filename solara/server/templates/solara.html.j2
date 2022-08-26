@@ -69,16 +69,16 @@
             {% include "loader-" ~ theme.loader ~ ".html" %}
 {% raw -%}
 
-            <v-menu v-if="debug && voilaDebugMessages && voilaDebugMessages.length" offset-y top
+            <v-menu v-if="debug && solaraDebugMessages && solaraDebugMessages.length" offset-y top
                 :close-on-content-click="false">
                 <template v-slot:activator="{ on }">
                     <v-btn text v-on="on" style="position: fixed; bottom: 8px; right: 8px">
-                        <span style="color: red">{{ voilaDebugMessages.length }}</span>
+                        <span style="color: red">{{ solaraDebugMessages.length }}</span>
                         <v-icon right large color="red">mdi-bug-outline</v-icon>
                     </v-btn>
                 </template>
                 <v-sheet class="pa-2" style="overflow: auto; max-height: 80vh">
-                    <div style="display: flex" v-for="message in voilaDebugMessages" :key="message.cell" class="pa-2">
+                    <div style="display: flex" v-for="message in solaraDebugMessages" :key="message.cell" class="pa-2">
                         <div style="width: 50px">[{{ message.cell }}]</div>
                         <div v-if="message.traceback" class="jp-RenderedText jp-OutputArea-output"
                             data-mime-type="application/vnd.jupyter.stderr">
@@ -92,7 +92,7 @@
                     <div class="d-flex justify-end">
                         <v-tooltip top>
                             <template v-slot:activator="{ on, attrs }">
-                                <v-btn icon v-bind="attrs" v-on="on" @click="voilaDebugMessages = []">
+                                <v-btn icon v-bind="attrs" v-on="on" @click="solaraDebugMessages = []">
                                     <v-icon>mdi-trash-can-outline</v-icon>
                                 </v-btn>
                             </template>
@@ -219,7 +219,7 @@
                     loadingPercentage: -1,
                     loading: true,
                     title: "No title",
-                    voilaDebugMessages: [],
+                    solaraDebugMessages: [],
                     outputMessages: [],
                     theme: theme,
                     debug: debug,
