@@ -1,5 +1,6 @@
 import json
 import logging
+import pdb
 import queue
 import struct
 from typing import Set
@@ -7,19 +8,27 @@ from typing import Set
 import ipykernel.kernelbase
 import jupyter_client.session as session
 from ipykernel.comm import CommManager
-from jupyter_client.jsonutil import json_default
-from jupyter_client.session import json_packer
 from zmq.eventloop.zmqstream import ZMQStream
 
 import solara
 
-from . import websocket
+from . import settings, websocket
 
 logger = logging.getLogger("solara.server.kernel")
 
 # from notebook.base.zmqhandlers import serialize_binary_message
 # this saves us a depdendency on notebook/jupyter_server when e.g.
 # running on pyodide
+
+
+def _fix_msg(msg):
+    # makes sure the msg can be json serializable
+    # instead of using a callable like in jupyter_client (i.e. json_default)
+    # we replace the keys we know are problematic
+    # this allows us to use a faster json serializer in the future
+    if "header" in msg and "date" in msg["header"]:
+        # this is what jupyter_client.jsonutil.json_default does
+        msg["header"]["date"] = msg["header"]["date"].isoformat().replace("+00:00", "Z")
 
 
 def serialize_binary_message(msg):
@@ -41,7 +50,7 @@ def serialize_binary_message(msg):
     # don't modify msg or buffer list in-place
     msg = msg.copy()
     buffers = list(msg.pop("buffers"))
-    bmsg = json.dumps(msg, default=json_default).encode("utf8")
+    bmsg = json.dumps(msg).encode("utf8")
     buffers.insert(0, bmsg)
     nbufs = len(buffers)
     offsets = [4 * (nbufs + 1)]
@@ -87,13 +96,20 @@ class SessionWebsocket(session.Session):
     def send(self, stream, msg_or_type, content=None, parent=None, ident=None, buffers=None, track=False, header=None, metadata=None):
         try:
             msg = self.msg(msg_or_type, content=content, parent=parent, header=header, metadata=metadata)
+            _fix_msg(msg)
             msg["channel"] = stream.channel
-            if buffers:
-                msg["buffers"] = [memoryview(k).cast("b") for k in buffers]
-                binary_msg = serialize_binary_message(msg)
-            else:
-                binary_msg = json_packer(msg).decode("utf8")
-            send_websockets(self.websockets, binary_msg)
+            try:
+                if buffers:
+                    msg["buffers"] = [memoryview(k).cast("b") for k in buffers]
+                    wire_message = serialize_binary_message(msg)
+                else:
+                    wire_message = json.dumps(msg)
+            except Exception:
+                logger.exception("Could not serialize message: %r", msg)
+                if settings.main.use_pdb:
+                    pdb.post_mortem()
+                raise
+            send_websockets(self.websockets, wire_message)
         except Exception as e:
             logger.exception("Error sending message: %s", e)
 
