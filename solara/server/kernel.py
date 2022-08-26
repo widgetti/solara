@@ -1,3 +1,4 @@
+import datetime
 import json
 import logging
 import pdb
@@ -29,6 +30,12 @@ def _fix_msg(msg):
     if "header" in msg and "date" in msg["header"]:
         # this is what jupyter_client.jsonutil.json_default does
         msg["header"]["date"] = msg["header"]["date"].isoformat().replace("+00:00", "Z")
+    if "parent_header" in msg and "date" in msg["parent_header"]:
+        # date is already a string if it's copied from the header that is not turned into a datetime
+        # maybe we should do that in server.py
+        date = msg["parent_header"]["date"]
+        if isinstance(date, datetime.datetime):
+            msg["parent_header"]["date"] = date.isoformat().replace("+00:00", "Z")
 
 
 def serialize_binary_message(msg):
