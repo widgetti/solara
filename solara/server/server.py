@@ -98,6 +98,7 @@ async def app_loop(ws: websocket.WebsocketWrapper, context_id: Optional[str]):
             msg = deserialize_binary_message(message)
 
         msg_type = msg["header"]["msg_type"]
+        kernel.set_parent(None, msg["header"], msg["channel"])
         if msg_type == "kernel_info_request":
             content = {
                 "status": "ok",
