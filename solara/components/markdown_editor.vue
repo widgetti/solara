@@ -243,7 +243,7 @@ module.exports = {
     getCdn() {
       return (
         (typeof solara_cdn !== "undefined" && solara_cdn) ||
-        `${document.body.dataset.baseUrl || "/"}_solara/cdn`
+        `${document.body.dataset.baseUrl || document.baseURI}_solara/cdn`
       );
     },
   },
