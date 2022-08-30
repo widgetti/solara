@@ -160,6 +160,15 @@ class StaticNbFiles(StaticFiles):
         raise ValueError(f"Unknown mode {settings.main.mode}")
 
 
+class StaticPublic(StaticFiles):
+    def get_directories(
+        self, directory: Union[str, "os.PathLike[str]", None] = None, packages: typing.List[str] = None
+    ) -> List[Union[str, "os.PathLike[str]"]]:
+        # we only know the .directory at runtime (after startup)
+        # which means we cannot pass the directory to the StaticFiles constructor
+        return cast(List[Union[str, "os.PathLike[str]"]], [server.solara_app.directory.parent / "public"])
+
+
 async def cdn(request: Request):
     path = request.path_params["path"]
     cache_directory = default_cache_dir
@@ -175,6 +184,7 @@ routes = [
     Route("/", endpoint=root),
     Route("/{fullpath}", endpoint=root),
     Route(f"/{cdn_url_path}/{{path:path}}", endpoint=cdn),
+    Mount(f"{prefix}/static/public", app=StaticPublic()),
     Mount(f"{prefix}/static/nbextensions", app=StaticNbFiles()),
     Mount(f"{prefix}/static/nbconvert", app=StaticFiles(directory=server.nbconvert_static)),
     Mount(f"{prefix}/static", app=StaticFiles(directory=server.solara_static)),

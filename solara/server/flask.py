@@ -59,6 +59,12 @@ def watchdog(ws: simple_websocket.Server):
     server.control_loop(ws_wrapper, context_id)
 
 
+@blueprint.route("/static/public/<path:path>")
+def public(path):
+    public_directory = server.solara_app.directory.parent / "public"
+    return send_from_directory(public_directory, path)
+
+
 @blueprint.route("/static/nbextensions/<dir>/<filename>")
 def nbext(dir, filename):
     for directory in server.nbextensions_directories:

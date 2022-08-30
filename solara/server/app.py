@@ -149,14 +149,17 @@ class AppScript:
         self.path: Path = Path(self.name)
         if self.path.is_dir():
             self.type = AppType.DIRECTORY
+            self.directory = self.path
         elif self.name.endswith(".py"):
             self.type = AppType.SCRIPT
             # manually add the script to the watcher
             reload.reloader.watcher.add_file(self.path)
+            self.directory = self.path.parent
         elif self.name.endswith(".ipynb"):
             self.type = AppType.NOTEBOOK
             # manually add the notebook to the watcher
             reload.reloader.watcher.add_file(self.path)
+            self.directory = self.path.parent
         else:
             # the module itself will be added by reloader
             # automatically
@@ -168,6 +171,8 @@ class AppScript:
                 assert spec is not None
                 assert spec.origin is not None
                 self.path = Path(spec.origin)
+                self.directory = self.path.parent
+
         # this is not expected for modules, similar to `python script.py and python -m package.mymodule`
         if self.type in [AppType.SCRIPT, AppType.NOTEBOOK]:
             working_directory = str(self.path.parent)
