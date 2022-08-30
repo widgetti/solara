@@ -169,6 +169,17 @@ class StaticPublic(StaticFiles):
         return cast(List[Union[str, "os.PathLike[str]"]], [server.solara_app.directory.parent / "public"])
 
 
+class StaticAssets(StaticFiles):
+    def get_directories(
+        self, directory: Union[str, "os.PathLike[str]", None] = None, packages: typing.List[str] = None
+    ) -> List[Union[str, "os.PathLike[str]"]]:
+        # we only know the .directory at runtime (after startup)
+        # which means we cannot pass the directory to the StaticFiles constructor
+        override = server.solara_app.directory.parent / "assets"
+        default = server.solara_static.parent / "assets"
+        return cast(List[Union[str, "os.PathLike[str]"]], [override, default])
+
+
 async def cdn(request: Request):
     path = request.path_params["path"]
     cache_directory = default_cache_dir
@@ -185,6 +196,7 @@ routes = [
     Route("/{fullpath}", endpoint=root),
     Route(f"/{cdn_url_path}/{{path:path}}", endpoint=cdn),
     Mount(f"{prefix}/static/public", app=StaticPublic()),
+    Mount(f"{prefix}/static/assets", app=StaticAssets()),
     Mount(f"{prefix}/static/nbextensions", app=StaticNbFiles()),
     Mount(f"{prefix}/static/nbconvert", app=StaticFiles(directory=server.nbconvert_static)),
     Mount(f"{prefix}/static", app=StaticFiles(directory=server.solara_static)),

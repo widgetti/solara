@@ -65,6 +65,17 @@ def public(path):
     return send_from_directory(public_directory, path)
 
 
+@blueprint.route("/static/assets/<path:path>")
+def assets(path):
+    override = server.solara_app.directory.parent / "assets"
+    default = server.solara_static.parent / "assets"
+    for directory in [override, default]:
+        file = directory / path
+        if file.exists():
+            return send_from_directory(directory, path)
+    return flask.Response("not found", status=404)
+
+
 @blueprint.route("/static/nbextensions/<dir>/<filename>")
 def nbext(dir, filename):
     for directory in server.nbextensions_directories:
