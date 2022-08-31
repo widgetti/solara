@@ -1,4 +1,5 @@
 import hashlib
+import logging
 import textwrap
 from typing import Any, Dict, List
 
@@ -11,6 +12,8 @@ from pygments.lexers import get_lexer_by_name
 
 from solara.kitchensink import react
 
+logger = logging.getLogger(__name__)
+
 html_no_execute_enabled = "<div><i>Solara execution is not enabled</i></div>"
 
 
@@ -21,7 +24,7 @@ def _run_solara(code):
     app = None
     if "app" in local_scope:
         app = local_scope["app"]
-    if "Page" in local_scope:
+    elif "Page" in local_scope:
         Page = local_scope["Page"]
         app = Page()
     else:
@@ -135,7 +138,11 @@ def Markdown(md_text: str, unsafe_solara_execute=False):
     md_text = textwrap.dedent(md_text)
 
     def highlight(src, language, *args, **kwargs):
-        return _highlight(src, language, unsafe_solara_execute, *args, **kwargs)
+        try:
+            return _highlight(src, language, unsafe_solara_execute, *args, **kwargs)
+        except Exception as e:
+            logger.exception("Error highlighting code: %s", src)
+            return repr(e)
 
     html = markdown.markdown(  # type: ignore
         md_text,
