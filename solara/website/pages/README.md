@@ -1,15 +1,15 @@
-# A professional data app framework for Python and Jupyter
+# Data apps for Jupyter and Production
 
-Build data apps like a pro for the Jupyter notebook and production.
+Solara is the bridge between Jupyter-based data-app development and production deployment.
 
-## What it is?
+## What is Solara?
 
-Solara lets you use and build reusable UI components for data focussed web apps (data apps) that work in the Jupyter ecosystem and the production ready Solara-server.
+Solara lets you use and build data-focused web apps (data apps) using reusable UI components. Your app will work in the Jupyter notebook and production-grade web frameworks (FastAPI, Starlette, Flask, ...).
 
-Based on proven technologies and mature standards (ReactJS, NextJS, Jupyter, Jupyter-widgets, FastAPI, Flask, etc), Solara will allow your data apps to scale from a one-off experiment in the Jupyter notebook, to a highly dynamic data portal while keeping your code complexity under control.
+Solara uses proven technologies and mature standards. Grow from a one-off experiment in the Jupyter notebook or a dynamic data portal in production.  Built on top of React-IPywidgets keeps your code complexity under control.
 
-We care about developer experience, from hot reloading to type hints and managing complexity.
+We care about developer experience. Solara will give your hot code reloading and type hints to faster development.
 
-
-[![Intro](https://dabuttonfactory.com/button.png?t=Introduction&f=Open+Sans-Bold&ts=20&tc=fff&hp=45&vp=20&c=8&bgt=unicolored&bgc=f19f41)](/docs)
-[![Guides](https://dabuttonfactory.com/button.png?t=Guides&f=Open+Sans-Bold&ts=20&tc=fff&hp=45&vp=20&c=8&bgt=unicolored&bgc=f19f41)](/docs/guides)
+[![Introduction](https://dabuttonfactory.com/button.png?t=Introduction&f=Open+Sans-Bold&ts=20&tc=fff&hp=45&vp=12&c=8&bgt=unicolored&bgc=f19f41)](/docs)
+[![Guides](https://dabuttonfactory.com/button.png?t=Guides&f=Open+Sans-Bold&ts=20&tc=fff&hp=45&vp=12&c=8&bgt=unicolored&bgc=f19f41)](/docs/guides)
+<!-- [![Book a demo](https://dabuttonfactory.com/button.png?t=Book+a+demo&f=Open+Sans-Bold&ts=20&tc=f19f41&hp=45&vp=12&c=8&bgt=unicolored&bgc=eee&bs=1&bc=f19f41)](/docs/guides) -->

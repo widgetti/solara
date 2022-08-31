@@ -2,29 +2,36 @@
 
 
 ## What is Solara?
-Solara lets you use and build reusable UI components for data focussed web apps (data apps) that work in the Jupyter ecosystem and the production ready Solara-server.
 
-Based on proven technologies and mature standards (ReactJS, NextJS, Jupyter, Jupyter-widgets, FastAPI, Flask, etc), Solara will allow your data apps to scale from a one-off experiment in the Jupyter notebook, to a highly dynamic data portal while keeping your code complexity under control.
+Solara lets you use and build data-focused web apps (data apps) using reusable UI components. Your app will work in the Jupyter notebook and production-grade web frameworks (FastAPI, Starlette, Flask, ...).
 
-We care about developer experience, from [hot reloading][/docs/guides/reloading] to type hints and managing complexity.
+Solara uses proven technologies and mature standards. Grow from a one-off experiment in the Jupyter notebook to a dynamic data portal in production.  Built on top of React-IPywidgets keeps your code complexity under control.
 
-## Why is Solara build?
+We care about developer experience. Solara will give your hot code reloading and type hints to faster development.
 
-Many framework can show you great examples that fit their framework nicely, because they are build to solve a particular problem. However, once you want to create an app that is less simple, or needs to do something slightly different, you hit a wall. Either you find workaround and suffer with horrible code complexities, or if you are out of luck, you cannot build what you want.
+## Why is Solara created?
 
-The limitations of all the existing frameworks, and the decision to re-invent new ways of binding the Python runtime to the browser, instead of re-using the solid Jupyter and Jupyter-widgets protocol led to the development of Solara.
+How much time have you wasted investing in a web framework only to find out that what you need is impossible to do?
 
-## How does Solara solve the complexity problem?
+Many frameworks only solve a specific set of problems. Once you step outside of the paved path, you get stuck.
 
-Instead of inventing a new API that hopefully solves all problems now and in the future, lets look at the JavaScript world. React is a technology that has proven itself for many years and seems to be an all round good model for building complex UIs.
+On the other extreme, you might be working with a library with no clear patterns that let you do anything. You may only be weeks away from a total code complexity nightmare, which slowly kills your project.
 
-[React-IPywidgets](https://github.com/widgetti/react-ipywidgets) is the equivalent of ReactJS for Python (and IPywidgets). It allows us to use the same reusable components and hooks as in the ReactJS ecosystem that allows us to build larger web/data application without suffering in complex code bases.
+At the same time, starting a new framework from scratch would be unwise. We prefer to build on top of solid, battle-tested libraries, such as ipywidgets.
 
-Looking again for at the JavaScript world, we see software such as NextJS is putting a framework around React, to be opinionated and add more "batteries" such as [routing](./understanding/routing).
+## Why use Solara?
 
-Solara plays a similar role as NextJS, it build on top of React-IPywidgets, but handles things like routing.
+Instead of inventing a new API with an unknown track record, we take a different approach. We look at the JavaScript world. React is a technology that has proven itself for many years. It has shown to be an all-around good model for building complex UIs.
 
-But Solara is also different, it is even more opinionated then NextJS. The reason for this is its focus on the data-heavy Python ecosystem. For this reason it comes with many components and hooks that makes building data apps easier [see the API](/api).
+React-IPywidgets is the equivalent of ReactJS for Python (and IPywidgets). It allows us to use the same reusable components and hooks as in the ReactJS ecosystem. Using React-IPywidgets, we build web/data applications without suffering from complex code bases.
+
+Looking again at the JavaScript world, we see software such as NextJS is putting a framework around ReactJS. NextJS is more opinionated then ReactJS and adds more "batteries" such as routing.
+
+Solara plays a similar role as NextJS. It builds on top of React-IPywidgets but handles things like routing for you.
+
+But Solara is also different, it is even more opinionated than NextJS. The reason for this is its focus on the data-heavy Python ecosystem. For this reason, it comes with many components and hooks that make building beautiful data apps easier (see our API).
+
+Solara is a clear, systematic, Python-based web framework using industry-trusted technology. Smooth developer experience and enforced code modularity will allow you to build a data app at any scale while maintaining simple code.
 
 ## A quick Solara example
 
@@ -35,7 +42,7 @@ Follow the [installation instructions](./installing) or do the TLDR:
     $ pip install solara[server]
 
 
-Creating a file `myapp.py`, or put the following code in the Jupyter notebook:
+Create a file `myapp.py`, or put the following code in the Jupyter notebook:
 
 ```solara
 import react_ipywidgets as react
@@ -67,9 +74,9 @@ The browser should open http://127.0.0.1:8765
 
 ## How does Solara fit into the big picture?
 
-Solara is actually two things. A server part that takes care of getting the widgets into the browser and a UI part, consisting of react components and hooks.
+Solara is two things. A server part that takes care of getting the widgets into the browser and a UI part, consisting of react components and hooks.
 
-The UI parts is build on top of [React-IPywidgets](https://github.com/widgetti/react-ipywidgets) which is using the existing IPyWidgets stack.
+The UI parts are built on top of [React-IPywidgets](https://github.com/widgetti/react-ipywidgets) which is using the existing IPyWidgets stack.
 
 If you use Jupyter, then you probably use the Jupyter notebook, Lab, of Voila to get your widgets into the browser.
 
