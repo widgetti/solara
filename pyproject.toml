@@ -57,6 +57,7 @@ dev = [
     "pytest-timeout",
     "pre-commit",
     "bump2version",
+    "watchdog",
 ]
 assets = [
     "solara-assets==0.9.1"
