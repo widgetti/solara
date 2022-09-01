@@ -130,11 +130,22 @@ class Reloader:
         # 2. although that idea is nice, when we execute this, uvicorn is not yet running
         # which causes us to reload httptools for instance
         # in the future we may use this trick if we only run at the first http request
-        # self.start_modules = self.start_modules.union(set(sys.modules))
+        # 3. Using starlette, we can use the on_startup event to start the reloader
+        self.ignore_modules: Set[str] = set()
         self.on_change = on_change
         self.watcher = WatcherType([], self._on_change)
         self.requires_reload = False
         self.reload_event_next = threading.Event()
+
+    def start(self):
+        # during test this might be called multiple times from starlette.py
+        # using flask we don't call this at all, this might be an issue when
+        # running the flask tests standalone, or even the flask server with reload.
+        if not self.ignore_modules:
+            current = set(sys.modules)
+            ignore = current - self.watched_modules
+            logger.info("Ignoring modules for reloading:\n%s", ignore)
+            self.ignore_modules = ignore
 
     def _on_change(self, name):
         # used for testing
@@ -150,10 +161,11 @@ class Reloader:
         self.watcher.close()
 
     def reload(self):
-        logger.info("Reloading modules... %s", self.watched_modules)
+        reload_modules = set(sys.modules) - self.ignore_modules
+        logger.info("Reloading modules... %s", reload_modules)
         # not sure if this is needed
         importlib.invalidate_caches()
-        for mod in self.watched_modules:
+        for mod in reload_modules:
             # don't reload modules like solara.server and react
             # that may cause issues (like 2 Element classes existing)
             if not mod.startswith("solara.server"):

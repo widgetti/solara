@@ -14,6 +14,7 @@ from starlette.routing import Mount, Route, WebSocketRoute
 from starlette.staticfiles import StaticFiles
 
 import solara
+from solara.server import reload
 
 from . import app as appmod
 from . import patch, server, settings, websocket
@@ -188,6 +189,10 @@ async def cdn(request: Request):
     return Response(content, media_type=mime[0])
 
 
+def on_startup():
+    reload.reloader.start()
+
+
 routes = [
     Route("/jupyter/api/kernels/{id}", endpoint=kernels),
     WebSocketRoute("/jupyter/api/kernels/{id}/{name}", endpoint=kernel_connection),
@@ -202,5 +207,8 @@ routes = [
     Mount(f"{prefix}/static", app=StaticFiles(directory=server.solara_static)),
     Route("/{fullpath:path}", endpoint=root),
 ]
-app = Starlette(routes=routes)
+app = Starlette(
+    routes=routes,
+    on_startup=[on_startup],
+)
 patch.patch()
