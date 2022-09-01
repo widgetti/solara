@@ -114,7 +114,7 @@ else:
                             logger.exception("Error while executing on change handler")
                     else:
                         logger.debug("File reported modified, but mtime did not change: %s", event.src_path)
-                        print("File reported modified, but mtime did not change: ", event.src_path)
+                        print("File reported modified, but mtime did not change: ", event.src_path)  # noqa
                 else:
                     logger.debug("Ignore file modification: %s", event.src_path)
 
@@ -124,10 +124,13 @@ else:
 class Reloader:
     def __init__(self, on_change: Callable[[str], None] = None) -> None:
         self.watched_modules: Set[str] = set()
-        # although we try to keep track of modules loaded (which we will watch)
+        # 1. although we try to keep track of modules loaded (which we will watch)
         # it can happen that an import is done at runtime, that we miss (could be in a thread)
         # so we always reload all modules except the start_modules
-        self.start_modules = set(sys.modules)
+        # 2. although that idea is nice, when we execute this, uvicorn is not yet running
+        # which causes us to reload httptools for instance
+        # in the future we may use this trick if we only run at the first http request
+        # self.start_modules = self.start_modules.union(set(sys.modules))
         self.on_change = on_change
         self.watcher = WatcherType([], self._on_change)
         self.requires_reload = False
@@ -150,11 +153,12 @@ class Reloader:
         logger.info("Reloading modules... %s", self.watched_modules)
         # not sure if this is needed
         importlib.invalidate_caches()
-        for mod in set(sys.modules):
+        for mod in self.watched_modules:
             # don't reload modules like solara.server and react
             # that may cause issues (like 2 Element classes existing)
-            if mod not in self.start_modules and not mod.startswith("solara.server"):
-                del sys.modules[mod]
+            if not mod.startswith("solara.server"):
+                logger.info("Reloading module %s", mod)
+                sys.modules.pop(mod, None)
         # if all succesfull...
         self.requires_reload = False
 
