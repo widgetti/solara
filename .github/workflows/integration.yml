@@ -29,4 +29,10 @@ jobs:
         run: playwright install
       - name: test
         # we also run the (cheap) unittests, to get better coverage report
-        run: pytest --cov=solara tests/integration tests/unit --timeout=20
+        run: pytest --cov=solara tests/integration tests/unit --timeout=20 --video=retain-on-failure -vv -s --log-cli-level=debug
+      - name: Upload Test artifacts
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-results
+          path: test-results
