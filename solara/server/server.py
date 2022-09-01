@@ -63,11 +63,11 @@ async def app_loop(ws: websocket.WebsocketWrapper, context_id: Optional[str]):
     session = kernel.session
     kernel.shell_stream = WebsocketStreamWrapper(ws, "shell")
     kernel.control_stream = WebsocketStreamWrapper(ws, "control")
-    kernel.iopub_stream = WebsocketStreamWrapper(ws, "iopub")
+    iopub_stream = WebsocketStreamWrapper(ws, "iopub")
 
     def send_status(status, parent):
         session.send(
-            kernel.iopub_stream,
+            iopub_stream,
             "status",
             {"execution_state": status},
             parent=parent,
