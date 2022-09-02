@@ -1,14 +1,15 @@
 import json
+import logging
 from typing import Union
 
-import ipywidgets
 import js
 
-from . import app, patch
-from .kernel import BytesWrap, Kernel, WebsocketStreamWrapper
+from . import app, patch, server
 from .websocket import WebsocketWrapper
 
-context_id = "single"
+connection_id = "single"
+
+logger = logging.getLogger("solara.server.pyodide")
 
 
 class Websocket(WebsocketWrapper):
@@ -28,35 +29,18 @@ class Websocket(WebsocketWrapper):
 ws = Websocket()
 
 
-def start():
+def start(app_name):
+    logger
+    app.apps["__default__"].close()
+    app.apps["__default__"] = app.AppScript(app_name)
     patch.patch()
-    kernel = Kernel()
-    kernel.shell_stream = WebsocketStreamWrapper(ws, "shell")
-    kernel.control_stream = WebsocketStreamWrapper(ws, "control")
-    context = app.contexts[context_id] = app.AppContext(id=context_id, kernel=kernel, control_sockets=[], widgets={}, templates={})
-    with context:
-        ipywidgets.register_comm_target(kernel)
-    # TODO: re-implement this
-    #     # TODO: what should the default pathname be for pyodide, probably an argument to start?
-    #     widget, render_context = server.run_app(app_state, "")
-    #     context.widgets["content"] = widget
-    # context.app_object = render_context
-    # model_id = context.widgets["content"].model_id
-    # kernel.session.websockets.add(ws)
-    # return model_id
+    app.initialize_virtual_kernel(connection_id, ws)
 
 
 async def processKernelMessage(msg):
     msg = json.loads(msg)
-    context = app.contexts[context_id]
+    context = app.contexts[connection_id]
     kernel = context.kernel
-    msg_serialized = kernel.session.serialize(msg)
-
-    channel = msg["channel"]
-    if channel == "shell":
-        msg = [BytesWrap(k) for k in msg_serialized]
-        # TODO: because we use await, we probably need to use a context
-        # manager that sets the app context in a async context, not just thread context
-        with context:
-            await kernel.dispatch_shell(msg)
+    with context:
+        server.process_kernel_messages(kernel, msg)
     return 42

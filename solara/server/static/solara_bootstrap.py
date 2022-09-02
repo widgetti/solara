@@ -76,14 +76,18 @@ def get_ipython():
     return None
 
 
+class Process:
+    pass
+
+
 async def main():
     # fake some packages we don't need
     micropip.install("numpy")
     micropip._micropip.PACKAGE_MANAGER.installed_packages["debugpy"] = micropip.package.PackageMetadata(name="debugpy", version="1.6", source="")
     micropip._micropip.PACKAGE_MANAGER.installed_packages["notebook"] = micropip.package.PackageMetadata(name="notebook", version="6.5", source="")
-    micropip._micropip.PACKAGE_MANAGER.installed_packages["pyzmq"] = micropip.package.PackageMetadata(name="pyzmq", version="22.3", source="")
+    micropip._micropip.PACKAGE_MANAGER.installed_packages["pyzmq"] = micropip.package.PackageMetadata(name="pyzmq", version="23.0", source="")
     micropip._micropip.PACKAGE_MANAGER.installed_packages["psutil"] = micropip.package.PackageMetadata(name="psutil", version="22.3", source="")
-    micropip._micropip.PACKAGE_MANAGER.installed_packages["tornado"] = micropip.package.PackageMetadata(name="tornado", version="6.1", source="")
+    micropip._micropip.PACKAGE_MANAGER.installed_packages["tornado"] = micropip.package.PackageMetadata(name="tornado", version="6.2", source="")
     micropip._micropip.PACKAGE_MANAGER.installed_packages["argon2-cffi-bindings"] = micropip.package.PackageMetadata(
         name="argon2-cffi-bindings", version="22.3", source=""
     )
@@ -102,7 +106,17 @@ async def main():
     ):
         sys.modules[fake] = solara_bootstrap
 
-    requirements = ["pydantic", "jinja2", "bqplot", "altair", "vega_datasets", "plotly"]
+    requirements = [
+        "Pygments==2.13.0",
+        "ipywidgets<8",
+        "pydantic",
+        "jinja2",
+        "bqplot",
+        "altair",
+        "vega_datasets",
+        "plotly",
+        "ipycanvas",
+    ]
     for dep in requirements:
         await micropip.install(dep, keep_going=True)
     await micropip.install("/wheels/solara-0.9.1-py2.py3-none-any.whl", keep_going=True)

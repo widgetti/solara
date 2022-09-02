@@ -68,6 +68,31 @@ def serialize_binary_message(msg):
     return b"".join(buffers)
 
 
+def deserialize_binary_message(bmsg):
+    """deserialize a message from a binary blog
+
+    Header:
+
+    4 bytes: number of msg parts (nbufs) as 32b int
+    4 * nbufs bytes: offset for each buffer as integer as 32b int
+
+    Offsets are from the start of the buffer, including the header.
+
+    Returns
+    -------
+    message dictionary
+    """
+    nbufs = struct.unpack("!i", bmsg[:4])[0]
+    offsets = list(struct.unpack("!" + "I" * nbufs, bmsg[4 : 4 * (nbufs + 1)]))
+    offsets.append(None)
+    bufs = []
+    for start, stop in zip(offsets[:-1], offsets[1:]):
+        bufs.append(bmsg[start:stop])
+    msg = json.loads(bufs[0].decode("utf8"))
+    msg["buffers"] = bufs[1:]
+    return msg
+
+
 SESSION_KEY = b"solara"
 
 

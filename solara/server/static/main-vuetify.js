@@ -107,13 +107,8 @@ class WebSocketRedirectWebWorker {
             if (msg.type == 'send') {
                 this.onmessage({ data: msg.value })
             }
-            if (msg.type == 'mount') {
-                let model_id = msg.value;
-
-                await solaraMount(model_id)
-            }
         });
-        solaraWorker.postMessage({ 'type': 'open' })
+        // solaraWorker.postMessage({ 'type': 'open' })
     }
 }
 
@@ -133,7 +128,7 @@ const COOKIE_KEY_CONTEXT_ID = 'solara-session-id'
 
 // from https://gist.github.com/outbreak/316637cde245160c2579898b21837c1c
 function generateUuid() {
-    function getRandomSymbol (symbol) {
+    function getRandomSymbol(symbol) {
         var array;
 
         if (symbol === 'y') {

@@ -15,7 +15,7 @@ async function loadSolara() {
     import solara_bootstrap
     await solara_bootstrap.main()
     import solara.server.pyodide`)
-    self.model_id = self.pyodide.runPython('import solara.server.pyodide as p; p.start()')
+    self.model_id = self.pyodide.runPython('import solara.server.pyodide as p; p.start("solara.website.pages:Page")')
     self.postMessage({ 'type': 'opened' })
 }
 
@@ -36,10 +36,6 @@ self.onmessage = async (event) => {
     solara_ = await solara;
     solaraPyodide = self.pyodide.runPython('import solara.server.pyodide as p; p');
     msg = event.data
-    if (msg.type == 'open') {
-        console.log('Wants to mount widget with model_id', self.model_id)
-        self.postMessage({ 'type': 'mount', 'value': self.model_id })
-    }
     if (msg.type == 'send') {
         await solaraPyodide.processKernelMessage(event.data['value'])
     }

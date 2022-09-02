@@ -30,6 +30,7 @@
     <script src="static/ansi.js"></script>
     </script>
     <script>
+        solara.production = {{ production |tojson|safe }};
         const themeVariants = ['light', 'dark', 'auto']
         var theme = {{ theme |tojson|safe }}
         if(theme.variant_user_selectable) {
@@ -64,6 +65,9 @@
 {% raw -%}
     <div id="app" style="display: none">
         <v-app :key="forceUpdateTrigger">
+            <v-alert v-if="needsRefresh || cancelAutoRefresh" type="warning" border="left" style="position: absolute; right: 0px; z-index: 100; left: 0px;">
+            App is disconnected, and may not function properly. Please refresh the page.
+        </v-alert>
 {% endraw -%}
             {# {% include "transition-domino.html" %} #}
             {% include "loader-" ~ theme.loader ~ ".html" %}
@@ -71,16 +75,25 @@
                 <v-progress-circular
                     indeterminate
                     size="128"
-                >Disconnected</v-progress-circular>
+                    style="text-align: center;"
+                >Server disconnected.</v-progress-circular>
             </v-overlay>
 
             <v-dialog v-model="needsRefresh" width="500">
                 <v-card>
                     <v-card-title class="text-h5 grey lighten-2">Please refresh the page</v-card-title>
 
+                    {% if production %}
                     <v-card-text>
-                        We lost the connection to the server. Please refresh the page.
+                        Could not restore session. Please refresh.
                     </v-card-text>
+                    {% else %}
+                    <v-card-text>
+                        {% raw -%}
+                        Could not restore session. Will refresh in {{autoRefreshCount}} seconds.
+                        {% endraw -%}
+                    </v-card-text>
+                    {% endif %}
 
                     <v-divider></v-divider>
 
@@ -91,14 +104,14 @@
                         text
                         @click="reload()"
                     >
-                        Refresh
+                        Refresh now
                     </v-btn>
                     <v-btn
                         color="primary"
                         text
-                        @click="needsRefresh = false"
+                        @click="setCancelAutoRefresh()"
                     >
-                        Close
+                        Cancel
                     </v-btn>
                     </v-card-actions>
                 </v-card>
@@ -235,6 +248,10 @@
                     msg = { "type": "state_reset", "reason": "user command" }
                     wsWatchdog.send(JSON.stringify(msg))
                 },
+                setCancelAutoRefresh() {
+                    this.needsRefresh = false;
+                    this.cancelAutoRefresh = true;
+                },
                 reload() {
                     location.reload();
                 },
@@ -251,6 +268,29 @@
                     }
                 }
             },
+            watch: {
+                needsRefresh: function(value) {
+                    if(this.needsRefresh && !this.cancelAutoRefresh && !solara.production) {
+                        console.log('value for needRefresh', value);
+                        setTimeout(() => {
+                            console.log('this.autoRefreshCount', this.autoRefreshCount)
+                            this.autoRefreshCount = this.autoRefreshCount - 1;
+                        }, 1000);
+                    }
+                },
+                autoRefreshCount: function(value) {
+                    console.log('value for autoRefreshCount', value);
+                    if(value == 0) {
+                        if(!this.cancelAutoRefresh)
+                            this.reload();
+                    } else if(value > 0) {
+                        setTimeout(() => {
+                            console.log('this.autoRefreshCount!', this.autoRefreshCount)
+                            this.autoRefreshCount = this.autoRefreshCount - 1;
+                        }, 1000);
+                    }
+                }
+            },
             data() {
                 return {
                     forceUpdateTrigger: 0,
@@ -264,6 +304,8 @@
                     debug: debug,
                     connectionStatus: null,
                     needsRefresh: false,
+                    cancelAutoRefresh: false,
+                    autoRefreshCount: 3,
                     // outputMessages: [{ name: 'stderr', text: 'lala' }],
                 }
             }

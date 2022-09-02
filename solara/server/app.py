@@ -18,8 +18,8 @@ from react_ipywidgets.core import Element, render
 import solara as sol
 
 from ..util import cwd
-from . import kernel, reload, settings
-from .kernel import Kernel
+from . import kernel, reload, settings, websocket
+from .kernel import Kernel, WebsocketStreamWrapper
 from .utils import nested_get
 
 WebSocket = Any
@@ -446,7 +446,7 @@ def register_solara_comm_target(kernel: Kernel):
     kernel.comm_manager.register_target("solara.control", solara_comm_target)
 
 
-def initialize_kernel(context_id: str):
+def initialize_virtual_kernel(context_id: str, websocket: websocket.WebsocketWrapper):
     kernel = Kernel()
     logger.info("new virtual kernel: %s", context_id)
     context = contexts[context_id] = AppContext(id=context_id, kernel=kernel, control_sockets=[], widgets={}, templates={})
@@ -454,3 +454,6 @@ def initialize_kernel(context_id: str):
         widgets.register_comm_target(kernel)
         register_solara_comm_target(kernel)
         assert kernel is Kernel.instance()
+        kernel.shell_stream = WebsocketStreamWrapper(websocket, "shell")
+        kernel.control_stream = WebsocketStreamWrapper(websocket, "control")
+        kernel.session.websockets.add(websocket)
