@@ -5,16 +5,15 @@ import os
 import sys
 import time
 from pathlib import Path
-from typing import List, TypeVar
+from typing import Dict, List, TypeVar
 
 import jinja2
-from jupyter_core.paths import jupyter_config_path
 
 import solara
 
 from . import app, settings, websocket
-from .app import initialize_kernel
-from .kernel import Kernel, WebsocketStreamWrapper
+from .app import initialize_virtual_kernel
+from .kernel import Kernel, deserialize_binary_message
 
 COOKIE_KEY_SESSION_ID = "solara-session-id"
 
@@ -40,7 +39,7 @@ nbextensions_ignorelist = [
 
 
 async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, connection_id: str):
-    initialize_kernel(connection_id)
+    initialize_virtual_kernel(connection_id, ws)
     context = app.contexts.get(connection_id)
     if context is None:
         logging.warning("invalid context id: %r", connection_id)
@@ -49,31 +48,6 @@ async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, connection_i
         return
 
     kernel = context.kernel
-    comm_manager = kernel.comm_manager
-    session = kernel.session
-    kernel.shell_stream = WebsocketStreamWrapper(ws, "shell")
-    kernel.control_stream = WebsocketStreamWrapper(ws, "control")
-    iopub_stream = WebsocketStreamWrapper(ws, "iopub")
-
-    def send_status(status, parent):
-        session.send(
-            iopub_stream,
-            "status",
-            {"execution_state": status},
-            parent=parent,
-            ident=None,
-        )
-
-    @contextlib.contextmanager
-    def work(parent):
-        send_status("busy", parent=parent)
-        try:
-            yield
-        finally:
-            send_status("idle", parent=parent)
-
-    # should we use excepthook ?
-    kernel.session.websockets.add(ws)
     while True:
         try:
             message = ws.receive()
@@ -83,38 +57,59 @@ async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, connection_i
         if isinstance(message, str):
             msg = json.loads(message)
         else:
-            from jupyter_server.base.zmqhandlers import deserialize_binary_message
-
             msg = deserialize_binary_message(message)
+        with context:
+            process_kernel_messages(kernel, msg)
 
-        msg_type = msg["header"]["msg_type"]
-        kernel.set_parent(None, msg["header"], msg["channel"])
-        if msg_type == "kernel_info_request":
-            content = {
-                "status": "ok",
-                "protocol_version": "5.3",
-                "implementation": Kernel.implementation,
-                "implementation_version": Kernel.implementation_version,
-                "language_info": {},
-                "banner": Kernel.banner,
-                "help_links": [],
-            }
-            with work(msg["header"]):
-                msg = kernel.session.send(kernel.shell_stream, "kernel_info_reply", content, msg["header"], None)
-        elif msg_type in ["comm_open", "comm_msg", "comm_close"]:
-            with work(msg["header"]):
-                with context:
-                    getattr(comm_manager, msg_type)(kernel.shell_stream, None, msg)
-        elif msg_type in ["comm_info_request"]:
-            content = msg["content"]
-            target_name = msg.get("target_name", None)
 
-            comms = {k: dict(target_name=v.target_name) for (k, v) in comm_manager.comms.items() if v.target_name == target_name or target_name is None}
-            reply_content = dict(comms=comms, status="ok")
-            with work(msg["header"]):
-                msg = session.send(kernel.shell_stream, "comm_info_reply", reply_content, msg["header"], None)
-        else:
-            logger.error("Unsupported msg with msg_type %r", msg_type)
+def process_kernel_messages(kernel: Kernel, msg: Dict):
+    session = kernel.session
+    comm_manager = kernel.comm_manager
+
+    def send_status(status, parent):
+        session.send(
+            kernel.iopub_socket,
+            "status",
+            {"execution_state": status},
+            parent=parent,
+            ident=None,
+        )
+
+    @contextlib.contextmanager
+    def busy_idle(parent):
+        send_status("busy", parent=parent)
+        try:
+            yield
+        finally:
+            send_status("idle", parent=parent)
+
+    msg_type = msg["header"]["msg_type"]
+    kernel.set_parent(None, msg["header"], msg["channel"])
+    if msg_type == "kernel_info_request":
+        content = {
+            "status": "ok",
+            "protocol_version": "5.3",
+            "implementation": Kernel.implementation,
+            "implementation_version": Kernel.implementation_version,
+            "language_info": {},
+            "banner": Kernel.banner,
+            "help_links": [],
+        }
+        with busy_idle(msg["header"]):
+            msg = kernel.session.send(kernel.shell_stream, "kernel_info_reply", content, msg["header"], None)
+    elif msg_type in ["comm_open", "comm_msg", "comm_close"]:
+        with busy_idle(msg["header"]):
+            getattr(comm_manager, msg_type)(kernel.shell_stream, None, msg)
+    elif msg_type in ["comm_info_request"]:
+        content = msg["content"]
+        target_name = msg.get("target_name", None)
+
+        comms = {k: dict(target_name=v.target_name) for (k, v) in comm_manager.comms.items() if v.target_name == target_name or target_name is None}
+        reply_content = dict(comms=comms, status="ok")
+        with busy_idle(msg["header"]):
+            msg = session.send(kernel.shell_stream, "comm_info_reply", reply_content, msg["header"], None)
+    else:
+        logger.error("Unsupported msg with msg_type %r", msg_type)
 
 
 def read_root(base_url: str = "", render_kwargs={}, use_nbextensions=True):
@@ -167,6 +162,8 @@ def get_nbextensions_directories() -> List[Path]:
 
 @solara.memoize()
 def get_nbextensions() -> List[str]:
+    from jupyter_core.paths import jupyter_config_path
+
     read_config_path = [os.path.join(p, "serverconfig") for p in jupyter_config_path()]
     read_config_path += [os.path.join(p, "nbconfig") for p in jupyter_config_path()]
     # import inline since we don't want this dep for pyiodide

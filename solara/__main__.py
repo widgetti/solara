@@ -340,6 +340,20 @@ class run_with_settings:
 
 
 @cli.command()
+@click.option("--port", default=int(os.environ.get("PORT", 8000)))
+def staticserve(port):
+    import http.server
+    import os
+    from functools import partial
+
+    print(f"http://localhost:{port}/")  # noqa
+    wk_dir = os.getcwd() + "/staticbuild"
+    http.server.SimpleHTTPRequestHandler.extensions_map[".js"] = "application/javascript"
+    http.server.SimpleHTTPRequestHandler.extensions_map = {k: v + ";charset=UTF-8" for k, v in http.server.SimpleHTTPRequestHandler.extensions_map.items()}
+    http.server.test(HandlerClass=partial(http.server.SimpleHTTPRequestHandler, directory=wk_dir), port=port, bind="")  # type: ignore
+
+
+@cli.command()
 def staticbuild():
     """Experimental static build"""
     # imports locals, otherwise .run() does not use the cli arguments
@@ -347,22 +361,33 @@ def staticbuild():
     import solara.server.patch
     import solara.server.server
 
-    server_path = HERE / "server/static"
+    server_path = HERE / "server"
+    assets_path = server_path / "assets"
+    static_path = server_path / "static"
 
-    build_dir = Path("staticbuild")
-    build_dir.mkdir(exist_ok=True)
+    target_dir = Path("staticbuild")
+    target_dir.mkdir(exist_ok=True)
 
-    build_dir_static = build_dir / "static"
-    build_dir_static.mkdir(exist_ok=True)
+    from .server import cdn_helper
+
+    copytree(cdn_helper.default_cache_dir, target_dir / "_solara/cdn/")
+
+    static_dir_target = target_dir / "static"
+    static_dir_target.mkdir(exist_ok=True)
+
+    assets_dir_target = target_dir / "static" / "assets"
+    assets_dir_target.mkdir(exist_ok=True)
+    copytree(assets_path, assets_dir_target)
+
     for path in (
-        list(server_path.glob("*.css"))
-        + list(server_path.glob("*.js"))
-        + list(server_path.glob("*.ps"))
-        + list(server_path.glob("*.py"))
-        + list(server_path.glob("*.png"))
-        + list(server_path.glob("*.svg"))
+        list(static_path.glob("*.css"))
+        + list(static_path.glob("*.js"))
+        + list(static_path.glob("*.ps"))
+        + list(static_path.glob("*.py"))
+        + list(static_path.glob("*.png"))
+        + list(static_path.glob("*.svg"))
     ):
-        shutil.copy(path, build_dir_static)
+        shutil.copy(path, static_dir_target)
 
     include_nbextensions = True
     if include_nbextensions:
@@ -372,32 +397,32 @@ def staticbuild():
             for directory in directories:
                 if (directory / (name + ".js")).exists():
                     src = (directory / (name + ".js")).parent
-                    dst: Path = (build_dir_static / "nbextensions" / (name + ".js")).parent
+                    dst: Path = (static_dir_target / "nbextensions" / (name + ".js")).parent
                     dst.mkdir(parents=True, exist_ok=True)
                     # shutil.copytree(src, dst)
                     copytree(src, dst)
 
-    build_dir_wheels = build_dir / "wheels"
-    build_dir_wheels.mkdir(exist_ok=True)
+    target_dir_wheels = target_dir / "wheels"
+    target_dir_wheels.mkdir(exist_ok=True)
     version = solara.__version__
     for path in [Path(f"dist/solara-{version}-py2.py3-none-any.whl")]:
-        shutil.copy(path, build_dir_wheels)
+        shutil.copy(path, target_dir_wheels)
 
-    build_dir_nbconvert_static = build_dir / "static/nbconvert"
-    build_dir_nbconvert_static.mkdir(exist_ok=True, parents=True)
+    target_dir_nbconvert_static = target_dir / "static/nbconvert"
+    target_dir_nbconvert_static.mkdir(exist_ok=True, parents=True)
     nbconvert = Path(solara.server.server.nbconvert_static)
     for path in list(nbconvert.glob("*.js")) + list(nbconvert.glob("*.css")):
-        shutil.copy(path, build_dir_nbconvert_static)
+        shutil.copy(path, target_dir_nbconvert_static)
 
-    build_dir_static_dist = build_dir / "static/dist"
-    build_dir_static_dist.mkdir(exist_ok=True)
+    target_dir_static_dist = target_dir / "static/dist"
+    target_dir_static_dist.mkdir(exist_ok=True)
     voila = server_path / "dist"
     for path in list(voila.glob("*.js")) + list(voila.glob("*.woff")):
-        shutil.copy(path, build_dir_static_dist)
+        shutil.copy(path, target_dir_static_dist)
 
     solara.server.patch.patch()
     index_html = solara.server.server.read_root("", render_kwargs={"for_pyodide": True}, use_nbextensions=True)
-    (build_dir / "index.html").write_text(index_html)
+    (target_dir / "index.html").write_text(index_html)
 
 
 @click.group()
@@ -441,6 +466,7 @@ def write_script(name: str, target: typing.Optional[Path]):
 
 # recursivly copy a directory and allow for existing directories
 def copytree(src: Path, dst: Path, copy_function=shutil.copy2, ignore: typing.Callable[[Path], bool] = lambda x: False, rename=lambda x: x):
+    print(src, " -> ", dst)  # noqa
     if not src.exists():
         return
     if not dst.exists():
