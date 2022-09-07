@@ -16,12 +16,16 @@ modules.export = {
     this.location = window.location.pathname;
     console.log("created");
     window.addEventListener("popstate", (lala) => {
-      // console.log('pop state!', lala, window.location.pathname )
+      // console.log("pop state!", lala, window.location.pathname);
       if (!window.location.href.startsWith(document.baseURI)) {
         throw `window.location = ${window.location}, but it should start with the document.baseURI = ${document.baseURI}`;
       }
-      const newLocation =
+      let newLocation =
         "/" + window.location.href.slice(document.baseURI.length);
+      // the router/server shouldn't care about the hash, that's for the frontend
+      if (newLocation.indexOf("#") !== -1) {
+        newLocation = newLocation.slice(0, newLocation.indexOf("#"));
+      }
       this.location = newLocation;
     });
   },

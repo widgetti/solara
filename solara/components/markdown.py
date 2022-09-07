@@ -58,9 +58,10 @@ module.exports = {
                 // TODO: should we really do this?
                 href = location.pathname + href.substr(1);
                 a.attributes['href'].href = href;
+                // console.log("change href to", href);
             }
-            console.log("connect anchor with href=", href, "to router")
             if(href.startsWith("./") || href.startsWith("/")) {
+                // console.log("connect link with href=", href, "to router")
                 a.onclick = e => {
                     console.log("clicked", href)
                     if(href.startsWith("./")) {
@@ -70,6 +71,14 @@ module.exports = {
                     }
                     e.preventDefault()
                 }
+            } else if(href.startsWith("#")) {
+                // console.log("connect anchor with href=", href, "to custom javascript due to using <base>")
+                a.onclick = e => {
+                    document.location.hash=href
+                    e.preventDefault();
+                }
+            } else {
+                console.log("href", href, "is not a local link")
             }
         }
     },
