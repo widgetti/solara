@@ -77,6 +77,7 @@ def Page():
             df = result.value
             sol.DataTable(df)
         elif query_executed is not None:
-            with v.Text(children=["Loading data..."]):
+            with sol.Div():
+                sol.Text("Loading data...")
                 v.ProgressCircular(indeterminate=True, class_="solara-progress")
     return main

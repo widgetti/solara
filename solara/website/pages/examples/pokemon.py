@@ -32,6 +32,7 @@ def Page():
                             v.Img(src=url, contain=True, max_height="200px")
                             v.Label(children=[name])
             else:
-                with v.Text(children=["Loading..."]):
+                with sol.Div():
+                    sol.Text("Loading...")
                     v.ProgressCircular(indeterminate=True, class_="solara-progress")
     return main
