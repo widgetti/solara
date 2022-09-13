@@ -156,9 +156,7 @@ class Reloader:
         # before we did this:
         # # don't reload modules like solara.server and react
         # # that may cause issues (like 2 Element classes existing)
-        reload_modules = {
-            k for k in set(sys.modules) - set(self.ignore_modules) if not (k.startswith("solara.server") or k.startswith("anyio") or k.startswith("plotly"))
-        }
+        reload_modules = {k for k in set(sys.modules) - set(self.ignore_modules) if not (k.startswith("solara.server") or k.startswith("anyio"))}
         # which picks up import that are done in threads etc, but it will also reload starlette, httptools etc
         # which causes issues with exceptions and isinstance checks.
         # reload_modules = self.watched_modules
