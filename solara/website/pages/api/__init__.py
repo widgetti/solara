@@ -42,6 +42,7 @@ def Layout(children=[], level=0):
                     add("/")
                     with sol.ListItem("Input", icon_name="mdi-chevron-left-box"):
                         add("button")
+                        add("select")
                         add("slider")
                         add("togglebuttons")
                         add("file_browser")
