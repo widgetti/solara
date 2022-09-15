@@ -23,6 +23,7 @@ class ThemeSettings(pydantic.BaseSettings):
 class MainSettings(pydantic.BaseSettings):
     use_pdb: bool = False
     mode: str = "production"
+    tracer: bool = False
 
     class Config:
         env_prefix = "solara_"

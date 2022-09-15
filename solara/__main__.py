@@ -112,6 +112,7 @@ When in dev mode Solara will:
   Prefer non-minized js/css assets for easier debugging.
 """,
 )
+@click.option("--tracer/--no-tracer", default=False)
 @click.option("--open/--no-open", default=False)
 @click.option("--reload", is_flag=True, default=False, help="Enable auto-reload.")
 @click.option(
@@ -211,6 +212,7 @@ def run(
     reload: bool,
     reload_dirs: typing.Optional[typing.List[str]],
     dev: bool,
+    tracer: bool,
     reload_excludes: typing.List[str],
     loop: str,
     workers: int,
@@ -290,7 +292,8 @@ def run(
     settings.theme.loader = theme_loader
     settings.theme.variant = theme_variant
     settings.theme.variant_user_selectable = theme_variant_user_selectable
-    for item in "theme_variant_user_selectable theme_variant theme_loader use_pdb server open_browser open url failed dev".split():
+    settings.main.tracer = tracer
+    for item in "theme_variant_user_selectable theme_variant theme_loader use_pdb server open_browser open url failed dev tracer".split():
         del kwargs[item]
 
     def start_server():

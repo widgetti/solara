@@ -47,19 +47,29 @@ async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, connection_i
         time.sleep(0.5)
         return
 
+    if settings.main.tracer:
+        import viztracer
+
+        output_file = f"viztracer-{connection_id}.html"
+        run_context = viztracer.VizTracer(output_file=output_file, max_stack_depth=10)
+        logger.warning(f"Running with tracer: {output_file}")
+    else:
+        run_context = contextlib.nullcontext()
+
     kernel = context.kernel
-    while True:
-        try:
-            message = ws.receive()
-        except websocket.WebSocketDisconnect:
-            logger.debug("Disconnected")
-            return
-        if isinstance(message, str):
-            msg = json.loads(message)
-        else:
-            msg = deserialize_binary_message(message)
-        with context:
-            process_kernel_messages(kernel, msg)
+    with run_context:
+        while True:
+            try:
+                message = ws.receive()
+            except websocket.WebSocketDisconnect:
+                logger.debug("Disconnected")
+                return
+            if isinstance(message, str):
+                msg = json.loads(message)
+            else:
+                msg = deserialize_binary_message(message)
+            with context:
+                process_kernel_messages(kernel, msg)
 
 
 def process_kernel_messages(kernel: Kernel, msg: Dict):
