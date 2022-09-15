@@ -331,7 +331,7 @@ def generate_routes_directory(path: Path) -> List[sol.Route]:
         # only handle directories and recognized file types
         if not (subpath.is_dir() or subpath.suffix in suffixes):
             continue
-        if subpath.stem.startswith("__"):
+        if subpath.stem.startswith("_") or subpath.stem.startswith("."):
             continue
         name = subpath.stem
         match = re.match("([0-9\\-_ ]*)(.*)", name)
