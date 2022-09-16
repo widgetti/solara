@@ -20,6 +20,7 @@
     </link>
     <link href="static/assets/custom.css" rel="stylesheet">
     </link>
+    <script src="static/assets/theme.js"></script>
     <link href="static/nbconvert/index.css" rel="stylesheet">
     </link>
     <link href="static/nbconvert/theme-light.css" rel="stylesheet">
@@ -227,7 +228,10 @@
         var debug = true;
         var app = new Vue({
             vuetify: new Vuetify({
-                theme: { dark: inDarkMode() },
+                theme: {
+                    dark: inDarkMode(),
+                    themes: vuetifyThemes,
+                },
             }),
             el: '#app',
             created() {
