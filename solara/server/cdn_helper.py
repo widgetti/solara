@@ -9,7 +9,7 @@ logger = logging.getLogger("Solara.cdn")
 cdn = "https://cdn.jsdelivr.net/npm/"
 
 default_cache_dir = pathlib.Path(sys.prefix + "/share/solara/cdn/")
-
+default_cache_dir.mkdir(exist_ok=True, parents=True)
 cdn_url_path = "_solara/cdn"
 
 
@@ -49,6 +49,24 @@ def get_data(base_cache_dir: pathlib.Path, path):
     if response.ok:
         put_in_cache(base_cache_dir, store_path, response.content)
         return response.content
+    else:
+        logger.warning("Could not load URL: %r", url)
+        raise Exception(f"Could not load URL: {url}")
+
+
+def get_path(base_cache_dir: pathlib.Path, path):
+    parts = path.split("/")
+    store_path = path if len(parts) != 1 else pathlib.Path(path) / "__main"
+    path = base_cache_dir / store_path
+
+    if path.exists():
+        return path
+    url = get_cdn_url(store_path)
+    response = requests.get(url)
+    if response.ok:
+        put_in_cache(base_cache_dir, store_path, response.content)
+        assert path.exists(), f"Could not write to {path}"
+        return path
     else:
         logger.warning("Could not load URL: %r", url)
         raise Exception(f"Could not load URL: {url}")

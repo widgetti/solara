@@ -1,5 +1,4 @@
 import logging
-import mimetypes
 import os
 import pathlib
 import typing
@@ -10,7 +9,7 @@ import anyio
 import starlette.websockets
 from starlette.applications import Starlette
 from starlette.requests import Request
-from starlette.responses import HTMLResponse, JSONResponse, Response
+from starlette.responses import HTMLResponse, JSONResponse
 from starlette.routing import Mount, Route, WebSocketRoute
 from starlette.staticfiles import StaticFiles
 
@@ -19,7 +18,7 @@ from solara.server import reload
 
 from . import app as appmod
 from . import patch, server, settings, websocket
-from .cdn_helper import cdn_url_path, default_cache_dir, get_data
+from .cdn_helper import cdn_url_path, default_cache_dir, get_path
 
 os.environ["SERVER_SOFTWARE"] = "solara/" + str(solara.__version__)
 
@@ -166,12 +165,10 @@ class StaticAssets(StaticFiles):
         return cast(List[Union[str, "os.PathLike[str]"]], [*overrides, default])
 
 
-async def cdn(request: Request):
-    path = request.path_params["path"]
-    cache_directory = default_cache_dir
-    content = get_data(pathlib.Path(cache_directory), path)
-    mime = mimetypes.guess_type(path)
-    return Response(content, media_type=mime[0])
+class StaticCdn(StaticFiles):
+    def lookup_path(self, path: str) -> typing.Tuple[str, typing.Optional[os.stat_result]]:
+        full_path = get_path(pathlib.Path(default_cache_dir), path)
+        return full_path, os.stat(full_path)
 
 
 def on_startup():
@@ -184,7 +181,7 @@ routes = [
     Route("/", endpoint=root),
     Route("/{fullpath}", endpoint=root),
     Route("/_solara/api/close/{connection_id}", endpoint=close, methods=["POST"]),
-    Route(f"/{cdn_url_path}/{{path:path}}", endpoint=cdn),
+    Mount(f"/{cdn_url_path}", app=StaticCdn(directory=default_cache_dir)),
     Mount(f"{prefix}/static/public", app=StaticPublic()),
     Mount(f"{prefix}/static/assets", app=StaticAssets()),
     Mount(f"{prefix}/static/nbextensions", app=StaticNbFiles()),
