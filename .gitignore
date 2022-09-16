@@ -82,3 +82,6 @@ build/
 ./examples
 node_modules
 packages/assets/cdn
+
+solara-env
+states
