@@ -6,7 +6,10 @@ Click on one of the items on the left.
 import inspect
 import urllib.parse
 
-from solara.kitchensink import react, sol, v
+from solara.alias import react, rv, sol
+
+from .. import List
+from .. import SimpleListItem as ListItem
 
 title = "API"
 
@@ -17,7 +20,7 @@ def Page():
 
 
 @react.component
-def Layout(children=[], level=0):
+def Sidebar(children=[], level=0):
     # note that we don't use children here, but we used route.module instead to ge the module
     # this is fine because all api/*.py files use the standard Page component, and do not add
     # a new Layout component
@@ -31,76 +34,94 @@ def Layout(children=[], level=0):
     def add(path):
         route = routes[path]
         with sol.Link(route):
-            sol.ListItem(route.label, value=route.path)
+            ListItem(route.label, class_="active" if route_current is not None and path == route_current.path else None)
         del routes[path]
 
-    with sol.HBox(grow=True) as main:
-        with v.NavigationDrawer(right=False, width="min-content", v_model=True, permanent=True):
-            with v.List(dense=True):
-                with v.ListItemGroup(v_model=route_current.path):
-                    # sol.ListItem("Overview")
-                    add("/")
-                    with sol.ListItem("Input", icon_name="mdi-chevron-left-box"):
-                        add("button")
-                        add("select")
-                        add("slider")
-                        add("togglebuttons")
-                        add("file_browser")
-                    with sol.ListItem("Output", icon_name="mdi-chevron-right-box"):
-                        add("markdown")
-                        add("markdown_editor")
-                        add("html")
-                        add("image")
-                        # add("code")
-                        add("sql_code")
-                    with sol.ListItem("Viz", icon_name="mdi-chart-histogram"):
-                        add("plotly")
-                        add("plotly_express")
-                    #     sol.ListItem("AltairChart")
-                    with sol.ListItem("Layout", icon_name="mdi-page-layout-sidebar-left"):
-                        add("hbox")
-                        add("vbox")
-                        add("griddraggable")
-                        add("gridfixed")
-                        # add("app")
-                    with sol.ListItem("Data", icon_name="mdi-database"):
-                        # sol.ListItem("DataTable")
-                        add("datatable")
-                        add("pivot_table")
-                    with sol.ListItem("Hooks", icon_name="mdi-hook"):
-                        # add("use_fetch")
-                        # add("use_json")
-                        add("use_thread")
-                        add("use_exception")
-                        add("use_previous")
-                        add("use_state_or_update")
-                    with sol.ListItem("Types", icon_name="mdi-fingerprint"):
-                        # sol.ListItem("Action")
-                        # sol.ListItem("ColumnAction")
-                        # sol.ListItem("Route")
-                        add("route")
-                    with sol.ListItem("Routing", icon_name="mdi-router"):
-                        add("use_route")
-                        # add("use_router")
-                        # add("use_route_level")
+    # with sol.HBox(grow=True) as main:
+    with rv.Col(tag="aside", md=4, lg=3, class_="sidebar bg-grey d-none d-md-block") as main:
+        with List():
+            add("/")
+            with ListItem("Input", icon_name="mdi-chevron-left-box"):
+                with List():
+                    add("button")
+                    add("slider")
+                    add("togglebuttons")
+                    add("file_browser")
+            with ListItem("Output", icon_name="mdi-chevron-right-box"):
+                with List():
+                    add("markdown")
+                    add("markdown_editor")
+                    add("html")
+                    add("image")
+                    # add("code")
+                    add("sql_code")
+            with ListItem("Viz", icon_name="mdi-chart-histogram"):
+                with List():
+                    add("plotly")
+                    add("plotly_express")
+                #     ListItem("AltairChart")
+            with ListItem("Layout", icon_name="mdi-page-layout-sidebar-left"):
+                with List():
+                    add("hbox")
+                    add("vbox")
+                    add("griddraggable")
+                    add("gridfixed")
+                    # add("app")
+            with ListItem("Data", icon_name="mdi-database"):
+                with List():
+                    # ListItem("DataTable")
+                    add("datatable")
+                    # add("pivot_table")
+            with ListItem("Hooks", icon_name="mdi-hook"):
+                with List():
+                    # add("use_fetch")
+                    # add("use_json")
+                    add("use_thread")
+                    add("use_exception")
+                    add("use_previous")
+                    add("use_state_or_update")
+            with ListItem("Types", icon_name="mdi-fingerprint"):
+                with List():
+                    # ListItem("Action")
+                    # ListItem("ColumnAction")
+                    # ListItem("Route")
+                    add("route")
+            with ListItem("Routing", icon_name="mdi-router"):
+                with List():
+                    add("use_route")
+                    # add("use_router")
+                    # add("use_route_level")
 
-                        # add("resolve_path")
-                        # add("use_pathname")
+                    # add("resolve_path")
+                    # add("use_pathname")
 
-                        # add("generate_routes")
-                        # add("generate_routes_directory")
+                    # add("generate_routes")
+                    # add("generate_routes_directory")
 
-                        # add("RenderPage")
-                        # add("DefaultNavigation")
-                        add("link")
+                    # add("RenderPage")
+                    # add("DefaultNavigation")
+                    add("link")
         if routes:
             print(f"Routes not used: {list(routes.keys())}")  # noqa
-        with sol.HBox(grow=True):
-            with sol.Padding(4):
-                if route_current.module:
-                    WithCode(route_current.module)
 
     return main
+
+
+@react.component
+def Layout(children=[]):
+    route_current, all_routes = sol.use_route()
+    if route_current is None:
+        return sol.Error("Page not found")
+
+    if route_current.path == "/":
+        return sol.Markdown(__doc__)
+    else:
+        with sol.HBox(grow=True) as main:
+            with sol.Padding(4):
+                if route_current.module:
+                    # we ignore children, and make the element again
+                    WithCode(route_current.module)
+        return main
 
 
 @react.component
@@ -110,9 +131,9 @@ def WithCode(module):
     #     return sol.Error("oops")
     component = getattr(module, "Page", None)
     show_code, set_show_code = react.use_state(False)
-    with v.Sheet() as main:
-        with v.Dialog(v_model=show_code, on_v_model=set_show_code):
-            with v.Sheet(class_="pa-4"):
+    with rv.Sheet() as main:
+        with rv.Dialog(v_model=show_code, on_v_model=set_show_code):
+            with rv.Sheet(class_="pa-4"):
                 if component:
                     if hasattr(module, "sources"):
                         codes = [inspect.getsource(k) for k in module.sources]

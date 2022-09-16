@@ -12,7 +12,8 @@
     <script src="_solara/cdn/mermaid@8.6.4/dist/mermaid.js"></script>
     {% endif %}
 
-    <link rel="icon" type="image/png" href="static/assets/favicon.png">
+    <link rel="icon" type="image/png" sizes="any" href="static/assets/favicon.png">
+    <link rel="icon" type="image/svg+xml" href="static/assets/favicon.svg">
 
     <link href="static/highlight.css" rel="stylesheet">
     <link href="static/highlight-dark.css" rel="stylesheet">
@@ -157,11 +158,11 @@
             </v-menu>
 
             <v-menu offset-y top :close-on-content-click="false" style="z-index: 100001">
-                <template v-slot:activator="{ on }">
+                <!-- <template v-slot:activator="{ on }">
                     <v-btn text v-on="on" style="position: fixed; top: 8px; right: 8px; z-index: 100000">
                         <v-icon right large style="opacity: 0.5" :color="connectionStatus != 'connected' ? 'red' : ''">mdi-account</v-icon>
                     </v-btn>
-                </template>
+                </template> -->
                 <v-list>
                     <v-list-item @click="stateReset()" link>
                         <v-list-item-icon>
