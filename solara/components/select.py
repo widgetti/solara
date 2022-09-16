@@ -17,7 +17,7 @@ def Select(label: str, value: T, values: List[T], on_value: Callable[[T], None] 
 
 
 @react.component
-def SelectMultiple(label: str, values: T, all_values: List[T], on_value: Callable[[T], None] = None):
+def SelectMultiple(label: str, values: List[T], all_values: List[T], on_value: Callable[[List[T]], None] = None):
     return v.Select(
         v_model=values,
         on_v_model=on_value,
