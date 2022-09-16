@@ -21,9 +21,10 @@ T = TypeVar("T")
 
 
 directory = Path(__file__).parent
-template_name = "solara.html.j2"
+template_name = "index.html.j2"
 
-jinja_loader = jinja2.FileSystemLoader(str(directory / "templates"))
+# first look at the project directory, then the builtin solara directory
+jinja_loader = jinja2.FileSystemLoader([app.apps["__default__"].directory.parent / "templates", str(directory / "templates")])
 jinja_env = jinja2.Environment(loader=jinja_loader, autoescape=True)
 logger = logging.getLogger("solara.server.server")
 nbextensions_ignorelist = [
