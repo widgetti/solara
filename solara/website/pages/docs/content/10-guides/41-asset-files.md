@@ -4,6 +4,7 @@ Asset files are special files with are loaded by Solara-server and thus have a s
 
  * `favicon.png` - Image shown by the browser (usually in the tab).
  * `style.css` - Default `CSS` used by Solara.
+ * `custom.css` - Custom `CSS` you can override for your project (empty `CSS` file by default).
 
 Assets files can be overridden by putting a file in the `../assets` directory.  A typical directory layout looks like this:
 
