@@ -19,16 +19,19 @@ def ListItem(title, icon_name: str = None, children=[], value=None):
     if value is None:
         value = title
     if children:
-        with v.ListItem(value=value) as main:
+        with v.ListItemContent() as main:
             v.ListItemTitle(children=[title])
-            with v.ListItemIcon():
-                v.Icon(children=[icon_name or ""])
-        return v.ListGroup(children=children, v_slots=[{"name": "activator", "children": main}], sub_group=True, value=True, append_icon=icon_name)
+            if icon_name is not None:
+                with v.ListItemIcon():
+                    v.Icon(children=[icon_name or ""])
+        return v.ListGroup(children=children, v_slots=[{"name": "activator", "children": main}], no_action=True, value=True, append_icon=icon_name)
     else:
         with v.ListItem(value=value) as main:
-            with v.ListItemIcon():
-                v.Icon(children=[icon_name or ""])
-            v.ListItemTitle(children=[title])
+            if icon_name is not None:
+                with v.ListItemIcon():
+                    v.Icon(children=[icon_name or ""])
+            with v.ListItemContent():
+                v.ListItemTitle(children=[title])
         return main
 
 
