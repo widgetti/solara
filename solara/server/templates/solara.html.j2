@@ -71,6 +71,11 @@
 {% raw -%}
     <div id="app" style="display: none">
         <v-app :key="forceUpdateTrigger">
+          <v-progress-linear
+                :style="{visibility: kernelBusy ? 'visible' : 'hidden'}"
+                indeterminate
+                absolute
+            ></v-progress-linear>
             <v-alert v-if="needsRefresh || cancelAutoRefresh" type="warning" border="left" style="position: absolute; right: 0px; z-index: 100; left: 0px;">
             App is disconnected, and may not function properly. Please refresh the page.
         </v-alert>
@@ -315,6 +320,7 @@
                     needsRefresh: false,
                     cancelAutoRefresh: false,
                     autoRefreshCount: 3,
+                    kernelBusy: false,
                     // outputMessages: [{ name: 'stderr', text: 'lala' }],
                 }
             }

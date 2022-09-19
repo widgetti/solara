@@ -165,6 +165,9 @@ async function solaraInit(mountId, appName) {
     }
     const close_url = document.baseURI + '_solara/api/close/' + kernel.clientId;
     let skipReconnectedCheck = true;
+    kernel.statusChanged.connect(() => {
+        app.$data.kernelBusy = kernel.status == 'busy';
+    });
     kernel.connectionStatusChanged.connect((s) => {
         app.$data.connectionStatus = s.connectionStatus;
         if (s.connectionStatus == 'connected' && !skipReconnectedCheck) {
