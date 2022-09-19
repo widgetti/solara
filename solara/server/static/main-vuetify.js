@@ -170,6 +170,9 @@ async function solaraInit(mountId, appName) {
     });
     kernel.connectionStatusChanged.connect((s) => {
         app.$data.connectionStatus = s.connectionStatus;
+        if (s.connectionStatus == 'connected') {
+            app.$data.wasConnected = true;
+        }
         if (s.connectionStatus == 'connected' && !skipReconnectedCheck) {
             (async () => {
                 let ok = await widgetManager.check()

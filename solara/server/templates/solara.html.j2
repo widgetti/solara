@@ -82,7 +82,7 @@
 {% endraw -%}
             {# {% include "transition-domino.html" %} #}
             {% include "loader-" ~ theme.loader ~ ".html" %}
-            <v-overlay :value="connectionStatus != 'connected'">
+            <v-overlay :value="(connectionStatus != 'connected') & wasConnected">
                 <v-progress-circular
                     indeterminate
                     size="128"
@@ -317,6 +317,7 @@
                     theme: theme,
                     debug: debug,
                     connectionStatus: null,
+                    wasConnected: false,
                     needsRefresh: false,
                     cancelAutoRefresh: false,
                     autoRefreshCount: 3,
