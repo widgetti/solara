@@ -33,7 +33,7 @@ def get_from_cache(base_cache_dir: pathlib.Path, path):
 
 
 def get_cdn_url(path):
-    return cdn + path
+    return str(cdn) + str(path)
 
 
 def get_data(base_cache_dir: pathlib.Path, path):
