@@ -57,16 +57,16 @@ def get_data(base_cache_dir: pathlib.Path, path):
 def get_path(base_cache_dir: pathlib.Path, path):
     parts = path.split("/")
     store_path = path if len(parts) != 1 else pathlib.Path(path) / "__main"
-    path = base_cache_dir / store_path
+    cache_path = base_cache_dir / store_path
 
-    if path.exists():
-        return path
-    url = get_cdn_url(store_path)
+    if cache_path.exists():
+        return cache_path
+    url = get_cdn_url(path)
     response = requests.get(url)
     if response.ok:
         put_in_cache(base_cache_dir, store_path, response.content)
-        assert path.exists(), f"Could not write to {path}"
-        return path
+        assert cache_path.exists(), f"Could not write to {cache_path}"
+        return cache_path
     else:
         logger.warning("Could not load URL: %r", url)
         raise Exception(f"Could not load URL: {url}")
