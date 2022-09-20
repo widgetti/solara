@@ -48,3 +48,18 @@ div.highlight pre code {
 .solara-markdown {
     max-width: 1024px;
 }
+
+
+div.highlight {
+    background-color: rgb(249 249 249);
+    padding: 30px;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    border-radius: 20px;
+    margin-top: 15px;
+    margin-bottom: 15px;
+}
+
+.solara-markdown pre {
+    background-color: unset !important
+}
