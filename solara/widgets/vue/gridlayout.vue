@@ -39,11 +39,6 @@ module.exports = {
     async created() {
       this.gridlayout_loaded = false
 
-      define("vue", ['jupyter-vue'], jupyterVue => {
-        jupyterVue.default = jupyterVue.Vue
-        return jupyterVue
-      });
-
       const {GridLayout, GridItem} = (await this.import([`${this.getCdn()}/@widgetti/vue-grid-layout@2.3.13-alpha.2/dist/vue-grid-layout.umd.js`]))[0]
       this.$options.components['grid-item'] = GridItem;
       this.$options.components['grid-layout'] = GridLayout;
@@ -55,10 +50,17 @@ module.exports = {
           window.dispatchEvent(new Event('resize'));
         },
         import(deps) {
-          return this.loadRequire()
-              .then(() => new Promise((resolve, reject) => {
+          return this.loadRequire().then(
+            () => {
+              if(window.jupyterVue) {
+                // in jupyterlab, we take Vue from ipyvue/jupyterVue
+                define("vue", [], () => window.jupyterVue.Vue);
+              }
+              return new Promise((resolve, reject) => {
                 requirejs(deps, (...modules) => resolve(modules));
-              }));
+              })
+            }
+          );
         },
         loadRequire() {
           /* Needed in lab */
@@ -68,15 +70,23 @@ module.exports = {
           }
           return new Promise((resolve, reject) => {
             const script = document.createElement('script');
-            script.src = `${this.getCdn()}/requirejs@2.3.6/require.min.js`;
+            script.src = `${this.getCdn()}/requirejs@2.3.6/require.js`;
             script.onload = resolve;
             script.onerror = reject;
             document.head.appendChild(script);
           });
         },
+        getBaseUrl() {
+          const labConfigData = document.getElementById('jupyter-config-data');
+          if(labConfigData) {
+            /* lab and Voila */
+            return JSON.parse(labConfigData.textContent).baseUrl;
+          }
+          return document.body.dataset.baseUrl || document.baseURI
+        },
         getCdn() {
-          return (typeof solara_cdn !== "undefined" && solara_cdn) || `${document.body.dataset.baseUrl || document.baseURI}_solara/cdn`;
-        }
+          return (typeof solara_cdn !== "undefined" && solara_cdn) || `${this.getBaseUrl()}_solara/cdn`;
+        },
     }
 }
 </script>

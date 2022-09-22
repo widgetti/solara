@@ -7,7 +7,7 @@
 </template>
 <script>
   module.exports = {
-    mounted() {
+    async mounted() {
       const cmVersion = '5.65.3';
 
       if (!document.getElementById('codemirror-hint.css')) {
@@ -18,6 +18,8 @@
         link.id="codemirror-hint.css";
         document.head.appendChild(link);
       }
+
+      await this.loadRequire();
 
       requirejs.config({paths:{
           codemirror: `${this.getCdn()}/codemirror@${cmVersion}`
@@ -52,9 +54,44 @@
       }
     },
     methods: {
+      import(deps) {
+        return this.loadRequire().then(
+          () => {
+            if(window.jupyterVue) {
+              // in jupyterlab, we take Vue from ipyvue/jupyterVue
+              define("vue", [], () => window.jupyterVue.Vue);
+            }
+            return new Promise((resolve, reject) => {
+              requirejs(deps, (...modules) => resolve(modules));
+            })
+          }
+        );
+      },
+      loadRequire() {
+        /* Needed in lab */
+        if (window.requirejs) {
+            console.log('require found');
+            return Promise.resolve()
+        }
+        return new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = `${this.getCdn()}/requirejs@2.3.6/require.js`;
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      },
+      getBaseUrl() {
+        const labConfigData = document.getElementById('jupyter-config-data');
+        if(labConfigData) {
+          /* lab and Voila */
+          return JSON.parse(labConfigData.textContent).baseUrl;
+        }
+        return document.body.dataset.baseUrl || document.baseURI
+      },
       getCdn() {
-        return (typeof solara_cdn !== "undefined" && solara_cdn) || `${document.body.dataset.baseUrl || document.baseURI}_solara/cdn`;
-      }
+        return (typeof solara_cdn !== "undefined" && solara_cdn) || `${this.getBaseUrl()}_solara/cdn`;
+      },
     }
   }
 </script>

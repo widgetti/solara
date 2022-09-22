@@ -220,10 +220,15 @@ module.exports = {
   methods: {
     import(deps) {
       return this.loadRequire().then(
-        () =>
-          new Promise((resolve, reject) => {
+        () => {
+          if(window.jupyterVue) {
+            // in jupyterlab, we take Vue from ipyvue/jupyterVue
+            define("vue", [], () => window.jupyterVue.Vue);
+          }
+          return new Promise((resolve, reject) => {
             requirejs(deps, (...modules) => resolve(modules));
           })
+        }
       );
     },
     loadRequire() {
@@ -234,17 +239,22 @@ module.exports = {
       }
       return new Promise((resolve, reject) => {
         const script = document.createElement("script");
-        script.src = `${this.getCdn()}/requirejs@2.3.6/require.min.js`;
+        script.src = `${this.getCdn()}/requirejs@2.3.6/require.js`;
         script.onload = resolve;
         script.onerror = reject;
         document.head.appendChild(script);
       });
     },
+    getBaseUrl() {
+      const labConfigData = document.getElementById('jupyter-config-data');
+      if(labConfigData) {
+        /* lab and Voila */
+        return JSON.parse(labConfigData.textContent).baseUrl;
+      }
+      return document.body.dataset.baseUrl || document.baseURI
+    },
     getCdn() {
-      return (
-        (typeof solara_cdn !== "undefined" && solara_cdn) ||
-        `${document.body.dataset.baseUrl || document.baseURI}_solara/cdn`
-      );
+      return (typeof solara_cdn !== "undefined" && solara_cdn) || `${this.getBaseUrl()}_solara/cdn`;
     },
   },
 };
