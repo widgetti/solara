@@ -60,7 +60,7 @@ dev = [
     "watchdog",
 ]
 assets = [
-    "solara-assets==0.9.1"
+    "solara-assets==0.10.0"
 ]
 server = [
     "jinja2",

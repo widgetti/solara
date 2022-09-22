@@ -1,5 +1,5 @@
 """Build webapps using IPywidgets"""
-__version__ = "0.9.1"
+__version__ = "0.10.0"
 github_url = "https://github.com/widgetti/solara"
 git_branch = "master"
 # isort: skip_file
