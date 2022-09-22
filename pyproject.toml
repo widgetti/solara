@@ -24,6 +24,7 @@ dependencies = [
     "mdit-py-plugins",
     "humanize",
     "ipyvuetify",
+    "ipyvue>=1.8.0",
     "numpy",
     "pillow",
 ]
