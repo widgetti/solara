@@ -182,7 +182,7 @@ def test_hook_download(tmpdir):
 
 def test_hook_use_fetch():
     url = "https://raw.githubusercontent.com/widgetti/react-ipywidgets/master/.gitignore"
-    content_length = 865
+    content_length = 888
 
     result = None
 
