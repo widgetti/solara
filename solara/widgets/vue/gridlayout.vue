@@ -55,6 +55,8 @@ module.exports = {
               if(window.jupyterVue) {
                 // in jupyterlab, we take Vue from ipyvue/jupyterVue
                 define("vue", [], () => window.jupyterVue.Vue);
+              } else {
+                define("vue", ['jupyter-vue'], jupyterVue => jupyterVue.Vue);
               }
               return new Promise((resolve, reject) => {
                 requirejs(deps, (...modules) => resolve(modules));
