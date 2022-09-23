@@ -248,6 +248,10 @@ module.exports = {
       });
     },
     getBaseUrl() {
+      // if base url is set, we use ./ for relative paths compared to the base url
+      if (document.getElementsByTagName("base").length) {
+        return "./";
+      }
       const labConfigData = document.getElementById('jupyter-config-data');
       if(labConfigData) {
         /* lab and Voila */

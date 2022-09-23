@@ -79,6 +79,9 @@ module.exports = {
           });
         },
         getBaseUrl() {
+          if (document.getElementsByTagName("base").length) {
+            return "./";
+          }
           const labConfigData = document.getElementById('jupyter-config-data');
           if(labConfigData) {
             /* lab and Voila */
