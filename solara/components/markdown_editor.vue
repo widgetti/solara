@@ -253,7 +253,11 @@ module.exports = {
         /* lab and Voila */
         return JSON.parse(labConfigData.textContent).baseUrl;
       }
-      return document.body.dataset.baseUrl || document.baseURI
+      let base = document.body.dataset.baseUrl || document.baseURI;
+      if(!base.endsWith('/')) {
+        base += '/';
+      }
+      return base
     },
     getCdn() {
       return (typeof solara_cdn !== "undefined" && solara_cdn) || `${this.getBaseUrl()}_solara/cdn`;
