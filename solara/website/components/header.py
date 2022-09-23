@@ -17,7 +17,7 @@ def Header(
             with sol.Button(icon=True, class_="hidden-md-and-up", on_click=lambda: on_toggle_left_menu and on_toggle_left_menu()):
                 rv.Icon(children=["mdi-menu"])
             with sol.Link(path_or_route="/"):
-                sol.Image("/static/assets/images/logo.svg")
+                sol.Image("./static/assets/images/logo.svg")
         rv.Spacer()
 
         # menu

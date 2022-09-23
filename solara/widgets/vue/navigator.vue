@@ -14,7 +14,7 @@ modules.export = {
       console.log("external router push", href);
       this.location = href;
     };
-    this.location = window.location.pathname;
+    this.location = "/" + window.location.href.slice(document.baseURI.length);
     window.addEventListener("popstate", this.onPopState);
     window.addEventListener("scroll", this.onScroll);
   },
