@@ -3,7 +3,7 @@ from enum import Enum
 from types import ModuleType
 from typing import Any, Callable, Dict, Generic, List, Optional, TypeVar, Union
 
-import react_ipywidgets as react
+import reacton
 from typing_extensions import Literal, TypedDict
 
 T = TypeVar("T")
@@ -110,8 +110,8 @@ class Route:
 
     # in the autorouting implementation, this is the
     # the same as module.Page (unless we are rendering a markdown)
-    component: Union[None, Callable, react.core.Component] = None
-    layout: Union[None, Callable, react.core.Component] = None
+    component: Union[None, Callable, reacton.core.Component] = None
+    layout: Union[None, Callable, reacton.core.Component] = None
 
     # in the autorouting implementation, this is the
     # path of the markdown file

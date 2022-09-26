@@ -9,10 +9,10 @@ If the markdown is fixed (such as in our own documentation) this should not pose
 """
 
 
-from solara.kitchensink import react, sol, v
+from solara.alias import reacton, rv, sol
 
 
-@react.component
+@reacton.component
 def Page():
     markdown_initial = """
 # Large
@@ -44,18 +44,18 @@ graph TD;
 
     """.strip()
 
-    markdown_text, set_markdown_text = react.use_state(markdown_initial)
+    markdown_text, set_markdown_text = reacton.use_state(markdown_initial)
     # with sol.GridFixed(columns=2) as main:
     with sol.HBox(grow=True) as main:
         with sol.VBox():
             sol.Markdown("# Input text")
             with sol.Padding(2):
-                with v.Sheet(elevation=2):
-                    v.Textarea(v_model=markdown_text, on_v_model=set_markdown_text, rows=30)
+                with rv.Sheet(elevation=2):
+                    rv.Textarea(v_model=markdown_text, on_v_model=set_markdown_text, rows=30)
         with sol.VBox():
             sol.Markdown("# Renders like")
             with sol.Padding(2):
-                with v.Sheet(elevation=2):
+                with rv.Sheet(elevation=2):
                     sol.Markdown(markdown_text)
 
     return main

@@ -10,7 +10,7 @@ nested layout tree,.
 
 For instance, having no layout gives the same result as putting this `Layout` component in `__init__.py`:
 ```python
-@react.component
+@reacton.component
 def Layout(children=[]):
     return sol.DefaultLayout(children=children)
 ```
@@ -18,7 +18,7 @@ def Layout(children=[]):
 A possible more custom `Layout` could look like this:
 
 ```python
-@react.component
+@reacton.component
 def Layout(children=[]):
     # Note that children being passed here for this example will be a Page() element.
     route_current, routes_all = sol.use_route()

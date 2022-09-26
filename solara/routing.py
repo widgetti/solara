@@ -2,7 +2,7 @@ import abc
 import logging
 from typing import Callable, List, Optional, Tuple, Union, cast
 
-from solara.kitchensink import react, sol
+from solara.alias import reacton, sol
 
 logger = logging.getLogger("solara.router")
 
@@ -72,24 +72,24 @@ class Router:
         self.set_path(path)
 
 
-router_context = react.create_context(Router("", []))
-_location_context = react.create_context(cast(_LocationBase, _Location("", lambda x: None)))
+router_context = reacton.create_context(Router("", []))
+_location_context = reacton.create_context(cast(_LocationBase, _Location("", lambda x: None)))
 
-route_level_context = react.create_context(0)
+route_level_context = reacton.create_context(0)
 
 
 def use_route_level():
-    route_level = react.use_context(route_level_context)
+    route_level = reacton.use_context(route_level_context)
     return route_level
 
 
 def use_router() -> Router:
-    return react.use_context(router_context)
+    return reacton.use_context(router_context)
 
 
 def use_route(level=0) -> Tuple[Optional[sol.Route], List[sol.Route]]:
-    router = react.use_context(router_context)
-    route_level = react.use_context(route_level_context)
+    router = reacton.use_context(router_context)
+    route_level = reacton.use_context(route_level_context)
     route_level_context.provide(route_level + 1)
     route_level += level
     if route_level < len(router.path_routes):
@@ -99,8 +99,8 @@ def use_route(level=0) -> Tuple[Optional[sol.Route], List[sol.Route]]:
 
 
 def find_route(path: str) -> Optional[sol.Route]:
-    router = react.use_context(router_context)
-    route_level = min(react.use_context(route_level_context), len(router.path_routes_siblings) - 1)
+    router = reacton.use_context(router_context)
+    route_level = min(reacton.use_context(route_level_context), len(router.path_routes_siblings) - 1)
     for route in router.path_routes_siblings[route_level]:
         if path.startswith(route.path) or (not path and route.path == "/"):
             return route
@@ -108,7 +108,7 @@ def find_route(path: str) -> Optional[sol.Route]:
 
 
 def use_pathname():
-    location_proxy = react.use_context(_location_context)
+    location_proxy = reacton.use_context(_location_context)
 
     def setter(value):
         location_proxy.pathname = value
@@ -117,12 +117,12 @@ def use_pathname():
 
 
 def resolve_path(path_or_route: Union[str, sol.Route], level=0) -> str:
-    router = react.use_context(router_context)
+    router = reacton.use_context(router_context)
     if isinstance(path_or_route, str):
         path = path_or_route
         if path.startswith("/"):
             return path
-        route_level = react.use_context(route_level_context) + level - 1
+        route_level = reacton.use_context(route_level_context) + level - 1
         parts = [*router.parts[:route_level], path]
         path = "/" + "/".join(parts)
         if path.startswith("//"):

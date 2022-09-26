@@ -7,10 +7,9 @@ import ipyvuetify as v
 import pygments
 import pymdownx.highlight
 import pymdownx.superfences
+import reacton
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import get_lexer_by_name
-
-from solara.kitchensink import react
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +29,7 @@ def _run_solara(code):
     else:
         raise NameError("No Page of app defined")
     box = v.Html(tag="div")
-    box, rc = react.render(app, container=box)
+    box, rc = reacton.render(app, container=box)
     widget_id = box._model_id
     return f'<jupyter-widget widget="IPY_MODEL_{widget_id}">loading widget...</jupyter-widget>'
 
@@ -114,7 +113,7 @@ def _highlight(src, language, unsafe_solara_execute, extra, *args, **kwargs):
         return html
 
 
-@react.component
+@reacton.component
 def MarkdownIt(md_text: str, highlight: List[int] = [], unsafe_solara_execute: bool = False):
     md_text = textwrap.dedent(md_text)
 
@@ -140,7 +139,7 @@ def MarkdownIt(md_text: str, highlight: List[int] = [], unsafe_solara_execute: b
     return v.VuetifyTemplate.element(template=_markdown_template(html)).key(hash)
 
 
-@react.component
+@reacton.component
 def Markdown(md_text: str, unsafe_solara_execute=False):
     import markdown
 

@@ -13,7 +13,7 @@ We provide three version of the pivot table
 
 import vaex.datasets
 
-from solara.kitchensink import react, sol
+from solara.alias import reacton, sol
 
 try:
     df = vaex.datasets.titanic()
@@ -21,11 +21,11 @@ except Exception:
     df = None
 
 
-@react.component
+@reacton.component
 def View():
     # select on the 2nd x axis, index=3, which means (pclass=2, survived=true)
     # Note: the indices refer to the header_x and header_y
-    selected, on_selected = react.use_state({"x": [1, 3]})
+    selected, on_selected = reacton.use_state({"x": [1, 3]})
     data = sol.PivotTableData(
         {
             "x": ["pclass", "survived"],
@@ -47,14 +47,14 @@ def View():
     return main
 
 
-@react.component
+@reacton.component
 def Page():
     with sol.Div() as main:
         sol.Markdown("# Titanic")
-        selected, on_selected = react.use_state({"x": [0, 0]})
+        selected, on_selected = reacton.use_state({"x": [0, 0]})
         sol.provide_cross_filter()
         with sol.VBox():
-            type, set_type = react.use_state("view")
+            type, set_type = reacton.use_state("view")
             with sol.ToggleButtonsSingle(type, on_value=set_type):
                 sol.Button("PivotTableView", value="view")
                 sol.Button("PivotTable", value="df")

@@ -1,9 +1,9 @@
-# React-ipywidgets
+# Reacton
 
- * [Documentation](https://react-ipywidgets.readthedocs.io/)
- * [GitHub](https://github.com/widgetti/react-ipywidgets/)
+ * [Documentation](https://reacton.readthedocs.io/)
+ * [GitHub](https://github.com/widgetti/reacton/)
 
-React-ipywidgets is a React-like layer around ipywidgets.
+Reacton is a React-like layer around ipywidgets.
 
 Using a declarative way, in a React (JS) style, makes your codebase smaller, less error-prone, and easier to reason about. We don't see a good reason not to use it.
 

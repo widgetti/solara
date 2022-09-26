@@ -1,21 +1,21 @@
-from solara.kitchensink import react, sol
+from solara.alias import reacton, sol
 
 set_fail = None
 clear = None
 
 
-@react.component
+@reacton.component
 def UnstableComponent(number: int):
     if number == 3:
         raise Exception("I do not like 3")
     return sol.Text(f"You picked {number}")
 
 
-@react.component
+@reacton.component
 def Page():
-    value, set_value = react.use_state(1)
+    value, set_value = reacton.use_state(1)
     value_previous = sol.use_previous(value)
-    exception, clear_exception = react.use_exception()
+    exception, clear_exception = reacton.use_exception()
     # print(exception)
     with sol.VBox() as main:
         if exception:

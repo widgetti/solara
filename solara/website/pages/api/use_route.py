@@ -44,10 +44,10 @@ If the current route has children, any child component that calls `use_route` wi
 
 """
 
-from solara.kitchensink import react, sol
+from solara.alias import reacton, sol
 
 
-@react.component
+@reacton.component
 def Fruit():
     # this gets all routes in fruit's children
     route, routes = sol.use_route()
@@ -76,7 +76,7 @@ def Fruit():
     return main
 
 
-@react.component
+@reacton.component
 def Page():
     # this gets the top level routes, '/' and 'fruit'
     route_current, routes_all = sol.use_route()

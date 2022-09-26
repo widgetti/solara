@@ -1,11 +1,11 @@
 from typing import Callable, List, TypeVar
 
-from solara.kitchensink import react, sol, v
+from solara.alias import reacton, rv, sol
 
 T = TypeVar("T")
 
 
-def _get_button_value(button: react.core.Element):
+def _get_button_value(button: reacton.core.Element):
     value = button.kwargs.get("value")
     if value is None:
         value = button.kwargs.get("label")
@@ -14,8 +14,8 @@ def _get_button_value(button: react.core.Element):
     return value
 
 
-@react.component
-def ToggleButtonsSingle(value: T, children: List[react.core.Element] = [], on_value: Callable[[T], None] = None):
+@reacton.component
+def ToggleButtonsSingle(value: T, children: List[reacton.core.Element] = [], on_value: Callable[[T], None] = None):
     values = [_get_button_value(button) for button in children]
     index, set_index = sol.use_state_or_update(values.index(value), key="index")
 
@@ -25,13 +25,13 @@ def ToggleButtonsSingle(value: T, children: List[react.core.Element] = [], on_va
         if on_value:
             on_value(value)
 
-    with v.BtnToggle(children=children, multiple=False, mandatory=True, v_model=index, on_v_model=on_index) as main:
+    with rv.BtnToggle(children=children, multiple=False, mandatory=True, v_model=index, on_v_model=on_index) as main:
         pass
     return main
 
 
-@react.component
-def ToggleButtonsMultiple(value: List[T], children: List[react.core.Element] = [], on_value: Callable[[List[T]], None] = None):
+@reacton.component
+def ToggleButtonsMultiple(value: List[T], children: List[reacton.core.Element] = [], on_value: Callable[[List[T]], None] = None):
     allvalues = [_get_button_value(button) for button in children]
     indices, set_indices = sol.use_state_or_update([allvalues.index(k) for k in value], key="index")
 
@@ -41,6 +41,6 @@ def ToggleButtonsMultiple(value: List[T], children: List[react.core.Element] = [
         if on_value:
             on_value(value)
 
-    with v.BtnToggle(children=children, multiple=True, mandatory=False, v_model=indices, on_v_model=on_indices) as main:
+    with rv.BtnToggle(children=children, multiple=True, mandatory=False, v_model=indices, on_v_model=on_indices) as main:
         pass
     return main

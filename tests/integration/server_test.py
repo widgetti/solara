@@ -6,8 +6,8 @@ from pathlib import Path
 
 import playwright
 import playwright.sync_api
-import react_ipywidgets as react
-import react_ipywidgets.ipywidgets as w
+import reacton
+import reacton.ipywidgets as w
 
 from solara.kitchensink import v
 
@@ -62,9 +62,9 @@ def test_docs_basics(page: playwright.sync_api.Page, solara_server, solara_app):
         # page.screenshot(path="tmp/screenshot_use_effect.png")
 
 
-@react.component
+@reacton.component
 def ClickButton():
-    count, set_count = react.use_state(0)
+    count, set_count = reacton.use_state(0)
     if not isinstance(count, int):
         print("oops, state issue?")  # noqa
         count = 0
@@ -89,10 +89,10 @@ def test_multi_user(page: playwright.sync_api.Page, solara_server, solara_app, e
         # page.locator("text=Clicked: 0").click()
 
 
-@react.component
+@reacton.component
 def ThreadTest():
-    label, set_label = react.use_state("initial")
-    use_thread, set_use_thread = react.use_state(False)
+    label, set_label = reacton.use_state("initial")
+    use_thread, set_use_thread = reacton.use_state(False)
 
     def from_thread():
         set_label("from thread")
@@ -103,7 +103,7 @@ def ThreadTest():
             thread.start()
             return thread.join
 
-    react.use_side_effect(start_thread, [use_thread])
+    reacton.use_side_effect(start_thread, [use_thread])
     # we need to trigger creating a new widget, to make sure we
     # invoke a solara.server.app.get_current_context
     if label == "initial":

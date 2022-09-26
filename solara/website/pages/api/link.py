@@ -1,7 +1,7 @@
 """Create a link to navigate to a route."""
 
 
-from solara.kitchensink import react, sol
+from solara.alias import reacton, sol
 
 routes = [
     sol.Route(path="/"),
@@ -11,7 +11,7 @@ routes = [
 ]
 
 
-@react.component
+@reacton.component
 def LinkExample():
     route_current, routes = sol.use_route()
     with sol.VBox() as main:

@@ -6,7 +6,7 @@ Solara is the bridge between Jupyter-based data-app development and production d
 
 Solara lets you use and build data-focused web apps (data apps) using reusable UI components. Your app will work in the Jupyter notebook and production-grade web frameworks (FastAPI, Starlette, Flask, ...).
 
-Solara uses proven technologies and mature standards. Grow from a one-off experiment in the Jupyter notebook or a dynamic data portal in production.  Built on top of React-IPywidgets keeps your code complexity under control.
+Solara uses proven technologies and mature standards. Grow from a one-off experiment in the Jupyter notebook or a dynamic data portal in production.  Built on top of Reacton keeps your code complexity under control.
 
 We care about developer experience. Solara will give your hot code reloading and type hints to faster development.
 

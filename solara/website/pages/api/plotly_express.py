@@ -21,15 +21,15 @@ plots.
 """
 
 import plotly.express as px
+import reacton
 
 import solara
 import solara.express as spx
-from solara.alias import react
 
 df = px.data.iris()
 
 
-@react.component
+@reacton.component
 def Page():
     solara.provide_cross_filter()
     fig = px.histogram(df, "species")

@@ -1,7 +1,7 @@
 from typing import Callable
 
 import ipyvuetify
-import react_ipywidgets as react
+import reacton
 import traitlets
 
 
@@ -12,6 +12,6 @@ class MarkdownEditorWidget(ipyvuetify.VuetifyTemplate):
     height = traitlets.Unicode("180px").tag(sync=True)
 
 
-@react.component
+@reacton.component
 def MarkdownEditor(value: str = "", on_value: Callable[[str], None] = None):
     return MarkdownEditorWidget.element(value=value, on_value=on_value)

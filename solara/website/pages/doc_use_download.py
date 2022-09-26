@@ -1,6 +1,6 @@
 # flake8: noqa
 import solara as sol
-from solara.kitchensink import react, v, w
+from solara.alias import reacton, rv, rw
 
 from .docutils import IncludeComponent
 
@@ -9,7 +9,7 @@ url = "https://pjreddie.com/media/files/yolov3.weights"
 expected_size = 248007048
 
 
-@react.component
+@reacton.component
 def DownloadFile(file_path=file_path, url=url, expected_size=expected_size, on_done=None):
     download = sol.hooks.use_download(file_path, url, expected_size=expected_size)
     downloaded_size = download.progress * expected_size
@@ -23,20 +23,20 @@ def DownloadFile(file_path=file_path, url=url, expected_size=expected_size, on_d
     # status = "hi"
     # return MarkdownIt(f'{status}')
     assert download.progress is not None
-    with v.Container() as main:
+    with rv.Container() as main:
         # with w.VBox() as main:
-        with v.Row():
-            with v.Col(cols=1):
-                progressbar = v.ProgressLinear(value=download.progress * 100, color="primary", striped=True, height=20)
-            # with v.Col(cols=1):
+        with rv.Row():
+            with rv.Col(cols=1):
+                progressbar = rv.ProgressLinear(value=download.progress * 100, color="primary", striped=True, height=20)
+            # with rv.Col(cols=1):
             #     MarkdownIt(f'{status}')
     return main
 
 
-@react.component
+@reacton.component
 def DocUseDownload():
-    with v.Container() as main:
-        with w.VBox(layout={"padding": "20px", "max_width": "1024px"}):
+    with rv.Container() as main:
+        with rw.VBox(layout={"padding": "20px", "max_width": "1024px"}):
             sol.MarkdownIt(
                 """
 # use_download
@@ -61,8 +61,8 @@ Lets start with a Button, that renders how many times it is clicked.
             IncludeComponent(
                 DownloadFile,
                 """
-import react_ipywidgets as react
-import react_ipywidgets.ipywidgets as w
+import reacton
+import reacton.ipywidgets as w
 
 """,
                 highlight=[6],

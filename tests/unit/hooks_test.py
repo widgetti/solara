@@ -3,10 +3,10 @@ import time
 from pathlib import Path
 from typing import Optional
 
-import react_ipywidgets as react
-from react_ipywidgets import component
-from react_ipywidgets import ipywidgets as w
-from react_ipywidgets import render_fixed
+import reacton
+from reacton import component
+from reacton import ipywidgets as w
+from reacton import render_fixed
 
 import solara as sol
 from solara.datatypes import FileContentResult
@@ -19,11 +19,11 @@ def test_hook_thread():
     @component
     def ThreadTest():
         nonlocal done
-        a, _ = react.use_state("a")
-        b, _ = react.use_state("b")
-        counter, set_counter = react.use_state(0)
-        other, set_other = react.use_state(0)
-        c, _ = react.use_state("c")
+        a, _ = reacton.use_state("a")
+        b, _ = reacton.use_state("b")
+        counter, set_counter = reacton.use_state(0)
+        other, set_other = reacton.use_state(0)
+        c, _ = reacton.use_state("c")
         if counter % 2 == 0:
             set_other(counter)
 
@@ -51,7 +51,7 @@ def test_use_thread_keep_previous():
     @component
     def Test():
         nonlocal set_x
-        x, set_x = react.use_state(2)
+        x, set_x = reacton.use_state(2)
 
         def work():
             time.sleep(0.1)
@@ -83,7 +83,7 @@ def test_hook_iterator():
     event = threading.Event()
     result = None
 
-    @react.component
+    @reacton.component
     def Test():
         nonlocal result
 
@@ -95,7 +95,7 @@ def test_hook_iterator():
         result = use_thread(work)
         return w.Label(value="test")
 
-    label, rc = react.render_fixed(Test())
+    label, rc = reacton.render_fixed(Test())
     assert result is not None
     assert isinstance(result, sol.Result)
     time.sleep(0.05)
@@ -111,7 +111,7 @@ def test_use_thread_intrusive_cancel():
     last_value = 0
     seconds = 4
 
-    @react.component
+    @reacton.component
     def Test():
         nonlocal result
         nonlocal last_value
@@ -127,7 +127,7 @@ def test_use_thread_intrusive_cancel():
         result = use_thread(work, dependencies=[])
         return w.Label(value="test")
 
-    react.render_fixed(Test())
+    reacton.render_fixed(Test())
     assert result is not None
     assert isinstance(result, sol.Result)
     result.cancel()
@@ -147,7 +147,7 @@ def test_use_thread_intrusive_cancel():
 
 
 def test_hook_download(tmpdir):
-    url = "https://raw.githubusercontent.com/widgetti/react-ipywidgets/master/.gitignore"
+    url = "https://raw.githubusercontent.com/widgetti/reacton/master/.gitignore"
     content_length = 865
 
     path = tmpdir / "file.txt"
@@ -167,8 +167,8 @@ def test_hook_download(tmpdir):
     assert label.value == expected
 
     # if given, content_length, we should render with done immediately
-    label, rc = render_fixed(DownloadFile(expected_size=content_length))
-    time.sleep(0.05)
+    label, rc = render_fixed(DownloadFile(expected_size=content_length), handle_error=False)
+    time.sleep(0.2)
     assert label.value == expected
 
     label, rc = render_fixed(DownloadFile(url=url + ".404"))
@@ -181,7 +181,7 @@ def test_hook_download(tmpdir):
 
 
 def test_hook_use_fetch():
-    url = "https://raw.githubusercontent.com/widgetti/react-ipywidgets/master/.gitignore"
+    url = "https://raw.githubusercontent.com/widgetti/reacton/master/.gitignore"
     content_length = 888
 
     result = None
@@ -232,7 +232,7 @@ def test_use_file_content(tmpdir: Path):
 
     result: Optional[FileContentResult[bytes]] = None
 
-    @react.component
+    @reacton.component
     def Test(path):
         nonlocal result
         result = sol.use_file_content(path)
@@ -245,7 +245,7 @@ def test_use_file_content(tmpdir: Path):
         # pickle.dumps(result)
         return w.Button()
 
-    box, rc = react.render(Test(path), handle_error=False)
+    box, rc = reacton.render(Test(path), handle_error=False)
     path_non_exist = tmpdir / "nonexist"
     rc.render(Test(path_non_exist))
     path_non_exist.write_text("Hi", "utf8")
@@ -258,14 +258,14 @@ def test_use_state_or_update():
     values = []
     set_value = None
 
-    @react.component
+    @reacton.component
     def Test(value):
         nonlocal set_value
         value, set_value = sol.use_state_or_update(value)
         values.append(value)
         return w.Button()
 
-    container, rc = react.render(Test(3))
+    container, rc = reacton.render(Test(3))
     assert set_value is not None
     assert values == [3]
     set_value(5)

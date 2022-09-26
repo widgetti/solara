@@ -7,7 +7,7 @@ The DataTable component can render dataframes of any size due to pagination.
 
 ### Component signature
 ```python
-@react.component
+@reacton.component
 def DataTable(df, page=0, items_per_page=20, format=None, column_actions: List[ColumnAction] = [], cell_actions: List[CellAction] = []):
     ...
 ```
@@ -29,7 +29,7 @@ try:
     import vaex
 except ImportError:
     vaex = None
-from solara.kitchensink import react, sol
+from solara.alias import reacton, sol
 
 if vaex is not None:
     df = vaex.datasets.titanic()
@@ -37,10 +37,10 @@ else:
     df = None
 
 
-@react.component
+@reacton.component
 def Page():
-    column, set_column = react.use_state(cast(Optional[str], None))
-    cell, set_cell = react.use_state(cast(Dict[str, Any], {}))
+    column, set_column = reacton.use_state(cast(Optional[str], None))
+    cell, set_cell = reacton.use_state(cast(Dict[str, Any], {}))
 
     def on_action_column(column):
         set_column(column)

@@ -13,7 +13,7 @@
 # semi automated
 To make a new release
 ```
-# update react-ipywidgets/_version.py
+# update solara/__init__.py
 $ git add -u && git commit -m 'Release v0.10.4' && git tag v0.10.4 && git push upstream master v0.10.4
 ```
 

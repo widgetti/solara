@@ -1,8 +1,8 @@
 import ipycanvas
 import numpy as np
-import react_ipywidgets as react
-from react_ipywidgets import ipycanvas as c
-from react_ipywidgets import ipywidgets as w
+import reacton
+from reacton import ipycanvas as c
+from reacton import ipywidgets as w
 
 
 def polygon(canvas, x, y, radius1, radius2, n_points):
@@ -19,10 +19,10 @@ def polygon(canvas, x, y, radius1, radius2, n_points):
     canvas.stroke_polygon(points)
 
 
-@react.component
+@reacton.component
 def Page():
     width, height = 800, 800
-    view_count, set_view_count = react.use_state(0)
+    view_count, set_view_count = reacton.use_state(0)
     with w.ViewcountVBox(set_view_count) as main:
         fill = w.color("#63934e", "fill color")
         stroke = w.color("#4e6393", "stroke color")
@@ -32,7 +32,7 @@ def Page():
         radius_outer = w.slider_float(80, "Outer radius", min=0, max=100)
 
         def real_drawing():
-            canvas: ipycanvas.Canvas = react.core.get_widget(canvas_element)
+            canvas: ipycanvas.Canvas = reacton.core.get_widget(canvas_element)
 
             with ipycanvas.hold_canvas(canvas):
                 canvas.clear()
@@ -42,7 +42,7 @@ def Page():
                 radius = width // 3
                 polygon(canvas, width // 2, height // 2, radius * radius_inner / 100, radius * radius_outer / 100, n_points)
 
-        react.use_side_effect(real_drawing, [fill, stroke, line_width, n_points, view_count, radius_inner, radius_outer])
+        reacton.use_side_effect(real_drawing, [fill, stroke, line_width, n_points, view_count, radius_inner, radius_outer])
         canvas_element = c.Canvas(width=width, height=height)
 
     return main

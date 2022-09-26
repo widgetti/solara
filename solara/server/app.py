@@ -12,8 +12,8 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, cast
 
 import ipywidgets as widgets
-import react_ipywidgets as react
-from react_ipywidgets.core import Element, render
+import reacton
+from reacton.core import Element, render
 
 import solara as sol
 
@@ -88,7 +88,7 @@ class AppScript:
         # this might be useful for development
         # but requires reloading of react in solara iself
         # for name, module in sys.modules.items():
-        #     if name.startswith("react_ipywidgets"):
+        #     if name.startswith("reacton"):
         #         file = inspect.getfile(module)
         #         self.watcher.add_file(file)
 
@@ -194,7 +194,7 @@ class AppScript:
             # save states into the context so the hot reload will
             # keep the same state
             for context in context_values:
-                render_context = cast(react.core._RenderContext, context.app_object)
+                render_context = cast(reacton.core._RenderContext, context.app_object)
                 if render_context:
                     context.state = render_context.state_get()
 
@@ -241,7 +241,7 @@ class AppContext:
     def close(self):
         with self:
             if self.app_object is not None:
-                if isinstance(self.app_object, react.core._RenderContext):
+                if isinstance(self.app_object, reacton.core._RenderContext):
                     self.app_object.close()
             import solara.server.patch
 
@@ -269,7 +269,7 @@ class AppContext:
         path = Path(state_directory) / f"{self.id}.pickle"
         render_context = self.app_object
         if render_context is not None:
-            render_context = cast(react.core._RenderContext, render_context)
+            render_context = cast(reacton.core._RenderContext, render_context)
             state = render_context.state_get()
             with path.open("wb") as f:
                 logger.debug("State: %r", state)
@@ -313,7 +313,7 @@ def get_current_context() -> AppContext:
     return context
 
 
-def _run_app(app_state, app_script: AppScript, pathname: str, render_context: react.core._RenderContext = None):
+def _run_app(app_state, app_script: AppScript, pathname: str, render_context: reacton.core._RenderContext = None):
 
     # app.signal_hook_install()
     main_object, routes = app_script.run()
@@ -322,7 +322,7 @@ def _run_app(app_state, app_script: AppScript, pathname: str, render_context: re
     container = context.container
     if isinstance(main_object, widgets.Widget):
         return main_object, render_context
-    elif isinstance(main_object, Element) or isinstance(main_object, react.core.Component):
+    elif isinstance(main_object, Element) or isinstance(main_object, reacton.core.Component):
         if isinstance(main_object, Element):
             children = [main_object]
         else:

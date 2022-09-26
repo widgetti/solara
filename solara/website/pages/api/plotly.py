@@ -10,21 +10,21 @@ This can be significantly faster than comparing he figure data directly.
 """
 
 import plotly.express as px
+import reacton
 
 import solara
-from solara.alias import react
 
 df = px.data.iris()
 
 
-@react.component
+@reacton.component
 def Page():
     with solara.VBox() as main:
-        selection_data, set_selection_data = react.use_state(None)
-        click_data, set_click_data = react.use_state(None)
-        hover_data, set_hover_data = react.use_state(None)
-        unhover_data, set_unhover_data = react.use_state(None)
-        deselect_data, set_deselect_data = react.use_state(None)
+        selection_data, set_selection_data = reacton.use_state(None)
+        click_data, set_click_data = reacton.use_state(None)
+        hover_data, set_hover_data = reacton.use_state(None)
+        unhover_data, set_unhover_data = reacton.use_state(None)
+        deselect_data, set_deselect_data = reacton.use_state(None)
         fig = px.scatter(df, x="sepal_width", y="sepal_length", color="species")
         solara.FigurePlotly(
             fig, on_selection=set_selection_data, on_click=set_click_data, on_hover=set_hover_data, on_unhover=set_unhover_data, on_deselect=set_deselect_data

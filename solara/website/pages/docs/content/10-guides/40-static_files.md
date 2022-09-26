@@ -13,9 +13,9 @@ Static files can be served under `/static/public` and will look for files in the
 Putting the `public` directory 1 level higher than the `pages` directory avoids name collision with pages.
 
 ```solara
-from solara.alias import react, sol
+from solara.alias import reacton, sol
 
-@react.component
+@reacton.component
 def Page():
 
     image_url = "/static/public/beach.jpeg"

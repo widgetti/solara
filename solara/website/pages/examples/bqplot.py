@@ -1,12 +1,12 @@
 import numpy as np
-import react_ipywidgets as react
-import react_ipywidgets.bqplot as bqplot
-import react_ipywidgets.ipywidgets as w
+import reacton
+import reacton.bqplot as bqplot
+import reacton.ipywidgets as w
 
 x0 = np.linspace(0, 2, 100)
 
 
-@react.component
+@reacton.component
 def Page(x=x0, ymax=5):
     with w.VBox() as main:
         y = x ** w.slider_float(1, min=0.1, max=3, description="Exponent")

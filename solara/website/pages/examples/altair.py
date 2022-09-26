@@ -2,13 +2,13 @@ import altair as alt
 import pandas as pd
 from vega_datasets import data
 
-from solara.kitchensink import react, sol
+from solara.alias import reacton, sol
 
 
-@react.component
+@reacton.component
 def Page():
-    click_data, set_click_data = react.use_state(None)
-    hover_data, set_hover_data = react.use_state(None)
+    click_data, set_click_data = reacton.use_state(None)
+    hover_data, set_hover_data = reacton.use_state(None)
 
     if 0:
         # to bad this example doesn't work well with on_click and on_hover

@@ -1,20 +1,20 @@
 from typing import Any, Callable, List
 
 import ipyvue as vue
-import react_ipywidgets as react
-import react_ipywidgets.ipyvuetify as v
-import react_ipywidgets.ipyvuetify as ipyvue
+import reacton
+import reacton.ipyvuetify as v
+import reacton.ipyvuetify as ipyvue
 
 import solara as sol
 import solara.widgets
 
-Navigator = react.core.ComponentWidget(solara.widgets.Navigator)
-GridDraggable = react.core.ComponentWidget(solara.widgets.GridLayout)
+Navigator = reacton.core.ComponentWidget(solara.widgets.Navigator)
+GridDraggable = reacton.core.ComponentWidget(solara.widgets.GridLayout)
 # keep the old name for a while
 GridLayout = GridDraggable
 
 
-@react.component
+@reacton.component
 def ListItem(title, icon_name: str = None, children=[], value=None):
     if value is None:
         value = title
@@ -37,7 +37,7 @@ def ListItem(title, icon_name: str = None, children=[], value=None):
 
 def ui_dropdown(label, value=None, options=["foo", "bar"], key=None, disabled=False, **kwargs):
     key = key or str(value) + str(label) + str(options)
-    value, set_value = react.use_state(value, key)
+    value, set_value = reacton.use_state(value, key)
 
     def set_index(index):
         set_value(options[index])
@@ -48,21 +48,21 @@ def ui_dropdown(label, value=None, options=["foo", "bar"], key=None, disabled=Fa
 
 def ui_text(label, value="", key=None, clearable=False, hint="", disabled=False, **kwargs):
     key = key or str(value) + str(label) + str(hint)
-    value, set_value = react.use_state(value, key)
+    value, set_value = reacton.use_state(value, key)
     v.TextField(v_model=value, label=label, on_v_model=set_value, clearable=clearable, hint=hint, disabled=disabled, **kwargs)
     return value
 
 
 def ui_checkbox(label, value=True, key=None, disabled=False, **kwargs):
     key = key or str(value) + str(label)
-    value, set_value = react.use_state(value, key)
+    value, set_value = reacton.use_state(value, key)
     v.Checkbox(v_model=value, label=label, on_v_model=set_value, **kwargs)
     return value
 
 
 def ui_slider(value=1, label="", min=0, max=100, key=None, tick_labels=None, thumb_label=None, disabled=False, **kwargs):
     key = key or str(value) + str(label)
-    value, set_value = react.use_state(value, key)
+    value, set_value = reacton.use_state(value, key)
     v.Slider(
         v_model=value,
         label=label,
@@ -78,8 +78,8 @@ def ui_slider(value=1, label="", min=0, max=100, key=None, tick_labels=None, thu
     return value
 
 
-@react.component
-def Card(title: str = None, elevation: int = 2, margin=2, children: List[react.core.Element] = []):
+@reacton.component
+def Card(title: str = None, elevation: int = 2, margin=2, children: List[reacton.core.Element] = []):
     with v.Card(elevation=elevation, class_=f"ma-{margin}") as main:
         if title:
             with v.CardTitle(
@@ -91,42 +91,42 @@ def Card(title: str = None, elevation: int = 2, margin=2, children: List[react.c
     return main
 
 
-@react.component
+@reacton.component
 def Text(text):
     return vue.Html.element(tag="span", children=[text])
 
 
-@react.component
+@reacton.component
 def Div(children=[], **kwargs):
     return vue.Html.element(tag="div", children=children, **kwargs)
 
 
-@react.component
+@reacton.component
 def Preformatted(text, **kwargs):
     return vue.Html.element(tag="pre", children=[text], **kwargs)
 
 
-@react.component
+@reacton.component
 def Warning(text, icon="mdi-alert", children=[], **kwargs):
     return v.Alert(type="warning", text=True, prominent=True, icon=icon, children=[text, *children], **kwargs)
 
 
-@react.component
+@reacton.component
 def Info(text, icon="mdi-alert", children=[], progress=False, **kwargs):
     return v.Alert(type="info", text=True, prominent=True, icon=icon, children=[text, *children], **kwargs)
 
 
-@react.component
+@reacton.component
 def Error(text, icon="mdi-alert", children=[], **kwargs):
     return v.Alert(type="error", text=True, prominent=True, icon=icon, children=[text, *children], **kwargs)
 
 
-@react.component
+@reacton.component
 def Success(text, icon="mdi-alert", children=[], **kwargs):
     return v.Alert(type="success", text=True, prominent=True, icon=icon, children=[text, *children], **kwargs)
 
 
-@react.component
+@reacton.component
 def Button(
     label: str = None,
     on_click: Callable[[], None] = None,
@@ -147,19 +147,19 @@ def Button(
     return btn
 
 
-@react.component
+@reacton.component
 def IconButton(icon_name: str = None, on_click=Callable[[], None], children: list = [], click_event="click", **kwargs):
     return Button(icon_name=icon_name, on_click=on_click, children=children, icon=True, click_event=click_event, **kwargs)
 
 
-@react.component
+@reacton.component
 def HTML(tag="div", unsafe_innerHTML=None, style: str = None, class_: str = None, **kwargs):
     attributes = dict(style=style)
     attributes["class"] = class_
     return solara.widgets.HTML.element(tag=tag, unsafe_innerHTML=unsafe_innerHTML, attributes=attributes)
 
 
-@react.component
+@reacton.component
 def VBox(children=[], grow=True, align_items="stretch"):
     style = f"flex-direction: column; align-items: {align_items};"
     if grow:
@@ -167,7 +167,7 @@ def VBox(children=[], grow=True, align_items="stretch"):
     return v.Sheet(class_="d-flex", style_=style, elevation=0, children=children)
 
 
-@react.component
+@reacton.component
 def HBox(children=[], grow=True, align_items="stretch"):
     style = f"flex-direction: row; align-items: {align_items}; "
     if grow:
@@ -175,7 +175,7 @@ def HBox(children=[], grow=True, align_items="stretch"):
     return v.Sheet(class_="d-flex", style_=style, elevation=0, children=children)
 
 
-@react.component
+@reacton.component
 def GridFixed(columns=4, column_gap="10px", row_gap="10px", children=[], align_items="stretch", justify_items="stretch"):
     """
 
@@ -189,7 +189,7 @@ def GridFixed(columns=4, column_gap="10px", row_gap="10px", children=[], align_i
     return Div(style_=style, children=children)
 
 
-@react.component
+@reacton.component
 def Padding(size, children=[], grow=True):
     style = "flex-direction: row;"
     if grow:
@@ -197,7 +197,7 @@ def Padding(size, children=[], grow=True):
     return v.Sheet(class_=f"pa-{size}", style_=style, elevation=0, children=children)
 
 
-@react.component
+@reacton.component
 def AltairChart(chart, on_click=None, on_hover=None):
     import altair as alt
 
@@ -212,7 +212,7 @@ def AltairChart(chart, on_click=None, on_hover=None):
         )
 
 
-@react.component
+@reacton.component
 def FigurePlotly(
     fig,
     on_selection: Callable[[Any], None] = None,
@@ -246,7 +246,7 @@ def FigurePlotly(
     fig_element = FigureWidget.element(on__js2py_pointsCallback=on_points_callback)
 
     def update_data():
-        fig_widget: FigureWidget = react.get_widget(fig_element)
+        fig_widget: FigureWidget = reacton.get_widget(fig_element)
         fig_widget.layout = fig.layout
 
         length = len(fig_widget.data)
@@ -254,11 +254,11 @@ def FigurePlotly(
         data = list(fig_widget.data)
         fig_widget.data = data[length:]
 
-    react.use_effect(update_data, dependencies or fig)
+    reacton.use_effect(update_data, dependencies or fig)
     return fig_element
 
 
-@react.component
+@reacton.component
 def Code(path, path_header=None):
     path_header = path_header or path
     with open(path) as f:

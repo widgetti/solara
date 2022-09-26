@@ -1,7 +1,7 @@
-from solara.alias import react, rv, rvue, sol
+from solara.alias import reacton, rv, rvue, sol
 
 
-@react.component
+@reacton.component
 def LinkTab(path, label):
     # both adding href to tab or adding Link makes vuetify buggy
     with rv.Tab() as tab:
@@ -16,7 +16,7 @@ def LinkTab(path, label):
     return tab
 
 
-@react.component
+@reacton.component
 def TabNavigation(children=[], vertical=False, **kwargs):
     children = children or []
     route_current, all_routes = sol.use_route()

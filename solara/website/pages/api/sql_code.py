@@ -17,7 +17,7 @@ try:
 except ImportError:
     vaex = None
 
-from solara.kitchensink import react, sol, v
+from solara.alias import reacton, rv, sol
 
 if vaex is not None:
     df_iris = vaex.datasets.iris().to_pandas_df()
@@ -39,12 +39,12 @@ if vaex is not None:
     table_hints = {table_name: conn.execute(f"SELECT * from {table_name} LIMIT 1").fetchone().keys() for table_name in table_names}
 
 
-@react.component
+@reacton.component
 def Page():
     if vaex is None:
         return sol.Error("Vaex is not installed, run pip install vaex-core vaex-hdf5")
-    query, set_query = react.use_state("SELECT * from titanic")
-    query_executed, set_query_executed = react.use_state(cast(Optional[str], None))
+    query, set_query = reacton.use_state("SELECT * from titanic")
+    query_executed, set_query_executed = reacton.use_state(cast(Optional[str], None))
 
     def run_query(cancel: threading.Event) -> pd.DataFrame:
         if not query_executed:
@@ -79,5 +79,5 @@ def Page():
         elif query_executed is not None:
             with sol.Div():
                 sol.Text("Loading data...")
-                v.ProgressCircular(indeterminate=True, class_="solara-progress")
+                rv.ProgressCircular(indeterminate=True, class_="solara-progress")
     return main

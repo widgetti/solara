@@ -3,7 +3,7 @@ from typing import Callable, Optional
 import ipyvue as vue
 import ipyvuetify as v
 
-from solara.kitchensink import react, sol
+from solara.alias import reacton, sol
 
 routes = [
     sol.Route(path="/"),
@@ -44,11 +44,11 @@ def test_router():
 
 
 def test_resolve_path_route():
-    @react.component
+    @reacton.component
     def Test(route):
         return sol.Text(sol.resolve_path(route))
 
-    @react.component
+    @reacton.component
     def Provider(path, route):
         # nonlocal set_path
         path, set_path = sol.use_state_or_update(path)
@@ -56,22 +56,22 @@ def test_resolve_path_route():
         sol.routing.router_context.provide(sol.routing.Router(path, routes=routes))
         return Test(route)
 
-    container, rc = react.render(Provider("/", routes[0]))
+    container, rc = reacton.render(Provider("/", routes[0]))
     assert rc._find(vue.Html).widget.children[0] == "/"
 
-    container, rc = react.render(Provider("/", routes[1]))
+    container, rc = reacton.render(Provider("/", routes[1]))
     assert rc._find(vue.Html).widget.children[0] == "/fruit"
-    container, rc = react.render(Provider("/", routes[1].children[1]))
+    container, rc = reacton.render(Provider("/", routes[1].children[1]))
     assert rc._find(vue.Html).widget.children[0] == "/fruit/banana"
 
 
 def test_resolve_path_str():
-    @react.component
+    @reacton.component
     def Test(path: str):
         sol.use_route()
         return sol.Text(sol.resolve_path(path))
 
-    @react.component
+    @reacton.component
     def FruitProvider(path: str):
         path, set_path = sol.use_state_or_update(path)
         sol.routing._location_context.provide(sol.routing._Location(path, set_path))
@@ -79,11 +79,11 @@ def test_resolve_path_str():
         sol.use_route()
         return Test(path)
 
-    container, rc = react.render(FruitProvider("kiwi"))
+    container, rc = reacton.render(FruitProvider("kiwi"))
     assert rc._find(vue.Html).widget.children[0] == "/fruit/kiwi"
-    container, rc = react.render(FruitProvider("apple"))
+    container, rc = reacton.render(FruitProvider("apple"))
     assert rc._find(vue.Html).widget.children[0] == "/fruit/apple"
-    container, rc = react.render(FruitProvider("/fruit/apple"))
+    container, rc = reacton.render(FruitProvider("/fruit/apple"))
     assert rc._find(vue.Html).widget.children[0] == "/fruit/apple"
 
 
@@ -107,7 +107,7 @@ def test_toggle_buttons_single():
         ),
     ]
 
-    @react.component
+    @reacton.component
     def Test():
         route, routes = sol.use_route()
         if route is None:
@@ -121,7 +121,7 @@ def test_toggle_buttons_single():
             sol.Button(route.path)
         return main
 
-    @react.component
+    @reacton.component
     def Root():
         route, routes = sol.use_route()
         assert sol.resolve_path("fruit") == "/fruit"
@@ -131,16 +131,16 @@ def test_toggle_buttons_single():
         assert route.path in ["fruit"]
         return Test()
 
-    @react.component
+    @reacton.component
     def Provider():
         nonlocal set_path
-        path, set_path = react.use_state("/fruit/banana")
+        path, set_path = reacton.use_state("/fruit/banana")
 
         sol.routing._location_context.provide(sol.routing._Location(path, set_path))
         sol.routing.router_context.provide(sol.routing.Router(path, routes=routes))
         return Root()
 
-    container, rc = react.render(Provider(), handle_error=False)
+    container, rc = reacton.render(Provider(), handle_error=False)
     assert rc._find(v.Btn).widget.children[0] == "banana"
     set_path("/fruit/kiwi")
     assert rc._find(v.Btn).widget.children[0] == "kiwi"

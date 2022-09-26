@@ -6,12 +6,12 @@ Child components are layed out on a grid, which can be dragged and resized.
 import pprint
 import textwrap
 
-from solara.kitchensink import react, sol
+from solara.alias import reacton, sol
 
 from .common import ColorCard
 
 
-@react.component
+@reacton.component
 def Page():
     grid_layout_initial = [
         {"h": 5, "i": "0", "moved": False, "w": 3, "x": 0, "y": 0},
@@ -26,7 +26,7 @@ def Page():
 
     # we need to store the state of the grid_layout ourselves, otherwise it will 'reset'
     # each time we change resizable or draggable
-    grid_layout, set_grid_layout = react.use_state(grid_layout_initial)
+    grid_layout, set_grid_layout = reacton.use_state(grid_layout_initial)
 
     # some placeholders
     items = [ColorCard(title=f"Child {i}", color=colors[i]) for i in range(len(grid_layout))]

@@ -13,14 +13,14 @@ Run as:
 
 This will create the file `sol.py` with the following content.
 ```solara
-import react_ipywidgets as react
+import reacton
 
 import solara as sol
 
 
-@react.component
+@reacton.component
 def Page():
-    clicks, set_clicks = react.use_state(0)
+    clicks, set_clicks = reacton.use_state(0)
 
     color = "green"
     if clicks >= 5:
@@ -46,7 +46,7 @@ Solara server is starting at http://localhost:8765
 If you open the URL in your browser ([or click here](http://localhost:8765)), you should see the same example as above.
 
 Solara will run your script once, and will look for the `Page` component. Solara expects this component to exist
-and be a `react_ipywidgets` component (or an element, or even a pure `ipywidgets` widget instance).
+and be a `reacton` component (or an element, or even a pure `ipywidgets` widget instance).
 
 Since your script is only run once, you could put in the main body of your script code that only needs to run once (e.g. loading data from disk)
 

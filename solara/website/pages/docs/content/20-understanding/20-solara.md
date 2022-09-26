@@ -1,6 +1,6 @@
 # Solara
 
-Solara combines [ipywidgets](./ipywidgets), [react-ipywidgets](./react-ipywidgets) and puts it into a opinionated framework to make web apps with a focus on data (data apps for short).
+Solara combines [ipywidgets](./ipywidgets), [reacton](./reacton) and puts it into a opinionated framework to make web apps with a focus on data (data apps for short).
 
 Solara consists of two main parts
 

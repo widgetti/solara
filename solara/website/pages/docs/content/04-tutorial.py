@@ -4,7 +4,7 @@ from typing import Any, Dict
 
 import nbformat
 
-from solara.alias import react, sol
+from solara.alias import reacton, sol
 
 HERE = Path(__file__).parent
 
@@ -42,10 +42,10 @@ def execute_notebook(path: Path):
     return nb
 
 
-@react.component
+@reacton.component
 def Page():
     # only execute once, other
-    nb: nbformat.NotebookNode = react.use_memo(lambda: execute_notebook(HERE / "_solara-tutorial.ipynb"))
+    nb: nbformat.NotebookNode = reacton.use_memo(lambda: execute_notebook(HERE / "_solara-tutorial.ipynb"))
 
     last_page = None
     with sol.VBox() as main:

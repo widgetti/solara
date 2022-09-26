@@ -7,7 +7,7 @@ The extra x and y must be optional arguments, and can be changed using the query
 """
 import plotly.express as px
 
-from solara.kitchensink import react, sol
+from solara.alias import reacton, sol
 
 from ... import data
 from ...components import Layout
@@ -17,7 +17,7 @@ def title(type: str, name: str):
     return f"Solara viz view: {type} - {name}"
 
 
-@react.component
+@reacton.component
 def Page(type: str, name: str, x: str = None, y: str = None):
     # router = sol.use_router()
     df = data.dfs[name].df

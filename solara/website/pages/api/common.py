@@ -1,8 +1,8 @@
-from solara.kitchensink import react, v
+from solara.alias import reacton, rv
 
 
-@react.component
+@reacton.component
 def ColorCard(title, color):
-    with v.Card(style_=f"background-color: {color}; width: 100%; height: 100%") as main:
-        v.CardTitle(children=[title])
+    with rv.Card(style_=f"background-color: {color}; width: 100%; height: 100%") as main:
+        rv.CardTitle(children=[title])
     return main

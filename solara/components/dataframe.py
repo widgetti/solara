@@ -1,10 +1,10 @@
 from typing import List, cast
 
 import numpy as np
-import react_ipywidgets as react
-import react_ipywidgets.bqplot as bqplot
-import react_ipywidgets.ipyvuetify as v
-import react_ipywidgets.ipywidgets as w
+import reacton
+import reacton.bqplot as bqplot
+import reacton.ipyvuetify as v
+import reacton.ipywidgets as w
 
 from solara.components import ui_checkbox, ui_dropdown
 from solara.hooks import df_unique, max_unique, use_cross_filter, use_df_column_names
@@ -12,7 +12,7 @@ from solara.hooks import df_unique, max_unique, use_cross_filter, use_df_column_
 cardheight = "100%"
 
 
-@react.component
+@reacton.component
 def ExpressionEditor(df, value: str, label="Custom expression", on_value=None, placeholder="Enter an expression", prepend_icon="function"):
     """Editor for expression for Vaex, on_value will only be triggered for valid expressions"""
 
@@ -25,9 +25,9 @@ def ExpressionEditor(df, value: str, label="Custom expression", on_value=None, p
         except Exception as e:
             return str(e)
 
-    value, set_value = react.use_state(value)
+    value, set_value = reacton.use_state(value)
     error: List = []
-    error, set_error = react.use_state(cast(List, []))
+    error, set_error = reacton.use_state(cast(List, []))
     set_error([get_error(value)])
 
     def on_value_local(value):
@@ -49,7 +49,7 @@ def ExpressionEditor(df, value: str, label="Custom expression", on_value=None, p
     )
 
 
-@react.component
+@reacton.component
 def FilterCard(df):
     filter, set_filter = use_cross_filter(id(df), "filter-custom")
 
@@ -61,24 +61,24 @@ def FilterCard(df):
     return main
 
 
-@react.component
+@reacton.component
 def Table(df, n=5):
     output_c = w.Output()
 
     def output():
         import ipywidgets as widgets
 
-        output_real: widgets.Output = react.get_widget(output_c)
+        output_real: widgets.Output = reacton.get_widget(output_c)
         # don't rely on display, does not work in solara yet
         with output_real.hold_sync():
             output_real.outputs = tuple()
             output_real.append_display_data(df)
 
-    react.use_side_effect(output)
+    reacton.use_side_effect(output)
     return output_c
 
 
-@react.component
+@reacton.component
 def TableCard(df):
     filter, set_filter = use_cross_filter(id(df), "table")
     dff = df
@@ -101,7 +101,7 @@ def TableCard(df):
     return main
 
 
-@react.component
+@reacton.component
 def HistogramCard(df, column=None):
     filter, set_filter = use_cross_filter(id(df), "filter-histogram")
     dff = df  # filter(df)
@@ -179,7 +179,7 @@ def HistogramCard(df, column=None):
     return main
 
 
-@react.component
+@reacton.component
 def ScatterCard(df, x=None, y=None, color=None):
     filter, set_filter = use_cross_filter(id(df), "filter-scatter")
     dff = df
@@ -322,11 +322,11 @@ color_maps = [
 cardheight = "100%"
 
 
-@react.component
+@reacton.component
 def HeatmapCard(df, x=None, y=None, debounce=True):
     limit_keys = "xmin xmax ymin ymax".split()
-    limits, set_limits = react.use_state(dict.fromkeys(limit_keys))
-    contrast, set_contrast = react.use_state([0.5, 99.5])
+    limits, set_limits = reacton.use_state(dict.fromkeys(limit_keys))
+    contrast, set_contrast = reacton.use_state([0.5, 99.5])
     # print("limits", limits)
     limits = limits.copy()
     filter, set_filter = use_cross_filter(id(df), "filter-heatmap")
@@ -379,7 +379,7 @@ def HeatmapCard(df, x=None, y=None, debounce=True):
                             return setter
                         # return shared
 
-                    return react.use_memo(make, [name])
+                    return reacton.use_memo(make, [name])
 
                 update_xmin = updater("xmin")
                 update_xmax = updater("xmax")
@@ -396,15 +396,15 @@ def HeatmapCard(df, x=None, y=None, debounce=True):
                     update_xmin(values[0])
                     update_xmax(values[1])
 
-                react.use_memo(lambda: minx(xcol), [xcol])
+                reacton.use_memo(lambda: minx(xcol), [xcol])
 
-                # @react.use_memo
+                # @reacton.use_memo
                 def miny(y):
                     values = [k.item() for k in dff[y].minmax()]
                     update_ymin(values[0])
                     update_ymax(values[1])
 
-                react.use_memo(lambda: miny(ycol), [ycol])
+                reacton.use_memo(lambda: miny(ycol), [ycol])
 
                 if all(limits[k] is not None for k in limit_keys):
                     # print("limits used", limits)
@@ -418,9 +418,9 @@ def HeatmapCard(df, x=None, y=None, debounce=True):
                         else:
                             set_filter(None)
 
-                    react.use_memo(cross_filter, [crossfilter_visible, xrange, yrange])
+                    reacton.use_memo(cross_filter, [crossfilter_visible, xrange, yrange])
 
-                    # @react.use_memo
+                    # @reacton.use_memo
 
                     def grid(xcol, ycol, limits):
                         vaex_limits = [xrange, yrange]
@@ -453,7 +453,7 @@ def HeatmapCard(df, x=None, y=None, debounce=True):
     return main
 
 
-@react.component
+@reacton.component
 def SummaryCard(df):
     filter, set_filter = use_cross_filter(id(df), "summary")
     dff = df
@@ -481,14 +481,14 @@ def SummaryCard(df):
     return main
 
 
-@react.component
+@reacton.component
 def DropdownCard(df, column=None):
     max_unique = 100
     filter, set_filter = use_cross_filter(id(df), "filter-dropdown")
     columns = use_df_column_names(df)
-    column, set_column = react.use_state(columns[0] if column is None else column)
+    column, set_column = reacton.use_state(columns[0] if column is None else column)
     uniques = df_unique(df, column, limit=max_unique + 1)
-    value, set_value = react.use_state(None)
+    value, set_value = reacton.use_state(None)
     # to avoid confusing vuetify about selecting 'None' and nothing
     magic_value_missing = "__missing_value__"
 

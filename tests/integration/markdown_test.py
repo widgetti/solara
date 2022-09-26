@@ -3,7 +3,7 @@ from pathlib import Path
 
 import playwright.sync_api
 
-from solara.alias import react, sol
+from solara.alias import reacton, sol
 
 HERE = Path(__file__).parent
 
@@ -13,14 +13,14 @@ md = """
 # Solara markdown
 
 ```solara
-import react_ipywidgets as react
+import reacton
 
 import solara as sol
 
 
-@react.component
+@reacton.component
 def ClickButton():
-    clicks, set_clicks = react.use_state(0)
+    clicks, set_clicks = reacton.use_state(0)
     def on_click():
         set_clicks(clicks + 1)
         print("clicks", clicks)
@@ -34,22 +34,22 @@ app = ClickButton()
 """
 
 
-@react.component
+@reacton.component
 def MarkdownApp():
     return sol.Markdown(md, unsafe_solara_execute=True)
 
 
-@react.component
+@reacton.component
 def MarkdownAppOff():
     return sol.Markdown(md, unsafe_solara_execute=False)
 
 
-@react.component
+@reacton.component
 def MarkdownItApp():
     return sol.MarkdownIt(md, unsafe_solara_execute=True)
 
 
-@react.component
+@reacton.component
 def MarkdownItAppOff():
     return sol.MarkdownIt(md, unsafe_solara_execute=False)
 

@@ -1,11 +1,11 @@
-import react_ipywidgets as react
+import reacton
 
 import solara as sol
 
 
-@react.component
+@reacton.component
 def Page():
-    clicks, set_clicks = react.use_state(0)
+    clicks, set_clicks = reacton.use_state(0)
 
     color = "green"
     if clicks >= 5:

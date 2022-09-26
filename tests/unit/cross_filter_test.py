@@ -1,6 +1,6 @@
 from typing import Optional
 
-import react_ipywidgets as react
+import reacton
 import vaex
 
 import solara
@@ -12,19 +12,19 @@ def test_basic():
     set_filter1 = filter1 = None
     set_filter2 = filter2 = None
 
-    @react.component
+    @reacton.component
     def FilterDummy1():
         nonlocal filter1, set_filter1
         filter1, set_filter1 = solara.use_cross_filter(id(df), "test1")
         return solara.Text("dummy1")
 
-    @react.component
+    @reacton.component
     def FilterDummy2():
         nonlocal filter2, set_filter2
         filter2, set_filter2 = solara.use_cross_filter(id(df), "test1")
         return solara.Text("dummy2")
 
-    @react.component
+    @reacton.component
     def Page():
         solara.provide_cross_filter()
         with solara.VBox() as main:
@@ -32,7 +32,7 @@ def test_basic():
             FilterDummy2()
         return main
 
-    rc, box = react.render(Page(), handle_error=False)
+    rc, box = reacton.render(Page(), handle_error=False)
     assert set_filter1 is not None
     assert set_filter2 is not None
     set_filter1(df.x > 1)
@@ -54,22 +54,22 @@ def test_remove():
     set_multiple = None
     cross_filter_store: Optional[solara.hooks.dataframe.CrossFilterStore] = None
 
-    @react.component
+    @reacton.component
     def FilterDummy1():
         nonlocal filter1, set_filter1
         filter1, set_filter1 = solara.use_cross_filter(id(df), "test1")
         return solara.Text("dummy1")
 
-    @react.component
+    @reacton.component
     def FilterDummy2():
         nonlocal filter2, set_filter2
         filter2, set_filter2 = solara.use_cross_filter(id(df), "test1")
         return solara.Text("dummy2")
 
-    @react.component
+    @reacton.component
     def Page():
         nonlocal cross_filter_store, set_multiple
-        multiple, set_multiple = react.use_state(True)
+        multiple, set_multiple = reacton.use_state(True)
         cross_filter_store = solara.provide_cross_filter()
         with solara.VBox() as main:
             if multiple:
@@ -79,7 +79,7 @@ def test_remove():
                 FilterDummy1()
         return main
 
-    rc, box = react.render(Page(), handle_error=False)
+    rc, box = reacton.render(Page(), handle_error=False)
     assert set_multiple is not None
     assert set_filter1 is not None
     assert set_filter2 is not None

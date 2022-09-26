@@ -3,17 +3,17 @@ import time
 from pathlib import Path
 from typing import Optional, cast
 
-from solara.kitchensink import react, sol, v, w
+from solara.alias import reacton, rv, rw, sol
 
 HERE = Path(__file__).parent
 __doc__ = open(HERE / "use_thread.md").read()
 
 
-@react.component
+@reacton.component
 def Page():
-    number, set_number = react.use_state(17)
+    number, set_number = reacton.use_state(17)
     # the number that proofs it is not a prime
-    proof, set_proof = react.use_state(cast(Optional[int], None))
+    proof, set_proof = reacton.use_state(cast(Optional[int], None))
 
     def work(cancelled: threading.Event):
         for i in range(3, number):
@@ -29,7 +29,7 @@ def Page():
     result: sol.Result[bool] = sol.use_thread(work, dependencies=[number])
 
     with sol.VBox() as main:
-        w.IntText(value=number, on_value=set_number)
+        rw.IntText(value=number, on_value=set_number)
         if result.state == sol.ResultState.FINISHED:
             if result.value:
                 sol.Success(f"{number} is a prime!")
@@ -39,5 +39,5 @@ def Page():
             sol.Error(f"Error occurred: {result.error}")
         else:
             sol.Info(f"Running... (status = {result.state})")
-            v.ProgressLinear(indeterminate=True)
+            rv.ProgressLinear(indeterminate=True)
     return main

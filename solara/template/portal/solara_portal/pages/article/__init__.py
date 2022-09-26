@@ -1,10 +1,10 @@
-from solara.kitchensink import react, sol
+from solara.alias import reacton, sol
 
 from ... import data
 from ...components import Layout
 
 
-@react.component
+@reacton.component
 def Page(name: str, page: int = 0, page_size=100):
     # router = sol.use_router()
     if name not in data.articles:

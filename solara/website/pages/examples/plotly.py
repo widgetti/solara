@@ -1,7 +1,7 @@
 import pandas as pd
 import plotly.express as px
 
-from solara.kitchensink import react, sol
+from solara.alias import reacton, sol
 
 try:
     df = pd.read_csv("https://raw.githubusercontent.com/plotly/datasets/master/gapminderDataFiveYear.csv")
@@ -14,7 +14,7 @@ if df is not None:
     years = df["year"].unique().tolist()
 
 
-@react.component
+@reacton.component
 def Page():
     with sol.Div() as main:
         sol.Markdown(

@@ -6,7 +6,7 @@ The extra page and page_size must be optional arguments, and can be changed usin
 /tabular/titanic?page=1&page_size=50
 """
 
-from solara.kitchensink import react, sol
+from solara.alias import reacton, sol
 
 from .. import data
 from ..components import Layout
@@ -16,7 +16,7 @@ def title():
     return "Solara Tabular view: titanic"
 
 
-@react.component
+@reacton.component
 def Page(name: str, page: int = 0, page_size=100):
     df = data.dfs[name].df
     with Layout() as main:

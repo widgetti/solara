@@ -1,7 +1,7 @@
-from solara.alias import react, rv, sol
+from solara.alias import reacton, rv, sol
 
 
-@react.component
+@reacton.component
 def Hero(title, button_text):
     with rv.Html(tag="section", class_="hero text-center") as main:
         with rv.Container():

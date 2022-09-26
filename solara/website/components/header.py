@@ -1,9 +1,9 @@
 from typing import Callable
 
-from solara.alias import react, rv, sol
+from solara.alias import reacton, rv, sol
 
 
-@react.component
+@reacton.component
 def Header(
     on_toggle_left_menu: Callable[[], None] = None,
     on_toggle_right_menu: Callable[[], None] = None,

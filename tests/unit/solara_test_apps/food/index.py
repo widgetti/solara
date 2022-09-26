@@ -1,8 +1,8 @@
-from solara.kitchensink import react, sol
+from solara.alias import reacton, sol
 
 title = "Fruit home"
 
 
-@react.component
+@reacton.component
 def Page():
     return sol.Success("Yay")

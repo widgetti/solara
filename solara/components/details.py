@@ -1,7 +1,7 @@
-from solara.kitchensink import react, sol, v
+from solara.alias import reacton, rv, sol
 
 
-@react.component
+@reacton.component
 def Details(summary="Summary", children=[], expand=False):
     expand, set_expand = sol.use_state_or_update(expand)
 
@@ -13,8 +13,8 @@ def Details(summary="Summary", children=[], expand=False):
         else:
             raise RuntimeError(f"v_model has odd value: {v_model}")
 
-    with v.ExpansionPanels(v_model=0 if expand else None, on_v_model=on_v_model) as main:
-        with v.ExpansionPanel():
-            v.ExpansionPanelHeader(children=[summary])
-            v.ExpansionPanelContent(children=children)
+    with rv.ExpansionPanels(v_model=0 if expand else None, on_v_model=on_v_model) as main:
+        with rv.ExpansionPanel():
+            rv.ExpansionPanelHeader(children=[summary])
+            rv.ExpansionPanelContent(children=children)
     return main

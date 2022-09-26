@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from solara.alias import react, rv, sol
+from solara.alias import reacton, rv, sol
 from solara.components.title import Title
 from solara.routing import route_level_context
 
@@ -16,14 +16,14 @@ title = "Home"
 route_order = ["/", "docs", "api", "examples"]
 
 
-@react.component
+@reacton.component
 def Page():
     with sol.GridFixed(1, justify_items="center") as main:
         sol.Markdown(md)
     return main
 
 
-@react.component
+@reacton.component
 def SimpleListItem(text=None, children=[], class_: str = None, icon_name=None):
     if icon_name is not None:
         children = [rv.Icon(children=[icon_name])] + children
@@ -32,12 +32,12 @@ def SimpleListItem(text=None, children=[], class_: str = None, icon_name=None):
     return rv.Html(tag="li", children=children, attributes={"class": class_})
 
 
-@react.component
+@reacton.component
 def List(children=[], class_: str = None):
     return rv.Html(tag="ul", children=children, attributes={"class": class_})
 
 
-@react.component
+@reacton.component
 def Sidebar():
     route_current, all_routes = sol.use_route()
     router = sol.use_router()
@@ -62,17 +62,17 @@ def Sidebar():
     return main
 
 
-@react.component
+@reacton.component
 def Layout(children=[]):
     router = sol.use_router()
     route_current, all_routes = sol.use_route()
     # get child routes, and restore router level, so we can also render the route of the sidebar for the mobile view
-    route_level = react.use_context(route_level_context)
+    route_level = reacton.use_context(route_level_context)
     route_sidebar_current, all_routes_sidebar = sol.use_route()
     route_level_context.provide(route_level)
 
-    show_left_menu, set_show_left_menu = react.use_state(False)
-    show_right_menu, set_show_right_menu = react.use_state(False)
+    show_left_menu, set_show_left_menu = reacton.use_state(False)
+    show_right_menu, set_show_right_menu = reacton.use_state(False)
 
     with sol.VBox(grow=False) as main:
         Title(title="Solara documentations")

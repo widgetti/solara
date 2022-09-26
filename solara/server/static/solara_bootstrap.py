@@ -123,7 +123,7 @@ async def main():
     import solara
 
     el = solara.Warning(text="lala")
-    import react_ipywidgets as react
+    import reacton
 
-    react.render_fixed(el)
+    reacton.render_fixed(el)
     return el

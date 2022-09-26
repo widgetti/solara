@@ -1,10 +1,10 @@
-import react_ipywidgets as react
-import react_ipywidgets.ipyvuetify as v
+import reacton
+import reacton.ipyvuetify as v
 
 from solara.kitchensink import sol
 
 
-@react.component
+@reacton.component
 def AppIcon(open=False, on_click=None, **kwargs):
     def click(*ignore):
         on_click()
@@ -14,10 +14,10 @@ def AppIcon(open=False, on_click=None, **kwargs):
     return icon
 
 
-@react.component
+@reacton.component
 def AppLayout(children=[], navigation=None, navigation_open=True, open_right=False, title="Solara"):
     navigation_open, set_navigation_open = sol.use_state_or_update(navigation_open)
-    open_right, set_open_right = react.use_state(open_right)
+    open_right, set_open_right = reacton.use_state(open_right)
     with v.Html(tag="div", style_="height: 100vh") as main:
         # with sol.VBox():
         if title:

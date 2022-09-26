@@ -2,12 +2,12 @@
 # Button
 A button that can be clicked to trigger an event.
 """
-from solara.kitchensink import react, sol
+from solara.alias import reacton, sol
 
 
-@react.component
+@reacton.component
 def Page():
-    count, set_count = react.use_state(0)
+    count, set_count = reacton.use_state(0)
 
     def increment():
         set_count(count + 1)

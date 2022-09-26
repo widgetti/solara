@@ -186,7 +186,7 @@ class Reloader:
             modules_added = modules_after - modules_before
             modules_to_consider = modules_added - set(self.watched_modules)
             # TODO: libraries that solara uses need special care
-            # modules_always = {k for k in sys.modules if k.startswith("react_ipywidgets")}
+            # modules_always = {k for k in sys.modules if k.startswith("reacton")}
             # modules_to_consider = modules_to_consider | modules_always
             modules_watching = set()
             if modules_to_consider:

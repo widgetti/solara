@@ -114,7 +114,7 @@ In the previous section where we create the example portal app. Taking a look at
 tabular.py, we see the `Page` component takes an additional arguments.
 
 ```python
-@react.component
+@reacton.component
 def Page(name: str):
     ...
 ```
@@ -125,7 +125,7 @@ Solara recognizes this, and will pass all routes such as `/tabular/foo` and `/ta
 An example Page component could look like:
 
 ```python
-@react.component
+@reacton.component
 def Page(name: str):
     subpages = ["foo", "bar", "solara", "react-ipywidgets"]
     with sol.VBox() as main:

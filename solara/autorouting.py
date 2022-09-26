@@ -6,13 +6,13 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any, Callable, List, Optional, cast
 
-import react_ipywidgets as react
+import reacton
 
 import solara as sol
 from solara.alias import rv
 from solara.util import cwd
 
-autoroute_level_context = react.create_context(0)
+autoroute_level_context = reacton.create_context(0)
 DEBUG = False
 
 
@@ -42,14 +42,14 @@ def source_to_module(path: Path) -> ModuleType:
 
 
 def count_arguments(f: Callable):
-    if isinstance(f, react.core.ComponentFunction):
+    if isinstance(f, reacton.core.ComponentFunction):
         f = f.f
     sig = inspect.signature(f)
     return len([k for name, k in sig.parameters.items() if (k.default == k.empty) and (k.kind != k.VAR_POSITIONAL) and (k.kind != k.VAR_KEYWORD)])
 
 
 def arg_cast(args: List[str], f: Callable):
-    if isinstance(f, react.core.ComponentFunction):
+    if isinstance(f, reacton.core.ComponentFunction):
         f = f.f
     sig = inspect.signature(f)
     results = []
@@ -70,8 +70,8 @@ def arg_cast(args: List[str], f: Callable):
     return results
 
 
-@react.component
-def RoutingProvider(children: List[react.core.Element] = [], routes: List[sol.Route] = [], pathname: str = ""):
+@reacton.component
+def RoutingProvider(children: List[reacton.core.Element] = [], routes: List[sol.Route] = [], pathname: str = ""):
     """Wraps the app, adds extra context, like navigation/routing."""
     path, set_path = sol.use_state_or_update(pathname, key="solara-context-path")
     nav = sol.Navigator(location=path, on_location=set_path)
@@ -88,11 +88,11 @@ def RoutingProvider(children: List[react.core.Element] = [], routes: List[sol.Ro
     return main
 
 
-@react.component
+@reacton.component
 def RenderPage():
     """Renders the page that matches the route."""
     level_start = sol.use_route_level()
-    router = react.use_context(sol.routing.router_context)
+    router = reacton.use_context(sol.routing.router_context)
 
     if len(router.path_routes) <= level_start:
         with sol.VBox() as main:
@@ -101,7 +101,7 @@ def RenderPage():
             with sol.Link(parent):
                 sol.Button(f"Go to parent: {parent}", text=True)
             if DEBUG:
-                from react_ipywidgets.core import pp
+                from reacton.core import pp
 
                 from solara.components.captureoutput import CaptureOutput
 
@@ -138,7 +138,7 @@ def RenderPage():
     if route_current.data is None and route_current.module is None:
         return sol.Error(f"Page not found: {router.path}, route does not link to a path or module")
 
-    def wrap_in_layouts(element: react.core.Element, layouts):
+    def wrap_in_layouts(element: reacton.core.Element, layouts):
         for Layout in reversed(layouts):
             element = Layout(children=[element])
         return element
@@ -209,8 +209,8 @@ def RenderPage():
     return main
 
 
-@react.component
-def DefaultLayout(children: List[react.core.Element] = [], router_level=-1):
+@reacton.component
+def DefaultLayout(children: List[reacton.core.Element] = [], router_level=-1):
     route_current, all_routes = sol.use_route()
     router = sol.use_router()
     selected = router.path

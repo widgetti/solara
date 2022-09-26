@@ -10,12 +10,12 @@ Returns the value from a previous render phase, or the current value on the firs
 
 
 """
-from solara.kitchensink import react, sol
+from solara.alias import reacton, sol
 
 
-@react.component
+@reacton.component
 def Page():
-    value, set_value = react.use_state(4)
+    value, set_value = reacton.use_state(4)
     value_previous = sol.use_previous(value)
     with sol.VBox() as main:
         sol.IntSlider("value", value=value, on_value=set_value)

@@ -3,7 +3,7 @@
 
 ## I am not interested in the server, I'm happy with Jupyter/Voila, what's in it for me?
 
-That means you simply do not use or install the server component, just use the React-ipywidgets components and run it with Voila.
+That means you simply do not use or install the server component, just use the Reacton components and run it with Voila.
 
 ## Is the Solara server better than Voilà?
 

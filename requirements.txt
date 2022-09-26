@@ -1,5 +1,5 @@
 ipyvuetify
-react_ipywidgets
+reacton
 bqplot
 plotly
 .[server,examples]

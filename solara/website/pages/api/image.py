@@ -2,7 +2,7 @@
 # Image
 
 ```python
-@react.component
+@reacton.component
 def Image(image: Union[str, Path, "np.ndarray"]):
     ...
 ```
@@ -15,10 +15,10 @@ from pathlib import Path
 import numpy as np
 import PIL.Image
 
-from solara.kitchensink import react, sol
+from solara.alias import reacton, sol
 
 
-@react.component
+@reacton.component
 def Page():
 
     image_path = Path(sol.__file__).parent.resolve() / "server/static/sun64.png"

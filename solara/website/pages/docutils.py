@@ -1,15 +1,15 @@
 import inspect
 
+from solara.alias import reacton, rw
 from solara.components import MarkdownIt
-from solara.kitchensink import react, w
 
 
-@react.component
+@reacton.component
 def Sample(code, component):
     locals = globals().copy()
     exec(code, locals)
     c = locals[component]
-    with w.VBox() as main:
+    with rw.VBox() as main:
         MarkdownIt(
             f"""
 ```python
@@ -21,10 +21,10 @@ def Sample(code, component):
     return main
 
 
-@react.component
+@reacton.component
 def IncludeComponent(component, pre="", highlight=[], **kwargs):
     code = inspect.getsource(component.f)
-    with w.VBox(layout={"padding": "20px", "max_width": "1024px", "border": "1px #333 solid"}) as main:
+    with rw.VBox(layout={"padding": "20px", "max_width": "1024px", "border": "1px #333 solid"}) as main:
         MarkdownIt(
             f"""
 ```python

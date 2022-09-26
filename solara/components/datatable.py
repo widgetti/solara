@@ -1,7 +1,7 @@
 from dataclasses import replace
 from typing import List
 
-import react_ipywidgets as react
+import reacton
 
 import solara as sol
 import solara.hooks.dataframe
@@ -14,11 +14,11 @@ def format_default(df, column, row_index, value):
     return str(value)
 
 
-@react.component
+@reacton.component
 def DataTable(df, page=0, items_per_page=20, format=None, column_actions: List[ColumnAction] = [], cell_actions: List[CellAction] = [], scrollable=False):
     total_length = len(df)
     options = {"descending": False, "page": page + 1, "itemsPerPage": items_per_page, "sortBy": [], "totalItems": total_length}
-    options, set_options = react.use_state(options, key="options")
+    options, set_options = reacton.use_state(options, key="options")
     format = format or format_default
     # frontend does 1 base, we use 0 based
     page = options["page"] - 1

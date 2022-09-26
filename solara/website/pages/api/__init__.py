@@ -6,7 +6,7 @@ Click on one of the items on the left.
 import inspect
 import urllib.parse
 
-from solara.alias import react, rv, sol
+from solara.alias import reacton, rv, sol
 
 from .. import List
 from .. import SimpleListItem as ListItem
@@ -14,12 +14,12 @@ from .. import SimpleListItem as ListItem
 title = "API"
 
 
-@react.component
+@reacton.component
 def Page():
     return sol.Markdown(__doc__)
 
 
-@react.component
+@reacton.component
 def Sidebar(children=[], level=0):
     # note that we don't use children here, but we used route.module instead to ge the module
     # this is fine because all api/*.py files use the standard Page component, and do not add
@@ -107,7 +107,7 @@ def Sidebar(children=[], level=0):
     return main
 
 
-@react.component
+@reacton.component
 def Layout(children=[]):
     route_current, all_routes = sol.use_route()
     if route_current is None:
@@ -124,13 +124,13 @@ def Layout(children=[]):
         return main
 
 
-@react.component
+@reacton.component
 def WithCode(module):
-    # e = react.use_exception_handler()
+    # e = reacton.use_exception_handler()
     # if e is not None:
     #     return sol.Error("oops")
     component = getattr(module, "Page", None)
-    show_code, set_show_code = react.use_state(False)
+    show_code, set_show_code = reacton.use_state(False)
     with rv.Sheet() as main:
         with rv.Dialog(v_model=show_code, on_v_model=set_show_code):
             with rv.Sheet(class_="pa-4"):

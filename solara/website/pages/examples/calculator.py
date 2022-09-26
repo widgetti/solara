@@ -4,7 +4,7 @@ import operator
 from typing import Any, Optional
 
 import solara.util
-from solara.kitchensink import react, sol, v
+from solara.alias import reacton, rv, sol
 
 DEBUG = False
 operator_map = {
@@ -96,52 +96,52 @@ def calculator_reducer(state: CalculatorState, action):
         return state
 
 
-@react.component
+@reacton.component
 def Calculator():
-    state, dispatch = react.use_reducer(calculator_reducer, initial_state)
+    state, dispatch = reacton.use_reducer(calculator_reducer, initial_state)
     if DEBUG:
         print("->", state)  # noqa
-    with v.Card(elevation=10, class_="ma-4") as main:
-        with v.CardTitle(children=["Calculator"]):
+    with rv.Card(elevation=10, class_="ma-4") as main:
+        with rv.CardTitle(children=["Calculator"]):
             pass
-        with v.CardSubtitle(children=["With ipyvuetify and ipywidgets-react"]):
+        with rv.CardSubtitle(children=["With ipyvuetify and ipywidgets-react"]):
             pass
-        with v.CardText():
+        with rv.CardText():
             with sol.VBox(grow=False):
-                # with v.Container(style_="padding: 10px"):
-                v.Label(children=[state.error or state.output or "0"])
+                # with rv.Container(style_="padding: 10px"):
+                rv.Label(children=[state.error or state.output or "0"])
                 class_ = "pa-0 ma-1"
 
                 with sol.HBox(grow=False):
                     if state.input:
-                        v.BtnWithClick(children="C", on_click=lambda: dispatch(("clear", None)), dark=True, class_=class_)
+                        rv.BtnWithClick(children="C", on_click=lambda: dispatch(("clear", None)), dark=True, class_=class_)
                     else:
-                        v.BtnWithClick(children="AC", on_click=lambda: dispatch(("reset", None)), dark=True, class_=class_)
-                    v.BtnWithClick(children="+/-", on_click=lambda: dispatch(("negate", None)), dark=True, class_=class_)
-                    v.BtnWithClick(children="%", on_click=lambda: dispatch(("percent", None)), dark=True, class_=class_)
-                    v.BtnWithClick(children="/", color="primary", on_click=lambda: dispatch(("operator", operator_map["/"])), class_=class_)
+                        rv.BtnWithClick(children="AC", on_click=lambda: dispatch(("reset", None)), dark=True, class_=class_)
+                    rv.BtnWithClick(children="+/-", on_click=lambda: dispatch(("negate", None)), dark=True, class_=class_)
+                    rv.BtnWithClick(children="%", on_click=lambda: dispatch(("percent", None)), dark=True, class_=class_)
+                    rv.BtnWithClick(children="/", color="primary", on_click=lambda: dispatch(("operator", operator_map["/"])), class_=class_)
 
                 column_op = ["x", "-", "+"]
                 for i in range(3):
                     with sol.HBox(grow=False):
                         for j in range(3):
                             digit = str(j + (2 - i) * 3 + 1)
-                            v.BtnWithClick(children=digit, on_click=lambda digit=digit: dispatch(("digit", digit)), class_=class_)
+                            rv.BtnWithClick(children=digit, on_click=lambda digit=digit: dispatch(("digit", digit)), class_=class_)
                         op_symbol = column_op[i]
                         op = operator_map[op_symbol]
-                        v.BtnWithClick(children=op_symbol, color="primary", on_click=lambda op=op: dispatch(("operator", op)), class_=class_)
+                        rv.BtnWithClick(children=op_symbol, color="primary", on_click=lambda op=op: dispatch(("operator", op)), class_=class_)
                 with sol.HBox(grow=False):
-                    # v.Btn(children='gap', style_="visibility: hidden")
+                    # rv.Btn(children='gap', style_="visibility: hidden")
                     def boom():
                         print("boom")  # noqa
                         raise ValueError("lala")
 
-                    v.BtnWithClick(children="?", on_click=boom, class_=class_)
+                    rv.BtnWithClick(children="?", on_click=boom, class_=class_)
 
-                    v.BtnWithClick(children="0", on_click=lambda: dispatch(("digit", "0")), class_=class_)
-                    v.BtnWithClick(children=".", on_click=lambda: dispatch(("digit", ".")), class_=class_)
+                    rv.BtnWithClick(children="0", on_click=lambda: dispatch(("digit", "0")), class_=class_)
+                    rv.BtnWithClick(children=".", on_click=lambda: dispatch(("digit", ".")), class_=class_)
 
-                    v.BtnWithClick(children="=", color="primary", on_click=lambda: dispatch(("calculate", None)), class_=class_)
+                    rv.BtnWithClick(children="=", color="primary", on_click=lambda: dispatch(("calculate", None)), class_=class_)
 
     return main
 

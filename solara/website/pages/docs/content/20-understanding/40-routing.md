@@ -64,7 +64,7 @@ routes = [
     sol.Route(path="contact")  # matches '/contact'
 ]
 
-@react.component
+@reacton.component
 def Page():
     ...
 ```
@@ -78,7 +78,7 @@ For instance, when our pathname is `/docs/basics/react`, the following code show
 `sol.use_route_level` and `sol.use_route` will return:
 
 ```python
-@react.component
+@reacton.component
 def MyRootComponent():
     level = sol.use_route_level()  # returns 0
     route_current, routes_current_level = sol.routes()
@@ -93,7 +93,7 @@ def MyRootComponent():
         return MyFirstLevelChildComponent()
 `
 
-@react.component
+@reacton.component
 def MyFirstLevelChildComponent():
     level = sol.use_route_level()  # returns 1
     route_current, routes_current_level = sol.routes()
@@ -106,7 +106,7 @@ def MyFirstLevelChildComponent():
         # we could render some mid level navigation here based on route_current_level and route_current
         return MySecondLevelChildComponent()
 
-@react.component
+@reacton.component
 def MySecondLevelChildComponent():
     level = sol.use_route_level()  # returns 2
     route_current, routes_current_level = sol.routes()
@@ -171,7 +171,7 @@ def resolve_path(path_or_route: Union[str, sol.Route], level=0) -> str:
 We can pass this full url to the `sol.Link` component, e.g. like:
 
 ```python
-@react.component
+@reacton.component
 def LinkToIpywidgets():
     route_ipywidgets = routes.children[1].children[0].children[1]
     # route_ipywidgets.path == "ipywidgets"

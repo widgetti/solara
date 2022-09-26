@@ -1,18 +1,18 @@
 import inspect
 import urllib.parse
 
-from solara.alias import react, sol
+from solara.alias import reacton, sol
 
 title = "Examples"
 
 
-@react.component
+@reacton.component
 def Page():
     # TODO: put a gallery here?
     return sol.Markdown("Click an example on the left")
 
 
-@react.component
+@reacton.component
 def Layout(children):
     route_current, all_routes = sol.use_route()
 

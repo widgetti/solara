@@ -5,7 +5,7 @@ from typing import Callable, List, Optional, Union, cast
 
 import humanize
 import ipyvuetify as vy
-import react_ipywidgets as react
+import reacton
 import traitlets
 
 import solara as sol
@@ -48,7 +48,7 @@ class FileListWidget(vy.VuetifyTemplate):
         return name in [k["name"] for k in self.files]
 
 
-@react.component
+@reacton.component
 def FileBrowser(
     directory: Union[str, Path] = None,
     on_directory_change: Callable[[Path], None] = None,
@@ -68,12 +68,12 @@ def FileBrowser(
     if directory is None:
         directory = os.getcwd()  # pragma: no cover
     current_dir, set_current_dir = sol.use_state_or_update(str(directory))
-    selected, set_selected = react.use_state(None)
-    double_clicked, set_double_clicked = react.use_state(None)
-    warning, set_warning = react.use_state(cast(Optional[str], None))
-    scroll_pos_stack, set_scroll_pos_stack = react.use_state(cast(List[int], []))
-    scroll_pos, set_scroll_pos = react.use_state(0)
-    selected, set_selected = react.use_state(None)
+    selected, set_selected = reacton.use_state(None)
+    double_clicked, set_double_clicked = reacton.use_state(None)
+    warning, set_warning = reacton.use_state(cast(Optional[str], None))
+    scroll_pos_stack, set_scroll_pos_stack = reacton.use_state(cast(List[int], []))
+    scroll_pos, set_scroll_pos = reacton.use_state(0)
+    selected, set_selected = reacton.use_state(None)
 
     def change_dir(new_dir):
         if os.access(new_dir, os.R_OK):

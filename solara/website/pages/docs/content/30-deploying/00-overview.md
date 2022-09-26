@@ -124,7 +124,7 @@ If you use want to use Voila, [you can use those deployment options](https://voi
 
 Make sure you run a notebook where you display the app, e.g.
 ```python
-@react.component
+@reacton.component
 def Page():
     ...
 element = Page()
@@ -137,24 +137,24 @@ Or consider using [Voila-vuetify](https://github.com/voila-dashboards/voila-vuet
 ## Panel
 
 [Panel](https://panel.holoviz.org/) supports [IPyWidgets](https://panel.holoviz.org/reference/panes/IPyWidget.html), which
-means we can also embed the resulting widget from React-IPyWidgets or Solara. See their [section on deployment](https://panel.holoviz.org/user_guide/Server_Deployment.html) and use the following code as an example of how to include a react component.
+means we can also embed the resulting widget from Reacton or Solara. See their [section on deployment](https://panel.holoviz.org/user_guide/Server_Deployment.html) and use the following code as an example of how to include a react component.
 ```python
 import panel as pn
-import react_ipywidgets as react
+import reacton
 import solara as sol
 
 
-@react.component
+@reacton.component
 def ButtonClick(label="Hi"):
-    clicks, set_clicks = react.use_state(0)
+    clicks, set_clicks = reacton.use_state(0)
     def increment():
         set_clicks(clicks + 1)
     return sol.Button(f"{label}: Clicked {clicks} times", on_click=increment)
 
 # this creates just an element, Panel doesn't know what to do with that
 element = ButtonClick("Solara+Panel")
-# we explicitly ask React-IPyWidgets to render it, and give us the widget
-button_widget, render_context = react.render_fixed(element)
+# we explicitly ask Reacton to render it, and give us the widget
+button_widget, render_context = reacton.render_fixed(element)
 # mark this panel to be served by the panel server
 pn.panel(button_widget).servable()
 ```

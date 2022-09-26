@@ -1,8 +1,8 @@
 import vaex
 
 import solara.components.pivot_table as pt
+from solara.alias import reacton, sol
 from solara.components.pivot_table import PivotTableWidget
-from solara.kitchensink import react, sol
 
 from .common import repeat_while_false, repeat_while_true
 
@@ -35,18 +35,18 @@ def test_df_data_pivot_data_vaex():
 def test_df_data_pivot_table_view():
     data = pt.df_aggregate_pivot_vaex(df, ["survived"], ["sex"], sol.AggregationCount(type="count"))
     el = sol.PivotTableView(data=data)
-    box, rc = react.render(el, handle_error=False)
+    box, rc = reacton.render(el, handle_error=False)
     assert rc._find(PivotTableWidget).widget.d["values"] == [["127", "682"], ["339", "161"]]
 
 
 def test_df_data_pivot_table_df():
     el = sol.PivotTable(df, ["survived"], ["sex"])
-    box, rc = react.render(el, handle_error=False)
+    box, rc = reacton.render(el, handle_error=False)
     repeat_while_false(lambda: rc._find(PivotTableWidget))
     assert rc._find(PivotTableWidget).widget.d["values"] == [["127", "682"], ["339", "161"]]
 
     el = sol.PivotTableCard(df, ["survived"], ["sex"])
-    box, rc = react.render(el, handle_error=False)
+    box, rc = reacton.render(el, handle_error=False)
     repeat_while_false(lambda: rc._find(PivotTableWidget))
     assert rc._find(PivotTableWidget).widget.d["values"] == [["127", "682"], ["339", "161"]]
 
@@ -54,13 +54,13 @@ def test_df_data_pivot_table_df():
 def test_pivot_table():
     filter = set_filter = None
 
-    @react.component
+    @reacton.component
     def FilterDummy(df):
         nonlocal filter, set_filter
         filter, set_filter = sol.use_cross_filter(id(df), "test")
         return sol.Text("dummy")
 
-    @react.component
+    @reacton.component
     def Test():
         sol.provide_cross_filter()
         with sol.VBox() as main:
@@ -68,7 +68,7 @@ def test_pivot_table():
             FilterDummy(df)
         return main
 
-    widget, rc = react.render(Test(), handle_error=False)
+    widget, rc = reacton.render(Test(), handle_error=False)
     repeat_while_false(lambda: rc._find(PivotTableWidget))
     pt = rc._find(PivotTableWidget).widget
     data = pt.d

@@ -1,6 +1,6 @@
-from solara.kitchensink import react
+import reacton
 
 
-@react.component
+@reacton.component
 def Header():
     pass

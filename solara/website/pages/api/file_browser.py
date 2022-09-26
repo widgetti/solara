@@ -18,14 +18,14 @@ There are two modes possible
 from pathlib import Path
 from typing import Optional, cast
 
-from solara.kitchensink import react, sol
+from solara.alias import reacton, sol
 
 
-@react.component
+@reacton.component
 def Page():
-    file, set_file = react.use_state(cast(Optional[Path], None))
-    path, set_path = react.use_state(cast(Optional[Path], None))
-    directory, set_directory = react.use_state(Path("~").expanduser())
+    file, set_file = reacton.use_state(cast(Optional[Path], None))
+    path, set_path = reacton.use_state(cast(Optional[Path], None))
+    directory, set_directory = reacton.use_state(Path("~").expanduser())
 
     with sol.VBox() as main:
         can_select = sol.ui_checkbox("Enable select")
@@ -35,7 +35,7 @@ def Page():
             set_file(None)
 
         # reset path and file when can_select changes
-        react.use_memo(reset_path, [can_select])
+        reacton.use_memo(reset_path, [can_select])
         sol.FileBrowser(directory, on_directory_change=set_directory, on_path_select=set_path, on_file_open=set_file, can_select=can_select)
         sol.Info(f"You are in directory: {directory}")
         sol.Info(f"You selected path: {path}")

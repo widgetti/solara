@@ -7,10 +7,10 @@ Note that this will be interpreted by the browser, so make sure the input html t
 cannot include code from users.
 """
 
-from solara.kitchensink import react, sol
+from solara.alias import reacton, sol
 
 
-@react.component
+@reacton.component
 def Page():
     html = """
 <h1>Custom html</h1>

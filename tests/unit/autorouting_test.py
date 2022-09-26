@@ -1,8 +1,8 @@
 from pathlib import Path
 
 import ipyvuetify as v
-import react_ipywidgets as react
-import react_ipywidgets.core
+import reacton
+import reacton.core
 
 import solara.autorouting
 import solara.template.portal.solara_portal.pages
@@ -53,7 +53,7 @@ def test_cast():
 
     assert solara.autorouting.arg_cast(["a", "42"], f2) == ["a", 42]
 
-    @react.component
+    @reacton.component
     def F3(a, b: int):
         pass
 
@@ -72,7 +72,7 @@ def test_routes_portal():
     main_object = solara.autorouting.RenderPage()
     root = solara.RoutingProvider(routes=routes, pathname="/", children=[main_object])
 
-    container, rc = react.render(root, handle_error=False)
+    container, rc = reacton.render(root, handle_error=False)
     nav = rc._find(solara.widgets.Navigator).widget
     title = rc._find(TitleWidget).widget
     assert title.title == "Solara Example: main"
@@ -97,7 +97,7 @@ def test_routes_examples_api_button():
     main_object = solara.autorouting.RenderPage()
     solara_context = solara.RoutingProvider(children=[main_object], routes=routes, pathname="/")
 
-    container, rc = react.render(solara_context, handle_error=False)
+    container, rc = reacton.render(solara_context, handle_error=False)
 
     assert not rc._find(v.NavigationDrawer)
 
@@ -113,7 +113,7 @@ def test_routes_examples_docs():
     main_object = solara.autorouting.RenderPage()
     solara_context = solara.RoutingProvider(children=[main_object], routes=routes, pathname="/")
 
-    container, rc = react.render(solara_context, handle_error=False)
+    container, rc = reacton.render(solara_context, handle_error=False)
 
     assert rc._find(v.NavigationDrawer)
 
@@ -128,7 +128,7 @@ def test_routes_examples_docs():
 #     main_object = solara.autorouting.RenderPage()
 #     solara_context = solara.RoutingProvider(children=[main_object], routes=routes, pathname="/")
 
-#     container, rc = react.render(solara_context, handle_error=False)
+#     container, rc = reacton.render(solara_context, handle_error=False)
 #     nav = rc._find(solara.widgets.Navigator).widget
 #     nav.location = "/examples/calculator"
 #     assert rc._find(v.Tabs, vertical=True)
@@ -163,7 +163,7 @@ def test_routes_directory():
     main_object = solara.autorouting.RenderPage()
     solara_context = solara.RoutingProvider(children=[main_object], routes=routes, pathname="/")
 
-    container, rc = react.render(solara_context, handle_error=False)
+    container, rc = reacton.render(solara_context, handle_error=False)
     nav = rc._find(solara.widgets.Navigator).widget
     title = rc._find(TitleWidget).widget
     assert title.title == "Home"

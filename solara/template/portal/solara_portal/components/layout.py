@@ -1,6 +1,6 @@
-from solara.kitchensink import react, sol
+from solara.alias import reacton, sol
 
 
-@react.component
+@reacton.component
 def Layout(children=[]):
     return sol.VBox(children=children)

@@ -1,15 +1,15 @@
 import numpy as np
 import plotly.express as px
 
-from solara.kitchensink import react, sol
+from solara.alias import reacton, sol
 
 x = np.linspace(0, 2, 100)
 
 
-@react.component
+@reacton.component
 def Page():
-    freq, set_freq = react.use_state(2.0)
-    phase, set_phase = react.use_state(0.1)
+    freq, set_freq = reacton.use_state(2.0)
+    phase, set_phase = reacton.use_state(0.1)
     y = np.sin(x * freq + phase)
 
     with sol.VBox() as main:

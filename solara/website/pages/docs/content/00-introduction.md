@@ -5,7 +5,7 @@
 
 Solara lets you use and build data-focused web apps (data apps) using reusable UI components. Your app will work in the Jupyter notebook and production-grade web frameworks (FastAPI, Starlette, Flask, ...).
 
-Solara uses proven technologies and mature standards. Grow from a one-off experiment in the Jupyter notebook to a dynamic data portal in production.  Built on top of React-IPywidgets keeps your code complexity under control.
+Solara uses proven technologies and mature standards. Grow from a one-off experiment in the Jupyter notebook to a dynamic data portal in production.  Built on top of Reacton keeps your code complexity under control.
 
 We care about developer experience. Solara will give your hot code reloading and type hints to faster development.
 
@@ -23,11 +23,11 @@ At the same time, starting a new framework from scratch would be unwise. We pref
 
 Instead of inventing a new API with an unknown track record, we take a different approach. We look at the JavaScript world. React is a technology that has proven itself for many years. It has shown to be an all-around good model for building complex UIs.
 
-React-IPywidgets is the equivalent of ReactJS for Python (and IPywidgets). It allows us to use the same reusable components and hooks as in the ReactJS ecosystem. Using React-IPywidgets, we build web/data applications without suffering from complex code bases.
+Reacton is the equivalent of ReactJS for Python (and IPywidgets). It allows us to use the same reusable components and hooks as in the ReactJS ecosystem. Using Reacton, we build web/data applications without suffering from complex code bases.
 
 Looking again at the JavaScript world, we see software such as NextJS is putting a framework around ReactJS. NextJS is more opinionated then ReactJS and adds more "batteries" such as routing.
 
-Solara plays a similar role as NextJS. It builds on top of React-IPywidgets but handles things like routing for you.
+Solara plays a similar role as NextJS. It builds on top of Reacton but handles things like routing for you.
 
 But Solara is also different, it is even more opinionated than NextJS. The reason for this is its focus on the data-heavy Python ecosystem. For this reason, it comes with many components and hooks that make building beautiful data apps easier (see our API).
 
@@ -45,12 +45,12 @@ Follow the [installation instructions](./installing) or do the TLDR:
 Create a file `myapp.py`, or put the following code in the Jupyter notebook:
 
 ```solara
-import react_ipywidgets as react
+import reacton
 import solara
 
-@react.component
+@reacton.component
 def Page():
-    clicks, set_clicks = react.use_state(0)
+    clicks, set_clicks = reacton.use_state(0)
     return solara.Button(label=f"Clicked {clicks} times",
                          on_click=lambda: set_clicks(clicks+1))
 
@@ -76,7 +76,7 @@ The browser should open http://127.0.0.1:8765
 
 Solara is two things. A server part that takes care of getting the widgets into the browser and a UI part, consisting of react components and hooks.
 
-The UI parts are built on top of [React-IPywidgets](https://github.com/widgetti/react-ipywidgets) which is using the existing IPyWidgets stack.
+The UI parts are built on top of [Reacton](https://github.com/widgetti/reacton) which is using the existing IPyWidgets stack.
 
 If you use Jupyter, then you probably use the Jupyter notebook, Lab, of Voila to get your widgets into the browser.
 

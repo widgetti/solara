@@ -7,8 +7,7 @@ import ipyvuetify as v
 import numpy as np
 import traitlets
 
-from solara.kitchensink import react, sol
-from solara.kitchensink import v as rv
+from solara.alias import reacton, rv, sol
 
 cardheight = "100%"
 
@@ -128,12 +127,12 @@ def use_df_pivot_data(df, x: List[str], y: List[str], aggregation: sol.Aggregati
     return sol.use_thread(lambda: df_aggregate_pivot_vaex(df, x, y, aggregation, filter=filter), dependencies=[*x, *y, aggregation, filter])
 
 
-@react.component
+@reacton.component
 def PivotTableView(data: sol.PivotTableData, selected: Dict[str, Any] = {}, on_selected: Callable[[Dict[str, Any]], None] = None, style=""):
     return PivotTableWidget.element(d=data, selected=selected, on_selected=on_selected, style_=style)
 
 
-@react.component
+@reacton.component
 def PivotTable(
     df,
     x: List[str] = [],
@@ -200,7 +199,7 @@ def PivotTable(
     return main
 
 
-@react.component
+@reacton.component
 def PivotTableCard(
     df,
     x=[],

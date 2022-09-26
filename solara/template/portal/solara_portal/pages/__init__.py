@@ -1,46 +1,46 @@
-from solara.kitchensink import react, sol, v
+from solara.alias import reacton, rv, sol
 
 from ..data import articles, dfs, names
 
 title = "Solara Example: main"
 
 
-@react.component
+@reacton.component
 def DataCard(name):
     df = dfs[name].df
-    with v.Card(max_width="400px") as main:
+    with rv.Card(max_width="400px") as main:
         with sol.Link(f"/tabular/{name}"):
-            v.Img(height="250", src=dfs[name].image_url)
-        v.CardTitle(children=[dfs[name].title])
-        with v.CardText():
+            rv.Img(height="250", src=dfs[name].image_url)
+        rv.CardTitle(children=[dfs[name].title])
+        with rv.CardText():
             sol.Markdown(f"*{len(df):,} rows*")
             with sol.Link(f"/tabular/{name}"):
                 sol.Button("Open table view", text=True, icon_name="mdi-table")
     return main
 
 
-@react.component
+@reacton.component
 def ArticleCard(name):
     article = articles[name]
-    with v.Card(max_width="400px") as main:
+    with rv.Card(max_width="400px") as main:
         with sol.Link(f"/article/{name}"):
-            v.Img(height="250", src=article.image_url)
-        v.CardTitle(children=[article.title])
-        with v.CardText():
+            rv.Img(height="250", src=article.image_url)
+        rv.CardTitle(children=[article.title])
+        with rv.CardText():
             sol.Markdown(article.description)
             with sol.Link(f"/article/{name}"):
                 sol.Button("Read article", text=True, icon_name="mdi-book-open")
     return main
 
 
-@react.component
+@reacton.component
 def PeopleCard(name):
     # article = articles[name]
-    with v.Card() as main:
+    with rv.Card() as main:
         # with sol.Link(f"/article/{name}"):
-        #     v.Img(height="250", src=article.image_url)
-        # v.CardTitle(children=[article.title])
-        with v.CardText():
+        #     rv.Img(height="250", src=article.image_url)
+        # rv.CardTitle(children=[article.title])
+        with rv.CardText():
             sol.Markdown(f"# {name}")
             sol.Markdown(
                 """
@@ -53,12 +53,12 @@ def PeopleCard(name):
     return main
 
 
-@react.component
+@reacton.component
 def Layout(children=[]):
-    router = react.use_context(sol.routing.router_context)
+    router = reacton.use_context(sol.routing.router_context)
     with sol.VBox() as navigation:
-        with v.List(dense=True):
-            with v.ListItemGroup(v_model=router.path):
+        with rv.List(dense=True):
+            with rv.ListItemGroup(v_model=router.path):
                 with sol.Link(sol.resolve_path("/")):
                     with sol.ListItem("Home", icon_name="mdi-home", value="/"):
                         pass
@@ -78,21 +78,21 @@ def Layout(children=[]):
     return main
 
 
-@react.component
+@reacton.component
 def Page():
     with sol.VBox() as main:
         with sol.Card("Datasets"):
-            with v.Container(style_="margin-left: unset; margin-right: unset;"):
-                with v.Row(justify="start"):
+            with rv.Container(style_="margin-left: unset; margin-right: unset;"):
+                with rv.Row(justify="start"):
                     for name in names:
-                        with v.Col(sm=4):
+                        with rv.Col(sm=4):
                             DataCard(name)
 
-        with v.Container(style_="margin-left: unset; margin-right: unset;"):
-            with v.Row():
-                with v.Col(style_="display: flex;", sm=6):
+        with rv.Container(style_="margin-left: unset; margin-right: unset;"):
+            with rv.Row():
+                with rv.Col(style_="display: flex;", sm=6):
                     PeopleCard("Maarten")
-                with v.Col(style_="display: flex;", sm=4):
+                with rv.Col(style_="display: flex;", sm=4):
                     with sol.Card("Quick links"):
                         with sol.VBox():
                             for name in names:
@@ -102,10 +102,10 @@ def Page():
                                     sol.Button(f"Histogram for {name}", text=True)
 
         with sol.Card("Company articles"):
-            with v.Container(style_="margin-left: unset; margin-right: unset;"):
-                with v.Row(justify="start"):
+            with rv.Container(style_="margin-left: unset; margin-right: unset;"):
+                with rv.Row(justify="start"):
                     for name in articles:
-                        with v.Col():
+                        with rv.Col():
                             ArticleCard(name)
 
     return main
