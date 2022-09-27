@@ -57,6 +57,7 @@ def Sidebar(children=[], level=0):
                     add("sql_code")
             with ListItem("Viz", icon_name="mdi-chart-histogram"):
                 with List():
+                    add("matplotlib")
                     add("plotly")
                     add("plotly_express")
                 #     ListItem("AltairChart")

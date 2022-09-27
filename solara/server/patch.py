@@ -20,6 +20,9 @@ class FakeIPython:
         self.context = context
         self.kernel = context.kernel
         self.display_pub = mock.MagicMock()
+        # needed for the pyplot interface of matplotlib
+        # (although we don't really support it)
+        self.events = mock.MagicMock()
 
     def enable_gui(self, gui):
         logger.error("ignoring call to enable_gui(%s)", gui)

@@ -85,6 +85,7 @@ documentation = [
     "bqplot",
     "altair",
     "ipycanvas",
+    "matplotlib",
     "vega_datasets",
     "plotly",
     "vaex-core",

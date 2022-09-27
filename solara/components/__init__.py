@@ -18,3 +18,4 @@ from .applayout import AppLayout  # noqa: #F401 F403
 from .tab_navigation import TabNavigation  # noqa: #F401 F403
 from .markdown_editor import MarkdownEditor  # noqa: #F401 F403
 from .select import Select, SelectMultiple  # noqa: #F401 F403
+from .matplotlib import FigureMatplotlib  # noqa: #F401 F403
