@@ -31,7 +31,11 @@ def _run_solara(code):
     box = v.Html(tag="div")
     box, rc = reacton.render(app, container=box)
     widget_id = box._model_id
-    return f'<jupyter-widget widget="IPY_MODEL_{widget_id}">loading widget...</jupyter-widget>'
+    return (
+        '<div class="solara-markdown-output v-card v-sheet elevation-7">'
+        f'<jupyter-widget widget="IPY_MODEL_{widget_id}">loading widget...</jupyter-widget>'
+        '<div class="v-messages">Live output</div></div>'
+    )
 
 
 def _markdown_template(html):

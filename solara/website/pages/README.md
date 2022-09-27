@@ -1,4 +1,4 @@
-# Data apps for Jupyter and Production
+# UI Framework for data web apps and Jupyter
 
 Solara is the bridge between Jupyter-based data-app development and production deployment.
 
@@ -11,5 +11,5 @@ Solara uses proven technologies and mature standards. Grow from a one-off experi
 We care about developer experience. Solara will give your hot code reloading and type hints to faster development.
 
 [![Introduction](https://dabuttonfactory.com/button.png?t=Introduction&f=Open+Sans-Bold&ts=20&tc=fff&hp=45&vp=12&c=8&bgt=unicolored&bgc=f19f41)](/docs)
-[![Guides](https://dabuttonfactory.com/button.png?t=Guides&f=Open+Sans-Bold&ts=20&tc=fff&hp=45&vp=12&c=8&bgt=unicolored&bgc=f19f41)](/docs/guides)
+[![Quickstart](https://dabuttonfactory.com/button.png?t=Quickstart&f=Open+Sans-Bold&ts=20&tc=fff&hp=45&vp=12&c=8&bgt=unicolored&bgc=f19f41)](/docs/quickstart)
 <!-- [![Book a demo](https://dabuttonfactory.com/button.png?t=Book+a+demo&f=Open+Sans-Bold&ts=20&tc=f19f41&hp=45&vp=12&c=8&bgt=unicolored&bgc=eee&bs=1&bc=f19f41)](/docs/guides) -->

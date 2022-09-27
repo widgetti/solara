@@ -5,7 +5,7 @@
 
 Solara lets you use and build data-focused web apps (data apps) using reusable UI components. Your app will work in the Jupyter notebook and production-grade web frameworks (FastAPI, Starlette, Flask, ...).
 
-Solara uses proven technologies and mature standards. Grow from a one-off experiment in the Jupyter notebook to a dynamic data portal in production.  Built on top of Reacton keeps your code complexity under control.
+Solara uses proven technologies and mature standards. Grow from a one-off experiment in the Jupyter notebook to a dynamic data portal in production.  Built on top of [Reacton](/docs/understanding/reacton) keeps your code complexity under control.
 
 We care about developer experience. Solara will give your hot code reloading and type hints to faster development.
 

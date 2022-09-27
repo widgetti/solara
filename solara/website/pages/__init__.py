@@ -81,7 +81,7 @@ def Layout(children=[]):
             on_toggle_right_menu=lambda: set_show_right_menu(not show_right_menu),
         )
         if route_current is not None and route_current.path == "/":
-            Hero(title="Data apps for Jupyter and Production", button_text="Quickstart")
+            Hero(title="UI Framework for data web apps and Jupyter", button_text="Quickstart")
 
         with rv.Container(tag="section", fluid=True, ma_0=True, pa_0=True, class_="fill-height"):
             with rv.Row(style_="gap:6rem"):
@@ -92,11 +92,12 @@ def Layout(children=[]):
                 with rv.Col(tag="main", md=True, class_="pt-12 pl-12 pr-10", style_="max-width: 1024px"):
                     if route_current is not None and route_current.path == "/":
                         with rv.Row(align="center"):
-                            with rv.Col(md=6, class_="pa-0"):
-                                rv.Html(tag="h1", children=["Live Demo"])
-                            with rv.Col(md=6, class_="d-flex", style_="justify-content: end"):
-                                rv.Btn(elevation=0, large=True, children=["Running App"], color="primary", class_="btn-size--xlarge")
-                        sol.Padding(6)
+                            pass
+                            # with rv.Col(md=6, class_="pa-0"):
+                            #     rv.Html(tag="h1", children=["Live Demo"])
+                            # with rv.Col(md=6, class_="d-flex", style_="justify-content: end"):
+                            #     rv.Btn(elevation=0, large=True, children=["Running App"], color="primary", class_="btn-size--xlarge")
+                        # sol.Padding(6)
                     with rv.Row(children=children):
                         pass
 

@@ -47,17 +47,33 @@ div.highlight pre code {
 
 .solara-markdown {
     max-width: 1024px;
+    padding-top: 10px;
+}
+
+
+div.solara-markdown-output>.v-messages {
+    font-style: italic;
+}
+
+div.solara-markdown-output {
+    padding: 30px;
+    margin-top: 15px;
+    margin-bottom: 15px;
 }
 
 
 div.highlight {
-    background-color: rgb(249 249 249);
+    background-color: #eee;
     padding: 30px;
-    padding-top: 20px;
-    padding-bottom: 20px;
     border-radius: 20px;
     margin-top: 15px;
     margin-bottom: 15px;
+}
+
+.solara-markdown pre,
+.solara-markdown .jp-RenderedHTMLCommon pre {
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 .solara-markdown pre {

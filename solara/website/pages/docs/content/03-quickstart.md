@@ -20,7 +20,7 @@ If not, please follow the [Installation instructions](/docs/installing).
 
 Put the following content in a file, say `sol.py`:
 
-```python
+```solara
 import numpy as np
 import plotly.express as px
 
@@ -44,18 +44,18 @@ def Page():
     return main
 ```
 
+Yes, the above example is running live on the Solara documentation web server. If you change the slider the graph updates.
+
 ## Run the script using Solara server
 
 Run from the command line in the same directory where you put your file (`sol.py`):
 
 ```bash
-solara run sol.py
+$ solara run sol.py
 Solara server is starting at http://localhost:8765
 ```
 
-If you open the URL in your browser ([or click here](http://localhost:8765)), you should see the following in your browser.
-
-<img src="/static/public/quickstart-server.png" alt="Markdown Monster icon" style="border: 1px solid #ccc;" />
+If you open the URL in your browser ([http://localhost:8765](http://localhost:8765)), you should see the same graph in your browser, now running on your computer.
 
 ## (Optional) Reuse your code in the Jupyter notebook.
 
