@@ -113,7 +113,7 @@ When in dev mode Solara will:
 """,
 )
 @click.option("--tracer/--no-tracer", default=False)
-@click.option("--open/--no-open", default=False)
+@click.option("--open/--no-open", default=True)
 @click.option("--reload", is_flag=True, default=False, help="Enable auto-reload.")
 @click.option(
     "--reload-dir",
