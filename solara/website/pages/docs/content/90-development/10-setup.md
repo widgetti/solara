@@ -7,8 +7,7 @@ Assuming you have created a virtual environment as described in [the installatio
 
     $ git clone git@github.com:widgetti/solara.git
     $ cd solara
-    $ flit install --pth-file --deps develop --extras server,examples
-    $ pip install watchdog  # to get hot reloading
+    $ pip install ".[server,develop,documentation]"  # documentation is optional
 
 
 ## Running Solara in dev mode
@@ -19,7 +18,7 @@ By passing the `--dev` flag, solara enters "dev" mode, which makes it friendlier
 
 This will:
 
-    * Automatically restart the server if any of the source code of solara changes (excluding solara.website
+    * Automatically restart the server if any of the source code of solara changes (excluding solara.website)
     * Load non-minified JS/CSS to make debugging easier)
 
 ## Contributing

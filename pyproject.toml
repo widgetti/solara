@@ -80,7 +80,7 @@ flask = [
     "flask",
     "flask-sock",
 ]
-examples = [
+documentation = [
     "numpy",
     "bqplot",
     "altair",

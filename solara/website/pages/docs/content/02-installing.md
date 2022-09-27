@@ -4,7 +4,7 @@
 
 It is best to install Solara into a virtual environment unless you know what you are doing (you already have a virtual environment, or you are using conda or docker).
 
-See also [The Python Packaging User Guide](https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/#creating-a-virtual-environment) for more information.
+See also [The Python Packaging User Guide](https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/#creating-a-virtual-environment) for more information about virtual environments.
 
 
 ### OSX/Unix/Linux
@@ -26,20 +26,25 @@ Setting up a virtual environment on Windows:
 
 Now install Solara using pip:
 
-    $ pip install solara[server,examples] watchdog
+    $ pip install "solara[server]" watchdog
 
-## Development
+  * `watchdog` is optional, but will give you auto reloading
+  * the `[server]` part will add in additional dependencies (such as starlette), needed to run the solara server (most people do unless you only use Jupyter)
 
-Go to [development documentation](/docs/development) if you want to develop on Solara, or you want to run the master branch, you can follow these steps:
+## Bleeding edge
 
-First clone the repo:
+If you want to install an unreleased version of Solara (e.g. because we just merged a feature you need)
 
-    $ git clone git@github.com:widgetti/solara.git
 
-Now install Solara in 'edit' mode. We use flit (`pip install flit` if you don't already have it)
+```
+$ pip install "solara[server] @ git+https://github.com/widgetti/solara"
+```
 
-    $ cd solara
-    $ flit install --pth-file --deps develop --extras server,examples
-    $ pip install watchdog  # to get hot reloading
+Or put the following in your `requirements.txt`:
 
-Now you can edit the source code in the git repository, without having to reinstall it.
+```
+solara[server] @ https://github.com/widgetti/solara/package/archive/master.tar.gz
+
+```
+
+If you want to do development on Solara, read the [development documentation](/docs/development).

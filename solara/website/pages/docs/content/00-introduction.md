@@ -39,7 +39,7 @@ For your understanding, it might be good to just run an example.
 
 Follow the [installation instructions](./installing) or do the TLDR:
 
-    $ pip install solara[server]
+    $ pip install "solara[server]"
 
 
 Create a file `myapp.py`, or put the following code in the Jupyter notebook:

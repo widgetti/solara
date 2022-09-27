@@ -7,38 +7,13 @@ This 1-minute quickstart will get you to:
    * Run your script using Solara server.
    * (Optional) Reuse your code in the Jupyter notebook.
 
-## Installation
+## You should know
 
+This quickstart will assume:
 
-### Create a virtual environment (optional)
+  * You have succesfully installed Solara
 
-It is best to install Solara into a virtual environment unless you know what you are doing (you already have a virtual environment, or you are using conda or docker).
-
-See also [The Python Packaging User Guide](https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/#creating-a-virtual-environment) for more information.
-
-Otherwise, you can go directly to the [Pip install Solara section](#pip-install-solara).
-
-
-#### OSX/Unix/Linux
-
-Setting up a virtual environment on OSX/Unix/Linux:
-
-    $ python -m venv solara-env
-    $ source ./solara-env/bin/activate
-
-#### Windows
-
-Setting up a virtual environment on Windows:
-
-    > py -m venv solara-env
-    > solara-env\Scripts\activate
-
-
-### Pip install Solara
-
-Now install Solara using pip:
-
-    $ pip install solara[server,examples] watchdog
+If not, please follow the [Installation instructions](/docs/installing).
 
 
 ## First script
