@@ -12,6 +12,8 @@ import solara as sol
 from solara.alias import rv
 from solara.util import cwd
 
+from .server import reload
+
 autoroute_level_context = reacton.create_context(0)
 DEBUG = False
 
@@ -282,6 +284,7 @@ def generate_routes(module: ModuleType) -> List[sol.Route]:
         routes.append(sol.Route(path="/", component=RenderPage, data=module, module=module, layout=layout, children=children, label=title))
 
         assert module.__file__ is not None
+        reload.reloader.watcher.add_file(module.__file__)
         for info in pkgutil.iter_modules([str(Path(module.__file__).parent)]):
             submod = importlib.import_module(module.__name__ + f".{info.name}")
             title = get_title(submod)
@@ -351,9 +354,11 @@ def generate_routes_directory(path: Path) -> List[sol.Route]:
         module_layout = layout if first else None
         if subpath.suffix == ".md":
             data = subpath
+            reload.reloader.watcher.add_file(subpath)
         elif subpath.is_dir():
             children = generate_routes_directory(subpath)
         else:
+            reload.reloader.watcher.add_file(subpath)
             module = source_to_module(subpath)
             children = getattr(module, "routes", children)
             module_layout = getattr(module, "Layout", module_layout)
