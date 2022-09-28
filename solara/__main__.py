@@ -113,6 +113,7 @@ When in dev mode Solara will:
 """,
 )
 @click.option("--tracer/--no-tracer", default=False)
+@click.option("--timing/--no-timing", default=False)
 @click.option("--open/--no-open", default=True)
 @click.option("--reload", is_flag=True, default=False, help="Enable auto-reload.")
 @click.option(
@@ -213,6 +214,7 @@ def run(
     reload_dirs: typing.Optional[typing.List[str]],
     dev: bool,
     tracer: bool,
+    timing: bool,
     reload_excludes: typing.List[str],
     loop: str,
     workers: int,
@@ -293,7 +295,8 @@ def run(
     settings.theme.variant = theme_variant
     settings.theme.variant_user_selectable = theme_variant_user_selectable
     settings.main.tracer = tracer
-    for item in "theme_variant_user_selectable theme_variant theme_loader use_pdb server open_browser open url failed dev tracer".split():
+    settings.main.timing = timing
+    for item in "theme_variant_user_selectable theme_variant theme_loader use_pdb server open_browser open url failed dev tracer timing".split():
         del kwargs[item]
 
     def start_server():

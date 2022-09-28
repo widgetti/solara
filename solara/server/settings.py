@@ -24,6 +24,7 @@ class MainSettings(pydantic.BaseSettings):
     use_pdb: bool = False
     mode: str = "production"
     tracer: bool = False
+    timing: bool = False
 
     class Config:
         env_prefix = "solara_"

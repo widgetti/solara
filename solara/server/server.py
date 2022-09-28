@@ -65,12 +65,17 @@ async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, connection_i
             except websocket.WebSocketDisconnect:
                 logger.debug("Disconnected")
                 return
+            t0 = time.time()
             if isinstance(message, str):
                 msg = json.loads(message)
             else:
                 msg = deserialize_binary_message(message)
+            t1 = time.time()
             with context:
                 process_kernel_messages(kernel, msg)
+                t2 = time.time()
+                if settings.main.timing:
+                    print(f"timing: total={t2-t0:.3f}s, deserialize={t1-t0:.3f}s, kernel={t2-t1:.3f}s")  # noqa: T201
 
 
 def process_kernel_messages(kernel: Kernel, msg: Dict):
