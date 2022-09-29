@@ -120,6 +120,16 @@ def FigurePlotlyCrossFiltered(fig):
     dff = df
     if filter is not None:
         dff = df[filter]
+        for key, value in kwargs.items():
+            if not isinstance(value, str):
+                try:
+                    n = len(value)
+                except Exception:
+                    raise
+                else:
+                    if n == len(df):
+                        kwargs[key] = np.array(value)[filter]
+
     kwargs[first_arg_name] = dff
 
     index = np.arange(len(dff))
