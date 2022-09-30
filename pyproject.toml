@@ -27,6 +27,18 @@ dependencies = [
     "ipyvue>=1.8.0",
     "numpy",
     "pillow",
+    "jinja2",
+    "pydantic",
+    "click",
+    "rich_click",
+    "uvicorn",
+    "watchgod",
+    "websockets",
+    "starlette",
+    "nbconvert",
+    "jupyter_server",
+    "jupyter_client>=7.0.0",
+    "watchdog",
 ]
 
 [tool.flit.external-data]
@@ -58,23 +70,9 @@ dev = [
     "pytest-timeout",
     "pre-commit",
     "bump2version",
-    "watchdog",
 ]
 assets = [
     "solara-assets==0.11.0"
-]
-server = [
-    "jinja2",
-    "pydantic",
-    "click",
-    "rich_click",
-    "uvicorn",
-    "watchgod",
-    "websockets",
-    "starlette",
-    "nbconvert",
-    "jupyter_server",
-    "jupyter_client>=7.0.0",
 ]
 flask = [
     "flask",

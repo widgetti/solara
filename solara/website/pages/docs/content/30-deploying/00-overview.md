@@ -119,9 +119,6 @@ app.mount("/solara/", app=solara.server.fastapi.app)
 
 If you use want to use Voila, [you can use those deployment options](https://voila.readthedocs.io/en/stable/deploy.html).
 
-> :warning: Note that you don't need to install Solara's server dependencies.
- E.g. install `pip install solara`, not `pip install solara[server]`)
-
 Make sure you run a notebook where you display the app, e.g.
 ```python
 @reacton.component

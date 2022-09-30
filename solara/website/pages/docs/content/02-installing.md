@@ -26,10 +26,7 @@ Setting up a virtual environment on Windows:
 
 Now install Solara using pip:
 
-    $ pip install "solara[server]" watchdog
-
-  * `watchdog` is optional, but will give you auto reloading
-  * the `[server]` part will add in additional dependencies (such as starlette), needed to run the solara server (most people do unless you only use Jupyter)
+    $ pip install solara
 
 ## Bleeding edge
 
@@ -37,13 +34,13 @@ If you want to install an unreleased version of Solara (e.g. because we just mer
 
 
 ```
-$ pip install "solara[server] @ git+https://github.com/widgetti/solara"
+$ pip install "solara @ git+https://github.com/widgetti/solara"
 ```
 
 Or put the following in your `requirements.txt`:
 
 ```
-solara[server] @ https://github.com/widgetti/solara/package/archive/master.tar.gz
+solara @ https://github.com/widgetti/solara/package/archive/master.tar.gz
 
 ```
 
