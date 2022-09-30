@@ -14,7 +14,12 @@ modules.export = {
       console.log("external router push", href);
       this.location = href;
     };
-    this.location = "/" + window.location.href.slice(document.baseURI.length);
+    let location = window.location.href.slice(document.baseURI.length);
+    // take of the anchor
+    if (location.indexOf("#") !== -1) {
+        location = location.slice(0, location.indexOf("#"));
+    }
+    this.location = "/" + location;
     window.addEventListener("popstate", this.onPopState);
     window.addEventListener("scroll", this.onScroll);
   },
@@ -31,6 +36,10 @@ modules.export = {
       );
     },
     onPopState(event) {
+      if(!event.state) {
+        console.log('ignore onPopState', event)
+        return;
+      }
       console.log("pop state!", event.state, window.location.pathname);
       if (!window.location.href.startsWith(document.baseURI)) {
         throw `window.location = ${window.location}, but it should start with the document.baseURI = ${document.baseURI}`;

@@ -7,9 +7,10 @@ import ipyvuetify as v
 import pygments
 import pymdownx.highlight
 import pymdownx.superfences
-import solara
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import get_lexer_by_name
+
+import solara
 
 logger = logging.getLogger(__name__)
 
@@ -76,10 +77,8 @@ module.exports = {
                 }
             } else if(href.startsWith("#")) {
                 // console.log("connect anchor with href=", href, "to custom javascript due to using <base>")
-                a.onclick = e => {
-                    document.location.hash=href
-                    e.preventDefault();
-                }
+                href = location.pathname + href;
+                a.attributes['href'].value = href;
             } else {
                 console.log("href", href, "is not a local link")
             }
