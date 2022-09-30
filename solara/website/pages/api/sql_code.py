@@ -76,7 +76,7 @@ def Page():
         elif result.value is not None:
             solara.Markdown(f"Result for query: `{query_executed}`")
             df = result.value
-            solara.DataTable(df)
+            solara.DataFrame(df)
         elif query_executed is not None:
             with solara.Div():
                 solara.Text("Loading data...")

@@ -72,7 +72,7 @@ def Sidebar(children=[], level=0):
             with ListItem("Data", icon_name="mdi-database"):
                 with List():
                     # ListItem("DataTable")
-                    add("datatable")
+                    add("dataframe")
                     # add("pivot_table")
             with ListItem("Hooks", icon_name="mdi-hook"):
                 with List():

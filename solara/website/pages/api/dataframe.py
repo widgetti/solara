@@ -1,29 +1,11 @@
 """
-# DataTable
-
-The DataTable component can render dataframes of any size due to pagination.
-
-## API
-
-### Component signature
-```python
-@solara.component
-def DataTable(df, page=0, items_per_page=20, format=None, column_actions: List[ColumnAction] = [], cell_actions: List[CellAction] = []):
-    ...
-```
-
-### arguments
-
-* `df` - `DataFrame`
-
-### events
-
-* `column_actions` - Triggered via clicking on the triple dot icon on the headers (visible when hovering).
-* `cell_actions` -  Triggered via clicking on the triple dot icon in the cell (visible when hovering).
+# DataFrame
 
 """
 
 from typing import Any, Dict, Optional, cast
+
+from solara.website.utils import apidoc
 
 try:
     import vaex
@@ -63,5 +45,8 @@ def Page():
 
         """
         )
-        solara.DataTable(df, column_actions=column_actions, cell_actions=cell_actions)
+        solara.DataFrame(df, column_actions=column_actions, cell_actions=cell_actions)
     return main
+
+
+__doc__ += apidoc(solara.DataFrame.f)  # type: ignore

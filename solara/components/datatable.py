@@ -64,3 +64,19 @@ def DataTable(df, page=0, items_per_page=20, format=None, column_actions: List[C
         _column_actions_callbacks=column_actions_callbacks,
         _cell_actions_callbacks=cell_actions_callbacks,
     )
+
+
+@solara.component
+def DataFrame(df, column_actions: List[ColumnAction] = [], cell_actions: List[CellAction] = []):
+    """Displays a Pandas dataframe in a table.
+
+
+    ## Arguments
+
+     * `df` - `DataFrame` - a Pandas dataframe.
+     * `column_actions` - Triggered via clicking on the triple dot icon on the headers (visible when hovering).
+     * `cell_actions` -  Triggered via clicking on the triple dot icon in the cell (visible when hovering).
+
+
+    """
+    return DataTable(df, column_actions=column_actions, cell_actions=cell_actions)
