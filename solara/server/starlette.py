@@ -66,6 +66,10 @@ async def kernel_connection(ws: starlette.websockets.WebSocket):
         await ws.close()
         return
     connection_id = ws.query_params["session_id"]
+    if not connection_id:
+        logger.error("no session_id/connection_id")
+        await ws.close()
+        return
     logger.info("Solara kernel requested for session_id=%s connection_id=%s", session_id, connection_id)
     await ws.accept()
 
@@ -74,6 +78,8 @@ async def kernel_connection(ws: starlette.websockets.WebSocket):
 
         async def run():
             try:
+                assert session_id is not None
+                assert connection_id is not None
                 await server.app_loop(ws_wrapper, session_id, connection_id)
             except:  # noqa
                 await portal.stop(cancel_remaining=True)
@@ -117,13 +123,15 @@ async def root(request: Request, fullpath: str = ""):
     content = server.read_root(root_path)
     response = HTMLResponse(content=content)
     session_id = request.cookies.get(server.COOKIE_KEY_SESSION_ID) or str(uuid4())
-    response.set_cookie(server.COOKIE_KEY_SESSION_ID, value=session_id, expires="Fri, 01 Jan 2038 00:00:00 GMT")
+    response.set_cookie(server.COOKIE_KEY_SESSION_ID, value=session_id, expires="Fri, 01 Jan 2038 00:00:00 GMT")  # type: ignore
     return response
 
 
 class StaticNbFiles(StaticFiles):
     def get_directories(
-        self, directory: Union[str, "os.PathLike[str]", None] = None, packages: typing.List[str] = None
+        self,
+        directory: Union[str, "os.PathLike[str]", None] = None,
+        packages=None,  # type: ignore
     ) -> List[Union[str, "os.PathLike[str]"]]:
         return cast(List[Union[str, "os.PathLike[str]"]], server.nbextensions_directories)
 
@@ -147,7 +155,9 @@ class StaticNbFiles(StaticFiles):
 
 class StaticPublic(StaticFiles):
     def get_directories(
-        self, directory: Union[str, "os.PathLike[str]", None] = None, packages: typing.List[str] = None
+        self,
+        directory: Union[str, "os.PathLike[str]", None] = None,
+        packages=None,  # type: ignore
     ) -> List[Union[str, "os.PathLike[str]"]]:
         # we only know the .directory at runtime (after startup)
         # which means we cannot pass the directory to the StaticFiles constructor
@@ -156,7 +166,9 @@ class StaticPublic(StaticFiles):
 
 class StaticAssets(StaticFiles):
     def get_directories(
-        self, directory: Union[str, "os.PathLike[str]", None] = None, packages: typing.List[str] = None
+        self,
+        directory: Union[str, "os.PathLike[str]", None] = None,
+        packages=None,  # type: ignore
     ) -> List[Union[str, "os.PathLike[str]"]]:
         # we only know the .directory at runtime (after startup)
         # which means we cannot pass the directory to the StaticFiles constructor

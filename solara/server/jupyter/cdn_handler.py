@@ -23,5 +23,6 @@ class CdnHandler(JupyterHandler):
             raise tornado.web.HTTPError(500)
 
         mime = mimetypes.guess_type(path)
-        self.set_header("Content-Type", mime[0])
+        if mime[0] is not None:
+            self.set_header("Content-Type", mime[0])
         self.write(content)
