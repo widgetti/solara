@@ -1,6 +1,7 @@
 from pathlib import Path
 
-from solara.alias import reacton, rv, sol
+import solara
+from solara.alias import rv
 from solara.components.title import Title
 from solara.routing import route_level_context
 
@@ -16,14 +17,14 @@ title = "Home"
 route_order = ["/", "docs", "api", "examples"]
 
 
-@reacton.component
+@solara.component
 def Page():
-    with sol.GridFixed(1, justify_items="center") as main:
-        sol.Markdown(md)
+    with solara.GridFixed(1, justify_items="center") as main:
+        solara.Markdown(md)
     return main
 
 
-@reacton.component
+@solara.component
 def SimpleListItem(text=None, children=[], class_: str = None, icon_name=None):
     if icon_name is not None:
         children = [rv.Icon(children=[icon_name])] + children
@@ -32,15 +33,15 @@ def SimpleListItem(text=None, children=[], class_: str = None, icon_name=None):
     return rv.Html(tag="li", children=children, attributes={"class": class_})
 
 
-@reacton.component
+@solara.component
 def List(children=[], class_: str = None):
     return rv.Html(tag="ul", children=children, attributes={"class": class_})
 
 
-@reacton.component
+@solara.component
 def Sidebar():
-    route_current, all_routes = sol.use_route()
-    router = sol.use_router()
+    route_current, all_routes = solara.use_route()
+    router = solara.use_router()
     selected = router.path
     with rv.Col(tag="aside", md=4, lg=3, class_="sidebar bg-grey d-none d-md-block") as main:
         with List():
@@ -49,32 +50,32 @@ def Sidebar():
                     with SimpleListItem(route.label):
                         with List():
                             for child in route.children:
-                                path = sol.resolve_path(child)
-                                with sol.Link(path):
+                                path = solara.resolve_path(child)
+                                with solara.Link(path):
                                     title = child.label or "no label"
                                     if callable(title):
                                         title = "Error: dynamic title"
                                     SimpleListItem(title, class_="active" if path == selected else None)
                 else:
-                    path = sol.resolve_path(route)
-                    with sol.Link(path):
+                    path = solara.resolve_path(route)
+                    with solara.Link(path):
                         SimpleListItem(route.label, class_="active" if path == selected else None)
     return main
 
 
-@reacton.component
+@solara.component
 def Layout(children=[]):
-    router = sol.use_router()
-    route_current, all_routes = sol.use_route()
+    router = solara.use_router()
+    route_current, all_routes = solara.use_route()
     # get child routes, and restore router level, so we can also render the route of the sidebar for the mobile view
-    route_level = reacton.use_context(route_level_context)
-    route_sidebar_current, all_routes_sidebar = sol.use_route()
+    route_level = solara.use_context(route_level_context)
+    route_sidebar_current, all_routes_sidebar = solara.use_route()
     route_level_context.provide(route_level)
 
-    show_left_menu, set_show_left_menu = reacton.use_state(False)
-    show_right_menu, set_show_right_menu = reacton.use_state(False)
+    show_left_menu, set_show_left_menu = solara.use_state(False)
+    show_right_menu, set_show_right_menu = solara.use_state(False)
 
-    with sol.VBox(grow=False) as main:
+    with solara.VBox(grow=False) as main:
         Title(title="Solara documentations")
         Header(
             on_toggle_left_menu=lambda: set_show_left_menu(not show_left_menu),
@@ -97,7 +98,7 @@ def Layout(children=[]):
                             #     rv.Html(tag="h1", children=["Live Demo"])
                             # with rv.Col(md=6, class_="d-flex", style_="justify-content: end"):
                             #     rv.Btn(elevation=0, large=True, children=["Running App"], color="primary", class_="btn-size--xlarge")
-                        # sol.Padding(6)
+                        # solara.Padding(6)
                     with rv.Row(children=children):
                         pass
 
@@ -113,8 +114,8 @@ def Layout(children=[]):
                 with rv.List(nav=True):
                     with rv.ListItemGroup(active_class="text--primary"):
                         for route in all_routes:
-                            with sol.Link(route):
-                                sol.ListItem(route.label)
+                            with solara.Link(route):
+                                solara.ListItem(route.label)
 
             # Drawer navigation for top menu
             with rv.NavigationDrawer(
@@ -132,14 +133,14 @@ def Layout(children=[]):
                         for route in all_routes_sidebar:
                             # this gets rid of the api/link child routes
                             if len([k for k in route.children if k.label]) == 0:
-                                with sol.Link(route):
-                                    sol.ListItem(route.label, value=sol.resolve_path(route))
+                                with solara.Link(route):
+                                    solara.ListItem(route.label, value=solara.resolve_path(route))
                             else:
-                                with sol.ListItem(route.label or "no-title", value=sol.resolve_path(route) + "_no_select"):
+                                with solara.ListItem(route.label or "no-title", value=solara.resolve_path(route) + "_no_select"):
                                     for subroute in route.children:
                                         if subroute.label:
-                                            with sol.Link(subroute):
-                                                with sol.ListItem(subroute.label, value=sol.resolve_path(subroute)):
+                                            with solara.Link(subroute):
+                                                with solara.ListItem(subroute.label, value=solara.resolve_path(subroute)):
                                                     pass
 
     return main

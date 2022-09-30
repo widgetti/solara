@@ -123,7 +123,7 @@ async def main():
     import solara
 
     el = solara.Warning(text="lala")
-    import reacton
+    import solara
 
-    reacton.render_fixed(el)
+    solara.render_fixed(el)
     return el

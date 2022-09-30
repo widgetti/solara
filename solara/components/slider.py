@@ -3,15 +3,14 @@ from datetime import date, datetime, timedelta
 from typing import Callable, List, TypeVar
 
 import ipyvue
+import solara
 import traitlets
-
-from solara.alias import reacton
 from solara.alias import rv as v
 
 T = TypeVar("T")
 
 
-@reacton.component
+@solara.component
 def FloatSlider(label: str, value: float = 0, min: float = 0, max: float = 10.0, step: float = 0.1, on_value: Callable[[float], None] = None, thumb_label=True):
     def set_value_cast(value):
         if on_value is None:
@@ -21,7 +20,7 @@ def FloatSlider(label: str, value: float = 0, min: float = 0, max: float = 10.0,
     return v.Slider(v_model=value, on_v_model=set_value_cast, label=label, min=min, max=max, step=step, thumb_label=thumb_label, dense=False, hide_details=True)
 
 
-@reacton.component
+@solara.component
 def IntSlider(label: str, value: int = 0, min: int = 0, max: int = 10, step: int = 1, on_value: Callable[[int], None] = None, thumb_label=True):
     def set_value_cast(value):
         if on_value is None:
@@ -31,9 +30,9 @@ def IntSlider(label: str, value: int = 0, min: int = 0, max: int = 10, step: int
     return v.Slider(v_model=value, on_v_model=set_value_cast, label=label, min=min, max=max, step=step, thumb_label=thumb_label, dense=False, hide_details=True)
 
 
-@reacton.component
+@solara.component
 def ValueSlider(label: str, value: T, values: List[T], on_value: Callable[[T], None] = None):
-    index, set_index = reacton.use_state(values.index(value), key="index")
+    index, set_index = solara.use_state(values.index(value), key="index")
 
     def on_index(index):
         set_index(index)
@@ -64,7 +63,7 @@ class DateSliderWidget(ipyvue.VueTemplate):
     label = traitlets.Unicode("").tag(sync=True)
 
 
-@reacton.component
+@solara.component
 def DateSlider(
     label: str, value: date = date(1981, 7, 28), min: date = date(1950, 1, 1), max: date = date(3000, 12, 30), on_value: Callable[[date], None] = None
 ):

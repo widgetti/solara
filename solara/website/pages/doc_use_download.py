@@ -1,6 +1,7 @@
 # flake8: noqa
+import solara
 import solara as sol
-from solara.alias import reacton, rv, rw
+from solara.alias import rv, rw
 
 from .docutils import IncludeComponent
 
@@ -9,9 +10,9 @@ url = "https://pjreddie.com/media/files/yolov3.weights"
 expected_size = 248007048
 
 
-@reacton.component
+@solara.component
 def DownloadFile(file_path=file_path, url=url, expected_size=expected_size, on_done=None):
-    download = sol.hooks.use_download(file_path, url, expected_size=expected_size)
+    download = solara.hooks.use_download(file_path, url, expected_size=expected_size)
     downloaded_size = download.progress * expected_size
     if on_done:
         on_done(download.progress == 1)
@@ -33,11 +34,11 @@ def DownloadFile(file_path=file_path, url=url, expected_size=expected_size, on_d
     return main
 
 
-@reacton.component
+@solara.component
 def DocUseDownload():
     with rv.Container() as main:
         with rw.VBox(layout={"padding": "20px", "max_width": "1024px"}):
-            sol.MarkdownIt(
+            solara.MarkdownIt(
                 """
 # use_download
 
@@ -62,7 +63,7 @@ Lets start with a Button, that renders how many times it is clicked.
                 DownloadFile,
                 """
 import reacton
-import reacton.ipywidgets as w
+import solara.ipywidgets as w
 
 """,
                 highlight=[6],

@@ -12,7 +12,7 @@ For instance, having no layout gives the same result as putting this `Layout` co
 ```python
 @reacton.component
 def Layout(children=[]):
-    return sol.DefaultLayout(children=children)
+    return solara.DefaultLayout(children=children)
 ```
 
 A possible more custom `Layout` could look like this:
@@ -21,13 +21,13 @@ A possible more custom `Layout` could look like this:
 @reacton.component
 def Layout(children=[]):
     # Note that children being passed here for this example will be a Page() element.
-    route_current, routes_all = sol.use_route()
-    with sol.VBox() as main:
-        with sol.HBox():
+    route_current, routes_all = solara.use_route()
+    with solara.VBox() as main:
+        with solara.HBox():
             for route in routes_all:
-                with sol.Link(route):
-                    sol.Button(route.path, color="red" if route_current == route else None)
-        sol.VBox(children=children)
+                with solara.Link(route):
+                    solara.Button(route.path, color="red" if route_current == route else None)
+        solara.VBox(children=children)
     return main
 ```
 

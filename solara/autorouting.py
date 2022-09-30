@@ -7,14 +7,13 @@ from types import ModuleType
 from typing import Any, Callable, List, Optional, cast
 
 import reacton
-
-import solara as sol
+import solara
 from solara.alias import rv
 from solara.util import cwd
 
 from .server import reload
 
-autoroute_level_context = reacton.create_context(0)
+autoroute_level_context = solara.create_context(0)
 DEBUG = False
 
 
@@ -72,15 +71,15 @@ def arg_cast(args: List[str], f: Callable):
     return results
 
 
-@reacton.component
-def RoutingProvider(children: List[reacton.core.Element] = [], routes: List[sol.Route] = [], pathname: str = ""):
+@solara.component
+def RoutingProvider(children: List[reacton.core.Element] = [], routes: List[solara.Route] = [], pathname: str = ""):
     """Wraps the app, adds extra context, like navigation/routing."""
-    path, set_path = sol.use_state_or_update(pathname, key="solara-context-path")
-    nav = sol.Navigator(location=path, on_location=set_path)
-    sol.routing._location_context.provide(sol.routing._Location(path, set_path))
-    sol.routing.router_context.provide(sol.routing.Router(path, routes=routes, set_path=set_path))
+    path, set_path = solara.use_state_or_update(pathname, key="solara-context-path")
+    nav = solara.Navigator(location=path, on_location=set_path)
+    solara.routing._location_context.provide(solara.routing._Location(path, set_path))
+    solara.routing.router_context.provide(solara.routing.Router(path, routes=routes, set_path=set_path))
 
-    main = sol.VBox(
+    main = solara.VBox(
         children=[
             nav,
             *children,
@@ -90,22 +89,21 @@ def RoutingProvider(children: List[reacton.core.Element] = [], routes: List[sol.
     return main
 
 
-@reacton.component
+@solara.component
 def RenderPage():
     """Renders the page that matches the route."""
-    level_start = sol.use_route_level()
-    router = reacton.use_context(sol.routing.router_context)
+    level_start = solara.use_route_level()
+    router = solara.use_context(solara.routing.router_context)
 
     if len(router.path_routes) <= level_start:
-        with sol.VBox() as main:
-            sol.Error(f"Page not found: {router.path}, len(router.path_routes)={len(router.path_routes)} <= level_start={level_start}")
+        with solara.VBox() as main:
+            solara.Error(f"Page not found: {router.path}, len(router.path_routes)={len(router.path_routes)} <= level_start={level_start}")
             parent = "/" + "/".join(router.parts[:-1])
-            with sol.Link(parent):
-                sol.Button(f"Go to parent: {parent}", text=True)
+            with solara.Link(parent):
+                solara.Button(f"Go to parent: {parent}", text=True)
             if DEBUG:
-                from reacton.core import pp
-
                 from solara.components.captureoutput import CaptureOutput
+                from solara.core import pp
 
                 with CaptureOutput():
                     pp(router.routes)
@@ -138,7 +136,7 @@ def RenderPage():
         else:
             layouts = [DefaultLayout]
     if route_current.data is None and route_current.module is None:
-        return sol.Error(f"Page not found: {router.path}, route does not link to a path or module")
+        return solara.Error(f"Page not found: {router.path}, route does not link to a path or module")
 
     def wrap_in_layouts(element: reacton.core.Element, layouts):
         for Layout in reversed(layouts):
@@ -156,26 +154,26 @@ def RenderPage():
     if isinstance(route_current.data, Path):
         path = cast(Path, route_current.data)
         if path.suffix == ".md":
-            with sol.HBox() as navigation:
+            with solara.HBox() as navigation:
                 if routes_siblings_index > 0:
                     prev = routes_siblings[routes_siblings_index - 1]
-                    with sol.Link(prev):
-                        sol.Button(f"{prev.label}", text=True, icon_name="mdi-arrow-left")
+                    with solara.Link(prev):
+                        solara.Button(f"{prev.label}", text=True, icon_name="mdi-arrow-left")
                 rv.Spacer()
                 if routes_siblings_index < len(routes_siblings) - 1:
                     next = routes_siblings[routes_siblings_index + 1]
-                    with sol.Link(next):
-                        sol.Button(f"{next.label}", text=True, icon_name="mdi-arrow-right")
-            main = sol.Div(
+                    with solara.Link(next):
+                        solara.Button(f"{next.label}", text=True, icon_name="mdi-arrow-right")
+            main = solara.Div(
                 children=[
-                    sol.Title(route_current.label or "No title"),
-                    sol.Markdown(path.read_text(), unsafe_solara_execute=True),
+                    solara.Title(route_current.label or "No title"),
+                    solara.Markdown(path.read_text(), unsafe_solara_execute=True),
                     navigation,
                 ]
             )
             main = wrap_in_layouts(main, layouts)
         else:
-            main = sol.Error(f"Suffix {path.suffix} not supported")
+            main = solara.Error(f"Suffix {path.suffix} not supported")
     else:
         assert route_current.module is not None
         title = route_current.label or "No title"
@@ -183,12 +181,12 @@ def RenderPage():
             title = route_current.module.title
             if callable(title):
                 title = title(*get_args(title))
-        title_element = sol.Title(title)
+        title_element = solara.Title(title)
         module = route_current.module
         namespace = module.__dict__
         if "app" in namespace:
             element = namespace["app"]
-            main = sol.Div(
+            main = solara.Div(
                 children=[
                     title_element,
                     element,
@@ -198,7 +196,7 @@ def RenderPage():
         elif "Page" in namespace:
             Page = get_page(module)
             args = get_args(Page)
-            main = sol.Div(
+            main = solara.Div(
                 children=[
                     title_element,
                     Page(*args),
@@ -207,36 +205,36 @@ def RenderPage():
             main = wrap_in_layouts(main, layouts)
         else:
             with DefaultLayout(router_level=-1) as main:
-                sol.Error(f"{module} does not have a Page component or an app element")
+                solara.Error(f"{module} does not have a Page component or an app element")
     return main
 
 
-@reacton.component
+@solara.component
 def DefaultLayout(children: List[reacton.core.Element] = [], router_level=-1):
-    route_current, all_routes = sol.use_route()
-    router = sol.use_router()
+    route_current, all_routes = solara.use_route()
+    router = solara.use_router()
     selected = router.path
 
-    with sol.HBox(grow=True) as main:
+    with solara.HBox(grow=True) as main:
         with rv.NavigationDrawer(right=False, width="400px", v_model=True, permanent=True):
             with rv.List(dense=True):
                 with rv.ListItemGroup(v_model=selected):
                     for route in all_routes:
                         if route.children and route.data is None:
-                            with sol.ListItem(route.label):
+                            with solara.ListItem(route.label):
                                 for child in route.children:
-                                    path = sol.resolve_path(child)
-                                    with sol.Link(path):
+                                    path = solara.resolve_path(child)
+                                    with solara.Link(path):
                                         title = child.label or "no label"
                                         if callable(title):
                                             title = "Error: dynamic title"
-                                        sol.ListItem(title, value=path)
+                                        solara.ListItem(title, value=path)
                         else:
-                            path = sol.resolve_path(route)
-                            with sol.Link(path):
-                                sol.ListItem(route.label, value=path)
-        with sol.Padding(4):
-            sol.Div(children=children)
+                            path = solara.resolve_path(route)
+                            with solara.Link(path):
+                                solara.ListItem(route.label, value=path)
+        with solara.Padding(4):
+            solara.Div(children=children)
     return main
 
 
@@ -269,7 +267,7 @@ def get_title(module: ModuleType, required=True):
     return title
 
 
-def generate_routes(module: ModuleType) -> List[sol.Route]:
+def generate_routes(module: ModuleType) -> List[solara.Route]:
     assert module.__file__ is not None
     routes = []
     if module.__file__.endswith("__init__.py"):
@@ -281,7 +279,7 @@ def generate_routes(module: ModuleType) -> List[sol.Route]:
         layout = getattr(module, "Layout", None)
         title = get_title(module)
         children = getattr(module, "routes", [])
-        routes.append(sol.Route(path="/", component=RenderPage, data=module, module=module, layout=layout, children=children, label=title))
+        routes.append(solara.Route(path="/", component=RenderPage, data=module, module=module, layout=layout, children=children, label=title))
 
         assert module.__file__ is not None
         reload.reloader.watcher.add_file(module.__file__)
@@ -290,7 +288,7 @@ def generate_routes(module: ModuleType) -> List[sol.Route]:
             title = get_title(submod)
 
             if info.ispkg:
-                route = sol.Route(info.name, component=RenderPage, children=generate_routes(submod), module=submod, layout=None, label=title)
+                route = solara.Route(info.name, component=RenderPage, children=generate_routes(submod), module=submod, layout=None, label=title)
                 # skip empty subpackages
                 if len(route.children) == 0:
                     continue
@@ -300,7 +298,7 @@ def generate_routes(module: ModuleType) -> List[sol.Route]:
                     continue
                 children = getattr(submod, "routes", [])
                 module_layout = getattr(submod, "Layout", None)
-                route = sol.Route(info.name, component=RenderPage, module=submod, layout=module_layout, children=children, label=title)
+                route = solara.Route(info.name, component=RenderPage, module=submod, layout=module_layout, children=children, label=title)
             routes.append(route)
         if route_order:
             lookup = {k.path: k for k in routes}
@@ -313,12 +311,12 @@ def generate_routes(module: ModuleType) -> List[sol.Route]:
 
     else:
         # single module, single route
-        return [sol.Route(path="/", component=RenderPage, data=None, module=module, label=get_title(module))]
+        return [solara.Route(path="/", component=RenderPage, data=None, module=module, label=get_title(module))]
 
     return routes
 
 
-def generate_routes_directory(path: Path) -> List[sol.Route]:
+def generate_routes_directory(path: Path) -> List[solara.Route]:
     subpaths = list(sorted(path.iterdir()))
     routes = []
     first = True
@@ -363,6 +361,6 @@ def generate_routes_directory(path: Path) -> List[sol.Route]:
             children = getattr(module, "routes", children)
             module_layout = getattr(module, "Layout", module_layout)
         first = False
-        route = sol.Route(route_path, component=component, module=module, label=title, children=children, data=data, layout=module_layout)
+        route = solara.Route(route_path, component=component, module=module, label=title, children=children, data=data, layout=module_layout)
         routes.append(route)
     return routes

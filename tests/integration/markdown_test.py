@@ -2,8 +2,7 @@
 from pathlib import Path
 
 import playwright.sync_api
-
-from solara.alias import reacton, sol
+import solara
 
 HERE = Path(__file__).parent
 
@@ -18,14 +17,14 @@ import reacton
 import solara as sol
 
 
-@reacton.component
+@solara.component
 def ClickButton():
-    clicks, set_clicks = reacton.use_state(0)
+    clicks, set_clicks = solara.use_state(0)
     def on_click():
         set_clicks(clicks + 1)
         print("clicks", clicks)
 
-    return sol.Button(label=f"Clicked: {clicks}", on_click=on_click)
+    return solara.Button(label=f"Clicked: {clicks}", on_click=on_click)
 
 
 app = ClickButton()
@@ -34,24 +33,24 @@ app = ClickButton()
 """
 
 
-@reacton.component
+@solara.component
 def MarkdownApp():
-    return sol.Markdown(md, unsafe_solara_execute=True)
+    return solara.Markdown(md, unsafe_solara_execute=True)
 
 
-@reacton.component
+@solara.component
 def MarkdownAppOff():
-    return sol.Markdown(md, unsafe_solara_execute=False)
+    return solara.Markdown(md, unsafe_solara_execute=False)
 
 
-@reacton.component
+@solara.component
 def MarkdownItApp():
-    return sol.MarkdownIt(md, unsafe_solara_execute=True)
+    return solara.MarkdownIt(md, unsafe_solara_execute=True)
 
 
-@reacton.component
+@solara.component
 def MarkdownItAppOff():
-    return sol.MarkdownIt(md, unsafe_solara_execute=False)
+    return solara.MarkdownIt(md, unsafe_solara_execute=False)
 
 
 app = MarkdownApp()

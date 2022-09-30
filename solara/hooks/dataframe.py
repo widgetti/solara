@@ -2,8 +2,6 @@ import operator
 from functools import reduce
 from typing import Any, Callable, Dict, List, TypeVar
 
-import reacton
-
 import solara.util
 from solara.hooks.misc import use_force_update, use_unique_key
 
@@ -38,7 +36,7 @@ class CrossFilterStore:
         updater = use_force_update()
 
         data_filters = self.filters.setdefault(data_key, {})
-        filter, set_filter = reacton.use_state(data_filters.get(key), eq=eq)
+        filter, set_filter = solara.use_state(data_filters.get(key), eq=eq)
 
         def on_change():
             set_filter(data_filters.get(key))
@@ -57,7 +55,7 @@ class CrossFilterStore:
 
             return cleanup
 
-        reacton.use_effect(connect, [key])
+        solara.use_effect(connect, [key])
 
         def setter(filter):
             data_filters[key] = filter
@@ -68,12 +66,12 @@ class CrossFilterStore:
         return filter, otherfilters, setter
 
 
-cross_filter_context = reacton.create_context(CrossFilterStore())
+cross_filter_context = solara.create_context(CrossFilterStore())
 
 
 def provide_cross_filter():
     # create it once
-    cross_filter_object = reacton.use_memo(CrossFilterStore, [])
+    cross_filter_object = solara.use_memo(CrossFilterStore, [])
     cross_filter_context.provide(cross_filter_object)
     return cross_filter_object
 
@@ -106,7 +104,7 @@ def use_cross_filter(data_key, name: str = "no-name", reducer: Callable[[T, T], 
     but only applied to all other components.
     """
     key = use_unique_key(prefix=f"cross-filter-{name}-")
-    cross_filter_store = reacton.use_context(cross_filter_context)
+    cross_filter_store = solara.use_context(cross_filter_context)
     _own_filter, otherfilters, set_filter = cross_filter_store.use(data_key, key, eq=eq)
     if otherfilters:
         cross_filter = reduce(reducer, otherfilters[1:], otherfilters[0])

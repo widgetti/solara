@@ -1,87 +1,88 @@
-from solara.alias import reacton, rv, sol
+import solara
+from solara.alias import rv
 
 from ..data import articles, dfs, names
 
 title = "Solara Example: main"
 
 
-@reacton.component
+@solara.component
 def DataCard(name):
     df = dfs[name].df
     with rv.Card(max_width="400px") as main:
-        with sol.Link(f"/tabular/{name}"):
+        with solara.Link(f"/tabular/{name}"):
             rv.Img(height="250", src=dfs[name].image_url)
         rv.CardTitle(children=[dfs[name].title])
         with rv.CardText():
-            sol.Markdown(f"*{len(df):,} rows*")
-            with sol.Link(f"/tabular/{name}"):
-                sol.Button("Open table view", text=True, icon_name="mdi-table")
+            solara.Markdown(f"*{len(df):,} rows*")
+            with solara.Link(f"/tabular/{name}"):
+                solara.Button("Open table view", text=True, icon_name="mdi-table")
     return main
 
 
-@reacton.component
+@solara.component
 def ArticleCard(name):
     article = articles[name]
     with rv.Card(max_width="400px") as main:
-        with sol.Link(f"/article/{name}"):
+        with solara.Link(f"/article/{name}"):
             rv.Img(height="250", src=article.image_url)
         rv.CardTitle(children=[article.title])
         with rv.CardText():
-            sol.Markdown(article.description)
-            with sol.Link(f"/article/{name}"):
-                sol.Button("Read article", text=True, icon_name="mdi-book-open")
+            solara.Markdown(article.description)
+            with solara.Link(f"/article/{name}"):
+                solara.Button("Read article", text=True, icon_name="mdi-book-open")
     return main
 
 
-@reacton.component
+@solara.component
 def PeopleCard(name):
     # article = articles[name]
     with rv.Card() as main:
-        # with sol.Link(f"/article/{name}"):
+        # with solara.Link(f"/article/{name}"):
         #     rv.Img(height="250", src=article.image_url)
         # rv.CardTitle(children=[article.title])
         with rv.CardText():
-            sol.Markdown(f"# {name}")
-            sol.Markdown(
+            solara.Markdown(f"# {name}")
+            solara.Markdown(
                 """
    * Age:
    * Height:
 """
             )
-            with sol.Link(f"/people/{name}"):
-                sol.Button("View employee", text=True, icon_name="mdi-profile")
+            with solara.Link(f"/people/{name}"):
+                solara.Button("View employee", text=True, icon_name="mdi-profile")
     return main
 
 
-@reacton.component
+@solara.component
 def Layout(children=[]):
-    router = reacton.use_context(sol.routing.router_context)
-    with sol.VBox() as navigation:
+    router = solara.use_context(solara.routing.router_context)
+    with solara.VBox() as navigation:
         with rv.List(dense=True):
             with rv.ListItemGroup(v_model=router.path):
-                with sol.Link(sol.resolve_path("/")):
-                    with sol.ListItem("Home", icon_name="mdi-home", value="/"):
+                with solara.Link(solara.resolve_path("/")):
+                    with solara.ListItem("Home", icon_name="mdi-home", value="/"):
                         pass
-                with sol.ListItem("tabular data", icon_name="mdi-database"):
+                with solara.ListItem("tabular data", icon_name="mdi-database"):
                     for name in names:
                         pathname = f"/tabular/{name}"
-                        with sol.Link(sol.resolve_path(pathname)):
-                            sol.ListItem(name, value=pathname)
-                with sol.ListItem("Articles", icon_name="mdi-book-open"):
+                        with solara.Link(solara.resolve_path(pathname)):
+                            solara.ListItem(name, value=pathname)
+                with solara.ListItem("Articles", icon_name="mdi-book-open"):
                     for name, article in articles.items():
                         pathname = f"/article/{name}"
-                        with sol.Link(sol.resolve_path(pathname)):
-                            sol.ListItem(article.title, value=pathname)
+                        with solara.Link(solara.resolve_path(pathname)):
+                            solara.ListItem(article.title, value=pathname)
 
-    with sol.AppLayout(navigation=navigation, title=title, children=children) as main:
+    with solara.AppLayout(navigation=navigation, title=title, children=children) as main:
         pass
     return main
 
 
-@reacton.component
+@solara.component
 def Page():
-    with sol.VBox() as main:
-        with sol.Card("Datasets"):
+    with solara.VBox() as main:
+        with solara.Card("Datasets"):
             with rv.Container(style_="margin-left: unset; margin-right: unset;"):
                 with rv.Row(justify="start"):
                     for name in names:
@@ -93,15 +94,15 @@ def Page():
                 with rv.Col(style_="display: flex;", sm=6):
                     PeopleCard("Maarten")
                 with rv.Col(style_="display: flex;", sm=4):
-                    with sol.Card("Quick links"):
-                        with sol.VBox():
+                    with solara.Card("Quick links"):
+                        with solara.VBox():
                             for name in names:
-                                with sol.Link(f"/viz/scatter/{name}"):
-                                    sol.Button(f"Scatter for {name}", text=True)
-                                with sol.Link(f"/viz/histogram/{name}"):
-                                    sol.Button(f"Histogram for {name}", text=True)
+                                with solara.Link(f"/viz/scatter/{name}"):
+                                    solara.Button(f"Scatter for {name}", text=True)
+                                with solara.Link(f"/viz/histogram/{name}"):
+                                    solara.Button(f"Histogram for {name}", text=True)
 
-        with sol.Card("Company articles"):
+        with solara.Card("Company articles"):
             with rv.Container(style_="margin-left: unset; margin-right: unset;"):
                 with rv.Row(justify="start"):
                     for name in articles:

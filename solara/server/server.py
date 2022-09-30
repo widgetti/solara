@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import Dict, List, TypeVar
 
 import jinja2
-
 import solara
 
 from . import app, settings, websocket
@@ -36,6 +35,9 @@ nbextensions_ignorelist = [
     "contrib_nbextensions_help_item/main",
     "execute_time/ExecuteTime",
     "dominocode/extension",
+    "low-code-assistant/extension",
+    "jupyter-js/extension",
+    "jupyter-js-widgets/extension",
 ]
 
 
@@ -191,6 +193,8 @@ def get_nbextensions() -> List[str]:
     load_extensions = notebook_config.get("load_extensions", {})
     if "jupyter-js-widgets/extension" in load_extensions:
         load_extensions["jupyter-js-widgets/extension"] = False
+    if "voila/extension" in load_extensions:
+        load_extensions["voila/extension"] = False
     if "voila/extension" in load_extensions:
         load_extensions["voila/extension"] = False
     directories = get_nbextensions_directories()

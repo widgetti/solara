@@ -15,7 +15,7 @@ This will create the file `sol.py` with the following content.
 ```solara
 import reacton
 
-import solara as sol
+import solara
 
 
 @reacton.component
@@ -30,7 +30,7 @@ def Page():
         set_clicks(clicks + 1)
         print("clicks", clicks)
 
-    return sol.Button(label=f"Clicked: {clicks}", on_click=on_click, color=color)
+    return solara.Button(label=f"Clicked: {clicks}", on_click=on_click, color=color)
 ```
 
 
@@ -58,9 +58,9 @@ you do not share the number of clicks with other people.
 Lets modify the script a little bit, possibly in this way:
 
 ```diff
--    return sol.Button(label=f"Clicked: {clicks}", on_click=on_click, color=color)
+-    return solara.Button(label=f"Clicked: {clicks}", on_click=on_click, color=color)
 +    label = "Not clicked yet" if clicks == 0 else f"Clicked: {clicks}"
-+    return sol.Button(label=label, on_click=on_click, color=color)
++    return solara.Button(label=label, on_click=on_click, color=color)
 ```
 
 If we now save the script, Solara will automatically reload your script and update

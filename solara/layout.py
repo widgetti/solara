@@ -1,10 +1,9 @@
-import reacton
 import reacton.ipyvuetify as v
-
+import solara
 from solara.kitchensink import vue
 
 
-@reacton.component
+@solara.component
 def AppIcon(open=False, on_click=None):
     def click(*ignore):
         on_click()
@@ -14,10 +13,10 @@ def AppIcon(open=False, on_click=None):
     return icon
 
 
-@reacton.component
+@solara.component
 def LayoutApp(children=[], left=None, right=None, open_left=False, open_right=False, title="Solara"):
-    open_left, set_open_left = reacton.use_state(open_left)
-    open_right, set_open_right = reacton.use_state(open_right)
+    open_left, set_open_left = solara.use_state(open_left)
+    open_right, set_open_right = solara.use_state(open_right)
     with v.Html(tag="div") as main:
         if left:
             with v.NavigationDrawer(absolute=True, right=False, width="min-content", v_model=open_left):

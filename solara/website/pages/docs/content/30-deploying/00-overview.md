@@ -146,7 +146,7 @@ def ButtonClick(label="Hi"):
     clicks, set_clicks = reacton.use_state(0)
     def increment():
         set_clicks(clicks + 1)
-    return sol.Button(f"{label}: Clicked {clicks} times", on_click=increment)
+    return solara.Button(f"{label}: Clicked {clicks} times", on_click=increment)
 
 # this creates just an element, Panel doesn't know what to do with that
 element = ButtonClick("Solara+Panel")

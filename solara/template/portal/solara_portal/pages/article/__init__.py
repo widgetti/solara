@@ -1,17 +1,17 @@
-from solara.alias import reacton, sol
+import solara
 
 from ... import data
 from ...components import Layout
 
 
-@reacton.component
+@solara.component
 def Page(name: str, page: int = 0, page_size=100):
-    # router = sol.use_router()
+    # router = solara.use_router()
     if name not in data.articles:
-        return sol.Error(f"No such article: {name!r}")
+        return solara.Error(f"No such article: {name!r}")
     article = data.articles[name]
     with Layout() as main:
-        with sol.Card():
+        with solara.Card():
             pre = f"# {article.title}\n\n"
-            sol.Markdown(pre + article.markdown)
+            solara.Markdown(pre + article.markdown)
     return main

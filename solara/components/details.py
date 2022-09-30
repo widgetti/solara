@@ -1,9 +1,10 @@
-from solara.alias import reacton, rv, sol
+import solara
+from solara.alias import rv
 
 
-@reacton.component
+@solara.component
 def Details(summary="Summary", children=[], expand=False):
-    expand, set_expand = sol.use_state_or_update(expand)
+    expand, set_expand = solara.use_state_or_update(expand)
 
     def on_v_model(v_model):
         if v_model is None:  # collapsed:

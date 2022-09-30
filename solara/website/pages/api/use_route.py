@@ -5,7 +5,7 @@ See also [Understanding Routing](/docs/understanding/routing).
 
 
 ```python
-def use_route() -> Tuple[Optional[sol.Route], List[sol.Route]]:
+def use_route() -> Tuple[Optional[solara.Route], List[solara.Route]]:
     ...
 ```
 
@@ -19,15 +19,15 @@ In the demo below, we declared the following routes.
 
 ```python
 routes = [
-    sol.Route(path="/"),
-    sol.Route(
+    solara.Route(path="/"),
+    solara.Route(
         path="fruit",
         component=Fruit,
         children=[
-            sol.Route(path="/"),
-            sol.Route(path="kiwi"),
-            sol.Route(path="banana"),
-            sol.Route(path="apple"),
+            solara.Route(path="/"),
+            solara.Route(path="kiwi"),
+            solara.Route(path="banana"),
+            solara.Route(path="apple"),
         ],
     ),
 ]
@@ -44,73 +44,73 @@ If the current route has children, any child component that calls `use_route` wi
 
 """
 
-from solara.alias import reacton, sol
+import solara
 
 
-@reacton.component
+@solara.component
 def Fruit():
     # this gets all routes in fruit's children
-    route, routes = sol.use_route()
+    route, routes = solara.use_route()
 
     if route is None:
-        with sol.Link("banana") as main:
-            sol.Button("Fruit not found, go to banana")
+        with solara.Link("banana") as main:
+            solara.Button("Fruit not found, go to banana")
         return main
 
     if route.path == "/":
-        with sol.Link("banana") as main:
-            sol.Button("Choose a fruit, I recomment banana")
+        with solara.Link("banana") as main:
+            solara.Button("Choose a fruit, I recomment banana")
         return main
 
-    with sol.VBox() as main:
-        with sol.HBox():
+    with solara.VBox() as main:
+        with solara.HBox():
             for route_fruit in routes[1:]:
-                with sol.Link(sol.resolve_path(route_fruit)):
-                    sol.Button(route_fruit.path)
+                with solara.Link(solara.resolve_path(route_fruit)):
+                    solara.Button(route_fruit.path)
 
-            with sol.Link("/api/use_route/fruit/nofruit"):
-                sol.Button("Wrong fruit")
-            with sol.Link("/api/use_route/not-routed"):
-                sol.Button("Wrong url")
-        sol.Success(f"You chose {route.path}")
+            with solara.Link("/api/use_route/fruit/nofruit"):
+                solara.Button("Wrong fruit")
+            with solara.Link("/api/use_route/not-routed"):
+                solara.Button("Wrong url")
+        solara.Success(f"You chose {route.path}")
     return main
 
 
-@reacton.component
+@solara.component
 def Page():
     # this gets the top level routes, '/' and 'fruit'
-    route_current, routes_all = sol.use_route()
-    with sol.VBox() as main:
-        with sol.Card("Navigation using buttons"):
-            with sol.HBox():
+    route_current, routes_all = solara.use_route()
+    with solara.VBox() as main:
+        with solara.Card("Navigation using buttons"):
+            with solara.HBox():
                 for route in routes_all:
-                    with sol.Link(route):
-                        sol.Button(route.path, color="red" if route_current == route else None)
-        with sol.Card("Content decided by route:"):
+                    with solara.Link(route):
+                        solara.Button(route.path, color="red" if route_current == route else None)
+        with solara.Card("Content decided by route:"):
             if route_current is None:
-                sol.Error("Page does not exist")
-                with sol.Link("fruit/kiwi"):
-                    sol.Button("Go to fruit/kiwi")
+                solara.Error("Page does not exist")
+                with solara.Link("fruit/kiwi"):
+                    solara.Button("Go to fruit/kiwi")
             elif route_current.path == "/":
-                with sol.Link("fruit/banana"):
-                    sol.Button("Go to fruit/banana")
+                with solara.Link("fruit/banana"):
+                    solara.Button("Go to fruit/banana")
             elif route_current.path == "fruit":
                 Fruit()
             else:
-                sol.Error(f"Unknown route: {route_current.path}")
+                solara.Error(f"Unknown route: {route_current.path}")
     return main
 
 
 routes = [
-    sol.Route(path="/"),
-    sol.Route(
+    solara.Route(path="/"),
+    solara.Route(
         path="fruit",
         component=Fruit,
         children=[
-            sol.Route(path="/"),
-            sol.Route(path="kiwi"),
-            sol.Route(path="banana"),
-            sol.Route(path="apple"),
+            solara.Route(path="/"),
+            solara.Route(path="kiwi"),
+            solara.Route(path="banana"),
+            solara.Route(path="apple"),
         ],
     ),
 ]

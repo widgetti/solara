@@ -6,8 +6,7 @@ The extra x and y must be optional arguments, and can be changed using the query
 /viz/tabular/titanic?x=1&page_size=50
 """
 import plotly.express as px
-
-from solara.alias import reacton, sol
+import solara
 
 from ... import data
 from ...components import Layout
@@ -17,29 +16,29 @@ def title(type: str, name: str):
     return f"Solara viz view: {type} - {name}"
 
 
-@reacton.component
+@solara.component
 def Page(type: str, name: str, x: str = None, y: str = None):
-    # router = sol.use_router()
+    # router = solara.use_router()
     df = data.dfs[name].df
     with Layout() as main:
         fig = None
         if type == "scatter":
             column_names = df.get_column_names()
-            x = sol.ui_dropdown("x", column_names[0], column_names)
-            y = sol.ui_dropdown("y", column_names[1], column_names)
+            x = solara.ui_dropdown("x", column_names[0], column_names)
+            y = solara.ui_dropdown("y", column_names[1], column_names)
             if x and y:
                 fig = px.scatter(df.to_pandas_df(), x=x, y=y)
             else:
-                sol.Warning("Please provide x and y")
+                solara.Warning("Please provide x and y")
         elif type == "histogram":
-            x = sol.ui_dropdown("x")
+            x = solara.ui_dropdown("x")
             if x:
                 fig = px.histogram(df, x=x)
             else:
-                sol.Warning("Please provide x")
+                solara.Warning("Please provide x")
         else:
-            sol.Error("Uknonwn ")
+            solara.Error("Uknonwn ")
         if fig:
-            sol.FigurePlotly(fig, dependencies=[x, y])
+            solara.FigurePlotly(fig, dependencies=[x, y])
         # router.set_query(x=x, y=y)
     return main

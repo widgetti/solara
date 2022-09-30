@@ -7,10 +7,10 @@ Note that this will be interpreted by the browser, so make sure the input html t
 cannot include code from users.
 """
 
-from solara.alias import reacton, sol
+import solara
 
 
-@reacton.component
+@solara.component
 def Page():
     html = """
 <h1>Custom html</h1>
@@ -19,6 +19,6 @@ def Page():
     <li>Item 2
 </ul>
 """
-    with sol.VBox() as main:
-        sol.HTML(tag="div", unsafe_innerHTML=html)
+    with solara.VBox() as main:
+        solara.HTML(tag="div", unsafe_innerHTML=html)
     return main

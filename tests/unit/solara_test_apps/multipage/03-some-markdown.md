@@ -28,7 +28,7 @@ def ClickButton():
         set_clicks(clicks + 1)
         print("clicks", clicks)
 
-    return sol.Button(label=f"Clicked: {clicks}", on_click=on_click, color=color)
+    return solara.Button(label=f"Clicked: {clicks}", on_click=on_click, color=color)
 
 
 app = ClickButton()

@@ -3,8 +3,9 @@ import dataclasses
 import operator
 from typing import Any, Optional
 
+import solara
 import solara.util
-from solara.alias import reacton, rv, sol
+from solara.alias import rv
 
 DEBUG = False
 operator_map = {
@@ -96,9 +97,9 @@ def calculator_reducer(state: CalculatorState, action):
         return state
 
 
-@reacton.component
+@solara.component
 def Calculator():
-    state, dispatch = reacton.use_reducer(calculator_reducer, initial_state)
+    state, dispatch = solara.use_reducer(calculator_reducer, initial_state)
     if DEBUG:
         print("->", state)  # noqa
     with rv.Card(elevation=10, class_="ma-4") as main:
@@ -107,12 +108,12 @@ def Calculator():
         with rv.CardSubtitle(children=["With ipyvuetify and ipywidgets-react"]):
             pass
         with rv.CardText():
-            with sol.VBox(grow=False):
+            with solara.VBox(grow=False):
                 # with rv.Container(style_="padding: 10px"):
                 rv.Label(children=[state.error or state.output or "0"])
                 class_ = "pa-0 ma-1"
 
-                with sol.HBox(grow=False):
+                with solara.HBox(grow=False):
                     if state.input:
                         rv.BtnWithClick(children="C", on_click=lambda: dispatch(("clear", None)), dark=True, class_=class_)
                     else:
@@ -123,14 +124,14 @@ def Calculator():
 
                 column_op = ["x", "-", "+"]
                 for i in range(3):
-                    with sol.HBox(grow=False):
+                    with solara.HBox(grow=False):
                         for j in range(3):
                             digit = str(j + (2 - i) * 3 + 1)
                             rv.BtnWithClick(children=digit, on_click=lambda digit=digit: dispatch(("digit", digit)), class_=class_)
                         op_symbol = column_op[i]
                         op = operator_map[op_symbol]
                         rv.BtnWithClick(children=op_symbol, color="primary", on_click=lambda op=op: dispatch(("operator", op)), class_=class_)
-                with sol.HBox(grow=False):
+                with solara.HBox(grow=False):
                     # rv.Btn(children='gap', style_="visibility: hidden")
                     def boom():
                         print("boom")  # noqa

@@ -2,9 +2,8 @@ import unittest.mock
 from pathlib import Path
 
 import pytest
-
+import solara
 import solara.components.file_browser
-from solara.alias import reacton, sol
 
 HERE = Path(__file__)
 
@@ -15,13 +14,13 @@ def test_file_browser_callback_no_select():
     on_file_name = unittest.mock.MagicMock()  # backwards compat test
     on_path_select = unittest.mock.MagicMock()
 
-    @reacton.component
+    @solara.component
     def Test():
-        return sol.FileBrowser(
+        return solara.FileBrowser(
             HERE.parent, on_path_select=on_path_select, on_directory_change=on_directory_change, on_file_open=on_file_open, on_file_name=on_file_name
         )
 
-    div, rc = reacton.render_fixed(Test())
+    div, rc = solara.render_fixed(Test())
     on_directory_change.assert_not_called()
     on_file_open.assert_not_called()
     on_path_select.assert_not_called()
@@ -58,11 +57,13 @@ def test_file_browser_callback_can_select():
     on_file_open = unittest.mock.MagicMock()
     on_path_select = unittest.mock.MagicMock()
 
-    @reacton.component
+    @solara.component
     def Test():
-        return sol.FileBrowser(HERE.parent, on_path_select=on_path_select, on_directory_change=on_directory_change, on_file_open=on_file_open, can_select=True)
+        return solara.FileBrowser(
+            HERE.parent, on_path_select=on_path_select, on_directory_change=on_directory_change, on_file_open=on_file_open, can_select=True
+        )
 
-    div, rc = reacton.render_fixed(Test())
+    div, rc = solara.render_fixed(Test())
     on_directory_change.assert_not_called()
     on_file_open.assert_not_called()
     on_path_select.assert_not_called()
@@ -111,11 +112,11 @@ def test_file_browser_callback_can_select():
 
 
 def test_file_browser_scroll_pos():
-    @reacton.component
+    @solara.component
     def Test():
-        return sol.FileBrowser(HERE.parent)
+        return solara.FileBrowser(HERE.parent)
 
-    div, rc = reacton.render_fixed(Test())
+    div, rc = solara.render_fixed(Test())
 
     list: solara.components.file_browser.FileListWidget = div.children[1]
     assert "file_browser_test.py" in list
@@ -143,12 +144,12 @@ def test_file_browser_no_access(tmpdir: Path):
     mode = path_no_read.stat().mode  # type: ignore
     path_no_read.chmod(000)
 
-    @reacton.component
+    @solara.component
     def Test():
-        return sol.FileBrowser(tmpdir, on_path_select=on_path_select, on_directory_change=on_directory_change, on_file_open=on_file_open, can_select=True)
+        return solara.FileBrowser(tmpdir, on_path_select=on_path_select, on_directory_change=on_directory_change, on_file_open=on_file_open, can_select=True)
 
     try:
-        div, rc = reacton.render_fixed(Test())
+        div, rc = solara.render_fixed(Test())
 
         list: solara.components.file_browser.FileListWidget = div.children[1]
         # select is ok
@@ -166,11 +167,11 @@ def test_file_browser_filter():
     def directory_filter(path: Path) -> bool:
         return path.is_dir() and not path.name.startswith("_")
 
-    @reacton.component
+    @solara.component
     def Test():
-        return sol.FileBrowser(HERE.parent.parent, filter=directory_filter)
+        return solara.FileBrowser(HERE.parent.parent, filter=directory_filter)
 
-    div, rc = reacton.render_fixed(Test())
+    div, rc = solara.render_fixed(Test())
 
     list: solara.components.file_browser.FileListWidget = div.children[1]
     items = list.files
@@ -179,8 +180,8 @@ def test_file_browser_filter():
 
 
 def test_file_browser_test_change_directory():
-    div, rc = reacton.render_fixed(sol.FileBrowser(HERE.parent))
+    div, rc = solara.render_fixed(solara.FileBrowser(HERE.parent))
     list: solara.components.file_browser.FileListWidget = div.children[1]
     assert "file_browser_test.py" in list
-    rc.render(sol.FileBrowser(HERE.parent.parent))
+    rc.render(solara.FileBrowser(HERE.parent.parent))
     assert "file_browser_test.py" not in list

@@ -1,9 +1,8 @@
 import bqplot
 import ipyvuetify as vw
 import ipywidgets
-import reacton
+import solara
 import vaex.datasets
-
 from solara.components.dataframe import (
     DropdownCard,
     FilterCard,
@@ -14,7 +13,6 @@ from solara.components.dataframe import (
     TableCard,
 )
 from solara.hooks.dataframe import provide_cross_filter, use_cross_filter
-from solara.kitchensink import sol
 
 df = vaex.datasets.titanic()
 
@@ -22,21 +20,21 @@ df = vaex.datasets.titanic()
 def test_histogram_card():
     filter = set_filter = None
 
-    @reacton.component
+    @solara.component
     def FilterDummy():
         nonlocal filter, set_filter
         filter, set_filter = use_cross_filter(id(df), "test")
-        return sol.Text("dummy")
+        return solara.Text("dummy")
 
-    @reacton.component
+    @solara.component
     def Test():
         provide_cross_filter()
-        with sol.VBox() as main:
+        with solara.VBox() as main:
             HistogramCard(df, column="sex")
             FilterDummy()
         return main
 
-    widget, rc = reacton.render(Test(), handle_error=False)
+    widget, rc = solara.render(Test(), handle_error=False)
     figure = rc._find(bqplot.Figure).widget
     bars = figure.marks[0]
     assert bars.x.tolist() == ["female", "male"]
@@ -52,21 +50,21 @@ def test_histogram_card():
 def test_dropdown_card():
     filter = set_filter = None
 
-    @reacton.component
+    @solara.component
     def FilterDummy():
         nonlocal filter, set_filter
         filter, set_filter = use_cross_filter(id(df), "test")
-        return sol.Text("dummy")
+        return solara.Text("dummy")
 
-    @reacton.component
+    @solara.component
     def Test(column=None):
         provide_cross_filter()
-        with sol.VBox() as main:
+        with solara.VBox() as main:
             DropdownCard(df, column=column)
             FilterDummy()
         return main
 
-    widget, rc = reacton.render(Test(column="sex"), handle_error=False)
+    widget, rc = solara.render(Test(column="sex"), handle_error=False)
     select = rc._find(vw.Select)[0].widget
     result: list = select.items
     result.sort(key=lambda item: item["value"])
@@ -82,21 +80,21 @@ def test_dropdown_card():
 def testfilter_card():
     filter = set_filter = None
 
-    @reacton.component
+    @solara.component
     def FilterDummy():
         nonlocal filter, set_filter
         filter, set_filter = use_cross_filter(id(df), "test")
-        return sol.Text("dummy")
+        return solara.Text("dummy")
 
-    @reacton.component
+    @solara.component
     def Test(column=None):
         provide_cross_filter()
-        with sol.VBox() as main:
+        with solara.VBox() as main:
             FilterCard(df)
             FilterDummy()
         return main
 
-    widget, rc = reacton.render(Test(column="sex"), handle_error=False)
+    widget, rc = solara.render(Test(column="sex"), handle_error=False)
     textfield = rc._find(vw.TextField).widget
     assert textfield.v_model == ""
     textfield.v_model = "str_equals(sex, 'female')"
@@ -110,21 +108,21 @@ def testfilter_card():
 def test_summary():
     filter = set_filter = None
 
-    @reacton.component
+    @solara.component
     def FilterDummy():
         nonlocal filter, set_filter
         filter, set_filter = use_cross_filter(id(df), "test")
-        return sol.Text("dummy")
+        return solara.Text("dummy")
 
-    @reacton.component
+    @solara.component
     def Test():
         provide_cross_filter()
-        with sol.VBox() as main:
+        with solara.VBox() as main:
             SummaryCard(df)
             FilterDummy()
         return main
 
-    widget, rc = reacton.render(Test(), handle_error=False)
+    widget, rc = solara.render(Test(), handle_error=False)
     html = rc._find(vw.Html).widget
     assert html.children[0] == "1,309"
     assert set_filter is not None
@@ -135,14 +133,14 @@ def test_summary():
 def test_table():
     filter = set_filter = None
 
-    @reacton.component
+    @solara.component
     def Test():
         nonlocal filter, set_filter
         provide_cross_filter()
         filter, set_filter = use_cross_filter(id(df), "test")
         return TableCard(df)
 
-    widget, rc = reacton.render_fixed(Test(), handle_error=False)
+    widget, rc = solara.render_fixed(Test(), handle_error=False)
     output = widget.children[-1].children[-1]
     assert isinstance(output, ipywidgets.Output)
     # we can't test the output since no frontend is connected
@@ -155,14 +153,14 @@ def test_table():
 def test_heatmap():
     filter = set_filter = None
 
-    @reacton.component
+    @solara.component
     def Test():
         nonlocal filter, set_filter
         provide_cross_filter()
         filter, set_filter = use_cross_filter(id(df), "test")
         return HeatmapCard(df, x="age", y="fare", debounce=False)
 
-    widget, rc = reacton.render_fixed(Test(), handle_error=False)
+    widget, rc = solara.render_fixed(Test(), handle_error=False)
     figure = widget.children[-1].children[-1]
     assert isinstance(figure, bqplot.Figure)
 
@@ -170,21 +168,21 @@ def test_heatmap():
 def test_scatter():
     filter = set_filter = None
 
-    @reacton.component
+    @solara.component
     def FilterDummy():
         nonlocal filter, set_filter
         filter, set_filter = use_cross_filter(id(df), "test")
-        return sol.Text("dummy")
+        return solara.Text("dummy")
 
-    @reacton.component
+    @solara.component
     def Test():
         provide_cross_filter()
-        with sol.VBox() as main:
+        with solara.VBox() as main:
             ScatterCard(df, x="age", y="fare")
             FilterDummy()
         return main
 
-    widget, rc = reacton.render(Test(), handle_error=False)
+    widget, rc = solara.render(Test(), handle_error=False)
     figure = rc._find(bqplot.Figure).widget
     scatter = figure.marks[0]
     scatter.selected = [0]

@@ -1,8 +1,8 @@
-from solara.alias import reacton, sol
+import solara
 
 
-@reacton.component
+@solara.component
 def Layout(children=[]):
-    with sol.VBox(children=children) as main:
-        sol.Info("Footer")
+    with solara.VBox(children=children) as main:
+        solara.Info("Footer")
     return main

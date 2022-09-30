@@ -1,11 +1,11 @@
 import ipyvuetify as vy
-import reacton
+import solara
 
 
 class CodeHighlightCssWidget(vy.VuetifyTemplate):
     template_file = (__file__, "code_highlight_css.vue")
 
 
-@reacton.component
+@solara.component
 def CodeHighlightCss():
     return CodeHighlightCssWidget.element()

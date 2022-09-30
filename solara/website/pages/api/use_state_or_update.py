@@ -1,63 +1,63 @@
 """
 # use_state_or_update
 
-Like `reacton.use_state`, except it will update the value if the input value changes.
+Like `solara.use_state`, except it will update the value if the input value changes.
 
 This is useful to give a component state *or* allow the state to be controlled by the parent component
 
 
 """
-from solara.alias import reacton, sol
+import solara
 
 
-@reacton.component
+@solara.component
 def SliderWithoutState(value: int):
     # Note that this is very bad practive, if value is an input change and the slider
     # can change it, this component should have a on_value callback to allow the parent
     # component to manage its state.
     # This component is only for demoing/understanding.
-    return sol.IntSlider("value", value=value)
+    return solara.IntSlider("value", value=value)
 
 
-@reacton.component
+@solara.component
 def SliderWithState(value: int):
     # effectively, because of use_state, the value prop passed in is
     # only a default value.
-    value, set_value = reacton.use_state(value)
-    return sol.IntSlider("value", value=value, on_value=set_value)
+    value, set_value = solara.use_state(value)
+    return solara.IntSlider("value", value=value, on_value=set_value)
 
 
-@reacton.component
+@solara.component
 def SliderWithStateOrUpdate(value: int):
-    value, set_value = sol.use_state_or_update(value)
-    return sol.IntSlider("value", value=value, on_value=set_value)
+    value, set_value = solara.use_state_or_update(value)
+    return solara.IntSlider("value", value=value, on_value=set_value)
 
 
-@reacton.component
+@solara.component
 def Page():
-    parent_value, set_parent_value = reacton.use_state(4)
+    parent_value, set_parent_value = solara.use_state(4)
     # used to force rerenders
-    rerender_counter, set_rerender_counter = reacton.use_state(4)
-    with sol.VBox() as main:
-        with sol.Card("Parent value selection"):
-            sol.Info("This slider value gets passed down to the child components")
-            sol.IntSlider("parent value", value=parent_value, on_value=set_parent_value)
-            sol.Button("Force redraw", on_click=lambda: set_rerender_counter(rerender_counter + 1))
+    rerender_counter, set_rerender_counter = solara.use_state(4)
+    with solara.VBox() as main:
+        with solara.Card("Parent value selection"):
+            solara.Info("This slider value gets passed down to the child components")
+            solara.IntSlider("parent value", value=parent_value, on_value=set_parent_value)
+            solara.Button("Force redraw", on_click=lambda: set_rerender_counter(rerender_counter + 1))
 
-        with sol.Card("Child without state"):
-            sol.Info("This child will simply render the value passed into the argument, a redraw will reset it to its parent value.")
+        with solara.Card("Child without state"):
+            solara.Info("This child will simply render the value passed into the argument, a redraw will reset it to its parent value.")
             SliderWithoutState(parent_value)
 
-        with sol.Card("Child with state"):
-            sol.Info("This child will not care about the value passed into the prop, it manages its own state.")
+        with solara.Card("Child with state"):
+            solara.Info("This child will not care about the value passed into the prop, it manages its own state.")
             SliderWithState(parent_value)
 
-        with sol.Card("Child with state (or update)"):
-            sol.Info("This child will update when the passes in a new value, but a redraw will not reset it.")
+        with solara.Card("Child with state (or update)"):
+            solara.Info("This child will update when the passes in a new value, but a redraw will not reset it.")
             SliderWithStateOrUpdate(parent_value)
 
-        with sol.Card("Child with state + key"):
-            sol.Info(
+        with solara.Card("Child with state + key"):
+            solara.Info(
                 "We can also use the `.key(...)` method to force the component to forget its state, this will however cause the widget to be re-created"
                 "(a performance penalty)."
             )

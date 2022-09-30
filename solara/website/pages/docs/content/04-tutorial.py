@@ -3,8 +3,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 import nbformat
-
-from solara.alias import reacton, sol
+import solara
 
 HERE = Path(__file__).parent
 
@@ -42,13 +41,13 @@ def execute_notebook(path: Path):
     return nb
 
 
-@reacton.component
+@solara.component
 def Page():
     # only execute once, other
-    nb: nbformat.NotebookNode = reacton.use_memo(lambda: execute_notebook(HERE / "_solara-tutorial.ipynb"))
+    nb: nbformat.NotebookNode = solara.use_memo(lambda: execute_notebook(HERE / "_solara-tutorial.ipynb"))
 
     last_page = None
-    with sol.VBox() as main:
+    with solara.VBox() as main:
         for cell_index, cell in list(enumerate(nb.cells)):
             cell_index += 1  # used 1 based
             if cell.cell_type == "code":
@@ -56,7 +55,7 @@ def Page():
                     continue
                 scope = cell.scope_snapshot
                 page = scope.get("Page")
-                sol.Markdown(
+                solara.Markdown(
                     f"""
 ```python
 {cell.source}
@@ -66,7 +65,7 @@ def Page():
                     page()
                 last_page = page
             elif cell.cell_type == "markdown":
-                sol.Markdown(cell.source)
+                solara.Markdown(cell.source)
             else:
                 raise ValueError(f"Unknown cell type: {cell.cell_type}, supported types are: code, markdown")
     return main

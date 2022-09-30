@@ -17,7 +17,8 @@ try:
 except ImportError:
     vaex = None
 
-from solara.alias import reacton, rv, sol
+import solara
+from solara.alias import rv
 
 if vaex is not None:
     df_iris = vaex.datasets.iris().to_pandas_df()
@@ -39,12 +40,12 @@ if vaex is not None:
     table_hints = {table_name: conn.execute(f"SELECT * from {table_name} LIMIT 1").fetchone().keys() for table_name in table_names}
 
 
-@reacton.component
+@solara.component
 def Page():
     if vaex is None:
-        return sol.Error("Vaex is not installed, run pip install vaex-core vaex-hdf5")
-    query, set_query = reacton.use_state("SELECT * from titanic")
-    query_executed, set_query_executed = reacton.use_state(cast(Optional[str], None))
+        return solara.Error("Vaex is not installed, run pip install vaex-core vaex-hdf5")
+    query, set_query = solara.use_state("SELECT * from titanic")
+    query_executed, set_query_executed = solara.use_state(cast(Optional[str], None))
 
     def run_query(cancel: threading.Event) -> pd.DataFrame:
         if not query_executed:
@@ -56,9 +57,9 @@ def Page():
         df = pd.DataFrame(cursor.fetchall(), columns=[k[0] for k in cursor.description])
         return df
 
-    result: sol.Result[pd.DataFrame] = sol.use_thread(run_query, dependencies=[query_executed])
-    with sol.VBox() as main:
-        sol.SqlCode(query=query, tables=table_hints, on_query=set_query)
+    result: solara.Result[pd.DataFrame] = solara.use_thread(run_query, dependencies=[query_executed])
+    with solara.VBox() as main:
+        solara.SqlCode(query=query, tables=table_hints, on_query=set_query)
         enable_execute = (query != query_executed) or result.error is not None
 
         def execute():
@@ -66,18 +67,18 @@ def Page():
             if query == query_executed and result.error:
                 result.retry()  # type: ignore
 
-        sol.Button("Execute", on_click=execute, disabled=not enable_execute)
+        solara.Button("Execute", on_click=execute, disabled=not enable_execute)
         if result.error:
-            sol.Error(f"Ooops {result.error}")
+            solara.Error(f"Ooops {result.error}")
         elif not query:
-            sol.Info("No query")
+            solara.Info("No query")
 
         elif result.value is not None:
-            sol.Markdown(f"Result for query: `{query_executed}`")
+            solara.Markdown(f"Result for query: `{query_executed}`")
             df = result.value
-            sol.DataTable(df)
+            solara.DataTable(df)
         elif query_executed is not None:
-            with sol.Div():
-                sol.Text("Loading data...")
+            with solara.Div():
+                solara.Text("Loading data...")
                 rv.ProgressCircular(indeterminate=True, class_="solara-progress")
     return main

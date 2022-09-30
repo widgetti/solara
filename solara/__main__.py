@@ -9,14 +9,12 @@ import webbrowser
 from enum import Enum
 from pathlib import Path
 
-import reacton
 import rich
 import rich_click as click
+import solara
 import uvicorn
 from rich import print as rprint
 from uvicorn.main import LEVEL_CHOICES, LOOP_CHOICES
-
-import solara
 
 from .server import settings
 
@@ -242,7 +240,7 @@ def run(
         # that for all dependencies of the server, but these are changing most often
         # during development
         # We exclude exampes, that will be handled by solara/server/reload.py
-        reload_dirs = [str(solara_root), str(Path(reacton.__file__).parent)]
+        reload_dirs = [str(solara_root), str(Path(solara.__file__).parent)]
         reload_excludes = reload_excludes if reload_excludes else []
         reload_excludes = [str(solara_root / "website")]
         del solara_root

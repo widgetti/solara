@@ -1,12 +1,11 @@
 import threading
 
-import reacton
+import solara
+import solara.hooks as hooks
 import traitlets
 from ipyvue import Template
 from ipyvuetify.extra import FileInput
 from ipywidgets import widget_serialization
-
-import solara.hooks as hooks
 
 
 class FileDropZone(FileInput):
@@ -17,10 +16,10 @@ class FileDropZone(FileInput):
     label = traitlets.Unicode().tag(sync=True)
 
 
-@reacton.component
+@solara.component
 def FileDrop(on_total_progress, on_file, label="Drop file here"):
-    file_info, set_file_info = reacton.use_state(None)
-    wired_files, set_wired_files = reacton.use_state(None)
+    file_info, set_file_info = solara.use_state(None)
+    wired_files, set_wired_files = solara.use_state(None)
 
     file_drop = FileDropZone.element(label=label, on_total_progress=on_total_progress, on_file_info=set_file_info)
 
@@ -28,7 +27,7 @@ def FileDrop(on_total_progress, on_file, label="Drop file here"):
         if not file_info:
             return
 
-        real = reacton.get_widget(file_drop)
+        real = solara.get_widget(file_drop)
 
         # workaround for @observe being cleared
         real.version += 1
@@ -36,7 +35,7 @@ def FileDrop(on_total_progress, on_file, label="Drop file here"):
 
         set_wired_files(real.get_files())
 
-    reacton.use_side_effect(wire_files, [file_info])
+    solara.use_side_effect(wire_files, [file_info])
 
     def handle_file(cancel: threading.Event):
         if not wired_files:

@@ -1,26 +1,26 @@
 """Create a link to navigate to a route."""
 
 
-from solara.alias import reacton, sol
+import solara
 
 routes = [
-    sol.Route(path="/"),
-    sol.Route(path="kiwi"),
-    sol.Route(path="banana"),
-    sol.Route(path="apple"),
+    solara.Route(path="/"),
+    solara.Route(path="kiwi"),
+    solara.Route(path="banana"),
+    solara.Route(path="apple"),
 ]
 
 
-@reacton.component
+@solara.component
 def LinkExample():
-    route_current, routes = sol.use_route()
-    with sol.VBox() as main:
-        sol.Info("Note the address bar in the browser. It should change to the path of the link.")
-        with sol.HBox():
+    route_current, routes = solara.use_route()
+    with solara.VBox() as main:
+        solara.Info("Note the address bar in the browser. It should change to the path of the link.")
+        with solara.HBox():
             for route in routes:
-                with sol.Link(route):
+                with solara.Link(route):
                     current = route_current is route
-                    sol.Button(f"Go to {route.path}", color="red" if current else None)
+                    solara.Button(f"Go to {route.path}", color="red" if current else None)
     return main
 
 

@@ -14,11 +14,10 @@ See also [Understanding Routing](/docs/understanding/routing). and [`use_route`]
 import inspect
 
 import solara
-from solara.alias import reacton, sol
 
 __doc__ = __doc__ % inspect.getsource(solara.Route)
 
 
-@reacton.component
+@solara.component
 def Page():
-    return sol.Text("")
+    return solara.Text("")

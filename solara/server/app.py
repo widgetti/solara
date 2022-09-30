@@ -13,9 +13,8 @@ from typing import Any, Callable, Dict, List, Optional, cast
 
 import ipywidgets as widgets
 import reacton
+import solara
 from reacton.core import Element, render
-
-import solara as sol
 
 from ..util import cwd
 from . import kernel, reload, settings, websocket
@@ -111,17 +110,17 @@ class AppScript:
         context = get_current_context()
         local_scope = {"display": context.display, "__name__": "__main__", "__file__": str(self.path)}
         ignore = list(local_scope)
-        routes: Optional[List[sol.Route]] = None
+        routes: Optional[List[solara.Route]] = None
         if self.type == AppType.DIRECTORY:
-            routes = sol.generate_routes_directory(self.path)
-            app = sol.RenderPage()
+            routes = solara.generate_routes_directory(self.path)
+            app = solara.RenderPage()
             return app, routes
         elif self.type == AppType.SCRIPT:
             with open(self.path) as f:
                 ast = compile(f.read(), self.path, "exec")
                 exec(ast, local_scope)
             app = nested_get(local_scope, self.app_name)
-            routes = cast(Optional[List[sol.Route]], local_scope.get("routes"))
+            routes = cast(Optional[List[solara.Route]], local_scope.get("routes"))
         elif self.type == AppType.NOTEBOOK:
             import nbformat
 
@@ -135,22 +134,22 @@ class AppScript:
                         ast = compile(source, cell_path, "exec")
                         exec(ast, local_scope)
             app = nested_get(local_scope, self.app_name)
-            routes = cast(Optional[List[sol.Route]], local_scope.get("routes"))
+            routes = cast(Optional[List[solara.Route]], local_scope.get("routes"))
         elif self.type == AppType.MODULE:
             mod = importlib.import_module(self.name)
 
             local_scope = mod.__dict__
             if not hasattr(mod, "routes"):
                 if self.app_name == "Page":
-                    routes = sol.generate_routes(mod)
-                    app = sol.RenderPage()
+                    routes = solara.generate_routes(mod)
+                    app = solara.RenderPage()
                 else:
                     app = nested_get(local_scope, self.app_name)
             else:
                 routes = mod.routes
                 app = nested_get(local_scope, self.app_name)
                 if app is None:
-                    app = sol.autorouting.RenderPage()
+                    app = solara.autorouting.RenderPage()
         else:
             raise ValueError(self.type)
 
@@ -169,7 +168,7 @@ class AppScript:
                 msg += " We did find: " + " or ".join(map(repr, options))
             raise NameError(msg)
         if routes is None:
-            routes = [sol.Route("/")]
+            routes = [solara.Route("/")]
         return app, routes
 
     def on_file_change(self, name):
@@ -322,12 +321,12 @@ def _run_app(app_state, app_script: AppScript, pathname: str, render_context: re
     container = context.container
     if isinstance(main_object, widgets.Widget):
         return main_object, render_context
-    elif isinstance(main_object, Element) or isinstance(main_object, reacton.core.Component):
+    elif isinstance(main_object, Element) or isinstance(main_object, solara.core.Component):
         if isinstance(main_object, Element):
             children = [main_object]
         else:
             children = [main_object()]
-        solara_context = sol.RoutingProvider(children=children, routes=routes, pathname=pathname)
+        solara_context = solara.RoutingProvider(children=children, routes=routes, pathname=pathname)
         if render_context is None:
             result = render(solara_context, container, handle_error=True, initial_state=app_state)
             # support older versions of react

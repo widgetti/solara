@@ -3,12 +3,10 @@ import time
 from pathlib import Path
 from typing import Optional
 
-import reacton
+import solara
 from reacton import component
 from reacton import ipywidgets as w
 from reacton import render_fixed
-
-import solara as sol
 from solara.datatypes import FileContentResult
 from solara.hooks.misc import use_download, use_fetch, use_json, use_thread
 
@@ -19,11 +17,11 @@ def test_hook_thread():
     @component
     def ThreadTest():
         nonlocal done
-        a, _ = reacton.use_state("a")
-        b, _ = reacton.use_state("b")
-        counter, set_counter = reacton.use_state(0)
-        other, set_other = reacton.use_state(0)
-        c, _ = reacton.use_state("c")
+        a, _ = solara.use_state("a")
+        b, _ = solara.use_state("b")
+        counter, set_counter = solara.use_state(0)
+        other, set_other = solara.use_state(0)
+        c, _ = solara.use_state("c")
         if counter % 2 == 0:
             set_other(counter)
 
@@ -51,13 +49,13 @@ def test_use_thread_keep_previous():
     @component
     def Test():
         nonlocal set_x
-        x, set_x = reacton.use_state(2)
+        x, set_x = solara.use_state(2)
 
         def work():
             time.sleep(0.1)
             return x**2
 
-        result: sol.Result[int] = use_thread(work, dependencies=[x])
+        result: solara.Result[int] = use_thread(work, dependencies=[x])
         return w.Label(value=f"{result.value}")
 
     label, rc = render_fixed(Test(), handle_error=False)
@@ -83,7 +81,7 @@ def test_hook_iterator():
     event = threading.Event()
     result = None
 
-    @reacton.component
+    @solara.component
     def Test():
         nonlocal result
 
@@ -95,14 +93,14 @@ def test_hook_iterator():
         result = use_thread(work)
         return w.Label(value="test")
 
-    label, rc = reacton.render_fixed(Test())
+    label, rc = solara.render_fixed(Test())
     assert result is not None
-    assert isinstance(result, sol.Result)
+    assert isinstance(result, solara.Result)
     time.sleep(0.05)
     assert result.value == 1
     event.set()
     time.sleep(0.01)
-    assert isinstance(result, sol.Result)
+    assert isinstance(result, solara.Result)
     assert result.value == 2
 
 
@@ -111,7 +109,7 @@ def test_use_thread_intrusive_cancel():
     last_value = 0
     seconds = 4
 
-    @reacton.component
+    @solara.component
     def Test():
         nonlocal result
         nonlocal last_value
@@ -127,21 +125,21 @@ def test_use_thread_intrusive_cancel():
         result = use_thread(work, dependencies=[])
         return w.Label(value="test")
 
-    reacton.render_fixed(Test())
+    solara.render_fixed(Test())
     assert result is not None
-    assert isinstance(result, sol.Result)
+    assert isinstance(result, solara.Result)
     result.cancel()
-    while result.state == sol.ResultState.RUNNING:
+    while result.state == solara.ResultState.RUNNING:
         time.sleep(0.1)
-    assert result.state == sol.ResultState.CANCELLED
+    assert result.state == solara.ResultState.CANCELLED
     assert last_value != 99
 
     # also test retry
     seconds = 0.1
     result.retry()
-    while result.state == sol.ResultState.CANCELLED:
+    while result.state == solara.ResultState.CANCELLED:
         time.sleep(0.1)
-    while result.state == sol.ResultState.RUNNING:
+    while result.state == solara.ResultState.RUNNING:
         time.sleep(0.1)
     assert last_value == 99
 
@@ -232,10 +230,10 @@ def test_use_file_content(tmpdir: Path):
 
     result: Optional[FileContentResult[bytes]] = None
 
-    @reacton.component
+    @solara.component
     def Test(path):
         nonlocal result
-        result = sol.use_file_content(path)
+        result = solara.use_file_content(path)
         if result.value is not None:
             assert result.value == b"Hi"
             assert result.exists
@@ -245,7 +243,7 @@ def test_use_file_content(tmpdir: Path):
         # pickle.dumps(result)
         return w.Button()
 
-    box, rc = reacton.render(Test(path), handle_error=False)
+    box, rc = solara.render(Test(path), handle_error=False)
     path_non_exist = tmpdir / "nonexist"
     rc.render(Test(path_non_exist))
     path_non_exist.write_text("Hi", "utf8")
@@ -258,14 +256,14 @@ def test_use_state_or_update():
     values = []
     set_value = None
 
-    @reacton.component
+    @solara.component
     def Test(value):
         nonlocal set_value
-        value, set_value = sol.use_state_or_update(value)
+        value, set_value = solara.use_state_or_update(value)
         values.append(value)
         return w.Button()
 
-    container, rc = reacton.render(Test(3))
+    container, rc = solara.render(Test(3))
     assert set_value is not None
     assert values == [3]
     set_value(5)

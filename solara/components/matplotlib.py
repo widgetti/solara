@@ -1,12 +1,11 @@
 import io
 from typing import Any, List
 
-import reacton
-
+import solara
 from solara.alias import rw
 
 
-@reacton.component
+@solara.component
 def FigureMatplotlib(
     figure,
     dependencies: List[Any] = None,
@@ -22,13 +21,13 @@ def FigureMatplotlib(
     import solara as sol
     from matplotlib.figure import Figure
 
-    @reacton.component
+    @solara.component
     def Page():
         # do this instead of plt.figure()
         fig = Figure()
         ax = fig.subplots()
         ax.plot([1, 2, 3], [1, 4, 9])
-        return sol.FigureMatplotlib(fig)
+        return solara.FigureMatplotlib(fig)
 
     ```
 
@@ -55,7 +54,7 @@ def FigureMatplotlib(
         figure.savefig(f, format=format, **kwargs)
         return f.getvalue()
 
-    value = reacton.use_memo(make_image, dependencies)
+    value = solara.use_memo(make_image, dependencies)
     # mime type name is different from format name of matplotlib
     format_mime = format
     if format_mime == "svg":

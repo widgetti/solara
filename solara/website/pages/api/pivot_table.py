@@ -11,9 +11,8 @@ We provide three version of the pivot table
 
 """
 
+import solara
 import vaex.datasets
-
-from solara.alias import reacton, sol
 
 try:
     df = vaex.datasets.titanic()
@@ -21,12 +20,12 @@ except Exception:
     df = None
 
 
-@reacton.component
+@solara.component
 def View():
     # select on the 2nd x axis, index=3, which means (pclass=2, survived=true)
     # Note: the indices refer to the header_x and header_y
-    selected, on_selected = reacton.use_state({"x": [1, 3]})
-    data = sol.PivotTableData(
+    selected, on_selected = solara.use_state({"x": [1, 3]})
+    data = solara.PivotTableData(
         {
             "x": ["pclass", "survived"],
             "y": ["sex"],
@@ -41,35 +40,35 @@ def View():
             "total": "1,309",
         }
     )
-    with sol.VBox() as main:
-        sol.Markdown(f"`selected = {selected}`")
-        sol.PivotTableView(data=data, selected=selected, on_selected=on_selected)
+    with solara.VBox() as main:
+        solara.Markdown(f"`selected = {selected}`")
+        solara.PivotTableView(data=data, selected=selected, on_selected=on_selected)
     return main
 
 
-@reacton.component
+@solara.component
 def Page():
-    with sol.Div() as main:
-        sol.Markdown("# Titanic")
-        selected, on_selected = reacton.use_state({"x": [0, 0]})
-        sol.provide_cross_filter()
-        with sol.VBox():
-            type, set_type = reacton.use_state("view")
-            with sol.ToggleButtonsSingle(type, on_value=set_type):
-                sol.Button("PivotTableView", value="view")
-                sol.Button("PivotTable", value="df")
-                sol.Button("PivotTableCard", value="card")
+    with solara.Div() as main:
+        solara.Markdown("# Titanic")
+        selected, on_selected = solara.use_state({"x": [0, 0]})
+        solara.provide_cross_filter()
+        with solara.VBox():
+            type, set_type = solara.use_state("view")
+            with solara.ToggleButtonsSingle(type, on_value=set_type):
+                solara.Button("PivotTableView", value="view")
+                solara.Button("PivotTable", value="df")
+                solara.Button("PivotTableCard", value="card")
             if type == "view":
-                sol.Markdown("# PivotTableView\nThis component will take aggregates data as input")
+                solara.Markdown("# PivotTableView\nThis component will take aggregates data as input")
                 View()
             elif type == "df":
-                sol.Markdown("# PivotTable\nThis component aggregates the dataframe for you")
-                sol.Markdown(f"`selected = {selected}`")
-                sol.PivotTable(df, ["pclass"], ["sex"], selected=selected, on_selected=on_selected)
+                solara.Markdown("# PivotTable\nThis component aggregates the dataframe for you")
+                solara.Markdown(f"`selected = {selected}`")
+                solara.PivotTable(df, ["pclass"], ["sex"], selected=selected, on_selected=on_selected)
             elif type == "card":
-                sol.Markdown("# PivotTable\nThis component aggregates the dataframe for you, and gives a UI to configure the component")
-                sol.Markdown(f"`selected = {selected}`")
-                sol.PivotTableCard(df, ["pclass"], ["sex"], selected=selected, on_selected=on_selected)
+                solara.Markdown("# PivotTable\nThis component aggregates the dataframe for you, and gives a UI to configure the component")
+                solara.Markdown(f"`selected = {selected}`")
+                solara.PivotTableCard(df, ["pclass"], ["sex"], selected=selected, on_selected=on_selected)
     return main
 
 

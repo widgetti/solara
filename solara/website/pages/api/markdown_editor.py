@@ -9,10 +9,11 @@ If the markdown is fixed (such as in our own documentation) this should not pose
 """
 
 
-from solara.alias import reacton, rv, sol
+import solara
+from solara.alias import rv
 
 
-@reacton.component
+@solara.component
 def Page():
     markdown_initial = """
 # Large heading
@@ -42,14 +43,14 @@ and line breaks
 
     """.strip()
 
-    markdown_text, set_markdown_text = reacton.use_state(markdown_initial)
-    with sol.HBox(grow=True) as main:
-        with sol.VBox():
-            with sol.Padding(2):
+    markdown_text, set_markdown_text = solara.use_state(markdown_initial)
+    with solara.HBox(grow=True) as main:
+        with solara.VBox():
+            with solara.Padding(2):
                 with rv.Sheet(elevation=2):
-                    sol.MarkdownEditor(markdown_text, on_value=set_markdown_text)
+                    solara.MarkdownEditor(markdown_text, on_value=set_markdown_text)
                 with rv.Sheet(elevation=2):
-                    sol.Markdown("# Raw markdown")
-                    sol.Preformatted(markdown_text)
+                    solara.Markdown("# Raw markdown")
+                    solara.Preformatted(markdown_text)
 
     return main

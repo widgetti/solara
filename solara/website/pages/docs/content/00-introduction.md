@@ -3,7 +3,7 @@
 
 ## What is Solara?
 
-Solara lets you use and build data-focused web apps (data apps) using reusable UI components. Your app will work in the Jupyter notebook and production-grade web frameworks (FastAPI, Starlette, Flask, ...).
+Solara is an Open Source library that lets you use and build data-focused web apps (data apps) using reusable UI components. Your app will work in the Jupyter notebook and production-grade web frameworks (FastAPI, Starlette, Flask, ...).
 
 Solara uses proven technologies and mature standards. Grow from a one-off experiment in the Jupyter notebook to a dynamic data portal in production.  Built on top of [Reacton](/docs/understanding/reacton) keeps your code complexity under control.
 
@@ -45,12 +45,11 @@ Follow the [installation instructions](./installing) or do the TLDR:
 Create a file `myapp.py`, or put the following code in the Jupyter notebook:
 
 ```solara
-import reacton
 import solara
 
-@reacton.component
+@solara.component
 def Page():
-    clicks, set_clicks = reacton.use_state(0)
+    clicks, set_clicks = solara.use_state(0)
     return solara.Button(label=f"Clicked {clicks} times",
                          on_click=lambda: set_clicks(clicks+1))
 

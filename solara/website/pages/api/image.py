@@ -2,7 +2,7 @@
 # Image
 
 ```python
-@reacton.component
+@solara.component
 def Image(image: Union[str, Path, "np.ndarray"]):
     ...
 ```
@@ -14,25 +14,25 @@ from pathlib import Path
 
 import numpy as np
 import PIL.Image
+import solara
+import solara.website
 
-from solara.alias import reacton, sol
 
-
-@reacton.component
+@solara.component
 def Page():
 
-    image_path = Path(sol.__file__).parent.resolve() / "server/static/sun64.png"
-    image_url = "/static/sun64.png"
+    image_path = Path(solara.website.__file__).parent / "public/beach.jpeg"
+    image_url = "/static/public/beach.jpeg"
     image_ndarray = np.asarray(PIL.Image.open(image_path))
 
-    with sol.VBox() as main:
-        with sol.Card(title="As a path"):
-            sol.Image(image_path)
+    with solara.VBox() as main:
+        with solara.Card(title="As a path"):
+            solara.Image(image_path)
 
-        with sol.Card(title="As a URL"):
-            sol.Image(image_url)
+        with solara.Card(title="As a URL"):
+            solara.Image(image_url)
 
-        with sol.Card(title="As NumPy array"):
-            sol.Image(image_ndarray)
+        with solara.Card(title="As NumPy array"):
+            solara.Image(image_ndarray)
 
     return main

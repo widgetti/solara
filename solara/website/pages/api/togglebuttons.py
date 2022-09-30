@@ -5,26 +5,26 @@ ToggleButtons are in two flavours, for single, and for multiple selections.
 
 
 """
-from solara.alias import reacton, sol
+import solara
 
 
-@reacton.component
+@solara.component
 def Page():
-    with sol.VBox() as main:
-        with sol.Card("Single selection"):
-            food, set_food = reacton.use_state("banana")
-            sol.Markdown(f"**Selected**: {food}")
-            with sol.ToggleButtonsSingle(food, on_value=set_food):
-                sol.Button("Kiwi")
-                sol.Button("Banana", value="banana")  # override the default value (the button label)
-                sol.Button("Apple")
+    with solara.VBox() as main:
+        with solara.Card("Single selection"):
+            food, set_food = solara.use_state("banana")
+            solara.Markdown(f"**Selected**: {food}")
+            with solara.ToggleButtonsSingle(food, on_value=set_food):
+                solara.Button("Kiwi")
+                solara.Button("Banana", value="banana")  # override the default value (the button label)
+                solara.Button("Apple")
 
-        with sol.Card("Multiple selections"):
+        with solara.Card("Multiple selections"):
             all_languages = "Python C++ Java JavaScript TypeScript BASIC".split()
-            languages, set_languages = reacton.use_state([all_languages[0]])
-            sol.Markdown(f"**Selected**: {languages}")
-            with sol.ToggleButtonsMultiple(languages, on_value=set_languages):
+            languages, set_languages = solara.use_state([all_languages[0]])
+            solara.Markdown(f"**Selected**: {languages}")
+            with solara.ToggleButtonsMultiple(languages, on_value=set_languages):
                 for language in all_languages:
-                    sol.Button(language, value=language)
+                    solara.Button(language, value=language)
 
     return main

@@ -1,6 +1,6 @@
-import reacton
+import solara
 
 
-@reacton.component
+@solara.component
 def Header():
     pass

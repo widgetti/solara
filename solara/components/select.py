@@ -1,11 +1,12 @@
 from typing import Callable, List, TypeVar
 
-from solara.alias import reacton, rv
+import solara
+from solara.alias import rv
 
 T = TypeVar("T")
 
 
-@reacton.component
+@solara.component
 def Select(label: str, value: T, values: List[T], on_value: Callable[[T], None] = None):
     return rv.Select(
         v_model=value,
@@ -16,7 +17,7 @@ def Select(label: str, value: T, values: List[T], on_value: Callable[[T], None] 
     )
 
 
-@reacton.component
+@solara.component
 def SelectMultiple(label: str, values: List[T], all_values: List[T], on_value: Callable[[List[T]], None] = None):
     return rv.Select(
         v_model=values,

@@ -1,14 +1,13 @@
 import altair as alt
 import pandas as pd
+import solara
 from vega_datasets import data
 
-from solara.alias import reacton, sol
 
-
-@reacton.component
+@solara.component
 def Page():
-    click_data, set_click_data = reacton.use_state(None)
-    hover_data, set_hover_data = reacton.use_state(None)
+    click_data, set_click_data = solara.use_state(None)
+    hover_data, set_hover_data = solara.use_state(None)
 
     if 0:
         # to bad this example doesn't work well with on_click and on_hover
@@ -24,8 +23,8 @@ def Page():
 
         chart = alt.Chart(source).mark_bar().encode(x="a", y="b")
 
-    with sol.Div() as main:
-        sol.MarkdownIt(
+    with solara.Div() as main:
+        solara.MarkdownIt(
             """
 Altair is supported since we can render vega lite.
 We also support on_click and on_hover events.
@@ -35,13 +34,13 @@ source = pd.DataFrame({{
     "b": [28, 55, 43, 91, 81, 53, 19, 87, 52]
 }})
 chart = alt.Chart(source).mark_bar().encode(x="a", y="b")
-sol.AltairChart(chart, on_click=set_click_data, on_hover=set_hover_data)
+solara.AltairChart(chart, on_click=set_click_data, on_hover=set_hover_data)
 ```
             """
         )
-        sol.AltairChart(chart, on_click=set_click_data, on_hover=set_hover_data)
+        solara.AltairChart(chart, on_click=set_click_data, on_hover=set_hover_data)
 
-        sol.Markdown(
+        solara.Markdown(
             f"""
 Click data:
 

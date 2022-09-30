@@ -2,9 +2,9 @@ import dataclasses
 import os
 
 import ipyvue
+import solara
 import traitlets
-
-from solara.alias import reacton, rw, sol
+from solara.alias import rw
 
 
 @dataclasses.dataclass
@@ -12,21 +12,21 @@ class Clicks:
     value: int
 
 
-@reacton.component
+@solara.component
 def ButtonClick():
-    clicks, set_clicks = reacton.use_state(Clicks(0))
+    clicks, set_clicks = solara.use_state(Clicks(0))
     return rw.Button(description=f"Clicked {clicks.value} times", on_click=lambda: set_clicks(Clicks(clicks.value + 1)))
 
 
 app = ButtonClick()
 
 
-@reacton.component
+@solara.component
 def ClickBoom():
-    count, set_count = reacton.use_state(0)
+    count, set_count = solara.use_state(0)
     if count == 1:
         raise ValueError("I crash on 1")
-    return sol.Button("Boom", on_click=lambda: set_count(count + 1))
+    return solara.Button("Boom", on_click=lambda: set_count(count + 1))
 
 
 clickboom = ClickBoom()
@@ -38,7 +38,7 @@ class TestWidget(ipyvue.VueTemplate):
     value = traitlets.Any(0).tag(sync=True)
 
 
-@reacton.component
+@solara.component
 def VueTestApp():
     return TestWidget.element(value="foobar")
 

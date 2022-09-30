@@ -1,10 +1,8 @@
-import reacton
 import reacton.ipyvuetify as v
+import solara
 
-from solara.kitchensink import sol
 
-
-@reacton.component
+@solara.component
 def AppIcon(open=False, on_click=None, **kwargs):
     def click(*ignore):
         on_click()
@@ -14,19 +12,19 @@ def AppIcon(open=False, on_click=None, **kwargs):
     return icon
 
 
-@reacton.component
+@solara.component
 def AppLayout(children=[], navigation=None, navigation_open=True, open_right=False, title="Solara"):
-    navigation_open, set_navigation_open = sol.use_state_or_update(navigation_open)
-    open_right, set_open_right = reacton.use_state(open_right)
+    navigation_open, set_navigation_open = solara.use_state_or_update(navigation_open)
+    open_right, set_open_right = solara.use_state(open_right)
     with v.Html(tag="div", style_="height: 100vh") as main:
-        # with sol.VBox():
+        # with solara.VBox():
         if title:
             with v.AppBar(color="primary", dark=True, app=True, clipped_left=True):
                 if navigation:
                     AppIcon(navigation_open, on_click=lambda: set_navigation_open(not navigation_open))
                 v.ToolbarTitle(children=[title])
                 v.Spacer()
-            with sol.HBox():
+            with solara.HBox():
                 # with v.Html(tag="div"):
                 if navigation:
                     with v.NavigationDrawer(

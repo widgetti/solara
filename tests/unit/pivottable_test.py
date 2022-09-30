@@ -1,7 +1,6 @@
-import vaex
-
+import solara
 import solara.components.pivot_table as pt
-from solara.alias import reacton, sol
+import vaex
 from solara.components.pivot_table import PivotTableWidget
 
 from .common import repeat_while_false, repeat_while_true
@@ -10,22 +9,22 @@ df = vaex.datasets.titanic()
 
 
 def test_df_data_pivot_data_vaex():
-    dfg = pt.df_aggregate_vaex(df, ["sex"], {"count": sol.AggregationCount(type="count")})
+    dfg = pt.df_aggregate_vaex(df, ["sex"], {"count": solara.AggregationCount(type="count")})
     assert dfg["count"].tolist() == [466, 843]
 
-    data = pt.df_aggregate_pivot_vaex(df, ["sex"], [], sol.AggregationCount(type="count"))
+    data = pt.df_aggregate_pivot_vaex(df, ["sex"], [], solara.AggregationCount(type="count"))
     assert data["values_x"] == ["466", "843"]
     assert data["values_y"] == []
     assert data["values"] == [[]]
     assert data["total"] == "1,309"
 
-    data = pt.df_aggregate_pivot_vaex(df, [], ["sex"], sol.AggregationCount(type="count"))
+    data = pt.df_aggregate_pivot_vaex(df, [], ["sex"], solara.AggregationCount(type="count"))
     assert data["values_x"] == []
     assert data["values_y"] == ["466", "843"]
     assert data["values"] == [[]]
     assert data["total"] == "1,309"
 
-    data = pt.df_aggregate_pivot_vaex(df, ["survived"], ["sex"], sol.AggregationCount(type="count"))
+    data = pt.df_aggregate_pivot_vaex(df, ["survived"], ["sex"], solara.AggregationCount(type="count"))
     assert data["values_x"] == ["809", "500"]
     assert data["values_y"] == ["466", "843"]
     assert data["values"] == [["127", "682"], ["339", "161"]]
@@ -33,20 +32,20 @@ def test_df_data_pivot_data_vaex():
 
 
 def test_df_data_pivot_table_view():
-    data = pt.df_aggregate_pivot_vaex(df, ["survived"], ["sex"], sol.AggregationCount(type="count"))
-    el = sol.PivotTableView(data=data)
-    box, rc = reacton.render(el, handle_error=False)
+    data = pt.df_aggregate_pivot_vaex(df, ["survived"], ["sex"], solara.AggregationCount(type="count"))
+    el = solara.PivotTableView(data=data)
+    box, rc = solara.render(el, handle_error=False)
     assert rc._find(PivotTableWidget).widget.d["values"] == [["127", "682"], ["339", "161"]]
 
 
 def test_df_data_pivot_table_df():
-    el = sol.PivotTable(df, ["survived"], ["sex"])
-    box, rc = reacton.render(el, handle_error=False)
+    el = solara.PivotTable(df, ["survived"], ["sex"])
+    box, rc = solara.render(el, handle_error=False)
     repeat_while_false(lambda: rc._find(PivotTableWidget))
     assert rc._find(PivotTableWidget).widget.d["values"] == [["127", "682"], ["339", "161"]]
 
-    el = sol.PivotTableCard(df, ["survived"], ["sex"])
-    box, rc = reacton.render(el, handle_error=False)
+    el = solara.PivotTableCard(df, ["survived"], ["sex"])
+    box, rc = solara.render(el, handle_error=False)
     repeat_while_false(lambda: rc._find(PivotTableWidget))
     assert rc._find(PivotTableWidget).widget.d["values"] == [["127", "682"], ["339", "161"]]
 
@@ -54,21 +53,21 @@ def test_df_data_pivot_table_df():
 def test_pivot_table():
     filter = set_filter = None
 
-    @reacton.component
+    @solara.component
     def FilterDummy(df):
         nonlocal filter, set_filter
-        filter, set_filter = sol.use_cross_filter(id(df), "test")
-        return sol.Text("dummy")
+        filter, set_filter = solara.use_cross_filter(id(df), "test")
+        return solara.Text("dummy")
 
-    @reacton.component
+    @solara.component
     def Test():
-        sol.provide_cross_filter()
-        with sol.VBox() as main:
-            sol.PivotTableCard(df, x=["sex"], y=["survived"])
+        solara.provide_cross_filter()
+        with solara.VBox() as main:
+            solara.PivotTableCard(df, x=["sex"], y=["survived"])
             FilterDummy(df)
         return main
 
-    widget, rc = reacton.render(Test(), handle_error=False)
+    widget, rc = solara.render(Test(), handle_error=False)
     repeat_while_false(lambda: rc._find(PivotTableWidget))
     pt = rc._find(PivotTableWidget).widget
     data = pt.d

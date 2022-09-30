@@ -53,6 +53,7 @@ div.highlight pre code {
 
 div.solara-markdown-output>.v-messages {
     font-style: italic;
+    margin-top: 10px;
 }
 
 div.solara-markdown-output {

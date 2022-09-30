@@ -15,8 +15,7 @@ import urllib.request
 import uuid
 from typing import IO, Any, Callable, Iterator, Optional, Tuple, TypeVar, Union, cast
 
-import reacton
-
+import solara
 from solara.datatypes import FileContentResult, Result, ResultState
 
 logger = logging.getLogger("react-ipywidgets.extra.hooks")
@@ -47,7 +46,7 @@ class CancelledError(BaseException):
 
 
 def use_retry(*actions: Callable[[], Any]):
-    counter, set_counter = reacton.use_state(0)
+    counter, set_counter = solara.use_state(0)
 
     def retry():
         for action in actions:
@@ -73,14 +72,14 @@ def use_thread(
     def make_lock():
         return threading.Lock()
 
-    lock: threading.Lock = reacton.use_memo(make_lock, [])
+    lock: threading.Lock = solara.use_memo(make_lock, [])
     updater = use_force_update()
-    result_state, set_result_state = reacton.use_state(ResultState.INITIAL)
-    error = reacton.use_ref(cast(Optional[Exception], None))
-    result = reacton.use_ref(cast(Optional[T], None))
-    running_thread = reacton.use_ref(cast(Optional[threading.Thread], None))
+    result_state, set_result_state = solara.use_state(ResultState.INITIAL)
+    error = solara.use_ref(cast(Optional[Exception], None))
+    result = solara.use_ref(cast(Optional[T], None))
+    running_thread = solara.use_ref(cast(Optional[threading.Thread], None))
     counter, retry = use_retry()
-    cancel: threading.Event = reacton.use_memo(make_event, [*dependencies, counter])
+    cancel: threading.Event = solara.use_memo(make_event, [*dependencies, counter])
 
     @contextlib.contextmanager
     def cancel_guard():
@@ -91,7 +90,7 @@ def use_thread(
         def tracefunc(frame, event, arg):
             # this gets called at least for every line executed
             if cancel.is_set():
-                rc = reacton.core._get_render_context(required=False)
+                rc = solara.core._get_render_context(required=False)
                 # we do not want to cancel the rendering cycle
                 if rc is None or not rc._is_rendering:
                     # this will bubble up
@@ -195,7 +194,7 @@ def use_thread(
 
         return cleanup
 
-    reacton.use_side_effect(run, dependencies + [counter])
+    solara.use_side_effect(run, dependencies + [counter])
     return Result[T](value=result.current, error=error.current, state=result_state, cancel=cancel.set, _retry=retry)
 
 
@@ -205,7 +204,7 @@ def use_download(
     if not isinstance(f, Result):
         f = Result(value=f)
     assert isinstance(f, Result)
-    content_length, set_content_length = reacton.use_state(expected_size, key="content_length")
+    content_length, set_content_length = solara.use_state(expected_size, key="content_length")
     downloaded_length = 0
     file_object = hasattr(f.value, "tell")
     if not file_object:
@@ -214,7 +213,7 @@ def use_download(
             file_size = os.path.getsize(file_path)
             if file_size == expected_size:
                 downloaded_length = file_size
-    downloaded_length, set_downloaded_length = reacton.use_state(downloaded_length, key="downloaded_length")
+    downloaded_length, set_downloaded_length = solara.use_state(downloaded_length, key="downloaded_length")
 
     def download(cancel: threading.Event):
         assert isinstance(f, Result)
@@ -262,7 +261,7 @@ def use_download(
 
 def use_fetch(url, chunk_size=chunk_size_default):
     # re-use the same file like object
-    f = reacton.use_memo(io.BytesIO, [url])
+    f = solara.use_memo(io.BytesIO, [url])
     result = use_download(f, url, return_content=True, chunk_size=chunk_size)
     return dataclasses.replace(result, value=f.getvalue() if result.progress == 1 else None)
 
@@ -316,7 +315,7 @@ def use_file_content(path, watch=False) -> FileContentResult[bytes]:
     except Exception:
         mtime = None
 
-    content = reacton.use_memo(read_file, dependencies=[path, mtime, counter])
+    content = solara.use_memo(read_file, dependencies=[path, mtime, counter])
     if result is not None:
         return result
     if isinstance(content, Exception):
@@ -330,7 +329,7 @@ def use_force_update() -> Callable[[], None]:
 
     This is used when external state has change, and we need to re-render out component.
     """
-    _counter, set_counter = reacton.use_state(0, "force update counter")
+    _counter, set_counter = solara.use_state(0, "force update counter")
 
     def updater():
         set_counter(lambda count: count + 1)
@@ -344,7 +343,7 @@ def use_uuid4(dependencies=[]):
     def make_uuid(*_ignore):
         return str(uuid.uuid4())
 
-    return reacton.use_memo(make_uuid, dependencies)
+    return solara.use_memo(make_uuid, dependencies)
 
 
 def use_unique_key(key: str = None, prefix: str = "", dependencies=[]):
@@ -360,7 +359,7 @@ def use_state_or_update(
     component, which should be respected, and otherwise the internal
     state should be kept.
     """
-    value, set_value = reacton.use_state(initial_or_updated, key=key, eq=eq)
+    value, set_value = solara.use_state(initial_or_updated, key=key, eq=eq)
 
     def possibly_update():
         nonlocal value
@@ -369,16 +368,16 @@ def use_state_or_update(
         # this make sure the return value gets updated directly
         value = initial_or_updated
 
-    reacton.use_memo(possibly_update, [initial_or_updated])
+    solara.use_memo(possibly_update, [initial_or_updated])
     return value, set_value
 
 
 def use_previous(value: T, condition=True) -> T:
-    ref = reacton.use_ref(value)
+    ref = solara.use_ref(value)
 
     def assign():
         if condition:
             ref.current = value
 
-    reacton.use_effect(assign, [value])
+    solara.use_effect(assign, [value])
     return ref.current

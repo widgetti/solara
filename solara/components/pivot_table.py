@@ -5,9 +5,9 @@ from typing import Any, Callable, Dict, List, NoReturn
 
 import ipyvuetify as v
 import numpy as np
+import solara
 import traitlets
-
-from solara.alias import reacton, rv, sol
+from solara.alias import rv
 
 cardheight = "100%"
 
@@ -24,7 +24,7 @@ def assert_never(value) -> NoReturn:
     assert False, f"This code should never be reached, got: {value}"
 
 
-def translate_agg_to_vaex(aggregation: sol.Aggregation, filter=None):
+def translate_agg_to_vaex(aggregation: solara.Aggregation, filter=None):
     if aggregation["type"] == "count":
         import vaex
 
@@ -32,12 +32,12 @@ def translate_agg_to_vaex(aggregation: sol.Aggregation, filter=None):
     assert_never(aggregation)
 
 
-def df_aggregate_vaex(df, columns: List[str], aggregations: Dict[str, sol.Aggregation], filter=None):
+def df_aggregate_vaex(df, columns: List[str], aggregations: Dict[str, solara.Aggregation], filter=None):
     aggs = {key: translate_agg_to_vaex(agg, filter) for key, agg, in aggregations.items()}
     return df.groupby(columns, sort=True).agg(aggs)
 
 
-def df_aggregate_pivot_vaex(df, x: List[str], y: List[str], aggregation: sol.Aggregation, filter=None) -> sol.PivotTableData:
+def df_aggregate_pivot_vaex(df, x: List[str], y: List[str], aggregation: solara.Aggregation, filter=None) -> solara.PivotTableData:
     agg_name = aggregation["type"]
 
     columns = [*x, *y]
@@ -68,7 +68,7 @@ def df_aggregate_pivot_vaex(df, x: List[str], y: List[str], aggregation: sol.Agg
             return f"{value:,d}"
 
     if x and y:
-        values: List[List[sol.JsonType]] = [[None] * len(dfgy) for _ in range(len(dfgx))]
+        values: List[List[solara.JsonType]] = [[None] * len(dfgy) for _ in range(len(dfgx))]
     else:
         values = [[]]
     if x:
@@ -107,7 +107,7 @@ def df_aggregate_pivot_vaex(df, x: List[str], y: List[str], aggregation: sol.Agg
             value = row[agg_column]
             values[xi][yi] = formatter(value)
 
-    data: sol.PivotTableData = {
+    data: solara.PivotTableData = {
         "x": x,
         "y": y,
         "agg": agg_name,
@@ -123,31 +123,31 @@ def df_aggregate_pivot_vaex(df, x: List[str], y: List[str], aggregation: sol.Agg
     return data
 
 
-def use_df_pivot_data(df, x: List[str], y: List[str], aggregation: sol.Aggregation, filter=None) -> sol.Result[sol.PivotTableData]:
-    return sol.use_thread(lambda: df_aggregate_pivot_vaex(df, x, y, aggregation, filter=filter), dependencies=[*x, *y, aggregation, filter])
+def use_df_pivot_data(df, x: List[str], y: List[str], aggregation: solara.Aggregation, filter=None) -> solara.Result[solara.PivotTableData]:
+    return solara.use_thread(lambda: df_aggregate_pivot_vaex(df, x, y, aggregation, filter=filter), dependencies=[*x, *y, aggregation, filter])
 
 
-@reacton.component
-def PivotTableView(data: sol.PivotTableData, selected: Dict[str, Any] = {}, on_selected: Callable[[Dict[str, Any]], None] = None, style=""):
+@solara.component
+def PivotTableView(data: solara.PivotTableData, selected: Dict[str, Any] = {}, on_selected: Callable[[Dict[str, Any]], None] = None, style=""):
     return PivotTableWidget.element(d=data, selected=selected, on_selected=on_selected, style_=style)
 
 
-@reacton.component
+@solara.component
 def PivotTable(
     df,
     x: List[str] = [],
     y: List[str] = [],
-    aggregation: sol.Aggregation = sol.AggregationCount(type="count"),
+    aggregation: solara.Aggregation = solara.AggregationCount(type="count"),
     selected: Dict[str, Any] = {},
     on_selected: Callable[[Dict[str, Any]], None] = None,
 ):
     x = x.copy()
     y = y.copy()
-    filter, set_filter = sol.use_cross_filter(id(df), "pivottable")
+    filter, set_filter = solara.use_cross_filter(id(df), "pivottable")
     dff = df
     data_result = use_df_pivot_data(dff, x, y, aggregation, filter=filter)
-    previous = sol.use_previous(data_result.value, condition=data_result.state == sol.ResultState.FINISHED)
-    selected, set_selected = sol.use_state_or_update(selected.copy())
+    previous = solara.use_previous(data_result.value, condition=data_result.state == solara.ResultState.FINISHED)
+    selected, set_selected = solara.use_state_or_update(selected.copy())
 
     def set_filter_from_pivot_selection(selection):
         set_selected(selection)
@@ -184,22 +184,22 @@ def PivotTable(
         set_filter(str(filter) if filter is not None else None)
 
     # Bug in use_thread on state result we remember that state is finished
-    if data_result.state == sol.ResultState.FINISHED and data_result.value is not None:
-        with sol.VBox() as main:
+    if data_result.state == solara.ResultState.FINISHED and data_result.value is not None:
+        with solara.VBox() as main:
             rv.ProgressLinear(indeterminate=False, style_="visibility: hidden;")
             PivotTableView(data=data_result.value, selected=selected, on_selected=set_filter_from_pivot_selection)
     elif previous is not None:
-        with sol.VBox() as main:
+        with solara.VBox() as main:
             rv.ProgressLinear(indeterminate=True)
             PivotTableView(data=previous, selected=selected, on_selected=set_filter_from_pivot_selection, style="opacity: 0.3; pointer-events: none;")
-    elif data_result.state == sol.ResultState.ERROR:
-        return sol.Error(f"Oops: {data_result.error}")
+    elif data_result.state == solara.ResultState.ERROR:
+        return solara.Error(f"Oops: {data_result.error}")
     else:
-        return sol.Info(f"Status: {data_result.state}")
+        return solara.Info(f"Status: {data_result.state}")
     return main
 
 
-@reacton.component
+@solara.component
 def PivotTableCard(
     df,
     x=[],
@@ -207,7 +207,7 @@ def PivotTableCard(
     selected: Dict[str, Any] = {},
     on_selected: Callable[[Dict[str, Any]], None] = None,
 ):
-    items = sol.use_df_column_names(df)
+    items = solara.use_df_column_names(df)
     with rv.Card(elevation=2, style_="position: relative", height=cardheight) as main:
         with rv.CardTitle(children=["Pivot table"]):
             pass
@@ -224,7 +224,7 @@ def PivotTableCard(
                                         pass
                                     with rv.CardText():
                                         for i in range(10):
-                                            col = sol.ui_dropdown(value=x[i] if i < len(x) else None, label=f"Row {i}", options=items)
+                                            col = solara.ui_dropdown(value=x[i] if i < len(x) else None, label=f"Row {i}", options=items)
                                             if col is None:
                                                 break
                                             else:
@@ -238,7 +238,7 @@ def PivotTableCard(
                                         pass
                                     with rv.CardText():
                                         for i in range(10):
-                                            col = sol.ui_dropdown(value=y[i] if i < len(y) else None, label=f"Column {i}", options=items)
+                                            col = solara.ui_dropdown(value=y[i] if i < len(y) else None, label=f"Column {i}", options=items)
                                             if col is None:
                                                 break
                                             else:

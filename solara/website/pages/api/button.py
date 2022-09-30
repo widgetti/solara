@@ -2,17 +2,17 @@
 # Button
 A button that can be clicked to trigger an event.
 """
-from solara.alias import reacton, sol
+import solara
 
 
-@reacton.component
+@solara.component
 def Page():
-    count, set_count = reacton.use_state(0)
+    count, set_count = solara.use_state(0)
 
     def increment():
         set_count(count + 1)
 
-    with sol.VBox() as main:
-        with sol.HBox():
-            sol.Button(label=f"Clicked {count} times", on_click=increment, icon_name="mdi-thumb-up")
+    with solara.VBox() as main:
+        with solara.HBox():
+            solara.Button(label=f"Clicked {count} times", on_click=increment, icon_name="mdi-thumb-up")
     return main

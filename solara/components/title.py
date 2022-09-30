@@ -1,5 +1,5 @@
 import ipyvuetify as vy
-import reacton
+import solara
 import traitlets
 
 
@@ -8,6 +8,6 @@ class TitleWidget(vy.VuetifyTemplate):
     title = traitlets.Unicode().tag(sync=True)
 
 
-@reacton.component
+@solara.component
 def Title(title: str):
     return TitleWidget.element(title=title)

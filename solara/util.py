@@ -6,13 +6,12 @@ from pathlib import Path
 
 import numpy as np
 import PIL.Image
-
-import solara as sol
+import solara
 
 
 def github_url(file):
-    rel_path = os.path.relpath(file, Path(sol.__file__).parent.parent)
-    github_url = sol.github_url + f"/blob/{sol.git_branch}/" + rel_path
+    rel_path = os.path.relpath(file, Path(solara.__file__).parent.parent)
+    github_url = solara.github_url + f"/blob/{solara.git_branch}/" + rel_path
     return github_url
 
 

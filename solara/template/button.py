@@ -1,11 +1,9 @@
-import reacton
-
-import solara as sol
+import solara
 
 
-@reacton.component
+@solara.component
 def Page():
-    clicks, set_clicks = reacton.use_state(0)
+    clicks, set_clicks = solara.use_state(0)
 
     color = "green"
     if clicks >= 5:
@@ -15,4 +13,4 @@ def Page():
         set_clicks(clicks + 1)
         print("clicks", clicks)  # noqa
 
-    return sol.Button(label=f"Clicked: {clicks}", on_click=on_click, color=color)
+    return solara.Button(label=f"Clicked: {clicks}", on_click=on_click, color=color)

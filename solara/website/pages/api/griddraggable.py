@@ -6,12 +6,12 @@ Child components are layed out on a grid, which can be dragged and resized.
 import pprint
 import textwrap
 
-from solara.alias import reacton, sol
+import solara
 
 from .common import ColorCard
 
 
-@reacton.component
+@solara.component
 def Page():
     grid_layout_initial = [
         {"h": 5, "i": "0", "moved": False, "w": 3, "x": 0, "y": 0},
@@ -26,26 +26,26 @@ def Page():
 
     # we need to store the state of the grid_layout ourselves, otherwise it will 'reset'
     # each time we change resizable or draggable
-    grid_layout, set_grid_layout = reacton.use_state(grid_layout_initial)
+    grid_layout, set_grid_layout = solara.use_state(grid_layout_initial)
 
     # some placeholders
     items = [ColorCard(title=f"Child {i}", color=colors[i]) for i in range(len(grid_layout))]
-    with sol.VBox() as main:
-        resizable = sol.ui_checkbox("Allow resizing", value=True)
-        draggable = sol.ui_checkbox("Allow dragging", value=True)
+    with solara.VBox() as main:
+        resizable = solara.ui_checkbox("Allow resizing", value=True)
+        draggable = solara.ui_checkbox("Allow dragging", value=True)
 
         def reset_layout():
             set_grid_layout(grid_layout_initial)
 
-        sol.Button("Reset to initial layout", on_click=reset_layout)
+        solara.Button("Reset to initial layout", on_click=reset_layout)
 
-        sol.GridDraggable(items=items, grid_layout=grid_layout, resizable=resizable, draggable=draggable, on_grid_layout=set_grid_layout)
+        solara.GridDraggable(items=items, grid_layout=grid_layout, resizable=resizable, draggable=draggable, on_grid_layout=set_grid_layout)
 
         # some string kung fu to make this print nicely
         grid_layout_formatted = pprint.pformat(grid_layout, indent=4)
         grid_layout_formatted = textwrap.indent(grid_layout_formatted, " " * len("grid_layout = "))
         grid_layout_formatted = grid_layout_formatted[len("grid_layout = ") :]
-        sol.MarkdownIt(
+        solara.MarkdownIt(
             f"""
             # Resulting layout
 

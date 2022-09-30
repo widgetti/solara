@@ -7,7 +7,7 @@ import ipyvuetify as v
 import pygments
 import pymdownx.highlight
 import pymdownx.superfences
-import reacton
+import solara
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import get_lexer_by_name
 
@@ -29,7 +29,7 @@ def _run_solara(code):
     else:
         raise NameError("No Page of app defined")
     box = v.Html(tag="div")
-    box, rc = reacton.render(app, container=box)
+    box, rc = solara.render(app, container=box)
     widget_id = box._model_id
     return (
         '<div class="solara-markdown-output v-card v-sheet elevation-7">'
@@ -117,7 +117,7 @@ def _highlight(src, language, unsafe_solara_execute, extra, *args, **kwargs):
         return html
 
 
-@reacton.component
+@solara.component
 def MarkdownIt(md_text: str, highlight: List[int] = [], unsafe_solara_execute: bool = False):
     md_text = textwrap.dedent(md_text)
 
@@ -143,7 +143,7 @@ def MarkdownIt(md_text: str, highlight: List[int] = [], unsafe_solara_execute: b
     return v.VuetifyTemplate.element(template=_markdown_template(html)).key(hash)
 
 
-@reacton.component
+@solara.component
 def Markdown(md_text: str, unsafe_solara_execute=False):
     import markdown
 

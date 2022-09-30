@@ -7,7 +7,7 @@ The DataTable component can render dataframes of any size due to pagination.
 
 ### Component signature
 ```python
-@reacton.component
+@solara.component
 def DataTable(df, page=0, items_per_page=20, format=None, column_actions: List[ColumnAction] = [], cell_actions: List[CellAction] = []):
     ...
 ```
@@ -29,7 +29,7 @@ try:
     import vaex
 except ImportError:
     vaex = None
-from solara.alias import reacton, sol
+import solara
 
 if vaex is not None:
     df = vaex.datasets.titanic()
@@ -37,10 +37,10 @@ else:
     df = None
 
 
-@reacton.component
+@solara.component
 def Page():
-    column, set_column = reacton.use_state(cast(Optional[str], None))
-    cell, set_cell = reacton.use_state(cast(Dict[str, Any], {}))
+    column, set_column = solara.use_state(cast(Optional[str], None))
+    cell, set_cell = solara.use_state(cast(Dict[str, Any], {}))
 
     def on_action_column(column):
         set_column(column)
@@ -48,10 +48,10 @@ def Page():
     def on_action_cell(column, row_index):
         set_cell(dict(column=column, row_index=row_index))
 
-    column_actions = [sol.ColumnAction(icon="mdi-sunglasses", name="User column action", on_click=on_action_column)]
-    cell_actions = [sol.CellAction(icon="mdi-white-balance-sunny", name="User cell action", on_click=on_action_cell)]
-    with sol.Div() as main:
-        sol.MarkdownIt(
+    column_actions = [solara.ColumnAction(icon="mdi-sunglasses", name="User column action", on_click=on_action_column)]
+    cell_actions = [solara.CellAction(icon="mdi-white-balance-sunny", name="User cell action", on_click=on_action_cell)]
+    with solara.Div() as main:
+        solara.MarkdownIt(
             f"""
             ## Demo
 
@@ -63,5 +63,5 @@ def Page():
 
         """
         )
-        sol.DataTable(df, column_actions=column_actions, cell_actions=cell_actions)
+        solara.DataTable(df, column_actions=column_actions, cell_actions=cell_actions)
     return main

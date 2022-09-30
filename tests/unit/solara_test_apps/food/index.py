@@ -1,8 +1,8 @@
-from solara.alias import reacton, sol
+import solara
 
 title = "Fruit home"
 
 
-@reacton.component
+@solara.component
 def Page():
-    return sol.Success("Yay")
+    return solara.Success("Yay")

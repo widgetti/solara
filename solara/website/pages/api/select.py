@@ -5,22 +5,22 @@ Select are in two flavours, for single, and for multiple selections.
 
 
 """
-from solara.alias import reacton, sol
+import solara
 
 
-@reacton.component
+@solara.component
 def Page():
-    with sol.VBox() as main:
-        with sol.Card("Single selection"):
-            food, set_food = reacton.use_state("Banana")
-            sol.Markdown(f"**Selected**: {food}")
+    with solara.VBox() as main:
+        with solara.Card("Single selection"):
+            food, set_food = solara.use_state("Banana")
+            solara.Markdown(f"**Selected**: {food}")
             foods = ["Kiwi", "Banana", "Apple"]
-            sol.Select(label="Food", value=food, values=foods, on_value=set_food)
+            solara.Select(label="Food", value=food, values=foods, on_value=set_food)
 
-        with sol.Card("Multiple selections"):
+        with solara.Card("Multiple selections"):
             all_languages = "Python C++ Java JavaScript TypeScript BASIC".split()
-            languages, set_languages = reacton.use_state([all_languages[0]])
-            sol.Markdown(f"**Selected**: {languages}")
-            sol.SelectMultiple("Languages", languages, all_languages, on_value=set_languages)
+            languages, set_languages = solara.use_state([all_languages[0]])
+            solara.Markdown(f"**Selected**: {languages}")
+            solara.SelectMultiple("Languages", languages, all_languages, on_value=set_languages)
 
     return main

@@ -128,13 +128,13 @@ An example Page component could look like:
 @reacton.component
 def Page(name: str):
     subpages = ["foo", "bar", "solara", "react-ipywidgets"]
-    with sol.VBox() as main:
-        sol.Markdown(f"You are at: {name}")
+    with solara.VBox() as main:
+        solara.Markdown(f"You are at: {name}")
         # bunch of buttons which navigate to our dynamic route
-        with sol.HBox():
+        with solara.HBox():
             for subpage in subpages:
-                with sol.Link(subpage):
-                    sol.Button(label=f"Go to: {subpage}")
+                with solara.Link(subpage):
+                    solara.Button(label=f"Go to: {subpage}")
     return main
 ```
 
