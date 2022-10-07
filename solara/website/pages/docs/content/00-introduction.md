@@ -81,7 +81,7 @@ If you use Jupyter, then you probably use the Jupyter notebook, Lab, of Voila to
 
 If you don't use Jupyter, or don't know what it is, or are a ML Ops, Dev Ops, or Sys Admin, you are probably more interested in the Solara server.
 
-![Solara stack](https://user-images.githubusercontent.com/1765949/168669118-da9410bf-e838-481c-925d-4754efa01b7b.png)
+![Solara stack](/static/public/docs/solara-stack.png)
 
 ## How do I learn Solara
 
@@ -96,4 +96,4 @@ If you want to know what components or hooks are available, check out the [API](
 
 If you need consulting, training or development, you can reach us at:
 
-solara-expert@widgetti.io
+contact@solara.dev
