@@ -13,8 +13,9 @@ from typing import Any, Callable, Dict, List, Optional, cast
 
 import ipywidgets as widgets
 import reacton
-import solara
 from reacton.core import Element, render
+
+import solara
 
 from ..util import cwd
 from . import kernel, reload, settings, websocket
@@ -321,7 +322,7 @@ def _run_app(app_state, app_script: AppScript, pathname: str, render_context: re
     container = context.container
     if isinstance(main_object, widgets.Widget):
         return main_object, render_context
-    elif isinstance(main_object, Element) or isinstance(main_object, solara.core.Component):
+    elif isinstance(main_object, Element) or isinstance(main_object, reacton.core.Component):
         if isinstance(main_object, Element):
             children = [main_object]
         else:
