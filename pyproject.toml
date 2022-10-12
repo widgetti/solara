@@ -14,7 +14,7 @@ packages = [
     { include = "solara" }
 ]
 dependencies = [
-    "reacton>=0.12.0",
+    "reacton>=0.12.1",
     "ipywidgets<8",
     "diskcache",
     "markdown",
@@ -72,7 +72,7 @@ dev = [
     "bump2version",
 ]
 assets = [
-    "solara-assets==0.12.0"
+    "solara-assets==0.12.1"
 ]
 flask = [
     "flask",
