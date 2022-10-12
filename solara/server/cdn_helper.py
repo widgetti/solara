@@ -1,5 +1,6 @@
 import logging
 import pathlib
+import site
 import sys
 
 import requests
@@ -8,7 +9,13 @@ logger = logging.getLogger("Solara.cdn")
 
 cdn = "https://cdn.jsdelivr.net/npm/"
 
-default_cache_dir = pathlib.Path(sys.prefix + "/share/solara/cdn/")
+if __file__.startswith(site.getuserbase()):
+    prefix = site.getuserbase()
+else:
+    prefix = sys.prefix
+
+
+default_cache_dir = pathlib.Path(prefix + "/share/solara/cdn/")
 default_cache_dir.mkdir(exist_ok=True, parents=True)
 cdn_url_path = "_solara/cdn"
 
