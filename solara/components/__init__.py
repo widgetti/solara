@@ -5,7 +5,18 @@ from .details import Details  # noqa: #F401 F403
 from .file_browser import FileBrowser  # noqa: #F401 F403
 from .image import Image  # noqa: #F401 F403
 from .markdown import Markdown, MarkdownIt  # noqa: #F401 F403
-from .slider import DateSlider, FloatSlider, IntSlider, ValueSlider  # noqa: #F401 F403
+from .slider import (  # noqa: F401 F403
+    DateSlider,  # noqa: F401 F403
+    FloatSlider,  # noqa: F401 F403
+    IntSlider,  # noqa: F401 F403
+    ValueSlider,  # noqa: F401 F403
+    SliderDate,  # noqa: F401 F403
+    SliderFloat,  # noqa: F401 F403
+    SliderInt,  # noqa: F401 F403
+    SliderValue,  # noqa: F401 F403
+    SliderRangeInt,  # noqa: F401 F403
+    SliderRangeFloat,  # noqa: F401 F403
+)  # noqa: F401 F403
 from .sql_code import SqlCode  # noqa: #F401 F403
 from .togglebuttons import (  # noqa: #F401 F403
     ToggleButtonsMultiple,
