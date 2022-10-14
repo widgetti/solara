@@ -7,6 +7,8 @@ from types import ModuleType
 from typing import Any, Callable, List, Optional, cast
 
 import reacton
+import reacton.core
+
 import solara
 from solara.alias import rv
 from solara.util import cwd

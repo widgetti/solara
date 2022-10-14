@@ -1,11 +1,12 @@
 """
-# Select
+# Select components
 
 Select are in two flavours, for single, and for multiple selections.
 
 
 """
 import solara
+from solara.website.utils import apidoc
 
 
 @solara.component
@@ -24,3 +25,9 @@ def Page():
             solara.SelectMultiple("Languages", languages, all_languages, on_value=set_languages)
 
     return main
+
+
+__doc__ += "# Select"
+__doc__ += apidoc(solara.Select.f)  # type: ignore
+__doc__ += "# SelectMultiple"
+__doc__ += apidoc(solara.SelectMultiple.f)  # type: ignore
