@@ -376,6 +376,7 @@ def load_app_widget(app_state, app_script: AppScript, pathname: str):
                     try:
                         widget, render_context = _run_app(app_state, app_script, pathname, render_context=render_context)
                         if render_context is None:
+                            assert context.container is not None
                             context.container.children = [widget]
                     except Exception:
                         if settings.main.use_pdb:
