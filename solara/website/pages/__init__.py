@@ -85,12 +85,12 @@ def Layout(children=[]):
             Hero(title="UI Framework for data web apps and Jupyter", button_text="Quickstart")
 
         with rv.Container(tag="section", fluid=True, ma_0=True, pa_0=True, class_="fill-height"):
-            with rv.Row(style_="gap:6rem"):
+            with rv.Row(style_="gap:6rem; flex-wrap: nowrap;"):
                 if route_current is not None and hasattr(route_current.module, "Sidebar"):
                     route_current.module.Sidebar()  # type: ignore
                 else:
                     Sidebar()
-                with rv.Col(tag="main", md=True, class_="pt-12 pl-12 pr-10", style_="max-width: 1024px"):
+                with rv.Col(tag="main", md=True, class_="pt-12 pl-12 pr-10", style_="max-width: 1024px; overflow: auto;"):
                     if route_current is not None and route_current.path == "/":
                         with rv.Row(align="center"):
                             pass
