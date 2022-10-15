@@ -4,6 +4,7 @@ import numpy as np
 import reacton.bqplot as bqplot
 import reacton.ipyvuetify as v
 import reacton.ipywidgets as w
+
 import solara
 from solara.components import ui_checkbox, ui_dropdown
 from solara.hooks import df_unique, max_unique, use_cross_filter, use_df_column_names
@@ -143,7 +144,7 @@ def HistogramCard(df, column=None):
                         scale_x = bqplot.OrdinalScale()
                         x = np.where(x.astype("int8"), "true", "false")
                     elif dfg[column].dtype == str:
-                        scale_x = bqplot.OrdinalScale()
+                        scale_x = bqplot.OrdinalScale(domain=x.tolist())
                     else:
                         scale_x = bqplot.OrdinalScale()
                     if log:
@@ -163,16 +164,33 @@ def HistogramCard(df, column=None):
                             set_filter(None)
 
                     lines = bqplot.Bars(
+                        colors=["rgba(58, 130, 246, 0.5)"],
                         x=x.tolist(),
                         y=y.tolist(),
                         scales={"x": scale_x, "y": scale_y},
                         type="grouped",
-                        selected_style={"fill": "#f55"},
+                        selected_style={"fill": "rgba(58, 130, 246, 0.8)"},
                         on_selected=on_selected,
                         interactions={"click": "select"},
                     )
-                    x_axis = bqplot.Axis(scale=scale_x, label=column)
-                    y_axis = bqplot.Axis(scale=scale_y, orientation="vertical", label="count")
+                    x_axis = bqplot.Axis(
+                        scale=scale_x,
+                        label=column,
+                        grid_lines="none",
+                        color="rgba(0,0,0,0)",
+                        tick_style={
+                            "fill": "rgba(0,0,0,0.8)",
+                        },
+                    )
+                    y_axis = bqplot.Axis(
+                        scale=scale_y,
+                        orientation="vertical",
+                        label="count",
+                        color="rgba(0,0,0,0)",
+                        tick_style={
+                            "fill": "rgba(0,0,0,0.8)",
+                        },
+                    )
                     axes = [x_axis, y_axis]
                     bqplot.Figure(axes=axes, marks=[lines])
     return main
