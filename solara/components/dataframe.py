@@ -106,7 +106,7 @@ def HistogramCard(df, column=None):
     filter, set_filter = use_cross_filter(id(df), "filter-histogram")
     dff = df  # filter(df)
 
-    items = df.get_column_names()
+    items = use_df_column_names(df)
 
     with v.Card(elevation=2, height=cardheight) as main:
         with v.CardTitle(children=["Histogram"]):
