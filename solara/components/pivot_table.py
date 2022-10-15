@@ -5,8 +5,9 @@ from typing import Any, Callable, Dict, List, NoReturn
 
 import ipyvuetify as v
 import numpy as np
-import solara
 import traitlets
+
+import solara
 from solara.alias import rv
 
 cardheight = "100%"
@@ -181,7 +182,7 @@ def PivotTable(
             filter = reduce(operator.and_, filters[1:], filters[0])
         else:
             filter = None
-        set_filter(str(filter) if filter is not None else None)
+        set_filter(filter if filter is not None else None)
 
     # Bug in use_thread on state result we remember that state is finished
     if data_result.state == solara.ResultState.FINISHED and data_result.value is not None:

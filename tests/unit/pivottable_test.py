@@ -1,6 +1,7 @@
+import vaex
+
 import solara
 import solara.components.pivot_table as pt
-import vaex
 from solara.components.pivot_table import PivotTableWidget
 
 from .common import repeat_while_false, repeat_while_true
@@ -91,8 +92,8 @@ def test_pivot_table():
     repeat_while_true(lambda: rc._find(PivotTableWidget).widget.d["values"] == [["12", "94"], ["146", "25"]])
     pt.selected = {"x": [0, 0]}  # sex, female
     assert filter is not None
-    assert df[df[filter]].sex.unique() == ["female"]
+    assert df[df[str(filter)]].sex.unique() == ["female"]
 
     pt.selected = {"y": [0, 0]}  # survived, False
     assert filter is not None
-    assert df[df[filter]].survived.unique() == [False]
+    assert df[df[str(filter)]].survived.unique() == [False]
