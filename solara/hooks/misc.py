@@ -158,6 +158,7 @@ def use_thread(
                             try:
                                 with cancel_guard():
                                     result.current = next(value)
+                                    error.current = None
                             except StopIteration:
                                 break
                             # assigning to the ref doesn't trigger a rerender, so do it manually
@@ -166,6 +167,7 @@ def use_thread(
                             set_result_state(ResultState.FINISHED)
                     else:
                         result.current = value
+                        error.current = None
                         if threading.current_thread() == running_thread.current:
                             set_result_state(ResultState.FINISHED)
                 except Exception as e:
