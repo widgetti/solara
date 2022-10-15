@@ -375,6 +375,8 @@ def load_app_widget(app_state, app_script: AppScript, pathname: str):
                     # e.g.: _pickle.PicklingError: Can't pickle <class 'testapp.Clicks'>: it's not the same object as testapp.Clicks
                     try:
                         widget, render_context = _run_app(app_state, app_script, pathname, render_context=render_context)
+                        if render_context is None:
+                            context.container.children = [widget]
                     except Exception:
                         if settings.main.use_pdb:
                             logger.exception("Exception, will be handled by debugger")
