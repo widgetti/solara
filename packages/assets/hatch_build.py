@@ -15,6 +15,7 @@ packages = [
     ["vega-embed", "6.20.2"],
     ["@widgetti/vue-grid-layout", "2.3.13-alpha.2"],
     ["@widgetti/solara-milkdown", "6.3.0"],
+    ["echarts", "5.4.0"],
 ]
 
 
