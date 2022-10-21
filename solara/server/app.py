@@ -11,8 +11,11 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, cast
 
+import comm
 import ipywidgets as widgets
+import ipywidgets.widgets.widget
 import reacton
+import traitlets
 from reacton.core import Element, render
 
 import solara
@@ -216,6 +219,7 @@ class AppContext:
     # this is the 'private' version of the normally global ipywidgets.Widgets.widget dict
     # see patch.py
     widgets: Dict[str, widgets.Widget]
+    comm_manager: comm.CommManager
     # same, for ipyvue templates
     # see patch.py
     templates: Dict[str, widgets.Widget]
@@ -449,10 +453,53 @@ def register_solara_comm_target(kernel: Kernel):
     kernel.comm_manager.register_target("solara.control", solara_comm_target)
 
 
+class SolaraCommManager(comm.CommManager):
+    pass
+
+
+def _get_solara_comm_manager():
+    context = get_current_context()
+    return context.comm_manager
+
+
+class SolaraComm(comm.base_comm.BaseComm):
+    def __init__(self, **kwargs) -> None:
+        self.kernel = get_current_context().kernel
+        super().__init__(**kwargs)
+
+    def publish_msg(self, msg_type, data=None, metadata=None, buffers=None, **keys):
+        data = {} if data is None else data
+        metadata = {} if metadata is None else metadata
+        content = dict(data=data, comm_id=self.comm_id, **keys)
+        self.kernel.session.send(
+            self.kernel.iopub_socket,
+            msg_type,
+            content,
+            metadata=metadata,
+            parent=self.kernel.get_parent("shell"),
+            ident=self.topic,
+            buffers=buffers,
+        )
+
+
+def _solara_create_comm(**kwargs):
+    return SolaraComm(**kwargs)
+
+
+comm.get_comm_manager = _get_solara_comm_manager
+comm.create_comm = _solara_create_comm
+
+comm_trait = getattr(ipywidgets.widgets.widget.Widget, "comm")
+if isinstance(comm_trait, traitlets.Instance):
+    comm_trait.klass = SolaraComm
+    ipywidgets.widgets.widget.Comm = SolaraComm
+
+
 def initialize_virtual_kernel(context_id: str, websocket: websocket.WebsocketWrapper):
-    kernel = Kernel()
+    comm_manager = SolaraCommManager()
+    kernel = Kernel(comm_manager=comm_manager)
     logger.info("new virtual kernel: %s", context_id)
-    context = contexts[context_id] = AppContext(id=context_id, kernel=kernel, control_sockets=[], widgets={}, templates={})
+    context = contexts[context_id] = AppContext(id=context_id, kernel=kernel, control_sockets=[], widgets={}, templates={}, comm_manager=comm_manager)
     with context:
         widgets.register_comm_target(kernel)
         register_solara_comm_target(kernel)

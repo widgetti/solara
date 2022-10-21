@@ -8,7 +8,6 @@ from typing import Set
 
 import ipykernel.kernelbase
 import jupyter_client.session as session
-from ipykernel.comm import CommManager
 from zmq.eventloop.zmqstream import ZMQStream
 
 import solara
@@ -151,7 +150,7 @@ class Kernel(ipykernel.kernelbase.Kernel):
     implementation_version = solara.__version__
     banner = "solara"
 
-    def __init__(self):
+    def __init__(self, comm_manager):
         super(Kernel, self).__init__()
         self.session = SessionWebsocket(parent=self, key=SESSION_KEY)
         self.msg_queue = queue.Queue()  # type: ignore
@@ -160,7 +159,7 @@ class Kernel(ipykernel.kernelbase.Kernel):
         # solara/server/kernel.py:111: error: "SessionWebsocket" has no attribute "stream"
         # not sure why we cannot reproduce that locally
         self.session.stream = self.iopub_socket  # type: ignore
-        self.comm_manager = CommManager(parent=self, kernel=self)
+        self.comm_manager = comm_manager
         self.shell = None
         self.log = logging.getLogger("fake")
 
