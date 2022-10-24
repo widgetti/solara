@@ -72,7 +72,7 @@ dev = [
     "bump2version",
 ]
 assets = [
-    "solara-assets==0.13.0"
+    "solara-assets==0.14.0"
 ]
 flask = [
     "flask",
