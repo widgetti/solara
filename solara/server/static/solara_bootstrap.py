@@ -122,7 +122,7 @@ async def main():
     await micropip.install("/wheels/solara-0.14.0-py2.py3-none-any.whl", keep_going=True)
     import solara
 
-    el = solara.Warning(text="lala")
+    el = solara.Warning("lala")
     import solara
 
     solara.render_fixed(el)
