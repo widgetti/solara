@@ -21,7 +21,28 @@ jobs:
         run: pip install flit
       - name: Build
         run: flit build
+      - uses: actions/upload-artifact@v1
+        with:
+          name: dist-${{ github.run_number }}
+          path: ./dist
+  install:
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/download-artifact@v2
+        with:
+          name: dist-${{ github.run_number }}
+          path: ./dist
       - name: Install
         run: pip install dist/*.whl
       - name: Test import
         run: python -c "import solara"
+      - name: Run solara create
+        run: solara create button test.py
+      - name: Run solara server
+        run: solara run test.py&
+      - name: Wait for Solara server to get online
+        uses: ifaxity/wait-on-action@v1
+        with:
+          resource: http-get://localhost:8765/
+          timeout: 10000
