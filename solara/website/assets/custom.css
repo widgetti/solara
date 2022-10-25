@@ -129,6 +129,15 @@ blockquote p:last-child {
     font-size: 4.5rem;
 }
 
+.hero h2 {
+    padding-left: 150px;
+    padding-right: 150px;
+}
+
+.hero b {
+    color: #ff991f;
+}
+
 @media screen and (max-width: 960px) {
     .hero {
         padding: 4rem 0;

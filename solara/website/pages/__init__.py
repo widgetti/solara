@@ -82,25 +82,91 @@ def Layout(children=[]):
             on_toggle_right_menu=lambda: set_show_right_menu(not show_right_menu),
         )
         if route_current is not None and route_current.path == "/":
-            Hero(title="UI Framework for data web apps and Jupyter", button_text="Quickstart")
+            Hero(
+                title="Build large and Scalable Data Apps for Jupyter and Production",
+                sub_title="Solara helps you build powerful & scalable data apps <b>faster</b> and <b>easier</b>.",
+                button_text="Quickstart",
+            )
 
         with rv.Container(tag="section", fluid=True, ma_0=True, pa_0=True, class_="fill-height"):
-            with rv.Row(style_="gap:6rem; flex-wrap: nowrap;"):
-                if route_current is not None and hasattr(route_current.module, "Sidebar"):
-                    route_current.module.Sidebar()  # type: ignore
-                else:
-                    Sidebar()
-                with rv.Col(tag="main", md=True, class_="pt-12 pl-12 pr-10", style_="max-width: 1024px; overflow: auto;"):
-                    if route_current is not None and route_current.path == "/":
-                        with rv.Row(align="center"):
+            if route_current is not None and route_current.path == "/":
+                with rv.Row(class_="ma-2"):
+                    with rv.Col(md=4, offset_md=2, sm=5, offset_sm=1):
+                        solara.Markdown(
+                            """
+                        # What is Solara?
+
+                        Solara lets you build data apps from in Python.
+
+                        Grow from one-off experiments in the Jupyter notebook to highly complex production-grade data apps with confidence.
+
+                        Access the full power of the Python ecosystem. Use your favorite libraries.
+                        """
+                        )
+                        with solara.HBox():
+                            with solara.Link("/docs"):
+                                solara.Button(label="Read more", class_="ma-1", href="/docs", color="#f19f41", dark=True)
+                            with solara.Link("/docs/quickstart"):
+                                solara.Button(label="Quickstart", class_="ma-1", color="#f19f41", dark=True)
+                    with rv.Col(md=4, sm=5):
+                        rv.Img(src="/static/public/landing/what.png", style_="width:900px")
+
+                with rv.Row(class_="ma-8"):
+                    with rv.Col(md=4, offset_md=2, sm=5, offset_sm=1):
+                        rv.Img(src="/static/public/landing/complexity.png", style_="width:500px")
+                    with rv.Col(md=4, sm=5):
+                        solara.Markdown(
+                            """
+                        # Build **large** apps with **low** code complexity
+
+                        With Solara, you can build large scale apps without hitting a complexity wall.
+
+                        With other tools you may hit a dead end due to missing features or implementing features
+                        adds too much complexity to your code base.
+
+                        Solara offers the **flexibility** to build complex apps, but keeps the **simplicity** of a small code base.
+                        """
+                        )
+                with rv.Row(class_="ma-8"):
+                    with rv.Col(md=4, sm=5, offset_sm=1, offset_md=2):
+                        solara.Markdown(
+                            """
+                        # The trustworthiness of React
+
+                        Using the same API as React, but ported to Python, Solara lets you build apps with the same
+                        trustworthiness as React.
+
+                        With a decade of experience, React is battle-tested and proven to be
+                        a reliable and robust framework to build large scale apps.
+                        """
+                        )
+                    with rv.Col(md=5, sm=5):
+                        rv.Img(src="/static/public/landing/python-love-react.png", style_="width:300px")
+                with rv.Row(class_="ma-8"):
+                    with rv.Col(md=5, offset_md=2, sm=5, offset_sm=1):
+                        solara.Markdown(
+                            """
+                        ## For any consulting, training or support needs
+                        [contact@solara.dev](mailto:contact@solara.dev)
+                        """
+                        )
+            else:
+                with rv.Row(style_="gap:6rem; flex-wrap: nowrap;"):
+                    if route_current is not None and hasattr(route_current.module, "Sidebar"):
+                        route_current.module.Sidebar()  # type: ignore
+                    else:
+                        Sidebar()
+                    with rv.Col(tag="main", md=True, class_="pt-12 pl-12 pr-10", style_="max-width: 1024px; overflow: auto;"):
+                        if route_current is not None and route_current.path == "/":
+                            with rv.Row(align="center"):
+                                pass
+                                # with rv.Col(md=6, class_="pa-0"):
+                                #     rv.Html(tag="h1", children=["Live Demo"])
+                                # with rv.Col(md=6, class_="d-flex", style_="justify-content: end"):
+                                #     rv.Btn(elevation=0, large=True, children=["Running App"], color="primary", class_="btn-size--xlarge")
+                            # solara.Padding(6)
+                        with rv.Row(children=children):
                             pass
-                            # with rv.Col(md=6, class_="pa-0"):
-                            #     rv.Html(tag="h1", children=["Live Demo"])
-                            # with rv.Col(md=6, class_="d-flex", style_="justify-content: end"):
-                            #     rv.Btn(elevation=0, large=True, children=["Running App"], color="primary", class_="btn-size--xlarge")
-                        # solara.Padding(6)
-                    with rv.Row(children=children):
-                        pass
 
             # Drawer navigation for sidebar
             with rv.NavigationDrawer(
