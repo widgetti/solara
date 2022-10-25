@@ -107,26 +107,6 @@ def Preformatted(text, **kwargs):
 
 
 @solara.component
-def Warning(text, icon="mdi-alert", children=[], **kwargs):
-    return v.Alert(type="warning", text=True, prominent=True, icon=icon, children=[text, *children], **kwargs)
-
-
-@solara.component
-def Info(text, icon="mdi-alert", children=[], progress=False, **kwargs):
-    return v.Alert(type="info", text=True, prominent=True, icon=icon, children=[text, *children], **kwargs)
-
-
-@solara.component
-def Error(text, icon="mdi-alert", children=[], **kwargs):
-    return v.Alert(type="error", text=True, prominent=True, icon=icon, children=[text, *children], **kwargs)
-
-
-@solara.component
-def Success(text, icon="mdi-alert", children=[], **kwargs):
-    return v.Alert(type="success", text=True, prominent=True, icon=icon, children=[text, *children], **kwargs)
-
-
-@solara.component
 def Button(
     label: str = None,
     on_click: Callable[[], None] = None,

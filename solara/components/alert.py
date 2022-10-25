@@ -1,0 +1,98 @@
+from typing import Union
+
+import reacton.ipyvuetify as v
+
+import solara
+
+
+@solara.component
+def Success(
+    label: str,
+    icon: Union[bool, str, None] = True,
+    dense=False,
+    outlined=True,
+    text=True,
+    children=[],
+    **kwargs,
+):
+    """Display a success message (green color).
+
+    ## Arguments
+
+     * `label`: the message to display
+     * `icon`: if True, display a check icon, if False, don't display an icon, if a string, display the icon with that name.
+     * `dense`: if True, display the message in a dense format, using less vertical height.
+     * `outlined`: if True (default), display the message in an outlined border, instead of a filled box.
+     * `text`: if True (default), display the message in a text format, which applies a semi-transparent background.
+    """
+    # vuetify doesn't accept True, but is ok with None for a default icon
+    if icon is True:
+        icon = None
+    return v.Alert(type="success", text=text, outlined=outlined, dense=dense, icon=icon, children=[label, *children], **kwargs)
+
+
+@solara.component
+def Info(
+    label: str,
+    icon: Union[bool, str, None] = True,
+    dense=False,
+    outlined=True,
+    text=True,
+    children=[],
+    **kwargs,
+):
+    """Display a info message (blue color).
+
+    ## Arguments
+
+     * `label`: the message to display
+     * `icon`: if True, display a info icon, if False, don't display an icon, if a string, display the icon with that name.
+     * `dense`: if True, display the message in a dense format, using less vertical height.
+     * `outlined`: if True (default), display the message in an outlined border, instead of a filled box.
+     * `text`: if True (default), display the message in a text format, which applies a semi-transparent background.
+    """
+    if icon is True:
+        icon = None
+    return v.Alert(type="info", text=text, outlined=outlined, dense=dense, icon=icon, children=[label, *children], **kwargs)
+
+
+@solara.component
+def Warning(
+    label: str,
+    icon: Union[bool, str, None] = True,
+    dense=False,
+    outlined=True,
+    text=True,
+    children=[],
+    **kwargs,
+):
+    """Display a warning message (orange color).
+
+    ## Arguments
+
+     * `label`: the message to display
+     * `icon`: if True, display a exclamation icon, if False, don't display an icon, if a string, display the icon with that name.
+     * `dense`: if True, display the message in a dense format, using less vertical height.
+     * `outlined`: if True (default), display the message in an outlined border, instead of a filled box.
+     * `text`: if True (default), display the message in a text format, which applies a semi-transparent background.
+    """
+    if icon is True:
+        icon = None
+    return v.Alert(type="warning", text=text, outlined=outlined, dense=dense, icon=icon, children=[label, *children], **kwargs)
+
+
+@solara.component
+def Error(label: str, icon: Union[bool, str, None] = True, dense=False, outlined=True, text=True, children=[], **kwargs):
+    """Display an error message (red color).
+
+    ## Arguments
+
+     * `label`: the message to display
+     * `icon`: if True, display a exclamation in a red triangle icon, if False, don't display an icon, if a string, display the icon with that name.
+     * `dense`: if True, display the message in a dense format, using less vertical height.
+     * `outlined`: if True (default), display the message in an outlined border, instead of a filled box.
+     * `text`: if True (default), display the message in a text format, which applies a semi-transparent background.
+    """
+    if icon is True:
+        icon = None
+    return v.Alert(type="error", text=text, outlined=outlined, dense=dense, icon=icon, children=[label, *children], **kwargs)
