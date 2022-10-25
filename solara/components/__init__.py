@@ -1,5 +1,6 @@
 # isort: skip_file
 from .misc import *  # noqa: #F401 F403
+from .checkbox import Checkbox  # noqa: #F401 F403
 from .datatable import DataTable, DataFrame  # noqa: #F401 F403
 from .details import Details  # noqa: #F401 F403
 from .file_browser import FileBrowser  # noqa: #F401 F403

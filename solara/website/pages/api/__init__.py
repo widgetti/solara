@@ -45,6 +45,7 @@ def Sidebar(children=[], level=0):
             with ListItem("Input", icon_name="mdi-chevron-left-box"):
                 with List():
                     add("button")
+                    add("checkbox")
                     add("input")
                     add("select")
                     add("slider")
