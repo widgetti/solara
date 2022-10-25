@@ -29,7 +29,7 @@ dependencies = [
     "pillow",
     "jinja2",
     "pydantic",
-    "click",
+    "click>=7.1.0",
     "rich_click",
     "uvicorn",
     "watchgod",
@@ -39,6 +39,7 @@ dependencies = [
     "jupyter_server",
     "jupyter_client>=7.0.0",
     "watchdog",
+    "requests",
 ]
 
 [tool.flit.external-data]
