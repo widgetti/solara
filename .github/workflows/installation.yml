@@ -7,6 +7,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+defaults:
+  run:
+    shell: bash {0}
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -26,13 +30,25 @@ jobs:
           name: dist-${{ github.run_number }}
           path: ./dist
   install:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu, macos, windows]
+        python: ["3.7", "3.10"]
     needs: [build]
     steps:
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
         with:
           name: dist-${{ github.run_number }}
           path: ./dist
+      - name: Debug
+        run: ls -R dist
       - name: Install
         run: pip install dist/*.whl
       - name: Test import
