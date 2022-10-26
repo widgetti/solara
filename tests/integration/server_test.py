@@ -31,7 +31,7 @@ def test_docs_basics(page_session: playwright.sync_api.Page, solara_server, sola
     with solara_app("solara.website.pages"):
         page_session.goto(solara_server.base_url)
         # assert page_session.title() == "Solara documentation"
-        page_session.locator("text=Examples").first.click()
+        page_session.locator("text=LALALALA").first.click()
 
         page_session.locator("text=Calculator").first.click()
         page_session.locator("text=+/-").wait_for()
