@@ -1,19 +1,17 @@
 # import contextlib
 # import logging
 # import sys
-# import threading
-# from pathlib import Path
+import threading
+from pathlib import Path
 
 import playwright
 import playwright.sync_api
+import reacton.ipywidgets as w
 
-# import reacton.ipywidgets as w
-
-# import solara
-# from solara.kitchensink import v
+import solara
 
 # logger = logging.getLogger("solara.server.test")
-# HERE = Path(__file__).parent
+HERE = Path(__file__).parent
 
 
 # @contextlib.contextmanager
@@ -63,83 +61,61 @@ def test_docs_basics(page_session: playwright.sync_api.Page, solara_server, sola
         # page.screenshot(path="tmp/screenshot_use_effect.png")
 
 
-# @solara.component
-# def ClickButton():
-#     count, set_count = solara.use_state(0)
-#     if not isinstance(count, int):
-#         print("oops, state issue?")  # noqa
-#         count = 0
-#     btn = v.Btn(children=[f"Clicked: {count}"])
+@solara.component
+def ClickButton():
+    count, set_count = solara.use_state(0)
+    if not isinstance(count, int):
+        print("oops, state issue?")  # noqa
+        count = 0
 
-#     def on_click(*ignore):
-#         set_count(count + 1)
+    def on_click():
+        set_count(count + 1)
 
-#     v.use_event(btn, "click", on_click)
-#     return btn
+    return solara.Button(f"Clicked: {count}", on_click=on_click)
 
 
-# click_button = ClickButton()
+@solara.component
+def ThreadTest():
+    label, set_label = solara.use_state("initial")
+    use_thread, set_use_thread = solara.use_state(False)
+
+    def from_thread():
+        set_label("from thread")
+
+    def start_thread():
+        if use_thread:
+            thread = threading.Thread(target=from_thread)
+            thread.start()
+            return thread.join
+
+    solara.use_side_effect(start_thread, [use_thread])
+    # we need to trigger creating a new widget, to make sure we
+    # invoke a solara.server.app.get_current_context
+    if label == "initial":
+        return w.Button(description=label, on_click=lambda: set_use_thread(True))
+    else:
+        return w.Label(value=label)
 
 
-# def test_multi_user(page: playwright.sync_api.Page, solara_server, solara_app, extra_include_path):
-#     with extra_include_path(HERE), solara_app("server_test:click_button"):
-#         page.goto(solara_server.base_url)
-#         assert page.title() == "Hello from Solara ☀️"
-#         page.screenshot(path="tmp/screenshot_test_click.png")
-
-#         # page.locator("text=Clicked: 0").click()
-
-
-# @solara.component
-# def ThreadTest():
-#     label, set_label = solara.use_state("initial")
-#     use_thread, set_use_thread = solara.use_state(False)
-
-#     def from_thread():
-#         set_label("from thread")
-
-#     def start_thread():
-#         if use_thread:
-#             thread = threading.Thread(target=from_thread)
-#             thread.start()
-#             return thread.join
-
-#     solara.use_side_effect(start_thread, [use_thread])
-#     # we need to trigger creating a new widget, to make sure we
-#     # invoke a solara.server.app.get_current_context
-#     if label == "initial":
-#         return w.Button(description=label, on_click=lambda: set_use_thread(True))
-#     else:
-#         return w.Label(value=label)
+def test_from_thread(page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path):
+    with extra_include_path(HERE), solara_app("server_test:ThreadTest"):
+        page_session.goto(solara_server.base_url)
+        el = page_session.locator(".jupyter-widgets")
+        assert el.text_content() == "initial"
+        page_session.wait_for_timeout(500)
+        el.click()
+        page_session.locator("text=from thread").wait_for()
 
 
-# thread_test = ThreadTest()
-# # click_button = ThreadTest()
-
-
-# def test_from_thread(page: playwright.sync_api.Page, solara_server, solara_app, extra_include_path):
-#     with extra_include_path(HERE), solara_app("server_test:thread_test"):
-#         page.goto(solara_server.base_url)
-
-#         assert page.title() == "Hello from Solara ☀️"
-#         el = page.locator(".jupyter-widgets")
-#         assert el.text_content() == "initial"
-#         page.wait_for_timeout(500)
-#         el.click()
-#         page.locator("text=from thread").wait_for()
-
-
-# def test_state(page: playwright.sync_api.Page, solara_server, solara_app, extra_include_path):
-#     with extra_include_path(HERE), solara_app("server_test:click_button"):
-#         page.goto(solara_server.base_url)
-#         # with screenshot_on_error(page, "tmp/test_state.png"):
-#         assert page.title() == "Hello from Solara ☀️"
-#         page.locator("text=Clicked: 0").click()
-#         page.locator("text=Clicked: 1").click()
-#         # refresh...
-#         page.goto(solara_server.base_url)
-#         # and state should NOT be restored
-#         page.locator("text=Clicked: 0").wait_for()
+def test_state(page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path):
+    with extra_include_path(HERE), solara_app("server_test:ClickButton"):
+        page_session.goto(solara_server.base_url)
+        page_session.locator("text=Clicked: 0").click()
+        page_session.locator("text=Clicked: 1").click()
+        # refresh...
+        page_session.goto(solara_server.base_url)
+        # and state should NOT be restored
+        page_session.locator("text=Clicked: 0").wait_for()
 
 
 # def test_from_thread_two_users(browser: playwright.sync_api.Browser, solara_server, solara_app, extra_include_path):
