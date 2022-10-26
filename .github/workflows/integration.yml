@@ -31,7 +31,7 @@ jobs:
         run: playwright install
       - name: test
         # we also run the (cheap) unittests, to get better coverage report
-        run: pytest tests/integration --timeout=20 --video=retain-on-failure -vv -s --log-cli-level=warning -x --assert=plain
+        run: pytest tests/integration --timeout=35 --video=retain-on-failure -vv -s --log-cli-level=warning -x --assert=plain
       - name: Upload Test artifacts
         if: always()
         uses: actions/upload-artifact@v2
