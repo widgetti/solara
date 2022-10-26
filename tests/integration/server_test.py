@@ -118,39 +118,32 @@ def test_state(page_session: playwright.sync_api.Page, solara_server, solara_app
         page_session.locator("text=Clicked: 0").wait_for()
 
 
-# def test_from_thread_two_users(browser: playwright.sync_api.Browser, solara_server, solara_app, extra_include_path):
-#     with extra_include_path(HERE), solara_app("server_test:thread_test"):
-#         context1 = browser.new_context()
-#         page1 = context1.new_page()
-#         context2 = browser.new_context()
-#         page2 = context2.new_page()
+def test_from_thread_two_users(browser: playwright.sync_api.Browser, solara_server, solara_app, extra_include_path):
+    with extra_include_path(HERE), solara_app("server_test:ThreadTest"):
+        context1 = browser.new_context()
+        page1 = context1.new_page()
+        context2 = browser.new_context()
+        page2 = context2.new_page()
 
-#         page1.goto(solara_server.base_url)
+        page1.goto(solara_server.base_url)
 
-#         assert page1.title() == "Hello from Solara ☀️"
-#         el1 = page1.locator(".jupyter-widgets")
-#         assert el1.text_content() == "initial"
+        el1 = page1.locator(".jupyter-widgets")
+        assert el1.text_content() == "initial"
 
-#         page2.goto(solara_server.base_url)
-#         assert page2.title() == "Hello from Solara ☀️"
-#         el2 = page2.locator(".jupyter-widgets")
-#         assert el2.text_content() == "initial"
+        page2.goto(solara_server.base_url)
+        el2 = page2.locator(".jupyter-widgets")
+        assert el2.text_content() == "initial"
 
-#         page1.wait_for_timeout(500)
-#         page1.wait_for_timeout(500)
+        page1.wait_for_timeout(500)
+        page1.wait_for_timeout(500)
 
-#         el1.click()
-#         page1.locator("text=from thread").wait_for()
+        el1.click()
+        page1.locator("text=from thread").wait_for()
 
-#         page2.wait_for_timeout(500)
-#         assert el2.text_content() == "initial"
+        page2.wait_for_timeout(500)
+        assert el2.text_content() == "initial"
 
-#         el2.click()
-#         page2.locator("text=from thread").wait_for()
-
-
-# # def test_two_clients(browser: playwright.sync_api.Browser):
-# #     context1 = browser.new_context()
-# #     page1 = context1.new_page()
-# #     context2 = browser.new_context()
-# #     page2 = context1.new_page()
+        el2.click()
+        page2.locator("text=from thread").wait_for()
+        page1.close()
+        page2.close()
