@@ -30,6 +30,9 @@ def test_docs_basics(page: playwright.sync_api.Page, solara_server, solara_app):
     # with screenshot_on_error(page, 'tmp/test_docs_basics.png'):
     with solara_app("solara.website.pages"):
         page.goto(solara_server.base_url)
+        timeout = 18
+        page.set_default_timeout(timeout * 1000)
+        page.set_default_navigation_timeout(timeout * 1000)
         # assert page.title() == "Solara documentation"
         page.locator("text=LALALALA").first.click()
 
