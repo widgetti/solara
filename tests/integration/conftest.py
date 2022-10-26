@@ -241,6 +241,14 @@ def page_session(browser: playwright.sync_api.Browser, solara_server):
     page.close()
 
 
+@pytest.fixture()  # type: ignore
+def page(page):  # noqa
+    # on CI, it seems that the above context.set_default_timeout(timeout * 1000) does not apply to page
+    # so we set it here again. Maybe in other situations the page is created early.. ?gg
+    page.set_default_timeout(timeout * 1000)
+    yield page
+
+
 @pytest.fixture()
 def solara_app(solara_server):
     @contextlib.contextmanager
