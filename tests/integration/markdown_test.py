@@ -13,9 +13,7 @@ md = """
 # Solara markdown
 
 ```solara
-import reacton
-
-import solara as sol
+import solara
 
 
 @solara.component
