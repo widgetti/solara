@@ -30,7 +30,7 @@ else:
 
 urls: Set[str] = set()
 
-
+timeout = 1000  # in seconds
 # allow symlinks on solara+starlette
 solara.server.settings.main.mode = "development"
 
@@ -56,7 +56,7 @@ def url_checks():
 # see https://github.com/microsoft/playwright-pytest/issues/23
 @pytest.fixture
 def context(context: playwright.sync_api.BrowserContext, url_checks):
-    context.set_default_timeout(50000)
+    context.set_default_timeout(timeout * 1000)
 
     def handle(route, request: playwright.sync_api.Request):
         urls.add(request.url)
@@ -208,7 +208,7 @@ server_classes = {
 }
 
 
-@pytest.fixture(params=SERVERS)
+@pytest.fixture(params=SERVERS, scope="session")
 def solara_server(request):
     server_class = server_classes[request.param]
     global TEST_PORT
@@ -221,6 +221,14 @@ def solara_server(request):
     finally:
         webserver.stop_serving()
         TEST_PORT += 1
+
+
+@pytest.fixture(scope="session")
+def page_session(browser: playwright.sync_api.Browser, solara_server):
+    page = browser.new_page()
+    page.set_default_timeout(timeout * 1000)
+    yield page
+    page.close()
 
 
 @pytest.fixture()

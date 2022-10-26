@@ -17,23 +17,26 @@ import playwright.sync_api
 #         page.locator('button:has-text("Reset to initial layout")').wait_for()
 
 
-def test_api_markdown_editor(page: playwright.sync_api.Page, solara_server, solara_app):
+def test_api_markdown_editor(page_session: playwright.sync_api.Page, solara_server, solara_app):
+    page = page_session
     # with screenshot_on_error(page, 'tmp/test_docs_basics.png'):
     with solara_app("solara.website.pages"):
         page.goto(solara_server.base_url + "/api/")
-        page.locator("text=Markdown Editor").click()
+        page.locator("text=Markdown Editor").first.click()
         page.locator('h1:has-text("Large heading")').wait_for()
 
 
-def test_api_file_browser(page: playwright.sync_api.Page, solara_server, solara_app):
+def test_api_file_browser(page_session: playwright.sync_api.Page, solara_server, solara_app):
+    page = page_session
     # with screenshot_on_error(page, 'tmp/test_docs_basics.png'):
     with solara_app("solara.website.pages"):
         page.goto(solara_server.base_url + "/api/")
-        page.locator("text=File Browser").click()
+        page.locator("text=File Browser").first.click()
         page.locator("text=You are in directory").wait_for()
 
 
-def test_api_matplotlib(page: playwright.sync_api.Page, solara_server, solara_app):
+def test_api_matplotlib(page_session: playwright.sync_api.Page, solara_server, solara_app):
+    page = page_session
     # with screenshot_on_error(page, 'tmp/test_docs_basics.png'):
     with solara_app("solara.website.pages"):
         page.goto(solara_server.base_url + "/api/matplotlib")
