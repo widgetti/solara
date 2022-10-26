@@ -24,11 +24,12 @@ dfs = {
         title="Iris",
         image_url="https://images.unsplash.com/photo-1540163502599-a3284e17072d?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=3870&q=80",  # noqa
     ),
-    "taxi": DataFrame(
-        df=vaex.datasets.taxi(),
-        title="New York Taxi",
-        image_url="https://images.unsplash.com/photo-1514749204155-24e484635226?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1587&q=80",  # noqa
-    ),
+    # uncomment for a larger dataset to be included
+    # "taxi": DataFrame(
+    #     df=vaex.datasets.taxi(),
+    #     title="New York Taxi",
+    #     image_url="https://images.unsplash.com/photo-1514749204155-24e484635226?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1587&q=80",  # noqa
+    # ),
 }
 
 names = list(dfs)
