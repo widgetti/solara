@@ -29,5 +29,5 @@ jobs:
           cache: "pip"
       - name: Install
         run: pip install ".[dev]"
-      - name: test
-        run: pytest --cov=solara tests/unit --doctest-modules solara/util.py --timeout=60
+      # - name: test
+      #   run: pytest --cov=solara tests/unit --doctest-modules solara/util.py --timeout=60
