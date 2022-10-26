@@ -66,6 +66,16 @@ def context(context: playwright.sync_api.BrowserContext, url_checks):
     yield context
 
 
+@pytest.fixture
+def page(page: playwright.sync_api.Page):
+    def log(msg):
+        print("PAGE LOG:", msg.text)  # noqa
+        logger.debug("PAGE LOG: %s", msg.text)
+
+    page.on("console", log)
+    return page
+
+
 class ServerBase(threading.Thread):
     def __init__(self, port: int, host: str = "localhost", **kwargs):
         self.port = port
