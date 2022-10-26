@@ -30,4 +30,4 @@ jobs:
       - name: Install
         run: pip install ".[dev]"
       - name: test
-        run: pytest tests/unit --timeout=60
+        run: pytest tests/unit --timeout=60 -vvv -s
