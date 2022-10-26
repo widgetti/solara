@@ -30,7 +30,7 @@ else:
 
 urls: Set[str] = set()
 
-timeout = 1000  # in seconds
+timeout = 18  # in seconds, slightly below the  --timeout=20 argument in integration.yml
 # allow symlinks on solara+starlette
 solara.server.settings.main.mode = "development"
 
