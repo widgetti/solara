@@ -26,31 +26,28 @@ import playwright.sync_api
 #         raise
 
 
-def test_docs_basics(page: playwright.sync_api.Page, solara_server, solara_app):
-    # with screenshot_on_error(page, 'tmp/test_docs_basics.png'):
+def test_docs_basics(page_session: playwright.sync_api.Page, solara_server, solara_app):
+    # with screenshot_on_error(page_session, 'tmp/test_docs_basics.png'):
     with solara_app("solara.website.pages"):
-        page.goto(solara_server.base_url)
-        timeout = 18
-        page.set_default_timeout(timeout * 1000)
-        page.set_default_navigation_timeout(timeout * 1000)
-        # assert page.title() == "Solara documentation"
-        page.locator("text=LALALALA").first.click()
+        page_session.goto(solara_server.base_url)
+        # assert page_session.title() == "Solara documentation"
+        page_session.locator("text=LALALALA").first.click()
 
-        page.locator("text=Calculator").first.click()
-        page.locator("text=+/-").wait_for()
-        page.screenshot(path="tmp/screenshot_calculator.png")
+        page_session.locator("text=Calculator").first.click()
+        page_session.locator("text=+/-").wait_for()
+        page_session.screenshot(path="tmp/screenshot_calculator.png")
 
-        page.locator("text=Bqplot").first.click()
-        page.locator("text=Line color").wait_for()
-        page.screenshot(path="tmp/screenshot_bqplot.png")
+        page_session.locator("text=Bqplot").first.click()
+        page_session.locator("text=Line color").wait_for()
+        page_session.screenshot(path="tmp/screenshot_bqplot.png")
 
-        page.locator("text=Plotly").first.click()
-        page.locator("text=plotly express").first.wait_for()
-        page.screenshot(path="tmp/screenshot_plotly.png")
+        page_session.locator("text=Plotly").first.click()
+        page_session.locator("text=plotly express").first.wait_for()
+        page_session.screenshot(path="tmp/screenshot_plotly.png")
 
-        page.locator("text=Altair").first.click()
-        page.locator("text=Altair is supported").wait_for()
-        page.screenshot(path="tmp/screenshot_altair.png")
+        page_session.locator("text=Altair").first.click()
+        page_session.locator("text=Altair is supported").wait_for()
+        page_session.screenshot(path="tmp/screenshot_altair.png")
 
         # page.locator("text=Docs").click()
         # page.screenshot(path="tmp/screenshot_debug.png")
