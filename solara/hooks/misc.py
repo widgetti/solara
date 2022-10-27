@@ -41,6 +41,18 @@ U = TypeVar("U")
 MaybeResult = Union[T, Result[T]]
 
 
+# not available in python 3.6
+class nullcontext(contextlib.AbstractContextManager):
+    def __init__(self, enter_result=None):
+        self.enter_result = enter_result
+
+    def __enter__(self):
+        return self.enter_result
+
+    def __exit__(self, *excinfo):
+        pass
+
+
 # inherit from BaseException so less change of being caught
 # in an except
 class CancelledError(BaseException):
@@ -227,7 +239,7 @@ def use_download(
 
         context: Any = None
         if file_object:
-            context = contextlib.nullcontext()
+            context = nullcontext()
             output_file = cast(IO, f.value)
         else:
             # f = cast(Result[Union[str, os.PathLike]], f)

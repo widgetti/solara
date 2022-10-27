@@ -35,7 +35,10 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu, macos, windows]
-        python: ["3.7", "3.10"]
+        python: ["3.6", "3.10"]
+        exclude:
+          - os: windows
+            python: 3.6
     needs: [build]
     steps:
       - name: Set up Python
