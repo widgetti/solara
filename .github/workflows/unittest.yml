@@ -1,6 +1,10 @@
 name: Unit testing
 
 on:
+  push:
+    branches:
+      - master
+  pull_request:
   workflow_dispatch:
 
 defaults:
@@ -26,4 +30,4 @@ jobs:
       - name: Install
         run: pip install ".[dev]"
       - name: test
-        run: pytest tests/unit --timeout=60 -vvv -s
+        run: pytest --cov=solara tests/unit --doctest-modules solara/util.py --timeout=60
