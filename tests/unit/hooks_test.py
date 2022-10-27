@@ -178,7 +178,7 @@ def test_hook_use_fetch():
         data = result.value
         return w.Label(value=f"{len(data) if data else '-'}")
 
-    label, rc = render_fixed(FetchFile())
+    label, rc = render_fixed(FetchFile(), handle_error=False)
     assert label.value == "-"
     expected = f"{content_length}"
     busy_wait_compare(lambda: label.value, expected)

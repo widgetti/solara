@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  integration-test:
     timeout-minutes: 5
     runs-on: ubuntu-latest
     strategy:
