@@ -1,7 +1,9 @@
+import platform
 import unittest.mock
 from pathlib import Path
 
 import pytest
+
 import solara
 import solara.components.file_browser
 
@@ -134,6 +136,7 @@ def test_file_browser_scroll_pos():
     assert list.scroll_pos == 10
 
 
+@pytest.mark.skipif(platform.system() == "Windows", reason="Windows doesn't support chmod")
 def test_file_browser_no_access(tmpdir: Path):
     on_directory_change = unittest.mock.MagicMock()
     on_file_open = unittest.mock.MagicMock()
