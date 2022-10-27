@@ -196,7 +196,16 @@ class AppScript:
             for context in context_values:
                 render_context = cast(reacton.core._RenderContext, context.app_object)
                 if render_context:
-                    context.state = render_context.state_get()
+                    with context:
+                        # we save the state for when the app reruns, so we stay in the same state.
+                        # (e.g. button clicks, chosen options etc)
+                        context.state = render_context.state_get()
+                        # clear/cleanup the render_context, so during reload we start
+                        # from scratch
+                        context.app_object = None
+                        # we want to reuse the container
+                        render_context.container = None
+                        render_context.close()
 
             # ask all contexts/users to reload
             for context in context_values:

@@ -17,7 +17,7 @@ modules.export = {
     let location = window.location.href.slice(document.baseURI.length);
     // take of the anchor
     if (location.indexOf("#") !== -1) {
-        location = location.slice(0, location.indexOf("#"));
+      location = location.slice(0, location.indexOf("#"));
     }
     this.location = "/" + location;
     window.addEventListener("popstate", this.onPopState);
@@ -36,29 +36,26 @@ modules.export = {
       );
     },
     onPopState(event) {
-      if(!event.state) {
-        console.log('ignore onPopState', event)
-        return;
-      }
       console.log("pop state!", event.state, window.location.pathname);
       if (!window.location.href.startsWith(document.baseURI)) {
         throw `window.location = ${window.location}, but it should start with the document.baseURI = ${document.baseURI}`;
       }
-      let newLocation =
-        "/" + window.location.href.slice(document.baseURI.length);
+      let newLocation = "/" + window.location.href.slice(document.baseURI.length);
       // the router/server shouldn't care about the hash, that's for the frontend
       if (newLocation.indexOf("#") !== -1) {
         newLocation = newLocation.slice(0, newLocation.indexOf("#"));
       }
       this.location = newLocation;
-      const top = event.state.top;
-      /*
-      // we'd like to restore the scroll position, but we do not know when yet
-      // maybe we will have a life cycle hook for this in the future
-      setTimeout(() => {
-        document.documentElement.scrollTop = top;
-      }, 500);
-      */
+      if (event.state) {
+        const top = event.state.top;
+        /*
+        // we'd like to restore the scroll position, but we do not know when yet
+        // maybe we will have a life cycle hook for this in the future
+        setTimeout(() => {
+          document.documentElement.scrollTop = top;
+        }, 500);
+        */
+      }
     },
   },
   watch: {
@@ -70,8 +67,7 @@ modules.export = {
       if (!window.location.href.startsWith(document.baseURI)) {
         throw `window.location = ${window.location}, but it should start with the document.baseURI = ${document.baseURI}`;
       }
-      const oldLocation =
-        "/" + window.location.href.slice(document.baseURI.length);
+      const oldLocation = "/" + window.location.href.slice(document.baseURI.length);
       console.log(
         "location changed",
         oldLocation,

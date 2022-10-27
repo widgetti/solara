@@ -58,6 +58,8 @@ def kernels_connection(ws: simple_websocket.Server, id: str, name: str):
             return
         ws_wrapper = WebsocketWrapper(ws)
         asyncio.run(server.app_loop(ws_wrapper, session_id=session_id, connection_id=connection_id))
+    except simple_websocket.ws.ConnectionClosed:
+        pass  # ok
     except:  # noqa
         logger.exception("Error in kernel handler")
         raise

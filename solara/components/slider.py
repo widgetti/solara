@@ -179,7 +179,7 @@ class DateSliderWidget(ipyvue.VueTemplate):
 
 @solara.component
 def SliderDate(
-    label: str, value: date = date(1981, 7, 28), min: date = date(1950, 1, 1), max: date = date(3000, 12, 30), on_value: Callable[[date], None] = None
+    label: str, value: date = date(1981, 7, 28), min: date = date(1981, 1, 1), max: date = date(3000, 12, 30), on_value: Callable[[date], None] = None
 ):
     """Slider for controlling a date value.
 

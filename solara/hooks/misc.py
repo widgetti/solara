@@ -15,6 +15,8 @@ import urllib.request
 import uuid
 from typing import IO, Any, Callable, Iterator, Optional, Tuple, TypeVar, Union, cast
 
+import reacton
+
 import solara
 from solara.datatypes import FileContentResult, Result, ResultState
 
@@ -90,7 +92,7 @@ def use_thread(
         def tracefunc(frame, event, arg):
             # this gets called at least for every line executed
             if cancel.is_set():
-                rc = solara.core._get_render_context(required=False)
+                rc = reacton.core._get_render_context(required=False)
                 # we do not want to cancel the rendering cycle
                 if rc is None or not rc._is_rendering:
                     # this will bubble up

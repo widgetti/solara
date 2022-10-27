@@ -3,12 +3,15 @@ import time
 from pathlib import Path
 from typing import Optional
 
-import solara
 from reacton import component
 from reacton import ipywidgets as w
 from reacton import render_fixed
+
+import solara
 from solara.datatypes import FileContentResult
 from solara.hooks.misc import use_download, use_fetch, use_json, use_thread
+
+from .common import busy_wait_compare
 
 
 def test_hook_thread():
@@ -35,10 +38,7 @@ def test_hook_thread():
 
     label, rc = render_fixed(ThreadTest(), handle_error=False)
     expected = "a b c 255"
-    for i in range(200):  # max 2 second
-        time.sleep(0.01)
-        if label.value == expected:
-            break
+    busy_wait_compare(lambda: label.value, expected)
     assert label.value == expected
 
 
@@ -60,20 +60,12 @@ def test_use_thread_keep_previous():
 
     label, rc = render_fixed(Test(), handle_error=False)
     expected_2 = "4"
-    for i in range(200):  # max 2 second
-        time.sleep(0.01)
-        if label.value == expected_2:
-            break
+    busy_wait_compare(lambda: label.value, expected_2)
     assert label.value == expected_2
 
     expected_3 = "9"
     set_x(3)
-    for i in range(200):  # max 2 second
-        time.sleep(0.01)
-        if label.value == expected_3:
-            break
-        else:
-            assert label.value == expected_2
+    busy_wait_compare(lambda: label.value, expected_3)
     assert label.value == expected_3
 
 
@@ -146,7 +138,7 @@ def test_use_thread_intrusive_cancel():
 
 def test_hook_download(tmpdir):
     url = "https://raw.githubusercontent.com/widgetti/reacton/master/.gitignore"
-    content_length = 865
+    # content_length = 865
 
     path = tmpdir / "file.txt"
 
@@ -158,23 +150,18 @@ def test_hook_download(tmpdir):
     label, rc = render_fixed(DownloadFile())
     assert label.value == "0 ResultState.RUNNING None"
     expected = "1.0 ResultState.FINISHED None"
-    for i in range(200):  # max 2 second
-        time.sleep(0.01)
-        if label.value == expected:
-            break
+    busy_wait_compare(lambda: label.value, expected)
     assert label.value == expected
 
     # if given, content_length, we should render with done immediately
-    label, rc = render_fixed(DownloadFile(expected_size=content_length), handle_error=False)
-    time.sleep(0.2)
-    assert label.value == expected
+    # there is not reliable way to test this, since it will still start the thread
+    # label, rc = render_fixed(DownloadFile(expected_size=content_length), handle_error=False)
+    # time.sleep(0.2)
+    # assert label.value == expected
 
     label, rc = render_fixed(DownloadFile(url=url + ".404"))
     expected = "0 ResultState.ERROR HTTP Error 404: Not Found"
-    for i in range(50):  # max 0.5 second
-        time.sleep(0.01)
-        if label.value == expected:
-            break
+    busy_wait_compare(lambda: label.value, expected)
     assert label.value == expected
 
 
@@ -194,10 +181,7 @@ def test_hook_use_fetch():
     label, rc = render_fixed(FetchFile())
     assert label.value == "-"
     expected = f"{content_length}"
-    for i in range(200):  # max 2 second
-        time.sleep(0.01)
-        if label.value == expected:
-            break
+    busy_wait_compare(lambda: label.value, expected)
     assert label.value == expected
 
 
@@ -217,10 +201,7 @@ def test_hook_use_json():
     label, rc = render_fixed(FetchJson())
     assert label.value == "-"
     expected = f"{pokemons}"
-    for i in range(200):  # max 2 second
-        time.sleep(0.01)
-        if label.value == expected:
-            break
+    busy_wait_compare(lambda: label.value, expected)
     assert label.value == expected
 
 

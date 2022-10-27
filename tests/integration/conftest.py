@@ -17,6 +17,7 @@ import solara.server.settings
 from solara.server import reload
 from solara.server.starlette import app as app_starlette
 
+reload.reloader.start()
 logger = logging.getLogger("solara-test.integration")
 
 worker = os.environ.get("PYTEST_XDIST_WORKER", "gw0")
@@ -30,7 +31,7 @@ else:
 
 urls: Set[str] = set()
 
-
+timeout = 18  # in seconds, slightly below the  --timeout=20 argument in integration.yml
 # allow symlinks on solara+starlette
 solara.server.settings.main.mode = "development"
 
@@ -56,7 +57,7 @@ def url_checks():
 # see https://github.com/microsoft/playwright-pytest/issues/23
 @pytest.fixture
 def context(context: playwright.sync_api.BrowserContext, url_checks):
-    context.set_default_timeout(50000)
+    context.set_default_timeout(timeout * 1000)
 
     def handle(route, request: playwright.sync_api.Request):
         urls.add(request.url)
@@ -64,6 +65,16 @@ def context(context: playwright.sync_api.BrowserContext, url_checks):
 
     # context.route("**/*", handle)
     yield context
+
+
+@pytest.fixture
+def page(page: playwright.sync_api.Page):
+    def log(msg):
+        print("PAGE LOG:", msg.text)  # noqa
+        logger.debug("PAGE LOG: %s", msg.text)
+
+    page.on("console", log)
+    return page
 
 
 class ServerBase(threading.Thread):
@@ -208,7 +219,7 @@ server_classes = {
 }
 
 
-@pytest.fixture(params=SERVERS)
+@pytest.fixture(params=SERVERS, scope="session")
 def solara_server(request):
     server_class = server_classes[request.param]
     global TEST_PORT
@@ -221,6 +232,22 @@ def solara_server(request):
     finally:
         webserver.stop_serving()
         TEST_PORT += 1
+
+
+@pytest.fixture(scope="session")
+def page_session(browser: playwright.sync_api.Browser, solara_server):
+    page = browser.new_page()
+    page.set_default_timeout(timeout * 1000)
+    yield page
+    page.close()
+
+
+@pytest.fixture()  # type: ignore # noqa
+def page(page):  # noqa
+    # on CI, it seems that the above context.set_default_timeout(timeout * 1000) does not apply to page
+    # so we set it here again. Maybe in other situations the page is created early.. ?
+    page.set_default_timeout(timeout * 1000)
+    yield page
 
 
 @pytest.fixture()
