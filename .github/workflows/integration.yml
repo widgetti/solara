@@ -33,7 +33,7 @@ jobs:
         # we also run the (cheap) unittests, to get better coverage report
         # it seems on CI that the default playwright timeout is not (always?) respected, also, if the --timeout argument
         # is shorter than the timeout of playwright, we get no good error message, summary: always keep above 30!
-        run: pytest --cov=solara tests/integration tests/unit --timeout=35 --video=retain-on-failure -vv -s --log-cli-level=warning --assert=plain
+        run: pytest --cov=solara tests/integration tests/unit --timeout=180 --video=retain-on-failure -vv -s --log-cli-level=warning --assert=plain
       - name: Upload Test artifacts
         if: always()
         uses: actions/upload-artifact@v2
