@@ -1,6 +1,3 @@
-# import contextlib
-# import logging
-# import sys
 import threading
 from pathlib import Path
 
@@ -10,25 +7,12 @@ import reacton.ipywidgets as w
 
 import solara
 
-# logger = logging.getLogger("solara.server.test")
 HERE = Path(__file__).parent
 
 
-# @contextlib.contextmanager
-# def screenshot_on_error(page, path):
-#     try:
-#         yield
-#     except:  # noqa: E722
-#         page.screenshot(path=path)
-#         print(f"Saved screenshot to {path}", file=sys.stderr)  # noqa
-#         raise
-
-
 def test_docs_basics(page_session: playwright.sync_api.Page, solara_server, solara_app):
-    # with screenshot_on_error(page_session, 'tmp/test_docs_basics.png'):
     with solara_app("solara.website.pages"):
         page_session.goto(solara_server.base_url)
-        # assert page_session.title() == "Solara documentation"
         page_session.locator("text=Examples").first.click()
 
         page_session.locator("text=Calculator").first.click()
@@ -46,19 +30,6 @@ def test_docs_basics(page_session: playwright.sync_api.Page, solara_server, sola
         page_session.locator("text=Altair").first.click()
         page_session.locator("text=Altair is supported").wait_for()
         page_session.screenshot(path="tmp/screenshot_altair.png")
-
-        # page.locator("text=Docs").click()
-        # page.screenshot(path="tmp/screenshot_debug.png")
-        # page.locator('div[role="tab"]:has-text("use_state")').wait_for()
-        # page.screenshot(path="tmp/screenshot_docs.png")
-
-        # page.locator('div[role="tab"]:has-text("use_state")').click()
-        # page.locator("text=use_state can be used").wait_for()
-        # page.screenshot(path="tmp/screenshot_use_state.png")
-
-        # page.locator('div[role="tab"]:has-text("use_effect")').click()
-        # page.locator("text=use_side_effect can be used").wait_for()
-        # page.screenshot(path="tmp/screenshot_use_effect.png")
 
 
 @solara.component

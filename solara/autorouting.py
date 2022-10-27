@@ -104,8 +104,9 @@ def RenderPage():
             with solara.Link(parent):
                 solara.Button(f"Go to parent: {parent}", text=True)
             if DEBUG:
+                from reacton.core import pp
+
                 from solara.components.captureoutput import CaptureOutput
-                from solara.core import pp
 
                 with CaptureOutput():
                     pp(router.routes)

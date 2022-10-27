@@ -39,7 +39,7 @@ def replace(path, text):
 
 
 def test_reload_syntax_error(page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path):
-    with extra_include_path(app_path.parent), solara_app("testapp:app"):
+    with extra_include_path(app_path.parent), solara_app("testapp:ButtonClick"):
         # use as module, otherwise pickle wil not work
         page_session.goto(solara_server.base_url)
         assert page_session.title() == "Hello from Solara ☀️"

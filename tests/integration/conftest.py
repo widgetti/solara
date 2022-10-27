@@ -17,6 +17,7 @@ import solara.server.settings
 from solara.server import reload
 from solara.server.starlette import app as app_starlette
 
+reload.reloader.start()
 logger = logging.getLogger("solara-test.integration")
 
 worker = os.environ.get("PYTEST_XDIST_WORKER", "gw0")
@@ -244,7 +245,7 @@ def page_session(browser: playwright.sync_api.Browser, solara_server):
 @pytest.fixture()  # type: ignore # noqa
 def page(page):  # noqa
     # on CI, it seems that the above context.set_default_timeout(timeout * 1000) does not apply to page
-    # so we set it here again. Maybe in other situations the page is created early.. ?gg
+    # so we set it here again. Maybe in other situations the page is created early.. ?
     page.set_default_timeout(timeout * 1000)
     yield page
 
