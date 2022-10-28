@@ -1,8 +1,9 @@
 """
 # Button
-A button that can be clicked to trigger an event.
+
 """
 import solara
+from solara.website.utils import apidoc
 
 
 @solara.component
@@ -16,3 +17,6 @@ def Page():
         with solara.HBox():
             solara.Button(label=f"Clicked {count} times", on_click=increment, icon_name="mdi-thumb-up")
     return main
+
+
+__doc__ += apidoc(solara.Button.f)  # type: ignore

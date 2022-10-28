@@ -4,7 +4,6 @@ Click on one of the items on the left.
 """
 
 import inspect
-import urllib.parse
 
 import solara
 from solara.alias import rv
@@ -164,12 +163,12 @@ def WithCode(module):
         # It renders code better
         solara.Markdown(module.__doc__ or "# no docs yet")
         if component:
-            solara.Markdown("# Example")
-            solara.Button("Show code", icon_name="mdi-eye", on_click=lambda: set_show_code(True), class_="ma-4")
-            code = inspect.getsource(module)
+            with solara.Card("Example"):
+                component()
+                solara.Button("Show code", icon_name="mdi-eye", on_click=lambda: set_show_code(True), text=True, class_="mt-8")
 
-            code_quoted = urllib.parse.quote_plus(code)
-            url = f"https://test.solara.dev/try?code={code_quoted}"
-            solara.Button("Run on solara.dev", icon_name="mdi-pencil", href=url, target="_blank")
-            component()
+                # code = inspect.getsource(module)
+                # code_quoted = urllib.parse.quote_plus(code)
+                # url = f"https://test.solara.dev/try?code={code_quoted}"
+                # solara.Button("Run on solara.dev", icon_name="mdi-pencil", href=url, target="_blank")
     return main

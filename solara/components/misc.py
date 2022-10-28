@@ -107,29 +107,8 @@ def Preformatted(text, **kwargs):
 
 
 @solara.component
-def Button(
-    label: str = None,
-    on_click: Callable[[], None] = None,
-    icon_name: str = None,
-    children: list = [],
-    click_event="click",
-    disabled=False,
-    value=None,
-    text=False,
-    **kwargs,
-):
-    if label:
-        children = [label] + children
-    if icon_name:
-        children = [v.Icon(left=bool(label), children=[icon_name])] + children
-    btn = v.Btn(children=children, **kwargs, disabled=disabled, text=text)
-    ipyvue.use_event(btn, click_event, lambda *_ignore: on_click and on_click())
-    return btn
-
-
-@solara.component
 def IconButton(icon_name: str = None, on_click=Callable[[], None], children: list = [], click_event="click", **kwargs):
-    return Button(icon_name=icon_name, on_click=on_click, children=children, icon=True, click_event=click_event, **kwargs)
+    return solara.Button(icon_name=icon_name, on_click=on_click, children=children, icon=True, click_event=click_event, **kwargs)
 
 
 @solara.component
