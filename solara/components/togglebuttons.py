@@ -18,8 +18,18 @@ def _get_button_value(button: reacton.core.Element):
 
 
 @solara.component
-def ToggleButtonsSingle(value: T, children: List[reacton.core.Element] = [], on_value: Callable[[T], None] = None):
-    values = [_get_button_value(button) for button in children]
+def ToggleButtonsSingle(value: T, values: List[T] = [], children: List[reacton.core.Element] = [], on_value: Callable[[T], None] = None):
+    """ToggleButtons for selecting a single value.
+
+    ## Arguments
+
+    * `value`: The currently selected value.
+    * `values`: List of values to select from.
+    * `children`: List of buttons to use as values.
+    * `on_value`: Callback to call when the value changes.
+    """
+    children = [solara.Button(label=str(value)) for value in values] + children
+    values = values + [_get_button_value(button) for button in children]
     index, set_index = solara.use_state_or_update(values.index(value), key="index")
 
     def on_index(index):
@@ -34,8 +44,18 @@ def ToggleButtonsSingle(value: T, children: List[reacton.core.Element] = [], on_
 
 
 @solara.component
-def ToggleButtonsMultiple(value: List[T], children: List[reacton.core.Element] = [], on_value: Callable[[List[T]], None] = None):
-    allvalues = [_get_button_value(button) for button in children]
+def ToggleButtonsMultiple(value: List[T], values: List[T] = [], children: List[reacton.core.Element] = [], on_value: Callable[[List[T]], None] = None):
+    """ToggleButtons for selecting multiple values.
+
+    ## Arguments
+
+    * `value`: The currently selected values.
+    * `values`: List of values to select from.
+    * `children`: List of buttons to use as values.
+    * `on_value`: Callback to call when the value changes.
+    """
+    children = [solara.Button(label=str(value)) for value in values] + children
+    allvalues = values + [_get_button_value(button) for button in children]
     indices, set_indices = solara.use_state_or_update([allvalues.index(k) for k in value], key="index")
 
     def on_indices(indices):
