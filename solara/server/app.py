@@ -53,17 +53,18 @@ class AppScript:
         self.path: Path = Path(self.name)
         if self.path.is_dir():
             self.type = AppType.DIRECTORY
-            self.directory = self.path
+            # resolve the directory, because Path("file").parent.parent == "." != ".."
+            self.directory = self.path.resolve()
         elif self.name.endswith(".py"):
             self.type = AppType.SCRIPT
             # manually add the script to the watcher
             reload.reloader.watcher.add_file(self.path)
-            self.directory = self.path.parent
+            self.directory = self.path.parent.resolve()
         elif self.name.endswith(".ipynb"):
             self.type = AppType.NOTEBOOK
             # manually add the notebook to the watcher
             reload.reloader.watcher.add_file(self.path)
-            self.directory = self.path.parent
+            self.directory = self.path.parent.resolve()
         else:
             # the module itself will be added by reloader
             # automatically
