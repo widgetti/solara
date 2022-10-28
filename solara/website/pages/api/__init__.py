@@ -163,7 +163,7 @@ def WithCode(module):
         # It renders code better
         solara.Markdown(module.__doc__ or "# no docs yet")
         if component:
-            with solara.Card("Example"):
+            with solara.Card("Example", margin=0, classes=["mt-8"]):
                 component()
                 solara.Button("Show code", icon_name="mdi-eye", on_click=lambda: set_show_code(True), text=True, class_="mt-8")
 

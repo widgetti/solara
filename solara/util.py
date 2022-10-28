@@ -3,9 +3,11 @@ import contextlib
 import os
 import sys
 from pathlib import Path
+from typing import List
 
 import numpy as np
 import PIL.Image
+
 import solara
 
 
@@ -73,3 +75,7 @@ def numpy_equals(a, b):
     if np.all(a == b):
         return True
     return False
+
+
+def _combine_classes(class_list: List[str]) -> str:
+    return " ".join(class_list)

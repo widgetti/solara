@@ -7,6 +7,7 @@ import reacton.ipyvuetify as ipyvue
 
 import solara
 import solara.widgets
+from solara.util import _combine_classes
 
 Navigator = reacton.core.ComponentWidget(solara.widgets.Navigator)
 GridDraggable = reacton.core.ComponentWidget(solara.widgets.GridLayout)
@@ -79,8 +80,9 @@ def ui_slider(value=1, label="", min=0, max=100, key=None, tick_labels=None, thu
 
 
 @solara.component
-def Card(title: str = None, elevation: int = 2, margin=2, children: List[reacton.core.Element] = []):
-    with v.Card(elevation=elevation, class_=f"ma-{margin}") as main:
+def Card(title: str = None, elevation: int = 2, margin=2, children: List[reacton.core.Element] = [], classes: List[str] = []):
+    class_ = _combine_classes([f"ma-{margin}", *classes])
+    with v.Card(elevation=elevation, class_=class_) as main:
         if title:
             with v.CardTitle(
                 children=[title],

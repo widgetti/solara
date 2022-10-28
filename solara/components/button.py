@@ -28,10 +28,10 @@ def Button(
     - icon_name: The name of the icon to display on the button ([Overview of available icons](https://pictogrammers.github.io/@mdi/font/4.9.95/)).
     - children: A list of child elements to display on the button.
     - disabled: Whether the button is disabled.
+    - value: (Optional) When used as a child of a ToggleButtons component, the value of the selected button, see [ToggleButtons](/api/togglebuttons).
 
     ### Deprecated arguments
     - click_event: (Deprecated/export option: The event that triggers the on_click callback, which can include vue event modifiers).
-    - value: (Deprecated: The value to use for ToggleButtons).
 
     """
     if label:
