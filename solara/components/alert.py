@@ -1,8 +1,9 @@
-from typing import Union
+from typing import List, Union
 
 import reacton.ipyvuetify as v
 
 import solara
+from solara.util import _combine_classes
 
 
 @solara.component
@@ -13,6 +14,7 @@ def Success(
     outlined=True,
     text=True,
     children=[],
+    classes: List[str] = [],
     **kwargs,
 ):
     """Display a success message (green color).
@@ -24,11 +26,14 @@ def Success(
      * `dense`: if True, display the message in a dense format, using less vertical height.
      * `outlined`: if True (default), display the message in an outlined border, instead of a filled box.
      * `text`: if True (default), display the message in a text format, which applies a semi-transparent background.
+     * `classes`: additional CSS classes to apply.
     """
     # vuetify doesn't accept True, but is ok with None for a default icon
     if icon is True:
         icon = None
-    return v.Alert(type="success", text=text, outlined=outlined, dense=dense, icon=icon, children=[label, *children], **kwargs)
+    return v.Alert(
+        type="success", text=text, outlined=outlined, dense=dense, icon=icon, children=[label, *children], class_=_combine_classes(classes), **kwargs
+    )
 
 
 @solara.component
@@ -39,6 +44,7 @@ def Info(
     outlined=True,
     text=True,
     children=[],
+    classes: List[str] = [],
     **kwargs,
 ):
     """Display a info message (blue color).
@@ -50,10 +56,11 @@ def Info(
      * `dense`: if True, display the message in a dense format, using less vertical height.
      * `outlined`: if True (default), display the message in an outlined border, instead of a filled box.
      * `text`: if True (default), display the message in a text format, which applies a semi-transparent background.
+     * `classes`: additional CSS classes to apply.
     """
     if icon is True:
         icon = None
-    return v.Alert(type="info", text=text, outlined=outlined, dense=dense, icon=icon, children=[label, *children], **kwargs)
+    return v.Alert(type="info", text=text, outlined=outlined, dense=dense, icon=icon, children=[label, *children], class_=_combine_classes(classes), **kwargs)
 
 
 @solara.component
@@ -64,6 +71,7 @@ def Warning(
     outlined=True,
     text=True,
     children=[],
+    classes: List[str] = [],
     **kwargs,
 ):
     """Display a warning message (orange color).
@@ -75,14 +83,17 @@ def Warning(
      * `dense`: if True, display the message in a dense format, using less vertical height.
      * `outlined`: if True (default), display the message in an outlined border, instead of a filled box.
      * `text`: if True (default), display the message in a text format, which applies a semi-transparent background.
+     * `classes`: additional CSS classes to apply.
     """
     if icon is True:
         icon = None
-    return v.Alert(type="warning", text=text, outlined=outlined, dense=dense, icon=icon, children=[label, *children], **kwargs)
+    return v.Alert(
+        type="warning", text=text, outlined=outlined, dense=dense, icon=icon, children=[label, *children], class_=_combine_classes(classes), **kwargs
+    )
 
 
 @solara.component
-def Error(label: str, icon: Union[bool, str, None] = True, dense=False, outlined=True, text=True, children=[], **kwargs):
+def Error(label: str, icon: Union[bool, str, None] = True, dense=False, outlined=True, text=True, children=[], classes: List[str] = [], **kwargs):
     """Display an error message (red color).
 
     ## Arguments
@@ -92,7 +103,8 @@ def Error(label: str, icon: Union[bool, str, None] = True, dense=False, outlined
      * `dense`: if True, display the message in a dense format, using less vertical height.
      * `outlined`: if True (default), display the message in an outlined border, instead of a filled box.
      * `text`: if True (default), display the message in a text format, which applies a semi-transparent background.
+     * `classes`: additional CSS classes to apply.
     """
     if icon is True:
         icon = None
-    return v.Alert(type="error", text=text, outlined=outlined, dense=dense, icon=icon, children=[label, *children], **kwargs)
+    return v.Alert(type="error", text=text, outlined=outlined, dense=dense, icon=icon, children=[label, *children], class_=_combine_classes(classes), **kwargs)
