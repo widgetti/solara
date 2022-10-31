@@ -11,6 +11,8 @@ def Page(name: str, page: int = 0, page_size=100):
         return solara.Error(f"No such article: {name!r}")
     article = data.articles[name]
     with Layout() as main:
+        with solara.Head():
+            solara.Title("Solara demo » Article » " + article.title)
         with solara.Card():
             pre = f"# {article.title}\n\n"
             solara.Markdown(pre + article.markdown)

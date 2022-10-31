@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import ipyvuetify as v
+
 import solara
 import solara.autorouting
 import solara.template.portal.solara_portal.pages
@@ -72,15 +73,15 @@ def test_routes_portal():
 
     container, rc = solara.render(root, handle_error=False)
     nav = rc._find(solara.widgets.Navigator).widget
-    title = rc._find(TitleWidget).widget
-    assert title.title == "Solara Example: main"
-    assert rc._find(v.ToolbarTitle).widget.children[0] == "Solara Example: main"
+    title = rc._find(TitleWidget)[-1].widget
+    assert title.title == "Solara demo » Home"
+    assert rc._find(v.ToolbarTitle).widget.children[0] == "Solara demo"
     nav.location = "/tabular/titanic"
-    title = rc._find(TitleWidget).widget
+    title = rc._find(TitleWidget)[-1].widget
     assert "titanic" in title.title
 
     nav.location = "/viz/scatter/titanic"
-    title = rc._find(TitleWidget).widget
+    title = rc._find(TitleWidget)[-1].widget
     assert "titanic" in title.title
     assert "scatter" in title.title
 

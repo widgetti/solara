@@ -11,7 +11,7 @@ from solara.alias import rv
 from .. import List
 from .. import SimpleListItem as ListItem
 
-title = "API"
+_title = "API"
 
 
 @solara.component
@@ -39,6 +39,12 @@ def Sidebar(children=[], level=0):
 
     # with solara.HBox(grow=True) as main:
     with rv.Col(tag="aside", md=4, lg=3, class_="sidebar bg-grey d-none d-md-block") as main:
+        with solara.Head():
+            name = route_current.label if route_current.label is not None else "No name"
+            if name == "API":
+                solara.Title("Solara » API overview")
+            else:
+                solara.Title("Solara » API » " + name)
         with List():
             add("/")
             with ListItem("Input", icon_name="mdi-chevron-left-box"):
@@ -83,6 +89,10 @@ def Sidebar(children=[], level=0):
                     # ListItem("DataTable")
                     add("dataframe")
                     # add("pivot_table")
+            with ListItem("Page", icon_name="mdi-file-code"):
+                with List():
+                    add("head")
+                    add("title")
             with ListItem("Hooks", icon_name="mdi-hook"):
                 with List():
                     # add("use_fetch")

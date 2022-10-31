@@ -21,6 +21,8 @@ def Page(type: str, name: str, x: str = None, y: str = None):
     # router = solara.use_router()
     df = data.dfs[name].df
     with Layout() as main:
+        with solara.Head():
+            solara.Title(f"Solara demo » {type} » {name}")
         fig = None
         if type == "scatter":
             column_names = df.get_column_names()

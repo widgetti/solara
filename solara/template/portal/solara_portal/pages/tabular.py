@@ -12,13 +12,11 @@ from .. import data
 from ..components import Layout
 
 
-def title():
-    return "Solara Tabular view: titanic"
-
-
 @solara.component
 def Page(name: str, page: int = 0, page_size=100):
     df = data.dfs[name].df
     with Layout() as main:
         solara.DataTable(df=df, page=page, items_per_page=page_size)
+        with solara.Head():
+            solara.Title(f"Solara demo » table view » {name}")
     return main

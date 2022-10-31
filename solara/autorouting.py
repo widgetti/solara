@@ -180,10 +180,6 @@ def RenderPage():
     else:
         assert route_current.module is not None
         title = route_current.label or "No title"
-        if route_current.module and hasattr(route_current.module, "title"):
-            title = route_current.module.title
-            if callable(title):
-                title = title(*get_args(title))
         title_element = solara.Title(title)
         module = route_current.module
         namespace = module.__dict__
@@ -262,7 +258,11 @@ def get_renderable(module: ModuleType, required=False):
 def get_title(module: ModuleType, required=True):
     assert module.__file__ is not None
     name = Path(module.__file__).stem
-    if hasattr(module, "title"):
+    # if title is a submodule it may shadown the variable in __init__
+    # in this case, _title is an escape hatch
+    if hasattr(module, "_title") and isinstance(module._title, str):
+        title = module._title
+    elif hasattr(module, "title") and isinstance(module.title, str):
         title = module.title
     else:
         title_parts = re.split("[\\-_ ]+", name)

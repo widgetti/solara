@@ -3,8 +3,6 @@ from solara.alias import rv
 
 from ..data import articles, dfs, names
 
-title = "Solara Example: main"
-
 
 @solara.component
 def DataCard(name):
@@ -74,7 +72,7 @@ def Layout(children=[]):
                         with solara.Link(solara.resolve_path(pathname)):
                             solara.ListItem(article.title, value=pathname)
 
-    with solara.AppLayout(navigation=navigation, title=title, children=children) as main:
+    with solara.AppLayout(navigation=navigation, title="Solara demo", children=children) as main:
         pass
     return main
 
@@ -82,6 +80,7 @@ def Layout(children=[]):
 @solara.component
 def Page():
     with solara.VBox() as main:
+        solara.Title("Solara demo » Home")
         with solara.Card("Datasets"):
             with rv.Container(style_="margin-left: unset; margin-right: unset;"):
                 with rv.Row(justify="start"):
