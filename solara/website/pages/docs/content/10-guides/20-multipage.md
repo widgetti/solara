@@ -54,7 +54,7 @@ TODO
 
 ## As a package
 
-Once you start building a larger application, it starts to pay off using a Python package instead. This allows you to organize and distribute your app as a Python package (as a wheel for instance) and allows you to organise your application
+Once you start building a larger application, it starts to pay off using a Python package instead. This allows you to organize and distribute your app as a Python package (as a wheel for instance) and allows you to organize your application
 into reusable packages for components, stores, hooks etc.
 
 As a quickstart, we can generate a startup project using:
@@ -83,7 +83,7 @@ You should have the following directory structure:
     │   └── articles
     │       ├── 7-reasons-why-i-love-vaex-for-data-science.md
     │       └── a-hybrid-apache-arrow-numpy-dataframe-with-vaex-version-4.md
-    ├── store.py  # here is where we store application state
+    ├── data.py  # here is where we store shared data or application state
     └── pages  # contains the pages
         ├── __init__.py
         ├── article
@@ -114,19 +114,19 @@ In the previous section where we create the example portal app. Taking a look at
 tabular.py, we see the `Page` component takes an additional arguments.
 
 ```python
-@reacton.component
+@solara.component
 def Page(name: str):
     ...
 ```
 
 
-Solara recognizes this, and will pass all routes such as `/tabular/foo` and `/tabular/bar` to this Page component passing for instance `"foo"` or `"bar"` as an argument, such that you can dynamically render a page based on the URL.
+Solara recognizes this and will pass all routes such as `/tabular/foo` and `/tabular/bar` to this Page component passing for instance `"foo"` or `"bar"` as an argument, such that you can dynamically render a page based on the URL.
 
-An example Page component could look like:
+An example Page component could look like this:
 
 ```python
-@reacton.component
-def Page(name: str):
+@solara.component
+def Page(name: str = "foo"):
     subpages = ["foo", "bar", "solara", "react-ipywidgets"]
     with solara.VBox() as main:
         solara.Markdown(f"You are at: {name}")
@@ -137,6 +137,8 @@ def Page(name: str):
                     solara.Button(label=f"Go to: {subpage}")
     return main
 ```
+
+By giving the name argument a default value of `"foo"`, Solara will also accept the `/tabular` url.
 
 # What you have leared
 

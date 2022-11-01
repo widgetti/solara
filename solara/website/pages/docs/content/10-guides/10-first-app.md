@@ -13,14 +13,12 @@ Run as:
 
 This will create the file `sol.py` with the following content.
 ```solara
-import reacton
-
 import solara
 
 
-@reacton.component
+@solara.component
 def Page():
-    clicks, set_clicks = reacton.use_state(0)
+    clicks, set_clicks = solara.use_state(0)
 
     color = "green"
     if clicks >= 5:

@@ -5,7 +5,7 @@ As a reference, we provide this "anatomy" image of our favorite `ClickButton` co
 
 ![anatomy](/static/public/docs/anatomy.png)
 
-## Explainations
+## Explanations
 
  * Import `solara` and you also get the `reacton` namespace with it (saves typing, and finding/remembering which hooks is in which packages)
  * Add a `@solara.component` decorator to turn your function into a component.

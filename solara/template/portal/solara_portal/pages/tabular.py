@@ -13,7 +13,9 @@ from ..components import Layout
 
 
 @solara.component
-def Page(name: str, page: int = 0, page_size=100):
+def Page(name: str = None, page: int = 0, page_size=100):
+    if name is None:
+        return solara.Error("Please specify a dataset name, e.g. /tabular/titanic")
     df = data.dfs[name].df
     with Layout() as main:
         solara.DataTable(df=df, page=page, items_per_page=page_size)

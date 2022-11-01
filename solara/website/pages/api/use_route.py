@@ -46,6 +46,8 @@ If the current route has children, any child component that calls `use_route` wi
 
 import solara
 
+title = "use_route"
+
 
 @solara.component
 def Fruit():

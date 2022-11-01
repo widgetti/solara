@@ -99,7 +99,24 @@ class PivotTableData(TypedDict):
 
 @dataclasses.dataclass(frozen=True)
 class Route:
-    """A declaration for routing"""
+    """A route tells Solara which component to render for a given URL. (Not a Solara component!)
+
+    ## Arguments
+
+     * `path` - The path of the route. This is the part of the URL that you see in the browser.
+     * `children` - (Optional) A list of child routes. These are routes that are nested under this route.
+     * `module` - (Optional) The module that contains the component to render for this route, used for autorouting.
+     * `component` - (Optional) The component to render for this route.
+     * `layout` - (Optional) The layout to use for this route. If not specified, the default layout will be used.
+     * `data` - (Optional) The data to pass to the component for this route, usage is up to the user.
+     * `label` - (Optional) The label to use for this route, can be used for labeling tabs or links.
+
+    ## See also
+
+     * [Multipage](/docs/guides/multipage).
+     * [Understanding Routing](/docs/understanding/routing).
+
+    """
 
     path: str
     children: List["Route"] = dataclasses.field(default_factory=list)

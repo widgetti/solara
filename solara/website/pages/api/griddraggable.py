@@ -10,6 +10,8 @@ import solara
 
 from .common import ColorCard
 
+title = "GridDraggable"
+
 
 @solara.component
 def Page():

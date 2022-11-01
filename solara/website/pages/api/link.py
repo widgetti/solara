@@ -1,7 +1,8 @@
-"""Create a link to navigate to a route."""
+"""# Link
 
-
+"""
 import solara
+from solara.website.utils import apidoc
 
 routes = [
     solara.Route(path="/"),
@@ -12,7 +13,7 @@ routes = [
 
 
 @solara.component
-def LinkExample():
+def Page():
     route_current, routes = solara.use_route()
     with solara.VBox() as main:
         solara.Info("Note the address bar in the browser. It should change to the path of the link.")
@@ -24,5 +25,4 @@ def LinkExample():
     return main
 
 
-App = LinkExample
-app = App()
+__doc__ += apidoc(solara.Link.f)  # type: ignore

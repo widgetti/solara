@@ -8,6 +8,8 @@ import solara
 
 from .common import ColorCard
 
+title = "GridFixed"
+
 
 @solara.component
 def Page():

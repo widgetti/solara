@@ -4,13 +4,13 @@ Solara will add default [Layout component](/api/default_layout) which includes a
 
 If you don't want this, you can define your own `Layout` component. The layout component should be
 defined in the `__init__.py` file in the same directory, or in the first script. Each subdirectory (or subpackage)
-can define its own `Layout` component, which then is embeded into the parent Layout to provide a hierarchical
-nested layout tree,.
+can define its own `Layout` component, which then is embedded into the parent Layout to provide a hierarchical
+nested layout tree.
 
 
 For instance, having no layout gives the same result as putting this `Layout` component in `__init__.py`:
 ```python
-@reacton.component
+@solara.component
 def Layout(children=[]):
     return solara.DefaultLayout(children=children)
 ```
@@ -18,7 +18,7 @@ def Layout(children=[]):
 A possible more custom `Layout` could look like this:
 
 ```python
-@reacton.component
+@solara.component
 def Layout(children=[]):
     # Note that children being passed here for this example will be a Page() element.
     route_current, routes_all = solara.use_route()
@@ -32,3 +32,12 @@ def Layout(children=[]):
 ```
 
 See [Understanding Routing](/docs/understanding/routing) for a more in depth documentation on routing.
+
+
+## Components to use for creating layouts
+
+Layout components are usually constructed using [Container components](/docs/understanding/containers), a few common container components are:
+
+ * [VBox](/api/vbox)
+ * [HBox](/api/hbox)
+ * [GridFixed](/api/gridfixed)

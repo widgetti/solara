@@ -25,8 +25,8 @@ Similar to the previous section [`generate_routes(module: ModuleType) -> List[so
 
 ## Manually defining routes
 
-In Solara, we set up routing by defining a list of `solara.Route` object, where each route can have another list of routes, it children, forming
-a tree of routes. We assign this list to the `routes` variable in your main app script or module, so Solara can find it and it should be in the same namespace as `Page`.
+In Solara, we set up routing by defining a list of `solara.Route` objects, where each route can have another list of routes, its children, forming
+a tree of routes. We assign this list to the `routes` variable in your main app script or module, so Solara can find it and it should be in the same namespace as your `Page` component.
 
 Routes are matched by splitting the pathname around the slash ("/") and matching each part to the routes.
 
@@ -70,7 +70,7 @@ def Page():
 ```
 
 The level of the depth into the tree is what we call the `route_level`, which starts at 0, the top level.
-Each call to `use_route` will return the current route (if there is a match to the current path) and the list of siblings includes itself.
+Each call to `use_route` will return the current route (if there is a match to the current path) and the list of siblings including itself.
 
 ## Rendering based on routes
 
@@ -91,7 +91,7 @@ def MyRootComponent():
     else:
         # we could render some top level navigation here based on route_current_level and route_current
         return MyFirstLevelChildComponent()
-`
+
 
 @reacton.component
 def MyFirstLevelChildComponent():
@@ -168,14 +168,14 @@ def resolve_path(path_or_route: Union[str, solara.Route], level=0) -> str:
     ...
 ```
 
-We can pass this full url to the `solara.Link` component, e.g. like:
+We can pass this full URL to the [`solara.Link`](/api/link) component, e.g. like:
 
 ```python
 @reacton.component
 def LinkToIpywidgets():
     route_ipywidgets = routes.children[1].children[0].children[1]
     # route_ipywidgets.path == "ipywidgets"
-    path = solara.resolve_path(route_)
+    path = solara.resolve_path(route_ipywidgets)
     # path == '/docs/basics/ipywidgets
     with solara.Link(path) as main:
         solara.Button("read about ipywidgets")

@@ -7,7 +7,7 @@ Solara is an Open Source library that lets you use and build data-focused web ap
 
 Solara uses proven technologies and mature standards. Grow from a one-off experiment in the Jupyter notebook to a dynamic data portal in production.  Built on top of [Reacton](/docs/understanding/reacton) keeps your code complexity under control.
 
-We care about developer experience. Solara will give your hot code reloading and type hints to faster development.
+We care about developer experience. Solara will give your hot code reloading and type hints for faster development.
 
 ## Why is Solara created?
 
@@ -25,7 +25,7 @@ Instead of inventing a new API with an unknown track record, we take a different
 
 Reacton is the equivalent of ReactJS for Python (and IPywidgets). It allows us to use the same reusable components and hooks as in the ReactJS ecosystem. Using Reacton, we build web/data applications without suffering from complex code bases.
 
-Looking again at the JavaScript world, we see software such as NextJS is putting a framework around ReactJS. NextJS is more opinionated then ReactJS and adds more "batteries" such as routing.
+Looking again at the JavaScript world, we see software such as NextJS is putting a framework around ReactJS. NextJS is more opinionated than ReactJS and adds more "batteries" such as routing.
 
 Solara plays a similar role as NextJS. It builds on top of Reacton but handles things like routing for you.
 
@@ -50,13 +50,16 @@ import solara
 @solara.component
 def Page():
     clicks, set_clicks = solara.use_state(0)
+    def increase_clicks():
+        set_clicks(clicks+1)
     return solara.Button(label=f"Clicked {clicks} times",
-                         on_click=lambda: set_clicks(clicks+1))
+                         on_click=increase_clicks)
 
 # in the Jupyter notebook, uncomment the next line:
 # display(Page())
 ```
 
+*Note that the above output is __live__, you can click the button and see the behaviour*.
 
 Run solara-server (if *not* using the Jupyter notebook)
 
@@ -73,23 +76,31 @@ The browser should open http://127.0.0.1:8765
 
 ## How does Solara fit into the big picture?
 
-Solara is two things. A server part that takes care of getting the widgets into the browser and a UI part, consisting of react components and hooks.
+Solara is two things. A server part that takes care of getting the widgets into the browser and a UI part, consisting of UI components and hooks.
 
 The UI parts are built on top of [Reacton](https://github.com/widgetti/reacton) which is using the existing IPyWidgets stack.
 
-If you use Jupyter, then you probably use the Jupyter notebook, Lab, of Voila to get your widgets into the browser.
+If you use Jupyter, then you probably use the Jupyter notebook, Lab, or Voila to get your widgets into the browser.
 
-If you don't use Jupyter, or don't know what it is, or are a ML Ops, Dev Ops, or Sys Admin, you are probably more interested in the Solara server.
+If you don't use Jupyter, or don't know what it is, or are an ML Ops, Dev Ops, or Sys Admin, you are probably more interested in the Solara server.
 
 ![Solara stack](/static/public/docs/solara-stack.png)
 
-## How do I learn Solara
+## How do I learn Solara?
 
-We recommend going through the [Guides](./guides) documentation first. Feel free to skip chapters, and go back to topics when you need to.
+We recommend going through the documentation linearly following the arrows on the bottom, meaning you will go through:
 
-If you want to know what components or hooks are available, check out the [API](/api) which includes live code examples.
+ * [Installing](/docs/installing)
+ * [Quick start](/docs/quickstart)
+ * [Tutorial](/docs/tutorial)
 
-[Our examples](/examples) may help you see how particular problems can be solved using Solara, or as inspiration. If you want to contribute an example, reach out to us on GitHub, or direcly open a [Pull Request](https://github.com/widgetti/solara/).
+If you want to know more about specific parts, you can go through the [Guides section](/docs/guides) to learn more. Feel free to skip chapters, and go back to topics when you need to.
+
+If you feel like you miss some basic understanding, and want to give a bit deeper into the what and why, feel free to explore the [Understanding section](/docs/understanding).
+
+If you want to know what components or hooks are available, or want to know more about a specific component, check out the [API](/api) which includes live code examples.
+
+[Our examples](/examples) may help you see how particular problems can be solved using Solara, or as inspiration. If you want to contribute an example, reach out to us on GitHub, or directly open a [Pull Request](https://github.com/widgetti/solara/).
 
 
 ## Where can I hire an expert?

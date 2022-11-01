@@ -1,4 +1,4 @@
-# Laying out components
+# Laying out components with containers
 
 ## Introduction
 Some components, such as our favorite `ClickButton` only add logic on top of an existing component:
@@ -80,7 +80,25 @@ Page = FancyClickButton
 
 ```
 
-Here we are using the top-level HBox as a context manager (with the name `main`). All child elements created within this context are automatically added as a child. The exception is that the element should not be added manually as child to another element.
+Here we are using the top-level HBox as a context manager (with the name `main`). All child elements created within this context are automatically added as a child. The exception is that the element should not be added manually as a child to another element.
+
+
+### About Context managers
+
+Context managers are a Python language feature, there are two ways to use them:
+
+```python
+
+with some_anonymous_context_manager():
+    print("some code")
+
+with some_named_context_manager() as this_is_my_name:
+    print("some other code")
+```
+
+Where the last example assigns the context manager to a variable. In Solara we only need to do that to the top context manager, since we need to return that in our [render function](/docs/understanding/anatomy).
+
+All Reacton or Solara components return elements that can be used as context managers. Context managers allow for code to be executed before and after your code block inside of the context manager. This allows us to capture all elements created inside of the context manager. If you want to know more about context managers, consult the Python documentation since this is not Solara specific.
 
 
 ### Nested layout

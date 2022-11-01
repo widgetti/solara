@@ -150,7 +150,7 @@ def RenderPage():
         if len(router.path_routes) < len(router.parts):
             arg_strings = router.parts[len(router.path_routes) :]
             args = arg_cast(arg_strings, f)
-            return args[: count_arguments(f)]
+            return args
         else:
             return []
 
@@ -210,6 +210,14 @@ def RenderPage():
 
 @solara.component
 def DefaultLayout(children: List[reacton.core.Element] = [], router_level=-1):
+    """Default layout used in multipage applications.
+
+    ## See
+
+     * [Multipage](/docs/guides/multipage).
+     * [Understanding Routing](/docs/understanding/routing).
+
+    """
     route_current, all_routes = solara.use_route()
     router = solara.use_router()
     selected = router.path

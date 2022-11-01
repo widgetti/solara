@@ -88,7 +88,7 @@ def Layout(children=[]):
                 button_text="Quickstart",
             )
 
-        with rv.Container(tag="section", fluid=True, ma_0=True, pa_0=True, class_="fill-height"):
+        with rv.Container(tag="section", fluid=True, ma_0=True, pa_0=True, class_="fill-height mb-8"):
             if route_current is not None and route_current.path == "/":
                 with rv.Row(class_="ma-2"):
                     with rv.Col(md=4, offset_md=2, sm=5, offset_sm=1):

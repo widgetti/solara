@@ -1,6 +1,6 @@
 # Reacton
 
- * [Documentation](https://reacton.readthedocs.io/)
+ * [Documentation](https://reacton.solara.dev/)
  * [GitHub](https://github.com/widgetti/reacton/)
 
 Reacton is a React-like layer around ipywidgets.

@@ -11,14 +11,12 @@ this = "renders to highlighted Python code
 
 This renders highlighted Python code, and shows app.
 ```solara
-import reacton
-
-import solara as sol
+import solara
 
 
-@reacton.component
+@solara.component
 def ClickButton():
-    clicks, set_clicks = reacton.use_state(0)
+    clicks, set_clicks = solara.use_state(0)
 
     color = "green"
     if clicks >= 5:

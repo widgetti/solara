@@ -2,7 +2,7 @@
 
 ## Reloading of Python files
 
-Solara will auto detect if your script, or the sourcecode of an imported module has changes. If so, Solara will reload the page.
+Solara will auto detect if your script or the sourcecode of an imported module has changes. If so, Solara will reload the page.
 
 ## Reloading of .vue files
 

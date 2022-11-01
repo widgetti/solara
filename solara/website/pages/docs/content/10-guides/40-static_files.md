@@ -1,6 +1,6 @@
 # Static files
 
-Static files can be served under `/static/public` and will look for files in the `../public` directory. A typical directory layout looks like this:
+Files located on your local filesystem at the `../public` directory will be served by the Solara server at `/static/public`. A typical directory layout looks like this:
 
 ```
 ├── pages
@@ -9,6 +9,8 @@ Static files can be served under `/static/public` and will look for files in the
 └── public
     └── beach.jpeg
 ```
+
+For instance, on this server, the `beach.jpeg` file will be available at `/static/public/beach.jpeg` and the full URL will be [`https://solara.dev/static/public/beach.jpeg`](https://solara.dev/static/public/beach.jpeg)
 
 Putting the `public` directory 1 level higher than the `pages` directory avoids name collision with pages.
 

@@ -117,6 +117,35 @@ def use_pathname():
 
 
 def resolve_path(path_or_route: Union[str, solara.Route], level=0) -> str:
+    """Resolve a relative path or a route to an absolute path.
+
+    If the path is a string and starts with a `/'`, it is returned as is.
+
+
+    ## Typical usage:
+
+    ```python
+    ...
+    route_current, routes_current_level = solara.routes()
+    # route_current.path == "banana"
+    path = solara.resolve_path(route_current)
+    # path == "/fruit/banana"
+    path_same = solara.resolve_path("banana")
+    # path_same == path == "/fruit/banana"
+    ...
+    ```
+
+    ## Arguments
+
+     * path_or_route: a path string or a [`solara.Route`](/api/route) object to resolve.
+
+    ## See also
+
+     * [Multipage](/docs/guides/multipage).
+     * [Understanding Routing](/docs/understanding/routing).
+
+
+    """
     router = solara.use_context(router_context)
     if isinstance(path_or_route, str):
         path = path_or_route

@@ -77,12 +77,13 @@ def Sidebar(children=[], level=0):
                     add("plotly")
                     add("plotly_express")
                 #     ListItem("AltairChart")
-            with ListItem("Layout", icon_name="mdi-page-layout-sidebar-left"):
+            with ListItem("Containers", icon_name="mdi-page-layout-sidebar-left"):
                 with List():
                     add("hbox")
                     add("vbox")
                     add("griddraggable")
                     add("gridfixed")
+                    add("default_layout")
                     # add("app")
             with ListItem("Data", icon_name="mdi-database"):
                 with List():
@@ -110,6 +111,7 @@ def Sidebar(children=[], level=0):
             with ListItem("Routing", icon_name="mdi-router"):
                 with List():
                     add("use_route")
+                    add("resolve_path")
                     # add("use_router")
                     # add("use_route_level")
 

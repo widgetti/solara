@@ -33,7 +33,7 @@ A typical command would be:
 $ SOLARA_APP=myapp.py gunicorn --workers 1 -b 0.0.0.0:8765 solara.server.flask:app
 ```
 
-Note that we explicitly set `--workers 1` such that it does not default to `$WEB_CONCURRENCY` which can be set to higher values, such as on Heroku. See the section on [Caviats](#caviats) why this matters.
+Note that we explicitly set `--workers 1` such that it does not default to `$WEB_CONCURRENCY` which can be set to higher values, such as on Heroku. See the section on [Caveats](#caveats) why this matters.
 
 ### Embedding in an existing Flask application
 
@@ -64,7 +64,7 @@ For [Starlette](https://www.starlette.io/) we will assume [uvicorn](http://www.u
 $ SOLARA_APP=myapp.py uvicorn --workers 1 -b 0.0.0.0:8765 solara.server.flask:app
 ```
 
-Note that we explicitly set `--workers 1` such that it does not default to `$WEB_CONCURRENCY` which can be set to higher values, such as on Heroku. See the section on [Caviats](#caviats) why this matters.
+Note that we explicitly set `--workers 1` such that it does not default to `$WEB_CONCURRENCY` which can be set to higher values, such as on Heroku. See the section on [Caveats](#caveats) why this matters.
 
 
 ### Embedding in an existing Starlette application
@@ -121,7 +121,7 @@ If you use want to use Voila, [you can use those deployment options](https://voi
 
 Make sure you run a notebook where you display the app, e.g.
 ```python
-@reacton.component
+@solara.component
 def Page():
     ...
 element = Page()
@@ -137,13 +137,12 @@ Or consider using [Voila-vuetify](https://github.com/voila-dashboards/voila-vuet
 means we can also embed the resulting widget from Reacton or Solara. See their [section on deployment](https://panel.holoviz.org/user_guide/Server_Deployment.html) and use the following code as an example of how to include a react component.
 ```python
 import panel as pn
-import reacton
-import solara as sol
+import solara
 
 
-@reacton.component
+@solara.component
 def ButtonClick(label="Hi"):
-    clicks, set_clicks = reacton.use_state(0)
+    clicks, set_clicks = solara.use_state(0)
     def increment():
         set_clicks(clicks + 1)
     return solara.Button(f"{label}: Clicked {clicks} times", on_click=increment)
@@ -195,7 +194,7 @@ $ SOLARA_APP=myapp.py uvicorn --workers 1 --root-path /solara -b 0.0.0.0:8765 so
 ```
 
 
-## Caviats
+## Caveats
 Currently, using multiple workers requires sticky sessions on the `solara-context-id` cookie, so that the application context/state is in the same process the user connects to each time. Otherwise different connections may end up talking to different nodes or processes.
 
 We plan to improve this situation in the future. In the meantime, please set your workers to 1, or go through the hassle of setting up multiple Python webservers and make your sessions sticky.
