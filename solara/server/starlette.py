@@ -17,7 +17,7 @@ import solara
 from solara.server import reload
 
 from . import app as appmod
-from . import patch, server, settings, websocket
+from . import patch, server, websocket
 from .cdn_helper import cdn_url_path, default_cache_dir, get_path
 
 os.environ["SERVER_SOFTWARE"] = "solara/" + str(solara.__version__)
@@ -135,22 +135,18 @@ class StaticNbFiles(StaticFiles):
     ) -> List[Union[str, "os.PathLike[str]"]]:
         return cast(List[Union[str, "os.PathLike[str]"]], server.nbextensions_directories)
 
-    # allow us to follow symlinks, maybe only in dev mode?
+    # follow symlinks
     # from https://github.com/encode/starlette/pull/1377/files
     def lookup_path(self, path: str) -> typing.Tuple[str, typing.Optional[os.stat_result]]:
-        if settings.main.mode == "production":
-            return super().lookup_path(path)
-        if settings.main.mode == "development":
-            for directory in self.all_directories:
-                original_path = os.path.join(directory, path)
-                full_path = os.path.realpath(original_path)
-                directory = os.path.realpath(directory)
-                try:
-                    return full_path, os.stat(full_path)
-                except (FileNotFoundError, NotADirectoryError):
-                    continue
-            return "", None
-        raise ValueError(f"Unknown mode {settings.main.mode}")
+        for directory in self.all_directories:
+            original_path = os.path.join(directory, path)
+            full_path = os.path.realpath(original_path)
+            directory = os.path.realpath(directory)
+            try:
+                return full_path, os.stat(full_path)
+            except (FileNotFoundError, NotADirectoryError):
+                continue
+        return "", None
 
 
 class StaticPublic(StaticFiles):
