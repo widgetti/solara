@@ -24,8 +24,13 @@
     </link>
     <link href="static/nbconvert/index.css" rel="stylesheet">
     </link>
+    {% if theme.variant == "light" %}
     <link href="static/nbconvert/theme-light.css" rel="stylesheet">
     </link>
+    {% elif theme.variant == "dark" %}
+    <link href="static/nbconvert/theme-dark.css" rel="stylesheet">
+    </link>
+    {% endif %}
     <link href="static/assets/custom.css" rel="stylesheet">
     </link>
     <script src="static/assets/custom.js"></script>
@@ -58,13 +63,6 @@
             }
         }
     </script>
-    {% if theme.variant == "light" %}
-    <link href="static/nbconvert/theme-light.css" rel="stylesheet">
-    </link>
-    {% elif theme.variant == "dark" %}
-    <link href="static/nbconvert/theme-dark.css" rel="stylesheet">
-    </link>
-    {% endif %}
 
     <script id="jupyter-config-data" type="application/json">
     {
