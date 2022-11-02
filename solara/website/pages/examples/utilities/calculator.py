@@ -1,11 +1,19 @@
+"""# Calculator
+
+This shows how to use `use_reducer` to implement a simple calculator.
+
+Note that the `reducer` implements all the logic of the calculator, and the `Calculator` component is just a thin wrapper around it.
+
+
+
+"""
+
 import ast
 import dataclasses
 import operator
 from typing import Any, Optional
 
 import solara
-import solara.util
-from solara.alias import rv
 
 DEBUG = False
 operator_map = {
@@ -14,9 +22,6 @@ operator_map = {
     "+": operator.add,
     "-": operator.sub,
 }
-
-
-github_url = solara.util.github_url(__file__)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -102,47 +107,45 @@ def Calculator():
     state, dispatch = solara.use_reducer(calculator_reducer, initial_state)
     if DEBUG:
         print("->", state)  # noqa
-    with rv.Card(elevation=10, class_="ma-4") as main:
-        with rv.CardTitle(children=["Calculator"]):
-            pass
-        with rv.CardSubtitle(children=["With ipyvuetify and ipywidgets-react"]):
-            pass
-        with rv.CardText():
-            with solara.VBox(grow=False):
-                # with rv.Container(style_="padding: 10px"):
-                rv.Label(children=[state.error or state.output or "0"])
-                class_ = "pa-0 ma-1"
+    with solara.Card("Calculator", elevation=10, classes=["ma-4"]) as main:
+        with solara.VBox(grow=False):
+            solara.Text(state.error or state.output or "0")
+            class_ = "pa-0 ma-1"
 
+            with solara.HBox(grow=False):
+                if state.input:
+                    solara.Button("C", on_click=lambda: dispatch(("clear", None)), dark=True, class_=class_)
+                else:
+                    solara.Button("AC", on_click=lambda: dispatch(("reset", None)), dark=True, class_=class_)
+                solara.Button("+/-", on_click=lambda: dispatch(("negate", None)), dark=True, class_=class_)
+                solara.Button("%", on_click=lambda: dispatch(("percent", None)), dark=True, class_=class_)
+                solara.Button("/", color="primary", on_click=lambda: dispatch(("operator", operator_map["/"])), class_=class_)
+
+            column_op = ["x", "-", "+"]
+            for i in range(3):
                 with solara.HBox(grow=False):
-                    if state.input:
-                        rv.BtnWithClick(children="C", on_click=lambda: dispatch(("clear", None)), dark=True, class_=class_)
-                    else:
-                        rv.BtnWithClick(children="AC", on_click=lambda: dispatch(("reset", None)), dark=True, class_=class_)
-                    rv.BtnWithClick(children="+/-", on_click=lambda: dispatch(("negate", None)), dark=True, class_=class_)
-                    rv.BtnWithClick(children="%", on_click=lambda: dispatch(("percent", None)), dark=True, class_=class_)
-                    rv.BtnWithClick(children="/", color="primary", on_click=lambda: dispatch(("operator", operator_map["/"])), class_=class_)
+                    for j in range(3):
+                        digit = str(j + (2 - i) * 3 + 1)
+                        solara.Button(digit, on_click=lambda: dispatch(("digit", digit)), class_=class_)
+                    op_symbol = column_op[i]
+                    op = operator_map[op_symbol]
 
-                column_op = ["x", "-", "+"]
-                for i in range(3):
-                    with solara.HBox(grow=False):
-                        for j in range(3):
-                            digit = str(j + (2 - i) * 3 + 1)
-                            rv.BtnWithClick(children=digit, on_click=lambda digit=digit: dispatch(("digit", digit)), class_=class_)
-                        op_symbol = column_op[i]
-                        op = operator_map[op_symbol]
-                        rv.BtnWithClick(children=op_symbol, color="primary", on_click=lambda op=op: dispatch(("operator", op)), class_=class_)
-                with solara.HBox(grow=False):
-                    # rv.Btn(children='gap', style_="visibility: hidden")
-                    def boom():
-                        print("boom")  # noqa
-                        raise ValueError("lala")
+                    def on_click_op(op=op):
+                        dispatch(("operator", op))
 
-                    rv.BtnWithClick(children="?", on_click=boom, class_=class_)
+                    solara.Button(op_symbol, color="primary", on_click=on_click_op, class_=class_)
+            with solara.HBox(grow=False):
 
-                    rv.BtnWithClick(children="0", on_click=lambda: dispatch(("digit", "0")), class_=class_)
-                    rv.BtnWithClick(children=".", on_click=lambda: dispatch(("digit", ".")), class_=class_)
+                def boom():
+                    print("boom")  # noqa
+                    raise ValueError("lala")
 
-                    rv.BtnWithClick(children="=", color="primary", on_click=lambda: dispatch(("calculate", None)), class_=class_)
+                solara.Button("?", on_click=boom, class_=class_)
+
+                solara.Button("0", on_click=lambda: dispatch(("digit", "0")), class_=class_)
+                solara.Button(".", on_click=lambda: dispatch(("digit", ".")), class_=class_)
+
+                solara.Button("=", color="primary", on_click=lambda: dispatch(("calculate", None)), class_=class_)
 
     return main
 

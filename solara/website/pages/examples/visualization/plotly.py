@@ -1,6 +1,22 @@
+"""# Scatter plot using Plotly
+
+This example shows how to use Plotly to create a scatter plot and a slider to do some filtering.
+
+Inspired by the dash documentation.
+
+
+## Note
+
+Solara supports plotly and plotly express. Create your figure (not a figure widget)
+and pass it to the [FigurePlotly](/api/plotly) component.
+
+"""
 import pandas as pd
 import plotly.express as px
+
 import solara
+
+title = "Scatter plot using Plotly"
 
 try:
     df = pd.read_csv("https://raw.githubusercontent.com/plotly/datasets/master/gapminderDataFiveYear.csv")
@@ -16,12 +32,6 @@ if df is not None:
 @solara.component
 def Page():
     with solara.Div() as main:
-        solara.Markdown(
-            """# Plotly
-Solara supports plotly and plotly express. Create your figure (not a figure widget)
-and pass it to the FigurePlotly component.
-"""
-        )
         index = solara.ui_slider(value=0, min=0, max=len(years) - 1, tick_labels=years, key="year slider index")
         selected_year = years[index]
 

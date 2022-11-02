@@ -1,9 +1,12 @@
 import numpy as np
 import reacton.bqplot as bqplot
 import reacton.ipywidgets as w
+
 import solara
 
 x0 = np.linspace(0, 2, 100)
+
+title = "Lines graph using bqplot"
 
 
 @solara.component

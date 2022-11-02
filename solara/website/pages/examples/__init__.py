@@ -1,5 +1,5 @@
-import inspect
-import urllib.parse
+# import inspect
+# import urllib.parse
 
 import solara
 
@@ -14,7 +14,13 @@ def Page():
 
 @solara.component
 def Layout(children):
-    route_current, all_routes = solara.use_route()
+    # TODO: this is using a private API, what is the best way to do this?
+    # we want to 'eat' the whole route for the current level, and the level below
+    # for example the utilities directory. But if an example does routing, we don't want
+    # to take on that route.
+    router = solara.use_router()
+    route_current = router.path_routes[-1]
+    # route_current, all_routes = solara.use_route()
 
     if route_current is None:
         return solara.Error("Page not found")
@@ -23,15 +29,20 @@ def Layout(children):
     github_url = solara.util.github_url(module.__file__)
 
     with solara.HBox(grow=False) as main:
-        with solara.VBox(grow=True):
+        with solara.VBox(grow=True, align_items="baseline"):
+            doc = module.__doc__
+            if doc:
+                with solara.VBox(grow=True):
+                    solara.Markdown(doc)
             with solara.HBox():
                 if route_current.path != "/":
-                    solara.Button("View on GitHub", icon_name="mdi-git", href=github_url, class_="ma-2", target="_blank")
-                    code = inspect.getsource(module)
+                    solara.Button("View source code on GitHub", icon_name="mdi-github-circle", href=github_url, class_="ma-2", target="_blank", text=True)
+                    # code = inspect.getsource(module)
 
-                    code_quoted = urllib.parse.quote_plus(code)
-                    url = f"https://test.solara.dev/try?code={code_quoted}"
-                    solara.Button("Run on solara.dev", icon_name="mdi-pencil", href=url, class_="ma-2", target="_blank")
+                    # code_quoted = urllib.parse.quote_plus(code)
+                    # url = f"https://test.solara.dev/try?code={code_quoted}"
+                    # solara.Button("Run on solara.dev", icon_name="mdi-pencil", href=url, class_="ma-2", target="_blank")
+            # with solara.HBox():
             if not hasattr(module, "Page"):
                 solara.Error(f"No Page component found in {module}")
             else:

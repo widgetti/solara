@@ -36,3 +36,4 @@ from .markdown_editor import MarkdownEditor  # noqa: #F401 F403
 from .select import Select, SelectMultiple  # noqa: #F401 F403
 from .matplotlib import FigureMatplotlib  # noqa: #F401 F403
 from .echarts import FigureEcharts  # noqa: #F401 F403
+from .figure_altair import FigureAltair, AltairChart  # noqa: #F401 F403

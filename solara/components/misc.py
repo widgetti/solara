@@ -164,21 +164,6 @@ def Padding(size, children=[], grow=True):
 
 
 @solara.component
-def AltairChart(chart, on_click=None, on_hover=None):
-    import altair as alt
-
-    with alt.renderers.enable("mimetype"):
-        bundle = chart._repr_mimebundle_()[0]
-        key = "application/vnd.vegalite.v4+json"
-        if key not in bundle:
-            raise KeyError(f"{key} not in mimebundle:\n\n{bundle}")
-        spec = bundle[key]
-        return solara.widgets.VegaLite.element(
-            spec=spec, on_click=on_click, listen_to_click=on_click is not None, on_hover=on_hover, listen_to_hover=on_hover is not None
-        )
-
-
-@solara.component
 def FigurePlotly(
     fig,
     on_selection: Callable[[Any], None] = None,

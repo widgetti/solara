@@ -3,8 +3,9 @@
 """
 
 import numpy as np
-import solara
 from matplotlib.figure import Figure
+
+import solara
 from solara.website.utils import apidoc
 
 x = np.linspace(0, 2, 100)

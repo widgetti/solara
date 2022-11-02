@@ -72,6 +72,7 @@ def Sidebar(children=[], level=0):
                     add("error")
             with ListItem("Viz", icon_name="mdi-chart-histogram"):
                 with List():
+                    add("altair")
                     add("echarts")
                     add("matplotlib")
                     add("plotly")

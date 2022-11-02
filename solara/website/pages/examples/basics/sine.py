@@ -1,8 +1,18 @@
+"""# Interactive sine wave
+
+
+This example shows how to have two slider control a visualization.
+
+"""
+
 import numpy as np
 import plotly.express as px
+
 import solara
 
 x = np.linspace(0, 2, 100)
+
+title = "Interactive sine wave"
 
 
 @solara.component
