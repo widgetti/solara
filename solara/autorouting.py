@@ -292,7 +292,8 @@ def generate_routes(module: ModuleType) -> List[solara.Route]:
         layout = getattr(module, "Layout", None)
         title = get_title(module)
         children = getattr(module, "routes", [])
-        routes.append(solara.Route(path="/", component=RenderPage, data=module, module=module, layout=layout, children=children, label=title))
+        if hasattr(module, "Page"):
+            routes.append(solara.Route(path="/", component=RenderPage, data=module, module=module, layout=layout, children=children, label=title))
 
         assert module.__file__ is not None
         reload.reloader.watcher.add_file(module.__file__)
