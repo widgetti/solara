@@ -266,6 +266,8 @@ def get_renderable(module: ModuleType, required=False):
 def get_title(module: ModuleType, required=True):
     assert module.__file__ is not None
     name = Path(module.__file__).stem
+    if module.__file__.endswith("__init__.py"):
+        name = Path(module.__file__).parent.stem
     # if title is a submodule it may shadown the variable in __init__
     # in this case, _title is an escape hatch
     if hasattr(module, "_title") and isinstance(module._title, str):
