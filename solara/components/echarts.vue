@@ -32,24 +32,38 @@ module.exports = {
       });
 
       this.chart.setOption(this.option, true);
+      const eventProps = [
+        "componentType",
+        "seriesType",
+        "seriesIndex",
+        "seriesName",
+        "name",
+        "dataIndex",
+        "data",
+        "dataType",
+        "value",
+        "color",
+      ];
       this.chart.on("click", (fullEvent) => {
-        const eventProps = [
-          "componentType",
-          "seriesType",
-          "seriesIndex",
-          "seriesName",
-          "name",
-          "dataIndex",
-          "data",
-          "dataType",
-          "value",
-          "color",
-        ];
         const eventData = {};
         eventProps.forEach((prop) => {
           eventData[prop] = fullEvent[prop];
         });
         this.on_click(eventData);
+      });
+      this.chart.on("mouseover", (fullEvent) => {
+        const eventData = {};
+        eventProps.forEach((prop) => {
+          eventData[prop] = fullEvent[prop];
+        });
+        if (this.on_mouseover_enabled) this.on_mouseover(eventData);
+      });
+      this.chart.on("mouseout", (fullEvent) => {
+        const eventData = {};
+        eventProps.forEach((prop) => {
+          eventData[prop] = fullEvent[prop];
+        });
+        if (this.on_mouseout_enabled) this.on_mouseout(eventData);
       });
     },
     import(deps) {
