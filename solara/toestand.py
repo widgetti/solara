@@ -209,6 +209,29 @@ class State(Generic[S]):
 
         return cast(Callable[[T], None], setter)
 
+    def computed(self, f: Callable[[S], T]) -> "Computed[T]":
+        return Computed(f, self)
+
+
+class Computed(Generic[T]):
+    def __init__(self, compute: Callable[[S], T], state: State[S]):
+        self.compute = compute
+        self.state = state
+
+    def get(self) -> T:
+        return self.compute(self.state.get())
+
+    def subscribe(self, listener: Callable[[T], None]):
+        return self.state.subscribe(lambda _: listener(self.get()))
+
+    def use(self, selector: Callable[[T], T]) -> T:
+        slice = use_sync_external_store_with_selector(
+            self.subscribe,
+            self.get,
+            selector,
+        )
+        return slice
+
 
 class Accessor(Generic[T]):
     def __init__(self, field: "FieldBase"):

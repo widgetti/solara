@@ -342,6 +342,40 @@ class AppState(State[AppStateComposite]):
         self.update(fish=fish)
 
 
+def test_store_primitive():
+    string_value = State("foo")
+    mock = unittest.mock.Mock()
+    unsub = string_value.subscribe(mock)
+    mock.assert_not_called()
+    string_value.set("bar")
+    mock.assert_called_with("bar")
+    unsub()
+
+
+def test_store_computed():
+    list_store = State[list]([1, 2, 3])
+
+    count = list_store.computed(len)
+    last = list_store.computed(lambda x: x[-1] if x else None)
+
+    assert count.get() == 3
+    assert last.get() == 3
+    mock = unittest.mock.Mock()
+    mock_last = unittest.mock.Mock()
+    unsub = count.subscribe(mock)
+    unsub_last = last.subscribe(mock_last)
+    mock.assert_not_called()
+    mock_last.assert_not_called()
+    list_store.set([1, 2, 3, 42])
+    mock.assert_called_with(4)
+    mock_last.assert_called_with(42)
+    unsub()
+    unsub_last()
+    list_store.set([])
+    mock.assert_called_with(4)
+    mock_last.assert_called_with(42)
+
+
 def test_app_composite():
     mock = unittest.mock.Mock()
     fish_state = Fish(fishes=4)
