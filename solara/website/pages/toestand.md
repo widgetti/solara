@@ -1,128 +1,153 @@
 # Toestand state management
 
-Toestand is a no-boilerplate, state management library that integrates well with Solara and avoids shooting yourself in the foot accidently. Toestand wraps you state object in a Store object with a `.get()` and `.update(..)` which turns it into an observable object such that Solara/React-IPywidgets can listen to state changes and trigger a re-render. It is typed where possible, so you have as little runtime problems, and can rely on mypy to spot issues.
+Toestand is a no-boilerplate, state management library that integrates well with Solara. It allows your state to live outside of the Solara components, and have multiple components listen to, or update parts of the state.
+
+Toestand wraps your state in a State object with a `.get()` and `.set(..)` and `.subscribe(callback)` which make your state "observable". This allows Solara components to listen to state changes and trigger a re-render. It is typed where possible, so you have as few runtime problems and can rely on mypy to spot issues.
+A convienent `.use()` method can be used inside a Solara component to make it automatically update when changes occur (your component will be responsive).
 
 Toestand is inspired on [Zustand](https://github.com/pmndrs/zustand).  The word "toestand" means "state" in Dutch, but can also be interpreted as "hassle".
 
-We separate:
-
-   * `State` - The data interface, in memory storage. Optional if you don't care about type safetly.
-   * `Store` - Manages access to the data (`.get` and `.update`) and adds observability (`.subscribe`/`.unsubscribe`).
-   * `Storage` - Where the data is stored (Memory, Disk, Redis?), and its scope (1 per user, connection, worker, application, ... ?).
-
 # Simplest possible example
 
-This example does not use any type safety, it just stored data in a dictionary.
+The State class can be used outside of Solara components, by using `.set`, `.get` and `.subscribe`:
 
 ```py
-from solara.toestand import Store
+from solara.toestand import State
 
-settings = Store({"bears": 2, "theme": "dark"})
-unsub = settings.subscribe(print)
+counter = State(0)
 
-settings.update(theme="light")
-# prints: {"bears": 2, "theme": "light"}
+# this will print out the value every time someone calls .set(..)
+unsubscribe = settings.subscribe(print)
 
-unsub()  # remove event listener
+# this triggers all subscribers
+settings.set(2)
+# prints: 2
 
+# The return value of .subscribe is an unsubscribe function
+unsubscribe()  # remove event listener
+
+# And we can also simply request the latest value
+print(counter.get())
+# prints: 2
 ```
 
-We can now use this in a React application:
-```py
-import react_ipywidgets as react
-import solara as sol
+# Integration with Solara components.
 
+The `.use()` method calls `.get()` and will also set up subscribing (and unsubscribing) automically for you. For example:
 
-@react.component
-def ThemeInfo():
-    # the lambda function here is called a selector, it 'selects' out the state you want
-    theme = settings.use(lambda state: state["theme"])
-    return sol.Info(f"Using theme {theme}")
-
-
-@react.component
-def ThemeSelector():
-    theme, set_theme = settings.use_field(settings.fields["theme"])
-    with sol.ToggleButtonsSingle(theme, on_value=set_theme) as main:
-        sol.Button("dark")
-        sol.Button("light")
-    return main
-
-
-@react.component
-def Page():
-    with sol.VBox() as main:
-        ThemeInfo()
-        ThemeSelector()
-    return main
-```
-
-# State class
-
-A user defined class with (typed) fields describing what you need to store.
+We can now use this in a Solara application:
 
 ```python
+import solara
+from solara.toestand import State
+
+counter = State(0)
+
+
+@solara.component
+def CounterView():
+    # .get() *and* .subscribe() to changes from a component
+    count = counter.use()
+    return solara.Info(f"Counter value {count}")
+
+
+@solara.component
+def CounterControl():
+    def increase_counter():
+        # this will trigger any component that used .use()
+        # or anyone that .subscribed to changes
+        counter.set(counter.get() + 1)
+    return solara.Button("Increase counter", on_click=increase_counter)
+
+
+@solara.component
+def Page():
+    with solara.VBox() as main:
+        CounterView()
+        CounterControl()
+    return main
+```
+
+# More complex state
+
+Application state is usually is more than a primitive such as an int of a string.
+A common way to store application state is to wrap it in a class using [dataclass](https://docs.python.org/3/library/dataclasses.html), [Pydantic](https://pydantic-docs.helpmanual.io/), [`attrs`](https://www.attrs.org/en/stable/) or even a `TypedDict`.
+
+```python
+import dataclasses
 
 # Immutable/frozen is always safest
 @dataclasses.dataclass(frozen=True)
-class BearState:
-    type: str
-    count: int
+class UserProfile:
+    username: str = None
+    logged_in: bool = False
+    wrong_login: bool = False
 
 ```
 
-You can use Python `dataclasses`, [Pydantic](https://pydantic-docs.helpmanual.io/) or [`attrs`](https://www.attrs.org/en/stable/), or even a `TypedDict`. Whatever your feel comfortable with.
+## Custom Store class
 
-
-# Store class
-
-This is where you put your methods in that do some logic, some call it business logic. But they can also be meaningful methodnames that do simple state mutations, such as here.
+To keep as much of our code outside of our UI, we create a subclass of State with methods to do modifications to our state.
 
 ```python
-from solara.toestand import Store, SubStorageAttr, use_sync_external_store
 
+class UserProfileState(State[UserProfile]):
+    def login(self, username: str, password: str):
+        # Note: in reality this should query a database
+        if username == "test" and password == "test":
+            self.set(UserProfile(username=username, logged_in=True, wrong_login=False))
+        else:
+            self.set(UserProfile(wrong_login=True))
 
-# we use a Generic (Store[BearState]) to make .get() return the right type
-# to make our editor autocomplete and give us type checks via mypy
-class BearStore(Store[BearState]):
-    def increase_population(self):
-        # .get always returns the latest `BearState` object
-        self.update(count=self.get().count + 1)
-        # Note that update does not check types due to typing limitations in Python
+    def logout(self):
+        self.set(UserProfile())
+
+user_profile_state = UserProfileState(UserProfile())
 ```
 
-We never mutate the state directly, but can only update it using `.update(...)`. Note that not all keys need to be given,  update will only update the keys it it being passed (`count` in this case).
 
-Since we use the `.update(...)` method, any listeners that subscribed to changes via `.subscribe(...)` will be notified.
+## Putting this together in an app.
 
-
-
-# Usage in React
+We can now create the UI components that contain as little logic as possible, and only interfaces to our custom State class.
 
 ```python
-import react_ipywidgets as react
-import solara as sol
-import solara.scope
+@solara.component
+def LoginStatus():
+    user_profile = user_profile_state.use()
+    with solara.VBox() as main:
+        if user_profile.logged_in:
+            solara.Text(f"Welcome {user_profile.username}")
+        else:
+            solara.Warning("Please log in")
+    return main
 
 
-bear_state_initial = BearState(type="brown", count=2)
-bear_store = BearStore(bear_state_initial)
+@solara.component
+def LoginForm():
+    username, set_username = solara.use_state("")
+    password, set_password = solara.use_state("")
+    with solara.VBox() as main:
+        if user_profile_state.use().wrong_login:
+            solara.Warning("Wrong username or password")
+        if user_profile_state.use().logged_in:
+            solara.Button(label="Logout", on_click=lambda: user_profile_state.logout())
+        else:
+            solara.InputText(label="Username", value=username, on_value=set_username)
+            solara.InputText(label="Password", password=True, value=password, on_value=set_password)
+            solara.Button(label="Login", on_click=lambda: user_profile_state.login(username, password))
+    return main
 
-@react.component
-def BearCounter():
-    # the lambda function here is called a selector, it 'selects' out the state you want
-    bear_count = bear_store.use(lambda bear: bear.count)
-    return sol.Info(f"{bear_count} bears around here")
 
+@solara.component
+def Page():
+    with solara.VBox() as main:
+        LoginStatus()
+        LoginForm()
+    return main
 ```
 
-By using the `store.use(some_selector)` toestand will only give us the data we need, and will only re-render our component when the data we need changes (in this case `.count`). Our component will thus no re-render when the `.type` changes value.
 
-Toestand finds out if it needs to update the react component by calling the selector function after any state change and comparing that to the previous result. This avoids unneeded updates to your component.
-
-
-
-## Changing state
+<!-- # Advanced
 
 Changing the state can be done calling a method on the store:
 
@@ -212,4 +237,4 @@ def App():
 app = App()
 ```
 
-<!-- TODO: solara try link -->
+TODO: solara try link -->

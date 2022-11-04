@@ -152,7 +152,7 @@ class StorageObserableMutableMapping(Storage[T]):
         del self.observable_dict[self.key]
 
 
-class Store(Generic[S]):
+class State(Generic[S]):
     _storage: Storage[S]
 
     def __init__(self, default_value: S = None, storage: Union[Storage[S], ObservableMutableMapping] = None):
@@ -187,7 +187,7 @@ class Store(Generic[S]):
     def subscribe(self, listener: Callable[[S], None]):
         return self._storage.subscribe(listener)
 
-    def use(self, selector: Callable[[S], T]) -> T:
+    def use(self, selector: Callable[[S], T] = lambda x: x) -> T:  # type: ignore
         slice = use_sync_external_store_with_selector(
             self.subscribe,
             self.get,
@@ -213,11 +213,11 @@ class Store(Generic[S]):
 class Accessor(Generic[T]):
     def __init__(self, field: "FieldBase"):
         self.field = field
-        store = field._parent
-        while not isinstance(store, Store):
-            store = store._parent
-        assert isinstance(store, Store)
-        self.store = store
+        state = field._parent
+        while not isinstance(state, State):
+            state = state._parent
+        assert isinstance(state, State)
+        self.state = state
 
     def setter(self) -> Callable[[T], None]:
         _field = cast(FieldBase, self.field)
@@ -237,7 +237,7 @@ class Accessor(Generic[T]):
         self.set(new_value)
 
     def use(self) -> T:
-        return use_sync_external_store(self.store.subscribe, self.field.get)  # type: ignore
+        return use_sync_external_store(self.state.subscribe, self.field.get)  # type: ignore
 
     def use_state(self) -> Tuple[T, Callable[[T], None]]:
         setter = self.setter()
@@ -268,8 +268,8 @@ class FieldBase:
 
 
 class Fields(FieldBase):
-    def __init__(self, store: Store):
-        self._parent = store
+    def __init__(self, state: State):
+        self._parent = state
 
     def get(self):
         return self._parent.get()

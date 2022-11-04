@@ -8,32 +8,32 @@ from typing_extensions import TypedDict
 
 import solara as sol
 from solara.server import app, kernel
-from solara.toestand import Store, SubStorageAttr, X, use_sync_external_store
+from solara.toestand import State, SubStorageAttr, X, use_sync_external_store
 
 from .common import click
 
 
 @dataclasses.dataclass(frozen=True)
-class BearState:
+class Bears:
     type: str
     count: int = dataclasses.field()
 
 
-B = TypeVar("B", bound=BearState)
+B = TypeVar("B", bound=Bears)
 
 
-class BearStore(Store[B]):
+class BearState(State[B]):
     def increase_population(self):
         self.update(count=self.get().count + 1)
 
 
-bear_state: BearState = BearState(type="brown", count=1)
+bears: Bears = Bears(type="brown", count=1)
 
 
 def test_store_bare():
     # no need for subclasses
     mock = unittest.mock.Mock()
-    store = Store[dict]({"string": "foo", "int": 42})
+    store = State[dict]({"string": "foo", "int": 42})
     unsub = store.subscribe(mock)
     mock.assert_not_called()
     store.update(string="bar")
@@ -70,7 +70,7 @@ def test_store_nested():
         people=people,
         dicator=Person(name="Jos", height=1.8),
     )
-    store = Store[Country](nl)
+    store = State[Country](nl)
     unsub = store.subscribe(mock)
     mock.assert_not_called()
     country = store.fields
@@ -139,19 +139,19 @@ def test_store_nested():
 
 def test_bear_store_basics():
     mock = unittest.mock.Mock()
-    bear_store = BearStore(bear_state)
+    bear_store = BearState(bears)
     unsub = bear_store.subscribe(mock)
     mock.assert_not_called()
     bear_store.increase_population()
-    mock.assert_called_with(BearState(type="brown", count=2))
+    mock.assert_called_with(Bears(type="brown", count=2))
     bear_store.increase_population()
     assert mock.call_count == 2
-    mock.assert_called_with(BearState(type="brown", count=3))
+    mock.assert_called_with(Bears(type="brown", count=3))
 
     setter = bear_store.setter(bear_store.fields.count)
     setter(5)
     assert mock.call_count == 3
-    mock.assert_called_with(BearState(type="brown", count=5))
+    mock.assert_called_with(Bears(type="brown", count=5))
 
     unsub()
     bear_store.increase_population()
@@ -159,30 +159,30 @@ def test_bear_store_basics():
 
 
 def test_bear_store_basics_dict():
-    class BearState(TypedDict):
+    class Bears(TypedDict):
         type: str
         count: int
 
-    bear_state = BearState(type="brown", count=1)
+    bears = Bears(type="brown", count=1)
 
-    class BearStore(Store[BearState]):
+    class BearState(State[Bears]):
         def increase_population(self):
             self.update(count=self.get()["count"] + 1)
 
     mock = unittest.mock.Mock()
-    bear_store = BearStore(bear_state)
+    bear_store = BearState(bears)
     unsub = bear_store.subscribe(mock)
     mock.assert_not_called()
     bear_store.increase_population()
-    mock.assert_called_with(BearState(type="brown", count=2))
+    mock.assert_called_with(Bears(type="brown", count=2))
     bear_store.increase_population()
     assert mock.call_count == 2
-    mock.assert_called_with(BearState(type="brown", count=3))
+    mock.assert_called_with(Bears(type="brown", count=3))
 
     setter = bear_store.setter(bear_store.fields["count"])
     setter(5)
     assert mock.call_count == 3
-    mock.assert_called_with(BearState(type="brown", count=5))
+    mock.assert_called_with(Bears(type="brown", count=5))
 
     unsub()
     bear_store.increase_population()
@@ -190,7 +190,7 @@ def test_bear_store_basics_dict():
 
 
 def test_bear_store_react():
-    bear_store = BearStore(bear_state)
+    bear_store = BearState(bears)
 
     @react.component
     def BearCounter():
@@ -251,9 +251,9 @@ def test_bear_store_react():
 
 
 def test_simplest():
-    from solara.toestand import Store
+    from solara.toestand import State
 
-    settings = Store({"bears": 2, "theme": "dark"})
+    settings = State({"bears": 2, "theme": "dark"})
     unsub = settings.subscribe(print)  # noqa
 
     settings.update(theme="light")
@@ -308,45 +308,45 @@ def test_simplest():
 
 
 @dataclasses.dataclass(frozen=True)
-class FishState:
+class Fish:
     fishes: int
 
 
-F = TypeVar("F", bound=FishState)
+F = TypeVar("F", bound=Fish)
 
 
-class FishStore(Store[F]):
+class FishState(State[F]):
     def jump(self):
         print("jump")  # noqa
 
 
 @dataclasses.dataclass(frozen=True)
 class AppStateComposite:
-    bear: BearState
-    fish: FishState
+    bear: Bears
+    fish: Fish
 
 
-class AppStore(Store[AppStateComposite]):
-    bears: BearStore
+class AppState(State[AppStateComposite]):
+    bears: BearState
 
     def __post__init__(self, storage):
         # for composite stores, manually create the substores
         sub = SubStorageAttr(storage=storage, key="bear")
-        self.bears = BearStore(self.get().bear, storage=sub)
+        self.bears = BearState(self.get().bear, storage=sub)
         # it's ok not to have a substore for fish
 
     def eat(self):
         state = self.get()
         bears = state.bear.count
-        fish = FishState(fishes=max(0, state.fish.fishes - bears))
+        fish = Fish(fishes=max(0, state.fish.fishes - bears))
         self.update(fish=fish)
 
 
 def test_app_composite():
     mock = unittest.mock.Mock()
-    fish_state = FishState(fishes=4)
-    app_state = AppStateComposite(bear=bear_state, fish=fish_state)
-    app_store = AppStore(app_state)
+    fish_state = Fish(fishes=4)
+    app_state = AppStateComposite(bear=bears, fish=fish_state)
+    app_store = AppState(app_state)
     app_store.subscribe(mock)
 
     assert app_store.get().bear.count == 1
@@ -357,10 +357,10 @@ def test_app_composite():
     app_store.eat()
     assert app_store.get().fish.fishes == 3
     assert mock.call_count == 1
-    mock.assert_called_with(AppStateComposite(bear=BearState(type="brown", count=1), fish=FishState(fishes=3)))
+    mock.assert_called_with(AppStateComposite(bear=Bears(type="brown", count=1), fish=Fish(fishes=3)))
 
     app_store.bears.increase_population()
-    mock.assert_called_with(AppStateComposite(bear=BearState(type="brown", count=2), fish=FishState(fishes=3)))
+    mock.assert_called_with(AppStateComposite(bear=Bears(type="brown", count=2), fish=Fish(fishes=3)))
     assert mock.call_count == 2
     assert app_store.get().bear.count == 2
     assert app_store.bears.get().count == 2
@@ -369,19 +369,19 @@ def test_app_composite():
     app_store.eat()
     assert app_store.get().fish.fishes == 1
     assert mock.call_count == 3
-    mock.assert_called_with(AppStateComposite(bear=BearState(type="brown", count=2), fish=FishState(fishes=1)))
+    mock.assert_called_with(AppStateComposite(bear=Bears(type="brown", count=2), fish=Fish(fishes=1)))
     app_store.eat()
     assert app_store.get().fish.fishes == 0
     assert mock.call_count == 4
-    mock.assert_called_with(AppStateComposite(bear=BearState(type="brown", count=2), fish=FishState(fishes=0)))
+    mock.assert_called_with(AppStateComposite(bear=Bears(type="brown", count=2), fish=Fish(fishes=0)))
 
 
 @dataclasses.dataclass(frozen=True)
-class AppStateInherit(BearState, FishState):
+class AppInherit(Bears, Fish):
     pass
 
 
-class AppStoreInherit(BearStore[AppStateInherit], FishStore[AppStateInherit], Store[AppStateInherit]):
+class AppStateInherit(BearState[AppInherit], FishState[AppInherit], State[AppInherit]):
     def eat(self):
         state = self.get()
         bears = state.count
@@ -390,8 +390,8 @@ class AppStoreInherit(BearStore[AppStateInherit], FishStore[AppStateInherit], St
 
 def test_app_inherit():
     mock = unittest.mock.Mock()
-    app_state = AppStateInherit(type="brown", count=1, fishes=4)
-    app_store = AppStoreInherit(app_state)
+    app = AppInherit(type="brown", count=1, fishes=4)
+    app_store = AppStateInherit(app)
     app_store.subscribe(mock)
 
     assert app_store.get().count == 1
@@ -401,10 +401,10 @@ def test_app_inherit():
     app_store.eat()
     assert app_store.get().fishes == 3
     assert mock.call_count == 1
-    mock.assert_called_with(AppStateInherit(type="brown", count=1, fishes=3))
+    mock.assert_called_with(AppInherit(type="brown", count=1, fishes=3))
 
     app_store.increase_population()
-    mock.assert_called_with(AppStateInherit(type="brown", count=2, fishes=3))
+    mock.assert_called_with(AppInherit(type="brown", count=2, fishes=3))
     assert mock.call_count == 2
     assert app_store.get().count == 2
     assert app_store.get().count == 2
@@ -413,11 +413,11 @@ def test_app_inherit():
     app_store.eat()
     assert app_store.get().fishes == 1
     assert mock.call_count == 3
-    mock.assert_called_with(AppStateInherit(type="brown", count=2, fishes=1))
+    mock.assert_called_with(AppInherit(type="brown", count=2, fishes=1))
     app_store.eat()
     assert app_store.get().fishes == 0
     assert mock.call_count == 4
-    mock.assert_called_with(AppStateInherit(type="brown", count=2, fishes=0))
+    mock.assert_called_with(AppInherit(type="brown", count=2, fishes=0))
 
 
 def test_use_external_store():
@@ -462,7 +462,7 @@ def test_use_external_store():
 #     import solara as sol
 #     import solara.scope
 
-#     bear_store = BearStore({"type": "brown", "count": 1}, storage=sol.scope.application)
+#     bear_store = BearState({"type": "brown", "count": 1}, storage=sol.scope.application)
 #     try:
 #         assert bear_store.get() == {"type": "brown", "count": 1}
 
