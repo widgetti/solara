@@ -22,7 +22,8 @@ def Success(
     ## Arguments
 
      * `label`: the message to display
-     * `icon`: if True, display a check icon, if False, don't display an icon, if a string, display the icon with that name.
+     * `icon`: if True, display a check icon, if False, don't display an icon, if a string,
+               display the icon with that name ([Overview of available icons](https://pictogrammers.github.io/@mdi/font/4.9.95/)).
      * `dense`: if True, display the message in a dense format, using less vertical height.
      * `outlined`: if True (default), display the message in an outlined border, instead of a filled box.
      * `text`: if True (default), display the message in a text format, which applies a semi-transparent background.
@@ -52,7 +53,8 @@ def Info(
     ## Arguments
 
      * `label`: the message to display
-     * `icon`: if True, display a info icon, if False, don't display an icon, if a string, display the icon with that name.
+     * `icon`: if True, display a info icon, if False, don't display an icon, if a string,
+               display the icon with that name ([Overview of available icons](https://pictogrammers.github.io/@mdi/font/4.9.95/)).
      * `dense`: if True, display the message in a dense format, using less vertical height.
      * `outlined`: if True (default), display the message in an outlined border, instead of a filled box.
      * `text`: if True (default), display the message in a text format, which applies a semi-transparent background.
@@ -79,7 +81,8 @@ def Warning(
     ## Arguments
 
      * `label`: the message to display
-     * `icon`: if True, display a exclamation icon, if False, don't display an icon, if a string, display the icon with that name.
+     * `icon`: if True, display a exclamation icon, if False, don't display an icon, if a string,
+               display the icon with that name ([Overview of available icons](https://pictogrammers.github.io/@mdi/font/4.9.95/)).
      * `dense`: if True, display the message in a dense format, using less vertical height.
      * `outlined`: if True (default), display the message in an outlined border, instead of a filled box.
      * `text`: if True (default), display the message in a text format, which applies a semi-transparent background.
@@ -99,7 +102,8 @@ def Error(label: str, icon: Union[bool, str, None] = True, dense=False, outlined
     ## Arguments
 
      * `label`: the message to display
-     * `icon`: if True, display a exclamation in a red triangle icon, if False, don't display an icon, if a string, display the icon with that name.
+     * `icon`: if True, display a exclamation in a red triangle icon, if False, don't display an icon, if a string,
+               display the icon with that name ([Overview of available icons](https://pictogrammers.github.io/@mdi/font/4.9.95/)).
      * `dense`: if True, display the message in a dense format, using less vertical height.
      * `outlined`: if True (default), display the message in an outlined border, instead of a filled box.
      * `text`: if True (default), display the message in a text format, which applies a semi-transparent background.
