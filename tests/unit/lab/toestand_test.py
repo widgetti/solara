@@ -7,10 +7,11 @@ import react_ipywidgets as react
 from typing_extensions import TypedDict
 
 import solara as sol
+from solara.lab import State
+from solara.lab.toestand import SubStorageAttr, X, use_sync_external_store
 from solara.server import app, kernel
-from solara.toestand import State, SubStorageAttr, X, use_sync_external_store
 
-from .common import click
+from ..common import click
 
 
 @dataclasses.dataclass(frozen=True)
@@ -251,7 +252,6 @@ def test_bear_store_react():
 
 
 def test_simplest():
-    from solara.toestand import State
 
     settings = State({"bears": 2, "theme": "dark"})
     unsub = settings.subscribe(print)  # noqa
