@@ -12,22 +12,22 @@ Toestand is inspired on [Zustand](https://github.com/pmndrs/zustand).  The word 
 The State class can be used outside of Solara components, by using `.set`, `.get` and `.subscribe`:
 
 ```py
-from solara.toestand import State
+from solara.lab import State
 
-counter = State(0)
+counter_state = State(0)
 
 # this will print out the value every time someone calls .set(..)
-unsubscribe = settings.subscribe(print)
+unsubscribe = counter_state.subscribe(print)
 
 # this triggers all subscribers
-settings.set(2)
+counter_state.set(2)
 # prints: 2
 
 # The return value of .subscribe is an unsubscribe function
 unsubscribe()  # remove event listener
 
 # And we can also simply request the latest value
-print(counter.get())
+print(counter_state.get())
 # prints: 2
 ```
 
@@ -39,15 +39,15 @@ We can now use this in a Solara application:
 
 ```python
 import solara
-from solara.toestand import State
+from solara.lab import State
 
-counter = State(0)
+counter_state = State(0)
 
 
 @solara.component
 def CounterView():
     # .get() *and* .subscribe() to changes from a component
-    count = counter.use()
+    count = counter_state.use()
     return solara.Info(f"Counter value {count}")
 
 
@@ -56,7 +56,7 @@ def CounterControl():
     def increase_counter():
         # this will trigger any component that used .use()
         # or anyone that .subscribed to changes
-        counter.set(counter.get() + 1)
+        counter_state.set(counter_state.get() + 1)
     return solara.Button("Increase counter", on_click=increase_counter)
 
 
