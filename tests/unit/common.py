@@ -37,6 +37,7 @@ def busy_wait_compare(getter, expected, iteration_delay=0.001, max_iterations=10
         if current_value == expected:
             break
 
+
 def event_and_mods(widget: VueWidget, event):
     event_match = [k for k in widget._event_handlers_map.keys() if k.startswith(event)]
     if event_match:
