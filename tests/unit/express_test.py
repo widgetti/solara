@@ -1,4 +1,5 @@
 import plotly.express as px
+
 import solara
 import solara.express
 
@@ -16,7 +17,7 @@ def test_cross_filter():
 
         with solara.HBox() as main:
             solara.express.scatter(df, x="sepal_length", y="sepal_width")
-            solara.express.scatter(df, x="sepal_length", y="sepal_width", size=[10 for ea in df.sepal_length])
+            solara.express.scatter(df, x="sepal_length", y="sepal_width", size=[10 for ea in df.sepal_length], log_x=True)
         return main
 
     box, rc = solara.render(Test(), handle_error=False)

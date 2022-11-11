@@ -5,12 +5,13 @@ from typing import Callable
 import numpy as np
 import plotly.express as px
 import plotly.graph_objs as go
-import solara
 import typing_extensions
 
 # behave as the px module
 from plotly.express import *  # noqa: F401, F403
 from plotly.express._core import make_figure
+
+import solara
 
 P = typing_extensions.ParamSpec("P")
 T = typing.TypeVar("T")
@@ -122,6 +123,8 @@ def FigurePlotlyCrossFiltered(fig):
             if not isinstance(value, str):
                 try:
                     n = len(value)
+                except TypeError:
+                    pass  # int or bool, or anything without a length
                 except Exception:
                     raise
                 else:
