@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Dict, List, TypeVar
 
 import jinja2
+
 import solara
 
 from . import app, settings, websocket
@@ -167,7 +168,7 @@ def find_prefixed_directory(path):
 def get_nbextensions_directories() -> List[Path]:
     from jupyter_core.paths import jupyter_path
 
-    all_nb_directories = jupyter_path("nbextensions")
+    all_nb_directories = [Path(k) for k in jupyter_path("nbextensions")]
     # FIXME: remove IPython nbextensions path after a migration period
     try:
         from IPython.paths import get_ipython_dir
