@@ -9,6 +9,7 @@ import traitlets
 
 import solara
 from solara.alias import rv
+from solara.lab.hooks.dataframe import use_df_column_names
 
 cardheight = "100%"
 
@@ -208,7 +209,7 @@ def PivotTableCard(
     selected: Dict[str, Any] = {},
     on_selected: Callable[[Dict[str, Any]], None] = None,
 ):
-    items = solara.use_df_column_names(df)
+    items = use_df_column_names(df)
     with rv.Card(elevation=2, style_="position: relative", height=cardheight) as main:
         with rv.CardTitle(children=["Pivot table"]):
             pass

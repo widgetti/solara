@@ -51,3 +51,13 @@ def test_api_style(page_session: playwright.sync_api.Page, solara_server, solara
         # enable css again
         page_session.locator('_vue=v-checkbox[label="Use CSS"]').click()
         expect(page_session.locator(".mybutton")).to_have_css("color", "rgb(76, 175, 80)")
+
+
+def test_api_cross_filter_select(page_session: playwright.sync_api.Page, solara_server, solara_app):
+    with solara_app("solara.website.pages"):
+        page_session.goto(solara_server.base_url + "/api/cross_filter_select")
+        page_session.locator("text=244").wait_for()
+        select_sex = page_session.locator('_vue=v-autocomplete[label="Select values in sex having values:"]')
+        select_sex.click()
+        page_session.locator("text=Female").click()
+        page_session.locator("text=87 / 244").wait_for()

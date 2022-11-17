@@ -99,6 +99,7 @@ def Sidebar(children=[], level=0):
                 with List():
                     # add("use_fetch")
                     # add("use_json")
+                    add("use_cross_filter")
                     add("use_thread")
                     add("use_exception")
                     add("use_previous")
@@ -128,6 +129,11 @@ def Sidebar(children=[], level=0):
             with ListItem("Advanced", icon_name="mdi-head-cog-outline"):
                 with List():
                     add("style")
+            with ListItem("Lab", icon_name="mdi-test-tube"):
+                with List():
+                    add("cross_filter_report")
+                    add("cross_filter_slider")
+                    add("cross_filter_select")
         if routes:
             print(f"Routes not used: {list(routes.keys())}")  # noqa
 

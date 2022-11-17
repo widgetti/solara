@@ -3,6 +3,9 @@ from typing import List
 
 import solara
 import solara.hooks.dataframe
+import solara.lab
+from solara.lab.hooks.dataframe import use_df_column_names
+from solara.lab.utils.dataframe import df_type
 
 from .. import CellAction, ColumnAction
 from ..widgets import DataTable as DataTableWidget
@@ -24,13 +27,13 @@ def DataTable(df, page=0, items_per_page=20, format=None, column_actions: List[C
     i1 = page * items_per_page
     i2 = min(total_length, (page + 1) * items_per_page)
 
-    columns = solara.hooks.dataframe.use_df_column_names(df)
+    columns = use_df_column_names(df)
 
     items = []
     column_data = {}
     dfs = df[i1:i2]
 
-    if solara.hooks.dataframe.df_type(df) == "pandas":
+    if df_type(df) == "pandas":
         column_data = dfs[columns].to_dict("records")
     else:
         column_data = dfs[columns].to_records()

@@ -7,7 +7,9 @@ import reacton.ipywidgets as w
 
 import solara
 from solara.components import ui_checkbox, ui_dropdown
-from solara.hooks import df_unique, max_unique, use_cross_filter, use_df_column_names
+from solara.hooks import use_cross_filter
+from solara.lab.hooks.dataframe import use_df_column_names
+from solara.lab.utils.dataframe import df_unique
 
 cardheight = "100%"
 
@@ -102,7 +104,7 @@ def TableCard(df):
 
 
 @solara.component
-def HistogramCard(df, column=None):
+def HistogramCard(df, column=None, max_unique=100):
     filter, set_filter = use_cross_filter(id(df), "filter-histogram")
     dff = df  # filter(df)
 

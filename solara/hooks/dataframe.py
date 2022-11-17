@@ -5,21 +5,12 @@ from typing import Any, Callable, Dict, List, TypeVar
 import solara.util
 from solara.hooks.misc import use_force_update, use_unique_key
 
-max_unique = 100
 T = TypeVar("T")
 
 __all__ = [
-    "df_type",
-    "df_unique",
     "provide_cross_filter",
     "use_cross_filter",
-    "use_df_column_names",
-    "max_unique",
 ]
-
-
-def df_type(df):
-    return df.__class__.__module__.split(".")[0]
 
 
 class CrossFilterStore:
@@ -76,25 +67,6 @@ def provide_cross_filter():
     return cross_filter_object
 
 
-def df_unique(df, column, limit=None):
-    if df_type(df) == "vaex":
-        return df.unique(column, limit=max_unique + 1, limit_raise=False)
-    if df_type(df) == "pandas":
-        x = df[column].unique()  # .to_numpy()
-        return x[:limit]
-    else:
-        raise TypeError(f"{type(df)} not supported")
-
-
-def use_df_column_names(df):
-    if df_type(df) == "vaex":
-        return df.get_column_names()
-    elif df_type(df) == "pandas":
-        return df.columns.tolist()
-    else:
-        raise TypeError(f"{type(df)} not supported")
-
-
 def use_cross_filter(data_key, name: str = "no-name", reducer: Callable[[T, T], T] = operator.and_, eq=solara.util.numpy_equals):
     """Provides cross filtering, all other filters are combined using the reducer.
 
@@ -102,6 +74,16 @@ def use_cross_filter(data_key, name: str = "no-name", reducer: Callable[[T, T], 
     them into a single filter, that excludes the filter we set for the current component.
     This is often used in dashboards where a filter is defined in a visualization component,
     but only applied to all other components.
+
+    The graph below shows what happens when component A and B set a filter, and C does not.
+
+    ```mermaid
+    graph TD;
+        A--"filter A"-->B;
+        B--"filter B"-->C;
+        A--"filter A"-->C;
+        B--"filter B"-->A;
+    ```
     """
     key = use_unique_key(prefix=f"cross-filter-{name}-")
     cross_filter_store = solara.use_context(cross_filter_context)

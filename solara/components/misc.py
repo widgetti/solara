@@ -126,19 +126,21 @@ def HTML(tag="div", unsafe_innerHTML=None, style: str = None, class_: str = None
 
 
 @solara.component
-def VBox(children=[], grow=True, align_items="stretch"):
+def VBox(children=[], grow=True, align_items="stretch", classes: List[str] = []):
     style = f"flex-direction: column; align-items: {align_items};"
     if grow:
         style += "flex-grow: 1;"
-    return v.Sheet(class_="d-flex", style_=style, elevation=0, children=children)
+    class_ = _combine_classes(["d-flex", *classes])
+    return v.Sheet(class_=class_, style_=style, elevation=0, children=children)
 
 
 @solara.component
-def HBox(children=[], grow=True, align_items="stretch"):
+def HBox(children=[], grow=True, align_items="stretch", classes: List[str] = []):
     style = f"flex-direction: row; align-items: {align_items}; "
     if grow:
         style += "flex-grow: 1;"
-    return v.Sheet(class_="d-flex", style_=style, elevation=0, children=children)
+    class_ = _combine_classes(["d-flex", *classes])
+    return v.Sheet(class_=class_, style_=style, elevation=0, children=children)
 
 
 @solara.component
