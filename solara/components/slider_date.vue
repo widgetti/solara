@@ -1,6 +1,6 @@
 <template>
   <div>
-    <v-slider :label="label" :min="0" :max="days" v-model="value">
+    <v-slider :label="label" :min="0" :max="days" v-model="value" :disabled="disabled">
       <template v-slot:append>
         <!-- give it a fixed with so the slider doesn't move around -->
         <div class="solara-fixedwidth">

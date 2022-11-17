@@ -20,6 +20,7 @@ def SliderInt(
     step: int = 1,
     on_value: Callable[[int], None] = None,
     thumb_label=True,
+    disabled: bool = False,
 ):
     """Slider for controlling an integer value.
 
@@ -32,6 +33,7 @@ def SliderInt(
     * `step`: Step size.
     * `on_value`: Callback to call when the value changes.
     * `thumb_label`: Show a thumb label when sliding (True), always ("always"), or never (False).
+    * `disabled`: Whether the slider is disabled.
     """
 
     def set_value_cast(value):
@@ -39,7 +41,18 @@ def SliderInt(
             return
         on_value(int(value))
 
-    return v.Slider(v_model=value, on_v_model=set_value_cast, label=label, min=min, max=max, step=step, thumb_label=thumb_label, dense=False, hide_details=True)
+    return v.Slider(
+        v_model=value,
+        on_v_model=set_value_cast,
+        label=label,
+        min=min,
+        max=max,
+        step=step,
+        thumb_label=thumb_label,
+        dense=False,
+        hide_details=True,
+        disabled=disabled,
+    )
 
 
 @solara.component
@@ -51,6 +64,7 @@ def SliderRangeInt(
     step: int = 1,
     on_value: Callable[[Tuple[int, int]], None] = None,
     thumb_label=True,
+    disabled: bool = False,
 ):
     """Slider for controlling a range of integer values.
 
@@ -62,6 +76,7 @@ def SliderRangeInt(
     * `step`: Step size.
     * `on_value`: Callback to call when the value changes.
     * `thumb_label`: Show a thumb label when sliding (True), always ("always"), or never (False).
+    * `disabled`: Whether the slider is disabled.
     """
 
     def set_value_cast(value):
@@ -71,12 +86,30 @@ def SliderRangeInt(
         on_value((int(v1), int(v2)))
 
     return v.RangeSlider(
-        v_model=value, on_v_model=set_value_cast, label=label, min=min, max=max, step=step, thumb_label=thumb_label, dense=False, hide_details=True
+        v_model=value,
+        on_v_model=set_value_cast,
+        label=label,
+        min=min,
+        max=max,
+        step=step,
+        thumb_label=thumb_label,
+        dense=False,
+        hide_details=True,
+        disabled=disabled,
     )
 
 
 @solara.component
-def SliderFloat(label: str, value: float = 0, min: float = 0, max: float = 10.0, step: float = 0.1, on_value: Callable[[float], None] = None, thumb_label=True):
+def SliderFloat(
+    label: str,
+    value: float = 0,
+    min: float = 0,
+    max: float = 10.0,
+    step: float = 0.1,
+    on_value: Callable[[float], None] = None,
+    thumb_label=True,
+    disabled: bool = False,
+):
     """Slider for controlling a float value.
 
     ## Arguments
@@ -87,6 +120,7 @@ def SliderFloat(label: str, value: float = 0, min: float = 0, max: float = 10.0,
     * `step`: The step size.
     * `on_value`: Callback to call when the value changes.
     * `thumb_label`: Show a thumb label when sliding (True), always ("always"), or never (False).
+    * `disabled`: Whether the slider is disabled.
     """
 
     def set_value_cast(value):
@@ -94,7 +128,18 @@ def SliderFloat(label: str, value: float = 0, min: float = 0, max: float = 10.0,
             return
         on_value(float(value))
 
-    return v.Slider(v_model=value, on_v_model=set_value_cast, label=label, min=min, max=max, step=step, thumb_label=thumb_label, dense=False, hide_details=True)
+    return v.Slider(
+        v_model=value,
+        on_v_model=set_value_cast,
+        label=label,
+        min=min,
+        max=max,
+        step=step,
+        thumb_label=thumb_label,
+        dense=False,
+        hide_details=True,
+        disabled=disabled,
+    )
 
 
 @solara.component
@@ -106,6 +151,7 @@ def SliderRangeFloat(
     step: float = 0.1,
     on_value: Callable[[Tuple[float, float]], None] = None,
     thumb_label=True,
+    disabled: bool = False,
 ):
     """Slider for controlling a range of float values.
 
@@ -117,6 +163,7 @@ def SliderRangeFloat(
     * `step`: The step size.
     * `on_value`: Callback to call when the value changes.
     * `thumb_label`: Show a thumb label when sliding (True), always ("always"), or never (False).
+    * `disabled`: Whether the slider is disabled.
     """
 
     def set_value_cast(value):
@@ -126,7 +173,16 @@ def SliderRangeFloat(
         on_value((float(v1), float(v2)))
 
     return v.RangeSlider(
-        v_model=value, on_v_model=set_value_cast, label=label, min=min, max=max, step=step, thumb_label=thumb_label, dense=False, hide_details=True
+        v_model=value,
+        on_v_model=set_value_cast,
+        label=label,
+        min=min,
+        max=max,
+        step=step,
+        thumb_label=thumb_label,
+        dense=False,
+        hide_details=True,
+        disabled=disabled,
     )
 
 
@@ -136,6 +192,7 @@ def SliderValue(
     value: T,
     values: List[T],
     on_value: Callable[[T], None] = None,
+    disabled: bool = False,
 ):
     """Slider for selecting a value from a list of values.
 
@@ -144,6 +201,7 @@ def SliderValue(
     * `value`: The currently selected value.
     * `values`: List of values to select from.
     * `on_value`: Callback to call when the value changes.
+    * `disabled`: Whether the slider is disabled.
 
     """
     index, set_index = solara.use_state(values.index(value), key="index")
@@ -164,6 +222,7 @@ def SliderValue(
         max=len(values) - 1,
         dense=False,
         hide_details=True,
+        disabled=disabled,
     )
 
 
@@ -175,11 +234,17 @@ class DateSliderWidget(ipyvue.VueTemplate):
     value = traitlets.Any(0).tag(sync=True)
 
     label = traitlets.Unicode("").tag(sync=True)
+    disabled = traitlets.Bool(False).tag(sync=True)
 
 
 @solara.component
 def SliderDate(
-    label: str, value: date = date(1981, 7, 28), min: date = date(1981, 1, 1), max: date = date(3000, 12, 30), on_value: Callable[[date], None] = None
+    label: str,
+    value: date = date(1981, 7, 28),
+    min: date = date(1981, 1, 1),
+    max: date = date(3000, 12, 30),
+    on_value: Callable[[date], None] = None,
+    disabled: bool = False,
 ):
     """Slider for controlling a date value.
 
@@ -189,6 +254,7 @@ def SliderDate(
     * `min`: The minimum value.
     * `max`: The maximum value.
     * `on_value`: Callback to call when the value changes.
+    * `disabled`: Whether the slider is disabled.
     """
 
     def format(d: date):
@@ -208,7 +274,7 @@ def SliderDate(
         if on_value:
             on_value(date)
 
-    return DateSliderWidget.element(label=label, min=dt_min, days=days, on_value=set_value_cast, value=days_value)
+    return DateSliderWidget.element(label=label, min=dt_min, days=days, on_value=set_value_cast, value=days_value, disabled=disabled)
 
 
 FloatSlider = SliderFloat
