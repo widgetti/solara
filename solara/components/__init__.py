@@ -1,5 +1,6 @@
 # isort: skip_file
 from .button import Button  # noqa: F401
+from .style import Style  # noqa: F401 F403
 from .misc import *  # noqa: #F401 F403
 from .alert import Warning, Info, Error, Success  # noqa: #F401 F403
 from .checkbox import Checkbox  # noqa: #F401 F403

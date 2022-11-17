@@ -1,5 +1,6 @@
 # tests pages in the api docs
 import playwright.sync_api
+from playwright.sync_api import expect
 
 # def test_api_sqlcode(page: playwright.sync_api.Page, solara_server, solara_app):
 #     # with screenshot_on_error(page, 'tmp/test_docs_basics.png'):
@@ -35,3 +36,18 @@ def test_api_matplotlib(page_session: playwright.sync_api.Page, solara_server, s
     with solara_app("solara.website.pages"):
         page_session.goto(solara_server.base_url + "/api/matplotlib")
         page_session.locator("text=Arguments").first.wait_for()
+
+
+def test_api_style(page_session: playwright.sync_api.Page, solara_server, solara_app):
+    with solara_app("solara.website.pages"):
+        page_session.goto(solara_server.base_url + "/api/style")
+        page_session.locator("text=Add a custom piece of CSS").first.wait_for()
+        expect(page_session.locator(".mybutton")).to_have_css("color", "rgb(76, 175, 80)")
+
+        # disable css
+        page_session.locator('_vue=v-checkbox[label="Use CSS"]').click()
+        expect(page_session.locator(".mybutton")).to_have_css("color", "rgba(0, 0, 0, 0.87)")
+
+        # enable css again
+        page_session.locator('_vue=v-checkbox[label="Use CSS"]').click()
+        expect(page_session.locator(".mybutton")).to_have_css("color", "rgb(76, 175, 80)")

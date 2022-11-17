@@ -125,6 +125,9 @@ def Sidebar(children=[], level=0):
                     # add("RenderPage")
                     # add("DefaultNavigation")
                     add("link")
+            with ListItem("Advanced", icon_name="mdi-head-cog-outline"):
+                with List():
+                    add("style")
         if routes:
             print(f"Routes not used: {list(routes.keys())}")  # noqa
 
