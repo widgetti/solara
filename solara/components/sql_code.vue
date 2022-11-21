@@ -86,7 +86,7 @@
       getBaseUrl() {
         // if base url is set, we use ./ for relative paths compared to the base url
         if (document.getElementsByTagName("base").length) {
-          return "./";
+          return document.baseURI;
         }
         const labConfigData = document.getElementById('jupyter-config-data');
         if(labConfigData) {
