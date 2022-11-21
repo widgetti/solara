@@ -119,9 +119,29 @@ def IconButton(icon_name: str = None, on_click=Callable[[], None], children: lis
 
 
 @solara.component
-def HTML(tag="div", unsafe_innerHTML=None, style: str = None, class_: str = None, **kwargs):
-    attributes = dict(style=style)
-    attributes["class"] = class_
+def HTML(tag="div", unsafe_innerHTML=None, style: str = None, classes: List[str] = [], attributes=None, class_: str = None):
+    """Render an HTML tag with optional raw HTML text inside.
+
+    # Arguments
+
+     * `tag`: HTML tag name for the top level element (default: `div`)
+     * `unsafe_innerHTML`: HTML string to be rendered inside the tag.
+        Note that this is not sanitized, so be careful this cannot include JavaScript from user input!
+     * `style`: CSS style string to be applied to the top level element.
+     * `classes`: List of CSS classes to be applied to the top level element.
+     * `attributes`: Dictionary of attributes to be applied to the top level element.
+     * `class_`: (deprecated) CSS class to be applied to the top level element.
+
+    """
+    if attributes is None:
+        attributes = {}
+    else:
+        attributes = attributes.copy()
+    if style:
+        attributes["style"] = style
+    if class_ or classes:
+        class_ = _combine_classes([*classes, *([] if class_ is None else [class_])])
+        attributes["class"] = class_
     return solara.widgets.HTML.element(tag=tag, unsafe_innerHTML=unsafe_innerHTML, attributes=attributes)
 
 

@@ -1,21 +1,14 @@
-"""
-# Image
-
-```python
-@solara.component
-def Image(image: Union[str, Path, "np.ndarray"]):
-    ...
-```
-
-Displays an image from a URL, Path or numpy data.
+"""# Image
 """
 
 from pathlib import Path
 
 import numpy as np
 import PIL.Image
+
 import solara
 import solara.website
+from solara.website.utils import apidoc
 
 
 @solara.component
@@ -36,3 +29,6 @@ def Page():
             solara.Image(image_ndarray)
 
     return main
+
+
+__doc__ += apidoc(solara.Image.f)  # type: ignore

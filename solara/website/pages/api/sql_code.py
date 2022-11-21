@@ -1,9 +1,5 @@
 """
 # SqlCode
-
-SQL textfield input with auto complete and SQL syntax highlighting.
-
-To get auto complete for the colum names, prefix is with the table name, i.e. "titanic.sur ctrl+space"
 """
 import os
 import sqlite3
@@ -19,6 +15,7 @@ except ImportError:
 
 import solara
 from solara.alias import rv
+from solara.website.utils import apidoc
 
 if vaex is not None:
     df_iris = vaex.datasets.iris().to_pandas_df()
@@ -82,3 +79,6 @@ def Page():
                 solara.Text("Loading data...")
                 rv.ProgressCircular(indeterminate=True, class_="solara-progress")
     return main
+
+
+__doc__ += apidoc(solara.SqlCode.f)  # type: ignore

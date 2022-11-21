@@ -11,6 +11,12 @@ if typing.TYPE_CHECKING:
 
 @solara.component
 def Image(image: Union[str, Path, "np.ndarray"]):
+    """Displays an image from a URL, Path or numpy data.
+
+    ## Arguments
+     * `image`: URL, Path or numpy data.
+
+    """
     if isinstance(image, (str, Path)):
         path = Path(image)
         if path.exists():

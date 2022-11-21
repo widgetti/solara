@@ -5,8 +5,9 @@ from typing import Callable, List, Optional, Union, cast
 
 import humanize
 import ipyvuetify as vy
-import solara
 import traitlets
+
+import solara
 from solara.components import Div
 
 
@@ -57,9 +58,28 @@ def FileBrowser(
     start_directory=None,
     can_select=False,
 ):
-    """
-    on_file_name is deprecated, use on_file_open
-    start_directory is deprecated, use directory
+    """File/directory browser at the server side.
+
+    There are two modes possible
+
+     * `can_select=False`
+        * `on_file_open`: Triggered when **single** clicking a file or directoy.
+        * `on_path_select`: Never triggered
+        * `on_directory_change`: Triggered when clicking a directory
+     * `can_select=True`
+        * `on_file_open`: Triggered when **double** clicking a file or directoy.
+        * `on_path_select`: Triggered when clicking a file or directoy
+        * `on_directory_change`: Triggered when double clicking a directory
+
+    ## Arguments
+
+     * `directory`: The directory to start in. If `None` the current working directory is used.
+     * `on_directory_change`: Depends on mode, see above.
+     * `on_path_select`: Depends on mode, see above.
+     * `on_file_open`: Depends on mode, see above.
+     * `filter`: A function that takes a `Path` and returns `True` if the file/directory should be shown.
+     * `on_file_name`: (deprecated) Use on_file_open instead.
+     * `start_directory`: (deprecated) Use directory instead.
     """
     if start_directory is not None:
         directory = start_directory  # pragma: no cover

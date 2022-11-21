@@ -8,6 +8,8 @@ ToggleButtons are in two flavours, for single, and for multiple selections.
 import solara
 from solara.website.utils import apidoc
 
+title = "ToggleButtons"
+
 
 @solara.component
 def Page():

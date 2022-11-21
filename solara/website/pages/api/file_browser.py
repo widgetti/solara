@@ -1,24 +1,11 @@
-"""
-# FileBrowser
-
-Browse file (and directories) at the server side.
-
-There are two modes possible
-
-   * `can_select=False`
-      * `on_file_open`: Triggered when **single** clicking a file or directoy.
-      * `on_path_select`: Never triggered
-      * `on_directory_change`: Triggered when clicking a directory
-   * `can_select=True`
-      * `on_file_open`: Triggered when **double** clicking a file or directoy.
-      * `on_path_select`: Triggered when clicking a file or directoy
-      * `on_directory_change`: Triggered when double clicking a directory
+"""# FileBrowser
 
 """
 from pathlib import Path
 from typing import Optional, cast
 
 import solara
+from solara.website.utils import apidoc
 
 
 @solara.component
@@ -41,3 +28,6 @@ def Page():
         solara.Info(f"You selected path: {path}")
         solara.Info(f"You opened file: {file}")
     return main
+
+
+__doc__ += apidoc(solara.FileBrowser.f)  # type: ignore

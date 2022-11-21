@@ -1,13 +1,8 @@
-"""
-# HTML
-
-Insert a custom html tag, possible with unescaped html text inside.
-
-Note that this will be interpreted by the browser, so make sure the input html text
-cannot include code from users.
+"""# HTML
 """
 
 import solara
+from solara.website.utils import apidoc
 
 
 @solara.component
@@ -22,3 +17,6 @@ def Page():
     with solara.VBox() as main:
         solara.HTML(tag="div", unsafe_innerHTML=html)
     return main
+
+
+__doc__ += apidoc(solara.HTML.f)  # type: ignore

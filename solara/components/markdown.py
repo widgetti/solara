@@ -144,6 +144,17 @@ def MarkdownIt(md_text: str, highlight: List[int] = [], unsafe_solara_execute: b
 
 @solara.component
 def Markdown(md_text: str, unsafe_solara_execute=False):
+    """Renders markdown text
+
+    Renders markdown using https://python-markdown.github.io/
+
+    ## Arguments
+
+     * `md_text`: The markdown text to render
+     * `unsafe_solara_execute`: If True, code marked with language "solara" will be executed. This is potentially unsafe
+        if the markdown text can come from user input and should only be used for trusted markdown.
+
+    """
     import markdown
 
     md_text = textwrap.dedent(md_text)
