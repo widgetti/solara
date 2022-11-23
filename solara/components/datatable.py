@@ -1,3 +1,4 @@
+import math
 from dataclasses import replace
 from typing import List
 
@@ -12,6 +13,8 @@ from ..widgets import DataTable as DataTableWidget
 
 
 def format_default(df, column, row_index, value):
+    if isinstance(value, float) and math.isnan(value):
+        return "NaN"
     return str(value)
 
 
