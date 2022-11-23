@@ -130,6 +130,9 @@ def FigurePlotlyCrossFiltered(fig):
                 else:
                     if n == len(df):
                         kwargs[key] = np.array(value)[filter]
+        original_indices = np.arange(len(df), dtype="int64")
+    else:
+        original_indices = None
 
     kwargs[first_arg_name] = dff
 
@@ -166,6 +169,11 @@ def FigurePlotlyCrossFiltered(fig):
             point_indexes = np.array(data["points"]["point_indexes"])
             if len(trace_indexes):
                 indices_selected = index_offsets[trace_indexes] + point_indexes
+
+                if filter is not None:
+                    assert original_indices is not None
+                    # these are references to the filtered dataframe
+                    indices_selected = original_indices[filter][indices_selected]
                 mask = np.zeros(len(df), dtype=bool)
                 mask[indices_selected] = True
                 set_filter(mask)
