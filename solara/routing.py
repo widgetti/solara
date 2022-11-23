@@ -38,10 +38,18 @@ class _Location(_LocationBase):
 
 
 class Router:
+    search: Optional[str]
+
     def __init__(self, path: str, routes: List[solara.Route], set_path: Callable[[str], None] = None):
-        self.path = path
+        # see https://developer.mozilla.org/en-US/docs/Web/API/Location for anatomy/nomenclature
+        if "?" in path:
+            self.path, self.search = path.split("?", 1)
+        else:
+            self.path = path
+            self.search = None
+        del path
         self.set_path = set_path
-        self.parts = (path or "").strip("/").split("/")
+        self.parts = (self.path or "").strip("/").split("/")
         self.routes = routes
         # each route in this list corresponds to a part in self.parts
         self.path_routes: List[solara.Route] = []

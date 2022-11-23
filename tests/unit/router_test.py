@@ -2,6 +2,7 @@ from typing import Callable, Optional
 
 import ipyvue as vue
 import ipyvuetify as v
+
 import solara
 
 routes = [
@@ -40,6 +41,10 @@ def test_router():
     assert solara.routing.Router("/blog/foo/", routes).path_routes == [routes[2], routes[2].children[1]]
 
     assert solara.routing.Router("/doesnotexist", routes).path_routes == []
+
+    assert solara.routing.Router("?a=1", routes).path_routes == [routes[0]]
+    assert solara.routing.Router("?a=1", routes).search == "a=1"
+    assert solara.routing.Router("/fruit?b=1&c=3", routes).path_routes == [routes[1]]
 
 
 def test_resolve_path_route():
