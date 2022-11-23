@@ -123,7 +123,16 @@ async def root(request: Request, fullpath: str = ""):
     content = server.read_root(root_path)
     response = HTMLResponse(content=content)
     session_id = request.cookies.get(server.COOKIE_KEY_SESSION_ID) or str(uuid4())
-    response.set_cookie(server.COOKIE_KEY_SESSION_ID, value=session_id, expires="Fri, 01 Jan 2038 00:00:00 GMT")  # type: ignore
+    samesite = "lax"
+    secure = False
+    # we want samesite, so we can set a cookie when embedded in an iframe, such as on huggingface
+    # however, samesite=none requires Secure https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite
+    if request.headers.get("x-forwarded-proto", "http") == "https":
+        samesite = "none"
+        secure = True
+    response.set_cookie(
+        server.COOKIE_KEY_SESSION_ID, value=session_id, expires="Fri, 01 Jan 2038 00:00:00 GMT", samesite=samesite, secure=secure  # type: ignore
+    )  # type: ignore
     return response
 
 
