@@ -43,7 +43,7 @@ def Page():
     return main
 ```
 
-Yes, the above example is running live on the Solara documentation web server. If you change the slider the graph updates.
+Yes, the above example is running live on the Solara documentation web server. If you change the slider the output updates.
 
 ## Run the script using Solara server
 
