@@ -1,11 +1,18 @@
 import hashlib
+import os
 
 from solara.server.cdn_helper import get_cdn_url, get_data, get_from_cache, put_in_cache
 
-path1 = "vue-grid-layout@1.0.2/dist/vue-grid-layout.min.js"
-hash1 = "4bd3c14b1fa124bd9fe4cb5f8a7cbc54"
-path2 = "@widgetti/vue-grid-layout@2.3.13-alpha.2/dist/vue-grid-layout.umd.js"
-hash2 = "91c2f41b719978849602e14e17abfb20"
+
+def norm(path):
+    # this is what starlette does
+    return os.path.normpath(os.path.join(*path.split("/")))
+
+
+path1 = norm("vue-grid-layout@1.0.2/dist/vue-grid-layout.min.js")
+hash1 = norm("4bd3c14b1fa124bd9fe4cb5f8a7cbc54")
+path2 = norm("@widgetti/vue-grid-layout@2.3.13-alpha.2/dist/vue-grid-layout.umd.js")
+hash2 = norm("91c2f41b719978849602e14e17abfb20")
 
 
 def test_cache(tmp_path_factory):
@@ -23,8 +30,8 @@ def test_cache(tmp_path_factory):
 
 
 def test_cdn_url():
-    assert get_cdn_url(path1) == f"https://cdn.jsdelivr.net/npm/{path1}"
-    assert get_cdn_url(path2) == f"https://cdn.jsdelivr.net/npm/{path2}"
+    assert get_cdn_url(path1) == f"https://cdn.jsdelivr.net/npm/{path1}".replace("\\", "/")
+    assert get_cdn_url(path2) == f"https://cdn.jsdelivr.net/npm/{path2}".replace("\\", "/")
 
 
 def test_get_data(tmp_path_factory):

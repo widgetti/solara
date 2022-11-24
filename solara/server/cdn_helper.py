@@ -40,11 +40,12 @@ def get_from_cache(base_cache_dir: pathlib.Path, path):
 
 
 def get_cdn_url(path):
-    return str(cdn) + str(path)
+    path = str(path)  # on windows, the path can contain a \
+    return str(cdn) + str(path).replace("\\", "/")
 
 
 def get_data(base_cache_dir: pathlib.Path, path):
-    parts = path.split("/")
+    parts = path.replace("\\", "/").split("/")
     store_path = path if len(parts) != 1 else pathlib.Path(path) / "__main"
 
     content = get_from_cache(base_cache_dir, store_path)
@@ -62,6 +63,7 @@ def get_data(base_cache_dir: pathlib.Path, path):
 
 
 def get_path(base_cache_dir: pathlib.Path, path):
+
     parts = path.split("/")
     store_path = path if len(parts) != 1 else pathlib.Path(path) / "__main"
     cache_path = base_cache_dir / store_path
