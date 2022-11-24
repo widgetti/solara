@@ -13,7 +13,7 @@ from flask_sock import Sock
 import solara
 
 from . import app as appmod
-from . import cdn_helper, server, websocket
+from . import cdn_helper, patch, server, websocket
 
 os.environ["SERVER_SOFTWARE"] = "solara/" + str(solara.__version__)
 
@@ -134,8 +134,7 @@ app = Flask(__name__)
 app.register_blueprint(blueprint)
 
 
-if __name__ == "__main__":
-    from .patch import patch
+patch.patch()
 
-    patch()
+if __name__ == "__main__":
     app.run(debug=False, port=8765)
