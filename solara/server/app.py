@@ -99,7 +99,8 @@ class AppScript:
         #         self.watcher.add_file(file)
 
         # cgi vars: https://datatracker.ietf.org/doc/html/rfc3875
-        os.environ["SCRIPT_NAME"] = self.name
+        # we cannot set script name, because gunicorn uses it (and will crash)
+        # os.environ["SCRIPT_NAME"] = self.name
         os.environ["PATH_TRANSLATED"] = str(self.path.resolve())
 
     def close(self):
