@@ -65,6 +65,14 @@ def kernels_connection(ws: simple_websocket.Server, id: str, name: str):
         raise
 
 
+@blueprint.route("/_solara/api/close/<connection_id>", methods=["GET", "POST"])
+def close(connection_id: str):
+    if connection_id in appmod.contexts:
+        context = appmod.contexts[connection_id]
+        context.close()
+    return ""
+
+
 @blueprint.route("/static/public/<path:path>")
 def public(path):
     directories = [app.directory.parent / "public" for app in appmod.apps.values()]
