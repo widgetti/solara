@@ -30,10 +30,10 @@ A common solution is to use [gunicorn](https://gunicorn.org/) as the WSGI HTTP S
 
 A typical command would be:
 ```
-$ SOLARA_APP=myapp.py gunicorn --workers 1 -b 0.0.0.0:8765 solara.server.flask:app
+$ SOLARA_APP=myapp.py gunicorn --workers 4 --threads=20 -b 0.0.0.0:8765 solara.server.flask:app
 ```
 
-Note that we explicitly set `--workers 1` such that it does not default to `$WEB_CONCURRENCY` which can be set to higher values, such as on Heroku. See the section on [Caveats](#caveats) why this matters.
+Note that we need at least 1 thread per user due to the use of a websocket.
 
 ### Embedding in an existing Flask application
 
@@ -58,14 +58,11 @@ Save this file as `"app.py"` and run
 
 ## Starlette
 
-For [Starlette](https://www.starlette.io/) we will assume [uvicorn](http://www.uvicorn.org/) for the ASGI webserver, and follow their [deployment documentation](https://www.uvicorn.org/deployment/), except we will not use gunicorn since we will not be using multiple workers yet.
+For [Starlette](https://www.starlette.io/) we will assume [uvicorn](http://www.uvicorn.org/) for the ASGI webserver, and follow their [deployment documentation](https://www.uvicorn.org/deployment/):
 
 ```
-$ SOLARA_APP=myapp.py uvicorn --workers 1 -b 0.0.0.0:8765 solara.server.flask:app
+$ SOLARA_APP=myapp.py uvicorn --workers 4 --host 0.0.0.0 --port 8765 solara.server.starlette:app
 ```
-
-Note that we explicitly set `--workers 1` such that it does not default to `$WEB_CONCURRENCY` which can be set to higher values, such as on Heroku. See the section on [Caveats](#caveats) why this matters.
-
 
 ### Embedding in an existing Starlette application
 
@@ -192,9 +189,3 @@ An alternative to using the `X-Script-Name` header with uvicorn, would be to pas
 ```
 $ SOLARA_APP=myapp.py uvicorn --workers 1 --root-path /solara -b 0.0.0.0:8765 solara.server.flask:app
 ```
-
-
-## Caveats
-Currently, using multiple workers requires sticky sessions on the `solara-context-id` cookie, so that the application context/state is in the same process the user connects to each time. Otherwise different connections may end up talking to different nodes or processes.
-
-We plan to improve this situation in the future. In the meantime, please set your workers to 1, or go through the hassle of setting up multiple Python webservers and make your sessions sticky.

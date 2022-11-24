@@ -189,6 +189,8 @@ class StaticCdn(StaticFiles):
 
 
 def on_startup():
+    # TODO: configure and set max number of threads
+    # see https://github.com/encode/starlette/issues/1724
     reload.reloader.start()
 
 
