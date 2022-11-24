@@ -66,7 +66,7 @@ your browser (we call this feature hot reloading).
 
 Note that Solara will remember your state (e.g. the number of buttons clicked) when the app reloads.
 
-# What you have leared
+# What you have learned
 
    * How to create a Python script `sol.py` by running `solara create button`
    * How to run the script with Solara server by running `solara run sol.py`

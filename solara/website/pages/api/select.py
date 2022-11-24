@@ -1,7 +1,10 @@
 """
 # Select components
 
-Select are in two flavours, for single, and for multiple selections.
+Select comes in two flavours:
+
+   * `Select` for a singular selection
+   * `SelectMultiple` which allows for multiple selections
 
 
 """

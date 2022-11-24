@@ -61,10 +61,18 @@ If you open the URL in your browser ([http://localhost:8765](http://localhost:87
 From Jupyter Notebook (classic) or Jupyter Lab, navigate to the same directory as `sol.py`. Enter the following code in a notebook cell:
 
 ```python
-from sol import Page()
-display(Page)
+from sol import Page
+display(Page())
 ```
 
 You should see the following output:
 
 <img src="/static/public/quickstart-notebook.png" alt="Markdown Monster icon" style="border: 1px solid #ccc;" />
+
+In case you forgot how to start a notebook server:
+
+    $ jupyter notebook
+
+Or the more modern Jupyter lab:
+
+    $ jupyter lab

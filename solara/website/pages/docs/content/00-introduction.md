@@ -37,7 +37,7 @@ Solara is a clear, systematic, Python-based web framework using industry-trusted
 
 For your understanding, it might be good to just run an example.
 
-Follow the [installation instructions](./installing) or do the TLDR:
+Follow the [installation instructions](/docs/installing) or do the TLDR:
 
     $ pip install solara
 
