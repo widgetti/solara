@@ -21,26 +21,25 @@ If not, please follow the [Installation instructions](/docs/installing).
 Put the following content in a file, say `sol.py`:
 
 ```solara
-import numpy as np
-import plotly.express as px
-
 import solara
-
-x = np.linspace(0, 2, 100)
-
 
 @solara.component
 def Page():
-    freq, set_freq = solara.use_state(2.0)
-    phase, set_phase = solara.use_state(0.1)
-    y = np.sin(x * freq + phase)
+    sentence, set_sentence = solara.use_state("Solara makes our team more productive.")
+    word_limit, set_word_limit = solara.use_state(10)
+    word_count = len(sentence.split())
 
     with solara.VBox() as main:
-        solara.FloatSlider("Frequency", value=freq, on_value=set_freq, min=0, max=10)
-        solara.FloatSlider("Phase", value=phase, on_value=set_phase, min=0, max=np.pi, step=0.1)
+        solara.SliderInt("Word limit", value=word_limit, on_value=set_word_limit, min=2, max=20)
+        solara.InputText(label="Your sentence", value=sentence, on_value=set_sentence,
+                         continuous_update=True)
 
-        fig = px.line(x=x, y=y)
-        solara.FigurePlotly(fig)
+        if word_count >= int(word_limit):
+            solara.Error(f"With {word_count} words, you passed the word limit of {word_limit}.")
+        elif word_count >= int(0.8 * word_limit):
+            solara.Warning(f"With {word_count} words, you are close to the word limit of {word_limit}.")
+        else:
+            solara.Success("Great short writing!")
     return main
 ```
 
