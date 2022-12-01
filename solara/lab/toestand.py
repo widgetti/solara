@@ -2,14 +2,20 @@ import dataclasses
 import sys
 import threading
 from operator import getitem
-from typing import Any, Callable, Generic, Set, Tuple, TypeVar, Union, cast
+from typing import Any, Callable, Dict, Generic, Set, Tuple, TypeVar, Union, cast
 
 import react_ipywidgets as react
 
-from solara.scope.types import ObservableMutableMapping
-
 T = TypeVar("T")
+TS = TypeVar("TS")
 S = TypeVar("S")  # used for state
+
+local = threading.local()
+_DEBUG = False
+
+
+def _in_solara_server():
+    return "solara.server" in sys.modules
 
 
 # these hooks should go into react-ipywidgets
@@ -41,19 +47,37 @@ def use_sync_external_store_with_selector(subscribe, get_snapshot: Callable[[], 
     return use_sync_external_store(subscribe, lambda: selector(get_snapshot()))
 
 
-def merge_state(d1: S, **kwargs):
+def merge_state(d1: S, **kwargs) -> S:
     if dataclasses.is_dataclass(d1):
         return dataclasses.replace(d1, **kwargs)
     if "pydantic" in sys.modules and isinstance(d1, sys.modules["pydantic"].BaseModel):
-        return type(d1)(**{**d1.dict(), **kwargs})
+        return type(d1)(**{**d1.dict(), **kwargs})  # type: ignore
     return cast(S, {**cast(dict, d1), **kwargs})
 
 
-class Storage(Generic[T]):
-    def __init__(self, initial_state: T, merge: Callable[..., T] = merge_state):
-        self.initial_state = initial_state
+class ValueBase(Generic[T]):
+    def __init__(self, merge: Callable = merge_state):
         self.merge = merge
         self.listeners: Set[Callable[[T], None]] = set()
+        self.listeners2: Set[Callable[[T, T], None]] = set()
+
+    @property
+    def lock(self):
+        raise NotImplementedError
+
+    @property
+    def value(self) -> T:
+        return self.get()
+
+    @value.setter
+    def value(self, value: T):
+        self.set(value)
+
+    def set(self, value: T):
+        raise NotImplementedError
+
+    def get(self) -> T:
+        raise NotImplementedError
 
     def subscribe(self, listener: Callable[[T], None]):
         self.listeners.add(listener)
@@ -63,116 +87,137 @@ class Storage(Generic[T]):
 
         return cleanup
 
-    def update(self, **kwargs):
-        self.set(self.merge(self.get(), **kwargs))
+    def subscribe_change(self, listener: Callable[[T, T], None]):
+        self.listeners2.add(listener)
 
-    def set(self, new_state: T):
-        raise NotImplementedError
+        def cleanup():
+            self.listeners2.remove(listener)
 
-    def get(self) -> T:
-        raise NotImplementedError
+        return cleanup
 
-    def fire(self, state: T):
-        for listener in self.listeners:
-            listener(state)
+    def update(self, _f=None, **kwargs):
+        if _f is not None:
+            assert not kwargs
+            with self.lock:
+                kwargs = _f(self.get())
+        with self.lock:
+            # important to have this part thread-safe
+            new = self.merge(self.get(), **kwargs)
+            self.set(new)
+
+    def fire(self, new: T, old: T):
+        for listener in self.listeners.copy():
+            listener(new)
+        for listener2 in self.listeners2.copy():
+            listener2(new, old)
+
+    def use_value(self) -> T:
+        # .use with the default argument doesn't give good type inference
+        return self.use()
+
+    def use(self, selector: Callable[[T], TS] = lambda x: x) -> TS:  # type: ignore
+        slice = use_sync_external_store_with_selector(
+            self.subscribe,
+            self.get,
+            selector,
+        )
+        return slice
+
+    def use_state(self) -> Tuple[T, Callable[[T], None]]:
+        setter = self.set
+        value = self.use()  # type: ignore
+        return value, setter
+
+    @property
+    def fields(self) -> T:
+        # we lie about the return type, but in combination with
+        # setter we can make type safe setters (see docs/tests)
+        return cast(T, Fields(self))
+
+    def setter(self, field: TS) -> Callable[[TS], None]:
+        _field = cast(FieldBase, field)
+
+        def setter(new_value: TS):
+            _field.set(new_value)
+
+        return cast(Callable[[TS], None], setter)
 
 
-class SubStorage(Storage):
-    def __init__(self, storage: Storage, key):
-        self.storage = storage
-        self.key = key
-
-    def subscribe(self, listener: Callable[[T], None]):
-        return self.storage.subscribe(lambda state: listener(state[self.key]))
-
-    def update(self, **kwargs):
-        new_value = self.storage.merge(self.get(), **kwargs)
-        self.storage.update(**{self.key: new_value})
-
-    def set(self, new_state: T):
-        # TODO: use merge
-        self.storage.update(**{self.key: new_state})
-
-    def get(self) -> T:
-        raise NotImplementedError
+# the default store for now, stores in a global dict, or when in a solara
+# context, in the solara user context
 
 
-class SubStorageDict(SubStorage):
-    def get(self) -> T:
-        return self.storage.get()[self.key]
+class ConnectionStore(ValueBase[S]):
+    _global_dict: Dict[str, S] = {}  # outside of solara context, this is used
+    scope_lock = threading.Lock()
 
+    def __init__(self, default_value: S = None):
+        super().__init__()
+        self.default_value = default_value
+        cls = type(default_value)
+        self.storage_key = cls.__module__ + ":" + cls.__name__ + "-" + str(id(default_value))
+        self._global_dict = {}
+        # since a set can trigger events, which can trigger new updates, we need a recursive lock
+        self._lock = threading.RLock()
 
-class SubStorageAttr(SubStorage):
-    def get(self) -> T:
-        return getattr(self.storage.get(), self.key)
+    @property
+    def lock(self):
+        return self._lock
 
+    def _get_dict(self):
+        scope_dict = self._global_dict
+        if _in_solara_server():
+            import solara.server.app
 
-class StorageGlobal(Storage[T]):
-    def __init__(self, initial_state: T, merge: Callable[..., T] = merge_state):
-        super().__init__(initial_state, merge=merge)
-        self.state = self.initial_state
-
-    def set(self, new_state: T):
-        self.state = new_state
-        self.fire(self.state)
+            try:
+                context = solara.server.app.get_current_context()
+            except:  # noqa
+                pass  # do we need to be more strict?
+            else:
+                scope_dict = cast(Dict[str, S], context.user_dicts)
+        return scope_dict
 
     def get(self):
-        return self.state
+        scope_dict = self._get_dict()
+        if self.storage_key not in scope_dict:
+            with self.scope_lock:
+                if self.storage_key not in scope_dict:
+                    # we assume immutable, so don't make a copy
+                    scope_dict[self.storage_key] = self.default_value
+        return scope_dict[self.storage_key]
+
+    def set(self, value: S):
+        scope_dict = self._get_dict()
+        old = self.get()
+        scope_dict[self.storage_key] = value
+
+        if _DEBUG:
+            import traceback
+
+            traceback.print_stack(limit=17, file=sys.stdout)
+
+            print("change old", old)  # noqa
+            print("change new", old)  # noqa
+
+        self.fire(value, old)
 
 
-ObserverCallback = Callable[[Any, Any], None]
+class Reactive(ValueBase[S]):
+    _storage: ValueBase[S]
 
-
-class StorageObserableMutableMapping(Storage[T]):
-    """Storage that subscribes to changes in an ObservableMutableMapping"""
-
-    def __init__(self, initial_state: T, key: str, observable_dict: ObservableMutableMapping, merge: Callable[..., T] = merge_state):
-        self.key = key
-        super().__init__(initial_state, merge=merge)
-        self.observable_dict = observable_dict
-        self.observable_dict.subscribe_key(self.key, self.on_external_change)
-        if self.key not in self.observable_dict:
-            self.observable_dict[self.key] = self.initial_state
-            self.state = self.initial_state
+    def __init__(self, default_value: Union[S, ValueBase[S]]):
+        super().__init__()
+        if not isinstance(default_value, ValueBase):
+            self._storage = ConnectionStore(default_value)
         else:
-            self.state = self.observable_dict[self.key]
+            self._storage = default_value
+        self.__post__init__()
 
-    def get(self):
-        return self.observable_dict.get(self.key, self.initial_state)
+    @property
+    def lock(self):
+        return self._storage.lock
 
-    def set(self, new_state: T):
-        self.observable_dict[self.key] = new_state
-        self.fire(new_state)
-
-    def on_external_change(self, key, value):
-        assert key == self.key
-        self.fire(value)
-
-    def delete(self):
-        del self.observable_dict[self.key]
-
-
-class State(Generic[S]):
-    _storage: Storage[S]
-
-    def __init__(self, default_value: S = None, storage: Union[Storage[S], ObservableMutableMapping] = None):
-        self.lock = threading.Lock()
-        cls = type(self)
-        self.storage_key = cls.__module__ + ":" + cls.__name__
-        if storage is None:
-            if default_value is None:
-                raise ValueError("Provide default_value or storage")
-            import solara.scope
-
-            storage = StorageObserableMutableMapping[S](default_value, self.storage_key, solara.scope.connection)
-        if isinstance(storage, ObservableMutableMapping):
-            if default_value is None:
-                raise ValueError("Provide default_value or storage")
-            storage = StorageObserableMutableMapping[S](default_value, self.storage_key, storage)
-        self._storage = storage
-        self.__post__init__(storage)
-
-    def __post__init__(self, storage: Storage[S]):
+    def __post__init__(self):
         pass
 
     def update(self, **kwargs):
@@ -187,34 +232,15 @@ class State(Generic[S]):
     def subscribe(self, listener: Callable[[S], None]):
         return self._storage.subscribe(listener)
 
-    def use(self, selector: Callable[[S], T] = lambda x: x) -> T:  # type: ignore
-        slice = use_sync_external_store_with_selector(
-            self.subscribe,
-            self.get,
-            selector,
-        )
-        return slice
-
-    @property
-    def fields(self) -> S:
-        # we lie about the return type, but in combination with
-        # setter we can make type safe setters (see docs/tests)
-        return cast(S, Fields(self))
-
-    def setter(self, field: T) -> Callable[[T], None]:
-        _field = cast(FieldBase, field)
-
-        def setter(new_value: T):
-            _field.set(new_value)
-
-        return cast(Callable[[T], None], setter)
+    def subscribe_change(self, listener: Callable[[S, S], None]):
+        return self._storage.subscribe_change(listener)
 
     def computed(self, f: Callable[[S], T]) -> "Computed[T]":
         return Computed(f, self)
 
 
 class Computed(Generic[T]):
-    def __init__(self, compute: Callable[[S], T], state: State[S]):
+    def __init__(self, compute: Callable[[S], T], state: Reactive[S]):
         self.compute = compute
         self.state = state
 
@@ -233,57 +259,53 @@ class Computed(Generic[T]):
         return slice
 
 
-class Accessor(Generic[T]):
+class ValueSubField(ValueBase[T]):
     def __init__(self, field: "FieldBase"):
-        self.field = field
-        state = field._parent
-        while not isinstance(state, State):
-            state = state._parent
-        assert isinstance(state, State)
-        self.state = state
+        super().__init__()  # type: ignore
+        self._field = field
+        field = field
+        while not isinstance(field, ValueBase):
+            field = field._parent
+        self._root = field
+        assert isinstance(self._root, ValueBase)
 
-    def setter(self) -> Callable[[T], None]:
-        _field = cast(FieldBase, self.field)
-        return _field.set
+    @property
+    def lock(self):
+        return self._root.lock
 
-    def get(self) -> T:
-        _field = cast(FieldBase, self.field)
-        return _field.get()
+    def subscribe(self, listener: Callable[[T], None]):
+        def on_change(new, old):
+            new_value = self._field.get(new)
+            old_value = self._field.get(old)
+            if new_value != old_value:
+                listener(new_value)
 
-    def set(self, new_value: T) -> None:
-        _field = cast(FieldBase, self.field)
-        _field.set(new_value)
+        return self._root.subscribe_change(on_change)
 
-    def update(self, updater: Callable[[T], T]):
-        _field = cast(Fields, self.field)
-        new_value = updater(_field.get())
-        self.set(new_value)
+    def get(self, obj=None) -> T:
+        return self._field.get(obj)
 
-    def use(self) -> T:
-        return use_sync_external_store(self.state.subscribe, self.field.get)  # type: ignore
-
-    def use_state(self) -> Tuple[T, Callable[[T], None]]:
-        setter = self.setter()
-        value = self.use()
-        return value, setter
+    def set(self, value: T):
+        self._field.set(value)
 
 
-def X(field: T) -> Accessor[T]:
-    return Accessor[T](cast(FieldBase, field))
+def Ref(field: T) -> ValueSubField[T]:
+    _field = cast(FieldBase, field)
+    return ValueSubField[T](_field)
 
 
 class FieldBase:
     _parent: Any
 
     def __getattr__(self, key):
-        if key in ["_parent", "set"]:
+        if key in ["_parent", "set", "_lock"] or key.startswith("__"):
             return self.__dict__[key]
         return FieldAttr(self, key)
 
     def __getitem__(self, key):
         return FieldItem(self, key)
 
-    def get(self):
+    def get(self, obj=None):
         raise NotImplementedError
 
     def set(self, value):
@@ -291,10 +313,15 @@ class FieldBase:
 
 
 class Fields(FieldBase):
-    def __init__(self, state: State):
+    def __init__(self, state: ValueBase):
         self._parent = state
+        self._lock = state.lock
 
-    def get(self):
+    def get(self, obj=None):
+        # we are at the root, so override the object
+        # so we can get the 'old' value
+        if obj is not None:
+            return obj
         return self._parent.get()
 
     def set(self, value):
@@ -305,34 +332,44 @@ class FieldAttr(FieldBase):
     def __init__(self, parent, key: str):
         self._parent = parent
         self.key = key
+        self._lock = parent._lock
 
-    def get(self):
-        return getattr(self._parent.get(), self.key)
+    def get(self, obj=None):
+        obj = self._parent.get(obj)
+        return getattr(obj, self.key)
 
     def set(self, value):
-        parent_value = self._parent.get()
-        if isinstance(self.key, str):
-            parent_value = merge_state(parent_value, **{self.key: value})
-            self._parent.set(parent_value)
-        else:
-            raise TypeError(f"Type of key {self.key!r} is not supported")
+        with self._lock:
+            parent_value = self._parent.get()
+            if isinstance(self.key, str):
+                parent_value = merge_state(parent_value, **{self.key: value})
+                self._parent.set(parent_value)
+            else:
+                raise TypeError(f"Type of key {self.key!r} is not supported")
 
 
 class FieldItem(FieldBase):
     def __init__(self, parent, key: str):
         self._parent = parent
         self.key = key
+        self._lock = parent._lock
 
-    def get(self):
-        return getitem(self._parent.get(), self.key)
+    def get(self, obj=None):
+        obj = self._parent.get(obj)
+        return getitem(obj, self.key)
 
     def set(self, value):
-        parent_value = self._parent.get()
-        if isinstance(self.key, int) and isinstance(parent_value, (list, tuple)):
-            parent_type = type(parent_value)
-            parent_value = parent_value.copy()
-            parent_value[self.key] = value
-            self._parent.set(parent_type(parent_value))
-        else:
-            parent_value = merge_state(parent_value, **{self.key: value})
-            self._parent.set(parent_value)
+        with self._lock:
+            parent_value = self._parent.get()
+            if isinstance(self.key, int) and isinstance(parent_value, (list, tuple)):
+                parent_type = type(parent_value)
+                parent_value = parent_value.copy()  # type: ignore
+                parent_value[self.key] = value
+                self._parent.set(parent_type(parent_value))
+            else:
+                parent_value = merge_state(parent_value, **{self.key: value})
+                self._parent.set(parent_value)
+
+
+# alias for compatibility
+State = Reactive

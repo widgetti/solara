@@ -1,33 +1,33 @@
 # Toestand state management
 
-Toestand is a no-boilerplate, state management library that integrates well with Solara. It allows your state to live outside of the Solara components, and have multiple components listen to, or update parts of the state.
+Toestand is a type safe, reactive, state management library that integrates well with Solara. It allows your state to live outside of the Solara components, and have multiple components listen to, or update parts of the state.
 
-Toestand wraps your state in a State object with a `.get()` and `.set(..)` and `.subscribe(callback)` which make your state "observable". This allows Solara components to listen to state changes and trigger a re-render. It is typed where possible, so you have as few runtime problems and can rely on mypy to spot issues.
+Toestand wraps your state in a Reactive object with a `.get()` and `.set(..)` and `.subscribe(callback)` which make your state "observable". This allows Solara components to listen to state changes and trigger a re-render. It is typed where possible, so you have as few runtime problems and can rely on mypy to spot issues.
 A convienent `.use()` method can be used inside a Solara component to make it automatically update when changes occur (your component will be responsive).
 
 Toestand is inspired on [Zustand](https://github.com/pmndrs/zustand).  The word "toestand" means "state" in Dutch, but can also be interpreted as "hassle".
 
 # Simplest possible example
 
-The State class can be used outside of Solara components, by using `.set`, `.get` and `.subscribe`:
+The Reactive class can be used outside of Solara components, by using `.set`, `.get` and `.subscribe`:
 
 ```py
-from solara.lab import State
+from solara.lab import Reactive
 
-counter_state = State(0)
+counter = Reactive(0)
 
 # this will print out the value every time someone calls .set(..)
-unsubscribe = counter_state.subscribe(print)
+unsubscribe = counter.subscribe(print)
 
 # this triggers all subscribers
-counter_state.set(2)
+counter.set(2)
 # prints: 2
 
 # The return value of .subscribe is an unsubscribe function
 unsubscribe()  # remove event listener
 
 # And we can also simply request the latest value
-print(counter_state.get())
+print(counter.get())
 # prints: 2
 ```
 
@@ -39,15 +39,15 @@ We can now use this in a Solara application:
 
 ```python
 import solara
-from solara.lab import State
+from solara.lab import Reactive
 
-counter_state = State(0)
+counter = Reactive(0)
 
 
 @solara.component
 def CounterView():
     # .get() *and* .subscribe() to changes from a component
-    count = counter_state.use()
+    count = counter.use()
     return solara.Info(f"Counter value {count}")
 
 
@@ -56,7 +56,7 @@ def CounterControl():
     def increase_counter():
         # this will trigger any component that used .use()
         # or anyone that .subscribed to changes
-        counter_state.set(counter_state.get() + 1)
+        counter.set(counter.get() + 1)
     return solara.Button("Increase counter", on_click=increase_counter)
 
 
@@ -85,13 +85,13 @@ class UserProfile:
 
 ```
 
-## Custom State class
+## Custom Reactive class
 
-To keep as much of our code outside of our UI, we create a subclass of State with methods to do modifications to our state.
+To keep as much of our code outside of our UI, we create a subclass of `Reactive` with methods to do modifications to our state.
 
 ```python
 
-class UserProfileState(State[UserProfile]):
+class ReactiveUserProfile(Reactive[UserProfile]):
     def login(self, username: str, password: str):
         # Note: in reality this should query a database
         if username == "test" and password == "test":
@@ -102,18 +102,20 @@ class UserProfileState(State[UserProfile]):
     def logout(self):
         self.set(UserProfile())
 
-user_profile_state = UserProfileState(UserProfile())
+user_profile = ReactiveUserProfile(UserProfile())
 ```
 
 
 ## Putting this together in an app.
 
-We can now create the UI components that contain as little logic as possible, and only interfaces to our custom State class.
+We can now create the UI components that contain as little logic as possible, and only interfaces to our custom Reactive
+
+ class.
 
 ```python
 @solara.component
 def LoginStatus():
-    user_profile = user_profile_state.use()
+    user_profile = user_profile.use()
     with solara.VBox() as main:
         if user_profile.logged_in:
             solara.Text(f"Welcome {user_profile.username}")
@@ -127,14 +129,14 @@ def LoginForm():
     username, set_username = solara.use_state("")
     password, set_password = solara.use_state("")
     with solara.VBox() as main:
-        if user_profile_state.use().wrong_login:
+        if user_profile.use().wrong_login:
             solara.Warning("Wrong username or password")
-        if user_profile_state.use().logged_in:
-            solara.Button(label="Logout", on_click=lambda: user_profile_state.logout())
+        if user_profile.use().logged_in:
+            solara.Button(label="Logout", on_click=lambda: user_profile.logout())
         else:
             solara.InputText(label="Username", value=username, on_value=set_username)
             solara.InputText(label="Password", password=True, value=password, on_value=set_password)
-            solara.Button(label="Login", on_click=lambda: user_profile_state.login(username, password))
+            solara.Button(label="Login", on_click=lambda: user_profile.login(username, password))
     return main
 
 

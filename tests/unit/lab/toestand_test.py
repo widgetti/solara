@@ -8,7 +8,7 @@ from typing_extensions import TypedDict
 
 import solara as sol
 from solara.lab import State
-from solara.lab.toestand import SubStorageAttr, X, use_sync_external_store
+from solara.lab.toestand import Reactive, Ref, use_sync_external_store
 from solara.server import app, kernel
 
 from ..common import click
@@ -23,7 +23,7 @@ class Bears:
 B = TypeVar("B", bound=Bears)
 
 
-class BearState(State[B]):
+class BearReactive(Reactive[B]):
     def increase_population(self):
         self.update(count=self.get().count + 1)
 
@@ -34,13 +34,66 @@ bears: Bears = Bears(type="brown", count=1)
 def test_store_bare():
     # no need for subclasses
     mock = unittest.mock.Mock()
-    store = State[dict]({"string": "foo", "int": 42})
+    mock_change = unittest.mock.Mock()
+    store = Reactive[dict]({"string": "foo", "int": 42})
     unsub = store.subscribe(mock)
+    unsub_change = store.subscribe_change(mock_change)
     mock.assert_not_called()
+    mock_change.assert_not_called()
     store.update(string="bar")
     mock.assert_called_with({"string": "bar", "int": 42})
+    mock_change.assert_called_with({"string": "bar", "int": 42}, {"string": "foo", "int": 42})
 
     unsub()
+    unsub_change()
+
+
+def test_subscribe():
+    bear_store = BearReactive(bears)
+    mock = unittest.mock.Mock()
+    mock_type = unittest.mock.Mock()
+    mock_count = unittest.mock.Mock()
+    unsub = []
+    unsub += [bear_store.subscribe(mock)]
+    unsub += [Ref(bear_store.fields.type).subscribe(mock_type)]
+    unsub += [Ref(bear_store.fields.count).subscribe(mock_count)]
+    mock.assert_not_called()
+    bear_store.update(type="purple")
+    mock.assert_called_with(Bears(type="purple", count=1))
+    mock_type.assert_called_with("purple")
+    mock_count.assert_not_called()
+
+    mock_type.reset_mock()
+    bear_store.update(count=3)
+    mock.assert_called_with(Bears(type="purple", count=3))
+    mock_type.assert_not_called()
+    mock_count.assert_called_with(3)
+    for u in unsub:
+        u()
+
+
+def test_nested_update():
+    # this effectively test the RLock vs Lock
+    bear_store = BearReactive(bears)
+
+    mock = unittest.mock.Mock()
+    mock_type = unittest.mock.Mock()
+    mock_count = unittest.mock.Mock()
+    unsub = []
+    unsub += [bear_store.subscribe(mock)]
+    unsub += [Ref(bear_store.fields.type).subscribe(mock_type)]
+    unsub += [Ref(bear_store.fields.count).subscribe(mock_count)]
+
+    def reset_count(new_type):
+        bear_store.update(count=0)
+
+    Ref(bear_store.fields.type).subscribe(reset_count)
+    Ref(bear_store.fields.type).value = "purple"
+    mock.assert_called_with(Bears(type="purple", count=0))
+    mock_type.assert_called_with("purple")
+    mock_count.assert_called_with(0)
+    for u in unsub:
+        u()
 
 
 def test_store_nested():
@@ -71,11 +124,11 @@ def test_store_nested():
         people=people,
         dicator=Person(name="Jos", height=1.8),
     )
-    store = State[Country](nl)
+    store = Reactive[Country](nl)
     unsub = store.subscribe(mock)
     mock.assert_not_called()
     country = store.fields
-    population_accessor = X(store.fields.cities[0].population)
+    population_accessor = Ref(store.fields.cities[0].population)
     assert population_accessor.get() == 1000000
     population_accessor.set(10)
     assert population_accessor.get() == 10
@@ -89,7 +142,7 @@ def test_store_nested():
         )
     )
 
-    X(country.people["Jos"].height).set(1.9)
+    Ref(country.people["Jos"].height).set(1.9)
     assert people == people_copy
     mock.assert_called_with(
         Country(
@@ -100,36 +153,48 @@ def test_store_nested():
         )
     )
 
-    X(country.people["Jos"].height).update(lambda x: x + 0.1)
+    Ref(country.people["Jos"].height).value = 2.1
+    assert people == people_copy
     mock.assert_called_with(
         Country(
             name="Netherlands",
             cities=[City(name="Amsterdam", population=10)],
-            people={"Jos": Person(name="Jos", height=2.0)},
+            people={"Jos": Person(name="Jos", height=2.1)},
             dicator=Person(name="Jos", height=1.8),
-        ),
+        )
     )
 
-    X(country.people).update(lambda x: {**x, "Maria": Person(name="Maria", height=1.7)})
+    # TODO: new name?
+    # Ref(country.people["Jos"].height).set(lambda x: x + 0.1)
+    # mock.assert_called_with(
+    #     Country(
+    #         name="Netherlands",
+    #         cities=[City(name="Amsterdam", population=10)],
+    #         people={"Jos": Person(name="Jos", height=2.0)},
+    #         dicator=Person(name="Jos", height=1.8),
+    #     ),
+    # )
+
+    Ref(country.people).update(lambda x: {**x, "Maria": Person(name="Maria", height=1.7)})
     mock.assert_called_with(
         Country(
             dicator=Person(name="Jos", height=1.8),
             name="Netherlands",
             cities=[City(name="Amsterdam", population=10)],
             people={
-                "Jos": Person(name="Jos", height=2.0),
+                "Jos": Person(name="Jos", height=2.1),
                 "Maria": Person(name="Maria", height=1.7),
             },
         )
     )
-    X(country.dicator.height).set(2.0)
+    Ref(country.dicator.height).set(2.0)
     mock.assert_called_with(
         Country(
             dicator=Person(name="Jos", height=2.0),
             name="Netherlands",
             cities=[City(name="Amsterdam", population=10)],
             people={
-                "Jos": Person(name="Jos", height=2.0),
+                "Jos": Person(name="Jos", height=2.1),
                 "Maria": Person(name="Maria", height=1.7),
             },
         )
@@ -140,7 +205,7 @@ def test_store_nested():
 
 def test_bear_store_basics():
     mock = unittest.mock.Mock()
-    bear_store = BearState(bears)
+    bear_store = BearReactive(bears)
     unsub = bear_store.subscribe(mock)
     mock.assert_not_called()
     bear_store.increase_population()
@@ -158,6 +223,17 @@ def test_bear_store_basics():
     bear_store.increase_population()
     assert mock.call_count == 3
 
+    # now test a subfield
+    mock_count = unittest.mock.Mock()
+    count = Ref(bear_store.fields.count)
+    bear_store.subscribe(mock)
+    count.subscribe(mock_count)
+    count.set(4)
+    assert count.get() == 4
+    assert bear_store.get() == Bears(type="brown", count=4)
+    mock.assert_called_with(Bears(type="brown", count=4))
+    mock_count.assert_called_with(4)
+
 
 def test_bear_store_basics_dict():
     class Bears(TypedDict):
@@ -166,12 +242,12 @@ def test_bear_store_basics_dict():
 
     bears = Bears(type="brown", count=1)
 
-    class BearState(State[Bears]):
+    class BearReactive(Reactive[Bears]):
         def increase_population(self):
             self.update(count=self.get()["count"] + 1)
 
     mock = unittest.mock.Mock()
-    bear_store = BearState(bears)
+    bear_store = BearReactive(bears)
     unsub = bear_store.subscribe(mock)
     mock.assert_not_called()
     bear_store.increase_population()
@@ -191,7 +267,7 @@ def test_bear_store_basics_dict():
 
 
 def test_bear_store_react():
-    bear_store = BearState(bears)
+    bear_store = BearReactive(bears)
 
     @react.component
     def BearCounter():
@@ -260,7 +336,7 @@ def test_simplest():
     # prints: {"bears": 2, "theme": "light"}
 
     unsub()  # remove event listener
-    theme_accessor = X(settings.fields["theme"])
+    theme_accessor = Ref(settings.fields["theme"])
 
     # Now use it in a React component
 
@@ -274,12 +350,12 @@ def test_simplest():
     def ThemeInfo():
         # the lambda function here is called a selector, it 'selects' out the state you want
         # theme = settings.use(lambda state: state["theme"])
-        theme = X(settings.fields["theme"]).use()
+        theme = Ref(settings.fields["theme"]).use_value()
         return sol.Info(f"Using theme {theme}")
 
     @react.component
     def ThemeSelector():
-        theme, set_theme = X(settings.fields["theme"]).use_state()
+        theme, set_theme = Ref(settings.fields["theme"]).use_state()
         with sol.ToggleButtonsSingle(theme, on_value=set_theme) as main:
             sol.Button("dark")
             sol.Button("light")
@@ -315,7 +391,7 @@ class Fish:
 F = TypeVar("F", bound=Fish)
 
 
-class FishState(State[F]):
+class FishReactive(Reactive[F]):
     def jump(self):
         print("jump")  # noqa
 
@@ -326,13 +402,12 @@ class AppStateComposite:
     fish: Fish
 
 
-class AppState(State[AppStateComposite]):
-    bears: BearState
+class AppState(Reactive[AppStateComposite]):
+    bears: BearReactive
 
-    def __post__init__(self, storage):
+    def __post__init__(self):
         # for composite stores, manually create the substores
-        sub = SubStorageAttr(storage=storage, key="bear")
-        self.bears = BearState(self.get().bear, storage=sub)
+        self.bears = BearReactive(Ref(self.fields.bear))
         # it's ok not to have a substore for fish
 
     def eat(self):
@@ -353,7 +428,7 @@ def test_store_primitive():
 
 
 def test_store_computed():
-    list_store = State[list]([1, 2, 3])
+    list_store = Reactive[list]([1, 2, 3])
 
     count = list_store.computed(len)
     last = list_store.computed(lambda x: x[-1] if x else None)
@@ -415,7 +490,7 @@ class AppInherit(Bears, Fish):
     pass
 
 
-class AppStateInherit(BearState[AppInherit], FishState[AppInherit], State[AppInherit]):
+class AppStateInherit(BearReactive[AppInherit], FishReactive[AppInherit], Reactive[AppInherit]):
     def eat(self):
         state = self.get()
         bears = state.count
@@ -496,7 +571,7 @@ def test_use_external_store():
 #     import solara as sol
 #     import solara.scope
 
-#     bear_store = BearState({"type": "brown", "count": 1}, storage=sol.scope.application)
+#     bear_store = BearReactive({"type": "brown", "count": 1}, storage=sol.scope.application)
 #     try:
 #         assert bear_store.get() == {"type": "brown", "count": 1}
 
