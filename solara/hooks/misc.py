@@ -20,6 +20,8 @@ import reacton
 import solara
 from solara.datatypes import FileContentResult, Result, ResultState
 
+SOLARA_ALLOW_OTHER_TRACER = os.environ.get("SOLARA_ALLOW_OTHER_TRACER", False) in (True, "True", "true", "1")
+
 logger = logging.getLogger("react-ipywidgets.extra.hooks")
 chunk_size_default = 1024**2
 
@@ -109,6 +111,8 @@ def use_thread(
                 if rc is None or not rc._is_rendering:
                     # this will bubble up
                     raise CancelledError()
+            if prev and SOLARA_ALLOW_OTHER_TRACER:
+                prev(frame, event, arg)
             # keep tracing:
             return tracefunc
 
