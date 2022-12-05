@@ -79,6 +79,8 @@ modules.export = {
         // <base href="https://myserver.com/someuser/project/a/">
         window.history.pushState({ top: 0 }, null, "." + this.location);
         window.scrollTo(0, 0);
+        const event = new Event('solara.router');
+        window.dispatchEvent(event);
       }
     },
   },
