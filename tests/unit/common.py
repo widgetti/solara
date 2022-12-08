@@ -3,7 +3,7 @@ import time
 from ipyvue import VueWidget
 
 
-def repeat_while_false(f, timeout=1):
+def repeat_while_false(f, timeout=2):
     while True:
         result = f()
         if result:
