@@ -13,7 +13,7 @@ defaults:
 
 jobs:
   test:
-    runs-on: ${{ matrix.os }}-latest
+    runs-on: ${{ matrix.os }}-${{matrix.os == 'ubuntu' && '20.04' || 'latest' }}
     strategy:
       fail-fast: false
       matrix:
