@@ -13,8 +13,6 @@ import solara
 from solara.alias import rv
 from solara.util import cwd
 
-from .server import reload
-
 autoroute_level_context = solara.create_context(0)
 DEBUG = False
 
@@ -281,6 +279,8 @@ def get_title(module: ModuleType, required=True):
 
 
 def generate_routes(module: ModuleType) -> List[solara.Route]:
+    from .server import reload
+
     assert module.__file__ is not None
     routes = []
     if module.__file__.endswith("__init__.py"):
@@ -331,6 +331,8 @@ def generate_routes(module: ModuleType) -> List[solara.Route]:
 
 
 def generate_routes_directory(path: Path) -> List[solara.Route]:
+    from .server import reload
+
     subpaths = list(sorted(path.iterdir()))
     routes = []
     first = True
