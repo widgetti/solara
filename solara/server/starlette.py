@@ -17,7 +17,7 @@ import solara
 from solara.server import reload
 
 from . import app as appmod
-from . import patch, server, websocket
+from . import patch, server, telemetry, websocket
 from .cdn_helper import cdn_url_path, default_cache_dir, get_path
 
 os.environ["SERVER_SOFTWARE"] = "solara/" + str(solara.__version__)
@@ -192,6 +192,11 @@ def on_startup():
     # TODO: configure and set max number of threads
     # see https://github.com/encode/starlette/issues/1724
     reload.reloader.start()
+    telemetry.server_start()
+
+
+def on_shutdown():
+    telemetry.server_stop()
 
 
 routes = [
@@ -211,5 +216,6 @@ routes = [
 app = Starlette(
     routes=routes,
     on_startup=[on_startup],
+    on_shutdown=[on_shutdown],
 )
 patch.patch()

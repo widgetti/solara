@@ -26,5 +26,5 @@ repos:
     hooks:
       - id: mypy
         args: [--no-strict-optional, --ignore-missing-imports]
-        additional_dependencies: [types-requests, types-markdown, types-PyYAML]
+        additional_dependencies: [types-requests, types-markdown, types-PyYAML, types-filelock]
         exclude: tests/unit/solara_test_apps/multipage/04-a_directory/*

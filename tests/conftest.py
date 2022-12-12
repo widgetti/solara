@@ -3,8 +3,11 @@ import sys
 
 import pytest
 
+import solara.server.settings
 from solara.server import kernel, patch
 from solara.server.app import AppContext
+
+solara.server.settings.telemetry.mixpanel_token = "adbf863d17cba80db608788e7fce9843"
 
 
 @pytest.fixture(scope="session")

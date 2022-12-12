@@ -1,26 +1,11 @@
-# Scopes
+# Solara server
 
-## Application scope
+The solara server enables running ipywidgets based applications without a real Jupyter kernel, allowing multiple "Virtual kernels" to share the same process for better performance and scalability.
 
-Does not exist (yet), although equals process scope when using a single worker. Could be implemented using Redis.
 
-## Worker scope
+## Telemetry
 
-The scope of a single worker. E.g. all Python imported modules live in this scope, so Solara does not explicitly support this. Your application (when using React elements) will also live in this scope.
+Solara uses Mixpanel to collect usage of the solara server. We track when a server is started and stopped. To opt out of mixpanel telemetry, either:
 
-```python
-import solara as sol
-# only load a global dataframe once per worker
-if "df" not in solara.scope.worker:
-    process_scope["df"] = ....
-```
-
-## User scope
-
-Things like shopping carts should go here.
-
-## UI scope
-
-Connected to the life-time of a single browser tab.
-
-## React scope
+ * Set the environmental variable `SOLARA_TELEMETRY_MIXPANEL_ENABLE` to `False`.
+ * Install [python-dotenv](https://pypi.org/project/python-dotenv/) and put `SOLARA_TELEMETRY_MIXPANEL_ENABLE=False` in a `.env` file.
