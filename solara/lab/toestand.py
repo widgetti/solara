@@ -10,6 +10,7 @@ from typing import (
     Dict,
     Generic,
     List,
+    Optional,
     Set,
     Tuple,
     Type,
@@ -52,11 +53,10 @@ class ModelBase:
             self.__dict__[k] = v
         for name, value in vars(cls).items():
             if isinstance(value, Field) and name not in self.__dict__:
-                default = value.default
-                if default == dataclasses.MISSING:
-                    if value.default_factory == dataclasses.MISSING:
-                        raise TypeError(f"no default value for {name}")
+                if value.default_factory is not None:
                     default = value.default_factory()
+                else:
+                    default = value.default
                 # setattr(self, name, default)
                 # do not trigger the __set__
                 self.__dict__[name] = default
@@ -119,10 +119,8 @@ def merge_state(d1: S, **kwargs) -> S:
     cls = type(d1)
     obj = cls()
     for k, v in vars(d1).items():
-        # setattr(obj, k, v)
         obj.__dict__[k] = v
     for k, v in kwargs.items():
-        # setattr(obj, k, v)
         obj.__dict__[k] = v
     return obj
 
@@ -363,7 +361,15 @@ class Computed(Generic[T]):
 
 
 class Field(ValueBase[S]):
-    def __init__(self, default=dataclasses.MISSING, default_factory=dataclasses.MISSING):
+    @overload
+    def __init__(self, default: S, default_factory: None = ...):
+        ...
+
+    @overload
+    def __init__(self, default: None = ..., default_factory: Callable[[], S] = ...):
+        ...
+
+    def __init__(self, default: Optional[S] = None, default_factory: Optional[Callable[[], S]] = None):
         self.default = default
         self.default_factory = default_factory
         ValueBase.__init__(self)
@@ -394,24 +400,6 @@ class Field(ValueBase[S]):
     def __set__(self, obj: Any, value: S):
         self.set(value)
 
-
-class Bears(ModelBase, frozen=True):
-    type: Field[str] = Field("brown")
-    count: Field[int] = Field(1)
-
-
-# bears = Bears()
-
-# bears.type.capitalize()
-# print(bears.type)
-
-# # Bears.type.set("black")
-
-# bears.fie
-
-# class Bears(ModelBase, frozen=True):
-#     type : Field[str] = Field("brown")
-#     count : Field[int] = Field(1)
 
 if typing.TYPE_CHECKING:
 
@@ -466,7 +454,6 @@ class FieldBase(ValueBase[T]):
             if key in self.__dict__:
                 return self.__dict__[key]
             return super().__getattribute__(key)
-            # return getattr(type(self), key)
         obj = self.get()
         try:
             if isinstance(getattr(type(obj), key), Field):
