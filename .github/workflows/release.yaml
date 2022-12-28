@@ -38,7 +38,7 @@ jobs:
           HATCH_INDEX_USER: __token__
           HATCH_INDEX_AUTH: ${{ secrets.pypi_assets }}
         run: |
-          (cd packages/assets; hatch publish)
+          (cd packages/assets; openssl sha256 dist/*; hatch publish; openssl sha256 dist/*)
       - name: remove assets
         run: rm -rf packages/assets/dist
       - name: Publish solara to PyPI
@@ -48,6 +48,7 @@ jobs:
         run: |
           openssl sha256 dist/*
           flit publish
+          openssl sha256 dist/*
       - uses: actions/upload-artifact@v1
         with:
           name: distributions
