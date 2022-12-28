@@ -191,8 +191,8 @@ def use_thread(
                 except Exception as e:
                     error.current = e
                     if threading.current_thread() == running_thread.current:
-                        set_result_state(ResultState.ERROR)
                         logger.exception(e)
+                        set_result_state(ResultState.ERROR)
                     return
                 except CancelledError:
                     pass
