@@ -2,7 +2,9 @@ import asyncio
 import logging
 import mimetypes
 import os
+from http.server import HTTPServer
 from pathlib import Path
+from typing import Any
 from uuid import uuid4
 
 import flask
@@ -11,6 +13,7 @@ from flask import Blueprint, Flask, request, send_from_directory, url_for
 from flask_sock import Sock
 
 import solara
+from solara.server.threaded import ServerBase
 
 from . import app as appmod
 from . import cdn_helper, patch, server, websocket
@@ -39,6 +42,34 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
 
     def receive(self):
         return self.ws.receive()
+
+
+class ServerFlask(ServerBase):
+    server: Any
+
+    def has_started(self):
+        import socket
+
+        s = socket.socket()
+        try:
+            s.connect((self.host, self.port))
+        except ConnectionRefusedError:
+            return False
+        return True
+
+    def signal_stop(self):
+        assert isinstance(self.server, HTTPServer)
+        self.server.shutdown()  # type: ignore
+
+    def serve(self):
+        from werkzeug.serving import make_server
+
+        from solara.server.flask import app
+
+        self.server = make_server(self.host, self.port, app, threaded=True)  # type: ignore
+        assert isinstance(self.server, HTTPServer)
+        self.started.set()
+        self.server.serve_forever(poll_interval=0.05)  # type: ignore
 
 
 @blueprint.route("/jupyter/api/kernels/<id>")

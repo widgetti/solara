@@ -1,12 +1,14 @@
 import logging
 import os
 import pathlib
+import sys
 import typing
 from typing import List, Union, cast
 from uuid import uuid4
 
 import anyio
 import starlette.websockets
+import uvicorn.server
 from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse
@@ -15,6 +17,7 @@ from starlette.staticfiles import StaticFiles
 
 import solara
 from solara.server import reload
+from solara.server.threaded import ServerBase
 
 from . import app as appmod
 from . import patch, server, telemetry, websocket
@@ -53,6 +56,42 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
             raise websocket.WebSocketDisconnect()
         else:
             raise RuntimeError(f"Unknown message type {message}")
+
+
+class ServerStarlette(ServerBase):
+    server: uvicorn.server.Server
+
+    def has_started(self):
+        return self.server.started
+
+    def signal_stop(self):
+        self.server.should_exit = True
+        # this cause uvicorn to not wait for background tasks, e.g.:
+        # <Task pending name='Task-55'
+        #  coro=<WebSocketProtocol.run_asgi() running at
+        #  /.../uvicorn/protocols/websockets/websockets_impl.py:184>
+        # wait_for=<Future pending cb=[<TaskWakeupMethWrapper object at 0x16896aa00>()]>
+        # cb=[WebSocketProtocol.on_task_complete()]>
+        self.server.force_exit = True
+        self.server.lifespan.should_exit = True
+
+    def serve(self):
+
+        from uvicorn.config import Config
+        from uvicorn.server import Server
+
+        if sys.version_info[:2] < (3, 7):
+            # make python 3.6 work
+            import asyncio
+
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+        # uvloop will trigger a: RuntimeError: There is no current event loop in thread 'fastapi-thread'
+        config = Config(app, host=self.host, port=self.port, **self.kwargs, loop="asyncio")
+        self.server = Server(config=config)
+        self.started.set()
+        self.server.run()
 
 
 async def kernels(id):

@@ -2,20 +2,17 @@ import contextlib
 import logging
 import os
 import sys
-import threading
-import time
-from http.server import HTTPServer
-from typing import Optional, Set, Union
+from typing import Set, Union
 
 import playwright.sync_api
 import pytest
-import uvicorn.server
 
 import solara.server.app
 import solara.server.server
 import solara.server.settings
 from solara.server import reload
-from solara.server.starlette import app as app_starlette
+from solara.server.flask import ServerFlask
+from solara.server.starlette import ServerStarlette
 
 reload.reloader.start()
 logger = logging.getLogger("solara-test.integration")
@@ -77,140 +74,10 @@ def page(page: playwright.sync_api.Page):
     return page
 
 
-class ServerBase(threading.Thread):
-    def __init__(self, port: int, host: str = "localhost", **kwargs):
-        self.port = port
-        self.host = host
-        self.base_url = f"http://{self.host}:{self.port}"
-
-        self.kwargs = kwargs
-        self.started = threading.Event()
-        self.stopped = threading.Event()
-        self.error: Optional[BaseException] = None
-        self.server = None
-        super().__init__(name="test-server-thread")
-        self.setDaemon(True)
-
-    def run(self):
-        try:
-            logger.info("Starting main loop")
-            self.mainloop()
-        except BaseException as e:  # noqa
-            self.error = e
-            self.started.set()
-            logger.exception("Issue starting server")
-
-    def serve_threaded(self):
-        logger.debug("start thread")
-        self.start()
-        logger.debug("wait for thread to run")
-        self.started.wait()
-        if self.error:
-            raise self.error
-
-    def wait_until_serving(self):
-        for n in range(30):
-            if self.has_started():
-                time.sleep(0.1)  # give some time to really start
-                return
-            time.sleep(0.05)
-        else:
-            raise RuntimeError(f"Server at {self.base_url} does not seem to be running")
-
-    def serve(self):
-        raise NotImplementedError
-
-    def mainloop(self):
-        logger.info("serving at http://%s:%d" % (self.host, self.port))
-        try:
-            self.serve()
-        except:  # noqa: E722
-            logger.exception("Oops, server stopped unexpectedly")
-        finally:
-            self.stopped.set()
-
-    def stop_serving(self):
-        logger.debug("stopping server")
-        self.signal_stop()
-        self.stopped.wait(10)
-        if not self.stopped.is_set():
-            logger.error("stopping server failed")
-        else:
-            logger.debug("stopped server")
-
-    def signal_stop(self):
-        pass
-
-    def has_started(self) -> bool:
-        return False
-
-
-class ServerStarlette(ServerBase):
-    server: uvicorn.server.Server
-
-    def has_started(self):
-        return self.server.started
-
-    def signal_stop(self):
-        self.server.should_exit = True
-        # this cause uvicorn to not wait for background tasks, e.g.:
-        # <Task pending name='Task-55'
-        #  coro=<WebSocketProtocol.run_asgi() running at
-        #  /.../uvicorn/protocols/websockets/websockets_impl.py:184>
-        # wait_for=<Future pending cb=[<TaskWakeupMethWrapper object at 0x16896aa00>()]>
-        # cb=[WebSocketProtocol.on_task_complete()]>
-        self.server.force_exit = True
-        self.server.lifespan.should_exit = True
-
-    def serve(self):
-
-        from uvicorn.config import Config
-        from uvicorn.server import Server
-
-        if sys.version_info[:2] < (3, 7):
-            # make python 3.6 work
-            import asyncio
-
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-
-        # uvloop will trigger a: RuntimeError: There is no current event loop in thread 'fastapi-thread'
-        config = Config(app_starlette, host=self.host, port=self.port, **self.kwargs, loop="asyncio")
-        self.server = Server(config=config)
-        self.started.set()
-        self.server.run()
-
-
 def _serve_flask_in_process(port, host):
     from solara.server.flask import app
 
     app.run(debug=False, port=port, host=host)
-
-
-class ServerFlask(ServerBase):
-    def has_started(self):
-        import socket
-
-        s = socket.socket()
-        try:
-            s.connect((self.host, self.port))
-        except ConnectionRefusedError:
-            return False
-        return True
-
-    def signal_stop(self):
-        assert isinstance(self.server, HTTPServer)
-        self.server.shutdown()  # type: ignore
-
-    def serve(self):
-        from werkzeug.serving import make_server
-
-        from solara.server.flask import app
-
-        self.server = make_server(self.host, self.port, app, threaded=True)  # type: ignore
-        assert isinstance(self.server, HTTPServer)
-        self.started.set()
-        self.server.serve_forever(poll_interval=0.05)  # type: ignore
 
 
 server_classes = {
