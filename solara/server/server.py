@@ -7,6 +7,7 @@ import time
 from pathlib import Path
 from typing import Dict, List, TypeVar
 
+import ipykernel
 import jinja2
 
 import solara
@@ -22,6 +23,7 @@ T = TypeVar("T")
 
 directory = Path(__file__).parent
 template_name = "index.html.j2"
+ipykernel_major = int(ipykernel.__version__.split(".")[0])
 
 # first look at the project directory, then the builtin solara directory
 jinja_loader = jinja2.FileSystemLoader([app.apps["__default__"].directory.parent / "templates", str(directory / "templates")])
@@ -103,7 +105,12 @@ def process_kernel_messages(kernel: Kernel, msg: Dict):
             send_status("idle", parent=parent)
 
     msg_type = msg["header"]["msg_type"]
-    kernel.set_parent(None, msg["header"], msg["channel"])
+
+    if ipykernel_major < 6:
+        # the channel argument was added in 6.0
+        kernel.set_parent(None, msg["header"])
+    else:
+        kernel.set_parent(None, msg["header"], msg["channel"])
     if msg_type == "kernel_info_request":
         content = {
             "status": "ok",
