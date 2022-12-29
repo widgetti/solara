@@ -39,6 +39,8 @@ class AppType(str, Enum):
 
 
 class AppScript:
+    directory: Path
+
     def __init__(self, name, default_app_name="Page"):
         self.fullname = name
         if reload.reloader.on_change:
