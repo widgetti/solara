@@ -2,6 +2,7 @@ import os
 import uuid
 from enum import Enum
 from pathlib import Path
+from typing import Optional
 
 import pydantic
 from filelock import FileLock
@@ -39,6 +40,18 @@ class ThemeSettings(pydantic.BaseSettings):
         env_file = ".env"
 
 
+class SSG(pydantic.BaseSettings):
+    # the first app create will initialize this if it is not set
+    build_path: Optional[Path] = None
+    enabled: bool = False
+    headed: bool = False
+
+    class Config:
+        env_prefix = "solara_ssg_"
+        case_sensitive = False
+        env_file = ".env"
+
+
 class Telemetry(pydantic.BaseSettings):
     mixpanel_token: str = "91845eb13a68e3db4e58d64ad23673b7"
     mixpanel_enable: bool = True
@@ -67,6 +80,7 @@ class MainSettings(pydantic.BaseSettings):
 main = MainSettings()
 theme = ThemeSettings()
 telemetry = Telemetry()
+ssg = SSG()
 
 
 home = get_solara_home()

@@ -18,6 +18,14 @@ from uvicorn.main import LEVEL_CHOICES, LOOP_CHOICES
 
 from .server import settings
 
+try:
+    from solara_enterprise.ssg import ssg_crawl
+except ImportError:
+
+    def ssg_crawl(*args, **kwargs):  # type: ignore
+        raise RuntimeError('SSG not available, please install solara-enterprise (pip install "solara-enterprise[ssg]"')
+
+
 HERE = Path(__file__).parent
 HOST_DEFAULT = os.environ.get("HOST", "localhost")
 if "arm64-apple-darwin" in HOST_DEFAULT:  # conda activate script
@@ -203,6 +211,12 @@ When in dev mode Solara will:
     help="Event loop implementation.",
     show_default=True,
 )
+@click.option(
+    "--ssg/--no-ssg",
+    is_flag=True,
+    default=settings.ssg.enabled,
+    help="(pre) Render static pages.",
+)
 def run(
     app,
     host,
@@ -226,7 +240,9 @@ def run(
     theme_loader: str,
     theme_variant: settings.ThemeVariant,
     theme_variant_user_selectable: bool,
+    ssg: bool,
 ):
+    settings.ssg.enabled = ssg
     reload_dirs = reload_dirs if reload_dirs else None
     url = f"http://{host}:{port}"
 
@@ -294,7 +310,7 @@ def run(
     settings.theme.variant_user_selectable = theme_variant_user_selectable
     settings.main.tracer = tracer
     settings.main.timing = timing
-    for item in "theme_variant_user_selectable theme_variant theme_loader use_pdb server open_browser open url failed dev tracer timing".split():
+    for item in "theme_variant_user_selectable theme_variant theme_loader use_pdb server open_browser open url failed dev tracer timing ssg".split():
         del kwargs[item]
 
     def start_server():
@@ -310,12 +326,27 @@ def run(
                 sock = config.bind_socket()
                 from uvicorn.supervisors import ChangeReload
 
-                ChangeReload(config, target=run_with_settings(server, main=settings.main.dict(), theme=settings.theme.dict()), sockets=[sock]).run()
+                ChangeReload(
+                    config, target=run_with_settings(server, main=settings.main.dict(), theme=settings.theme.dict(), ssg=settings.ssg.dict()), sockets=[sock]
+                ).run()
             else:
                 server.run()
         except:  # noqa
             failed = True
             raise
+
+    def ssg_run():
+        while not failed and (server is None or not server.started):
+            time.sleep(0.1)
+        if not failed:
+            assert server is not None
+            base_url = f"http://{server.config.host}:{server.config.port}"
+            rprint("Running Static Site Generator pre-render background task")
+            ssg_crawl(base_url)
+
+    # in dev mode we run the ssg in the child process (see run_with_settings)
+    if not dev and settings.ssg.enabled:
+        threading.Thread(target=ssg_run, daemon=True).start()
 
     start_server()
 
@@ -328,19 +359,63 @@ def run(
     # server_thread.join()
 
 
+@cli.command()
+@click.argument("app")
+@click.option("--port", default=int(os.environ.get("PORT", 8765)))
+@click.option("--host", default=HOST_DEFAULT)
+@click.option(
+    "--headed/--no-headed",
+    is_flag=True,
+    default=settings.ssg.headed,
+    help="Show browser window if true.",
+)
+def ssg(app: str, port: int, host: str, headed: bool):
+    settings.ssg.headed = headed
+    settings.ssg.enabled = True
+    os.environ["SOLARA_APP"] = app
+    from solara.server.starlette import ServerStarlette
+
+    server = ServerStarlette(port=port, host=host)
+    server.serve_threaded()
+    server.wait_until_serving()
+
+    base_url = f"http://{server.server.config.host}:{server.server.config.port}"
+
+    ssg_crawl(base_url)
+
+
 class run_with_settings:
     """This cross a process boundry, and takes the serialized settings with it"""
 
-    def __init__(self, server: uvicorn.Server, main: typing.Dict, theme: typing.Dict):
+    def __init__(self, server: uvicorn.Server, main: typing.Dict, theme: typing.Dict, ssg: typing.Dict):
         self.server = server
         self.main = main
         self.theme = theme
+        self.ssg = ssg
 
     def __call__(self, *args, **kwargs):
         # this is now in the new process, where we need to re-apply the settings
+        failed = False
+
+        def ssg_run():
+            while not failed and (self.server is None or not self.server.started):
+                time.sleep(0.1)
+            if not failed:
+                assert self.server is not None
+                base_url = f"http://{self.server.config.host}:{self.server.config.port}"
+                rprint("Running Static Site Generator pre-render background task")
+                ssg_crawl(base_url)
+
         settings.main = settings.MainSettings(**self.main)
         settings.theme = settings.ThemeSettings(**self.theme)
-        return self.server.run(*args, **kwargs)
+        settings.ssg = settings.SSG(**self.ssg)
+        if settings.ssg.enabled:
+            threading.Thread(target=ssg_run, daemon=True).start()
+        try:
+            return self.server.run(*args, **kwargs)
+        except:  # noqa
+            failed = True
+            raise
 
 
 @cli.command()
@@ -522,6 +597,7 @@ def portal(target: Path):
 cli.add_command(run)
 cli.add_command(staticbuild)
 cli.add_command(create)
+cli.add_command(ssg)
 
 
 def main():
