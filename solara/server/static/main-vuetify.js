@@ -149,7 +149,9 @@ async function solaraInit(mountId, appName) {
     define("vuetify", [], { framework: app.$vuetify });
     cookies = getCookiesMap(document.cookie);
     uuid = generateUuid()
+    let unloading = false;
     window.addEventListener('beforeunload', function (e) {
+        unloading = true;
         kernel.dispose()
         window.navigator.sendBeacon(close_url);
     });
@@ -169,6 +171,10 @@ async function solaraInit(mountId, appName) {
         app.$data.kernelBusy = kernel.status == 'busy';
     });
     kernel.connectionStatusChanged.connect((s) => {
+        if (unloading) {
+            // we don't want to show ui changes when hitting refresh
+            return;
+        }
         app.$data.connectionStatus = s.connectionStatus;
         if (s.connectionStatus == 'connected') {
             app.$data.wasConnected = true;
