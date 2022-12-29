@@ -155,14 +155,20 @@ def read_root(base_url: str = "", render_kwargs={}, use_nbextensions=True):
         "nbextensions": nbextensions,
     }
     template: jinja2.Template = get_jinja_env(app_name="__default__").get_template(template_name)
+    pre_rendered_html = ""
+    pre_rendered_css = ""
+    title = "Solara ☀️"
+
     render_settings = {
+        "title": title,
         "base_url": base_url,
         "resources": resources,
         "theme": settings.theme.dict(),
         "production": settings.main.mode == "production",
+        "pre_rendered_html": pre_rendered_html,
+        "pre_rendered_css": pre_rendered_css,
         **render_kwargs,
     }
-    logger.debug("Render setting for template: %r", render_settings)
     response = template.render(**render_settings)
     return response
 

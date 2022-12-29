@@ -3,21 +3,17 @@
 
 <head>
     <base href="{{base_url}}/">
+    <title>{{title}}</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
-{% block header %}
-    {% if production %}
-    <link href="_solara/cdn/@widgetti/solara-vuetify-app@2.1.0/dist/main.css" rel="stylesheet"></link>
-    <script src="_solara/cdn/@widgetti/solara-vuetify-app@2.1.0/dist/solara-vuetify-app.min.js"></script>
-    <script src="_solara/cdn/mermaid@9.1.7/dist/mermaid.min.js"></script>
-    {% else %}
-    <link href="_solara/cdn/@widgetti/solara-vuetify-app@2.1.0/dist/main.css" rel="stylesheet"></link>
-    <script src="_solara/cdn/@widgetti/solara-vuetify-app@2.1.0/dist/solara-vuetify-app.js"></script>
-    <script src="_solara/cdn/mermaid@9.1.7/dist/mermaid.js"></script>
-    {% endif %}
-
     <link rel="icon" type="image/png" sizes="any" href="static/assets/favicon.png">
     <link rel="icon" type="image/svg+xml" href="static/assets/favicon.svg">
+
+    {% block header %}
+
+    {{ pre_rendered_css | safe }}
+
+    <link href="_solara/cdn/@widgetti/solara-vuetify-app@2.1.0/dist/main.css" rel="stylesheet"></link>
 
     <link href="static/highlight.css" rel="stylesheet">
     <link href="static/highlight-dark.css" rel="stylesheet">
@@ -35,36 +31,6 @@
     {% endif %}
     <link href="static/assets/custom.css" rel="stylesheet">
     </link>
-    <script src="static/assets/custom.js"></script>
-    <script src="static/assets/theme.js"></script>
-    <title>Hello from Solara ☀️</title>
-
-    <script src="_solara/cdn/requirejs@2.3.6/require.js" crossorigin="anonymous">
-    </script>
-    <script src="static/main-vuetify.js"></script>
-    <script src="static/ansi.js"></script>
-    </script>
-    <script>
-        solara.production = {{ production |tojson|safe }};
-        const themeVariants = ['light', 'dark', 'auto']
-        var theme = {{ theme |tojson|safe }}
-        if(theme.variant_user_selectable) {
-            if(localStorage.getItem('theme.variant')) {
-                theme.variant = JSON.parse(localStorage.getItem('theme.variant'))
-            }
-        }
-        function prefersDarkScheme() {
-            return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
-        }
-        function inDarkMode() {
-            if(theme.variant == 'auto') {
-                return prefersDarkScheme();
-            }
-            else {
-                return theme.variant == 'dark';
-            }
-        }
-    </script>
 
     <script id="jupyter-config-data" type="application/json">
     {
@@ -73,32 +39,27 @@
     }
     </script>
     <style>
-        {% include "loader-" ~ theme.loader ~ ".css" %}
+        {% include "loader-"~theme.loader~".css" %}
     </style>
-{% endblock header %}
+    {% endblock header %}
 </head>
 
 <body>
-{% raw -%}
-    <div id="app" style="display: none">
+    {% raw -%}
+    <div id="vue-app-template" style="display: none">
         <v-app :key="forceUpdateTrigger">
-          <v-progress-linear
-                :style="{visibility: kernelBusy ? 'visible' : 'hidden'}"
-                indeterminate
-                absolute
-            ></v-progress-linear>
-            <v-alert v-if="needsRefresh || cancelAutoRefresh" type="warning" border="left" style="position: absolute; right: 0px; z-index: 100; left: 0px;">
-            App is disconnected, and may not function properly. Please refresh the page.
-        </v-alert>
-{% endraw -%}
+            <v-progress-linear :style="{visibility: (kernelBusy && isMounted) ? 'visible' : 'hidden'}" indeterminate
+                absolute></v-progress-linear>
+            <v-alert v-if="needsRefresh || cancelAutoRefresh" type="warning" border="left"
+                style="position: absolute; right: 0px; z-index: 100; left: 0px;">
+                App is disconnected, and may not function properly. Please refresh the page.
+            </v-alert>
+            {% endraw -%}
             {# {% include "transition-domino.html" %} #}
             {% include "loader-" ~ theme.loader ~ ".html" %}
             <v-overlay :value="(connectionStatus != 'connected') & wasConnected">
-                <v-progress-circular
-                    indeterminate
-                    size="128"
-                    style="text-align: center;"
-                >Server disconnected.</v-progress-circular>
+                <v-progress-circular indeterminate size="128" style="text-align: center;">Server
+                    disconnected.</v-progress-circular>
             </v-overlay>
 
             <v-dialog v-model="needsRefresh" width="500">
@@ -120,25 +81,17 @@
                     <v-divider></v-divider>
 
                     <v-card-actions>
-                    <v-spacer></v-spacer>
-                    <v-btn
-                        color="secondary"
-                        text
-                        @click="reload()"
-                    >
-                        Refresh now
-                    </v-btn>
-                    <v-btn
-                        color="primary"
-                        text
-                        @click="setCancelAutoRefresh()"
-                    >
-                        Cancel
-                    </v-btn>
+                        <v-spacer></v-spacer>
+                        <v-btn color="secondary" text @click="reload()">
+                            Refresh now
+                        </v-btn>
+                        <v-btn color="primary" text @click="setCancelAutoRefresh()">
+                            Cancel
+                        </v-btn>
                     </v-card-actions>
                 </v-card>
             </v-dialog>
-{% raw -%}
+            {% raw -%}
 
             <v-menu v-if="debug && solaraDebugMessages && solaraDebugMessages.length" offset-y top
                 :close-on-content-click="false">
@@ -188,17 +141,17 @@
                         </v-list-item-title>
                     </v-list-item>
                     <v-list-item v-if="theme.variant_user_selectable">
-                            <v-btn-toggle v-model="themeVariantIndex" tile group mandatory>
-                                <v-btn vaue="light" icon>
-                                    <v-icon>mdi-white-balance-sunny</v-icon>
-                                </v-btn>
-                                <v-btn>
-                                    <v-icon>mdi-weather-night</v-icon>
-                                </v-btn>
-                                <v-btn>
-                                    <v-icon>mdi-theme-light-dark</v-icon>
-                                </v-btn>
-                            </v-btn-toggle>
+                        <v-btn-toggle v-model="themeVariantIndex" tile group mandatory>
+                            <v-btn vaue="light" icon>
+                                <v-icon>mdi-white-balance-sunny</v-icon>
+                            </v-btn>
+                            <v-btn>
+                                <v-icon>mdi-weather-night</v-icon>
+                            </v-btn>
+                            <v-btn>
+                                <v-icon>mdi-theme-light-dark</v-icon>
+                            </v-btn>
+                        </v-btn-toggle>
                     </v-list-item>
 
                 </v-list>
@@ -237,7 +190,55 @@
             </v-menu> -->
         </v-app>
     </div>
-{% endraw -%}
+    {% endraw -%}
+    {% if theme.variant == "light" %}
+    <div id="app" class="v-application v-application--is-ltr theme--light" data-app="true">
+    {% elif theme.variant == "dark" %}
+    <div id="app" class="v-application v-application--is-ltr theme--dark" data-app="true">
+    {% endif %}
+        {{ pre_rendered_html|safe }}
+        {# next div is used in ssg code to see if vue took over rendering #}
+        <div id="pre-rendered-html-present" style="display: none"></div>
+    </div>
+    {% if production %}
+    <script src="_solara/cdn/@widgetti/solara-vuetify-app@2.1.0/dist/solara-vuetify-app.min.js"></script>
+    <script src="_solara/cdn/mermaid@9.1.7/dist/mermaid.min.js"></script>
+    {% else %}
+    <script src="_solara/cdn/@widgetti/solara-vuetify-app@2.1.0/dist/solara-vuetify-app.js"></script>
+    <script src="_solara/cdn/mermaid@9.1.7/dist/mermaid.js"></script>
+    {% endif %}
+
+    <script src="static/assets/custom.js"></script>
+    <script src="static/assets/theme.js"></script>
+
+    <script src="_solara/cdn/requirejs@2.3.6/require.js" crossorigin="anonymous">
+    </script>
+    <script src="static/main-vuetify.js"></script>
+    <script src="static/ansi.js"></script>
+
+    <script>
+        solara.production = {{ production | tojson | safe }};
+        const themeVariants = ['light', 'dark', 'auto']
+        solara.preRendered = {{ pre_rendered_html | safe | length | tojson }} > 0
+        var theme = {{ theme | tojson | safe }}
+        if (theme.variant_user_selectable) {
+            if (localStorage.getItem('theme.variant')) {
+                theme.variant = JSON.parse(localStorage.getItem('theme.variant'))
+            }
+        }
+        function prefersDarkScheme() {
+            return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        }
+        function inDarkMode() {
+            if (theme.variant == 'auto') {
+                return prefersDarkScheme();
+            }
+            else {
+                return theme.variant == 'dark';
+            }
+        }
+    </script>
+
     <script>
         window.for_pyodide = false;
         {% if for_pyodide %}
@@ -252,7 +253,10 @@
                     themes: vuetifyThemes,
                 },
             }),
-            el: '#app',
+            // if we do prerendering, keep it unmounted, and mount
+            // when loading becomes false
+            el: solara.preRendered ? null : '#app' ,
+            template: '#vue-app-template',
             created() {
                 const original_$forceUpdate = this.$forceUpdate.bind(this);
                 this.$forceUpdate = (() => {
@@ -282,7 +286,7 @@
                 },
             },
             computed: {
-                themeVariantIndex:{
+                themeVariantIndex: {
                     get() {
                         return themeVariants.indexOf(theme.variant)
                     },
@@ -294,8 +298,18 @@
                 }
             },
             watch: {
-                needsRefresh: function(value) {
-                    if(this.needsRefresh && !this.cancelAutoRefresh && !solara.production) {
+                loading: function (value) {
+                    // if preRendered, the app is not mounted yet
+                    // so we mount it when loading becomes false
+                    if (solara.preRendered && !this.mounted) {
+                        this.isMounted = true;
+                        this.$mount("#app")
+                    } else {
+                        this.isMounted = true;
+                    }
+                },
+                needsRefresh: function (value) {
+                    if (this.needsRefresh && !this.cancelAutoRefresh && !solara.production) {
                         console.log('value for needRefresh', value);
                         setTimeout(() => {
                             console.log('this.autoRefreshCount', this.autoRefreshCount)
@@ -303,12 +317,12 @@
                         }, 1000);
                     }
                 },
-                autoRefreshCount: function(value) {
+                autoRefreshCount: function (value) {
                     console.log('value for autoRefreshCount', value);
-                    if(value == 0) {
-                        if(!this.cancelAutoRefresh)
+                    if (value == 0) {
+                        if (!this.cancelAutoRefresh)
                             this.reload();
-                    } else if(value > 0) {
+                    } else if (value > 0) {
                         setTimeout(() => {
                             console.log('this.autoRefreshCount!', this.autoRefreshCount)
                             this.autoRefreshCount = this.autoRefreshCount - 1;
@@ -333,6 +347,7 @@
                     cancelAutoRefresh: false,
                     autoRefreshCount: 3,
                     kernelBusy: false,
+                    isMounted: false,
                     // outputMessages: [{ name: 'stderr', text: 'lala' }],
                 }
             }
@@ -348,20 +363,20 @@
             map: {
                 '*': {
                         {% if 'jupyter-vue/extension' in resources.nbextensions -%}
-                            'jupyter-vue': 'nbextensions/jupyter-vue/nodeps',
-                        {% endif -%}
-                        {% if 'jupyter-vuetify/extension' in resources.nbextensions -%}
-                            'jupyter-vuetify': 'nbextensions/jupyter-vuetify/nodeps',
-                        {% endif -%}
+        'jupyter-vue': 'nbextensions/jupyter-vue/nodeps',
+            {% endif -%}
+        {% if 'jupyter-vuetify/extension' in resources.nbextensions -%}
+        'jupyter-vuetify': 'nbextensions/jupyter-vuetify/nodeps',
+            {% endif -%}
                     },
                 }
             });
         requirejs([
             {% for ext in resources.nbextensions if ext != 'jupyter-vuetify/extension' and ext != 'jupyter-vue/extension' -%}
-                "{{resources.base_url}}static/nbextensions/{{ ext }}.js",
+        "{{resources.base_url}}static/nbextensions/{{ ext }}.js",
             {% endfor %}
         ]);
-        (async function() {
+        (async function () {
             await Promise.all([
                 solaraInit('solara-main')
             ]);
