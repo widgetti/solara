@@ -1,7 +1,8 @@
 var path = require('path');
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 
 var rules = [
-    { test: /\.css$/, use: ['style-loader', 'css-loader'] },
+    { test: /\.css$/, use: [MiniCssExtractPlugin.loader, 'css-loader'] },
     {
         test: /\.(woff|woff2|eot|ttf|otf)$/,
         loader: 'file-loader',
@@ -10,6 +11,7 @@ var rules = [
 
 module.exports = [
     {
+        plugins: [new MiniCssExtractPlugin()],
         entry: './src/solara-vuetify-app.js',
         output: {
             filename: 'solara-vuetify-app.min.js',
@@ -23,6 +25,7 @@ module.exports = [
         },
         mode: 'production',
     }, {
+        plugins: [new MiniCssExtractPlugin()],
         entry: './src/solara-vuetify-app.js',
         output: {
             filename: 'solara-vuetify-app.js',

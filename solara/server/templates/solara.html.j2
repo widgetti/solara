@@ -7,9 +7,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
 {% block header %}
     {% if production %}
+    <link href="_solara/cdn/@widgetti/solara-vuetify-app@2.1.0/dist/main.css" rel="stylesheet"></link>
     <script src="_solara/cdn/@widgetti/solara-vuetify-app@2.1.0/dist/solara-vuetify-app.min.js"></script>
     <script src="_solara/cdn/mermaid@9.1.7/dist/mermaid.min.js"></script>
     {% else %}
+    <link href="_solara/cdn/@widgetti/solara-vuetify-app@2.1.0/dist/main.css" rel="stylesheet"></link>
     <script src="_solara/cdn/@widgetti/solara-vuetify-app@2.1.0/dist/solara-vuetify-app.js"></script>
     <script src="_solara/cdn/mermaid@9.1.7/dist/mermaid.js"></script>
     {% endif %}
