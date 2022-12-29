@@ -130,7 +130,7 @@ def solara_app(solara_server):
             yield
         finally:
             if app.type == solara.server.app.AppType.MODULE:
-                if app.name in sys.modules:
+                if app.name in sys.modules and app.name.startswith("tests.integration.testapp"):
                     del sys.modules[app.name]
                 if app.name in reload.reloader.watched_modules:
                     reload.reloader.watched_modules.remove(app.name)

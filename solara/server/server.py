@@ -9,7 +9,6 @@ from typing import Dict, List, TypeVar
 
 import ipykernel
 import jinja2
-
 import solara
 
 from . import app, settings, websocket
@@ -144,7 +143,7 @@ def process_kernel_messages(kernel: Kernel, msg: Dict):
         logger.error("Unsupported msg with msg_type %r", msg_type)
 
 
-def read_root(base_url: str = "", render_kwargs={}, use_nbextensions=True):
+def read_root(path: str, base_url: str = "", render_kwargs={}, use_nbextensions=True):
     if use_nbextensions:
         nbextensions = get_nbextensions()
     else:
@@ -158,6 +157,14 @@ def read_root(base_url: str = "", render_kwargs={}, use_nbextensions=True):
     pre_rendered_html = ""
     pre_rendered_css = ""
     title = "Solara ☀️"
+    if settings.ssg.enabled:
+        from solara_enterprise import ssg
+
+        ssg_data = ssg.ssg_data(path)
+        if ssg_data is not None:
+            pre_rendered_html = ssg_data["html"]
+            pre_rendered_css = "\n".join(ssg_data["styles"])
+            title = ssg_data["title"]
 
     render_settings = {
         "title": title,

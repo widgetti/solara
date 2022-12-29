@@ -2,6 +2,6 @@ ipyvuetify
 reacton
 bqplot
 plotly
-.[server,documentation]
+.[server,documentation,ssg]
 vega_datasets
 altair

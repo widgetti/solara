@@ -29,7 +29,9 @@ jobs:
       - name: Prepare
         run: mkdir test-results
       - name: Install
-        run: pip install ".[dev,server,flask,documentation]"
+        run: |
+          pip install ".[dev,server,flask,documentation]"
+          (cd packages/solara-enterprise && pip install ".[ssg]")
       - name: Install playwright
         run: playwright install
       - name: test

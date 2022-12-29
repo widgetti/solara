@@ -1,0 +1,35 @@
+[build-system]
+requires = ["hatchling >=0.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "solara-enterprise"
+authors = [
+    {name = "Maarten A. Breddels", email = "maartenbreddels@gmail.com"},
+    {name = "Mario Buikhuizen", email = "mariobuikhuizen@gmail.com"}]
+license = {file = "LICENSE"}
+classifiers = ["License :: Free for non-commercial use"]
+dynamic = ["version", "description"]
+dependencies = [
+    "solara==0.19.1",
+]
+
+ssg = [
+    "beautifulsoup4",
+    "playwright; python_version > '3.6'",
+]
+
+[project.urls]
+Home = "https://www.github.com/widgetti/solara"
+
+[tool.hatch.version]
+path = "solara_enterprise/__init__.py"
+
+[tool.black]
+line-length = 160
+
+[tool.ruff]
+line-length = 160
+
+[tool.isort]
+profile = "black"

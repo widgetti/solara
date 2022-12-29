@@ -148,6 +148,9 @@ class AppScript:
             if working_directory not in sys.path:
                 sys.path.insert(0, working_directory)
 
+        if settings.ssg.build_path is None:
+            settings.ssg.build_path = self.directory.parent.resolve() / "build"
+
         # this might be useful for development
         # but requires reloading of react in solara iself
         # for name, module in sys.modules.items():
