@@ -105,6 +105,9 @@ solara = "solara.__main__:main"
 [tool.black]
 line-length = 160
 
+[tool.ruff]
+line-length = 160
+
 [tool.isort]
 profile = "black"
 
