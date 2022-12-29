@@ -10,6 +10,8 @@ import anyio
 import starlette.websockets
 import uvicorn.server
 from starlette.applications import Starlette
+from starlette.middleware import Middleware
+from starlette.middleware.gzip import GZipMiddleware
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse
 from starlette.routing import Mount, Route, WebSocketRoute
@@ -238,6 +240,8 @@ def on_shutdown():
     telemetry.server_stop()
 
 
+middleware = [Middleware(GZipMiddleware, minimum_size=1000)]
+
 routes = [
     Route("/jupyter/api/kernels/{id}", endpoint=kernels),
     WebSocketRoute("/jupyter/api/kernels/{id}/{name}", endpoint=kernel_connection),
@@ -252,9 +256,6 @@ routes = [
     Mount(f"{prefix}/static", app=StaticFiles(directory=server.solara_static)),
     Route("/{fullpath:path}", endpoint=root),
 ]
-app = Starlette(
-    routes=routes,
-    on_startup=[on_startup],
-    on_shutdown=[on_shutdown],
-)
+
+app = Starlette(routes=routes, on_startup=[on_startup], on_shutdown=[on_shutdown], middleware=middleware)
 patch.patch()
