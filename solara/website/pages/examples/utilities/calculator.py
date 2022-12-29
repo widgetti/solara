@@ -126,7 +126,11 @@ def Calculator():
                 with solara.HBox(grow=False):
                     for j in range(3):
                         digit = str(j + (2 - i) * 3 + 1)
-                        solara.Button(digit, on_click=lambda: dispatch(("digit", digit)), class_=class_)
+
+                        def on_click(digit=digit):
+                            dispatch(("digit", digit))
+
+                        solara.Button(digit, on_click=on_click, class_=class_)
                     op_symbol = column_op[i]
                     op = operator_map[op_symbol]
 
