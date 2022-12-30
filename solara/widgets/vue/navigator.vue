@@ -14,12 +14,12 @@ modules.export = {
       console.log("external router push", href);
       this.location = href;
     };
-    let location = window.location.href.slice(document.baseURI.length);
+    let location = window.location.pathname.slice(solara.rootPath.length);
     // take of the anchor
     if (location.indexOf("#") !== -1) {
       location = location.slice(0, location.indexOf("#"));
     }
-    this.location = "/" + location;
+    this.location = location;
     window.addEventListener("popstate", this.onPopState);
     window.addEventListener("scroll", this.onScroll);
   },
@@ -32,15 +32,15 @@ modules.export = {
       window.history.replaceState(
         { top: document.documentElement.scrollTop },
         null,
-        "." + this.location
+        solara.rootPath + this.location
       );
     },
     onPopState(event) {
       console.log("pop state!", event.state, window.location.pathname);
-      if (!window.location.href.startsWith(document.baseURI)) {
-        throw `window.location = ${window.location}, but it should start with the document.baseURI = ${document.baseURI}`;
+      if (!window.location.pathname.startsWith(solara.rootPath)) {
+        throw `window.location.pathname = ${window.location.pathname}, but it should start with the solara.rootPath = ${solara.rootPath}`;
       }
-      let newLocation = "/" + window.location.href.slice(document.baseURI.length);
+      let newLocation = window.location.pathname.slice(solara.rootPath.length);
       // the router/server shouldn't care about the hash, that's for the frontend
       if (newLocation.indexOf("#") !== -1) {
         newLocation = newLocation.slice(0, newLocation.indexOf("#"));
@@ -59,15 +59,15 @@ modules.export = {
     },
   },
   watch: {
-    location() {
-      console.log("changed", this.location);
+    location(value) {
+      console.log("changed", this.location, value);
       // if we use the back navigation, this watch will trigger,
       // but we don't want to push the history
       // otherwise we cannot go forward
-      if (!window.location.href.startsWith(document.baseURI)) {
-        throw `window.location = ${window.location}, but it should start with the document.baseURI = ${document.baseURI}`;
+      if (!window.location.pathname.startsWith(solara.rootPath)) {
+        throw `window.location.pathname = ${window.location.pathname}, but it should start with the solara.rootPath = ${solara.rootPath}`;
       }
-      const oldLocation = "/" + window.location.href.slice(document.baseURI.length);
+      const oldLocation = window.location.pathname.slice(solara.rootPath.length);
       console.log(
         "location changed",
         oldLocation,
@@ -75,9 +75,7 @@ modules.export = {
         document.documentElement.scrollTop
       );
       if (oldLocation != this.location) {
-        // we prepend with "." to make it work behind a proxy. e.g.
-        // <base href="https://myserver.com/someuser/project/a/">
-        window.history.pushState({ top: 0 }, null, "." + this.location);
+        window.history.pushState({ top: 0 }, null, solara.rootPath + this.location);
         window.scrollTo(0, 0);
         const event = new Event('solara.router');
         window.dispatchEvent(event);

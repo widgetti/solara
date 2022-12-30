@@ -128,10 +128,13 @@ export class WidgetManager extends JupyterLabManager {
     }
   }
 
-  async run(appName: string) {
+  async run(appName: string, path: string) {
     // used for routing
     // should be similar to what we do in navigator.vue
-    const path = window.location.href.slice(document.baseURI.length);
+    if (typeof path === 'undefined') {
+      // backward compatibility, this was before we used <base>
+      path = window.location.href.slice(document.baseURI.length);
+    }
     const widget_id_promise = new Promise((resolve, reject) => {
       this.controlCommHandler = {
         onMsg: (msg) => {

@@ -2,7 +2,6 @@
 <html>
 
 <head>
-    <base href="{{base_url}}/">
     <title>{{title}}</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
@@ -13,28 +12,28 @@
 
     {{ pre_rendered_css | safe }}
 
-    <link href="_solara/cdn/@widgetti/solara-vuetify-app@2.1.0/dist/main.css" rel="stylesheet"></link>
+    <link href="{{root_path}}/_solara/cdn/@widgetti/solara-vuetify-app@2.1.0/dist/main.css" rel="stylesheet"></link>
 
-    <link href="static/highlight.css" rel="stylesheet">
-    <link href="static/highlight-dark.css" rel="stylesheet">
+    <link href="{{root_path}}/static/highlight.css" rel="stylesheet">
+    <link href="{{root_path}}/static/highlight-dark.css" rel="stylesheet">
     </link>
-    <link href="static/assets/style.css" rel="stylesheet">
+    <link href="{{root_path}}/static/assets/style.css" rel="stylesheet">
     </link>
-    <link href="static/nbconvert/index.css" rel="stylesheet">
+    <link href="{{root_path}}/static/nbconvert/index.css" rel="stylesheet">
     </link>
     {% if theme.variant == "light" %}
-    <link href="static/nbconvert/theme-light.css" rel="stylesheet">
+    <link href="{{root_path}}/static/nbconvert/theme-light.css" rel="stylesheet">
     </link>
     {% elif theme.variant == "dark" %}
-    <link href="static/nbconvert/theme-dark.css" rel="stylesheet">
+    <link href="{{root_path}}/static/nbconvert/theme-dark.css" rel="stylesheet">
     </link>
     {% endif %}
-    <link href="static/assets/custom.css" rel="stylesheet">
+    <link href="{{root_path}}/static/assets/custom.css" rel="stylesheet">
     </link>
 
     <script id="jupyter-config-data" type="application/json">
     {
-        "baseUrl": "{{base_url}}/jupyter",
+        "baseUrl": "{{root_path}}/jupyter",
         "kernelId": "1234"
     }
     </script>
@@ -201,20 +200,24 @@
         <div id="pre-rendered-html-present" style="display: none"></div>
     </div>
     {% if production %}
-    <script src="_solara/cdn/@widgetti/solara-vuetify-app@2.1.0/dist/solara-vuetify-app.min.js"></script>
-    <script src="_solara/cdn/mermaid@9.1.7/dist/mermaid.min.js"></script>
+    <script src="{{root_path}}/_solara/cdn/@widgetti/solara-vuetify-app@2.1.0/dist/solara-vuetify-app.min.js"></script>
+    <script src="{{root_path}}/_solara/cdn/mermaid@9.1.7/dist/mermaid.min.js"></script>
     {% else %}
-    <script src="_solara/cdn/@widgetti/solara-vuetify-app@2.1.0/dist/solara-vuetify-app.js"></script>
-    <script src="_solara/cdn/mermaid@9.1.7/dist/mermaid.js"></script>
+    <script src="{{root_path}}/_solara/cdn/@widgetti/solara-vuetify-app@2.1.0/dist/solara-vuetify-app.js"></script>
+    <script src="{{root_path}}/_solara/cdn/mermaid@9.1.7/dist/mermaid.js"></script>
     {% endif %}
-
-    <script src="static/assets/custom.js"></script>
-    <script src="static/assets/theme.js"></script>
-
-    <script src="_solara/cdn/requirejs@2.3.6/require.js" crossorigin="anonymous">
+    <script>
+        solara.rootPath = {{ root_path | tojson | safe}};
+        console.log("rootPath", solara.rootPath);
     </script>
-    <script src="static/main-vuetify.js"></script>
-    <script src="static/ansi.js"></script>
+
+    <script src="{{root_path}}/static/assets/custom.js"></script>
+    <script src="{{root_path}}/static/assets/theme.js"></script>
+
+    <script src="{{root_path}}/_solara/cdn/requirejs@2.3.6/require.js" crossorigin="anonymous">
+    </script>
+    <script src="{{root_path}}/static/main-vuetify.js"></script>
+    <script src="{{root_path}}/static/ansi.js"></script>
 
     <script>
         solara.production = {{ production | tojson | safe }};
@@ -358,7 +361,7 @@
         window.enable_nbextensions = true;
         {% endif -%}
         requirejs.config({
-            baseUrl: '{{resources.base_url}}static/',
+            baseUrl: '{{root_path}}/static/',
             waitSeconds: 3000,
             map: {
                 '*': {
@@ -373,7 +376,7 @@
             });
         requirejs([
             {% for ext in resources.nbextensions if ext != 'jupyter-vuetify/extension' and ext != 'jupyter-vue/extension' -%}
-        "{{resources.base_url}}static/nbextensions/{{ ext }}.js",
+        "{{root_path}}/static/nbextensions/{{ ext }}.js",
             {% endfor %}
         ]);
         (async function () {

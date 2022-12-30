@@ -501,6 +501,7 @@ def staticbuild():
 
     solara.server.patch.patch()
     index_html = solara.server.server.read_root("", render_kwargs={"for_pyodide": True}, use_nbextensions=True)
+    assert index_html is not None
     (target_dir / "index.html").write_text(index_html)
 
 

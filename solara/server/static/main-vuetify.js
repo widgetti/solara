@@ -161,11 +161,11 @@ async function solaraInit(mountId, appName) {
     } else {
         options = {}
     }
-    let kernel = await solara.connectKernel('jupyter', uuid, options)
+    let kernel = await solara.connectKernel(solara.rootPath + '/jupyter', uuid, options)
     if (!kernel) {
         return;
     }
-    const close_url = document.baseURI + '_solara/api/close/' + kernel.clientId;
+    const close_url = solara.rootPath + '/_solara/api/close/' + kernel.clientId;
     let skipReconnectedCheck = true;
     kernel.statusChanged.connect(() => {
         app.$data.kernelBusy = kernel.status == 'busy';
@@ -227,7 +227,8 @@ async function solaraInit(mountId, appName) {
     let widgetManager = new solara.WidgetManager(context, rendermime, settings);
     // it seems if we attach this to early, it will not be called
     app.$data.loading_text = 'Loading app';
-    const widgetId = await widgetManager.run(appName);
+    const path = window.location.pathname.slice(solara.rootPath.length);
+    const widgetId = await widgetManager.run(appName, path);
     await solaraMount(widgetManager, mountId || 'content', widgetId);
     skipReconnectedCheck = false;
     solara.renderMathJax();

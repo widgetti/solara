@@ -72,10 +72,11 @@ If you already have a Starlette app and want to add your Solara app behind a pre
 from starlette.applications import Starlette
 from starlette.routing import Mount, Route, WebSocketRoute
 from starlette.responses import JSONResponse
+from starlette.requests import Request
 import solara.server.starlette
 
 
-def myroot():
+def myroot(request: Request):
     return JSONResponse({'framework': 'solara'})
 
 
