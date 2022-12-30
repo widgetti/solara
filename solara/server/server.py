@@ -144,7 +144,7 @@ def process_kernel_messages(kernel: Kernel, msg: Dict):
         logger.error("Unsupported msg with msg_type %r", msg_type)
 
 
-def read_root(path: str, base_url: str = "", render_kwargs={}, use_nbextensions=True) -> Optional[str]:
+def read_root(path: str, root_path: str = "", render_kwargs={}, use_nbextensions=True) -> Optional[str]:
     default_app = app.apps["__default__"]
     routes = default_app.routes
     router = solara.routing.Router(path, routes)
@@ -174,7 +174,7 @@ def read_root(path: str, base_url: str = "", render_kwargs={}, use_nbextensions=
 
     render_settings = {
         "title": title,
-        "base_url": base_url,
+        "root_path": root_path,
         "resources": resources,
         "theme": settings.theme.dict(),
         "production": settings.main.mode == "production",

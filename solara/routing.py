@@ -51,6 +51,11 @@ class Router:
         self.set_path = set_path
         self.parts = (self.path or "").strip("/").split("/")
         self.routes = routes
+        self.root_path = ""
+        # should this import be top level? do we use routing outside of solara.server?
+        import solara.server.settings
+
+        self.root_path = solara.server.settings.main.root_path or ""
         # each route in this list corresponds to a part in self.parts
         self.path_routes: List[solara.Route] = []
         self.path_routes_siblings = []  # siblings including itself

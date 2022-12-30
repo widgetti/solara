@@ -70,6 +70,7 @@ class MainSettings(pydantic.BaseSettings):
     mode: str = "production"
     tracer: bool = False
     timing: bool = False
+    root_path: Optional[str] = None
 
     class Config:
         env_prefix = "solara_"

@@ -22,7 +22,7 @@ from solara.server import reload
 from solara.server.threaded import ServerBase
 
 from . import app as appmod
-from . import patch, server, telemetry, websocket
+from . import patch, server, settings, telemetry, websocket
 from .cdn_helper import cdn_url_path, default_cache_dir, get_path
 
 os.environ["SERVER_SOFTWARE"] = "solara/" + str(solara.__version__)
@@ -152,18 +152,30 @@ async def close(request: Request):
 
 
 async def root(request: Request, fullpath: str = ""):
-    root_path = request.scope.get("root_path", "")
-    logger.debug("root_path: %s", root_path)
-    if request.headers.get("script-name"):
-        logger.debug("override root_path using script-name header from %s to %s", root_path, request.headers.get("script-name"))
-        root_path = request.headers.get("script-name")
-    if request.headers.get("x-script-name"):
-        logger.debug("override root_path using x-script-name header from %s to %s", root_path, request.headers.get("x-script-name"))
-        root_path = request.headers.get("x-script-name")
+    root_path = settings.main.root_path or ""
+    # if not explicltly set,
+    if settings.main.root_path is None:
+        # use the default root path from the app, which seems to also include the path
+        # if we are mounted under a path
+        root_path = request.scope.get("root_path", "")
+        logger.debug("root_path: %s", root_path)
+        # or use the script-name header, for instance when running under a reverse proxy
+        script_name = request.headers.get("script-name")
+        if script_name:
+            logger.debug("override root_path using script-name header from %s to %s", root_path, script_name)
+            root_path = script_name
+        script_name = request.headers.get("x=script-name")
+        if script_name:
+            logger.debug("override root_path using x-script-name header from %s to %s", root_path, script_name)
+            root_path = script_name
+        settings.main.root_path = root_path
 
-    content = server.read_root(request.url.path, root_path)
+    request_path = request.url.path
+    if request_path.startswith(root_path):
+        request_path = request_path[len(root_path) :]
+    content = server.read_root(request_path, root_path)
     if content is None:
-        return HTMLResponse(content="Not found", status_code=404)
+        return HTMLResponse(content="Page not found by Solara router", status_code=404)
     response = HTMLResponse(content=content)
     session_id = request.cookies.get(server.COOKIE_KEY_SESSION_ID) or str(uuid4())
     samesite = "lax"
@@ -260,4 +272,10 @@ routes = [
 ]
 
 app = Starlette(routes=routes, on_startup=[on_startup], on_shutdown=[on_shutdown], middleware=middleware)
+# Uncomment the lines below to test solara mouted under a subpath
+# def myroot(request: Request):
+#     return JSONResponse({"framework": "solara"})
+
+# routes_test_sub = [Route("/", endpoint=myroot), Mount("/foo/", routes=routes)]
+# app = Starlette(routes=routes_test_sub, on_startup=[on_startup], on_shutdown=[on_shutdown], middleware=middleware)
 patch.patch()
