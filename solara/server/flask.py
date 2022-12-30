@@ -161,6 +161,8 @@ def read_root(path):
         base_url = base_url[:-1]
     session_id = request.cookies.get(server.COOKIE_KEY_SESSION_ID) or str(uuid4())
     content = server.read_root(flask.request.path, base_url=base_url)
+    if content is None:
+        return flask.Response("not found", status=404)
     assert session_id is not None
     response = flask.Response(content, mimetype="text/html")
     response.set_cookie(server.COOKIE_KEY_SESSION_ID, value=session_id)

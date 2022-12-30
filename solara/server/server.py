@@ -5,11 +5,12 @@ import os
 import sys
 import time
 from pathlib import Path
-from typing import Dict, List, TypeVar
+from typing import Dict, List, Optional, TypeVar
 
 import ipykernel
 import jinja2
 import solara
+import solara.routing
 
 from . import app, settings, websocket
 from .app import initialize_virtual_kernel
@@ -143,7 +144,12 @@ def process_kernel_messages(kernel: Kernel, msg: Dict):
         logger.error("Unsupported msg with msg_type %r", msg_type)
 
 
-def read_root(path: str, base_url: str = "", render_kwargs={}, use_nbextensions=True):
+def read_root(path: str, base_url: str = "", render_kwargs={}, use_nbextensions=True) -> Optional[str]:
+    default_app = app.apps["__default__"]
+    routes = default_app.routes
+    router = solara.routing.Router(path, routes)
+    if not router.possible_match:
+        return None
     if use_nbextensions:
         nbextensions = get_nbextensions()
     else:

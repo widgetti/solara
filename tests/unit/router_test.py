@@ -31,6 +31,7 @@ def test_router():
     assert solara.routing.Router("", routes).path_routes == [routes[0]]
     assert solara.routing.Router("/fruit", routes).path_routes == [routes[1]]
     assert solara.routing.Router("/fruit/kiwi", routes).path_routes == [routes[1], routes[1].children[0]]
+
     assert solara.routing.Router("/fruit/pineapple", routes).path_routes == [routes[1]]
     assert solara.routing.Router("/fruit/apple", routes).path_routes == [routes[1], routes[1].children[-1]]
 
@@ -45,6 +46,22 @@ def test_router():
     assert solara.routing.Router("?a=1", routes).path_routes == [routes[0]]
     assert solara.routing.Router("?a=1", routes).search == "a=1"
     assert solara.routing.Router("/fruit?b=1&c=3", routes).path_routes == [routes[1]]
+
+    # non-existing routes, as leafs are fine, since they can do 'subrouting'
+    assert solara.routing.Router("/fruit/kiwi/sub", routes).path_routes == [routes[1], routes[1].children[0]]
+    assert solara.routing.Router("/fruit/kiwi/sub", routes).possible_match
+
+    # but if there are sublings, it should not exist
+    assert solara.routing.Router("/fruit/chocolate", routes).path_routes == [routes[1]]
+    assert not solara.routing.Router("/fruit/chocolate", routes).possible_match
+
+    assert solara.routing.Router("/fruit/chocolate", routes).path_routes == [routes[1]]
+    assert not solara.routing.Router("/fruit/chocolate/sub", routes).possible_match
+
+    assert solara.routing.Router("/foo", routes).path_routes == []
+    assert not solara.routing.Router("/foo", routes).possible_match
+    assert solara.routing.Router("/foo/bar", routes).path_routes == []
+    assert not solara.routing.Router("/foo/bar", routes).possible_match
 
 
 def test_resolve_path_route():
