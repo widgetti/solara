@@ -74,6 +74,7 @@ class Router:
                     self.path_routes_siblings.append(route.children)
 
         assert len(self.path_routes) == len(self.path_routes_siblings)
+        self.possible_match = (len(self.path_routes[-1].children) == 0) if self.path_routes else False
 
     def push(self, path: str):
         assert self.set_path is not None

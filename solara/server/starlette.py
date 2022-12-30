@@ -162,6 +162,8 @@ async def root(request: Request, fullpath: str = ""):
         root_path = request.headers.get("x-script-name")
 
     content = server.read_root(request.url.path, root_path)
+    if content is None:
+        return HTMLResponse(content="Not found", status_code=404)
     response = HTMLResponse(content=content)
     session_id = request.cookies.get(server.COOKIE_KEY_SESSION_ID) or str(uuid4())
     samesite = "lax"
