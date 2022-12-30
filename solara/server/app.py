@@ -38,8 +38,13 @@ class AppType(str, Enum):
     DIRECTORY = "directory"
 
 
+def display(*args, **kwargs):
+    print("display not implemented", args, kwargs)  # noqa
+
+
 class AppScript:
     directory: Path
+    routes: List[solara.Route]
 
     def __init__(self, name, default_app_name="Page"):
         self.fullname = name
@@ -49,24 +54,58 @@ class AppScript:
 
         self.app_name = default_app_name
         if ":" in self.fullname:
-            self.name, self.app_name = self.fullname.split(":")
+            self.name, self.app_name = self.fullname.rsplit(":", 1)
+            if len(self.name) == 1:  # a windows drive letter, restore
+                self.name = self.fullname
+                self.app_name = default_app_name
         else:
             self.name = name
         self.path: Path = Path(self.name)
+
+        app = self._execute()
+        self._first_execute_app = app
+        self._is_widget = isinstance(self._first_execute_app, widgets.Widget)
+
+    def _execute(self):
+        app = None
+        local_scope = {"display": display, "__name__": "__main__", "__file__": str(self.path)}
+        ignore = list(local_scope)
+        routes: Optional[List[solara.Route]] = None
         if self.path.is_dir():
             self.type = AppType.DIRECTORY
             # resolve the directory, because Path("file").parent.parent == "." != ".."
             self.directory = self.path.resolve()
+            routes = solara.generate_routes_directory(self.path)
         elif self.name.endswith(".py"):
             self.type = AppType.SCRIPT
             # manually add the script to the watcher
             reload.reloader.watcher.add_file(self.path)
             self.directory = self.path.parent.resolve()
+            with reload.reloader.watch():
+                local_scope = {}
+                with open(self.path) as f:
+                    ast = compile(f.read(), self.path, "exec")
+                    exec(ast, local_scope)
+            app = nested_get(local_scope, self.app_name)
+            routes = cast(Optional[List[solara.Route]], local_scope.get("routes"))
         elif self.name.endswith(".ipynb"):
             self.type = AppType.NOTEBOOK
             # manually add the notebook to the watcher
             reload.reloader.watcher.add_file(self.path)
             self.directory = self.path.parent.resolve()
+            import nbformat
+
+            nb: nbformat.NotebookNode = nbformat.read(self.path, 4)
+            with reload.reloader.watch(), cwd(Path(self.path).parent):
+                for cell_index, cell in enumerate(nb.cells):
+                    cell_index += 1  # used 1 based
+                    if cell.cell_type == "code":
+                        source = cell.source
+                        cell_path = f"{self.path} input cell {cell_index}"
+                        ast = compile(source, cell_path, "exec")
+                        exec(ast, local_scope)
+                app = nested_get(local_scope, self.app_name)
+                routes = cast(Optional[List[solara.Route]], local_scope.get("routes"))
         else:
             # the module itself will be added by reloader
             # automatically
@@ -87,6 +126,22 @@ class AppScript:
                 self.path = Path(spec.origin)
                 self.directory = self.path.parent
 
+                mod = importlib.import_module(self.name)
+
+                local_scope = mod.__dict__
+                if not hasattr(mod, "routes"):
+                    if self.app_name == "Page":
+                        routes = solara.generate_routes(mod)
+                        app = solara.RenderPage()
+                    else:
+                        app = nested_get(local_scope, self.app_name)
+                        routes = None
+                else:
+                    routes = mod.routes
+                    app = nested_get(local_scope, self.app_name)
+                    if app is None:
+                        app = solara.autorouting.RenderPage()
+
         # this is not expected for modules, similar to `python script.py and python -m package.mymodule`
         if self.type in [AppType.SCRIPT, AppType.NOTEBOOK]:
             working_directory = str(self.path.parent)
@@ -105,64 +160,6 @@ class AppScript:
         # os.environ["SCRIPT_NAME"] = self.name
         os.environ["PATH_TRANSLATED"] = str(self.path.resolve())
 
-    def close(self):
-        reload.reloader.on_change = None
-        context_values = list(contexts.values())
-        contexts.clear()
-        for context in context_values:
-            context.close()
-
-    def run(self):
-        with reload.reloader.watch():
-            return self._run()
-
-    def _run(self):
-        context = get_current_context()
-        local_scope = {"display": context.display, "__name__": "__main__", "__file__": str(self.path)}
-        ignore = list(local_scope)
-        routes: Optional[List[solara.Route]] = None
-        if self.type == AppType.DIRECTORY:
-            routes = solara.generate_routes_directory(self.path)
-            app = solara.RenderPage()
-            return app, routes
-        elif self.type == AppType.SCRIPT:
-            with open(self.path) as f:
-                ast = compile(f.read(), self.path, "exec")
-                exec(ast, local_scope)
-            app = nested_get(local_scope, self.app_name)
-            routes = cast(Optional[List[solara.Route]], local_scope.get("routes"))
-        elif self.type == AppType.NOTEBOOK:
-            import nbformat
-
-            nb: nbformat.NotebookNode = nbformat.read(self.path, 4)
-            with cwd(Path(self.path).parent):
-                for cell_index, cell in enumerate(nb.cells):
-                    cell_index += 1  # used 1 based
-                    if cell.cell_type == "code":
-                        source = cell.source
-                        cell_path = f"{self.path} input cell {cell_index}"
-                        ast = compile(source, cell_path, "exec")
-                        exec(ast, local_scope)
-            app = nested_get(local_scope, self.app_name)
-            routes = cast(Optional[List[solara.Route]], local_scope.get("routes"))
-        elif self.type == AppType.MODULE:
-            mod = importlib.import_module(self.name)
-
-            local_scope = mod.__dict__
-            if not hasattr(mod, "routes"):
-                if self.app_name == "Page":
-                    routes = solara.generate_routes(mod)
-                    app = solara.RenderPage()
-                else:
-                    app = nested_get(local_scope, self.app_name)
-            else:
-                routes = mod.routes
-                app = nested_get(local_scope, self.app_name)
-                if app is None:
-                    app = solara.autorouting.RenderPage()
-        else:
-            raise ValueError(self.type)
-
         if app is None:
             # workaround for backward compatibility
             app = local_scope.get("app")
@@ -178,8 +175,39 @@ class AppScript:
                 msg += " We did find: " + " or ".join(map(repr, options))
             raise NameError(msg)
         if routes is None:
-            routes = [solara.Route("/")]
-        return app, routes
+            self.routes = [solara.Route("/")]
+        else:
+            self.routes = routes
+
+        # this might be useful for development
+        # but requires reloading of react in solara iself
+        # for name, module in sys.modules.items():
+        #     if name.startswith("reacton"):
+        #         file = inspect.getfile(module)
+        #         self.watcher.add_file(file)
+
+        # cgi vars: https://datatracker.ietf.org/doc/html/rfc3875
+        # we cannot set script name, because gunicorn uses it (and will crash)
+        # os.environ["SCRIPT_NAME"] = self.name
+        os.environ["PATH_TRANSLATED"] = str(self.path.resolve())
+        return app
+
+    def close(self):
+        reload.reloader.on_change = None
+        context_values = list(contexts.values())
+        contexts.clear()
+        for context in context_values:
+            context.close()
+
+    def run(self):
+        if self._is_widget:
+            return self._execute()
+        else:
+            if reload.reloader.requires_reload:
+                with thread_lock:
+                    if reload.reloader.requires_reload:
+                        self._first_execute_app = self._execute()
+            return self._first_execute_app
 
     def on_file_change(self, name):
         path = Path(name)
@@ -223,7 +251,8 @@ class AppScript:
 
 
 # the default app (used in solara-server)
-apps["__default__"] = AppScript(os.environ.get("SOLARA_APP", "solara.website.pages:Page"))
+if "SOLARA_APP" in os.environ:
+    apps["__default__"] = AppScript(os.environ.get("SOLARA_APP", "solara.website.pages:Page"))
 
 
 @dataclasses.dataclass
@@ -334,7 +363,7 @@ def get_current_context() -> AppContext:
 def _run_app(app_state, app_script: AppScript, pathname: str, render_context: reacton.core._RenderContext = None):
 
     # app.signal_hook_install()
-    main_object, routes = app_script.run()
+    main_object = app_script.run()
 
     context = get_current_context()
     container = context.container
@@ -345,7 +374,7 @@ def _run_app(app_state, app_script: AppScript, pathname: str, render_context: re
             children = [main_object]
         else:
             children = [main_object()]
-        solara_context = solara.RoutingProvider(children=children, routes=routes, pathname=pathname)
+        solara_context = solara.RoutingProvider(children=children, routes=app_script.routes, pathname=pathname)
         if render_context is None:
             result = render(solara_context, container, handle_error=True, initial_state=app_state)
             # support older versions of react

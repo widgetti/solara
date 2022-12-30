@@ -121,7 +121,8 @@ def page(page):  # noqa
 def solara_app(solara_server):
     @contextlib.contextmanager
     def run(app: Union[solara.server.app.AppScript, str]):
-        solara.server.app.apps["__default__"].close()
+        if "__default__" in solara.server.app.apps:
+            solara.server.app.apps["__default__"].close()
         if isinstance(app, str):
             app = solara.server.app.AppScript(app)
         solara.server.app.apps["__default__"] = app

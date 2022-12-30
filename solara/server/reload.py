@@ -6,7 +6,7 @@ import logging
 import os
 import sys
 import threading
-from typing import Callable, Dict, List, Set, Type
+from typing import Callable, Dict, List, Optional, Set, Type
 
 NO_WATCHDOG = False
 try:
@@ -121,10 +121,10 @@ else:
 
 
 class Reloader:
-    def __init__(self, on_change: Callable[[str], None] = None) -> None:
+    def __init__(self, on_change: Optional[Callable[[str], None]] = None) -> None:
         self.watched_modules: Set[str] = set()
         self._first = True
-        self.on_change = on_change
+        self.on_change: Optional[Callable[[str], None]] = on_change
         self.watcher = WatcherType([], self._on_change)
         self.requires_reload = False
         self.ignore_modules: Set[str] = set()

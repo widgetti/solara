@@ -1,12 +1,56 @@
-# import logging
+import logging
+
 # import sys
+from pathlib import Path
 
-# import pytest
+import ipywidgets
+import reacton.core
 
-# from solara.server import reload
-# from solara.server.app import AppScript
+# import solara.server.app
+from solara.server import reload
+from solara.server.app import AppScript
 
-# logger = logging.getLogger("solara.server.app_test")
+logger = logging.getLogger("solara.server.app_test")
+
+
+HERE = Path(__file__).parent
+reload.reloader.start()
+
+
+def test_notebook_element():
+    name = str(HERE / "solara_test_apps" / "notebookapp_element.ipynb")
+    app = AppScript(name)
+    try:
+        el = app.run()
+        assert isinstance(el, reacton.core.Element)
+        el2 = app.run()
+        assert el is el2
+    finally:
+        app.close()
+
+
+def test_notebook_component():
+    name = str(HERE / "solara_test_apps" / "notebookapp_component.ipynb")
+    app = AppScript(name)
+    try:
+        el = app.run()
+        assert isinstance(el, reacton.core.Component)
+        el2 = app.run()
+        assert el is el2
+    finally:
+        app.close()
+
+
+def test_notebook_widget():
+    name = str(HERE / "solara_test_apps" / "notebookapp_widget.ipynb")
+    app = AppScript(name)
+    try:
+        widget = app.run()
+        assert isinstance(widget, ipywidgets.Button)
+        widget2 = app.run()
+        assert widget is not widget2
+    finally:
+        app.close()
 
 
 # def test_watch_module_reload(tmpdir, app_context, extra_include_path):
@@ -37,12 +81,14 @@
 #             # wait for the event to trigger
 #             reload.reloader.reload_event_next.wait()
 #             # assert "somemod" not in sys.modules
+#             # breakpoint()
 #             result = app.run()
 #             assert "somemod" in sys.modules
 #             assert result().component.widget == v.Card
 #         finally:
 #             app.close()
-#             del sys.modules["somemod"]
+#             if "somemod" in sys.modules:
+#                 del sys.modules["somemod"]
 #             reload.reloader.watched_modules.remove("somemod")
 
 

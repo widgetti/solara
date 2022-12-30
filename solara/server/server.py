@@ -26,8 +26,14 @@ template_name = "index.html.j2"
 ipykernel_major = int(ipykernel.__version__.split(".")[0])
 
 # first look at the project directory, then the builtin solara directory
-jinja_loader = jinja2.FileSystemLoader([app.apps["__default__"].directory.parent / "templates", str(directory / "templates")])
-jinja_env = jinja2.Environment(loader=jinja_loader, autoescape=True)
+
+
+def get_jinja_env(app_name: str) -> jinja2.Environment:
+    jinja_loader = jinja2.FileSystemLoader([app.apps["__default__"].directory.parent / "templates", str(directory / "templates")])
+    jinja_env = jinja2.Environment(loader=jinja_loader, autoescape=True)
+    return jinja_env
+
+
 logger = logging.getLogger("solara.server.server")
 nbextensions_ignorelist = [
     "jupytext/index",
@@ -148,7 +154,7 @@ def read_root(base_url: str = "", render_kwargs={}, use_nbextensions=True):
         "theme": "light",
         "nbextensions": nbextensions,
     }
-    template: jinja2.Template = jinja_env.get_template(template_name)
+    template: jinja2.Template = get_jinja_env(app_name="__default__").get_template(template_name)
     render_settings = {
         "base_url": base_url,
         "resources": resources,
