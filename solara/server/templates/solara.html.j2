@@ -42,154 +42,154 @@
     </style>
     {% endblock header %}
 </head>
+{% raw -%}
+<script type="x-template" id="vue-app-template" style="display: none">
+    <v-app :key="forceUpdateTrigger">
+        <v-progress-linear :style="{visibility: (kernelBusy && isMounted) ? 'visible' : 'hidden'}" indeterminate
+            absolute></v-progress-linear>
+        <v-alert v-if="needsRefresh || cancelAutoRefresh" type="warning" border="left"
+            style="position: absolute; right: 0px; z-index: 100; left: 0px;">
+            App is disconnected, and may not function properly. Please refresh the page.
+        </v-alert>
+        {% endraw -%}
+        {# {% include "transition-domino.html" %} #}
+        {% include "loader-" ~ theme.loader ~ ".html" %}
+        <v-overlay :value="(connectionStatus != 'connected') & wasConnected">
+            <v-progress-circular indeterminate size="128" style="text-align: center;">Server
+                disconnected.</v-progress-circular>
+        </v-overlay>
+
+        <v-dialog v-model="needsRefresh" width="500">
+            <v-card>
+                <v-card-title class="text-h5 grey lighten-2">Please refresh the page</v-card-title>
+
+                {% if production %}
+                <v-card-text>
+                    Could not restore session. Please refresh.
+                </v-card-text>
+                {% else %}
+                <v-card-text>
+                    {% raw -%}
+                    Could not restore session. Will refresh in {{autoRefreshCount}} seconds.
+                    {% endraw -%}
+                </v-card-text>
+                {% endif %}
+
+                <v-divider></v-divider>
+
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn color="secondary" text @click="reload()">
+                        Refresh now
+                    </v-btn>
+                    <v-btn color="primary" text @click="setCancelAutoRefresh()">
+                        Cancel
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+        {% raw -%}
+
+        <v-menu v-if="debug && solaraDebugMessages && solaraDebugMessages.length" offset-y top
+            :close-on-content-click="false">
+            <template v-slot:activator="{ on }">
+                <v-btn text v-on="on" style="position: fixed; bottom: 8px; right: 8px">
+                    <span style="color: red">{{ solaraDebugMessages.length }}</span>
+                    <v-icon right large color="red">mdi-bug-outline</v-icon>
+                </v-btn>
+            </template>
+            <v-sheet class="pa-2" style="overflow: auto; max-height: 80vh">
+                <div style="display: flex" v-for="message in solaraDebugMessages" :key="message.cell" class="pa-2">
+                    <div style="width: 50px">[{{ message.cell }}]</div>
+                    <div v-if="message.traceback" class="jp-RenderedText jp-OutputArea-output"
+                        data-mime-type="application/vnd.jupyter.stderr">
+                        <pre v-html="message.traceback" class="pa-2"></pre>
+                    </div>
+                    <pre v-else><span :style="message.name === 'stderr' ? 'background-color: var(--jp-rendermime-error-background)' : ''"
+                                class="pa-2"
+                            >{{ message.text }}</span>
+                    </pre>
+                </div>
+                <div class="d-flex justify-end">
+                    <v-tooltip top>
+                        <template v-slot:activator="{ on, attrs }">
+                            <v-btn icon v-bind="attrs" v-on="on" @click="solaraDebugMessages = []">
+                                <v-icon>mdi-trash-can-outline</v-icon>
+                            </v-btn>
+                        </template>
+                        <span>Clear messages</span>
+                    </v-tooltip>
+                </div>
+            </v-sheet>
+        </v-menu>
+
+        <v-menu offset-y top :close-on-content-click="false" style="z-index: 100001">
+            <!-- <template v-slot:activator="{ on }">
+                <v-btn text v-on="on" style="position: fixed; top: 8px; right: 8px; z-index: 100000">
+                    <v-icon right large style="opacity: 0.5" :color="connectionStatus != 'connected' ? 'red' : ''">mdi-account</v-icon>
+                </v-btn>
+            </template> -->
+            <v-list>
+                <v-list-item @click="stateReset()" link>
+                    <v-list-item-icon>
+                        <v-icon>mdi-close-box</v-icon>
+                    </v-list-item-icon>
+                    <v-list-item-title>Reset application
+                    </v-list-item-title>
+                </v-list-item>
+                <v-list-item v-if="theme.variant_user_selectable">
+                    <v-btn-toggle v-model="themeVariantIndex" tile group mandatory>
+                        <v-btn vaue="light" icon>
+                            <v-icon>mdi-white-balance-sunny</v-icon>
+                        </v-btn>
+                        <v-btn>
+                            <v-icon>mdi-weather-night</v-icon>
+                        </v-btn>
+                        <v-btn>
+                            <v-icon>mdi-theme-light-dark</v-icon>
+                        </v-btn>
+                    </v-btn-toggle>
+                </v-list-item>
+
+            </v-list>
+        </v-menu>
+        <!-- <v-menu v-if="debug && outputMessages && outputMessages.length" offset-y top
+            :close-on-content-click="false">
+            <template v-slot:activator="{ on }">
+                <v-btn text v-on="on" style="position: fixed; top: 8px; right: 8px">
+                    <span style="color: #333">{{ outputMessages.length }}</span>
+                    <v-icon right large color="#333">mdi-information-outline</v-icon>
+                </v-btn>
+            </template>
+            <v-sheet class="pa-2" style="overflow: auto; max-height: 80vh">
+                <div style="display: flex" v-for="message in outputMessages" :key="message.cell" class="pa-2">
+                    <div style="width: 50px">[{{ message.cell }}]</div>
+                    <div v-if="message.traceback" class="jp-RenderedText jp-OutputArea-output"
+                        data-mime-type="application/vnd.jupyter.stderr">
+                        <pre v-html="message.traceback" class="pa-2"></pre>
+                    </div>
+                    <pre v-else><span :style="message.name === 'stderr' ? 'background-color: var(--jp-rendermime-error-background)' : ''"
+                                class="pa-2"
+                            >{{ message.text }}</span>
+                    </pre>
+                </div>
+                <div class="d-flex justify-end">
+                    <v-tooltip top>
+                        <template v-slot:activator="{ on, attrs }">
+                            <v-btn icon v-bind="attrs" v-on="on" @click="outputMessages = []">
+                                <v-icon>mdi-trash-can-outline</v-icon>
+                            </v-btn>
+                        </template>
+                        <span>Clear messages</span>
+                    </v-tooltip>
+                </div>
+            </v-sheet>
+        </v-menu> -->
+    </v-app>
+</script>
+{% endraw -%}
 
 <body>
-    {% raw -%}
-    <div id="vue-app-template" style="display: none">
-        <v-app :key="forceUpdateTrigger">
-            <v-progress-linear :style="{visibility: (kernelBusy && isMounted) ? 'visible' : 'hidden'}" indeterminate
-                absolute></v-progress-linear>
-            <v-alert v-if="needsRefresh || cancelAutoRefresh" type="warning" border="left"
-                style="position: absolute; right: 0px; z-index: 100; left: 0px;">
-                App is disconnected, and may not function properly. Please refresh the page.
-            </v-alert>
-            {% endraw -%}
-            {# {% include "transition-domino.html" %} #}
-            {% include "loader-" ~ theme.loader ~ ".html" %}
-            <v-overlay :value="(connectionStatus != 'connected') & wasConnected">
-                <v-progress-circular indeterminate size="128" style="text-align: center;">Server
-                    disconnected.</v-progress-circular>
-            </v-overlay>
-
-            <v-dialog v-model="needsRefresh" width="500">
-                <v-card>
-                    <v-card-title class="text-h5 grey lighten-2">Please refresh the page</v-card-title>
-
-                    {% if production %}
-                    <v-card-text>
-                        Could not restore session. Please refresh.
-                    </v-card-text>
-                    {% else %}
-                    <v-card-text>
-                        {% raw -%}
-                        Could not restore session. Will refresh in {{autoRefreshCount}} seconds.
-                        {% endraw -%}
-                    </v-card-text>
-                    {% endif %}
-
-                    <v-divider></v-divider>
-
-                    <v-card-actions>
-                        <v-spacer></v-spacer>
-                        <v-btn color="secondary" text @click="reload()">
-                            Refresh now
-                        </v-btn>
-                        <v-btn color="primary" text @click="setCancelAutoRefresh()">
-                            Cancel
-                        </v-btn>
-                    </v-card-actions>
-                </v-card>
-            </v-dialog>
-            {% raw -%}
-
-            <v-menu v-if="debug && solaraDebugMessages && solaraDebugMessages.length" offset-y top
-                :close-on-content-click="false">
-                <template v-slot:activator="{ on }">
-                    <v-btn text v-on="on" style="position: fixed; bottom: 8px; right: 8px">
-                        <span style="color: red">{{ solaraDebugMessages.length }}</span>
-                        <v-icon right large color="red">mdi-bug-outline</v-icon>
-                    </v-btn>
-                </template>
-                <v-sheet class="pa-2" style="overflow: auto; max-height: 80vh">
-                    <div style="display: flex" v-for="message in solaraDebugMessages" :key="message.cell" class="pa-2">
-                        <div style="width: 50px">[{{ message.cell }}]</div>
-                        <div v-if="message.traceback" class="jp-RenderedText jp-OutputArea-output"
-                            data-mime-type="application/vnd.jupyter.stderr">
-                            <pre v-html="message.traceback" class="pa-2"></pre>
-                        </div>
-                        <pre v-else><span :style="message.name === 'stderr' ? 'background-color: var(--jp-rendermime-error-background)' : ''"
-                                   class="pa-2"
-                                >{{ message.text }}</span>
-                        </pre>
-                    </div>
-                    <div class="d-flex justify-end">
-                        <v-tooltip top>
-                            <template v-slot:activator="{ on, attrs }">
-                                <v-btn icon v-bind="attrs" v-on="on" @click="solaraDebugMessages = []">
-                                    <v-icon>mdi-trash-can-outline</v-icon>
-                                </v-btn>
-                            </template>
-                            <span>Clear messages</span>
-                        </v-tooltip>
-                    </div>
-                </v-sheet>
-            </v-menu>
-
-            <v-menu offset-y top :close-on-content-click="false" style="z-index: 100001">
-                <!-- <template v-slot:activator="{ on }">
-                    <v-btn text v-on="on" style="position: fixed; top: 8px; right: 8px; z-index: 100000">
-                        <v-icon right large style="opacity: 0.5" :color="connectionStatus != 'connected' ? 'red' : ''">mdi-account</v-icon>
-                    </v-btn>
-                </template> -->
-                <v-list>
-                    <v-list-item @click="stateReset()" link>
-                        <v-list-item-icon>
-                            <v-icon>mdi-close-box</v-icon>
-                        </v-list-item-icon>
-                        <v-list-item-title>Reset application
-                        </v-list-item-title>
-                    </v-list-item>
-                    <v-list-item v-if="theme.variant_user_selectable">
-                        <v-btn-toggle v-model="themeVariantIndex" tile group mandatory>
-                            <v-btn vaue="light" icon>
-                                <v-icon>mdi-white-balance-sunny</v-icon>
-                            </v-btn>
-                            <v-btn>
-                                <v-icon>mdi-weather-night</v-icon>
-                            </v-btn>
-                            <v-btn>
-                                <v-icon>mdi-theme-light-dark</v-icon>
-                            </v-btn>
-                        </v-btn-toggle>
-                    </v-list-item>
-
-                </v-list>
-            </v-menu>
-            <!-- <v-menu v-if="debug && outputMessages && outputMessages.length" offset-y top
-                :close-on-content-click="false">
-                <template v-slot:activator="{ on }">
-                    <v-btn text v-on="on" style="position: fixed; top: 8px; right: 8px">
-                        <span style="color: #333">{{ outputMessages.length }}</span>
-                        <v-icon right large color="#333">mdi-information-outline</v-icon>
-                    </v-btn>
-                </template>
-                <v-sheet class="pa-2" style="overflow: auto; max-height: 80vh">
-                    <div style="display: flex" v-for="message in outputMessages" :key="message.cell" class="pa-2">
-                        <div style="width: 50px">[{{ message.cell }}]</div>
-                        <div v-if="message.traceback" class="jp-RenderedText jp-OutputArea-output"
-                            data-mime-type="application/vnd.jupyter.stderr">
-                            <pre v-html="message.traceback" class="pa-2"></pre>
-                        </div>
-                        <pre v-else><span :style="message.name === 'stderr' ? 'background-color: var(--jp-rendermime-error-background)' : ''"
-                                   class="pa-2"
-                                >{{ message.text }}</span>
-                        </pre>
-                    </div>
-                    <div class="d-flex justify-end">
-                        <v-tooltip top>
-                            <template v-slot:activator="{ on, attrs }">
-                                <v-btn icon v-bind="attrs" v-on="on" @click="outputMessages = []">
-                                    <v-icon>mdi-trash-can-outline</v-icon>
-                                </v-btn>
-                            </template>
-                            <span>Clear messages</span>
-                        </v-tooltip>
-                    </div>
-                </v-sheet>
-            </v-menu> -->
-        </v-app>
-    </div>
-    {% endraw -%}
     {% if theme.variant == "light" %}
     <div id="app" class="v-application v-application--is-ltr theme--light" data-app="true">
     {% elif theme.variant == "dark" %}
