@@ -117,7 +117,7 @@ else:
                 else:
                     logger.debug("Ignore file modification: %s", event.src_path)
 
-    WatcherType = WatcherWatchdog
+    WatcherType = WatcherWatchdog  # type: ignore
 
 
 class Reloader:
