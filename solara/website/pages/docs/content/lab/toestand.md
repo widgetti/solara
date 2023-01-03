@@ -71,7 +71,7 @@ def Page():
 # More complex state
 
 Application state is usually more than a primitive such as an int of a string.
-A common way to store application state is to wrap it in a class using [dataclass](https://docs.python.org/3/library/dataclasses.html), [Pydantic](https://pydantic-docs.helpmanual.io/), [`attrs`](https://www.attrs.org/en/stable/) or even a `TypedDict`.
+A common way to store application state is to wrap it in a class using [dataclass](https://docs.python.org/3/library/dataclasses.html), [Pydantic](https://docs.pydantic.dev/), [`attrs`](https://www.attrs.org/en/stable/) or even a `TypedDict`.
 
 ```python
 import dataclasses

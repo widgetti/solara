@@ -3,7 +3,7 @@
 
 ## Development setup
 
-Assuming you have created a virtual environment as described in [the installation guide](/docs/guides/installing), you can install a development install of Solara using:
+Assuming you have created a virtual environment as described in [the installation guide](/docs/installing), you can install a development install of Solara using:
 
     $ git clone git@github.com:widgetti/solara.git
     $ cd solara
