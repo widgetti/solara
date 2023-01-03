@@ -324,8 +324,9 @@ def generate_routes(module: ModuleType) -> List[solara.Route]:
                 raise KeyError(f"Some routes are not in route_order: {set(lookup) - set(route_order)}")
 
     else:
+        children = getattr(module, "routes", [])
         # single module, single route
-        return [solara.Route(path="/", component=RenderPage, data=None, module=module, label=get_title(module))]
+        return [solara.Route(path="/", component=RenderPage, data=None, module=module, label=get_title(module), children=children)]
 
     return routes
 
