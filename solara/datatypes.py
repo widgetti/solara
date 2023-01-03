@@ -1,5 +1,6 @@
 import dataclasses
 from enum import Enum
+from pathlib import Path
 from types import ModuleType
 from typing import Any, Callable, Dict, Generic, List, Optional, TypeVar, Union
 
@@ -136,3 +137,7 @@ class Route:
 
     # Can be used for a title and/or a tab label
     label: Optional[str] = None
+
+    # file corresponding to this route, can be used for
+    # checking of content has changed (using mtime)
+    file: Optional[Path] = None

@@ -1,3 +1,4 @@
+import dataclasses
 import importlib
 import inspect
 import pkgutil
@@ -278,6 +279,20 @@ def get_title(module: ModuleType, required=True):
     return title
 
 
+def fix_route(route: solara.Route, new_file: Path) -> solara.Route:
+    file = route.file or new_file
+    children = fix_routes(route.children, new_file) if route.children else []
+
+    return dataclasses.replace(route, file=file, children=children)
+
+
+def fix_routes(routes: List[solara.Route], new_file: Path):
+    new_routes = []
+    for route in routes:
+        new_routes.append(fix_route(route, new_file))
+    return new_routes
+
+
 def generate_routes(module: ModuleType) -> List[solara.Route]:
     """Generate routes from a module.
 
@@ -295,22 +310,26 @@ def generate_routes(module: ModuleType) -> List[solara.Route]:
 
     assert module.__file__ is not None
     routes = []
+    file = Path(module.__file__)
+
     if module.__file__.endswith("__init__.py"):
         if hasattr(module, "routes"):
             # if routes if provided, use them instead of us generating them
             children = getattr(module, "routes")
+            children = fix_routes(children, file)
             return children
         route_order = getattr(module, "route_order", None)
         layout = getattr(module, "Layout", None)
         title = get_title(module)
         children = getattr(module, "routes", [])
         if hasattr(module, "Page"):
-            routes.append(solara.Route(path="/", component=RenderPage, data=module, module=module, layout=layout, children=children, label=title))
+            routes.append(solara.Route(path="/", component=RenderPage, data=module, module=module, layout=layout, children=children, label=title, file=file))
 
         assert module.__file__ is not None
         reload.reloader.watcher.add_file(module.__file__)
         for info in pkgutil.iter_modules([str(Path(module.__file__).parent)]):
             submod = importlib.import_module(module.__name__ + f".{info.name}")
+            subfile = Path(submod.__file__) if submod.__file__ is not None else None
             title = get_title(submod)
 
             if info.ispkg:
@@ -323,8 +342,10 @@ def generate_routes(module: ModuleType) -> List[solara.Route]:
                 if get_renderable(submod) is None:
                     continue
                 children = getattr(submod, "routes", [])
+                if subfile:
+                    children = fix_routes(children, subfile)
                 module_layout = getattr(submod, "Layout", None)
-                route = solara.Route(info.name, component=RenderPage, module=submod, layout=module_layout, children=children, label=title)
+                route = solara.Route(info.name, component=RenderPage, module=submod, layout=module_layout, children=children, label=title, file=subfile)
             routes.append(route)
         if route_order:
             lookup = {k.path: k for k in routes}
@@ -337,8 +358,10 @@ def generate_routes(module: ModuleType) -> List[solara.Route]:
 
     else:
         children = getattr(module, "routes", [])
+        children = fix_routes(children, file)
+        # children = []
         # single module, single route
-        return [solara.Route(path="/", component=RenderPage, data=None, module=module, label=get_title(module), children=children)]
+        return [solara.Route(path="/", component=RenderPage, data=None, module=module, label=get_title(module), children=children, file=file)]
 
     return routes
 
@@ -402,8 +425,9 @@ def generate_routes_directory(path: Path) -> List[solara.Route]:
             reload.reloader.watcher.add_file(subpath)
             module = source_to_module(subpath)
             children = getattr(module, "routes", children)
+            children = fix_routes(children, subpath)
             module_layout = getattr(module, "Layout", module_layout)
         first = False
-        route = solara.Route(route_path, component=component, module=module, label=title, children=children, data=data, layout=module_layout)
+        route = solara.Route(route_path, component=component, module=module, label=title, children=children, data=data, layout=module_layout, file=subpath)
         routes.append(route)
     return routes
