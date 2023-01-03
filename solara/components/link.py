@@ -10,6 +10,7 @@ import solara
 def Link(
     path_or_route: Union[str, solara.Route],
     children=[],
+    nofollow=False,
 ):
     """Makes clicking on child elements navigate to a route.
 
@@ -31,10 +32,14 @@ def Link(
      * path_or_route: the path or route to navigate to. Paths should be absolute, e.g. '/fruit/banana'.
        If a route is given, [`resolve_path`](/api/resolve_path)] will be used to resolve to the absolute path.
      * children: the children of the link. If a child is clicked, the link will be followed.
+     * nofollow: If True, the link will not be followed by web crawlers (such as google).
 
     """
     path = solara.resolve_path(path_or_route, level=0)
-    link = vue.Html.element(tag="a", children=children, attributes={"href": path})
+    attributes = {"href": path}
+    if nofollow:
+        attributes["rel"] = "nofollow"
+    link = vue.Html.element(tag="a", children=children, attributes=attributes)
     location = solara.use_context(solara.routing._location_context)
 
     def go(*ignore):
