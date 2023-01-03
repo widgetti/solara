@@ -34,6 +34,7 @@ class SSGData(TypedDict):
     title: str
     html: str
     styles: List[str]
+    metas: List[str]
 
 
 def _get_playwright():
@@ -171,6 +172,14 @@ def ssg_data(path: str) -> Optional[SSGData]:
             if title_tag:
                 title = title_tag.text
 
+            # include all meta tags
+            rendered_metas = soup.find_all("meta")
+            metas = []
+            for meta in rendered_metas:
+                # but only the ones added by solara
+                if meta.attrs.get("data-solara-head-key"):
+                    metas.append(str(meta))
+
             # include all styles
             rendered_styles = soup.find_all("style")
             for style in rendered_styles:
@@ -181,7 +190,7 @@ def ssg_data(path: str) -> Optional[SSGData]:
                 # pre_rendered_css += style_html
                 styles.append(style_html)
                 logger.debug("Include style (size is %r mb):\n\t%r", len(style_html) / 1024**2, style_html[:200])
-            return SSGData(title=title, html=html, styles=styles)
+            return SSGData(title=title, html=html, styles=styles, metas=metas)
         else:
             logger.error("Count not find html at %r", html_path)
     return None

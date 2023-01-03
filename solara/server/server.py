@@ -9,7 +9,6 @@ from typing import Dict, List, Optional, TypeVar
 
 import ipykernel
 import jinja2
-
 import solara
 import solara.routing
 
@@ -163,6 +162,7 @@ def read_root(path: str, root_path: str = "", render_kwargs={}, use_nbextensions
     template: jinja2.Template = get_jinja_env(app_name="__default__").get_template(template_name)
     pre_rendered_html = ""
     pre_rendered_css = ""
+    pre_rendered_metas = ""
     title = "Solara ☀️"
     if settings.ssg.enabled:
         from solara_enterprise import ssg
@@ -171,6 +171,7 @@ def read_root(path: str, root_path: str = "", render_kwargs={}, use_nbextensions
         if ssg_data is not None:
             pre_rendered_html = ssg_data["html"]
             pre_rendered_css = "\n".join(ssg_data["styles"])
+            pre_rendered_metas = "\n    ".join(ssg_data["metas"])
             title = ssg_data["title"]
 
     render_settings = {
@@ -182,6 +183,7 @@ def read_root(path: str, root_path: str = "", render_kwargs={}, use_nbextensions
         "production": settings.main.mode == "production",
         "pre_rendered_html": pre_rendered_html,
         "pre_rendered_css": pre_rendered_css,
+        "pre_rendered_metas": pre_rendered_metas,
         **render_kwargs,
     }
     response = template.render(**render_settings)

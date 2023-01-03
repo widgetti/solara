@@ -27,7 +27,10 @@ def SSG():
     global context
     value, set_value = solara.use_state(text_ssg)  # type: ignore
     context = get_current_context()
-    return solara.Markdown(value)
+    with solara.HBox() as main:
+        solara.Markdown(value)
+        solara.Meta(name="description", property="og:description", content="My page description")
+    return main
 
 
 def test_ssg(page_session: playwright.sync_api.Page, solara_server, solara_app, tmpdir):
@@ -50,7 +53,10 @@ def test_ssg(page_session: playwright.sync_api.Page, solara_server, solara_app, 
         t.join()
         path = settings.ssg.build_path / "index.html"
         assert path.exists()
-        assert ">SSG Test</h1>" in path.read_text(), "SSG did not render correctly"
+        html = path.read_text()
+        assert ">SSG Test</h1>" in html, "SSG did not render correctly"
+        assert "og:description" in html, "SSG did not render meta correctly"
+        assert "My page description" in html, "SSG did not render meta correctly"
 
         page_session.goto(solara_server.base_url)
         page_session.locator("text=SSG Test").wait_for()
