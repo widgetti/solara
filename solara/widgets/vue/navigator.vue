@@ -12,6 +12,10 @@ modules.export = {
     }
     window.solara.router.push = (href) => {
       console.log("external router push", href);
+      // take of the anchor
+      if (href.indexOf("#") !== -1) {
+        href = href.slice(0, href.indexOf("#"));
+      }
       this.location = href;
     };
     let location = window.location.pathname.slice(solara.rootPath.length);
