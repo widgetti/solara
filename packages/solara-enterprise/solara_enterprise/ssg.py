@@ -1,4 +1,8 @@
 import logging
+import multiprocessing.pool
+import threading
+import time
+import typing
 from pathlib import Path
 from typing import List, Optional
 
@@ -11,11 +15,37 @@ from . import license
 
 logger = logging.getLogger("solara.server.ssg")
 
+if typing.TYPE_CHECKING:
+    import playwright.sync_api
+    import playwright.sync_api._context_manager
+
+
+class Playwright(threading.local):
+    browser: Optional["playwright.sync_api.Browser"] = None
+    sync_playwright: Optional["playwright.sync_api.Playwright"] = None
+    context_manager: Optional["playwright.sync_api._context_manager.PlaywrightContextManager"] = None
+
+
+pw = Playwright()
+playwrights: List[Playwright] = []
+
 
 class SSGData(TypedDict):
     title: str
     html: str
     styles: List[str]
+
+
+def _get_playwright():
+    if hasattr(pw, "browser") and pw.browser is not None:
+        return pw
+    from playwright.sync_api import sync_playwright
+
+    pw.context_manager = sync_playwright()
+    pw.sync_playwright = pw.context_manager.start()
+
+    pw.browser = pw.sync_playwright.chromium.launch(headless=not settings.ssg.headed)
+    return pw
 
 
 def ssg_crawl(base_url: str):
@@ -31,43 +61,77 @@ def ssg_crawl(base_url: str):
     rprint(f"Building {app_script.name} at {build_path}")
     routes = app_script.routes
 
-    from playwright.sync_api import sync_playwright
+    # although in theory we should be able to run this with multiple threads
+    # there are issues with uvloop:
+    #  e.g.: "Racing with another loop to spawn a process."
+    thread_pool = multiprocessing.pool.ThreadPool(1)
 
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=not settings.ssg.headed)
-        for route in routes:
-            ssg_crawl_route(browser, f"{base_url}/", route, build_path)
-        browser.close()
+    results = []
+    for route in routes:
+        results.append(thread_pool.apply_async(ssg_crawl_route, [f"{base_url}/", route, build_path, thread_pool]))
+
+    def wait(async_result):
+        results = async_result.get()
+        for result in results:
+            wait(result)
+
+    for result in results:
+        wait(result)
+    thread_pool.terminate()
+    for pw in playwrights:
+        assert pw.browser is not None
+        assert pw.context_manager is not None
+        pw.browser.close()
+        pw.context_manager.stop()
+
+    rprint("Done building SSG")
 
 
-def ssg_crawl_route(browser, base_url: str, route: solara.Route, build_path: Path):
+def ssg_crawl_route(base_url: str, route: solara.Route, build_path: Path, thread_pool: multiprocessing.pool.ThreadPool):
     # if route
     url = base_url + (route.path if route.path != "/" else "")
-    rprint("Check SSG for URL", url)
-    build_path.mkdir(exist_ok=True, parents=True)
-    path = build_path / ("index.html" if route.path == "/" else route.path + ".html")
-    if not path.exists():
-        rprint(f"Will generate {path}")
-        page = browser.new_page()
-        response = page.goto(url, wait_until="networkidle")
-        if response.status != 200:
-            raise Exception(f"Failed to load {url} with status {response.status}")
-        # TODO: if we don't want to detached, we get stack trace showing errors in solara
-        # make sure the html is loaded
-        page.locator("#app").wait_for()
-        # make sure vue took over
-        page.locator("#pre-rendered-html-present").wait_for(state="detached")
-        # and wait for the
-        page.locator("text=Loading app").wait_for(state="detached")
-        html = page.content()
-        path.write_text(html, encoding="utf-8")
-        rprint(f"Wrote to {path}")
-        page.close()
-    else:
-        rprint(f"Skipping existing render: {path}")
+    if not route.children:
+        rprint("Check SSG for URL", url)
+        build_path.mkdir(exist_ok=True, parents=True)
+        path = build_path / ("index.html" if route.path == "/" else route.path + ".html")
+        stale = False
+        pw = _get_playwright()
+        browser = pw.browser
+        if path.exists():
+            if route.file is None:
+                rprint(f"File corresponding to {url} is not found (route: {route})")
+            else:
+                assert route.file is not None
+                stale = path.stat().st_mtime < route.file.stat().st_mtime
+                if stale:
+                    rprint(f"Path {path} is stale: mtime {path} is older than {route.file} mtime {route.file.stat().st_mtime}")
+        if not path.exists() or stale:
+            rprint(f"Will generate {path}")
+            page = browser.new_page()
+            response = page.goto(url, wait_until="networkidle")
+            if response.status != 200:
+                raise Exception(f"Failed to load {url} with status {response.status}")
+            # TODO: if we don't want to detached, we get stack trace showing errors in solara
+            # make sure the html is loaded
+            page.locator("#app").wait_for()
+            # make sure vue took over
+            page.locator("#pre-rendered-html-present").wait_for(state="detached")
+            # and wait for the
+            page.locator("text=Loading app").wait_for(state="detached")
+            page.locator("#kernel-busy-indicator").wait_for(state="hidden")
+            # page.wait_
+            time.sleep(0.5)
+            html = page.content()
+            path.write_text(html, encoding="utf-8")
+            rprint(f"Wrote to {path}")
+            page.close()
+        else:
+            rprint(f"Skipping existing render: {path}")
+    results = []
     for child in route.children:
-        if child.path != "/":
-            ssg_crawl_route(browser, url + "/", child, build_path / Path(route.path))
+        result = thread_pool.apply_async(ssg_crawl_route, [url + "/", child, build_path / Path(route.path), thread_pool])
+        results.append(result)
+    return results
 
 
 def ssg_data(path: str) -> Optional[SSGData]:
@@ -119,5 +183,5 @@ def ssg_data(path: str) -> Optional[SSGData]:
                 logger.debug("Include style (size is %r mb):\n\t%r", len(style_html) / 1024**2, style_html[:200])
             return SSGData(title=title, html=html, styles=styles)
         else:
-            logger.error("Looking for html at %r", html_path)
+            logger.error("Count not find html at %r", html_path)
     return None
