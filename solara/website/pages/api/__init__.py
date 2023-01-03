@@ -20,6 +20,11 @@ def Page():
 
 
 @solara.component
+def NoPage():
+    raise RuntimeError("This page should not be rendered")
+
+
+@solara.component
 def Sidebar(children=[], level=0):
     # note that we don't use children here, but we used route.module instead to ge the module
     # this is fine because all api/*.py files use the standard Page component, and do not add
@@ -103,6 +108,7 @@ def Sidebar(children=[], level=0):
                     add("use_thread")
                     add("use_exception")
                     add("use_previous")
+                    add("use_state")
                     add("use_state_or_update")
             with ListItem("Types", icon_name="mdi-fingerprint"):
                 with List():
@@ -114,14 +120,13 @@ def Sidebar(children=[], level=0):
                 with List():
                     add("use_route")
                     add("resolve_path")
+                    add("generate_routes")
+                    add("generate_routes_directory")
                     # add("use_router")
                     # add("use_route_level")
 
                     # add("resolve_path")
                     # add("use_pathname")
-
-                    # add("generate_routes")
-                    # add("generate_routes_directory")
 
                     # add("RenderPage")
                     # add("DefaultNavigation")
@@ -184,7 +189,7 @@ def WithCode(module):
                     )
         # It renders code better
         solara.Markdown(module.__doc__ or "# no docs yet")
-        if component:
+        if component and component != NoPage:
             with solara.Card("Example", margin=0, classes=["mt-8"]):
                 component()
                 solara.Button("Show code", icon_name="mdi-eye", on_click=lambda: set_show_code(True), text=True, class_="mt-8")

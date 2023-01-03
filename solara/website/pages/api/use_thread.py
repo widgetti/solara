@@ -7,6 +7,7 @@ import solara
 from solara.alias import rv, rw
 
 HERE = Path(__file__).parent
+title = "use_thread"
 __doc__ = open(HERE / "use_thread.md").read()
 
 

@@ -253,12 +253,12 @@ def get_page(module: ModuleType, required=True):
 def get_renderable(module: ModuleType, required=False):
     var_names = "app Page page".split()
     for var_name in var_names:
-        entry = getattr(module, var_name, None)
-        if entry:
-            return entry
+        if not hasattr(module, var_name):
+            continue
+        entry = getattr(module, var_name)
+        return entry
     if required:
         raise NameError(f"No component, element or widget found in module {module} with names: {', '.join(var_names[:-1])} or {var_names[-1]}")
-    return entry
 
 
 def get_title(module: ModuleType, required=True):
@@ -279,6 +279,18 @@ def get_title(module: ModuleType, required=True):
 
 
 def generate_routes(module: ModuleType) -> List[solara.Route]:
+    """Generate routes from a module.
+
+    This is a recursive function that will generate routes for all submodules.
+
+    Note this only support .py files, since Markdown files and Jupyter notebook
+    files are not Python modules.
+
+
+    See [our multipage guide](/docs/guides/multipage#as-a-package) for more details.
+
+
+    """
     from .server import reload
 
     assert module.__file__ is not None
@@ -332,6 +344,20 @@ def generate_routes(module: ModuleType) -> List[solara.Route]:
 
 
 def generate_routes_directory(path: Path) -> List[solara.Route]:
+    """Generate routes for a directory.
+
+    This is a recursive function that will generate routes for all
+    subdirectories and files in the directory. It will skip any
+    files or directories that start with an underscore or a dot.
+
+    Markdown files ending in .md will be rendered as markdown.
+
+    Python files ending in .py, or Jupyter notebooks ending in .ipynb
+    will be executed and its `Page` component will be rendered.
+
+    Automatic titles will be [generated as explained in the multipage guide](/docs/guides/multipage).
+
+    """
     from .server import reload
 
     subpaths = list(sorted(path.iterdir()))

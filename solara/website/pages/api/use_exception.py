@@ -1,5 +1,6 @@
 import solara
 
+title = "use_exception"
 set_fail = None
 clear = None
 

@@ -9,6 +9,8 @@ This is useful to give a component state *or* allow the state to be controlled b
 """
 import solara
 
+title = "use_state_or_update"
+
 
 @solara.component
 def SliderWithoutState(value: int):
