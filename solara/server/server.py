@@ -9,6 +9,7 @@ from typing import Dict, List, Optional, TypeVar
 
 import ipykernel
 import jinja2
+
 import solara
 import solara.routing
 
@@ -174,6 +175,7 @@ def read_root(path: str, root_path: str = "", render_kwargs={}, use_nbextensions
 
     render_settings = {
         "title": title,
+        "path": path,
         "root_path": root_path,
         "resources": resources,
         "theme": settings.theme.dict(),
