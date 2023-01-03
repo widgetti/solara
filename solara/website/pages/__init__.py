@@ -77,6 +77,9 @@ def Layout(children=[]):
 
     with solara.VBox(grow=False) as main:
         Title(title="Solara documentations")
+        solara.Meta(property="og:url", content="https://solara.dev" + router.path)
+        solara.Meta(property="og:image", content="https://solara.dev/static/assets/images/logo.svg")
+        solara.Meta(property="og:type", content="website")
         Header(
             on_toggle_left_menu=lambda: set_show_left_menu(not show_left_menu),
             on_toggle_right_menu=lambda: set_show_right_menu(not show_right_menu),
@@ -90,6 +93,11 @@ def Layout(children=[]):
 
         with rv.Container(tag="section", fluid=True, ma_0=True, pa_0=True, class_="fill-height mb-8"):
             if route_current is not None and route_current.path == "/":
+                description = "Use ipywidgets with Solara to build powerful and scalable data apps for Jupyter and production in Python."
+                # both tags in one
+                solara.Meta(name="description", property="og:description", content=description)
+                solara.Meta(property="og:title", content="Solara documentation")
+
                 with rv.Row(class_="ma-2"):
                     with rv.Col(md=4, offset_md=2, sm=5, offset_sm=1):
                         solara.Markdown(
