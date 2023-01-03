@@ -78,7 +78,7 @@ def Layout(children=[]):
     with solara.VBox(grow=False) as main:
         Title(title="Solara documentations")
         solara.Meta(property="og:url", content="https://solara.dev" + router.path)
-        solara.Meta(property="og:image", content="https://solara.dev/static/assets/images/logo.svg")
+        solara.Meta(property="og:image", content="https://solara.dev/static/assets/images/logo-small.png")
         solara.Meta(property="og:type", content="website")
         Header(
             on_toggle_left_menu=lambda: set_show_left_menu(not show_left_menu),
