@@ -164,7 +164,7 @@ async def root(request: Request, fullpath: str = ""):
         if script_name:
             logger.debug("override root_path using script-name header from %s to %s", root_path, script_name)
             root_path = script_name
-        script_name = request.headers.get("x=script-name")
+        script_name = request.headers.get("x-script-name")
         if script_name:
             logger.debug("override root_path using x-script-name header from %s to %s", root_path, script_name)
             root_path = script_name
