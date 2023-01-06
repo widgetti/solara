@@ -77,6 +77,7 @@ def Layout(children=[]):
 
     with solara.VBox(grow=False) as main:
         Title(title="Solara documentations")
+        solara.Meta(property="twitter:site", content="@solara_dev" + router.path)
         solara.Meta(property="og:url", content="https://solara.dev" + router.path)
         solara.Meta(property="og:image", content="https://solara.dev/static/assets/images/logo-small.png")
         solara.Meta(property="og:type", content="website")
