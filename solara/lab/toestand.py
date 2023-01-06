@@ -6,16 +6,14 @@ from typing import Any, Callable, Dict, Generic, Set, Tuple, TypeVar, Union, cas
 
 import react_ipywidgets as react
 
+from solara import _using_solara_server
+
 T = TypeVar("T")
 TS = TypeVar("TS")
 S = TypeVar("S")  # used for state
 
 local = threading.local()
 _DEBUG = False
-
-
-def _in_solara_server():
-    return "solara.server" in sys.modules
 
 
 # these hooks should go into react-ipywidgets
@@ -166,7 +164,7 @@ class ConnectionStore(ValueBase[S]):
 
     def _get_dict(self):
         scope_dict = self._global_dict
-        if _in_solara_server():
+        if _using_solara_server():
             import solara.server.app
 
             try:

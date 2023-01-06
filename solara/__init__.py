@@ -2,6 +2,14 @@
 __version__ = "1.0.0"
 github_url = "https://github.com/widgetti/solara"
 git_branch = "master"
+
+
+def _using_solara_server():
+    import sys
+
+    return "solara.server" in sys.modules
+
+
 # isort: skip_file
 from reacton import (
     component,

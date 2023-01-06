@@ -3,6 +3,7 @@ import logging
 from typing import Callable, List, Optional, Tuple, Union, cast
 
 import solara
+from solara import _using_solara_server
 
 logger = logging.getLogger("solara.router")
 
@@ -52,12 +53,12 @@ class Router:
         self.parts = (self.path or "").strip("/").split("/")
         self.routes = routes
         self.root_path = ""
-        # should this import be top level? do we use routing outside of solara.server?
-        import solara.server.settings
+        if _using_solara_server():
+            import solara.server.settings
 
-        self.root_path = solara.server.settings.main.root_path or ""
+            self.root_path = solara.server.settings.main.root_path or ""
         # each route in this list corresponds to a part in self.parts
-        self.path_routes: List[solara.Route] = []
+        self.path_routes: List["solara.Route"] = []
         self.path_routes_siblings = []  # siblings including itself
         # routes = routes.copy()
         route = None
