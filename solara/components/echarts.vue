@@ -94,7 +94,7 @@ module.exports = {
       });
     },
     getBaseUrl() {
-      if (solara && solara.rootPath) {
+      if (window.solara && window.solara.rootPath) {
         return solara.rootPath + "/";
       }
       // if base url is set, we use ./ for relative paths compared to the base url
