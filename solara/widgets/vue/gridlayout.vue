@@ -79,7 +79,7 @@ module.exports = {
           });
         },
         getBaseUrl() {
-          if (window.solara && window.solara.rootPath) {
+          if (window.solara && window.solara.rootPath !== undefined) {
                 return solara.rootPath + "/";
           }
           if (document.getElementsByTagName("base").length) {
