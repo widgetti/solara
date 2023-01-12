@@ -54,6 +54,7 @@ nbextensions_ignorelist = [
     "low-code-assistant/extension",
     "jupyter-js/extension",
     "jupyter-js-widgets/extension",
+    "jupyter_dash/main",
 ]
 
 
