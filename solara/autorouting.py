@@ -213,7 +213,7 @@ def DefaultLayout(children: List[reacton.core.Element] = [], router_level=-1):
 
     ## See
 
-     * [Multipage](/docs/guides/multipage).
+     * [Multipage](/docs/howto/multipage).
      * [Understanding Routing](/docs/understanding/routing).
 
     """
@@ -302,7 +302,7 @@ def generate_routes(module: ModuleType) -> List[solara.Route]:
     files are not Python modules.
 
 
-    See [our multipage guide](/docs/guides/multipage#as-a-package) for more details.
+    See [our multipage guide](/docs/howto/multipage#as-a-package) for more details.
 
 
     """
@@ -378,7 +378,7 @@ def generate_routes_directory(path: Path) -> List[solara.Route]:
     Python files ending in .py, or Jupyter notebooks ending in .ipynb
     will be executed and its `Page` component will be rendered.
 
-    Automatic titles will be [generated as explained in the multipage guide](/docs/guides/multipage).
+    Automatic titles will be [generated as explained in the multipage guide](/docs/howto/multipage).
 
     """
     from .server import reload

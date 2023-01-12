@@ -5,7 +5,7 @@
 
 Solara is an Open Source library that lets you use and build data-focused web apps (data apps) using reusable UI components. Your app will work in the Jupyter notebook and production-grade web frameworks (FastAPI, Starlette, Flask, ...).
 
-Solara uses proven technologies and mature standards. Grow from a one-off experiment in the Jupyter notebook to a dynamic data portal in production.  Built on top of [Reacton](/docs/understanding/reacton) keeps your code complexity under control.
+Solara uses proven technologies and mature standards. Grow from a one-off experiment in the Jupyter notebook to a dynamic data portal in production.  Built on top of [Reacton](/docs/understanding/reacton) to keep your code complexity under control and [IPywidgets](/docs/understanding/ipywidgets) to access a rich set of UI libraries without having to write Javascript or CSS.
 
 We care about developer experience. Solara will give your hot code reloading and type hints for faster development.
 
@@ -17,25 +17,25 @@ Many frameworks only solve a specific set of problems. Once you step outside of 
 
 On the other extreme, you might be working with a library with no clear patterns that let you do anything. You may only be weeks away from a total code complexity nightmare, which slowly kills your project.
 
-At the same time, starting a new framework from scratch would be unwise. We prefer to build on top of solid, battle-tested libraries, such as ipywidgets.
+At the same time, starting a new framework from scratch would be unwise. We prefer to build on top of solid, battle-tested libraries, such as [IPywidgets](/docs/understanding/ipywidgets).
 
 ## Why use Solara?
 
-Instead of inventing a new API with an unknown track record, we take a different approach. We look at the JavaScript world. React is a technology that has proven itself for many years. It has shown to be an all-around good model for building complex UIs.
+Instead of inventing a new API with an unknown track record, we take a different approach. We look at the JavaScript world. React is a technology that has proven itself for many years. It has shown to be a good all-around model for building complex UIs.
 
-Reacton is the equivalent of ReactJS for Python (and IPywidgets). It allows us to use the same reusable components and hooks as in the ReactJS ecosystem. Using Reacton, we build web/data applications without suffering from complex code bases.
+[Reacton](/docs/understanding/reacton) is the equivalent of ReactJS for Python (and IPywidgets). It allows us to use the same reusable components and hooks as in the ReactJS ecosystem. Using Reacton, we build web/data applications without suffering from complex code bases.
 
 Looking again at the JavaScript world, we see software such as NextJS is putting a framework around ReactJS. NextJS is more opinionated than ReactJS and adds more "batteries" such as routing.
 
 Solara plays a similar role as NextJS. It builds on top of Reacton but handles things like routing for you.
 
-But Solara is also different, it is even more opinionated than NextJS. The reason for this is its focus on the data-heavy Python ecosystem. For this reason, it comes with many components and hooks that make building beautiful data apps easier (see our API).
+But Solara is also different and is even more opinionated than NextJS. The reason for this is its focus on the data-heavy Python ecosystem. For this reason, it comes with many components and hooks that make building beautiful data apps easier (see our [API](/api)).
 
 Solara is a clear, systematic, Python-based web framework using industry-trusted technology. Smooth developer experience and enforced code modularity will allow you to build a data app at any scale while maintaining simple code.
 
 ## A quick Solara example
 
-For your understanding, it might be good to just run an example.
+For your understanding, it might be good just to run an example.
 
 Follow the [installation instructions](/docs/installing) or do the TLDR:
 
@@ -64,25 +64,32 @@ def Page():
 Run solara-server (if *not* using the Jupyter notebook)
 
     $ solara run myapp.py
-    INFO:     Uvicorn running on http://127.0.0.1:8765 (Press CTRL+C to quit)
-    INFO:     Started reloader process [50178] using watchgod
-    INFO:     Started server process [50183
+    Solara server is starting at http://localhost:8765
 
 The browser should open http://127.0.0.1:8765
 
 
 
 
-
 ## How does Solara fit into the big picture?
 
-Solara is two things. A server part that takes care of getting the widgets into the browser and a UI part, consisting of UI components and hooks.
+Solara is actually two things.
 
-The UI parts are built on top of [Reacton](https://github.com/widgetti/reacton) which is using the existing IPyWidgets stack.
+### Solara server
+[Solara server](/docs/understanding/solara-server) renders ipywidgets in the browser in a very efficient manner and takes care of many other things
+such as [routing](/docs/understanding/routing) and [Static Site Generation](/docs/reference/static-site-generation).
 
-If you use Jupyter, then you probably use the Jupyter notebook, Lab, or Voila to get your widgets into the browser.
+### Solara UI
 
-If you don't use Jupyter, or don't know what it is, or are an ML Ops, Dev Ops, or Sys Admin, you are probably more interested in the Solara server.
+The UI part is built on top of [Reacton](/docs/understanding/reacton), which uses the existing IPyWidgets stack. It gives a consistent set
+of modern UI components with the Material Design look, as well as a set of routines to make application development of data heavy web apps
+easier.
+
+
+### Overview
+If you use Jupyter, then you probably use the Jupyter notebook, Lab, or [Voila](/docs/understanding/voila) to get your widgets into the browser. You may not care about [Solara server](/docs/understanding/solara-server) and can focus on just the UI part.
+
+If you don't use Jupyter, don't know what it is, or are an ML Ops, Dev Ops, or Sys Admin, you are probably more interested in the Solara server.
 
 ![Solara stack](/static/public/docs/solara-stack.png)
 
@@ -92,15 +99,17 @@ We recommend going through the documentation linearly following the arrows on th
 
  * [Installing](/docs/installing)
  * [Quick start](/docs/quickstart)
- * [Tutorial](/docs/tutorial)
+ * [Tutorials](/docs/tutorial)
 
-If you want to know more about specific parts, you can go through the [Guides section](/docs/guides) to learn more. Feel free to skip chapters, and go back to topics when you need to.
+If you want to know more about specific parts, you can go through the [How-to section](/docs/howto) to learn more. Feel free to skip chapters, and go back to topics when you need to.
 
-If you feel like you miss some basic understanding, and want to give a bit deeper into the what and why, feel free to explore the [Understanding section](/docs/understanding).
 
-If you want to know what components or hooks are available, or want to know more about a specific component, check out the [API](/api) which includes live code examples.
+If you want to know what components or hooks are available, or want to know more about a specific component, check out the [API](/api) which includes live code examples. Other reference documentation can be found at the [reference section](/docs/reference)
 
-[Our examples](/examples) may help you see how particular problems can be solved using Solara, or as inspiration. If you want to contribute an example, reach out to us on GitHub, or directly open a [Pull Request](https://github.com/widgetti/solara/).
+If you feel like you miss some basic understanding and want to give a bit deeper into the what and why feel free to explore the [Understanding section](/docs/understanding).
+
+
+[Our examples](/examples) may help you see how particular problems can be solved using Solara, or as inspiration. If you want to contribute an example, contact us on GitHub or directly open a [Pull Request](https://github.com/widgetti/solara/).
 
 
 ## Where can I hire an expert?

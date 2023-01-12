@@ -16,12 +16,12 @@ Setting up routing can be repetative, and thefore Solara comes also with a more 
 Using [`generate_routes_directory(path: Path) -> List[solara.Route]:`](/api/generate_routes_directory) we can request Solara to give us a list of
 routes by scanning a directory for Python scripts, Notebooks and Markdown files.
 
-This function is being used by Solara if you run solara server with a directory as argument name, as used in [our Multi Page guide](/docs/guides/multipage). More details can be found there.
+This function is being used by Solara if you run solara server with a directory as argument name, as used in [our Multi Page guide](/docs/howto/multipage). More details can be found there.
 
 
 ### Based on a Python package
 
-Similar to the previous section [`generate_routes(module: ModuleType) -> List[solara.Route]:`](/api/generate_routes) will return a list of routes by scanning a Python package or module for `Page` components, or `app` elements. Again, more information can be found at [our Multi Page guide](/docs/guides/multipage).
+Similar to the previous section [`generate_routes(module: ModuleType) -> List[solara.Route]:`](/api/generate_routes) will return a list of routes by scanning a Python package or module for `Page` components, or `app` elements. Again, more information can be found at [our Multi Page guide](/docs/howto/multipage).
 
 ## Manually defining routes
 

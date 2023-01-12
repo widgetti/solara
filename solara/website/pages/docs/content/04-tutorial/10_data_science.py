@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 import nbformat
+
 import solara
 
 HERE = Path(__file__).parent
@@ -44,7 +45,7 @@ def execute_notebook(path: Path):
 @solara.component
 def Page():
     # only execute once, other
-    nb: nbformat.NotebookNode = solara.use_memo(lambda: execute_notebook(HERE / "_solara-tutorial.ipynb"))
+    nb: nbformat.NotebookNode = solara.use_memo(lambda: execute_notebook(HERE / "_data_science.ipynb"))
 
     last_page = None
     with solara.VBox() as main:

@@ -7,6 +7,8 @@ This 1-minute quickstart will get you to:
    * Run your script using Solara server.
    * (Optional) Reuse your code in the Jupyter notebook.
 
+If you are an existing ipywidget user, you might want to skip the quickstart and directly go to the [IPywidget tutorial](/docs/tutorial/ipywidgets).
+
 ## You should know
 
 This quickstart will assume:

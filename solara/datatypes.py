@@ -114,7 +114,7 @@ class Route:
 
     ## See also
 
-     * [Multipage](/docs/guides/multipage).
+     * [Multipage](/docs/howto/multipage).
      * [Understanding Routing](/docs/understanding/routing).
 
     """

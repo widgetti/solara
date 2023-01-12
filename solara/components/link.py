@@ -16,7 +16,7 @@ def Link(
 
     See also:
 
-     * [Multipage](/docs/guides/multipage).
+     * [Multipage](/docs/howto/multipage).
      * [Understanding Routing](/docs/understanding/routing).
 
     Most common usage is in combination with a button, e.g.:

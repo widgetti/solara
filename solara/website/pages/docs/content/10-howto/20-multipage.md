@@ -1,11 +1,11 @@
-# Multi page support
+# Multi-page support
 
-In the previous section we created an application consisting of a single page. Web applications generally have multiple pages, and Solara supports this as well.
+In the [Web App tutorial](/docs/tutorial/web-app), we created an application consisting of a single page. Web applications generally have multiple pages, and Solara supports this as well.
 
 
 ## Multiple scripts
 
-The simplest way to create a multi page app is to create a directory with multiple scripts.
+The simplest way to create a multi-page app is to create a directory with multiple scripts.
 
 ```bash
 $ solara create button multipage-demo/01-click-button.py
@@ -37,7 +37,7 @@ Solara will now:
    * Sort the paths according to the filename (hence the 01- and 02- prefix)
    * Generate a nice URL by stripping of prefix, splitting the filename taking out `-`, `_` and spaces, and join them together using a `-`  (e.g. "/markdown-editor").
    * Generate a nice default title similar to the link, but now capitalize the first letter and join with a space instead  (e.g. "Mardown Editor").
-   * The first page will be the default (and it's URL will be empty instead, i.e. the empty string `""`)
+   * The first page will be the default (and its URL will be empty instead, i.e., the empty string `""`)
    * Since the first script does not define a `Layout` component, nor did we add a `__init__.py` with a `Layout` component, Solara will add a [default
      Layout component](/api/default_layout) which includes a navigation sidebar.
    * If a path is a directory, Solara will recursively scan the subdirectory and include it in the navigation. Read more on this in the [Layout section](layout)
@@ -54,7 +54,7 @@ TODO
 
 ## As a package
 
-Once you start building a larger application, it starts to pay off using a Python package instead. This allows you to organize and distribute your app as a Python package (as a wheel for instance) and allows you to organize your application
+Once you start building a larger application, it pays off using a Python package instead. This allows you to organize and distribute your app as a Python package (as a wheel for instance) and allows you to organize your application
 into reusable packages for components, stores, hooks etc.
 
 As a quickstart, we can generate a startup project using:
@@ -105,12 +105,12 @@ $ solara run solara_test_portal
 Solara server is starting at http://localhost:8765
 ```
 
-Go to http://localhost:8765 ([or click here](http://localhost:8765)), explore the sourcecode, edit it, save it, and watch the web app reload instantly.
+Go to http://localhost:8765 ([or click here](http://localhost:8765)), explore the source code, edit it, save it, and watch the web app reload instantly.
 
 
 ## Dynamic pages
 
-In the previous section where we create the example portal app. Taking a look at
+In the previous section we created the example portal app. Taking a look at
 tabular.py, we see the `Page` component takes an additional arguments.
 
 ```python
@@ -145,7 +145,7 @@ By giving the name argument a default value of `"foo"`, Solara will also accept 
   * Putting multiple Solara app script into a directory allows Solara to show a multipage app.
   * If no `Layout` component is provided, Solara adds a default navigation sidebar.
   * Large application can benefit from setting up a Python package, use `solara create portal my-name` to create one.
-  * By adding argument to the `Page` component, routes like `/tabular` will turn into dynamic routes (e.g. `/tabular/dynamic-name`) and pass the argument (`"dynamic-name"` in this case) to the `Page` component to implement dynamic pages.
+  * By adding an argument to the `Page` component, routes like `/tabular` will turn into dynamic routes (e.g. `/tabular/dynamic-name`) and pass the argument (`"dynamic-name"` in this case) to the `Page` component to implement dynamic pages.
 
 <!-- Solara creates [Single Page Applications](https://en.wikipedia.org/wiki/Single-page_application) (SPI), but do not let that name confuse you.
 

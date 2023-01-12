@@ -87,14 +87,14 @@ def Layout(children=[]):
         )
         if route_current is not None and route_current.path == "/":
             Hero(
-                title="Build large and Scalable Data Apps for Jupyter and Production",
+                title="Build large and Scalable Web Apps for Jupyter and Production",
                 sub_title="Solara helps you build powerful & scalable data apps <b>faster</b> and <b>easier</b>.",
                 button_text="Quickstart",
             )
 
         with rv.Container(tag="section", fluid=True, ma_0=True, pa_0=True, class_="fill-height mb-8"):
             if route_current is not None and route_current.path == "/":
-                description = "Use ipywidgets with Solara to build powerful and scalable data apps for Jupyter and production in Python."
+                description = "Use ipywidgets with Solara to build powerful and scalable web apps for Jupyter and production in Python."
                 # both tags in one
                 solara.Meta(name="description", property="og:description", content=description)
                 solara.Meta(property="og:title", content="Solara documentation")
@@ -105,9 +105,9 @@ def Layout(children=[]):
                             """
                         # What is Solara?
 
-                        Solara lets you build data apps from in Python.
+                        Solara lets you build web apps from pure Python using ipywidgets.
 
-                        Grow from one-off experiments in the Jupyter notebook to highly complex production-grade data apps with confidence.
+                        Grow from a one-off experiment in the Jupyter notebook to highly complex production-grade web apps with confidence.
 
                         Access the full power of the Python ecosystem. Use your favorite libraries.
                         """

@@ -156,7 +156,7 @@ def resolve_path(path_or_route: Union[str, solara.Route], level=0) -> str:
 
     ## See also
 
-     * [Multipage](/docs/guides/multipage).
+     * [Multipage](/docs/howto/multipage).
      * [Understanding Routing](/docs/understanding/routing).
 
 
