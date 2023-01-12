@@ -48,14 +48,7 @@ class ServerFlask(ServerBase):
     server: Any
 
     def has_started(self):
-        import socket
-
-        s = socket.socket()
-        try:
-            s.connect((self.host, self.port))
-        except ConnectionRefusedError:
-            return False
-        return True
+        return server.is_ready(f"http://{self.host}:{self.port}")
 
     def signal_stop(self):
         assert isinstance(self.server, HTTPServer)
@@ -167,6 +160,12 @@ def read_root(path):
     response = flask.Response(content, mimetype="text/html")
     response.set_cookie(server.COOKIE_KEY_SESSION_ID, value=session_id)
     return response
+
+
+@blueprint.route("/readyz")
+def readyz():
+    json, status = server.readyz()
+    return flask.Response(json, mimetype="application/json", status=status)
 
 
 # using the blueprint and websocket blueprint makes it easier to integrate into other applications

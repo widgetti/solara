@@ -9,6 +9,8 @@ from typing import Dict, List, Optional, TypeVar
 
 import ipykernel
 import jinja2
+import requests
+
 import solara
 import solara.routing
 
@@ -48,6 +50,50 @@ nbextensions_ignorelist = [
     "jupyter-js/extension",
     "jupyter-js-widgets/extension",
 ]
+
+
+def readyz():
+    return {"status": "ok"}, 200
+
+
+def wait_ready(url, timeout=10) -> None:
+    """Wait for a solara server at root url to be ready, or throw a TimeoutError
+
+    This uses the /readyz endpoint to check if the server is ready.
+
+    >>> solara.server.server.wait_ready("http://localhost:8888")
+    ...
+
+    """
+    t0 = time.time()
+    while True:
+        try:
+            r = requests.get(url + "/readyz")
+            if r.status_code == 200:
+                return
+        except Exception:
+            pass
+        time.sleep(0.1)
+        if time.time() - t0 > timeout:
+            raise TimeoutError(f"Timeout waiting for {url}")
+
+
+def is_ready(url) -> bool:
+    """Returns wether a solara server at root url is ready.
+
+    This uses the /readyz endpoint to check if the server is ready.
+
+    >>> solara.server.server.is_ready("http://localhost:8888")
+    True
+
+    """
+    try:
+        r = requests.get(url + "/readyz")
+        if r.status_code == 200:
+            return True
+    except Exception:
+        pass
+    return False
 
 
 async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, connection_id: str):

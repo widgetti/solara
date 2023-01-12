@@ -91,6 +91,7 @@ def solara_server(request):
     server_class = server_classes[request.param]
     global TEST_PORT
     webserver = server_class(TEST_PORT)
+    TEST_PORT += 1
 
     try:
         webserver.serve_threaded()
@@ -98,7 +99,6 @@ def solara_server(request):
         yield webserver
     finally:
         webserver.stop_serving()
-        TEST_PORT += 1
 
 
 @pytest.fixture(scope="session")

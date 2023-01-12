@@ -254,9 +254,15 @@ def on_shutdown():
     telemetry.server_stop()
 
 
+def readyz(request: Request):
+    json, status = server.readyz()
+    return JSONResponse(json, status_code=status)
+
+
 middleware = [Middleware(GZipMiddleware, minimum_size=1000)]
 
 routes = [
+    Route("/readyz", endpoint=readyz),
     Route("/jupyter/api/kernels/{id}", endpoint=kernels),
     WebSocketRoute("/jupyter/api/kernels/{id}/{name}", endpoint=kernel_connection),
     Route("/", endpoint=root),
