@@ -3,6 +3,7 @@ import pdb
 import sys
 import threading
 import traceback
+import warnings
 from typing import MutableMapping
 from unittest import mock
 
@@ -67,7 +68,17 @@ def kernel_initialized_dispatch(cls):
     return True
 
 
-def display_solara(*objs, include=None, exclude=None, metadata=None, transient=None, display_id=None, raw=False, clear=False, **kwargs):
+def display_solara(
+    *objs,
+    include=None,
+    exclude=None,
+    metadata=None,
+    transient=None,
+    display_id=None,
+    raw=False,
+    clear=False,
+    **kwargs,
+):
     print(*objs)  # noqa
 
 
@@ -118,9 +129,12 @@ def display_solara(*objs, include=None, exclude=None, metadata=None, transient=N
 
 
 def get_ipython():
-    context = app.get_current_context()
-    our_fake_ipython = FakeIPython(context)
-    return our_fake_ipython
+    if app.has_current_context():
+        context = app.get_current_context()
+        our_fake_ipython = FakeIPython(context)
+        return our_fake_ipython
+    else:
+        return None
 
 
 class context_dict(MutableMapping):
@@ -202,7 +216,15 @@ def Thread_debug_run(self):
         raise
 
 
+_patched = False
+
+
 def patch():
+    global _patched
+    if _patched:
+        warnings.warn("patch() called twice")
+        return
+    _patched = True
     IPython.display.display = display_solara
     __builtins__["display"] = display_solara
 

@@ -22,7 +22,7 @@ from solara.server import reload
 from solara.server.threaded import ServerBase
 
 from . import app as appmod
-from . import patch, server, settings, telemetry, websocket
+from . import server, settings, telemetry, websocket
 from .cdn_helper import cdn_url_path, default_cache_dir, get_path
 
 os.environ["SERVER_SOFTWARE"] = "solara/" + str(solara.__version__)
@@ -284,4 +284,3 @@ app = Starlette(routes=routes, on_startup=[on_startup], on_shutdown=[on_shutdown
 
 # routes_test_sub = [Route("/", endpoint=myroot), Mount("/foo/", routes=routes)]
 # app = Starlette(routes=routes_test_sub, on_startup=[on_startup], on_shutdown=[on_shutdown], middleware=middleware)
-patch.patch()

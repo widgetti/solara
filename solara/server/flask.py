@@ -16,7 +16,7 @@ import solara
 from solara.server.threaded import ServerBase
 
 from . import app as appmod
-from . import cdn_helper, patch, server, websocket
+from . import cdn_helper, server, websocket
 
 os.environ["SERVER_SOFTWARE"] = "solara/" + str(solara.__version__)
 
@@ -172,9 +172,6 @@ def readyz():
 websocket_extension.init_app(blueprint)
 app = Flask(__name__)
 app.register_blueprint(blueprint)
-
-
-patch.patch()
 
 if __name__ == "__main__":
     app.run(debug=False, port=8765)

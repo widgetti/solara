@@ -113,6 +113,6 @@ profile = "black"
 
 
 [tool.pytest.ini_options]
-addopts = "--disable-warnings"
+addopts = "--disable-warnings --ignore=tests/integration/app_widget.py"
 timeout = 180
 python_files = "*.py"

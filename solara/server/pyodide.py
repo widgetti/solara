@@ -4,7 +4,7 @@ from typing import Union
 
 import js
 
-from . import app, patch, server
+from . import app, server
 from .websocket import WebsocketWrapper
 
 connection_id = "single"
@@ -33,7 +33,6 @@ def start(app_name):
     logger
     app.apps["__default__"].close()
     app.apps["__default__"] = app.AppScript(app_name)
-    patch.patch()
     app.initialize_virtual_kernel(connection_id, ws)
 
 

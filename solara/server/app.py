@@ -13,6 +13,7 @@ from typing import Any, Callable, Dict, List, Optional, cast
 
 import ipywidgets as widgets
 import reacton
+from ipywidgets import DOMWidget, Widget
 from reacton.core import Element, render
 
 import solara
@@ -42,6 +43,19 @@ def display(*args, **kwargs):
     print("display not implemented", args, kwargs)  # noqa
 
 
+_warned_is_widget = False
+
+
+def warn_is_widget():
+    global _warned_is_widget
+    if not _warned_is_widget:
+        _warned_is_widget = True
+        print(  # noqa
+            "The app you are running is a widget, note that your app is run once before any user connected. "
+            "If this causes a performance issue, please open an issue on GitHub."
+        )
+
+
 class AppScript:
     directory: Path
     routes: List[solara.Route]
@@ -61,14 +75,28 @@ class AppScript:
         else:
             self.name = name
         self.path: Path = Path(self.name)
-
-        app = self._execute()
+        try:
+            context = get_current_context()
+        except RuntimeError:
+            context = None
+        if context is not None:
+            raise RuntimeError(f"We should not have an existing Solara app context when running an app for the first time: {context}")
+        app_context = create_dummy_context()
+        with app_context:
+            app = self._execute()
         self._first_execute_app = app
         self._is_widget = isinstance(self._first_execute_app, widgets.Widget)
+        app_context.close()
+        if self._is_widget:
+            warn_is_widget()
 
     def _execute(self):
         app = None
-        local_scope = {"display": display, "__name__": "__main__", "__file__": str(self.path)}
+        local_scope = {
+            "display": display,
+            "__name__": "__main__",
+            "__file__": str(self.path),
+        }
         ignore = list(local_scope)
         routes: Optional[List[solara.Route]] = None
         if self.path.is_dir():
@@ -253,29 +281,24 @@ class AppScript:
                     context.reload()
 
 
-# the default app (used in solara-server)
-if "SOLARA_APP" in os.environ:
-    apps["__default__"] = AppScript(os.environ.get("SOLARA_APP", "solara.website.pages:Page"))
-
-
 @dataclasses.dataclass
 class AppContext:
     id: str
     kernel: kernel.Kernel
-    control_sockets: List[WebSocket]
+    control_sockets: List[WebSocket] = dataclasses.field(default_factory=list)
     # this is the 'private' version of the normally global ipywidgets.Widgets.widget dict
     # see patch.py
-    widgets: Dict[str, widgets.Widget]
+    widgets: Dict[str, Widget] = dataclasses.field(default_factory=dict)
     # same, for ipyvue templates
     # see patch.py
-    templates: Dict[str, widgets.Widget]
+    templates: Dict[str, Widget] = dataclasses.field(default_factory=dict)
     user_dicts: Dict[str, Dict] = dataclasses.field(default_factory=dict)
     # anything we need to attach to the context
     # e.g. for a react app the render context, so that we can store/restore the state
     app_object: Optional[Any] = None
     reload: Callable = lambda: None
     state: Any = None
-    container: Optional[widgets.DOMWidget] = None
+    container: Optional[DOMWidget] = None
 
     def display(self, *args):
         print(args)  # noqa
@@ -331,6 +354,16 @@ contexts: Dict[str, AppContext] = {}
 current_context: Dict[str, Optional[AppContext]] = {}
 
 
+def create_dummy_context():
+    from . import kernel
+
+    app_context = AppContext(
+        id="dummy",
+        kernel=kernel.Kernel(),
+    )
+    return app_context
+
+
 def get_current_thread_key() -> str:
     thread = threading.currentThread()
     return get_thread_key(thread)
@@ -345,6 +378,11 @@ def set_context_for_thread(context: AppContext, thread: threading.Thread):
     key = get_thread_key(thread)
     contexts[key] = context
     current_context[key] = context
+
+
+def has_current_context() -> bool:
+    thread_key = get_current_thread_key()
+    return (thread_key in current_context) and (current_context[thread_key] is not None)
 
 
 def get_current_context() -> AppContext:
@@ -363,7 +401,17 @@ def get_current_context() -> AppContext:
     return context
 
 
-def _run_app(app_state, app_script: AppScript, pathname: str, render_context: reacton.core._RenderContext = None):
+def set_current_context(context: Optional[AppContext]):
+    thread_key = get_current_thread_key()
+    current_context[thread_key] = context
+
+
+def _run_app(
+    app_state,
+    app_script: AppScript,
+    pathname: str,
+    render_context: reacton.core._RenderContext = None,
+):
 
     # app.signal_hook_install()
     main_object = app_script.run()
@@ -424,7 +472,12 @@ def load_app_widget(app_state, app_script: AppScript, pathname: str):
                     app_state = app_state_initial
                     # e.g.: _pickle.PicklingError: Can't pickle <class 'testapp.Clicks'>: it's not the same object as testapp.Clicks
                     try:
-                        widget, render_context = _run_app(app_state, app_script, pathname, render_context=render_context)
+                        widget, render_context = _run_app(
+                            app_state,
+                            app_script,
+                            pathname,
+                            render_context=render_context,
+                        )
                         if render_context is None:
                             assert context.container is not None
                             context.container.children = [widget]
@@ -510,3 +563,11 @@ def initialize_virtual_kernel(context_id: str, websocket: websocket.WebsocketWra
         kernel.shell_stream = WebsocketStreamWrapper(websocket, "shell")
         kernel.control_stream = WebsocketStreamWrapper(websocket, "control")
         kernel.session.websockets.add(websocket)
+
+
+from . import patch  # noqa
+
+patch.patch()
+# the default app (used in solara-server)
+if "SOLARA_APP" in os.environ:
+    apps["__default__"] = AppScript(os.environ.get("SOLARA_APP", "solara.website.pages:Page"))

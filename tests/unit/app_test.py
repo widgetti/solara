@@ -17,37 +17,40 @@ HERE = Path(__file__).parent
 reload.reloader.start()
 
 
-def test_notebook_element():
+def test_notebook_element(app_context, no_app_context):
     name = str(HERE / "solara_test_apps" / "notebookapp_element.ipynb")
     app = AppScript(name)
     try:
-        el = app.run()
-        assert isinstance(el, reacton.core.Element)
-        el2 = app.run()
-        assert el is el2
+        with app_context:
+            el = app.run()
+            assert isinstance(el, reacton.core.Element)
+            el2 = app.run()
+            assert el is el2
     finally:
         app.close()
 
 
-def test_notebook_component():
+def test_notebook_component(app_context, no_app_context):
     name = str(HERE / "solara_test_apps" / "notebookapp_component.ipynb")
     app = AppScript(name)
     try:
-        el = app.run()
-        assert isinstance(el, reacton.core.Component)
-        el2 = app.run()
-        assert el is el2
+        with app_context:
+            el = app.run()
+            assert isinstance(el, reacton.core.Component)
+            el2 = app.run()
+            assert el is el2
     finally:
         app.close()
 
 
-def test_notebook_widget():
+def test_notebook_widget(app_context, no_app_context):
     name = str(HERE / "solara_test_apps" / "notebookapp_widget.ipynb")
     app = AppScript(name)
     try:
-        widget = app.run()
-        assert isinstance(widget, ipywidgets.Button)
-        widget2 = app.run()
+        with app_context:
+            widget = app.run()
+            assert isinstance(widget, ipywidgets.Button)
+            widget2 = app.run()
         assert widget is not widget2
     finally:
         app.close()

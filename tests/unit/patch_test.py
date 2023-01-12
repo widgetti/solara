@@ -1,8 +1,6 @@
 import ipywidgets as widgets
 
-from solara.server import app, kernel, patch
-
-patch.patch()
+from solara.server import app, kernel
 
 
 def test_widget_dict():

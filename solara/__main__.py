@@ -16,8 +16,7 @@ from rich import print as rprint
 from uvicorn.main import LEVEL_CHOICES, LOOP_CHOICES
 
 import solara
-
-from .server import settings
+from solara.server import settings
 
 try:
     from solara_enterprise.ssg import ssg_crawl
@@ -438,7 +437,6 @@ def staticbuild():
     """Experimental static build"""
     # imports locals, otherwise .run() does not use the cli arguments
     import solara.server
-    import solara.server.patch
     import solara.server.server
 
     server_path = HERE / "server"
@@ -500,7 +498,6 @@ def staticbuild():
     for path in list(voila.glob("*.js")) + list(voila.glob("*.woff")):
         shutil.copy(path, target_dir_static_dist)
 
-    solara.server.patch.patch()
     index_html = solara.server.server.read_root("", render_kwargs={"for_pyodide": True}, use_nbextensions=True)
     assert index_html is not None
     (target_dir / "index.html").write_text(index_html)

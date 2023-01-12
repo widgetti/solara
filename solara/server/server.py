@@ -31,7 +31,12 @@ ipykernel_major = int(ipykernel.__version__.split(".")[0])
 
 
 def get_jinja_env(app_name: str) -> jinja2.Environment:
-    jinja_loader = jinja2.FileSystemLoader([app.apps["__default__"].directory.parent / "templates", str(directory / "templates")])
+    jinja_loader = jinja2.FileSystemLoader(
+        [
+            app.apps["__default__"].directory.parent / "templates",
+            str(directory / "templates"),
+        ]
+    )
     jinja_env = jinja2.Environment(loader=jinja_loader, autoescape=True)
     return jinja_env
 
@@ -185,7 +190,13 @@ def process_kernel_messages(kernel: Kernel, msg: Dict):
         comms = {k: dict(target_name=v.target_name) for (k, v) in comm_manager.comms.items() if v.target_name == target_name or target_name is None}
         reply_content = dict(comms=comms, status="ok")
         with busy_idle(msg["header"]):
-            msg = session.send(kernel.shell_stream, "comm_info_reply", reply_content, msg["header"], None)
+            msg = session.send(
+                kernel.shell_stream,
+                "comm_info_reply",
+                reply_content,
+                msg["header"],
+                None,
+            )
     else:
         logger.error("Unsupported msg with msg_type %r", msg_type)
 
