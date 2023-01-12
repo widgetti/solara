@@ -1,6 +1,8 @@
 {% extends "solara.html.j2" %}
 {% block header %}
+    {% if production %}
     <link rel="canonical" href="https://solara.dev{{path}}">
+    {% endif %}
     {#
     <!-- not using this right now, leaving it here for reference -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
