@@ -10,6 +10,16 @@ import solara
 HERE = Path(__file__).parent
 
 
+def test_large_cookie(browser: playwright.sync_api.Browser, page_session: playwright.sync_api.Page, solara_server, solara_app):
+    with solara_app("solara.website.pages"):
+        port = solara_server.port
+        # more than 8kb of cookies
+        for i in range(9):
+            browser.contexts[0].add_cookies([{"name": f"a_{i}", "value": "a" * 1024, "url": f"http://localhost:{port}"}])
+        page_session.goto(solara_server.base_url)
+        page_session.locator("text=Examples").first.click()
+
+
 def test_docs_basics(page_session: playwright.sync_api.Page, solara_server, solara_app):
     with solara_app("solara.website.pages"):
         page_session.goto(solara_server.base_url)

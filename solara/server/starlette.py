@@ -9,6 +9,7 @@ from uuid import uuid4
 import anyio
 import starlette.websockets
 import uvicorn.server
+import websockets.legacy.http
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.gzip import GZipMiddleware
@@ -30,6 +31,18 @@ os.environ["SERVER_SOFTWARE"] = "solara/" + str(solara.__version__)
 logger = logging.getLogger("solara.server.fastapi")
 # if we add these to the router, the server_test does not run (404's)
 prefix = ""
+
+# The limit for starlette's http traffic should come from h11's DEFAULT_MAX_INCOMPLETE_EVENT_SIZE=16kb
+# In practice, testing with 132kb cookies (server_test.py:test_large_cookie) seems to work fine.
+# For the websocket, the limit is set to 4kb till 10.4, see
+#  * https://github.com/aaugustin/websockets/blob/10.4/src/websockets/legacy/http.py#L14
+# Later releases should set this to 8kb. See
+#  * https://github.com/aaugustin/websockets/commit/8ce4739b7efed3ac78b287da7fb5e537f78e72aa
+#  * https://github.com/aaugustin/websockets/issues/743
+# Since starlette seems to accept really large values for http, lets do the same for websockets
+# An arbitrarily large value we settled on for now is 32kb
+# If we don't do this, users with many cookies will fail to get a websocket connection.
+websockets.legacy.http.MAX_LINE = 1024 * 32
 
 
 class WebsocketWrapper(websocket.WebsocketWrapper):
