@@ -159,38 +159,41 @@ def Markdown(md_text: str, unsafe_solara_execute=False):
 
     md_text = textwrap.dedent(md_text)
 
-    def highlight(src, language, *args, **kwargs):
-        try:
-            return _highlight(src, language, unsafe_solara_execute, *args, **kwargs)
-        except Exception as e:
-            logger.exception("Error highlighting code: %s", src)
-            return repr(e)
+    def make_markdown_object():
+        def highlight(src, language, *args, **kwargs):
+            try:
+                return _highlight(src, language, unsafe_solara_execute, *args, **kwargs)
+            except Exception as e:
+                logger.exception("Error highlighting code: %s", src)
+                return repr(e)
 
-    html = markdown.markdown(  # type: ignore
-        md_text,
-        extensions=[
-            "pymdownx.highlight",
-            "pymdownx.superfences",
-            "pymdownx.emoji",
-            "toc",  # so we get anchors for h1 h2 etc
-        ],
-        extension_configs={
-            "pymdownx.superfences": {
-                "custom_fences": [
-                    {
-                        "name": "mermaid",
-                        "class": "mermaid",
-                        "format": pymdownx.superfences.fence_div_format,
-                    },
-                    {
-                        "name": "solara",
-                        "class": "",
-                        "format": highlight,
-                    },
-                ],
+        return markdown.Markdown(  # type: ignore
+            extensions=[
+                "pymdownx.highlight",
+                "pymdownx.superfences",
+                "pymdownx.emoji",
+                "toc",  # so we get anchors for h1 h2 etc
+            ],
+            extension_configs={
+                "pymdownx.superfences": {
+                    "custom_fences": [
+                        {
+                            "name": "mermaid",
+                            "class": "mermaid",
+                            "format": pymdownx.superfences.fence_div_format,
+                        },
+                        {
+                            "name": "solara",
+                            "class": "",
+                            "format": highlight,
+                        },
+                    ],
+                },
             },
-        },
-    )
+        )
+
+    md = solara.use_memo(make_markdown_object, dependencies=[unsafe_solara_execute])
+    html = md.convert(md_text)
     # if we update the template value, the whole vue tree will rerender (ipvue/ipyvuetify issue)
     # however, using the hash we simply generate a new widget each time
     hash = hashlib.sha256((html + str(unsafe_solara_execute)).encode("utf-8")).hexdigest()
