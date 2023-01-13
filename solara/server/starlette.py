@@ -227,6 +227,10 @@ class StaticNbFiles(StaticFiles):
 
 
 class StaticPublic(StaticFiles):
+    def lookup_path(self, *args, **kwargs):
+        self.all_directories = self.get_directories(None, None)
+        return super().lookup_path(*args, **kwargs)
+
     def get_directories(
         self,
         directory: Union[str, "os.PathLike[str]", None] = None,
@@ -238,6 +242,10 @@ class StaticPublic(StaticFiles):
 
 
 class StaticAssets(StaticFiles):
+    def lookup_path(self, *args, **kwargs):
+        self.all_directories = self.get_directories(None, None)
+        return super().lookup_path(*args, **kwargs)
+
     def get_directories(
         self,
         directory: Union[str, "os.PathLike[str]", None] = None,
