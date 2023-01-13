@@ -13,7 +13,7 @@ md = open(directory / "README.md").read()
 
 title = "Home"
 
-route_order = ["/", "docs", "api", "examples", "apps"]
+route_order = ["/", "showcase", "docs", "api", "examples", "apps"]
 
 
 @solara.component
@@ -72,6 +72,8 @@ def Layout(children=[]):
 
     show_left_menu, set_show_left_menu = solara.use_state(False)
     show_right_menu, set_show_right_menu = solara.use_state(False)
+
+    target, set_target = solara.use_state(0)
 
     if route_current and route_current.path == "apps":
         return children[0]
@@ -156,6 +158,101 @@ def Layout(children=[]):
                     with rv.Col(md=5, sm=5):
                         rv.Img(src="/static/public/landing/python-love-react.png", style_="width:300px")
                 with rv.Row(class_="ma-8"):
+                    with rv.Col(md=4, offset_md=2, cols=10, offset=1):
+                        with solara.Column():
+                            if target == 0:
+                                solara.Markdown("#### Running in: Jupyter notebook")
+                                solara.Image(
+                                    "https://global.discourse-cdn.com/standard11/uploads/jupyter/original/2X/8/8bc875c0c3845ae077168575a4f8a49cf1b35bc6.gif"
+                                )
+                            else:
+                                solara.Markdown("#### Running in: FastAPI")
+                                solara.Image(
+                                    "https://global.discourse-cdn.com/standard11/uploads/jupyter/original/2X/9/9442fc70e2a1fcd201f4f900fa073698a1f8c937.gif"
+                                )
+                            import solara.website.pages.apps.scatter as scatter
+
+                            github_url = solara.util.github_url(scatter.__file__)
+                            # solara.Text("dsadsa")
+                            solara.Button(
+                                label="View source",
+                                icon_name="mdi-github-circle",
+                                attributes={"href": github_url, "target": "_blank"},
+                                text=True,
+                                outlined=False,
+                            )
+                            with solara.Link("/examples"):
+                                with solara.Column(style="width: 100%;"):
+                                    solara.Button(
+                                        label="More examples",
+                                        icon_name="mdi-brain",
+                                        text=True,
+                                        outlined=False,
+                                    )
+                    with rv.Col(md=4, sm=10, offset_sm=1):
+                        solara.Markdown(
+                            """
+                                ## Create apps
+
+                                In Jupyter or standalone, and run them in production
+                                using FastAPI or starlette.
+
+                                Get more inspiration from our [examples](/examples).
+                            """
+                        )
+                        with rv.ExpansionPanels(v_model=target, on_v_model=set_target, mandatory=True, flat=True):
+                            with rv.ExpansionPanel():
+                                rv.ExpansionPanelHeader(children=["Jupyter notebook"])
+                                with rv.ExpansionPanelContent():
+                                    solara.Markdown("Build on top of ipywidgets, solara components work in all Jupyter notebook environments.")
+                            with rv.ExpansionPanel():
+                                rv.ExpansionPanelHeader(children=["FastAPI"])
+                                with rv.ExpansionPanelContent():
+                                    solara.Markdown("Using [solara-server](/docs/understanding/solara-server), we can run our app in production using FastAPI.")
+
+                # with rv.Row(class_="ma-8", style_="background-color:#ffeec5; margin-left:0px; margin-right:0px;"):
+                #     with rv.Col(md=8, sm=10, offset_sm=1, offset_md=2):
+                #         solara.Markdown("# Demo", style="text-align:center; color: white")
+                with rv.Row(class_="ma-8"):
+                    with rv.Col(md=10, offset_md=2, sm=12):
+                        with rv.Container(tag="section", fluid=False, ma_0=True, pa_0=True, class_="fill-height mb-8"):
+                            with rv.Row(class_="ma-2"):
+                                with rv.Col(md=8, offset_md=2, sm=12):
+                                    solara.Markdown("# Testimonials", style="text-align:center")
+                            with rv.Row(class_="ma-8", align_content="stretch", justify="stretch"):
+                                with rv.Col(sm=6, md=4):
+                                    Testimonial(
+                                        "Solara is like streamlit, but for Jupyter. I am really excited to see where this goes!",
+                                        "Jack Parmer",
+                                        "Former CEO and Co-Founder of Plotly",
+                                        "/static/public/avatar/jack-parmer.jpg",
+                                    )
+
+                                with rv.Col(sm=6, md=4):
+                                    Testimonial(
+                                        "Solara has been transformative, allowing us to rapidly create a Jupyter app and iterate with impressive speed.",
+                                        "Nick Elprin",
+                                        "CEO and Co-Founder of Domino Data Lab",
+                                        "/static/public/avatar/nick-elprin.jpg",
+                                    )
+                                with rv.Col(sm=6, md=4):
+                                    Testimonial(
+                                        "Solara allows us to go from prototype to production with the same stack.",
+                                        "Jonathan Chambers",
+                                        "Co-founder of Planeto",
+                                        "/static/public/avatar/jonathan-chambers.jpg",
+                                    )
+                with rv.Row(class_="ma-8"):
+                    with rv.Col(md=8, sm=10, offset_sm=1, offset_md=2):
+                        solara.Markdown("# Sponsors", style="text-align:center")
+                with rv.Row(class_="ma-8"):
+                    with rv.Col(md=8, sm=10, offset_sm=1, offset_md=2):
+                        solara.Markdown(
+                            """![sponsors](/static/public/sponsors/domino.png)
+                            """,
+                            style="text-align:center",
+                        )
+                with rv.Row(class_="ma-8"):
                     with rv.Col(md=5, offset_md=2, sm=5, offset_sm=1):
                         solara.Markdown(
                             """
@@ -163,12 +260,16 @@ def Layout(children=[]):
                         [contact@solara.dev](mailto:contact@solara.dev)
                         """
                         )
+
             else:
-                with rv.Row(style_="gap:6rem; flex-wrap: nowrap;"):
+                with rv.Row(
+                    style_="gap:6rem; flex-wrap: nowrap;", justify="center" if route_current is not None and route_current.path == "showcase" else "start"
+                ):
                     if route_current is not None and hasattr(route_current.module, "Sidebar"):
                         route_current.module.Sidebar()  # type: ignore
                     else:
-                        Sidebar()
+                        if route_current is not None and route_current.path != "showcase":
+                            Sidebar()
                     with rv.Col(tag="main", md=True, class_="pt-12 pl-12 pr-10", style_="max-width: 1024px; overflow: auto;"):
                         if route_current is not None and route_current.path == "/":
                             with rv.Row(align="center"):
@@ -227,3 +328,31 @@ def Layout(children=[]):
                                                     pass
 
     return main
+
+
+@solara.component
+def Testimonial(text, name, position, img):
+    max_width = "300px"
+    with rv.Card(
+        elevation=2,
+        dark=False,
+        color="#ffeec5",
+        max_width=max_width,
+        height="100%",
+        style_="display: flex; flex-direction: column; justify-content: space-between;",
+    ):
+        # rv.CardTitle(children=["Former Plotly CEO"])
+        with rv.CardActions():
+            with rv.ListItem(class_="grow"):
+                with rv.ListItemAvatar(color="grey darken-3"):
+                    rv.Img(
+                        class_="elevation-6",
+                        src=img,
+                    )
+                with rv.ListItemContent():
+                    rv.ListItemTitle(children=[name])
+                    rv.ListItemSubtitle(children=[position], style_="white-space: unset;")
+        rv.CardText(
+            children=[text],
+            style_="font-style: italic; padding-top: 0px",
+        )

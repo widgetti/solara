@@ -338,8 +338,12 @@ def generate_routes(module: ModuleType) -> List[solara.Route]:
             subfile = Path(submod.__file__) if submod.__file__ is not None else None
             title = get_title(submod)
 
+            name = info.name
+            # ideally, we do this similar to generate_routes_directory
+            # however, this may break things.
+            # name = name.replace("_", "-")
             if info.ispkg:
-                route = solara.Route(info.name, component=RenderPage, children=generate_routes(submod), module=submod, layout=None, label=title)
+                route = solara.Route(name, component=RenderPage, children=generate_routes(submod), module=submod, layout=None, label=title)
                 # skip empty subpackages
                 if len(route.children) == 0:
                     continue
@@ -351,7 +355,7 @@ def generate_routes(module: ModuleType) -> List[solara.Route]:
                 if subfile:
                     children = fix_routes(children, subfile)
                 module_layout = getattr(submod, "Layout", None)
-                route = solara.Route(info.name, component=RenderPage, module=submod, layout=module_layout, children=children, label=title, file=subfile)
+                route = solara.Route(name, component=RenderPage, module=submod, layout=module_layout, children=children, label=title, file=subfile)
             routes.append(route)
         if route_order:
             lookup = {k.path: k for k in routes}
