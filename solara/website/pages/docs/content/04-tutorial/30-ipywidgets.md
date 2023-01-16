@@ -47,7 +47,8 @@ The Solara server will execute your script once before any browser connects,
 as demonstrated by the `"I get run at startup, and for every page request"` output.
 
 The `:button` part on the command line tells the Solara server the variable name of
-the widget it should render.
+the widget it should render. The default name for a widget variable Solara will look
+for is `page`.
 
 For every page request (for instance, you open a second tab, or do a page refresh)
 you will see the same text printed out in the terminal.

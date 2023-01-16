@@ -50,7 +50,18 @@ Solara will now render two pages:
 
 ## Classical widgets support
 
-TODO
+Multipage is also supported for regular ipywidgets.  An example directory can be seen on [GitHub](https://github.com/widgetti/solara/tree/master/tests/unit/solara_test_apps/multipage),
+which we use for testing.
+
+A large difference between using regular ipywidgets for pages compared to using components is that there is no lifecycle
+management in regular ipywidgets. This means Solara cannot clean up your ipywidget-based page (garbage-collect the unused widgets, unregister callbacks)
+when a user navigates away from your page.
+
+At the same time, rerunning your regular ipywidget-based script each time a user navigates to that page will result in a buildup of many widgets.
+
+This means that Solara will run your page once (the first time it is loaded by a user/browser tab), and, when navigating back,
+will show the page in the same state as when the user left the page.
+
 
 ## As a package
 

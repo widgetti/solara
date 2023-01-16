@@ -7,6 +7,7 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any, Callable, List, Optional, cast
 
+import ipywidgets
 import reacton
 import reacton.core
 
@@ -95,6 +96,9 @@ def RenderPage():
     """Renders the page that matches the route."""
     level_start = solara.use_route_level()
     router = solara.use_context(solara.routing.router_context)
+    # we use these to cache script runs that use regular ipywidgets
+    modules = solara.use_memo(dict, dependencies=[])
+    modules_modified_times = solara.use_memo(dict, dependencies=[])
 
     if len(router.path_routes) <= level_start:
         with solara.VBox() as main:
@@ -182,16 +186,45 @@ def RenderPage():
         title_element = solara.Title(title)
         module = route_current.module
         namespace = module.__dict__
-        if "app" in namespace:
-            element = namespace["app"]
+        Page = namespace.get("Page", None)
+        # app is for backwards compatibility
+        page = namespace.get("page", namespace.get("app"))
+        if page is not None:
+            if isinstance(page, reacton.core.Element):
+                pass  # we are good
+            elif isinstance(page, ipywidgets.Widget):
+                # If we have a widget, we need to execute this again for each
+                # connection, since we cannot share widgets between connections/users.
+                # We also cannot tear them down, so we cache the widget based pages.
+                # To support hot reload, we manualy need to check the mtimes
+                # because the reload support for modules in reloader.py only works
+                # for modules.
+                if route_current.file is None:
+                    page = solara.Error(f"{route_current.path} is not associated with a file")
+                else:
+                    assert route_current.file is not None
+                    if route_current.path not in modules:
+                        modules[route_current.path] = source_to_module(route_current.file)
+                        modules_modified_times[route_current.path] = route_current.file.stat().st_mtime
+                    else:
+                        if modules_modified_times[route_current.path] != route_current.file.stat().st_mtime:
+                            # out of date, 'reload'
+                            modules[route_current.path] = source_to_module(route_current.file)
+                            modules_modified_times[route_current.path] = route_current.file.stat().st_mtime
+                    page = getattr(modules[route_current.path], "app", None)
+                    page = getattr(modules[route_current.path], "page", page)
+                    if page is None:
+                        page = solara.Error(f"{module} does not have a `Page` component of a `page` element or widget")
+            else:
+                page = solara.Error(f"{module} page variable not a Solara element or ipywidget")
             main = solara.Div(
                 children=[
                     title_element,
-                    element,
+                    page,
                 ]
             )
             main = wrap_in_layouts(main, layouts)
-        elif "Page" in namespace:
+        elif Page is not None:
             Page = get_page(module)
             args = get_args(Page)
             main = solara.Div(

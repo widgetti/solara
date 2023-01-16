@@ -23,12 +23,12 @@ def test_run_widget(page_session: playwright.sync_api.Page):
         page_session.locator("text=Clicked 1 times").click(timeout=5000)
         page_session.locator("text=Clicked 2 times").wait_for(timeout=5000)
         popen.kill()
-    except Exception:
+    except Exception as e:
         outs, errs = popen.communicate(timeout=5)
         if errs:
             print("STDERR:")  # noqa
             print(errs.decode("utf-8"))  # noqa
             print("STDOUT:")  # noqa
             print(outs.decode("utf-8"))  # noqa
-            raise ValueError("Expected no errors in solara server output")
+            raise ValueError("Expected no errors in solara server output") from e
         assert not errs

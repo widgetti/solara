@@ -104,6 +104,7 @@ class AppScript:
             # resolve the directory, because Path("file").parent.parent == "." != ".."
             self.directory = self.path.resolve()
             routes = solara.generate_routes_directory(self.path)
+            app = solara.autorouting.RenderPage()
         elif self.name.endswith(".py"):
             self.type = AppType.SCRIPT
             # manually add the script to the watcher
@@ -194,6 +195,8 @@ class AppScript:
         if app is None:
             # workaround for backward compatibility
             app = local_scope.get("app")
+        if app is None:
+            app = local_scope.get("page")
         if app is None:
             import difflib
 

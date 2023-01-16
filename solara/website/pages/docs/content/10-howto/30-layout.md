@@ -33,6 +33,18 @@ def Layout(children=[]):
 
 See [Understanding Routing](/docs/understanding/routing) for a more in depth documentation on routing.
 
+## No layout
+
+Disabling layout is also possible, using the following component:
+
+```python
+@solara.component
+def Layout(children=[]):
+    return solara.VBox(children=children)
+```
+
+This layout leaves every page responsible for creating its own header, footer, and/or menu structure.
+
 
 ## Components to use for creating layouts
 

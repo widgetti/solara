@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import ipyvuetify as v
+import ipywidgets as widgets
 
 import solara
 import solara.autorouting
@@ -201,3 +202,39 @@ def test_routes_directory():
 
     nav.location = "/a-directory/wrong-path"
     assert "Page not found" in rc._find(v.Alert).widget.children[0]
+
+
+def test_routes_regular_widgets():
+    # routes = solara.autorouting.generate_routes_directory(HERE.parent / "solara_test_apps" / "multipage")
+    routes = solara.autorouting.generate_routes_directory(HERE.parent / "solara_test_apps" / "multipage-widgets")
+
+    main_object = solara.autorouting.RenderPage()
+    solara_context = solara.RoutingProvider(children=[main_object], routes=routes, pathname="/")
+
+    container, rc = solara.render(solara_context, handle_error=False)
+    nav = rc.find(solara.widgets.Navigator).widget
+
+    html = rc.find(v.VuetifyTemplate)[-1].widget
+    assert "regular ipywidget" in html.template
+
+    nav.location = "/views"
+    rc.find(widgets.Button, description="Never viewed").widget.click()
+    assert rc.find(widgets.Button).widget.description == "Viewed 1 times"
+
+    nav.location = "/likes"
+    rc.find(widgets.Button, description="No likes recorded").widget.click()
+    rc.find(widgets.Button, description="Liked 1 times").widget.click()
+    rc.find(widgets.Button, description="Liked 2 times").widget.click()
+
+    # if we navigate back, the state should be preserved for regular ipywidgets
+    nav.location = "/views"
+    assert rc.find(widgets.Button).widget.description == "Viewed 1 times"
+
+    # but not for elements
+    nav.location = "/volume"
+    assert rc.find(v.Slider).widget.v_model == 5
+    rc.find(v.Slider).widget.v_model = 11
+    nav.location = "/views"
+    assert rc.find(widgets.Button).widget.description == "Viewed 1 times"
+    nav.location = "/volume"
+    assert rc.find(v.Slider).widget.v_model == 5

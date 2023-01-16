@@ -115,7 +115,7 @@ app.mount("/solara/", app=solara.server.fastapi.app)
 
 ## Voila
 
-If you use want to use Voila, [you can use those deployment options](https://voila.readthedocs.io/en/stable/deploy.html).
+If you use Voila, [you can use those deployment options](https://voila.readthedocs.io/en/stable/deploy.html).
 
 Make sure you run a notebook where you display the app, e.g.
 ```python
