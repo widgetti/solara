@@ -26,6 +26,7 @@ T = TypeVar("T")
 directory = Path(__file__).parent
 template_name = "index.html.j2"
 ipykernel_major = int(ipykernel.__version__.split(".")[0])
+cache_memory = solara.cache.Memory(max_items=128)
 
 # first look at the project directory, then the builtin solara directory
 
@@ -258,7 +259,7 @@ def find_prefixed_directory(path):
         raise RuntimeError(f"{path} not found at prefixes: {prefixes}")
 
 
-@solara.memoize()
+@solara.memoize(storage=cache_memory)
 def get_nbextensions_directories() -> List[Path]:
     from jupyter_core.paths import jupyter_path
 
@@ -273,7 +274,7 @@ def get_nbextensions_directories() -> List[Path]:
     return [Path(k) for k in all_nb_directories]
 
 
-@solara.memoize()
+@solara.memoize(storage=cache_memory)
 def get_nbextensions() -> List[str]:
     from jupyter_core.paths import jupyter_config_path
 

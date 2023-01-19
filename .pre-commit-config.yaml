@@ -22,9 +22,9 @@ repos:
         files: \.py$
         args: [--profile=black]
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v0.942" # Use the sha / tag you want to point at
+    rev: "v0.991" # Use the sha / tag you want to point at
     hooks:
       - id: mypy
         args: [--no-strict-optional, --ignore-missing-imports]
-        additional_dependencies: [types-requests, types-markdown, types-PyYAML, types-filelock]
+        additional_dependencies: [types-requests, types-markdown, types-PyYAML, types-filelock, types-cachetools, types-redis]
         exclude: tests/unit/solara_test_apps/multipage/04-a_directory/*

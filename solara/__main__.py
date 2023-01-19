@@ -550,7 +550,7 @@ def copytree(src: Path, dst: Path, copy_function=shutil.copy2, ignore: typing.Ca
     if not dst.exists():
         dst.mkdir(parents=True, exist_ok=True)
     for item in src.iterdir():
-        if ignore and ignore(item):
+        if ignore(item):
             continue
         if item.is_dir():
             copytree(item, dst / rename(item).name, ignore=ignore, copy_function=copy_function, rename=rename)

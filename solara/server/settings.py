@@ -1,4 +1,3 @@
-import os
 import uuid
 from enum import Enum
 from pathlib import Path
@@ -7,20 +6,10 @@ from typing import Optional
 import pydantic
 from filelock import FileLock
 
-
-def get_solara_home() -> Path:
-    """Get solara home directory, defaults to $HOME/.solara.
-
-    The $SOLARA_HOME environment variable can be set to override this default.
-
-    If both $SOLARA_HOME and $HOME are not define, the current working directory is used.
-    """
-    if "SOLARA_HOME" in os.environ:
-        return Path(os.environ["SOLARA_HOME"])
-    elif "HOME" in os.environ:
-        return Path(os.path.join(os.environ["HOME"], ".solara"))
-    else:
-        return Path(os.getcwd())
+from .. import (  # noqa  # sidefx is that this module creates the ~/.solara directory
+    settings,
+)
+from ..util import get_solara_home
 
 
 class ThemeVariant(str, Enum):
@@ -84,11 +73,8 @@ telemetry = Telemetry()
 ssg = SSG()
 
 
-home = get_solara_home()
-if not home.exists():
-    home.mkdir(parents=True, exist_ok=True)
-
 if telemetry.server_user_id == "not_set":
+    home = get_solara_home()
     server_user_id_file = home / "server_user_id.txt"
     with FileLock(str(server_user_id_file) + ".lock"):
         if not server_user_id_file.exists():

@@ -16,7 +16,7 @@ packages = [
 dependencies = [
     "reacton>=0.16.0",
     "ipywidgets<8",
-    "diskcache",
+    "cachetools",
     "filelock",
     "markdown",
     "pygments",
