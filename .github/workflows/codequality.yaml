@@ -22,7 +22,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
-        run: pip install ".[dev]" mypy==0.940
+        run: |
+          pip install ".[dev]" mypy==0.991
+          mypy --install-types --non-interactive solara
       - name: Test formatting
         uses: psf/black@stable
       - name: Run flake8

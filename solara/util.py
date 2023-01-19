@@ -79,3 +79,48 @@ def numpy_equals(a, b):
 
 def _combine_classes(class_list: List[str]) -> str:
     return " ".join(class_list)
+
+
+def import_item(name: str):
+    """Import an object by name like solara.cache.LRU"""
+    parts = name.rsplit(".", 2)
+    if len(parts) == 1:
+        return __import__(name)
+    else:
+        module = __import__(".".join(parts[:-1]), fromlist=[parts[-1]])
+        return getattr(module, parts[-1])
+
+
+def get_solara_home() -> Path:
+    """Get solara home directory, defaults to $HOME/.solara.
+
+    The $SOLARA_HOME environment variable can be set to override this default.
+
+    If both $SOLARA_HOME and $HOME are not defined, the current working directory is used.
+    """
+    if "SOLARA_HOME" in os.environ:
+        return Path(os.environ["SOLARA_HOME"])
+    elif "HOME" in os.environ:
+        return Path(os.path.join(os.environ["HOME"], ".solara"))
+    else:
+        return Path(os.getcwd())
+
+
+def parse_size(size: str) -> int:
+    """Given a human readable size, return the number of bytes.
+
+    Supports GB, MB, KB, and bytes. E.g. 10GB, 500MB, 1KB, 1000
+
+    Commas and _ are ignored, e.g. 1,000,000 is the same as 1000000.
+    """
+    size = size.replace(",", "").replace("_", "").upper()
+    if size.endswith("GB"):
+        return int(float(size[:-2]) * 1024 * 1024 * 1024)
+    elif size.endswith("MB"):
+        return int(float(size[:-2]) * 1024 * 1024)
+    elif size.endswith("KB"):
+        return int(float(size[:-2]) * 1024)
+    elif size.endswith("B"):
+        return int(float(size[:-1]))
+    else:
+        return int(size)

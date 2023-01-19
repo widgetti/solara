@@ -37,7 +37,8 @@ from . import util
 # flake8: noqa: F402
 from .datatypes import *
 from .hooks import *
-from .memoize import memoize
+from .cache import memoize
+from . import cache
 from .components import *
 
 from .routing import use_route, use_router, use_route_level, find_route, use_pathname, resolve_path

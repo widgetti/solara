@@ -133,6 +133,9 @@ def Sidebar(children=[], level=0):
                     # add("RenderPage")
                     # add("DefaultNavigation")
                     add("link")
+            with ListItem("Utils", icon_name="mdi-hammer-wrench"):
+                with List():
+                    add("memoize")
             with ListItem("Advanced", icon_name="mdi-head-cog-outline"):
                 with List():
                     add("style")

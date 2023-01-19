@@ -25,6 +25,7 @@ Put the following content in a file, say `sol.py`:
 ```solara
 import solara
 
+
 @solara.component
 def Page():
     sentence, set_sentence = solara.use_state("Solara makes our team more productive.")
