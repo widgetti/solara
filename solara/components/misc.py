@@ -2,8 +2,8 @@ from typing import Any, Callable, List
 
 import ipyvue as vue
 import reacton
-import reacton.ipyvuetify as v
 import reacton.ipyvuetify as ipyvue
+import reacton.ipyvuetify as v
 
 import solara
 import solara.widgets

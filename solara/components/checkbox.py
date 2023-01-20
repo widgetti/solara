@@ -1,16 +1,15 @@
 from typing import Callable
 
+import reacton
 import reacton.ipyvuetify as v
 
-import solara
 
-
-@solara.component
+@reacton.value_component(bool)
 def Checkbox(
     *,
     label=None,
     value=True,
-    on_value: Callable[[bool], None],
+    on_value: Callable[[bool], None] = None,
     disabled=False,
     style: str = None,
 ):

@@ -14,6 +14,7 @@ def _using_solara_server():
 from reacton import (
     component,
     component_interactive,
+    value_component,
     create_context,
     display,
     get_widget,
