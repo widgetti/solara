@@ -94,6 +94,7 @@ def Sidebar(children=[], level=0):
                     add("griddraggable")
                     add("gridfixed")
                     add("default_layout")
+                    add("app_layout")
                     # add("app")
             with ListItem("Data", icon_name="mdi-database"):
                 with List():
