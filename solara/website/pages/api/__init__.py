@@ -83,10 +83,12 @@ def Sidebar(children=[], level=0):
                     add("plotly")
                     add("plotly_express")
                 #     ListItem("AltairChart")
-            with ListItem("Containers", icon_name="mdi-page-layout-sidebar-left"):
+            with ListItem("Layout", icon_name="mdi-page-layout-sidebar-left"):
                 with List():
                     add("columns")
                     add("columns_responsive")
+                    add("column")
+                    add("row")
                     add("hbox")
                     add("vbox")
                     add("griddraggable")

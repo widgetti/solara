@@ -147,6 +147,7 @@ def HTML(tag="div", unsafe_innerHTML=None, style: str = None, classes: List[str]
 
 @solara.component
 def VBox(children=[], grow=True, align_items="stretch", classes: List[str] = []):
+    """Deprecated. Use `Row` instead."""
     style = f"flex-direction: column; align-items: {align_items};"
     if grow:
         style += "flex-grow: 1;"
@@ -156,9 +157,50 @@ def VBox(children=[], grow=True, align_items="stretch", classes: List[str] = [])
 
 @solara.component
 def HBox(children=[], grow=True, align_items="stretch", classes: List[str] = []):
+    """Deprecated. Use `Column` instead."""
     style = f"flex-direction: row; align-items: {align_items}; "
     if grow:
         style += "flex-grow: 1;"
+    class_ = _combine_classes(["d-flex", *classes])
+    return v.Sheet(class_=class_, style_=style, elevation=0, children=children)
+
+
+@solara.component
+def Row(children=[], gap="12px", classes: List[str] = [], style: str = ""):
+    """Lays out children in a row, side by side, with the given gap between them.
+
+    Example with three children side by side:
+
+    ```python
+    with Row(gap="10px"):
+        solara.Text("On the left")
+        solara.Text("In the middle")
+        solara.Text("On the right")
+    ```
+    """
+    align_items = "stretch"
+    style = f"flex-direction: row; align-items: {align_items}; column-gap: {gap};" + style + ";"
+    class_ = _combine_classes(["d-flex", *classes])
+    return v.Sheet(class_=class_, style_=style, elevation=0, children=children)
+
+
+@solara.component
+def Column(children=[], gap="12px", classes: List[str] = [], style: str = ""):
+    """Lays out children in a column on top of eachother, with the given gap between them.
+
+    Example with three children on top of eachother:
+
+    ```python
+
+    with Column(gap="10px"):
+        solara.Text("On top")
+        solara.Text("In the middle")
+        solara.Text("On bottom")
+    ```
+
+    """
+    align_items = "stretch"
+    style = f"flex-direction: column; align-items: {align_items}; row-gap: {gap};" + style + ";"
     class_ = _combine_classes(["d-flex", *classes])
     return v.Sheet(class_=class_, style_=style, elevation=0, children=children)
 
