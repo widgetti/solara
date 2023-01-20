@@ -76,7 +76,7 @@ def arg_cast(args: List[str], f: Callable):
 @solara.component
 def RoutingProvider(children: List[reacton.core.Element] = [], routes: List[solara.Route] = [], pathname: str = ""):
     """Wraps the app, adds extra context, like navigation/routing."""
-    path, set_path = solara.use_state_or_update(pathname, key="solara-context-path")
+    path, set_path = solara.use_state(pathname, key="solara-context-path")
     nav = solara.Navigator(location=path, on_location=set_path)
     solara.routing._location_context.provide(solara.routing._Location(path, set_path))
     solara.routing.router_context.provide(solara.routing.Router(path, routes=routes, set_path=set_path))
