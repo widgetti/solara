@@ -156,17 +156,20 @@ class Reloader:
         # before we did this:
         # # don't reload modules like solara.server and react
         # # that may cause issues (like 2 Element classes existing)
-        reload_modules = {k for k in set(sys.modules) - set(self.ignore_modules) if not (k.startswith("solara.server") or k.startswith("anyio"))}
+        # not sure why, but if we reload pandas, the integration/reload_test.py fails
+        reload_modules = {
+            k for k in set(sys.modules) - set(self.ignore_modules) if not (k.startswith("solara.server") or k.startswith("anyio") or k.startswith("pandas"))
+        }
         # which picks up import that are done in threads etc, but it will also reload starlette, httptools etc
         # which causes issues with exceptions and isinstance checks.
         # reload_modules = self.watched_modules
         logger.info("Reloading modules... %s", reload_modules)
         # not sure if this is needed
         importlib.invalidate_caches()
-        for mod in reload_modules:
+        for mod in sorted(reload_modules):
             # don't reload modules like solara.server and react
             # that may cause issues (like 2 Element classes existing)
-            logger.info("Reloading module %s", mod)
+            logger.debug("Reloading module %s", mod)
             sys.modules.pop(mod, None)
         # if all succesfull...
         self.requires_reload = False

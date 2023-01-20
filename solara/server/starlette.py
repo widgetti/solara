@@ -19,7 +19,6 @@ from starlette.routing import Mount, Route, WebSocketRoute
 from starlette.staticfiles import StaticFiles
 
 import solara
-from solara.server import reload
 from solara.server.threaded import ServerBase
 
 from . import app as appmod
@@ -267,7 +266,6 @@ class StaticCdn(StaticFiles):
 def on_startup():
     # TODO: configure and set max number of threads
     # see https://github.com/encode/starlette/issues/1724
-    reload.reloader.start()
     telemetry.server_start()
 
 

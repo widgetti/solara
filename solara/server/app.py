@@ -31,6 +31,8 @@ logger = logging.getLogger("solara.server.app")
 state_directory = Path(".") / "states"
 state_directory.mkdir(exist_ok=True)
 
+reload.reloader.start()
+
 
 class AppType(str, Enum):
     SCRIPT = "script"
@@ -91,6 +93,7 @@ class AppScript:
             warn_is_widget()
 
     def _execute(self):
+        logger.info("Executing %s", self.name)
         app = None
         local_scope = {
             "display": display,
@@ -270,7 +273,13 @@ class AppScript:
                     with context:
                         # we save the state for when the app reruns, so we stay in the same state.
                         # (e.g. button clicks, chosen options etc)
-                        context.state = render_context.state_get()
+                        # for instance a dataframe, needs to be pickled, because after the pandas
+                        # module is reloaded, it's a different class type
+                        logger.info("pickling state: %s", render_context.state_get())
+                        try:
+                            context.state = pickle.dumps(render_context.state_get())
+                        except Exception as e:
+                            logger.warning("Could not pickle state, next render the state will be lost: %s", e)
                         # clear/cleanup the render_context, so during reload we start
                         # from scratch
                         context.app_object = None
@@ -417,6 +426,9 @@ def _run_app(
 
     # app.signal_hook_install()
     main_object = app_script.run()
+    app_state = pickle.loads(app_state) if app_state is not None else None
+    if app_state:
+        logger.info("Restoring state: %r", app_state)
 
     context = get_current_context()
     container = context.container
@@ -464,35 +476,25 @@ def load_app_widget(app_state, app_script: AppScript, pathname: str):
     try:
         render_context = context.app_object
         with context:
-            with reload.reloader.watch():
-                while True:
-                    # reloading might take in extra dependencies, so the reload happens first
-                    if reload.reloader.requires_reload:
-                        reload.reloader.reload()
-                    # reload before starting app, because we may load state using pickle
-                    # if we do that before reloading, the classes are not compatible:
-                    app_state = app_state_initial
-                    # e.g.: _pickle.PicklingError: Can't pickle <class 'testapp.Clicks'>: it's not the same object as testapp.Clicks
-                    try:
-                        widget, render_context = _run_app(
-                            app_state,
-                            app_script,
-                            pathname,
-                            render_context=render_context,
-                        )
-                        if render_context is None:
-                            assert context.container is not None
-                            context.container.children = [widget]
-                    except Exception:
-                        if settings.main.use_pdb:
-                            logger.exception("Exception, will be handled by debugger")
-                            pdb.post_mortem()
-                        raise
+            app_state = app_state_initial
+            try:
+                widget, render_context = _run_app(
+                    app_state,
+                    app_script,
+                    pathname,
+                    render_context=render_context,
+                )
+                if render_context is None:
+                    assert context.container is not None
+                    context.container.children = [widget]
+            except Exception:
+                if settings.main.use_pdb:
+                    logger.exception("Exception, will be handled by debugger")
+                    pdb.post_mortem()
+                raise
 
-                    if render_context:
-                        context.app_object = render_context
-                    if not reload.reloader.requires_reload:
-                        break
+            if render_context:
+                context.app_object = render_context
 
     except BaseException as e:
         error = ""

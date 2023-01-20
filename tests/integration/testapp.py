@@ -2,8 +2,9 @@ import dataclasses
 import os
 
 import ipyvue
-import solara
 import traitlets
+
+import solara
 from solara.alias import rw
 
 

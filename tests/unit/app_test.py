@@ -4,6 +4,8 @@ import logging
 from pathlib import Path
 
 import ipywidgets
+
+# import pytest
 import reacton.core
 
 # import solara.server.app
@@ -56,7 +58,8 @@ def test_notebook_widget(app_context, no_app_context):
         app.close()
 
 
-# def test_watch_module_reload(tmpdir, app_context, extra_include_path):
+# these make other test fail on CI (vaex is used, which causes a blake3 reload, which fails)
+# def test_watch_module_reload(tmpdir, app_context, extra_include_path, no_app_context):
 #     import ipyvuetify as v
 
 #     with extra_include_path(str(tmpdir)):
@@ -76,6 +79,7 @@ def test_notebook_widget(app_context, no_app_context):
 #             result = app.run()
 #             assert "somemod" in sys.modules
 #             assert "somemod" in reload.reloader.watched_modules
+#             somemod1 = sys.modules["somemod"]
 #             assert result().component.widget == v.Btn
 
 #             # change depending module
@@ -88,6 +92,8 @@ def test_notebook_widget(app_context, no_app_context):
 #             result = app.run()
 #             assert "somemod" in sys.modules
 #             assert result().component.widget == v.Card
+#             somemod2 = sys.modules["somemod"]
+#             assert somemod1 is not somemod2
 #         finally:
 #             app.close()
 #             if "somemod" in sys.modules:
@@ -95,7 +101,33 @@ def test_notebook_widget(app_context, no_app_context):
 #             reload.reloader.watched_modules.remove("somemod")
 
 
-# def test_watch_module_import_error(tmpdir, app_context, extra_include_path):
+# def test_script_reload_component(tmpdir, app_context, extra_include_path, no_app_context):
+#     import ipyvuetify as v
+
+#     with extra_include_path(str(tmpdir)):
+#         py_file = tmpdir / "test.py"
+
+#         logger.info("writing files")
+#         with open(py_file, "w") as f:
+#             f.write("import reacton.ipyvuetify as v; Page = v.Btn\n")
+
+#         app = AppScript(f"{py_file}")
+#         try:
+#             result = app.run()
+#             assert result().component.widget == v.Btn
+#             with open(py_file, "w") as f:
+#                 f.write("import reacton.ipyvuetify as v; Page = v.Slider\n")
+#             # wait for the event to trigger
+#             reload.reloader.reload_event_next.wait()
+#             # assert "somemod" not in sys.modules
+#             # breakpoint()
+#             result = app.run()
+#             assert result().component.widget == v.Slider
+#         finally:
+#             app.close()
+
+
+# def test_watch_module_import_error(tmpdir, app_context, extra_include_path, no_app_context):
 #     import ipyvuetify as v
 
 #     with extra_include_path(str(tmpdir)):
@@ -112,9 +144,6 @@ def test_notebook_widget(app_context, no_app_context):
 
 #         app = AppScript(f"{py_file}")
 #         try:
-#             # import pdb
-
-#             # pdb.set_trace()
 #             result = app.run()
 #             assert "somemod2" in sys.modules
 #             assert "somemod2" in reload.reloader.watched_modules
@@ -124,7 +153,6 @@ def test_notebook_widget(app_context, no_app_context):
 #             with open(py_mod_file, "w") as f:
 #                 f.write("import ipyvuetify as v; App !%#$@= v.Card.element\n")
 #             reload.reloader.reload_event_next.wait()
-#             # # assert "somemod" not in sys.modules
 #             with pytest.raises(SyntaxError):
 #                 result = app.run()
 
