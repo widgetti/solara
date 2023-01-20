@@ -379,7 +379,6 @@ def get_thread_key(thread: threading.Thread) -> str:
 
 def set_context_for_thread(context: AppContext, thread: threading.Thread):
     key = get_thread_key(thread)
-    contexts[key] = context
     current_context[key] = context
 
 
