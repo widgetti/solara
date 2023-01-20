@@ -149,11 +149,11 @@ class ConnectionStore(ValueBase[S]):
     _global_dict: Dict[str, S] = {}  # outside of solara context, this is used
     scope_lock = threading.Lock()
 
-    def __init__(self, default_value: S = None):
+    def __init__(self, default_value: S = None, key=None):
         super().__init__()
         self.default_value = default_value
         cls = type(default_value)
-        self.storage_key = cls.__module__ + ":" + cls.__name__ + "-" + str(id(default_value))
+        self.storage_key = key or (cls.__module__ + ":" + cls.__name__ + "-" + str(id(default_value)))
         self._global_dict = {}
         # since a set can trigger events, which can trigger new updates, we need a recursive lock
         self._lock = threading.RLock()
@@ -206,7 +206,7 @@ class Reactive(ValueBase[S]):
     def __init__(self, default_value: Union[S, ValueBase[S]]):
         super().__init__()
         if not isinstance(default_value, ValueBase):
-            self._storage = ConnectionStore(default_value)
+            self._storage = ConnectionStore(default_value, key=id(self))
         else:
             self._storage = default_value
         self.__post__init__()
@@ -221,8 +221,8 @@ class Reactive(ValueBase[S]):
     def update(self, **kwargs):
         self._storage.update(**kwargs)
 
-    def set(self, new_state: S):
-        self._storage.set(new_state)
+    def set(self, value: S):
+        self._storage.set(value)
 
     def get(self) -> S:
         return self._storage.get()
