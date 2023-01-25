@@ -1,5 +1,6 @@
-from typing import Callable, List, TypeVar
+from typing import Callable, List, Optional, TypeVar, cast
 
+import ipyvuetify as v
 import reacton
 
 import solara
@@ -17,8 +18,10 @@ def _get_button_value(button: reacton.core.Element):
     return value
 
 
-@solara.component
-def ToggleButtonsSingle(value: T, values: List[T] = [], children: List[reacton.core.Element] = [], on_value: Callable[[T], None] = None):
+@solara.value_component(None)
+def ToggleButtonsSingle(
+    value: Optional[T] = None, values: List[T] = [], children: List[reacton.core.Element] = [], on_value: Optional[Callable[[T], None]] = None
+) -> reacton.core.ValueElement[v.BtnToggle, T]:
     """ToggleButtons for selecting a single value.
 
     ## Arguments
@@ -29,7 +32,7 @@ def ToggleButtonsSingle(value: T, values: List[T] = [], children: List[reacton.c
     * `on_value`: Callback to call when the value changes.
     """
     children = [solara.Button(label=str(value)) for value in values] + children
-    values = values + [_get_button_value(button) for button in children]
+    values = values + [_get_button_value(button) for button in children]  # type: ignore
     index, set_index = solara.use_state_or_update(values.index(value), key="index")
 
     def on_index(index):
@@ -38,13 +41,13 @@ def ToggleButtonsSingle(value: T, values: List[T] = [], children: List[reacton.c
         if on_value:
             on_value(value)
 
-    with rv.BtnToggle(children=children, multiple=False, mandatory=True, v_model=index, on_v_model=on_index) as main:
-        pass
-    return main
+    return cast(reacton.core.ValueElement[v.BtnToggle, T], rv.BtnToggle(children=children, multiple=False, mandatory=True, v_model=index, on_v_model=on_index))
 
 
-@solara.component
-def ToggleButtonsMultiple(value: List[T], values: List[T] = [], children: List[reacton.core.Element] = [], on_value: Callable[[List[T]], None] = None):
+@solara.value_component(None)
+def ToggleButtonsMultiple(
+    value: List[T], values: List[T] = [], children: List[reacton.core.Element] = [], on_value: Callable[[List[T]], None] = None
+) -> reacton.core.ValueElement[v.BtnToggle, List[T]]:
     """ToggleButtons for selecting multiple values.
 
     ## Arguments
@@ -64,6 +67,6 @@ def ToggleButtonsMultiple(value: List[T], values: List[T] = [], children: List[r
         if on_value:
             on_value(value)
 
-    with rv.BtnToggle(children=children, multiple=True, mandatory=False, v_model=indices, on_v_model=on_indices) as main:
-        pass
-    return main
+    return cast(
+        reacton.core.ValueElement[v.BtnToggle, List[T]], rv.BtnToggle(children=children, multiple=True, mandatory=False, v_model=indices, on_v_model=on_indices)
+    )
