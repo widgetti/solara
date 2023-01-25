@@ -63,6 +63,10 @@ def arg_cast(args: List[str], f: Callable):
             # raise TypeError(f"{f} expected positional argument {param}, but not enought argument supplied")
         annotation = param.annotation
         value = args[i]
+        check_optional_types = [str, int, float]
+        for check_type in check_optional_types:
+            if annotation == Optional[check_type]:
+                annotation = check_type
         if annotation == param.empty:
             results.append(value)
         else:
