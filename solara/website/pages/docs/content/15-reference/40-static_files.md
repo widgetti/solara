@@ -20,11 +20,8 @@ import solara
 
 @solara.component
 def Page():
-
     image_url = "/static/public/beach.jpeg"
-    with solara.VBox() as main:
-        with solara.Card(title="The following image is served from the ../public directory"):
-            solara.Image(image_url)
-    return main
+    with solara.Card(title="The following image is served from the ../public directory"):
+        solara.Image(image_url)
 
 ```

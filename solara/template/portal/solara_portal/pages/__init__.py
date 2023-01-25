@@ -1,51 +1,19 @@
 import solara
 from solara.alias import rv
 
-from ..data import articles, dfs, names
-
-
-@solara.component
-def DataCard(name):
-    df = dfs[name].df
-    with rv.Card(max_width="400px") as main:
-        with solara.Link(f"/tabular/{name}"):
-            rv.Img(height="250", src=dfs[name].image_url)
-        rv.CardTitle(children=[dfs[name].title])
-        with rv.CardText():
-            solara.Markdown(f"*{len(df):,} rows*")
-            with solara.Link(f"/tabular/{name}"):
-                solara.Button("Open table view", text=True, icon_name="mdi-table")
-    return main
-
-
-@solara.component
-def ArticleCard(name):
-    article = articles[name]
-    with rv.Card(max_width="400px") as main:
-        with solara.Link(f"/article/{name}"):
-            rv.Img(height="250", src=article.image_url)
-        rv.CardTitle(children=[article.title])
-        with rv.CardText():
-            solara.Markdown(article.description)
-            with solara.Link(f"/article/{name}"):
-                solara.Button("Read article", text=True, icon_name="mdi-book-open")
-    return main
+from ..components import article, data
+from ..data import articles, names
 
 
 @solara.component
 def PeopleCard(name):
-    # article = articles[name]
-    with rv.Card() as main:
-        # with solara.Link(f"/article/{name}"):
-        #     rv.Img(height="250", src=article.image_url)
-        # rv.CardTitle(children=[article.title])
+    with solara.Card(f"Employee of the Month: {name}") as main:
         with rv.CardText():
-            solara.Markdown(f"# {name}")
             solara.Markdown(
                 """
-   * Age:
-   * Height:
-"""
+                * Department: foo
+                * Skills: bar, baz
+                """
             )
             with solara.Link(f"/people/{name}"):
                 solara.Button("View employee", text=True, icon_name="mdi-profile")
@@ -67,10 +35,10 @@ def Layout(children=[]):
                         with solara.Link(solara.resolve_path(pathname)):
                             solara.ListItem(name, value=pathname)
                 with solara.ListItem("Articles", icon_name="mdi-book-open"):
-                    for name, article in articles.items():
+                    for name, article_ in articles.items():
                         pathname = f"/article/{name}"
                         with solara.Link(solara.resolve_path(pathname)):
-                            solara.ListItem(article.title, value=pathname)
+                            solara.ListItem(article_.title, value=pathname)
 
     with solara.AppLayout(navigation=navigation, title="Solara demo", children=children) as main:
         pass
@@ -81,31 +49,19 @@ def Layout(children=[]):
 def Page():
     with solara.VBox() as main:
         solara.Title("Solara demo » Home")
-        with solara.Card("Datasets"):
-            with rv.Container(style_="margin-left: unset; margin-right: unset;"):
-                with rv.Row(justify="start"):
-                    for name in names:
-                        with rv.Col(sm=4):
-                            DataCard(name)
+        data.Overview()
+        article.Overview()
 
-        with rv.Container(style_="margin-left: unset; margin-right: unset;"):
-            with rv.Row():
-                with rv.Col(style_="display: flex;", sm=6):
-                    PeopleCard("Maarten")
-                with rv.Col(style_="display: flex;", sm=4):
+        with solara.ColumnsResponsive(12):
+            with solara.Card("Other"):
+                with solara.ColumnsResponsive(6):
+                    PeopleCard("Maarten Breddels")
                     with solara.Card("Quick links"):
-                        with solara.VBox():
+                        with solara.Column():
                             for name in names:
                                 with solara.Link(f"/viz/scatter/{name}"):
                                     solara.Button(f"Scatter for {name}", text=True)
                                 with solara.Link(f"/viz/histogram/{name}"):
                                     solara.Button(f"Histogram for {name}", text=True)
-
-        with solara.Card("Company articles"):
-            with rv.Container(style_="margin-left: unset; margin-right: unset;"):
-                with rv.Row(justify="start"):
-                    for name in articles:
-                        with rv.Col():
-                            ArticleCard(name)
 
     return main

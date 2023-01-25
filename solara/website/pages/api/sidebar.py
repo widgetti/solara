@@ -1,23 +1,23 @@
 """
-# AppLayout
+# Sidebar
 
 """
 import solara
 import solara.lab
 from solara.website.utils import apidoc
 
-title = "AppLayout"
-
 
 @solara.component
 def Page():
     return solara.Markdown(
         """
-    An example cannot be shown embeddded in this page, Visit the [AppLayout page](/app/scatter) to see an example.
+
+    The sidebar can only be shown in embedded mode on this page.
+    Visit the [Scatter app demo](/app/scatter) to see an example of a full sidebar used in Soalra server.
 
     [![AppLayout screenshot](/static/public/docs/app-layout.png)](/app/scatter)
     """
     )
 
 
-__doc__ += apidoc(solara.AppLayout.f)  # type: ignore
+__doc__ += apidoc(solara.Sidebar.f)  # type: ignore

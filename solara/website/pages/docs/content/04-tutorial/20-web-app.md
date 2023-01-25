@@ -34,7 +34,7 @@ def Page():
         set_clicks(clicks + 1)
         print("clicks", clicks)
 
-    return solara.Button(label=f"Clicked: {clicks}", on_click=on_click, color=color)
+    solara.Button(label=f"Clicked: {clicks}", on_click=on_click, color=color)
 ```
 
 

@@ -11,6 +11,7 @@ from pygments.formatters import HtmlFormatter
 from pygments.lexers import get_lexer_by_name
 
 import solara
+import solara.components.applayout
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ def _run_solara(code):
         app = local_scope["app"]
     elif "Page" in local_scope:
         Page = local_scope["Page"]
-        app = Page()
+        app = solara.components.applayout._AppLayoutEmbed(children=[Page()])
     else:
         raise NameError("No Page of app defined")
     box = v.Html(tag="div")

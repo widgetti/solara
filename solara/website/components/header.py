@@ -25,6 +25,8 @@ def Header(
         # menu
         with rv.Html(tag="ul", class_="main-menu menu d-none d-md-flex"):
             for route in all_routes:
+                if route.path == "apps":
+                    continue
                 current = route_current == route
                 with rv.Html(tag="li", class_="active" if current else None):
                     solara.Link("/" + route.path if route.path != "/" else "/", children=[route.label])

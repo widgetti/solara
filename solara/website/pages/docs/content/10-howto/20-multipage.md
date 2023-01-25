@@ -32,7 +32,11 @@ $ solara run ./multipage-demo
 Solara server is starting at http://localhost:8765
 ```
 
-Solara will now:
+Giving you an output like:
+
+![screencapture](https://user-images.githubusercontent.com/1765949/214879312-19323de3-c4ce-4528-ac84-5aa0021ca5b4.gif)
+
+Solara now:
 
    * Sort the paths according to the filename (hence the 01- and 02- prefix)
    * Generate a nice URL by stripping of prefix, splitting the filename taking out `-`, `_` and spaces, and join them together using a `-`  (e.g. "/markdown-editor").
@@ -42,10 +46,11 @@ Solara will now:
      Layout component](/api/default_layout) which includes a navigation sidebar.
    * If a path is a directory, Solara will recursively scan the subdirectory and include it in the navigation. Read more on this in the [Layout section](layout)
 
-Solara will now render two pages:
+Solara will render two pages:
 
    * http://localhost:8765 with title "Click Button"
    * http://localhost:8765/markdown-editor with title "Markdown Editor"
+
 
 
 ## Classical widgets support
@@ -139,14 +144,12 @@ An example Page component could look like this:
 @solara.component
 def Page(name: str = "foo"):
     subpages = ["foo", "bar", "solara", "react-ipywidgets"]
-    with solara.VBox() as main:
-        solara.Markdown(f"You are at: {name}")
-        # bunch of buttons which navigate to our dynamic route
-        with solara.HBox():
-            for subpage in subpages:
-                with solara.Link(subpage):
-                    solara.Button(label=f"Go to: {subpage}")
-    return main
+    solara.Markdown(f"You are at: {name}")
+    # bunch of buttons which navigate to our dynamic route
+    with solara.Row():
+        for subpage in subpages:
+            with solara.Link(subpage):
+                solara.Button(label=f"Go to: {subpage}")
 ```
 
 By giving the name argument a default value of `"foo"`, Solara will also accept the `/tabular` url.
@@ -158,7 +161,6 @@ By giving the name argument a default value of `"foo"`, Solara will also accept 
   * Large application can benefit from setting up a Python package, use `solara create portal my-name` to create one.
   * By adding an argument to the `Page` component, routes like `/tabular` will turn into dynamic routes (e.g. `/tabular/dynamic-name`) and pass the argument (`"dynamic-name"` in this case) to the `Page` component to implement dynamic pages.
 
-<!-- Solara creates [Single Page Applications](https://en.wikipedia.org/wiki/Single-page_application) (SPI), but do not let that name confuse you.
+# What next?
 
-An SPA only loads a single page from your browser, but can still navigate to
-other pages without having to reload the page. This leads to a  -->
+  * Also check out the [Multipage example](/apps/multipage) for more inspiration.

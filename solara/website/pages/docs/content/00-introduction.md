@@ -52,8 +52,7 @@ def Page():
     clicks, set_clicks = solara.use_state(0)
     def increase_clicks():
         set_clicks(clicks+1)
-    return solara.Button(label=f"Clicked {clicks} times",
-                         on_click=increase_clicks)
+    solara.Button(label=f"Clicked {clicks} times", on_click=increase_clicks)
 
 # in the Jupyter notebook, uncomment the next line:
 # display(Page())

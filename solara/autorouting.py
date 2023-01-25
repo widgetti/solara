@@ -19,6 +19,9 @@ autoroute_level_context = solara.create_context(0)
 DEBUG = False
 
 
+DefaultLayout = solara.AppLayout
+
+
 def source_to_module(path: Path) -> ModuleType:
     fullname = path.stem
     mod = ModuleType(fullname)
@@ -229,7 +232,6 @@ def RenderPage():
             )
             main = wrap_in_layouts(main, layouts)
         elif Page is not None:
-            Page = get_page(module)
             args = get_args(Page)
             main = solara.Div(
                 children=[
@@ -239,45 +241,8 @@ def RenderPage():
             )
             main = wrap_in_layouts(main, layouts)
         else:
-            with DefaultLayout(router_level=-1) as main:
+            with DefaultLayout() as main:
                 solara.Error(f"{module} does not have a Page component or an app element")
-    return main
-
-
-@solara.component
-def DefaultLayout(children: List[reacton.core.Element] = [], router_level=-1):
-    """Default layout used in multipage applications.
-
-    ## See
-
-     * [Multipage](/docs/howto/multipage).
-     * [Understanding Routing](/docs/understanding/routing).
-
-    """
-    route_current, all_routes = solara.use_route()
-    router = solara.use_router()
-    selected = router.path
-
-    with solara.HBox(grow=True) as main:
-        with rv.NavigationDrawer(right=False, width="400px", v_model=True, permanent=True):
-            with rv.List(dense=True):
-                with rv.ListItemGroup(v_model=selected):
-                    for route in all_routes:
-                        if route.children and route.data is None:
-                            with solara.ListItem(route.label):
-                                for child in route.children:
-                                    path = solara.resolve_path(child)
-                                    with solara.Link(path):
-                                        title = child.label or "no label"
-                                        if callable(title):
-                                            title = "Error: dynamic title"
-                                        solara.ListItem(title, value=path)
-                        else:
-                            path = solara.resolve_path(route)
-                            with solara.Link(path):
-                                solara.ListItem(route.label, value=path)
-        with solara.Padding(4):
-            solara.Div(children=children)
     return main
 
 

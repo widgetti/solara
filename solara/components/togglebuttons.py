@@ -33,7 +33,7 @@ def ToggleButtonsSingle(
     """
     children = [solara.Button(label=str(value)) for value in values] + children
     values = values + [_get_button_value(button) for button in children]  # type: ignore
-    index, set_index = solara.use_state_or_update(values.index(value), key="index")
+    index, set_index = solara.use_state_or_update(values.index(value) if value is not None else 0, key="index")
 
     def on_index(index):
         set_index(index)

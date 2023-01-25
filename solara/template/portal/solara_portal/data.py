@@ -57,4 +57,4 @@ for file in (HERE.parent / "content/articles").glob("*.md"):
     yamltext = "\n".join(lines[frontmatter_start + 1 : frontmatter_end - 2])
     metadata = yaml.safe_load(yamltext)
     markdown = "\n".join(lines[frontmatter_end + 1 :])
-    articles[file.name] = Article(markdown=markdown, title=metadata["title"], description=metadata["description"], image_url=metadata["image"])
+    articles[file.stem] = Article(markdown=markdown, title=metadata["title"], description=metadata["description"], image_url=metadata["image"])

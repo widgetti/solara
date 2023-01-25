@@ -5,6 +5,7 @@ from typing import Any, Dict
 import nbformat
 
 import solara
+import solara.components.applayout
 
 HERE = Path(__file__).parent
 
@@ -48,6 +49,8 @@ def Page():
     nb: nbformat.NotebookNode = solara.use_memo(lambda: execute_notebook(HERE / "_data_science.ipynb"))
 
     last_page = None
+
+    solara.components.applayout.should_use_embed.provide(True)
     with solara.VBox() as main:
         for cell_index, cell in list(enumerate(nb.cells)):
             cell_index += 1  # used 1 based
@@ -63,7 +66,8 @@ def Page():
 ```"""
                 )
                 if page != last_page and page is not None:
-                    page()
+                    with solara.AppLayout(navigation=False, toolbar_dark=False):
+                        page()
                 last_page = page
             elif cell.cell_type == "markdown":
                 solara.Markdown(cell.source)

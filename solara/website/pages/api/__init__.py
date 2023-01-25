@@ -94,8 +94,8 @@ def Sidebar(children=[], level=0):
                     add("vbox")
                     add("griddraggable")
                     add("gridfixed")
-                    add("default_layout")
                     add("app_layout")
+                    add("sidebar")
                     # add("app")
             with ListItem("Data", icon_name="mdi-database"):
                 with List():
@@ -198,7 +198,10 @@ def WithCode(module):
 """
                     )
         # It renders code better
-        solara.Markdown(module.__doc__ or "# no docs yet")
+        solara.Markdown(
+            module.__doc__ or "# no docs yet",
+            unsafe_solara_execute=True,
+        )
         if component and component != NoPage:
             with solara.Card("Example", margin=0, classes=["mt-8"]):
                 component()

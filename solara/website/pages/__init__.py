@@ -14,7 +14,7 @@ md = open(directory / "README.md").read()
 
 title = "Home"
 
-route_order = ["/", "docs", "api", "examples", "app"]
+route_order = ["/", "docs", "api", "examples", "apps"]
 
 
 @solara.component
@@ -75,7 +75,7 @@ def Layout(children=[]):
     show_left_menu, set_show_left_menu = solara.use_state(False)
     show_right_menu, set_show_right_menu = solara.use_state(False)
 
-    if route_current.path == "app":
+    if route_current and route_current.path == "apps":
         return children[0]
     with solara.VBox(grow=False) as main:
         Title(title="Solara documentation")

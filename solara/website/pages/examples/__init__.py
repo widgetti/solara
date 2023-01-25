@@ -29,23 +29,27 @@ def Layout(children):
     github_url = solara.util.github_url(module.__file__)
 
     with solara.HBox(grow=False) as main:
-        with solara.VBox(grow=True, align_items="baseline"):
-            doc = module.__doc__
-            if doc:
-                with solara.VBox(grow=True):
-                    solara.Markdown(doc)
-            with solara.HBox():
-                if route_current.path != "/":
-                    solara.Button("View source code on GitHub", icon_name="mdi-github-circle", href=github_url, class_="ma-2", target="_blank", text=True)
-                    # code = inspect.getsource(module)
+        if route_current.path == "fullscreen":
+            with solara.Padding(4, children=children):
+                pass
+        else:
+            with solara.VBox(grow=True, align_items="baseline"):
+                doc = module.__doc__
+                if doc:
+                    with solara.VBox(grow=True):
+                        solara.Markdown(doc)
+                with solara.HBox():
+                    if route_current.path != "/":
+                        solara.Button("View source code on GitHub", icon_name="mdi-github-circle", href=github_url, class_="ma-2", target="_blank", text=True)
+                        # code = inspect.getsource(module)
 
-                    # code_quoted = urllib.parse.quote_plus(code)
-                    # url = f"https://test.solara.dev/try?code={code_quoted}"
-                    # solara.Button("Run on solara.dev", icon_name="mdi-pencil", href=url, class_="ma-2", target="_blank")
-            # with solara.HBox():
-            if not hasattr(module, "Page"):
-                solara.Error(f"No Page component found in {module}")
-            else:
-                with solara.Padding(4, children=children):
-                    pass
+                        # code_quoted = urllib.parse.quote_plus(code)
+                        # url = f"https://test.solara.dev/try?code={code_quoted}"
+                        # solara.Button("Run on solara.dev", icon_name="mdi-pencil", href=url, class_="ma-2", target="_blank")
+                # with solara.HBox():
+                if not hasattr(module, "Page"):
+                    solara.Error(f"No Page component found in {module}")
+                else:
+                    with solara.Padding(4, children=children):
+                        pass
     return main

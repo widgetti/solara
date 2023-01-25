@@ -2,25 +2,22 @@
 
 This 1-minute quickstart will get you to:
 
-   * Solara install.
+   * Install Solara.
    * Write your first Solara script.
    * Run your script using Solara server.
    * (Optional) Reuse your code in the Jupyter notebook.
 
-If you are an existing ipywidget user, you might want to skip the quickstart and directly go to the [IPywidget tutorial](/docs/tutorial/ipywidgets).
+If you are an existing ipywidget user and do not want to learn the component based method, you might want to skip the quickstart and directly go to the [IPywidgets user tutorial](/docs/tutorial/ipywidgets).
 
-## You should know
+## Installation
 
-This quickstart will assume:
 
-  * You have successfully installed Solara
-
-If not, please follow the [Installation instructions](/docs/installing).
+Run `pip install solara`, or follow the [Installation instructions](/docs/installing) for more detailed instructions.
 
 
 ## First script
 
-Put the following content in a file, say `sol.py`:
+Put the following Python script in a file, we suggest `sol.py`:
 
 ```solara
 import solara
@@ -32,18 +29,19 @@ def Page():
     word_limit, set_word_limit = solara.use_state(10)
     word_count = len(sentence.split())
 
-    with solara.VBox() as main:
-        solara.SliderInt("Word limit", value=word_limit, on_value=set_word_limit, min=2, max=20)
-        solara.InputText(label="Your sentence", value=sentence, on_value=set_sentence,
-                         continuous_update=True)
+    solara.SliderInt("Word limit", value=word_limit, on_value=set_word_limit, min=2, max=20)
+    solara.InputText(label="Your sentence", value=sentence, on_value=set_sentence,
+                        continuous_update=True)
 
-        if word_count >= int(word_limit):
-            solara.Error(f"With {word_count} words, you passed the word limit of {word_limit}.")
-        elif word_count >= int(0.8 * word_limit):
-            solara.Warning(f"With {word_count} words, you are close to the word limit of {word_limit}.")
-        else:
-            solara.Success("Great short writing!")
-    return main
+    if word_count >= int(word_limit):
+        solara.Error(f"With {word_count} words, you passed the word limit of {word_limit}.")
+    elif word_count >= int(0.8 * word_limit):
+        solara.Warning(f"With {word_count} words, you are close to the word limit of {word_limit}.")
+    else:
+        solara.Success("Great short writing!")
+
+# In a Jupyter notebook, put this at the end of your cell:
+# Page()
 ```
 
 Yes, the above example is running live on the Solara documentation web server. If you change the slider the output updates.

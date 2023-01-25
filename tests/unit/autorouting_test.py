@@ -76,7 +76,7 @@ def test_routes_portal():
     nav = rc._find(solara.widgets.Navigator).widget
     title = rc._find(TitleWidget)[-1].widget
     assert title.title == "Solara demo » Home"
-    assert rc._find(v.ToolbarTitle).widget.children[0] == "Solara demo"
+    assert rc._find(v.ToolbarTitle).widget.children[0] == "Solara demo » Home"
     nav.location = "/tabular/titanic"
     title = rc._find(TitleWidget)[-1].widget
     assert "titanic" in title.title
@@ -115,7 +115,7 @@ def test_routes_examples_docs():
 
     container, rc = solara.render(solara_context, handle_error=False)
 
-    assert rc._find(v.NavigationDrawer)
+    rc._find(v.AppBar).assert_not_empty()
 
 
 # requires altair as dependency
@@ -195,7 +195,7 @@ def test_routes_directory():
     nav.location = "/single-file-directory"
     title = rc._find(TitleWidget).widget
     assert "Single File" == title.title
-    assert len(rc._find(v.NavigationDrawer)) == 1
+    assert len(rc._find(v.AppBar)) == 1
 
     nav.location = "/wrong-path"
     assert "Page not found" in rc._find(v.Alert).widget.children[0]
