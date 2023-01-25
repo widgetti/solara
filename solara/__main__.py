@@ -62,7 +62,7 @@ LOGGING_CONFIG: dict = {
     },
     "loggers": {
         "solara": {"handlers": ["default"], "level": "ERROR"},
-        "react": {"handlers": ["default"], "level": "ERROR"},
+        "reacton": {"handlers": ["default"], "level": "ERROR"},
         # "react": {"handlers": ["rich"], "level": "DEBUG"},
         "uvicorn": {"handlers": ["default"], "level": "ERROR"},
         "uvicorn.error": {"level": "ERROR"},
@@ -290,7 +290,7 @@ def run(
 
     if log_level is not None:
         LOGGING_CONFIG["loggers"]["solara"]["level"] = log_level.upper()
-        # LOGGING_CONFIG["loggers"]["react"]["level"] = log_level.upper()
+        # LOGGING_CONFIG["loggers"]["reacton"]["level"] = log_level.upper()
 
     log_level = log_level_uvicorn
     del log_level_uvicorn
