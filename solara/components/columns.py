@@ -63,7 +63,7 @@ def Columns(
 
 
 @solara.component
-def ColumnsResponsive(default=None, small=None, medium=None, large=None, xlarge=None, children=[], wrap=False, gutters=True, gutters_dense=False):
+def ColumnsResponsive(default=None, small=None, medium=None, large=None, xlarge=None, children=[], wrap=True, gutters=True, gutters_dense=False):
     """Lay our children in columns, on a 12 point grid system that is responsive to screen size.
 
     If a single number is specified, or less values than children, the values will be cycled.
