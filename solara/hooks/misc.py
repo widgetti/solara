@@ -357,7 +357,7 @@ def use_force_update() -> Callable[[], None]:
     return updater
 
 
-def use_uuid4(dependencies=[]):
+def use_uuid4(dependencies=[]) -> str:
     """Generate a unique string using the uuid4 algorithm. Will only change when the dependencies change."""
 
     def make_uuid(*_ignore):
@@ -366,7 +366,7 @@ def use_uuid4(dependencies=[]):
     return solara.use_memo(make_uuid, dependencies)
 
 
-def use_unique_key(key: str = None, prefix: str = "", dependencies=[]):
+def use_unique_key(key: str = None, prefix: str = "", dependencies=[]) -> str:
     """Generate a unique string, or use key when not None. Dependencies are forwarded to `use_uuid4`."""
     uuid = use_uuid4(dependencies=dependencies)
     return prefix + (key or uuid)
