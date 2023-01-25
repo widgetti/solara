@@ -78,7 +78,7 @@ def Layout(children=[]):
     if route_current.path == "app":
         return children[0]
     with solara.VBox(grow=False) as main:
-        Title(title="Solara documentations")
+        Title(title="Solara documentation")
         solara.Meta(property="twitter:site", content="@solara_dev" + router.path)
         solara.Meta(property="og:url", content="https://solara.dev" + router.path)
         solara.Meta(property="og:image", content="https://solara.dev/static/assets/images/logo-small.png")
