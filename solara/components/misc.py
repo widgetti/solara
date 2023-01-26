@@ -185,7 +185,7 @@ def Row(children=[], gap="12px", classes: List[str] = [], style: str = ""):
 
 
 @solara.component
-def Column(children=[], gap="12px", classes: List[str] = [], style: str = ""):
+def Column(children=[], gap="12px", margin: int = 0, classes: List[str] = [], style: str = ""):
     """Lays out children in a column on top of eachother, with the given gap between them.
 
     Example with three children on top of eachother:
@@ -201,7 +201,7 @@ def Column(children=[], gap="12px", classes: List[str] = [], style: str = ""):
     """
     align_items = "stretch"
     style = f"flex-direction: column; align-items: {align_items}; row-gap: {gap};" + style + ";"
-    class_ = _combine_classes(["d-flex", *classes])
+    class_ = _combine_classes(["d-flex", f"ma-{margin}", *classes])
     return v.Sheet(class_=class_, style_=style, elevation=0, children=children)
 
 
