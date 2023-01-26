@@ -20,7 +20,7 @@ def cycle(value):
 @solara.component
 def Columns(
     widths: List[Union[float, int]] = [1],
-    wrap=False,
+    wrap=True,
     gutters=True,
     gutters_dense=False,
     children=[],
