@@ -1,7 +1,7 @@
 import hashlib
 import logging
 import textwrap
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 import ipyvuetify as v
 import pygments
@@ -39,11 +39,13 @@ def _run_solara(code):
     )
 
 
-def _markdown_template(html):
+def _markdown_template(html, style=""):
     return (
         """
 <template>
-    <div class="solara-markdown rendered_html jp-RenderedHTMLCommon">"""
+    <div class="solara-markdown rendered_html jp-RenderedHTMLCommon" style=\""""
+        + style
+        + """\">"""
         + html
         + """</div>
 </template>
@@ -143,7 +145,7 @@ def MarkdownIt(md_text: str, highlight: List[int] = [], unsafe_solara_execute: b
 
 
 @solara.component
-def Markdown(md_text: str, unsafe_solara_execute=False):
+def Markdown(md_text: str, unsafe_solara_execute=False, style: Union[str, Dict, None] = None):
     """Renders markdown text
 
     Renders markdown using https://python-markdown.github.io/
@@ -153,11 +155,13 @@ def Markdown(md_text: str, unsafe_solara_execute=False):
      * `md_text`: The markdown text to render
      * `unsafe_solara_execute`: If True, code marked with language "solara" will be executed. This is potentially unsafe
         if the markdown text can come from user input and should only be used for trusted markdown.
+     * `style`: A string or dict of css styles to apply to the rendered markdown.
 
     """
     import markdown
 
     md_text = textwrap.dedent(md_text)
+    style = solara.util._flatten_style(style)
 
     def make_markdown_object():
         def highlight(src, language, *args, **kwargs):
@@ -197,4 +201,4 @@ def Markdown(md_text: str, unsafe_solara_execute=False):
     # if we update the template value, the whole vue tree will rerender (ipvue/ipyvuetify issue)
     # however, using the hash we simply generate a new widget each time
     hash = hashlib.sha256((html + str(unsafe_solara_execute)).encode("utf-8")).hexdigest()
-    return v.VuetifyTemplate.element(template=_markdown_template(html)).key(hash)
+    return v.VuetifyTemplate.element(template=_markdown_template(html, style)).key(hash)

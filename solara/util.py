@@ -3,7 +3,7 @@ import contextlib
 import os
 import sys
 from pathlib import Path
-from typing import List
+from typing import Dict, List, Union
 
 import numpy as np
 import PIL.Image
@@ -79,6 +79,17 @@ def numpy_equals(a, b):
 
 def _combine_classes(class_list: List[str]) -> str:
     return " ".join(class_list)
+
+
+def _flatten_style(style: Union[str, Dict, None] = None) -> str:
+    if style is None:
+        return ""
+    elif isinstance(style, str):
+        return style
+    elif isinstance(style, dict):
+        return ";".join(f"{k}:{v}" for k, v in style.items())
+    else:
+        raise ValueError(f"Expected style to be a string or dict, got {type(style)}")
 
 
 def import_item(name: str):
