@@ -120,6 +120,10 @@ class AppScript:
                     exec(ast, local_scope)
             app = nested_get(local_scope, self.app_name)
             routes = cast(Optional[List[solara.Route]], local_scope.get("routes"))
+            if isinstance(app, Element):
+                app = solara.AppLayout(children=[app])
+            if isinstance(app, reacton.core.Component):
+                app = solara.AppLayout(children=[app()])
         elif self.name.endswith(".ipynb"):
             self.type = AppType.NOTEBOOK
             # manually add the notebook to the watcher
@@ -138,6 +142,10 @@ class AppScript:
                         exec(ast, local_scope)
                 app = nested_get(local_scope, self.app_name)
                 routes = cast(Optional[List[solara.Route]], local_scope.get("routes"))
+            if isinstance(app, Element):
+                app = solara.AppLayout(children=[app])
+            if isinstance(app, reacton.core.Component):
+                app = solara.AppLayout(children=[app()])
         else:
             # the module itself will be added by reloader
             # automatically

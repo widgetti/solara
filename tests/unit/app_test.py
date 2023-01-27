@@ -37,9 +37,9 @@ def test_notebook_component(app_context, no_app_context):
     app = AppScript(name)
     try:
         with app_context:
-            el = app.run()
+            el = app.run().kwargs["children"][0].component
             assert isinstance(el, reacton.core.Component)
-            el2 = app.run()
+            el2 = app.run().kwargs["children"][0].component
             assert el is el2
     finally:
         app.close()
