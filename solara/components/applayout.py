@@ -183,7 +183,7 @@ def AppLayout(
                     location.pathname = path
 
                 v_slots = []
-                if routes and navigation:
+                if routes and navigation and len(routes) > 1:
                     with v.Tabs(v_model=index, on_v_model=set_path, centered=True) as tabs:
                         for route in routes:
                             name = route.path if route.path != "/" else "Home"
@@ -233,7 +233,7 @@ def AppLayout(
                     location.pathname = path
 
                 v_slots = []
-                if routes:
+                if routes and navigation and len(routes) > 1:
                     with v.Tabs(v_model=index, on_v_model=set_path, centered=True) as tabs:
                         for route in routes:
                             name = route.path if route.path != "/" else "Home"
