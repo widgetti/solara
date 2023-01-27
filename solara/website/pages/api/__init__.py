@@ -61,6 +61,7 @@ def Sidebar(children=[], level=0):
                     add("slider")
                     add("togglebuttons")
                     add("file_browser")
+                    add("file_drop")
             with ListItem("Output", icon_name="mdi-chevron-right-box"):
                 with List():
                     add("markdown")
