@@ -7,7 +7,7 @@ Assuming you have created a virtual environment as described in [the installatio
 
     $ git clone git@github.com:widgetti/solara.git
     $ cd solara
-    $ pip install ".[server,develop,documentation]"  # documentation is optional
+    $ pip install ".[dev,documentation]"  # documentation is optional
 
 
 ## Running Solara in dev mode
@@ -45,3 +45,14 @@ If you want to run the integration tests (uses playwright to open a browser to t
     $ py.test tests/integration
 
 Pass the `--headed` flag to see what is going on, [or check out the docs](https://playwright.dev/python/docs/intro)
+
+
+## Documentation
+
+If you want to work on the documentation, everything is in the `solara/website/pages/` directory.
+
+Run the solara website app:
+
+```bash
+$ solara run solara.website.pages
+```
