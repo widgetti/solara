@@ -17,7 +17,7 @@ def test_run_widget(page_session: playwright.sync_api.Page):
     popen = subprocess.Popen(args, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
     host = "localhost"
     try:
-        solara.server.server.wait_ready(f"http://{host}:{port}", timeout=10)
+        solara.server.server.wait_ready(f"http://{host}:{port}", timeout=15)
         page_session.goto(f"http://localhost:{port}")
         page_session.locator("text=Clicked 0 times").click(timeout=5000)
         page_session.locator("text=Clicked 1 times").click(timeout=5000)

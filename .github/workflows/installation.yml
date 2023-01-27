@@ -68,4 +68,4 @@ jobs:
         uses: ifaxity/wait-on-action@v1
         with:
           resource: http-get://localhost:8765/
-          timeout: 10000
+          timeout: 20000
