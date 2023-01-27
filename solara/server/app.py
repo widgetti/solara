@@ -285,7 +285,10 @@ class AppScript:
                         context.app_object = None
                         # we want to reuse the container
                         render_context.container = None
-                        render_context.close()
+                        try:
+                            render_context.close()
+                        except Exception as e:
+                            logger.exception("Could not close render context: %s", e)
 
             # ask all contexts/users to reload
             for context in context_values:
@@ -327,7 +330,11 @@ class AppContext:
         with self:
             if self.app_object is not None:
                 if isinstance(self.app_object, reacton.core._RenderContext):
-                    self.app_object.close()
+                    try:
+                        self.app_object.close()
+                    except Exception as e:
+                        logger.exception("Could not close render context: %s", e)
+                        # we want to continue, so we at least close all widgets
             import solara.server.patch
 
             assert isinstance(widgets.Widget.widgets, solara.server.patch.context_dict_widgets), f"Unexpected widget dict type: {type(widgets.Widget.widgets)}"
