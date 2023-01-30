@@ -393,6 +393,7 @@ def run(
     help="Show browser window if true.",
 )
 def ssg(app: str, port: int, host: str, headed: bool):
+    """Static site generation"""
     settings.ssg.headed = headed
     settings.ssg.enabled = True
     os.environ["SOLARA_APP"] = app
@@ -460,6 +461,7 @@ class run_with_settings:
 @cli.command()
 @click.option("--port", default=int(os.environ.get("PORT", 8000)))
 def staticserve(port):
+    """Experimental static serving"""
     import http.server
     import os
     from functools import partial
@@ -544,6 +546,7 @@ def staticbuild():
 
 @click.group()
 def create():
+    """Quickly create a solara script or project."""
     pass
 
 
@@ -555,6 +558,7 @@ def create():
     required=False,
 )
 def button(target: typing.Optional[Path]):
+    """Create a button with a click counter."""
     write_script("button", target)
 
 
@@ -566,6 +570,7 @@ def button(target: typing.Optional[Path]):
     required=False,
 )
 def markdown(target: typing.Optional[Path] = None):
+    """Create a markdown editor."""
     write_script("markdown", target)
 
 
@@ -605,6 +610,7 @@ def copytree(src: Path, dst: Path, copy_function=shutil.copy2, ignore: typing.Ca
     required=False,
 )
 def portal(target: Path):
+    """Create a full Python project template for a data portal"""
     target = Path(target)
     name = target.name
     package_name = name.replace("-", "_")
