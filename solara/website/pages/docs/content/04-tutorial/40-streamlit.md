@@ -68,7 +68,7 @@ If you are using [Solara server](docs/understanding/solara-server), try editing 
 As the introduction says, Solara does not re-execute your whole script after user interactions.
 The main script is executed only once. With Solara you can use your main script to read large dataframes, or do some pre-calculations without the need for [caching](/docs/reference/caching).
 
-When a user navigates to a Solara server, the `Page` component (basically a function) will get executed. The `Page` component will call (lazily) new components like [solara.Markdown](/api/markdown) to build up the page. If state changes due to user input, Solara will trigger a cascade of re-excecutions of components, but never you whole script.
+When a user navigates to a Solara server, the `Page` component (basically a function) will get executed. The `Page` component will call (lazily) new components like [solara.Markdown](/api/markdown) to build up the page. If state changes due to user input, Solara will trigger a cascade of re-excecutions of components, but never your whole script.
 
 ### State
 With Solara (and [Reacton](/docs/understanding/reacton)) state does not live in a UI component (like a slider). State can be added to a component using the `solara.use_state` function call. Connecting the state to the UI component (in this case a slider) is a separate step, done via `value=x, on_value=set_x` in the above example. In general we recommend organising your components
