@@ -13,10 +13,9 @@ from typing import Any, Callable, Dict, List, Optional, cast
 
 import ipywidgets as widgets
 import reacton
+import solara
 from ipywidgets import DOMWidget, Widget
 from reacton.core import Element, render
-
-import solara
 
 from ..util import cwd
 from . import kernel, reload, settings, websocket
@@ -190,6 +189,11 @@ class AppScript:
 
         if settings.ssg.build_path is None:
             settings.ssg.build_path = self.directory.parent.resolve() / "build"
+
+        # auto enable search if search.json exists
+        search_index_file = self.directory.parent / "assets" / "search.json"
+        if search_index_file.exists():
+            settings.search.enabled = True
 
         # this might be useful for development
         # but requires reloading of react in solara iself

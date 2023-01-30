@@ -217,6 +217,12 @@ When in dev mode Solara will:
     default=settings.ssg.enabled,
     help="(pre) Render static pages.",
 )
+@click.option(
+    "--search/--no-search",
+    is_flag=True,
+    default=settings.search.enabled,
+    help="Enable search (requires ssg generated pages).",
+)
 def run(
     app,
     host,
@@ -241,8 +247,11 @@ def run(
     theme_variant: settings.ThemeVariant,
     theme_variant_user_selectable: bool,
     ssg: bool,
+    search: bool,
 ):
+    """Run a Solara app."""
     settings.ssg.enabled = ssg
+    settings.search.enabled = search
     reload_dirs = reload_dirs if reload_dirs else None
     url = f"http://{host}:{port}"
 
@@ -310,7 +319,7 @@ def run(
     settings.theme.variant_user_selectable = theme_variant_user_selectable
     settings.main.tracer = tracer
     settings.main.timing = timing
-    for item in "theme_variant_user_selectable theme_variant theme_loader use_pdb server open_browser open url failed dev tracer timing ssg".split():
+    for item in "theme_variant_user_selectable theme_variant theme_loader use_pdb server open_browser open url failed dev tracer timing ssg search".split():
         del kwargs[item]
 
     def start_server():
@@ -327,7 +336,11 @@ def run(
                 from uvicorn.supervisors import ChangeReload
 
                 ChangeReload(
-                    config, target=run_with_settings(server, main=settings.main.dict(), theme=settings.theme.dict(), ssg=settings.ssg.dict()), sockets=[sock]
+                    config,
+                    target=run_with_settings(
+                        server, main=settings.main.dict(), theme=settings.theme.dict(), ssg=settings.ssg.dict(), search=settings.search.dict()
+                    ),
+                    sockets=[sock],
                 ).run()
             else:
                 server.run()
@@ -343,10 +356,20 @@ def run(
             base_url = f"http://{server.config.host}:{server.config.port}"
             rprint("Running Static Site Generator pre-render background task")
             ssg_crawl(base_url)
+            if settings.search.enabled:
+                from solara_enterprise.search.index import build_index
+
+                build_index("")
 
     # in dev mode we run the ssg in the child process (see run_with_settings)
     if not dev and settings.ssg.enabled:
         threading.Thread(target=ssg_run, daemon=True).start()
+
+    # if we don't have to wait for SSG, we can build the index right away
+    if not settings.ssg.enabled and settings.search.enabled:
+        from solara_enterprise.search.index import build_index
+
+        build_index("")
 
     start_server()
 
@@ -384,14 +407,25 @@ def ssg(app: str, port: int, host: str, headed: bool):
     ssg_crawl(base_url)
 
 
+@cli.command()
+@click.argument("app")
+def search(app: str):
+    """Build search index based on ssg output"""
+    os.environ["SOLARA_APP"] = app
+    from solara_enterprise.search.index import build_index
+
+    build_index("")
+
+
 class run_with_settings:
     """This cross a process boundry, and takes the serialized settings with it"""
 
-    def __init__(self, server: uvicorn.Server, main: typing.Dict, theme: typing.Dict, ssg: typing.Dict):
+    def __init__(self, server: uvicorn.Server, main: typing.Dict, theme: typing.Dict, ssg: typing.Dict, search: typing.Dict):
         self.server = server
         self.main = main
         self.theme = theme
         self.ssg = ssg
+        self.search = search
 
     def __call__(self, *args, **kwargs):
         # this is now in the new process, where we need to re-apply the settings
@@ -405,10 +439,15 @@ class run_with_settings:
                 base_url = f"http://{self.server.config.host}:{self.server.config.port}"
                 rprint("Running Static Site Generator pre-render background task")
                 ssg_crawl(base_url)
+                if settings.search.enabled:
+                    from solara_enterprise.search.index import build_index
+
+                    build_index("")
 
         settings.main = settings.MainSettings(**self.main)
         settings.theme = settings.ThemeSettings(**self.theme)
         settings.ssg = settings.SSG(**self.ssg)
+        settings.search = settings.Search(**self.search)
         if settings.ssg.enabled:
             threading.Thread(target=ssg_run, daemon=True).start()
         try:

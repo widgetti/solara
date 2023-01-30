@@ -41,6 +41,10 @@ class SSG(pydantic.BaseSettings):
         env_file = ".env"
 
 
+class Search(pydantic.BaseSettings):
+    enabled: bool = False
+
+
 class Telemetry(pydantic.BaseSettings):
     mixpanel_token: str = "91845eb13a68e3db4e58d64ad23673b7"
     mixpanel_enable: bool = True
@@ -71,7 +75,7 @@ main = MainSettings()
 theme = ThemeSettings()
 telemetry = Telemetry()
 ssg = SSG()
-
+search = Search()
 
 if telemetry.server_user_id == "not_set":
     home = get_solara_home()

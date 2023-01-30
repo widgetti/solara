@@ -176,7 +176,7 @@ def Layout(children=[]):
                                 # with rv.Col(md=6, class_="d-flex", style_="justify-content: end"):
                                 #     rv.Btn(elevation=0, large=True, children=["Running App"], color="primary", class_="btn-size--xlarge")
                             # solara.Padding(6)
-                        with rv.Row(children=children):
+                        with rv.Row(children=children, class_="solara-page-content-search"):
                             pass
 
             # Drawer navigation for sidebar

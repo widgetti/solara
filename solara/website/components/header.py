@@ -2,6 +2,7 @@ from typing import Callable
 
 import solara
 from solara.alias import rv
+from solara.server import settings
 
 
 @solara.component
@@ -21,6 +22,11 @@ def Header(
             with solara.Link(path_or_route="/"):
                 solara.Image(router.root_path + "/static/assets/images/logo.svg")
         rv.Spacer()
+
+        if settings.search.enabled:
+            from solara_enterprise.search.search import Search
+
+            Search()
 
         # menu
         with rv.Html(tag="ul", class_="main-menu menu d-none d-md-flex"):
