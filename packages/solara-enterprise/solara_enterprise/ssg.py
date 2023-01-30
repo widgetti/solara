@@ -114,15 +114,19 @@ def ssg_crawl_route(base_url: str, route: solara.Route, build_path: Path, thread
                 raise Exception(f"Failed to load {url} with status {response.status}")
             # TODO: if we don't want to detached, we get stack trace showing errors in solara
             # make sure the html is loaded
-            page.locator("#app").wait_for()
-            # make sure vue took over
-            page.locator("#pre-rendered-html-present").wait_for(state="detached")
-            # and wait for the
-            page.locator("text=Loading app").wait_for(state="detached")
-            page.locator("#kernel-busy-indicator").wait_for(state="hidden")
-            # page.wait_
-            time.sleep(0.5)
-            html = page.content()
+            try:
+                page.locator("#app").wait_for()
+                # make sure vue took over
+                page.locator("#pre-rendered-html-present").wait_for(state="detached")
+                # and wait for the
+                page.locator("text=Loading app").wait_for(state="detached")
+                page.locator("#kernel-busy-indicator").wait_for(state="hidden")
+                # page.wait_
+                time.sleep(0.5)
+                html = page.content()
+            except Exception:
+                logger.exception("Failure retrieving content for url: %s", url)
+                raise
             path.write_text(html, encoding="utf-8")
             rprint(f"Wrote to {path}")
             page.close()
