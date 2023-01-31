@@ -47,15 +47,17 @@ def Sidebar():
         with List():
             for route in all_routes:
                 if route.children and route.data is None:
-                    with SimpleListItem(route.label):
-                        with List():
-                            for child in route.children:
-                                path = solara.resolve_path(child)
-                                with solara.Link(path):
-                                    title = child.label or "no label"
-                                    if callable(title):
-                                        title = "Error: dynamic title"
-                                    SimpleListItem(title, class_="active" if path == selected else None)
+                    path = solara.resolve_path(route.children[0])
+                    with solara.Link(path):
+                        with SimpleListItem(route.label, class_="active" if path == selected else None):
+                            with List():
+                                for child in route.children[1:]:
+                                    path = solara.resolve_path(child)
+                                    with solara.Link(path):
+                                        title = child.label or "no label"
+                                        if callable(title):
+                                            title = "Error: dynamic title"
+                                        SimpleListItem(title, class_="active" if path == selected else None)
                 else:
                     path = solara.resolve_path(route)
                     with solara.Link(path):
