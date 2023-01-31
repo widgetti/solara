@@ -409,6 +409,16 @@ def ssg(app: str, port: int, host: str, headed: bool):
 
 
 @cli.command()
+def deploy():
+    rprint("...")
+    import time
+
+    time.sleep(1)
+    rprint("Want your app to run instantly on awesomeapp-mystartup-gh.solara.run?")
+    rprint("\tCheck out https://solara.dev/docs/deploying/cloud-hosted")
+
+
+@cli.command()
 @click.argument("app")
 def search(app: str):
     """Build search index based on ssg output"""
