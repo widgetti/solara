@@ -1,11 +1,12 @@
 import dataclasses
 import unittest.mock
-from typing import Callable, Dict, List, TypeVar
+from typing import Callable, Dict, List, Optional, TypeVar
 
 import ipyvuetify as v
 import react_ipywidgets as react
 from typing_extensions import TypedDict
 
+import solara
 import solara as sol
 from solara.lab import State
 from solara.lab.toestand import Reactive, Ref, use_sync_external_store
@@ -609,3 +610,45 @@ def test_use_external_store():
 #         rc._find(v.Alert).widget.children[0] == "3 bears around here"
 #     finally:
 #         bear_store._storage.delete()
+def test_dataframe():
+    mock = unittest.mock.Mock()
+    import pandas as pd
+
+    df = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
+    df2 = df.copy()
+    store = Reactive[pd.DataFrame](df)
+    unsub = store.subscribe(mock)
+    mock.assert_not_called()
+    store.set(df)
+    mock.assert_not_called()
+    store.set(df2)
+    mock.assert_called_with(df2)
+
+    unsub()
+    store.set(df)
+
+    @solara.component
+    def Test():
+        df = store.use_value()
+        return solara.Info(repr(id(df)))
+
+    box, rc = solara.render(Test(), handle_error=False)
+    assert rc.find(v.Alert).widget.children[0] == repr(id(df))
+    df2 = df.copy()
+    store.set(df2)
+    assert rc.find(v.Alert).widget.children[0] == repr(id(df2))
+
+    @dataclasses.dataclass(frozen=True)
+    class DataFrame:
+        df: Optional[pd.DataFrame] = dataclasses.field()
+
+    df_store = Reactive[DataFrame](DataFrame(df=df))
+    mock.reset_mock()
+    unsub = Ref(df_store.fields).subscribe(mock)
+    mock.assert_not_called()
+    df_store.set(DataFrame(df=df2))
+    mock.assert_called_once()
+    mock.reset_mock()
+    Ref(df_store.fields.df).set(df)
+    mock.assert_called_once()
+    unsub()

@@ -1,4 +1,4 @@
-from typing import Optional, cast
+from typing import Optional
 
 import pandas as pd
 import plotly.express as px
@@ -8,68 +8,86 @@ import solara.lab
 from solara.components.columns import Columns
 from solara.components.file_drop import FileDrop
 
-size_max = solara.lab.Reactive[float](40)
-size = solara.lab.Reactive[Optional[str]](None)
-color = solara.lab.Reactive[Optional[str]](None)
-x = solara.lab.Reactive[Optional[str]](None)
-y = solara.lab.Reactive[Optional[str]](None)
-logx = solara.lab.Reactive[bool](False)
-logy = solara.lab.Reactive[bool](False)
-
-
-df_sample = pd.read_csv("https://raw.githubusercontent.com/plotly/datasets/master/gapminderDataFiveYear.csv")
 github_url = solara.util.github_url(__file__)
+df_sample = pd.read_csv("https://raw.githubusercontent.com/plotly/datasets/master/gapminderDataFiveYear.csv")
+
+
+class State:
+    size_max = solara.lab.Reactive[float](40)
+    size = solara.lab.Reactive[Optional[str]](None)
+    color = solara.lab.Reactive[Optional[str]](None)
+    x = solara.lab.Reactive[Optional[str]](None)
+    y = solara.lab.Reactive[Optional[str]](None)
+    logx = solara.lab.Reactive[bool](False)
+    logy = solara.lab.Reactive[bool](False)
+    df = solara.lab.Reactive[Optional[pd.DataFrame]](None)
+
+    @staticmethod
+    def load_sample():
+        State.x.value = str("gdpPercap")
+        State.y.value = str("lifeExp")
+        State.size.value = str("pop")
+        State.color.value = str("continent")
+        State.logx.value = True
+        State.df.value = df_sample
+
+    @staticmethod
+    def load_from_file(file):
+        df = pd.read_csv(file["file_obj"])
+        State.x.value = str(df.columns[0])
+        State.y.value = str(df.columns[1])
+        State.size.value = str(df.columns[2])
+        State.color.value = str(df.columns[3])
+        State.df.value = df
+
+    @staticmethod
+    def reset():
+        State.df.value = None
 
 
 @solara.component
 def Page():
-    size.use()
-    color.use()
-    size_max.use()
-    x.use()
-    y.use()
-    logx.use()
-    logy.use()
-    df, set_df = solara.use_state(cast(Optional[pd.DataFrame], None), eq=lambda *args: False)
-
-    def load_sample():
-        x.value = str("gdpPercap")
-        y.value = str("lifeExp")
-        size.value = str("pop")
-        color.value = str("continent")
-        logx.value = True
-        set_df(df_sample)
-
-    def load_from_file(file):
-        df = pd.read_csv(file["file_obj"])
-        x.value = str(df.columns[0])
-        y.value = str(df.columns[1])
-        size.value = str(df.columns[2])
-        color.value = str(df.columns[3])
-        set_df(df)
+    # TODO: .use can be removed in the future if we wire this up automatically
+    State.size.use()
+    State.color.use()
+    State.size_max.use()
+    State.x.use()
+    State.y.use()
+    State.logx.use()
+    State.logy.use()
+    df = State.df.use_value()
 
     with solara.Sidebar():
         with solara.Card("Controls", margin=0, elevation=0):
             with solara.Column():
                 with solara.Row():
-                    solara.Button("Sample dataset", color="primary", text=True, outlined=True, on_click=load_sample)
-                    solara.Button("Clear dataset", color="primary", text=True, outlined=True, on_click=lambda: set_df(None))
-                FileDrop(on_file=load_from_file, on_total_progress=lambda *args: None, label="Drag file here")
+                    solara.Button("Sample dataset", color="primary", text=True, outlined=True, on_click=State.load_sample)
+                    solara.Button("Clear dataset", color="primary", text=True, outlined=True, on_click=State.reset)
+                FileDrop(on_file=State.load_from_file, on_total_progress=lambda *args: None, label="Drag file here")
 
                 if df is not None:
-                    solara.FloatSlider("Size", max=60).connect(size_max)
-                    solara.Checkbox(label="Log x").connect(logx)
-                    solara.Checkbox(label="Log y").connect(logy)
+                    solara.FloatSlider("Size", max=60).connect(State.size_max)
+                    solara.Checkbox(label="Log x").connect(State.logx)
+                    solara.Checkbox(label="Log y").connect(State.logy)
                     columns = list(map(str, df.columns))
-                    solara.Select("Column x", values=columns).connect(x)  # type: ignore
-                    solara.Select("Column y", values=columns).connect(y)  # type: ignore
-                    solara.Select("Size", values=columns).connect(size)  # type: ignore
-                    solara.Select("Color", values=columns).connect(color)  # type: ignore
+                    solara.Select("Column x", values=columns).connect(State.x)  # type: ignore
+                    solara.Select("Column y", values=columns).connect(State.y)  # type: ignore
+                    solara.Select("Size", values=columns).connect(State.size)  # type: ignore
+                    solara.Select("Color", values=columns).connect(State.color)  # type: ignore
 
     if df is not None:
         with Columns(widths=[2, 4]):
-            if x.value and y.value:
-                fig = px.scatter(df, x.value, y.value, size=size.value, color=color.value, size_max=size_max.value, log_x=logx.value, log_y=logy.value)
+            if State.x.value and State.y.value:
+                fig = px.scatter(
+                    df,
+                    State.x.value,
+                    State.y.value,
+                    size=State.size.value,
+                    color=State.color.value,
+                    size_max=State.size_max.value,
+                    log_x=State.logx.value,
+                    log_y=State.logy.value,
+                )
                 solara.FigurePlotly(fig)
             else:
                 solara.Warning("Select x and y columns")

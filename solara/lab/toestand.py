@@ -5,6 +5,7 @@ from operator import getitem
 from typing import Any, Callable, Dict, Generic, Set, Tuple, TypeVar, Union, cast
 
 import react_ipywidgets as react
+from reacton.utils import equals
 
 from solara import _using_solara_server
 
@@ -33,7 +34,7 @@ def use_sync_external_store(subscribe: Callable[[Callable[[], None]], Callable[[
 
     def on_store_change(_ignore_new_state=None):
         new_state = get_snapshot()
-        if new_state != prev_state.current:
+        if not equals(new_state, prev_state.current):
             prev_state.current = new_state
             force_update()
 
@@ -187,6 +188,8 @@ class ConnectionStore(ValueBase[S]):
     def set(self, value: S):
         scope_dict = self._get_dict()
         old = self.get()
+        if equals(old, value):
+            return
         scope_dict[self.storage_key] = value
 
         if _DEBUG:
@@ -275,7 +278,7 @@ class ValueSubField(ValueBase[T]):
         def on_change(new, old):
             new_value = self._field.get(new)
             old_value = self._field.get(old)
-            if new_value != old_value:
+            if not equals(new_value, old_value):
                 listener(new_value)
 
         return self._root.subscribe_change(on_change)
