@@ -80,3 +80,11 @@ div.highlight {
 .solara-markdown pre {
     background-color: unset !important
 }
+
+
+/* See https://github.com/jupyter-widgets/ipywidgets/issues/3692
+  TODO: this fixes the cursor in Solara, but not in the notebook
+*/
+.solara-image {
+    cursor: unset !important;
+}
