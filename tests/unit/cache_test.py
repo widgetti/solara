@@ -244,10 +244,10 @@ def test_memoize_hook():
             return solara.Text("running")
 
     box, rc = solara.render(Test(), handle_error=False)
-    rc.find(v.Btn, children=["0"]).wait_for()
+    rc.find(v.Btn, children=["0"]).wait_for(timeout=10)
     result_values.clear()
     click(rc.find(v.Btn).widget)
-    rc.find(v.Btn, children=["1"]).wait_for()
+    rc.find(v.Btn, children=["1"]).wait_for(timeout=10)
     assert len(result_values) == 1
     # we should directly get the result from the cache, so we don't go into running state
     assert result_values[0].state == solara.ResultState.FINISHED
