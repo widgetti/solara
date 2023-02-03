@@ -71,7 +71,7 @@ def FileDrop(
     def Page():
         def load_file_df(file):
             data = io.BytesIO(file["data"])
-            display(pd.read_csv(data))
+            print(pd.read_csv(data))
         
         solara.FileDrop(label="Drop file to see dataframe!",lazy=False, on_file=load_file_df)
     Page()
