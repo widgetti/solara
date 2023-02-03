@@ -207,7 +207,7 @@ def AppLayout(
             with v.Row(no_gutters=False):
                 v.Col(cols=12, children=children_content)
     else:
-        with v.Html(tag="div", style_="height: 100vh") as main:
+        with v.Html(tag="div", style_="min-height: 100vh") as main:
             with solara.HBox():
                 if use_drawer:
                     with v.NavigationDrawer(
