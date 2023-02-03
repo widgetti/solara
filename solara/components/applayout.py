@@ -239,7 +239,9 @@ def AppLayout(
                             name = route.path if route.path != "/" else "Home"
                             v.Tab(children=[name])
                     v_slots = [{"name": "extension", "children": tabs}]
-                with v.AppBar(color="primary", dark=True, app=True, clipped_left=True, hide_on_scroll=True, v_slots=v_slots):
+                # if hide_on_scroll is True, and we have a little bit of scrolling, vuetify seems to act strangely
+                # when scolling (on @mariobuikhuizen/vuetify v2.2.26-rc.0
+                with v.AppBar(color="primary", dark=True, app=True, clipped_left=True, hide_on_scroll=False, v_slots=v_slots):
                     if use_drawer:
                         AppIcon(sidebar_open, on_click=lambda: set_sidebar_open(not sidebar_open))
                     if title:
