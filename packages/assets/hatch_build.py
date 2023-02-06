@@ -6,7 +6,7 @@ import tempfile
 from hatchling.builders.hooks.plugin.interface import BuildHookInterface
 
 packages = [
-    ["@widgetti/solara-vuetify-app", "3.0.0"],
+    ["@widgetti/solara-vuetify-app", "3.0.1"],
     ["requirejs", "2.3.6"],
     ["mermaid", "8.6.4"],
     ["codemirror", "5.65.3"],
