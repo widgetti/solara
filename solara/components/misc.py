@@ -1,4 +1,4 @@
-from typing import Any, Callable, List
+from typing import Any, Callable, Dict, List, Union
 
 import ipyvue as vue
 import reacton
@@ -185,7 +185,7 @@ def Row(children=[], gap="12px", classes: List[str] = [], style: str = ""):
 
 
 @solara.component
-def Column(children=[], gap="12px", margin: int = 0, classes: List[str] = [], style: str = ""):
+def Column(children=[], gap="12px", margin: int = 0, classes: List[str] = [], style: Union[str, Dict[str, str], None] = None):
     """Lays out children in a column on top of eachother, with the given gap between them.
 
     Example with three children on top of eachother:
@@ -199,10 +199,11 @@ def Column(children=[], gap="12px", margin: int = 0, classes: List[str] = [], st
     ```
 
     """
+    style_flat = solara.util._flatten_style(style)
     align_items = "stretch"
-    style = f"flex-direction: column; align-items: {align_items}; row-gap: {gap};" + style + ";"
+    style_flat = f"flex-direction: column; align-items: {align_items}; row-gap: {gap};" + style_flat + ";"
     class_ = _combine_classes(["d-flex", f"ma-{margin}", *classes])
-    return v.Sheet(class_=class_, style_=style, elevation=0, children=children)
+    return v.Sheet(class_=class_, style_=style_flat, elevation=0, children=children)
 
 
 @solara.component
