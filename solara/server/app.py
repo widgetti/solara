@@ -11,11 +11,13 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, cast
 
+import IPython.display
 import ipywidgets as widgets
 import reacton
-import solara
 from ipywidgets import DOMWidget, Widget
 from reacton.core import Element, render
+
+import solara
 
 from ..util import cwd
 from . import kernel, reload, settings, websocket
@@ -95,7 +97,7 @@ class AppScript:
         logger.info("Executing %s", self.name)
         app = None
         local_scope = {
-            "display": display,
+            "display": IPython.display.display,
             "__name__": "__main__",
             "__file__": str(self.path),
         }

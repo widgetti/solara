@@ -225,8 +225,7 @@ def patch():
         warnings.warn("patch() called twice")
         return
     _patched = True
-    IPython.display.display = display_solara
-    __builtins__["display"] = display_solara
+    __builtins__["display"] = IPython.display.display
 
     # the ipyvue.Template module cannot be accessed like ipyvue.Template
     # because the import in ipvue overrides it
