@@ -28,27 +28,38 @@ def Columns(
     """Lays out children in columns, with relative widths specified as a list of floats or ints.
 
     Widths are relative to each other, so [1, 2, 1] will result in 1/4, 1/2, 1/4 width columns.
+    Columns with a width of 0 will take up the minimal amount of space.
 
     If there are more children than widths, the width list will be cycled.
 
     ```python
     with solara.Columns([1, 2, 1]):
-        with solara.Column():
-            solara.Text("I am on the left")
+        solara.Text("I am on the left")
         with solara.Card("Middle"):
             ...
         with solara.Column():
             ...
-
     ```
 
     When three children are added to this component, they will be laid out in three columns,
     with the first and last column taking up 1/4 of the width, and the middle column taking up 1/2 of the width.
 
+    ```solara
+    import solara
+
+    @solara.component
+    def Page():
+        with solara.Columns([0, 1, 2]):
+            solara.Text("I am as small as possible")
+            solara.Select("I strech", values=["a", "b", "c"], value="a")
+            solara.Select("I strech twice the amount", values=["a", "b", "c"], value="a")
+    ```
+
+
     # Arguments
 
      * widths: List of floats or ints, specifying the relative widths of the columns.
-     * wrap: Whether to wrap the columns to the next row if there is not enough space available.
+     * wrap: Whether to wrap the columns to the next row if there is not enough space available. This only happens when using widths of 0.
      * gutters: Whether to add gutters between the columns.
      * gutters_dense: Make gutters smaller.
      * children: List of children to be laid out in columns.
@@ -57,7 +68,7 @@ def Columns(
     with rv.Container() as main:
         with rv.Row(class_="flex-nowrap" if not wrap else "", no_gutters=not gutters, dense=gutters_dense):
             for child, width in zip(children, cycle(widths)):
-                with rv.Col(children=[child], style_=f"flex-grow: {width};"):
+                with rv.Col(children=[child], style_=f"flex-grow: {width}; overflow: auto" if width != 0 else "flex-grow: 0;"):
                     pass
     return main
 
