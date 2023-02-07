@@ -181,14 +181,16 @@ def Layout(children=[]):
                         with rv.Row(children=children, class_="solara-page-content-search"):
                             pass
 
-            # Drawer navigation for sidebar
+            # Drawer navigation for top menu
             with rv.NavigationDrawer(
-                v_model=show_left_menu,
-                on_v_model=set_show_left_menu,
-                absolute=True,
+                v_model=show_right_menu,
+                on_v_model=set_show_right_menu,
+                fixed=True,
+                right=True,
                 hide_overlay=False,
                 overlay_color="#000000",
                 overlay_opacity=0.5,
+                style_="height: 100vh",
             ):
                 with rv.List(nav=True):
                     with rv.ListItemGroup(active_class="text--primary"):
@@ -196,15 +198,15 @@ def Layout(children=[]):
                             with solara.Link(route):
                                 solara.ListItem(route.label)
 
-            # Drawer navigation for top menu
+            # Drawer navigation for sidebar
             with rv.NavigationDrawer(
-                v_model=show_right_menu,
-                on_v_model=set_show_right_menu,
-                right=True,
-                absolute=True,
+                v_model=show_left_menu,
+                on_v_model=set_show_left_menu,
+                fixed=True,
                 hide_overlay=False,
                 overlay_color="#000000",
                 overlay_opacity=0.5,
+                style_="height: 100vh",
             ):
                 with rv.List(nav=True):
                     current_path = router.path
