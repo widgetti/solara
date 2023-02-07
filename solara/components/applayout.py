@@ -154,6 +154,7 @@ def AppLayout(
     paths = [solara.resolve_path(r, level=0) for r in routes]
     location = solara.use_context(solara.routing._location_context)
     embedded_mode = solara.use_context(should_use_embed)
+    fullscreen, set_fullscreen = solara.use_state(False)
     # we cannot nest AppLayouts, so we can use the context to set the embedded mode
     should_use_embed.provide(True)
     index = routes.index(route) if route else None
@@ -172,7 +173,7 @@ def AppLayout(
 
     if title is None and not children_sidebar and len(children) == 1:
         return children[0]
-    if embedded_mode:
+    if embedded_mode and not fullscreen:
         # this version doesn't need to run fullscreen
         # also ideal in jupyter notebooks
         with v.Html(tag="div") as main:
@@ -204,9 +205,11 @@ def AppLayout(
                     if title:
                         v.ToolbarTitle(children=[title])
                     v.Spacer()
+                    solara.Button(icon_name="mdi-fullscreen", on_click=lambda: set_fullscreen(True), icon=True, dark=False)
             with v.Row(no_gutters=False):
                 v.Col(cols=12, children=children_content)
     else:
+        show_app_bar = title or routes or fullscreen
         with v.Html(tag="div", style_="min-height: 100vh") as main:
             with solara.HBox():
                 if use_drawer:
@@ -221,12 +224,12 @@ def AppLayout(
                         disable_route_watcher=True,
                         mobile_break_point="960",
                     ):
-                        if not title:
+                        if not show_app_bar:
                             AppIcon(sidebar_open, on_click=lambda: set_sidebar_open(not sidebar_open))
                         v.Html(tag="div", children=children_sidebar, style_="padding: 12px;").meta(ref="sidebar-content")
                 else:
                     AppIcon(sidebar_open, on_click=lambda: set_sidebar_open(not sidebar_open), style_="position: absolute; z-index: 2")
-            if title or routes:
+            if show_app_bar:
 
                 def set_path(index):
                     path = paths[index]
@@ -247,8 +250,16 @@ def AppLayout(
                     if title:
                         v.ToolbarTitle(children=[title])
                     v.Spacer()
+                    if fullscreen:
+                        solara.Button(icon_name="mdi-fullscreen-exit", on_click=lambda: set_fullscreen(False), icon=True, dark=False)
+
             with v.Content():
                 v.Col(cols=12, children=children_content)
+        if fullscreen:
+            with v.Dialog(v_model=True, children=[], fullscreen=True, hide_overlay=True) as dialog:
+                v.Sheet(class_="overflow-y-auto overflow-x-auto", children=[main])
+                pass
+            return dialog
     return main
 
 
