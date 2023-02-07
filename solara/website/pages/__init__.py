@@ -195,6 +195,8 @@ def Layout(children=[]):
                 with rv.List(nav=True):
                     with rv.ListItemGroup(active_class="text--primary"):
                         for route in all_routes:
+                            if route.path == "apps":
+                                continue
                             with solara.Link(route):
                                 solara.ListItem(route.label)
 
