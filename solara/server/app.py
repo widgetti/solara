@@ -77,7 +77,7 @@ class AppScript:
                 self.app_name = default_app_name
         else:
             self.name = name
-        self.path: Path = Path(self.name)
+        self.path: Path = Path(self.name).resolve()
         try:
             context = get_current_context()
         except RuntimeError:
