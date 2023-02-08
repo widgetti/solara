@@ -147,7 +147,7 @@ def Sidebar(children=[], level=0):
                 with List():
                     add("style")
                     add("meta")
-            with ListItem("Lab", icon_name="mdi-test-tube"):
+            with ListItem("Cross filter", icon_name="mdi-filter-variant-remove"):
                 with List():
                     add("cross_filter_dataframe")
                     add("cross_filter_report")

@@ -4,7 +4,7 @@ import vaex.datasets
 
 import solara
 import solara.lab
-from solara.lab.components.cross_filter import Select, magic_value_missing
+from solara.components.cross_filter import Select, magic_value_missing
 
 df_vaex = vaex.datasets.titanic()
 df_pandas = df_vaex.to_pandas_df()
@@ -29,7 +29,7 @@ def test_cross_filter_select(df_titanic):
     def Test(column=None, max_unique=100, multiple=False):
         solara.provide_cross_filter()
         with solara.VBox() as main:
-            solara.lab.CrossFilterSelect(df_titanic, column=column, max_unique=max_unique, multiple=multiple)
+            solara.CrossFilterSelect(df_titanic, column=column, max_unique=max_unique, multiple=multiple)
             FilterDummy()
         return main
 
@@ -103,7 +103,7 @@ def test_cross_filter_slider(df_titanic):
     def Test(column=None, max_unique=100, multiple=False):
         solara.provide_cross_filter()
         with solara.VBox() as main:
-            solara.lab.CrossFilterSlider(df_titanic, column=column)
+            solara.CrossFilterSlider(df_titanic, column=column)
             FilterDummy()
         return main
 

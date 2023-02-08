@@ -16,9 +16,9 @@ df = plotly.data.gapminder()
 def Page():
     solara.provide_cross_filter()
     with solara.VBox() as main:
-        solara.lab.CrossFilterReport(df, classes=["py-2"])
-        solara.lab.CrossFilterSelect(df, "continent")
-        solara.lab.CrossFilterSlider(df, "gdpPercap", mode=">")
+        solara.CrossFilterReport(df, classes=["py-2"])
+        solara.CrossFilterSelect(df, "continent")
+        solara.CrossFilterSlider(df, "gdpPercap", mode=">")
     return main
 
 

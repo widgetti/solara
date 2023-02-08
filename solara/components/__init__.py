@@ -4,6 +4,12 @@ from .style import Style  # noqa: F401 F403
 from .misc import *  # noqa: #F401 F403
 from .alert import Warning, Info, Error, Success  # noqa: #F401 F403
 from .checkbox import Checkbox  # noqa: #F401 F403
+from .cross_filter import (  # noqa: F401
+    CrossFilterDataFrame,
+    CrossFilterReport,
+    CrossFilterSelect,
+    CrossFilterSlider,
+)
 from .datatable import DataTable, DataFrame  # noqa: #F401 F403
 from .details import Details  # noqa: #F401 F403
 from .file_browser import FileBrowser  # noqa: #F401 F403
@@ -42,6 +48,7 @@ from .meta import Meta  # noqa: #F401 F403
 from .columns import Columns, ColumnsResponsive  # noqa: #F401 F403
 from .file_drop import FileDrop  # noqa: #F401 F403
 from .file_download import FileDownload  # noqa: #F401 F403
+
 
 import reacton.core
 

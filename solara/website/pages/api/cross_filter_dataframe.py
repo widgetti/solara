@@ -14,10 +14,10 @@ df = plotly.data.gapminder()
 def Page():
     solara.provide_cross_filter()
     with solara.VBox() as main:
-        solara.lab.CrossFilterReport(df, classes=["py-2"])
-        solara.lab.CrossFilterSelect(df, "country")
-        solara.lab.CrossFilterDataFrame(df)
+        solara.CrossFilterReport(df, classes=["py-2"])
+        solara.CrossFilterSelect(df, "country")
+        solara.CrossFilterDataFrame(df)
     return main
 
 
-__doc__ += apidoc(solara.lab.CrossFilterDataFrame.f)  # type: ignore
+__doc__ += apidoc(solara.CrossFilterDataFrame.f)  # type: ignore
