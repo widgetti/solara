@@ -108,7 +108,7 @@ _patch()
 
 
 @solara.component
-def FigurePlotlyCrossFiltered(fig):
+def CrossFilteredFigurePlotly(fig):
     first_arg_name = fig._func.__code__.co_varnames[0]
     kwargs = fig._kwargs.copy()
     kwargs.update(zip(fig._func.__code__.co_varnames, fig._args))
@@ -186,11 +186,15 @@ def FigurePlotlyCrossFiltered(fig):
     return solara.FigurePlotly(new_fig, on_selection=on_selection, on_deselect=on_deselect)
 
 
+# for backwards compatibility
+FigurePlotlyCrossFiltered = CrossFilteredFigurePlotly
+
+
 def _wraps(f: Callable[P, T]):
     @functools.wraps(f)
     def wrapper(*args: P.args, **kwargs: P.kwargs):
         fig = f(*args, **kwargs)
-        return FigurePlotlyCrossFiltered(fig)
+        return CrossFilteredFigurePlotly(fig)
 
     return wrapper
 

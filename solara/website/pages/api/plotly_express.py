@@ -21,6 +21,7 @@ plots.
 """
 
 import plotly.express as px
+
 import solara
 import solara.express as spx
 
@@ -36,5 +37,5 @@ def Page():
     with solara.VBox() as main:
         spx.scatter(df, x="sepal_width", y="sepal_length", color="species")
         spx.scatter_3d(df, x="sepal_width", y="sepal_length", z="petal_width")
-        spx.FigurePlotlyCrossFiltered(fig)
+        spx.CrossFilteredFigurePlotly(fig)
     return main
