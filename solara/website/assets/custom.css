@@ -101,7 +101,7 @@ blockquote p:last-child {
 
 /* vuetify component overrides */
 
-.v-btn {
+.v-btn.solara-docs-button {
     font-weight: bold;
     border-radius: 10px;
 }
