@@ -30,53 +30,56 @@ def _set_sidebar_default(updater: Callable[[PortalElements], PortalElements]):
     pass
 
 
-portal_context = solara.create_context((cast(PortalElements, {}), _set_sidebar_default))
+class ElementPortal:
+    def __init__(self):
+        self.context = solara.create_context((cast(PortalElements, {}), _set_sidebar_default))
+
+    # TODO: can we generalize the use of 'portals' ? (i.e. transporting elements from one place to another)
+    def use_portal(self) -> List[Element]:
+        portal_elements, set_portal_elements = solara.use_state(cast(PortalElements, {}))
+        self.context.provide((portal_elements, set_portal_elements))  # type: ignore
+
+        portal_elements_flat: List[Tuple[int, Element]] = []
+        for uuid, value in portal_elements.items():
+            portal_elements_flat.extend(value)
+        portal_elements_flat.sort(key=lambda x: x[0])
+        return [e[1] for e in portal_elements_flat]
+
+    def use_portal_add(self, children: List[Element], offset: int):
+        key = solara.use_unique_key(prefix="portal-")
+        portal_elements, set_portal_elements = solara.use_context(self.context)
+        values: List[Tuple[int, Element]] = []
+        for i, child in enumerate(children):
+            values.append((offset + i, child))
+
+        # updates we do when children/offset changes
+        def add():
+            # we use the update function method, to avoid stale data
+            def update_dict(portal_elements):
+                portal_elements_updated = portal_elements.copy()
+                portal_elements_updated[key] = values
+                return portal_elements_updated
+
+            set_portal_elements(update_dict)
+
+        solara.use_effect(add, [values])
+
+        # cleanup we only need to do after component removal
+        def add_cleanup():
+            def cleanup():
+                def without(portal_elements):
+                    portal_elements_restored = portal_elements.copy()
+                    portal_elements_restored.pop(key, None)
+                    return portal_elements_restored
+
+                set_portal_elements(without)
+
+            return cleanup
+
+        solara.use_effect(add_cleanup, [])
 
 
-# TODO: can we generalize the use of 'portals' ? (i.e. transporting elements from one place to another)
-def use_portal() -> List[Element]:
-    portal_elements, set_portal_elements = solara.use_state(cast(PortalElements, {}))
-    portal_context.provide((portal_elements, set_portal_elements))  # type: ignore
-
-    portal_elements_flat: List[Tuple[int, Element]] = []
-    for uuid, value in portal_elements.items():
-        portal_elements_flat.extend(value)
-    portal_elements_flat.sort(key=lambda x: x[0])
-    return [e[1] for e in portal_elements_flat]
-
-
-def use_portal_add(children: List[Element], offset: int):
-    key = solara.use_unique_key(prefix="portal-")
-    portal_elements, set_portal_elements = solara.use_context(portal_context)
-    values: List[Tuple[int, Element]] = []
-    for i, child in enumerate(children):
-        values.append((offset + i, child))
-
-    # updates we do when children/offset changes
-    def add():
-        # we use the update function method, to avoid stale data
-        def update_dict(portal_elements):
-            portal_elements_updated = portal_elements.copy()
-            portal_elements_updated[key] = values
-            return portal_elements_updated
-
-        set_portal_elements(update_dict)
-
-    solara.use_effect(add, [values])
-
-    # cleanup we only need to do after component removal
-    def add_cleanup():
-        def cleanup():
-            def without(portal_elements):
-                portal_elements_restored = portal_elements.copy()
-                portal_elements_restored.pop(key, None)
-                return portal_elements_restored
-
-            set_portal_elements(without)
-
-        return cleanup
-
-    solara.use_effect(add_cleanup, [])
+sidebar_portal = ElementPortal()
 
 
 @solara.component
@@ -110,7 +113,7 @@ def Sidebar(children=[]):
         level += 1
         context = context.parent
     offset = 2**level
-    use_portal_add(children, offset)
+    sidebar_portal.use_portal_add(children, offset)
 
     return solara.Div(style="display; none")
 
@@ -166,7 +169,7 @@ def AppLayout(
     if use_drawer:
         children_content = children[1:]
         children_sidebar = children[:1]
-    children_sidebar = children_sidebar + use_portal()
+    children_sidebar = children_sidebar + sidebar_portal.use_portal()
     if children_sidebar:
         use_drawer = True
     title = t.use_title_get() or title
