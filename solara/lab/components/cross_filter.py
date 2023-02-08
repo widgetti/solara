@@ -7,6 +7,7 @@ import traitlets
 
 import solara
 
+from ... import CellAction, ColumnAction
 from ..hooks.dataframe import use_df_column_names
 from ..utils.dataframe import df_filter_values, df_py_types, df_range, df_value_count
 
@@ -306,3 +307,25 @@ def CrossFilterSlider(
                                         solara.Button(icon_name="mdi-code-greater-than-or-equal", icon=True, value=">=")
 
     return main
+
+
+@solara.component
+def CrossFilterDataFrame(df, column_actions: List[ColumnAction] = [], cell_actions: List[CellAction] = []):
+    """Display a DataFrame with filters applied from the cross filter.
+
+    This component wraps [DataFrame](/api/dataframe).
+
+    See [use_cross_filter](/api/use_cross_filter) for more information about how to use cross filtering.
+
+    # Arguments
+
+     * `df` - a Pandas dataframe.
+     * `column_actions` - Triggered via clicking on the triple dot icon on the headers (visible when hovering).
+     * `cell_actions` -  Triggered via clicking on the triple dot icon in the cell (visible when hovering).
+
+    """
+    dff = df
+    filter, set_filter = solara.use_cross_filter(id(df), "dataframe")
+    if filter is not None:
+        dff = df[filter]
+    return solara.DataFrame(dff)

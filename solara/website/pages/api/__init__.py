@@ -148,6 +148,7 @@ def Sidebar(children=[], level=0):
                     add("meta")
             with ListItem("Lab", icon_name="mdi-test-tube"):
                 with List():
+                    add("cross_filter_dataframe")
                     add("cross_filter_report")
                     add("cross_filter_slider")
                     add("cross_filter_select")
