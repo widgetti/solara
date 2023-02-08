@@ -16,6 +16,10 @@
 
     <link href="{{root_path}}/_solara/cdn/@widgetti/solara-vuetify-app@3.0.1/dist/main.css" rel="stylesheet"></link>
 
+
+    {% if assets.fontawesome_enabled == True %}
+    <link rel="stylesheet" href="{{cdn}}{{assets.fontawesome_path}}" type="text/css">
+    {% endif %}
     <link href="{{root_path}}/static/highlight.css" rel="stylesheet">
     <link href="{{root_path}}/static/highlight-dark.css" rel="stylesheet">
     </link>

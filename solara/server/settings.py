@@ -1,3 +1,5 @@
+import site
+import sys
 import uuid
 from enum import Enum
 from pathlib import Path
@@ -10,6 +12,11 @@ from .. import (  # noqa  # sidefx is that this module creates the ~/.solara dir
     settings,
 )
 from ..util import get_solara_home
+
+if __file__.startswith(site.getuserbase()):
+    prefix = site.getuserbase()
+else:
+    prefix = sys.prefix
 
 
 class ThemeVariant(str, Enum):
@@ -58,6 +65,19 @@ class Telemetry(pydantic.BaseSettings):
         env_file = ".env"
 
 
+class Assets(pydantic.BaseSettings):
+    cdn: str = "https://cdn.jsdelivr.net/npm/"
+    proxy: bool = True
+    proxy_cache_dir: Path = Path(prefix + "/share/solara/cdn/")
+    fontawesome_enabled: bool = True
+    fontawesome_path: str = "/font-awesome@4.5.0/css/font-awesome.min.css"
+
+    class Config:
+        env_prefix = "solara_assets_"
+        case_sensitive = False
+        env_file = ".env"
+
+
 class MainSettings(pydantic.BaseSettings):
     use_pdb: bool = False
     mode: str = "production"
@@ -76,6 +96,9 @@ theme = ThemeSettings()
 telemetry = Telemetry()
 ssg = SSG()
 search = Search()
+assets = Assets()
+
+assets.proxy_cache_dir.mkdir(exist_ok=True, parents=True)
 
 if telemetry.server_user_id == "not_set":
     home = get_solara_home()

@@ -497,9 +497,9 @@ def staticbuild():
     target_dir = Path("staticbuild")
     target_dir.mkdir(exist_ok=True)
 
-    from .server import cdn_helper
+    from .server import settings
 
-    copytree(cdn_helper.default_cache_dir, target_dir / "_solara/cdn/")
+    copytree(settings.assets.proxy_cache_dir, target_dir / "_solara/cdn/")
 
     static_dir_target = target_dir / "static"
     static_dir_target.mkdir(exist_ok=True)

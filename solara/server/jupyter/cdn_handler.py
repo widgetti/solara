@@ -1,18 +1,18 @@
 import logging
 import mimetypes
-import pathlib
 
 import tornado.web
 from jupyter_server.base.handlers import JupyterHandler
 
-from solara.server.cdn_helper import default_cache_dir, get_data
+from solara.server import settings
+from solara.server.cdn_helper import get_data
 
 logger = logging.getLogger("Solara.cdn")
 
 
 class CdnHandler(JupyterHandler):
-    def initialize(self, cache_directory=default_cache_dir):
-        self.cache_directory = pathlib.Path(cache_directory)
+    def initialize(self, cache_directory=settings.assets.proxy_cache_dir):
+        self.cache_directory = cache_directory
         logging.info("Using %r as cache directory", self.cache_directory)
 
     async def get(self, path=None):

@@ -10,7 +10,6 @@ from typing import Dict, List, Optional, TypeVar
 import ipykernel
 import jinja2
 import requests
-
 import solara
 import solara.routing
 
@@ -233,6 +232,12 @@ def read_root(path: str, root_path: str = "", render_kwargs={}, use_nbextensions
             pre_rendered_metas = "\n    ".join(ssg_data["metas"])
             title = ssg_data["title"]
 
+    if settings.assets.proxy:
+        # solara acts as a proxy
+        cdn = f"{root_path}/_solara/cdn"
+    else:
+        cdn = settings.assets.cdn
+
     render_settings = {
         "title": title,
         "path": path,
@@ -243,6 +248,8 @@ def read_root(path: str, root_path: str = "", render_kwargs={}, use_nbextensions
         "pre_rendered_html": pre_rendered_html,
         "pre_rendered_css": pre_rendered_css,
         "pre_rendered_metas": pre_rendered_metas,
+        "assets": settings.assets.dict(),
+        "cdn": cdn,
         **render_kwargs,
     }
     response = template.render(**render_settings)

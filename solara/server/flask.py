@@ -9,14 +9,13 @@ from uuid import uuid4
 
 import flask
 import simple_websocket
+import solara
 from flask import Blueprint, Flask, request, send_from_directory, url_for
 from flask_sock import Sock
-
-import solara
 from solara.server.threaded import ServerBase
 
 from . import app as appmod
-from . import cdn_helper, server, websocket
+from . import cdn_helper, server, settings, websocket
 
 os.environ["SERVER_SOFTWARE"] = "solara/" + str(solara.__version__)
 
@@ -55,9 +54,8 @@ class ServerFlask(ServerBase):
         self.server.shutdown()  # type: ignore
 
     def serve(self):
-        from werkzeug.serving import make_server
-
         from solara.server.flask import app
+        from werkzeug.serving import make_server
 
         self.server = make_server(self.host, self.port, app, threaded=True)  # type: ignore
         assert isinstance(self.server, HTTPServer)
@@ -140,7 +138,7 @@ def serve_static(path):
 
 @blueprint.route(f"/{cdn_helper.cdn_url_path}/<path:path>")
 def cdn(path):
-    cache_directory = cdn_helper.default_cache_dir
+    cache_directory = settings.assets.proxy_cache_dir
     content = cdn_helper.get_data(Path(cache_directory), path)
     mime = mimetypes.guess_type(path)
     return flask.Response(content, mimetype=mime[0])
