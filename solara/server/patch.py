@@ -12,6 +12,7 @@ import IPython.display
 import ipywidgets
 
 from . import app, reload, settings
+from .utils import pdb_guard
 
 logger = logging.getLogger("solara.server.app")
 
@@ -207,13 +208,8 @@ def WidgetContextAwareThread__init__(self, *args, **kwargs):
 def Thread_debug_run(self):
     if self.current_context:
         app.set_context_for_thread(self.current_context, self)
-    try:
+    with pdb_guard():
         Thread__run(self)
-    except Exception:
-        if settings.main.use_pdb:
-            logger.exception("Exception, will be handled by debugger")
-            pdb.post_mortem()
-        raise
 
 
 _patched = False

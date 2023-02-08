@@ -2,7 +2,6 @@ import dataclasses
 import importlib.util
 import logging
 import os
-import pdb
 import pickle
 import sys
 import threading
@@ -22,7 +21,7 @@ import solara
 from ..util import cwd
 from . import kernel, reload, settings, websocket
 from .kernel import Kernel, WebsocketStreamWrapper
-from .utils import nested_get
+from .utils import nested_get, pdb_guard
 
 WebSocket = Any
 apps: Dict[str, "AppScript"] = {}
@@ -87,6 +86,7 @@ class AppScript:
         app_context = create_dummy_context()
         with app_context:
             app = self._execute()
+
         self._first_execute_app = app
         self._is_widget = isinstance(self._first_execute_app, widgets.Widget)
         app_context.close()
@@ -498,7 +498,7 @@ def load_app_widget(app_state, app_script: AppScript, pathname: str):
         render_context = context.app_object
         with context:
             app_state = app_state_initial
-            try:
+            with pdb_guard():
                 widget, render_context = _run_app(
                     app_state,
                     app_script,
@@ -508,11 +508,6 @@ def load_app_widget(app_state, app_script: AppScript, pathname: str):
                 if render_context is None:
                     assert context.container is not None
                     context.container.children = [widget]
-            except Exception:
-                if settings.main.use_pdb:
-                    logger.exception("Exception, will be handled by debugger")
-                    pdb.post_mortem()
-                raise
 
             if render_context:
                 context.app_object = render_context
@@ -595,4 +590,5 @@ from . import patch  # noqa
 patch.patch()
 # the default app (used in solara-server)
 if "SOLARA_APP" in os.environ:
-    apps["__default__"] = AppScript(os.environ.get("SOLARA_APP", "solara.website.pages:Page"))
+    with pdb_guard():
+        apps["__default__"] = AppScript(os.environ.get("SOLARA_APP", "solara.website.pages:Page"))

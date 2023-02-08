@@ -163,6 +163,7 @@ class SessionWebsocket(session.Session):
             msg = self.msg(msg_or_type, content=content, parent=parent, header=header, metadata=metadata)
             _fix_msg(msg)
             msg["channel"] = stream.channel
+            # not using pdb guard for performance reasons
             try:
                 if buffers:
                     msg["buffers"] = [memoryview(k).cast("b") for k in buffers]
