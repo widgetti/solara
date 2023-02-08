@@ -266,7 +266,7 @@ def AppLayout(
                         width="min-content",
                         v_model=sidebar_open,
                         on_v_model=set_sidebar_open,
-                        style_="z-index: 2; min-width: 400px; max-width: 600px",
+                        style_="min-width: 400px; max-width: 600px",
                         clipped=True,
                         app=True,
                         # disable_resize_watcher=True,
