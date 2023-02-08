@@ -89,6 +89,8 @@ def FileDrop(
                 wired_files[0]["data"] = None
             on_file(wired_files[0])
 
-    hooks.use_thread(handle_file, [wired_files])
+    result: solara.Result = hooks.use_thread(handle_file, [wired_files])
+    if result.error:
+        raise result.error
 
     return file_drop
