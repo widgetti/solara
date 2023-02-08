@@ -80,6 +80,45 @@ class ElementPortal:
 
 
 sidebar_portal = ElementPortal()
+appbar_portal = ElementPortal()
+
+
+@solara.component
+def AppBar(children=[]):
+    """Puts its children in the app bar of the AppLayout (or any layout that supports it).
+    This component does not need to be a direct child of the AppLayout, it can be at any level in your component tree.
+
+    ## Example showing an app bar
+    ```solara
+    import solara
+
+    @solara.component
+    def Page():
+        logged_in, set_logged_in = solara.use_state(False)
+        def toggle_login():
+            set_logged_in(not logged_in)
+
+        with solara.AppBar():
+            icon_name = "mdi-logout" if logged_in else "mdi-login"
+            solara.Button(icon_name=icon_name , on_click=toggle_login, icon=True)
+        with solara.Column():
+            if logged_in:
+                solara.Info("You are logged in")
+            else:
+                solara.Error("You are logged out")
+    ```
+    """
+    # TODO: generalize this, this is also used in title
+    level = 0
+    rc = reacton.core.get_render_context()
+    context = rc.context
+    while context and context.parent:
+        level += 1
+        context = context.parent
+    offset = 2**level
+    appbar_portal.use_portal_add(children, offset)
+
+    return solara.Div(style="display; none")
 
 
 @solara.component
@@ -163,24 +202,30 @@ def AppLayout(
     index = routes.index(route) if route else None
 
     sidebar_open, set_sidebar_open = solara.use_state_or_update(sidebar_open)
-    use_drawer = len(children) > 1
+    # remove the appbar from the children
+    children_without_portal_sources = [c for c in children if c.component != AppBar]
+    use_drawer = len(children_without_portal_sources) > 1
     children_content = children
     children_sidebar = []
     if use_drawer:
-        children_content = children[1:]
-        children_sidebar = children[:1]
+        child_sidebar = children_without_portal_sources.pop(0)
+        children_sidebar = [child_sidebar]
+        children_content = [c for c in children if c is not child_sidebar]
     children_sidebar = children_sidebar + sidebar_portal.use_portal()
+    children_appbar = appbar_portal.use_portal()
     if children_sidebar:
         use_drawer = True
+
     title = t.use_title_get() or title
 
-    if title is None and not children_sidebar and len(children) == 1:
+    show_app_bar = title or routes or children_appbar or use_drawer
+    if not show_app_bar and not children_sidebar and len(children) == 1:
         return children[0]
     if embedded_mode and not fullscreen:
         # this version doesn't need to run fullscreen
         # also ideal in jupyter notebooks
         with v.Html(tag="div") as main:
-            if title or use_drawer:
+            if show_app_bar or use_drawer:
 
                 def set_path(index):
                     path = paths[index]
@@ -208,11 +253,12 @@ def AppLayout(
                     if title:
                         v.ToolbarTitle(children=[title])
                     v.Spacer()
+                    for child in children_appbar:
+                        solara.display(child)
                     solara.Button(icon_name="mdi-fullscreen", on_click=lambda: set_fullscreen(True), icon=True, dark=False)
             with v.Row(no_gutters=False):
                 v.Col(cols=12, children=children_content)
     else:
-        show_app_bar = title or routes or fullscreen
         with v.Html(tag="div", style_="min-height: 100vh") as main:
             with solara.HBox():
                 if use_drawer:
@@ -253,6 +299,8 @@ def AppLayout(
                     if title:
                         v.ToolbarTitle(children=[title])
                     v.Spacer()
+                    for child in children_appbar:
+                        solara.display(child)
                     if fullscreen:
                         solara.Button(icon_name="mdi-fullscreen-exit", on_click=lambda: set_fullscreen(False), icon=True, dark=False)
 
