@@ -10,6 +10,7 @@ from typing import Dict, List, Optional, TypeVar
 import ipykernel
 import jinja2
 import requests
+
 import solara
 import solara.routing
 
@@ -52,6 +53,7 @@ nbextensions_ignorelist = [
     "execute_time/ExecuteTime",
     "dominocode/extension",
     "low-code-assistant/extension",
+    "domino-code-assist/extension",
     "jupyter-js/extension",
     "jupyter-js-widgets/extension",
     "jupyter_dash/main",
