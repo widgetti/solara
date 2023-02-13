@@ -1,14 +1,13 @@
 <template>
-    <a @click="request_download = true">
+    <div @click="request_download = true" class="solara-file-download-container">
         <jupyter-widget v-for="child in children" :key="child" :widget="child"></jupyter-widget>
-    </a>
+    </div>
 </template>
 
 <script>
 module.exports = {
     watch: {
         bytes(value) {
-            console.log("this.request_download", this.request_download, this.bytes, this)
             if (this.request_download) {
                 const a = document.createElement('a');
                 a.download = this.filename;
@@ -28,3 +27,9 @@ module.exports = {
     }
 }
 </script>
+
+<style id="solara-file-download">
+.solara-file-download-container {
+    cursor: pointer;
+}
+</style>
