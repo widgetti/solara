@@ -89,7 +89,7 @@ def FileDownload(
         # only open the file once by using use_memo
         file_object = solara.use_memo(lambda: open(filename, "rb"), [])
         # no filename is provided, but we can extract it from the file object
-        solara.FileDownload(file_object, mime_type="image/jpeg")
+        solara.FileDownload(file_object, mime_type="image/jpeg", close_file=False)
     ```
 
     ## Lazy reading
@@ -148,6 +148,9 @@ def FileDownload(
             else:
                 data_non_lazy = data
             if hasattr(data_non_lazy, "read"):
+                if hasattr(data_non_lazy, "seek"):
+                    if hasattr(data_non_lazy, "tell") and data_non_lazy.tell() != 0:
+                        data_non_lazy.seek(0)
                 content = data_non_lazy.read()  # type: ignore
                 if close_file:
                     data_non_lazy.close()  # type: ignore
