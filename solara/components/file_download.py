@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import BinaryIO, Callable, Optional, Union
+from typing import BinaryIO, Callable, Optional, Union, cast
 
 import ipyvuetify as vy
 import ipywidgets as widgets
@@ -99,10 +99,13 @@ def FileDownload(
 
     ```solara
     import solara
+    import time
 
     @solara.component
     def Page():
         def get_data():
+            # I run in a thread, so I can do some heavy processing
+            time.sleep(3)
             # I only get called when the download is requested
             return "This is the content of the file"
         solara.FileDownload(get_data, "solara-lazy-download.txt")
@@ -138,7 +141,7 @@ def FileDownload(
     solara.use_memo(reset, [data])
 
     # we only upload to the frontend if clicked
-    def get_data():
+    def get_data() -> Optional[bytes]:
         if request_download:
             if callable(data):
                 data_non_lazy = data()
@@ -152,9 +155,10 @@ def FileDownload(
             elif isinstance(data_non_lazy, str):
                 return data_non_lazy.encode(string_encoding)
             else:
-                return data_non_lazy
+                return cast(bytes, data_non_lazy)
+        return None
 
-    bytes = solara.use_memo(get_data, [request_download, data])
+    bytes_result: solara.Result[Optional[bytes]] = solara.use_thread(get_data, dependencies=[request_download, data])
     if filename is None and hasattr(data, "name"):
         try:
             filename = Path(data.name).name  # type: ignore
@@ -162,12 +166,13 @@ def FileDownload(
             pass
     filename = filename or "solara-download.dat"
     label = label or ("Download: " + filename)
-    download = FileDownloadWidget.element(
+    FileDownloadWidget.element(
         filename=filename,
-        bytes=bytes,
+        bytes=bytes_result.value if bytes_result.state == solara.ResultState.FINISHED else None,
         request_download=request_download,
         on_request_download=set_request_download,
-        children=children or [solara.Button(label)],
+        children=children or [solara.Button(label, loading=bytes_result.state == solara.ResultState.RUNNING)],
         mime_type=mime_type,
     )
-    return download
+    if bytes_result.state == solara.ResultState.ERROR and bytes_result.error:
+        raise bytes_result.error
