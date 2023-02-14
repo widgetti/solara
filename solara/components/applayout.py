@@ -307,7 +307,7 @@ def AppLayout(
             with v.Content():
                 v.Col(cols=12, children=children_content)
         if fullscreen:
-            with v.Dialog(v_model=True, children=[], fullscreen=True, hide_overlay=True) as dialog:
+            with v.Dialog(v_model=True, children=[], fullscreen=True, hide_overlay=True, persistent=True, no_click_animation=True) as dialog:
                 v.Sheet(class_="overflow-y-auto overflow-x-auto", children=[main])
                 pass
             return dialog
