@@ -60,6 +60,13 @@ def Page():
     # the .scatter will set this cross filter
     filter, _set_filter = solara.use_cross_filter(id(df))
 
+    # only apply the filter if the filter or dataframe changes
+    def filter_df():
+        if filter is not None and df is not None:
+            return df.loc[filter]
+
+    dff = solara.use_memo(filter_df, dependencies=[df, filter])
+
     with solara.Sidebar():
         with solara.Card("Controls", margin=0, elevation=0):
             with solara.Column():
@@ -80,9 +87,6 @@ def Page():
                     if filter is None:
                         solara.Info("I you select points in the scatter plot, you can download the points here.")
                     else:
-
-                        # only apply the filter if the filter or dataframe changes
-                        dff = solara.use_memo(lambda: df.loc[filter], dependencies=[df, filter])
 
                         def get_data():
                             return dff.to_csv(index=False)
