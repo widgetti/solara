@@ -68,6 +68,47 @@ Try making the following code change (remove the first, add the last), and watch
 + button = widgets.Button(description="Did not click yet!")
 ```
 
+## Using Solara components
+
+There are a lot of [valueble components in Solara](/api), but they are written as [Reacton/Solara components](/docs/understanding/reacton-basics), not
+classic ipywidgets.
+
+Use the [.widget(...)](/api/widget) method on a component to create a widget that can be used in your existing classic ipywidget application.
+
+```python
+
+import ipywidgets as widgets
+
+import solara
+
+clicks = 0
+
+
+def on_click(button):
+    global clicks
+    clicks += 1
+    button.description = f"Clicked {clicks} times"
+
+
+button = widgets.Button(description="Clicked 0 times")
+button.on_click(on_click)
+
+page = widgets.VBox(
+    [
+        button,
+        # using .widget(..) we can create a classic ipywidget from a solara component
+        solara.FileDownload.widget(data="some text data", filename="solara-demo.txt"),
+    ]
+)
+```
+
+Now we can run this app using:
+```
+$ solara run sol-ipywidgets.py
+```
+
+Note that we did not include the `:page` here, since solara will automatically look for that.
+
 ## What you have learned
 
   * [Solara server](/docs/understanding/solara-server) can render [ipywidgets](/docs/understanding/ipywidgets).
@@ -76,3 +117,4 @@ Try making the following code change (remove the first, add the last), and watch
     * Once, when the solara server starts.
     * On each page reqest.
     * For each open browser page/tab, when the script is saved (hot reloading).
+  * Using the [.widget(...)](/api/widget) method we can start using Solara components in classic ipywidget app.

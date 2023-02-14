@@ -143,6 +143,7 @@ def Sidebar(children=[], level=0):
                 with List():
                     add("memoize")
                     add("display")
+                    add("widget")
             with ListItem("Advanced", icon_name="mdi-head-cog-outline"):
                 with List():
                     add("style")
