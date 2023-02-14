@@ -22,6 +22,7 @@ def FileDownload(
     data: Union[str, bytes, BinaryIO, Callable[[], Union[str, bytes, BinaryIO]]],
     filename: Optional[str] = None,
     label: Optional[str] = None,
+    icon_name: Optional[str] = "mdi-cloud-download-outline",
     close_file: bool = True,
     mime_type: str = "application/octet-stream",
     string_encoding: str = "utf-8",
@@ -117,6 +118,7 @@ def FileDownload(
      * `filename`: The name of the file the user will see as default when downloading (default name is "solara-download.dat").
         If a file object is provided, the filename will be extracted from the file object if possible.
      * `label`: The label of the button. If not provided, the label will be "Download: {filename}".
+     - `icon_name`: The name of the icon to display on the button ([Overview of available icons](https://pictogrammers.github.io/@mdi/font/4.9.95/)).
      * `close_file`: If a file object is provided, close the file after downloading (default True).
      * `mime_type`: The mime type of the file. If not provided, the mime type will be "application/octet-stream",
            For instance setting it to "application/vnd.ms-excel" will allow the user OS to directly open the
@@ -174,7 +176,7 @@ def FileDownload(
         bytes=bytes_result.value if bytes_result.state == solara.ResultState.FINISHED else None,
         request_download=request_download,
         on_request_download=set_request_download,
-        children=children or [solara.Button(label, loading=bytes_result.state == solara.ResultState.RUNNING)],
+        children=children or [solara.Button(label, loading=bytes_result.state == solara.ResultState.RUNNING, icon_name=icon_name)],
         mime_type=mime_type,
     )
     if bytes_result.state == solara.ResultState.ERROR and bytes_result.error:
