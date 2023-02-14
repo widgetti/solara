@@ -1,9 +1,9 @@
 from typing import Optional
 
 import pandas as pd
-import plotly.express as px
 
 import solara
+import solara.express as solara_px  # similar to plotly express, but comes with cross filters
 import solara.lab
 from solara.components.columns import Columns
 from solara.components.file_drop import FileDrop
@@ -57,6 +57,9 @@ def Page():
     State.logy.use()
     df = State.df.use_value()
 
+    # the .scatter will set this cross filter
+    filter, _set_filter = solara.use_cross_filter(id(df))
+
     with solara.Sidebar():
         with solara.Card("Controls", margin=0, elevation=0):
             with solara.Column():
@@ -74,11 +77,22 @@ def Page():
                     solara.Select("Column y", values=columns).connect(State.y)  # type: ignore
                     solara.Select("Size", values=columns).connect(State.size)  # type: ignore
                     solara.Select("Color", values=columns).connect(State.color)  # type: ignore
+                    if filter is None:
+                        solara.Info("I you select points in the scatter plot, you can download the points here.")
+                    else:
+
+                        # only apply the filter if the filter or dataframe changes
+                        dff = solara.use_memo(lambda: df.loc[filter], dependencies=[df, filter])
+
+                        def get_data():
+                            return dff.to_csv(index=False)
+
+                        solara.FileDownload(get_data, label=f"Download {len(dff):,} selected points", filename="selected.csv")
 
     if df is not None:
         with Columns(widths=[2, 4]):
             if State.x.value and State.y.value:
-                fig = px.scatter(
+                solara_px.scatter(
                     df,
                     State.x.value,
                     State.y.value,
@@ -88,7 +102,6 @@ def Page():
                     log_x=State.logx.value,
                     log_y=State.logy.value,
                 )
-                solara.FigurePlotly(fig)
             else:
                 solara.Warning("Select x and y columns")
 
