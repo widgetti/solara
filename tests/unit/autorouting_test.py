@@ -106,7 +106,7 @@ def test_routes_examples_docs():
 
     routes = solara.autorouting.generate_routes(solara.website.pages.docs)
 
-    assert len(routes) == 11
+    assert len(routes) == 12
     assert routes[0].path == "/"
     assert routes[0].label == "Introduction"
 
