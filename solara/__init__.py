@@ -7,7 +7,11 @@ git_branch = "master"
 def _using_solara_server():
     import sys
 
-    return "solara.server" in sys.modules
+    if "solara.server" in sys.modules:
+        return True
+    if sys.argv[0].split("/")[-1] == "solara":
+        return True
+    return False
 
 
 # isort: skip_file
