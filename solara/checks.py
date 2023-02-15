@@ -62,7 +62,7 @@ def get_server_python_executable(silent: bool = False):
 
 
 libraries_minimal = [
-    {"python": "ipyvuetify", "classic": "jupyter-vuetify/extension", "lab": "jupyter-vuetify2"},
+    {"python": "ipyvuetify", "classic": "jupyter-vuetify/extension", "lab": "jupyter-vuetify"},
     {"python": "ipyvue", "classic": "jupyter-vue/extension", "lab": "jupyter-vue"},
 ]
 
