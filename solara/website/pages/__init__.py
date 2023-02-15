@@ -81,7 +81,9 @@ def Layout(children=[]):
         return children[0]
     with solara.VBox(grow=False) as main:
         Title(title="Solara documentation")
-        solara.Meta(property="twitter:site", content="@solara_dev" + router.path)
+        solara.Meta(name="twitter:card", content="summary_large_image")
+        solara.Meta(name="twitter:site", content="@solara_dev")
+        solara.Meta(name="twitter:image", content="https://solara.dev/static/assets/images/logo-small.png")
         solara.Meta(property="og:url", content="https://solara.dev" + router.path)
         solara.Meta(property="og:image", content="https://solara.dev/static/assets/images/logo-small.png")
         solara.Meta(property="og:type", content="website")
@@ -101,7 +103,9 @@ def Layout(children=[]):
                 description = "Use ipywidgets with Solara to build powerful and scalable web apps for Jupyter and production in Python."
                 # both tags in one
                 solara.Meta(name="description", property="og:description", content=description)
+                solara.Meta(name="twitter:description", content=description)
                 solara.Meta(property="og:title", content="Solara documentation")
+                solara.Meta(property="twitter:title", content="Solara documentation")
 
                 with rv.Row(class_="ma-2"):
                     with rv.Col(md=4, offset_md=2, sm=5, offset_sm=1):
