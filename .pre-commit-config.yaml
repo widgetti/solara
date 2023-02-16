@@ -10,13 +10,13 @@ repos:
     rev: 22.12.0
     hooks:
       - id: black
-  - repo: https://gitlab.com/pycqa/flake8
+  - repo: https://github.com/PyCQA/flake8
     rev: 4.0.1
     hooks:
       - id: flake8
         additional_dependencies: [flake8-print]
   - repo: https://github.com/PyCQA/isort
-    rev: 5.10.1
+    rev: 5.11.5
     hooks:
       - id: isort
         files: \.py$
