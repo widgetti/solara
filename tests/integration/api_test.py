@@ -61,3 +61,21 @@ def test_api_cross_filter_select(page_session: playwright.sync_api.Page, solara_
         select_sex.click()
         page_session.locator("text=Female").click()
         page_session.locator("text=87 / 244").wait_for()
+
+
+def test_dataframe(page_session: playwright.sync_api.Page, solara_server, solara_app):
+    with solara_app("solara.website.pages"):
+        page_session.goto(solara_server.base_url + "/api/dataframe")
+        datatable_value_counts = page_session.locator(".solara-data-table").nth(1)
+        datatable_value_counts.wait_for()
+
+        # open the species hover menu
+        datatable_value_counts.locator("th >> text=species_id >> _vue=v-icon").hover()
+        page_session.locator("text=Value counts for species_id").wait_for()
+        page_session.locator("text=Name: species_id").wait_for()
+
+        # open the petal_width hover menu
+        datatable_value_counts.locator("th >> text=petal_width >> _vue=v-icon").hover()
+        page_session.locator("text=Name species").wait_for(state="detached")
+        page_session.locator("text=Value counts for petal_width").wait_for()
+        page_session.locator("text=Name: petal_width").wait_for()
