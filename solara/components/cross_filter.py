@@ -315,7 +315,7 @@ def CrossFilterSlider(
 
 
 @solara.component
-def CrossFilterDataFrame(df, column_actions: List[ColumnAction] = [], cell_actions: List[CellAction] = []):
+def CrossFilterDataFrame(df, items_per_page=20, column_actions: List[ColumnAction] = [], cell_actions: List[CellAction] = [], scrollable=False):
     """Display a DataFrame with filters applied from the cross filter.
 
     This component wraps [DataFrame](/api/dataframe).
@@ -333,4 +333,4 @@ def CrossFilterDataFrame(df, column_actions: List[ColumnAction] = [], cell_actio
     filter, set_filter = solara.use_cross_filter(id(df), "dataframe")
     if filter is not None:
         dff = df[filter]
-    return solara.DataFrame(dff)
+    return solara.DataFrame(dff, items_per_page=items_per_page, scrollable=scrollable, column_actions=column_actions, cell_actions=cell_actions)

@@ -73,16 +73,17 @@ def DataTable(df, page=0, items_per_page=20, format=None, column_actions: List[C
 
 
 @solara.component
-def DataFrame(df, column_actions: List[ColumnAction] = [], cell_actions: List[CellAction] = []):
+def DataFrame(df, items_per_page=20, column_actions: List[ColumnAction] = [], cell_actions: List[CellAction] = [], scrollable=False):
     """Displays a Pandas dataframe in a table.
 
 
     ## Arguments
 
      * `df` - `DataFrame` - a Pandas dataframe.
+     * `items_per_page` - `int` - number of items per page.
      * `column_actions` - Triggered via clicking on the triple dot icon on the headers (visible when hovering).
      * `cell_actions` -  Triggered via clicking on the triple dot icon in the cell (visible when hovering).
 
 
     """
-    return DataTable(df, column_actions=column_actions, cell_actions=cell_actions)
+    return DataTable(df, items_per_page=items_per_page, column_actions=column_actions, cell_actions=cell_actions, scrollable=scrollable)
