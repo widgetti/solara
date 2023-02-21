@@ -105,7 +105,7 @@ def Layout(children=[]):
                 solara.Meta(name="description", property="og:description", content=description)
                 solara.Meta(name="twitter:description", content=description)
                 solara.Meta(property="og:title", content="Solara documentation")
-                solara.Meta(property="twitter:title", content="Solara documentation")
+                solara.Meta(name="twitter:title", content="Solara documentation")
 
                 with rv.Row(class_="ma-2"):
                     with rv.Col(md=4, offset_md=2, sm=5, offset_sm=1):
