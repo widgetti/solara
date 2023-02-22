@@ -38,7 +38,6 @@ a:link {
     color: var(--color-primary);
 }
 
-pre,
 .jp-RenderedHTMLCommon pre {
     background-color: var(--color-grey-light);
     display: block;
