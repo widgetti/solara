@@ -88,3 +88,8 @@ div.highlight {
 .solara-image {
     cursor: unset !important;
 }
+
+
+.jp-OutputArea-prompt {
+    display: none;
+}
