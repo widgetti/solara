@@ -35,6 +35,7 @@ from reacton import (
     use_state,
     use_state_widget,
 )  # noqa: F403, F401
+from reacton.core import Element  # noqa: F403, F401
 from . import util
 
 # flake8: noqa: F402
