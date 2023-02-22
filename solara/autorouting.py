@@ -3,6 +3,7 @@ import importlib
 import inspect
 import pkgutil
 import re
+import warnings
 from pathlib import Path
 from types import ModuleType
 from typing import Any, Callable, List, Optional, cast
@@ -356,7 +357,7 @@ def generate_routes(module: ModuleType) -> List[solara.Route]:
                     raise KeyError(f"Route {k!r} listen in route_order not found in {module}")
             routes = [lookup[k] for k in route_order]
             if set(lookup) - set(route_order):
-                raise KeyError(f"Some routes are not in route_order: {set(lookup) - set(route_order)}")
+                warnings.warn(f"Some routes are not in route_order: {set(lookup) - set(route_order)}")
 
     else:
         children = getattr(module, "routes", [])
