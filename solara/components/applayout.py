@@ -218,7 +218,7 @@ def AppLayout(
 
     title = t.use_title_get() or title
 
-    show_app_bar = title or routes or children_appbar or use_drawer
+    show_app_bar = title or (routes and navigation) or children_appbar or use_drawer
     if not show_app_bar and not children_sidebar and len(children) == 1:
         return children[0]
     if embedded_mode and not fullscreen:
