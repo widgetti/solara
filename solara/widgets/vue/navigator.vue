@@ -1,4 +1,6 @@
-<template><span></span></template>
+<template>
+  <span></span>
+</template>
 ​
 <script>
 modules.export = {
@@ -23,7 +25,7 @@ modules.export = {
     if (location.indexOf("#") !== -1) {
       location = location.slice(0, location.indexOf("#"));
     }
-    this.location = location;
+    this.location = location + window.location.search;
     window.addEventListener("popstate", this.onPopState);
     window.addEventListener("scroll", this.onScroll);
   },
@@ -40,7 +42,7 @@ modules.export = {
       );
     },
     onPopState(event) {
-      console.log("pop state!", event.state, window.location.pathname);
+      console.log("pop state!", event.state, window.location.href);
       if (!window.location.pathname.startsWith(solara.rootPath)) {
         throw `window.location.pathname = ${window.location.pathname}, but it should start with the solara.rootPath = ${solara.rootPath}`;
       }
@@ -49,7 +51,7 @@ modules.export = {
       if (newLocation.indexOf("#") !== -1) {
         newLocation = newLocation.slice(0, newLocation.indexOf("#"));
       }
-      this.location = newLocation;
+      this.location = newLocation + window.location.search;
       if (event.state) {
         const top = event.state.top;
         /*
@@ -65,13 +67,15 @@ modules.export = {
   watch: {
     location(value) {
       console.log("changed", this.location, value);
+      pathnameNew = (new URL(value, window.location)).pathname
+      pathnameOld = window.location.pathname
       // if we use the back navigation, this watch will trigger,
       // but we don't want to push the history
       // otherwise we cannot go forward
       if (!window.location.pathname.startsWith(solara.rootPath)) {
         throw `window.location.pathname = ${window.location.pathname}, but it should start with the solara.rootPath = ${solara.rootPath}`;
       }
-      const oldLocation = window.location.pathname.slice(solara.rootPath.length);
+      const oldLocation = window.location.pathname.slice(solara.rootPath.length) + window.location.search;
       console.log(
         "location changed",
         oldLocation,
@@ -80,7 +84,11 @@ modules.export = {
       );
       if (oldLocation != this.location) {
         window.history.pushState({ top: 0 }, null, solara.rootPath + this.location);
-        window.scrollTo(0, 0);
+        if (pathnameNew != pathnameOld) {
+          // we scroll to the top only when we change page, not when we change
+          // the search string
+          window.scrollTo(0, 0);
+        }
         const event = new Event('solara.router');
         window.dispatchEvent(event);
       }
