@@ -1,7 +1,8 @@
 import hashlib
 import os
+from pathlib import Path
 
-from solara.server.cdn_helper import get_cdn_url, get_data, get_from_cache, put_in_cache
+from solara.server.cdn_helper import get_cdn_url, get_data, get_from_cache, put_in_cache, get_path
 
 
 def norm(path):
@@ -32,6 +33,11 @@ def test_cache(tmp_path_factory):
 def test_cdn_url():
     assert get_cdn_url(path1) == f"https://cdn.jsdelivr.net/npm/{path1}".replace("\\", "/")
     assert get_cdn_url(path2) == f"https://cdn.jsdelivr.net/npm/{path2}".replace("\\", "/")
+
+
+def test_get_path(tmpdir):
+    full_path = get_path(Path(tmpdir), path1)
+    assert str(full_path).endswith("vue-grid-layout.min.js")
 
 
 def test_get_data(tmp_path_factory):
