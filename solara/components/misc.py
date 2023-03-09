@@ -1,8 +1,6 @@
 from typing import Any, Callable, Dict, List, Union
 
-import ipyvue as vue
 import reacton
-import reacton.ipyvuetify as ipyvue
 import reacton.ipyvuetify as v
 
 import solara
@@ -100,17 +98,17 @@ def Card(title: str = None, subtitle: str = None, elevation: int = 2, margin=2, 
 
 @solara.component
 def Text(text):
-    return vue.Html.element(tag="span", children=[text])
+    return v.Html.element(tag="span", children=[text])
 
 
 @solara.component
 def Div(children=[], **kwargs):
-    return vue.Html.element(tag="div", children=children, **kwargs)
+    return v.Html(tag="div", children=children, **kwargs)
 
 
 @solara.component
 def Preformatted(text, **kwargs):
-    return vue.Html.element(tag="pre", children=[text], **kwargs)
+    return v.Html.element(tag="pre", children=[text], **kwargs)
 
 
 @solara.component
