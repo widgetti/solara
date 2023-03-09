@@ -71,6 +71,7 @@ def Sidebar(children=[], level=0):
                     # add("code")
                     add("sql_code")
                     add("file_download")
+                    add("tooltip")
             with ListItem("Status", icon_name="mdi-information"):
                 with List():
                     add("success")
