@@ -98,7 +98,7 @@ def Card(title: str = None, subtitle: str = None, elevation: int = 2, margin=2, 
 
 @solara.component
 def Text(text):
-    return v.Html.element(tag="span", children=[text])
+    return v.Html(tag="span", children=[text])
 
 
 @solara.component
@@ -108,7 +108,7 @@ def Div(children=[], **kwargs):
 
 @solara.component
 def Preformatted(text, **kwargs):
-    return v.Html.element(tag="pre", children=[text], **kwargs)
+    return v.Html(tag="pre", children=[text], **kwargs)
 
 
 @solara.component
