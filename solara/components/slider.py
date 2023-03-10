@@ -16,7 +16,7 @@ T = TypeVar("T")
 @solara.value_component(int)
 def SliderInt(
     label: str,
-    value: int = 0,
+    value: solara.Value[int] = 0,
     min: int = 0,
     max: int = 10,
     step: int = 1,
@@ -38,13 +38,14 @@ def SliderInt(
     * `disabled`: Whether the slider is disabled.
     """
 
-    def set_value_cast(value):
+    def set_value_cast(new_value):
+        solara.set(value, int(new_value))
         if on_value is None:
             return
-        on_value(int(value))
+        on_value(int(new_value))
 
     return rv.Slider(
-        v_model=value,
+        v_model=solara.get(value),
         on_v_model=set_value_cast,
         label=label,
         min=min,

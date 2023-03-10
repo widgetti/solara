@@ -35,7 +35,7 @@ def use_change(el: reacton.core.Element, on_value: Callable[[Any], Any], enabled
 @solara.component
 def InputText(
     label: str,
-    value: str = "",
+    value: solara.Value[str] = "",
     on_value: Callable[[str], None] = None,
     disabled: bool = False,
     password: bool = False,
@@ -53,16 +53,18 @@ def InputText(
     * `continuous_update`: Whether to call the `on_value` callback on every change or only when the input loses focus or the enter key is pressed.
     """
 
-    def set_value_cast(value):
+    def set_value_cast(new_value):
+        solara.set(value, str(new_value))
         if on_value is None:
             return
-        on_value(str(value))
+        on_value(str(new_value))
 
-    def on_v_model(value):
+    def on_v_model(new_value):
         if continuous_update:
             set_value_cast(value)
+            solara.set(value, str(new_value))
 
-    text_field = v.TextField(v_model=value, on_v_model=on_v_model, label=label, disabled=disabled, type="password" if password else None)
+    text_field = v.TextField(v_model=solara.get(value), on_v_model=on_v_model, label=label, disabled=disabled, type="password" if password else None)
     use_change(text_field, set_value_cast, enabled=not continuous_update)
     return text_field
 

@@ -14,6 +14,10 @@ def _using_solara_server():
     return False
 
 
+from typing import TypeVar, Union
+from solara.lab import Reactive
+
+
 # isort: skip_file
 from reacton import (
     component,
@@ -40,6 +44,8 @@ from . import util
 
 # flake8: noqa: F402
 from .datatypes import *
+
+Value = Union[T, Reactive[T]]
 from .hooks import *
 from .cache import memoize
 from . import cache
@@ -48,6 +54,31 @@ from .components import *
 from .routing import use_route, use_router, use_route_level, find_route, use_pathname, resolve_path
 from .autorouting import generate_routes, generate_routes_directory, RenderPage, RoutingProvider, DefaultLayout
 from .checks import check_jupyter
+
+
+def get(v: Value[T]) -> T:
+    """Get the value of a `Reactive` or return the value if it is a normal value"""
+    if isinstance(v, Reactive):
+        return v.value
+    return v
+
+
+def set(v: Value[T], value: T) -> None:
+    """Set the value of a `Reactive` value or do nothing if it is a normal value"""
+    if isinstance(v, Reactive):
+        v.value = value
+
+
+def use_reactive(initial_value: T) -> Reactive[T]:
+    """A reactive variable that can be used in a component."""
+
+    def create():
+        return Reactive(initial_value)
+
+    reactive_value = use_memo(create, dependencies=[])
+    reactive_value.use()
+
+    return reactive_value
 
 
 def display(*objs, **kwargs):
