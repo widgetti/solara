@@ -21,6 +21,9 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.7
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 14
       - name: Install flit
         run: pip install flit
       - name: Build
