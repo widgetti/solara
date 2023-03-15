@@ -1,14 +1,17 @@
-import datetime
 import json
 import logging
 import pdb
 import queue
 import struct
+import warnings
+from binascii import b2a_base64
+from datetime import datetime
 from typing import Set
 
 import ipykernel
 import ipykernel.kernelbase
 import jupyter_client.session as session
+from dateutil.tz import tzlocal  # type: ignore
 from ipykernel.comm import CommManager
 from zmq.eventloop.zmqstream import ZMQStream
 
@@ -17,6 +20,48 @@ import solara
 from . import settings, websocket
 
 logger = logging.getLogger("solara.server.kernel")
+
+jsonmodule = json
+
+
+# from jupyter_client/jsonutil.py
+def _ensure_tzinfo(dt: datetime) -> datetime:
+    """Ensure a datetime object has tzinfo
+    If no tzinfo is present, add tzlocal
+    """
+    if not dt.tzinfo:
+        # No more naïve datetime objects!
+        warnings.warn(
+            "Interpreting naive datetime as local %s. Please add timezone info to timestamps." % dt,
+            DeprecationWarning,
+            stacklevel=4,
+        )
+        dt = dt.replace(tzinfo=tzlocal())
+    return dt
+
+
+def json_default(obj):
+    """default function for packing objects in JSON."""
+    if isinstance(obj, datetime):
+        obj = _ensure_tzinfo(obj)
+        return obj.isoformat().replace("+00:00", "Z")
+    elif isinstance(obj, bytes):
+        return b2a_base64(obj).decode("ascii")
+    else:
+        raise TypeError("%r is not JSON serializable" % obj)
+
+
+def json_dumps(data):
+    try:
+        return jsonmodule.dumps(data)
+    except TypeError:
+        logger.warning("Invalid JSON, will try a with a more forgiving json encoder")
+    return jsonmodule.dumps(
+        data,
+        default=json_default,
+        ensure_ascii=False,
+        allow_nan=False,
+    )
 
 
 ipykernel_version = tuple(map(int, ipykernel.__version__.split(".")))
@@ -67,7 +112,7 @@ def _fix_msg(msg):
         # date is already a string if it's copied from the header that is not turned into a datetime
         # maybe we should do that in server.py
         date = msg["parent_header"]["date"]
-        if isinstance(date, datetime.datetime):
+        if isinstance(date, datetime):
             msg["parent_header"]["date"] = date.isoformat().replace("+00:00", "Z")
 
 
@@ -90,7 +135,7 @@ def serialize_binary_message(msg):
     # don't modify msg or buffer list in-place
     msg = msg.copy()
     buffers = list(msg.pop("buffers"))
-    bmsg = json.dumps(msg).encode("utf8")
+    bmsg = json_dumps(msg).encode("utf8")
     buffers.insert(0, bmsg)
     nbufs = len(buffers)
     offsets = [4 * (nbufs + 1)]
@@ -169,7 +214,7 @@ class SessionWebsocket(session.Session):
                     msg["buffers"] = [memoryview(k).cast("b") for k in buffers]
                     wire_message = serialize_binary_message(msg)
                 else:
-                    wire_message = json.dumps(msg)
+                    wire_message = json_dumps(msg)
             except Exception:
                 logger.exception("Could not serialize message: %r", msg)
                 if settings.main.use_pdb:
