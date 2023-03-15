@@ -22,16 +22,6 @@ columns_xlarge = solara.lab.Reactive[int](1)
 
 @solara.component
 def Page():
-    gutters.use()
-    gutters_dense.use()
-    children_count.use()
-    columns_default.use()
-    columns_small.use()
-    columns_medium.use()
-    columns_large.use()
-    columns_xlarge.use()
-    wrap.use()
-
     with solara.VBox() as main:
         with solara.Card("Controls"):
             solara.Checkbox(label="Wrap").connect(wrap)

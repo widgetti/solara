@@ -47,15 +47,7 @@ class State:
 
 @solara.component
 def Page():
-    # TODO: .use can be removed in the future if we wire this up automatically
-    State.size.use()
-    State.color.use()
-    State.size_max.use()
-    State.x.use()
-    State.y.use()
-    State.logx.use()
-    State.logy.use()
-    df = State.df.use_value()
+    df = State.df.value
 
     # the .scatter will set this cross filter
     filter, _set_filter = solara.use_cross_filter(id(df))

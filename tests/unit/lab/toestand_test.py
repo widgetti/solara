@@ -1,6 +1,7 @@
 import dataclasses
+import threading
 import unittest.mock
-from typing import Callable, Dict, List, Optional, TypeVar
+from typing import Callable, Dict, List, Optional, Set, TypeVar
 
 import ipyvuetify as v
 import react_ipywidgets as react
@@ -8,6 +9,7 @@ from typing_extensions import TypedDict
 
 import solara
 import solara as sol
+import solara.lab
 from solara.lab import State
 from solara.lab.toestand import Reactive, Ref, use_sync_external_store
 from solara.server import app, kernel
@@ -532,7 +534,7 @@ def test_app_composite():
     assert mock.call_count == 1
     mock.assert_called_with(AppStateComposite(bear=Bears(type="brown", count=1), fish=Fish(fishes=3)))
 
-    app_store.bears.increase_population()
+    app_store.bears.increase_population()  # type: ignore
     mock.assert_called_with(AppStateComposite(bear=Bears(type="brown", count=2), fish=Fish(fishes=3)))
     assert mock.call_count == 2
     assert app_store.get().bear.count == 2
@@ -715,3 +717,169 @@ def test_dataframe():
     Ref(df_store.fields.df).set(df)
     mock.assert_called_once()
     unsub()
+
+
+def test_thread_local():
+    def test1():
+        assert solara.lab.thread_local.reactive_used is None
+
+    t = threading.Thread(target=test1)
+    t.start()
+    t.join()
+
+    def test2():
+        myset: Set[solara.lab.ValueBase] = set()
+        solara.lab.local.reactive_used = myset
+        assert solara.lab.thread_local.reactive_used is myset
+
+    t = threading.Thread(target=test2)
+    t.start()
+    t.join()
+
+    def test3():
+        assert solara.lab.thread_local.reactive_used is None
+
+    t = threading.Thread(target=test3)
+    t.start()
+    t.join()
+
+
+def test_reactive_auto_subscribe(app_context):
+    x = Reactive(1)
+    y = Reactive("hi")
+    extra = Reactive("extra")
+    count = Reactive(1)
+
+    @solara.component
+    def Test():
+        if x.value == 0:
+            _ = extra.value  # access conditional
+        _ = x.value  # access twice
+        return solara.IntSlider(label=y.value, value=x.value)
+
+    @solara.component
+    def Main():
+        for i in range(count.value):
+            Test()
+        if count.value == 0:
+            return solara.Info("no slider")
+
+    box, rc = solara.render(Main(), handle_error=False)
+    assert rc.find(v.Slider).widget.v_model == 1
+    x.value = 2
+    assert rc.find(v.Slider).widget.v_model == 2
+    y.value = "hello"
+    assert rc.find(v.Slider).widget.label == "hello"
+    assert len(x._storage.listeners2) == 1
+    # force an extra listener
+    x.value = 0
+    # and remove it
+    x.value = 1
+
+    count.value = 2
+    assert len(rc.find(v.Slider)) == 2
+    assert len(x._storage.listeners2[app_context.id]) == 2
+    x.value = 3
+    assert rc.find(v.Slider)[0].widget.v_model == 3
+    assert len(x._storage.listeners2[app_context.id]) == 2
+
+    count.value = 1
+    assert len(rc.find(v.Slider)) == 1
+    count.value = 0
+    assert len(rc.find(v.Slider)) == 0
+
+    rc.close()
+    assert not x._storage.listeners[app_context.id]
+    assert not x._storage.listeners2[app_context.id]
+
+
+def test_reactive_auto_subscribe_sub():
+    bears = Reactive(Bears(type="brown", count=1))
+    renders = 0
+
+    @solara.component
+    def Test():
+        nonlocal renders
+        renders += 1
+        count = Ref(bears.fields.count).value
+        return solara.Info(f"{count} bears around here")
+
+    box, rc = solara.render(Test(), handle_error=False)
+    assert rc.find(v.Alert).widget.children[0] == "1 bears around here"
+    Ref(bears.fields.count).value += 1
+    assert rc.find(v.Alert).widget.children[0] == "2 bears around here"
+    # now check that we didn't listen to the while object, just count changes
+    renders_before = renders
+    Ref(bears.fields.type).value = "pink"
+    assert renders == renders_before
+
+
+def test_reactive_auto_subscribe_cleanup(app_context):
+    x = Reactive(1)
+    y = Reactive("hi")
+    renders = 0
+
+    @solara.component
+    def Test():
+        nonlocal renders
+        renders += 1
+        if x.value == 0:
+            _ = y.value  # access conditional
+            x.value = 100
+        return solara.IntSlider("test", value=x.value)
+
+    box, rc = solara.render(Test(), handle_error=False)
+    assert rc.find(v.Slider).widget.v_model == 1
+    assert len(x._storage.listeners2) == 1
+    assert len(y._storage.listeners2) == 0
+    # this triggers two renders, where during the first one we use y, but the seconds we don't
+    x.value = 0
+    assert rc.find(v.Slider).widget.v_model == 100
+    assert len(x._storage.listeners2[app_context.id]) == 1
+    # which means we shouldn't have a listener on y
+    assert len(y._storage.listeners2[app_context.id]) == 0
+
+    rc.close()
+    assert not x._storage.listeners[app_context.id]
+    assert not y._storage.listeners2[app_context.id]
+
+
+def test_reactive_auto_subscribe_subfield_limit(app_context):
+    bears = Reactive(Bears(type="brown", count=1))
+    renders = 0
+
+    @solara.component
+    def Test():
+        nonlocal renders
+        renders += 1
+        _ = bears.value  # access it to trigger the subscription
+        return solara.IntSlider("test", value=Ref(bears.fields.count).value)
+
+    box, rc = solara.render(Test(), handle_error=False)
+    assert rc.find(v.Slider).widget.v_model == 1
+    assert renders == 1
+    Ref(bears.fields.count).value = 2
+    assert renders == 2
+    rc.close()
+    assert not bears._storage.listeners[app_context.id]
+    assert not bears._storage.listeners2[app_context.id]
+
+
+def test_repr():
+    x = Reactive(1)
+    assert repr(x).startswith("<Reactive 1")
+    assert str(x) == "1"
+    y = Reactive("hi")
+    assert repr(y).startswith("<Reactive 'hi'")
+    assert str(y) == "'hi'"
+
+    class Foo:
+        bar = Reactive(1)
+
+    assert repr(Foo.bar).startswith("<Reactive Foo.bar value=1")
+    assert str(Foo.bar) == "Foo.bar=1"
+
+    bears = Reactive(Bears(type="brown", count=1))
+    s = repr(bears.fields.count)
+    assert s.startswith("<Field <Reactive Bears(type='brown', count=1)")
+    assert s.endswith(".count>")

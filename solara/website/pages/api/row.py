@@ -12,8 +12,6 @@ gap_size = solara.lab.Reactive[str]("12px")
 
 @solara.component
 def Page():
-    gap_size.use()
-
     with solara.Card("Row demo") as main:
         with solara.Row():
             solara.Select(
