@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Optional
 
 import IPython.display
+from IPython.core.interactiveshell import InteractiveShell
 from IPython.display import display
 
 import solara
@@ -83,6 +84,10 @@ def check_jupyter(
     extra: bool = False,
 ):
     if solara._using_solara_server():
+        # for the server we don't need to do this check
+        return
+    if not InteractiveShell.initialized():
+        # also, in a normal python repr, we don't want to display anything
         return
     try:
         python_executable = server_python or get_server_python_executable(silent)
