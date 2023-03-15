@@ -6,7 +6,7 @@ import logging
 import os
 import sys
 import threading
-from typing import Callable, Dict, List, Optional, Set, Type
+from typing import Any, Callable, Dict, List, Optional, Set, Type
 
 NO_WATCHDOG = False
 try:
@@ -48,7 +48,7 @@ else:
     class WatcherWatchdog(FileSystemEventHandler):
         def __init__(self, files, on_change: Callable[[str], None]):
             self.on_change = on_change
-            self.observers: List[Observer] = []
+            self.observers: List[Any] = []
             self.directories: Set[str] = set()
             self.files: List[str] = []
             self.mtimes: Dict[str, float] = dict()

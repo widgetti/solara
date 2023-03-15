@@ -14,7 +14,7 @@ packages = [
     { include = "solara" }
 ]
 dependencies = [
-    "reacton>=1.2.0",
+    "reacton>=1.3.0",
     "ipywidgets",
     "cachetools",
     "filelock",

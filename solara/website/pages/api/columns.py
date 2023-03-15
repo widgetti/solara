@@ -12,9 +12,6 @@ gutters_dense = solara.lab.Reactive[bool](True)
 
 @solara.component
 def Page():
-    gutters.use()
-    gutters_dense.use()
-
     with solara.Columns([1, 2, 1], gutters=gutters.value, gutters_dense=gutters_dense.value) as main:
         with solara.Card("Left", margin=0):
             solara.Checkbox(label="Gutters").connect(gutters)
