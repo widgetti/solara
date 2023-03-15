@@ -15,6 +15,12 @@ from . import app, reload, settings
 from .utils import pdb_guard
 
 logger = logging.getLogger("solara.server.app")
+try:
+    from reacton.patch_display import patch as patch_display
+except:  # noqa
+    patch_display = None  # type: ignore
+if patch_display is not None:
+    patch_display()
 
 
 class FakeIPython:
