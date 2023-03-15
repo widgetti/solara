@@ -79,3 +79,18 @@ def test_dataframe(page_session: playwright.sync_api.Page, solara_server, solara
         page_session.locator("text=Name species").wait_for(state="detached")
         page_session.locator("text=Value counts for petal_width").wait_for()
         page_session.locator("text=Name: petal_width").wait_for()
+
+
+def test_use_query_parameter(page_session: playwright.sync_api.Page, solara_server, solara_app):
+    with solara_app("solara.website.pages"):
+        page_session.goto(solara_server.base_url + "/api/use_query_parameter")
+        page_session.locator("text=👍👍").wait_for()
+        page_session.locator('button:has-text("Decrement")').click()
+        page_session.locator('button:has-text("Decrement")').click()
+        page_session.locator("text=🤔").nth(1).wait_for()
+        page_session.go_back()
+        page_session.go_back()
+        page_session.locator("text=👍👍").wait_for()
+        page_session.go_forward()
+        page_session.go_forward()
+        page_session.locator("text=🤔").nth(1).wait_for()

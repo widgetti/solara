@@ -167,3 +167,50 @@ def test_toggle_buttons_single():
     assert rc._find(v.Btn).widget.children[0] == "kiwi"
     set_path("/fruit/wumpa")
     assert rc._find(v.Btn).widget.children[0] == "Error!"
+
+
+def test_query_parameters():
+    path = ""
+    set_path: Callable[[str], None] = lambda x: None  # noqa
+    routes = [
+        solara.Route(path="/"),
+        solara.Route(
+            path="fruit",
+            children=[
+                solara.Route(path="kiwi"),
+                solara.Route(path="banana"),
+                solara.Route(path="apple"),
+            ],
+        ),
+    ]
+
+    @solara.component
+    def Root():
+        route, routes = solara.use_route()
+        route2, routes2 = solara.use_route()
+        assert route is not None
+        assert route2 is not None
+        count, set_count = solara.use_query_parameter("count", 1, int)
+        solara.Button("Increment", on_click=lambda: set_count(count + 1))
+        solara.Button("Decrement", on_click=lambda: set_count(count - 1))
+        solara.Text(f"{count} {route.path} {route2.path}")
+
+    @solara.component
+    def Provider():
+        nonlocal set_path, path
+        path, set_path = solara.use_state("/fruit/banana")
+
+        solara.routing._location_context.provide(solara.routing._Location(path, set_path))
+        solara.routing.router_context.provide(solara.routing.Router(path, routes=routes, set_path=set_path))
+        return Root()
+
+    container, rc = solara.render(Provider(), handle_error=False)
+    assert rc.find(vue.Html).widget.children[0] == "1 fruit banana"
+    set_path("/fruit/kiwi?count=5")
+    assert rc.find(vue.Html).widget.children[0] == "5 fruit kiwi"
+    rc.find(v.Btn, children=["Increment"]).widget.click()
+    assert rc.find(vue.Html).widget.children[0] == "6 fruit kiwi"
+    assert path == "/fruit/kiwi?count=6"
+    set_path("/fruit/banana?count=2")
+    rc.find(v.Btn, children=["Decrement"]).widget.click()
+    assert path == "/fruit/banana"

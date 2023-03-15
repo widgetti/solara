@@ -119,6 +119,7 @@ def Sidebar(children=[], level=0):
                     add("use_previous")
                     add("use_state")
                     add("use_state_or_update")
+                    add("use_query_parameter")
             with ListItem("Types", icon_name="mdi-fingerprint"):
                 with List():
                     # ListItem("Action")

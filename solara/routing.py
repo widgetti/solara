@@ -1,11 +1,13 @@
 import abc
 import logging
-from typing import Callable, List, Optional, Tuple, Union, cast
+import urllib.parse
+from typing import Callable, List, Optional, Tuple, TypeVar, Union, cast
 
 import solara
 from solara import _using_solara_server
 
 logger = logging.getLogger("solara.router")
+T = TypeVar("T")
 
 
 class _LocationBase(abc.ABC):
@@ -188,3 +190,65 @@ def _resolve_path(prefix: str, findroute: solara.Route, routes: List[solara.Rout
         possible_path = _resolve_path(path, findroute=findroute, routes=route.children)
         if possible_path is not None:
             return possible_path
+
+
+def use_query_parameter(
+    name: str,
+    default: T,
+    from_string: Callable[[str], T],
+    to_string: Callable[[T], str] = str,
+) -> Tuple[T, Callable[[T], None]]:
+    """Store state in a query parameter, which is part of the URL.
+
+    Can be used as a replacement for `use_state`, but the state is stored in the URL,
+    so an url can be shared with others, or bookmarked.
+
+    For instance [Give 10 thumbs up by clicking on /api/use_query_parameter?count=10](/api/use_query_parameter?count=10)
+    will change the count query parameter to 10.
+
+    ## Typical usage:
+
+    ```python
+    import solara
+
+    @solara.component
+    def Page():
+        count, set_count = solara.use_query_parameter("count", 2, int)
+        if count > 0:
+            solara.Text(f"👍" * count)
+        if count == 0:
+            solara.Text("🤔")
+        else:
+            solara.Text(f"👎" * (-count))
+        solara.Button("Increment", on_click=lambda: set_count(count + 1))
+        solara.Button("Decrement", on_click=lambda: set_count(count - 1))
+    ```
+
+    ## Arguments
+
+     * name: the name of the query parameter.
+     * default: the default value of the query parameter.
+     * from_string: a function to convert the value of the query parameter to the desired type.
+     * to_string: a function to convert the value of the query parameter to a string.
+    """
+    router = use_router()
+
+    values = urllib.parse.parse_qs(router.search, keep_blank_values=True)
+
+    def setter(value: T):
+        values = urllib.parse.parse_qs(router.search, keep_blank_values=True)
+        if solara.equals(value, default):
+            values.pop(name, None)
+        else:
+            values[name] = [to_string(value)]
+        path = router.path
+        if values:
+            path += "?" + urllib.parse.urlencode(values, doseq=True)
+        router.push(path)
+
+    if name in values:
+        string_value = values[name][0]
+        typed_value = from_string(string_value) if string_value is not None else default
+    else:
+        typed_value = default
+    return typed_value, setter

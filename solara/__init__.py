@@ -37,6 +37,7 @@ from reacton import (
 )  # noqa: F403, F401
 from reacton.core import Element  # noqa: F403, F401
 from . import util
+from reacton.utils import equals
 
 # flake8: noqa: F402
 from .datatypes import *
@@ -45,7 +46,7 @@ from .cache import memoize
 from . import cache
 from .components import *
 
-from .routing import use_route, use_router, use_route_level, find_route, use_pathname, resolve_path
+from .routing import use_route, use_router, use_route_level, find_route, use_pathname, resolve_path, use_query_parameter
 from .autorouting import generate_routes, generate_routes_directory, RenderPage, RoutingProvider, DefaultLayout
 from .checks import check_jupyter
 
