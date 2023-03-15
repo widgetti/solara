@@ -22,17 +22,18 @@ Put the following Python script in a file, we suggest `sol.py`:
 ```solara
 import solara
 
+sentence = solara.Reactive("Solara makes our team more productive.")
+word_limit = solara.Reactive(10)
+
 
 @solara.component
 def Page():
-    sentence = solara.use_reactive("Solara makes our team more productive.")
-    word_limit = solara.use_reactive(10)
     word_count = len(sentence.value.split())
 
     solara.SliderInt("Word limit", value=word_limit, min=2, max=20)
     solara.InputText(label="Your sentence", value=sentence, continuous_update=True)
 
-    if word_count >= int(word_limit.value):
+    if word_count >= word_limit.value:
         solara.Error(f"With {word_count} words, you passed the word limit of {word_limit.value}.")
     elif word_count >= int(0.8 * word_limit.value):
         solara.Warning(f"With {word_count} words, you are close to the word limit of {word_limit.value}.")
