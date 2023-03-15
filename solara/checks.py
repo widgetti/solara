@@ -86,7 +86,7 @@ def check_jupyter(
         return
     try:
         python_executable = server_python or get_server_python_executable(silent)
-        if python_executable != sys.executable or force:
+        if Path(python_executable).resolve() != Path(sys.executable).resolve() or force:
             libraries_json = json.dumps(libraries + (libraries_extra if extra else []))
             display(
                 IPython.display.Javascript(
