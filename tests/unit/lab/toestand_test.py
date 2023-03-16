@@ -73,6 +73,51 @@ def test_subscribe():
         u()
 
 
+def test_scopes(no_app_context):
+    bear_store = BearReactive(bears)
+    mock_global = unittest.mock.Mock()
+    unsub = []
+    unsub += [bear_store.subscribe(mock_global)]
+
+    kernel_shared = kernel.Kernel()
+    assert app.current_context[app.get_current_thread_key()] is None
+
+    context1 = app.AppContext(id="toestand-1", kernel=kernel_shared, control_sockets=[], widgets={}, templates={})
+    context2 = app.AppContext(id="toestand-2", kernel=kernel_shared, control_sockets=[], widgets={}, templates={})
+
+    with context1:
+        mock1 = unittest.mock.Mock()
+        unsub += [bear_store.subscribe(mock1)]
+    with context2:
+        mock2 = unittest.mock.Mock()
+        unsub += [bear_store.subscribe(mock2)]
+
+    mock_global.assert_not_called()
+
+    with context2:
+        bear_store.update(type="purple")
+    mock_global.assert_not_called()
+    mock1.assert_not_called()
+    mock2.assert_called_with(Bears(type="purple", count=1))
+    mock2.reset_mock()
+
+    with context1:
+        bear_store.update(count=3)
+    mock_global.assert_not_called()
+    mock1.assert_called_with(Bears(type="brown", count=3))
+    mock2.assert_not_called()
+    mock1.reset_mock()
+
+    bear_store.update(type="yellow")
+    mock_global.assert_called_with(Bears(type="yellow", count=1))
+    mock1.assert_not_called()
+    mock2.assert_not_called()
+
+    mock_global.reset_mock()
+    for u in unsub:
+        u()
+
+
 def test_nested_update():
     # this effectively test the RLock vs Lock
     bear_store = BearReactive(bears)
@@ -294,38 +339,56 @@ def test_bear_store_react():
 
     # the storage should live in the app context to support multiple users/connections
     kernel_shared = kernel.Kernel()
-    context1 = app.AppContext(id="1", kernel=kernel_shared, control_sockets=[], widgets={}, templates={})
-    context2 = app.AppContext(id="2", kernel=kernel_shared, control_sockets=[], widgets={}, templates={})
+    context1 = app.AppContext(id="bear-1", kernel=kernel_shared, control_sockets=[], widgets={}, templates={})
+    context2 = app.AppContext(id="bear-2", kernel=kernel_shared, control_sockets=[], widgets={}, templates={})
+    rcs = []
     for context in [context1, context2]:
         with context:
-            rc.render(el)
+            el = App()
+            box, rc = react.render(el, handle_error=False)
+            rcs.append(rc)
             # el = App()
             # box, rc = react.render(el, handle_error=False)
             assert rc._find(v.Alert).widget.children[0] == "1 bears around here"
+            assert Ref(bear_store.fields.count).value == 1
             click(rc._find(v.Btn).widget)
             assert rc._find(v.Alert).widget.children[0] == "2 bears around here"
+            assert Ref(bear_store.fields.count).value == 2
 
+    rc = rcs[1]
     with context2:
         rc.render(el)
+        assert Ref(bear_store.fields.count).value == 2
         assert rc._find(v.Alert).widget.children[0] == "2 bears around here"
         click(rc._find(v.Btn).widget)
+        assert Ref(bear_store.fields.count).value == 3
         assert rc._find(v.Alert).widget.children[0] == "3 bears around here"
 
+    rc = rcs[0]
     with context1:
         rc.render(el)
+        assert Ref(bear_store.fields.count).value == 2
         assert rc._find(v.Alert).widget.children[0] == "2 bears around here"
         click(rc._find(v.Btn).widget)
+        assert Ref(bear_store.fields.count).value == 3
         assert rc._find(v.Alert).widget.children[0] == "3 bears around here"
         click(rc._find(v.Btn).widget)
+        assert Ref(bear_store.fields.count).value == 4
         assert rc._find(v.Alert).widget.children[0] == "4 bears around here"
         click(rc._find(v.Btn).widget)
+        assert Ref(bear_store.fields.count).value == 5
         assert rc._find(v.Alert).widget.children[0] == "5 bears around here"
 
+    rc = rcs[1]
     with context2:
         rc.render(el)
+        assert Ref(bear_store.fields.count).value == 3
         assert rc._find(v.Alert).widget.children[0] == "3 bears around here"
         click(rc._find(v.Btn).widget)
+        assert Ref(bear_store.fields.count).value == 4
         assert rc._find(v.Alert).widget.children[0] == "4 bears around here"
+        Ref(bear_store.fields.count).value = 10
+        assert rc._find(v.Alert).widget.children[0] == "10 bears around here"
 
 
 def test_simplest():

@@ -1,6 +1,7 @@
 import dataclasses
 import sys
 import threading
+from collections import defaultdict
 from operator import getitem
 from typing import Any, Callable, Dict, Generic, Set, Tuple, TypeVar, Union, cast
 
@@ -57,8 +58,8 @@ def merge_state(d1: S, **kwargs) -> S:
 class ValueBase(Generic[T]):
     def __init__(self, merge: Callable = merge_state):
         self.merge = merge
-        self.listeners: Set[Callable[[T], None]] = set()
-        self.listeners2: Set[Callable[[T, T], None]] = set()
+        self.listeners: Dict[str, Set[Callable[[T], None]]] = defaultdict(set)
+        self.listeners2: Dict[str, Set[Callable[[T, T], None]]] = defaultdict(set)
 
     @property
     def lock(self):
@@ -78,21 +79,33 @@ class ValueBase(Generic[T]):
     def get(self) -> T:
         raise NotImplementedError
 
+    def _get_scope_key(self):
+        raise NotImplementedError
+
     def subscribe(self, listener: Callable[[T], None]):
-        self.listeners.add(listener)
+        scope_id = self._get_scope_key()
+        self.listeners[scope_id].add(listener)
 
         def cleanup():
-            self.listeners.remove(listener)
+            self.listeners[scope_id].remove(listener)
 
         return cleanup
 
     def subscribe_change(self, listener: Callable[[T, T], None]):
-        self.listeners2.add(listener)
+        scope_id = self._get_scope_key()
+        self.listeners2[scope_id].add(listener)
 
         def cleanup():
-            self.listeners2.remove(listener)
+            self.listeners2[scope_id].remove(listener)
 
         return cleanup
+
+    def fire(self, new: T, old: T):
+        scope_id = self._get_scope_key()
+        for listener in self.listeners[scope_id].copy():
+            listener(new)
+        for listener2 in self.listeners2[scope_id].copy():
+            listener2(new, old)
 
     def update(self, _f=None, **kwargs):
         if _f is not None:
@@ -103,12 +116,6 @@ class ValueBase(Generic[T]):
             # important to have this part thread-safe
             new = self.merge(self.get(), **kwargs)
             self.set(new)
-
-    def fire(self, new: T, old: T):
-        for listener in self.listeners.copy():
-            listener(new)
-        for listener2 in self.listeners2.copy():
-            listener2(new, old)
 
     def use_value(self) -> T:
         # .use with the default argument doesn't give good type inference
@@ -158,13 +165,19 @@ class ConnectionStore(ValueBase[S]):
         self._global_dict = {}
         # since a set can trigger events, which can trigger new updates, we need a recursive lock
         self._lock = threading.RLock()
+        self.local = threading.local()
 
     @property
     def lock(self):
         return self._lock
 
+    def _get_scope_key(self):
+        scope_dict, scope_id = self._get_dict()
+        return scope_id
+
     def _get_dict(self):
         scope_dict = self._global_dict
+        scope_id = "global"
         if _using_solara_server():
             import solara.server.app
 
@@ -174,10 +187,11 @@ class ConnectionStore(ValueBase[S]):
                 pass  # do we need to be more strict?
             else:
                 scope_dict = cast(Dict[str, S], context.user_dicts)
-        return scope_dict
+                scope_id = context.id
+        return cast(Dict[str, S], scope_dict), scope_id
 
     def get(self):
-        scope_dict = self._get_dict()
+        scope_dict, scope_id = self._get_dict()
         if self.storage_key not in scope_dict:
             with self.scope_lock:
                 if self.storage_key not in scope_dict:
@@ -186,7 +200,7 @@ class ConnectionStore(ValueBase[S]):
         return scope_dict[self.storage_key]
 
     def set(self, value: S):
-        scope_dict = self._get_dict()
+        scope_dict, scope_id = self._get_dict()
         old = self.get()
         if equals(old, value):
             return
