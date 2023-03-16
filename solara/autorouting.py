@@ -85,6 +85,9 @@ def arg_cast(args: List[str], f: Callable):
 def RoutingProvider(children: List[reacton.core.Element] = [], routes: List[solara.Route] = [], pathname: str = ""):
     """Wraps the app, adds extra context, like navigation/routing."""
     path, set_path = solara.use_state(pathname, key="solara-context-path")
+    # TODO: since we provide a cross filter context here, I don't think name `RoutingProvider` is a good name
+    # we might want to change/refactor this.
+    solara.provide_cross_filter()
     nav = solara.Navigator(location=path, on_location=set_path)
     solara.routing._location_context.provide(solara.routing._Location(path, set_path))
     solara.routing.router_context.provide(solara.routing.Router(path, routes=routes, set_path=set_path))
