@@ -1,5 +1,6 @@
 import logging
 import pathlib
+import shutil
 
 import requests
 
@@ -59,7 +60,13 @@ def get_path(base_cache_dir: pathlib.Path, path) -> pathlib.Path:
     cache_path = base_cache_dir / store_path
 
     if cache_path.exists():
-        return cache_path
+        # before d7eba856f100d5c3c64f4eec22c62390f084cb40 on windows, we could
+        # accidentally write to the cache directory, so we need to check if we still
+        # have an old directory layout, and remove that first.
+        if cache_path.is_dir():
+            shutil.rmtree(cache_path)
+        else:
+            return cache_path
     url = get_cdn_url(path)
     response = requests.get(url)
     if response.ok:
