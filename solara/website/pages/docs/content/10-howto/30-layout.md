@@ -112,9 +112,9 @@ The following [Container components](/docs/understanding/containers) can be used
 
  * [Row](/api/row)
  * [Column](/api/column)
- * [ColumnsResponsive](/api/ColumnsResponsive)
+ * [ColumnsResponsive](/api/columns_responsive)
  * [GridFixed](/api/gridfixed)
  * [GridDraggable](/api/griddraggable)
  * [VBox](/api/vbox) (kept for ipywidgets compatibility, please use Column)
  * [HBox](/api/hbox) (kept for ipywidgets compatibility, please use Row)
- * [AppLayout](/api/applayout) Not often used directly, since Solara will already wrap your page in it. Sometimes re-used in a new `Layout` component.
+ * [AppLayout](/api/app_layout) Not often used directly, since Solara will already wrap your page in it. Sometimes re-used in a new `Layout` component.

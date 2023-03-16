@@ -60,7 +60,7 @@ Again, slightly different for a different environment.
 
 ## Hot reloading
 
-If you are using [Solara server](docs/understanding/solara-server), try editing `sol.py`, and watch the page reload automatically after you save your file. Notebook users can simply edit and re-run.
+If you are using [Solara server](/docs/understanding/solara-server), try editing `sol.py`, and watch the page reload automatically after you save your file. Notebook users can simply edit and re-run.
 
 ## How are streamlit and Solara different?
 
