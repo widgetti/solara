@@ -88,6 +88,8 @@ def Sidebar(children=[], level=0):
                 #     ListItem("AltairChart")
             with ListItem("Layout", icon_name="mdi-page-layout-sidebar-left"):
                 with List():
+                    add("card")
+                    add("card_actions")
                     add("columns")
                     add("columns_responsive")
                     add("column")

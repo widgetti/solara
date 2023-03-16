@@ -78,25 +78,6 @@ def ui_slider(value=1, label="", min=0, max=100, key=None, tick_labels=None, thu
 
 
 @solara.component
-def Card(title: str = None, subtitle: str = None, elevation: int = 2, margin=2, children: List[reacton.core.Element] = [], classes: List[str] = []):
-    class_ = _combine_classes([f"ma-{margin}", *classes])
-    with v.Card(elevation=elevation, class_=class_) as main:
-        if title:
-            with v.CardTitle(
-                children=[title],
-            ):
-                pass
-        if subtitle:
-            with v.CardSubtitle(
-                children=[subtitle],
-            ):
-                pass
-        with v.CardText(children=children):
-            pass
-    return main
-
-
-@solara.component
 def Text(text):
     return v.Html(tag="span", children=[text])
 
