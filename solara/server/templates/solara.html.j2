@@ -14,7 +14,7 @@
 
     {{ pre_rendered_css | safe }}
 
-    <link href="{{root_path}}/_solara/cdn/@widgetti/solara-vuetify-app@3.0.1/dist/main.css" rel="stylesheet"></link>
+    <link href="{{root_path}}/_solara/cdn/@widgetti/solara-vuetify-app@4.0.0/dist/main.css" rel="stylesheet"></link>
 
 
     {% if assets.fontawesome_enabled == True %}
@@ -206,10 +206,10 @@
         <div id="pre-rendered-html-present" style="display: none"></div>
     </div>
     {% if production %}
-    <script src="{{root_path}}/_solara/cdn/@widgetti/solara-vuetify-app@3.0.1/dist/solara-vuetify-app{{ipywidget_major_version}}.min.js"></script>
+    <script src="{{root_path}}/_solara/cdn/@widgetti/solara-vuetify-app@4.0.0/dist/solara-vuetify-app{{ipywidget_major_version}}.min.js"></script>
     <script src="{{root_path}}/_solara/cdn/mermaid@9.1.7/dist/mermaid.min.js"></script>
     {% else %}
-    <script src="{{root_path}}/_solara/cdn/@widgetti/solara-vuetify-app@3.0.1/dist/solara-vuetify-app{{ipywidget_major_version}}.js"></script>
+    <script src="{{root_path}}/_solara/cdn/@widgetti/solara-vuetify-app@4.0.0/dist/solara-vuetify-app{{ipywidget_major_version}}.js"></script>
     <script src="{{root_path}}/_solara/cdn/mermaid@9.1.7/dist/mermaid.js"></script>
     {% endif %}
     <script>
