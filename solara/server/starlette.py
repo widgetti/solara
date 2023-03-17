@@ -6,19 +6,20 @@ from typing import List, Union, cast
 from uuid import uuid4
 
 import anyio
+import solara
 import starlette.websockets
 import uvicorn.server
 import websockets.legacy.http
+from authlib.integrations.starlette_client import OAuth
+from solara.server.threaded import ServerBase
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.gzip import GZipMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 from starlette.requests import Request
-from starlette.responses import HTMLResponse, JSONResponse
+from starlette.responses import HTMLResponse, JSONResponse, RedirectResponse
 from starlette.routing import Mount, Route, WebSocketRoute
 from starlette.staticfiles import StaticFiles
-
-import solara
-from solara.server.threaded import ServerBase
 
 from . import app as appmod
 from . import server, settings, telemetry, websocket
@@ -113,6 +114,17 @@ async def kernels(id):
 
 async def kernel_connection(ws: starlette.websockets.WebSocket):
     session_id = ws.cookies.get(server.COOKIE_KEY_SESSION_ID)
+
+    if settings.oauth.required:
+        user = ws.session.get("user")
+        if not user:
+            logger.error("no user cookie")
+            await ws.close()
+            return
+        import json
+
+        user = json.loads(ws.session.get("token"))
+        user["userinfo"] = json.loads(ws.session.get("user"))
     if not session_id:
         logger.error("no session cookie")
         await ws.close()
@@ -132,7 +144,7 @@ async def kernel_connection(ws: starlette.websockets.WebSocket):
             try:
                 assert session_id is not None
                 assert connection_id is not None
-                await server.app_loop(ws_wrapper, session_id, connection_id)
+                await server.app_loop(ws_wrapper, session_id, connection_id, user)
             except:  # noqa
                 await portal.stop(cancel_remaining=True)
                 raise
@@ -162,7 +174,31 @@ def close(request: Request):
     return response
 
 
+oauth = None
+
+if settings.oauth.client_id:
+    oauth = OAuth()
+    oauth.register(
+        name="oauth1",
+        client_id=settings.oauth.client_id,
+        client_secret=settings.oauth.client_secret,
+        api_base_url=f"https://{settings.oauth.api_base_url}",
+        server_metadata_url=f"https://{settings.oauth.api_base_url}/.well-known/openid-configuration",
+        client_kwargs={"scope": settings.oauth.scope},
+    )
+
+
 async def root(request: Request, fullpath: str = ""):
+    if settings.oauth.required:
+        from solara_enterprise import auth
+
+        if not auth.app_base_url:
+            auth.app_base_url = str(request.base_url)
+        user = request.session.get("user")
+        if not user:
+            oauth_client = oauth.create_client("oauth1")
+            request.session["org_url"] = str(request.url.path)
+            return await oauth_client.authorize_redirect(request, str(request.base_url) + "auth/authorize")
     root_path = settings.main.root_path or ""
     # if not explicltly set,
     if settings.main.root_path is None:
@@ -277,10 +313,36 @@ def readyz(request: Request):
     return JSONResponse(json, status_code=status)
 
 
+async def authorize(request: Request):
+    import json
+
+    token = await oauth.oauth1.authorize_access_token(request)
+    logger.info("got token %s", token)
+
+    # workaround: if token is set in the session in one piece, it is not saved, so we
+    # split it up
+    token.pop("id_token", None)
+    user = token.pop("userinfo", None)
+
+    request.session["token"] = json.dumps(token)
+    request.session["user"] = json.dumps(user)
+    org_url = request.session.pop("org_url", None)
+
+    return RedirectResponse(org_url)
+
+
+async def logout(request: Request):
+    request.session.pop("token", None)
+    request.session.pop("user", None)
+    return RedirectResponse("/")
+
+
 middleware = [Middleware(GZipMiddleware, minimum_size=1000)]
 
 routes = [
     Route("/readyz", endpoint=readyz),
+    Route("/auth/authorize", endpoint=authorize),
+    Route("/auth/logout", endpoint=logout),
     Route("/jupyter/api/kernels/{id}", endpoint=kernels),
     WebSocketRoute("/jupyter/api/kernels/{id}/{name}", endpoint=kernel_connection),
     Route("/", endpoint=root),
@@ -296,6 +358,12 @@ routes = [
 ]
 
 app = Starlette(routes=routes, on_startup=[on_startup], on_shutdown=[on_shutdown], middleware=middleware)
+
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=settings.oauth.session_secret_key,
+)
+
 # Uncomment the lines below to test solara mouted under a subpath
 # def myroot(request: Request):
 #     return JSONResponse({"framework": "solara"})

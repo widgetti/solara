@@ -78,6 +78,21 @@ class Assets(pydantic.BaseSettings):
         env_file = ".env"
 
 
+class OAuth(pydantic.BaseSettings):
+    required: bool
+    session_secret_key: str
+    client_id: str
+    client_secret: str
+    api_base_url: str
+    logout_path: str
+    scope: str
+
+    class Config:
+        env_prefix = "solara_auth_"
+        case_sensitive = False
+        env_file = ".env"
+
+
 class MainSettings(pydantic.BaseSettings):
     use_pdb: bool = False
     mode: str = "production"
@@ -97,6 +112,7 @@ telemetry = Telemetry()
 ssg = SSG()
 search = Search()
 assets = Assets()
+oauth = OAuth()
 
 assets.proxy_cache_dir.mkdir(exist_ok=True, parents=True)
 
