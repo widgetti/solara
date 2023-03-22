@@ -3,7 +3,6 @@ from pathlib import Path
 import solara
 from solara.alias import rv
 from solara.components.title import Title
-from solara.routing import route_level_context
 
 from ..components import Header, Hero
 
@@ -69,10 +68,7 @@ def Sidebar():
 def Layout(children=[]):
     router = solara.use_router()
     route_current, all_routes = solara.use_route()
-    # get child routes, and restore router level, so we can also render the route of the sidebar for the mobile view
-    route_level = solara.use_context(route_level_context)
-    route_sidebar_current, all_routes_sidebar = solara.use_route()
-    route_level_context.provide(route_level)
+    route_sidebar_current, all_routes_sidebar = solara.use_route(1)
 
     show_left_menu, set_show_left_menu = solara.use_state(False)
     show_right_menu, set_show_right_menu = solara.use_state(False)

@@ -166,7 +166,7 @@ def resolve_path(path_or_route: Union[str, solara.Route], level=0) -> str:
         path = path_or_route
         if path.startswith("/"):
             return path
-        route_level = solara.get_context(route_level_context) + level - 1
+        route_level = solara.get_context(route_level_context) + level
         parts = [*router.parts[:route_level], path]
         path = "/" + "/".join(parts)
         if path.startswith("//"):
