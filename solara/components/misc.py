@@ -78,8 +78,8 @@ def ui_slider(value=1, label="", min=0, max=100, key=None, tick_labels=None, thu
 
 
 @solara.component
-def Text(text):
-    return v.Html(tag="span", children=[text])
+def Text(text, style: str = None, classes: List[str] = []):
+    return v.Html(tag="span", class_=_combine_classes(classes), style_=style, children=[text])
 
 
 @solara.component

@@ -1,9 +1,10 @@
 import itertools
-from typing import List, Union
+from typing import List, Optional, Union
 
 import reacton.ipyvuetify as rv
 
 import solara
+from solara.util import _combine_classes
 
 
 def cycle(value):
@@ -74,7 +75,19 @@ def Columns(
 
 
 @solara.component
-def ColumnsResponsive(default=None, small=None, medium=None, large=None, xlarge=None, children=[], wrap=True, gutters=True, gutters_dense=False):
+def ColumnsResponsive(
+    default=None,
+    small=None,
+    medium=None,
+    large=None,
+    xlarge=None,
+    children=[],
+    wrap=True,
+    gutters=True,
+    gutters_dense=False,
+    classes: List[str] = [],
+    style: Optional[str] = None,
+):
     """Lay our children in columns, on a 12 point grid system that is responsive to screen size.
 
     If a single number is specified, or less values than children, the values will be cycled.
@@ -122,7 +135,7 @@ def ColumnsResponsive(default=None, small=None, medium=None, large=None, xlarge=
         else:
             raise ValueError(f"Invalid value for columns: {value}, should be None, int, or list/tuple.")
 
-    with rv.Container() as main:
+    with rv.Container(class_=_combine_classes(classes), style_=style) as main:
         with rv.Row(class_="flex-nowrap" if not wrap else "", no_gutters=not gutters, dense=gutters_dense):
             for child, xsmall, small, medium, large, xlarge in zip(children, cycle(default), cycle(small), cycle(medium), cycle(large), cycle(xlarge)):
                 with rv.Col(
