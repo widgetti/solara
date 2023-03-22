@@ -21,6 +21,7 @@ from reacton import (
     value_component,
     create_context,
     get_widget,
+    get_context,
     make,
     provide_context,
     render,

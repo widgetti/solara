@@ -114,8 +114,8 @@ def use_route(level=0) -> Tuple[Optional[solara.Route], List[solara.Route]]:
 
 
 def find_route(path: str) -> Optional[solara.Route]:
-    router = solara.use_context(router_context)
-    route_level = min(solara.use_context(route_level_context), len(router.path_routes_siblings) - 1)
+    router = solara.get_context(router_context)
+    route_level = min(solara.get_context(route_level_context), len(router.path_routes_siblings) - 1)
     for route in router.path_routes_siblings[route_level]:
         if path.startswith(route.path) or (not path and route.path == "/"):
             return route
@@ -161,12 +161,12 @@ def resolve_path(path_or_route: Union[str, solara.Route], level=0) -> str:
 
 
     """
-    router = solara.use_context(router_context)
+    router = solara.get_context(router_context)
     if isinstance(path_or_route, str):
         path = path_or_route
         if path.startswith("/"):
             return path
-        route_level = solara.use_context(route_level_context) + level - 1
+        route_level = solara.get_context(route_level_context) + level - 1
         parts = [*router.parts[:route_level], path]
         path = "/" + "/".join(parts)
         if path.startswith("//"):
