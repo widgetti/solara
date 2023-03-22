@@ -1,4 +1,4 @@
-from typing import Any, Callable, cast
+from typing import Any, Callable, Optional, cast
 
 import ipyvue
 import reacton
@@ -74,6 +74,7 @@ def InputFloat(
     on_value: Callable[[float], None] = None,
     disabled: bool = False,
     continuous_update: bool = False,
+    hide_details: bool = False,
 ):
     """Numeric input.
 
@@ -100,6 +101,51 @@ def InputFloat(
         if continuous_update:
             set_value_cast(value)
 
-    text_field = v.TextField(v_model=value, on_v_model=on_v_model, label=label, disabled=disabled, type="number")
+    text_field = v.TextField(v_model=value, on_v_model=on_v_model, label=label, disabled=disabled, type="number", hide_details=hide_details)
+    use_change(text_field, set_value_cast, enabled=not continuous_update)
+    return text_field
+
+
+@solara.component
+def InputOptionalInt(
+    label: str,
+    value: Optional[int] = 0,
+    on_value: Callable[[int], None] = None,
+    disabled: bool = False,
+    continuous_update: bool = False,
+    hide_details: bool = False,
+    clearable: bool = False,
+):
+    """Numeric input.
+
+    ## Arguments
+
+    * `label`: Label to display next to the slider.
+    * `value`: The currently entered value.
+    * `on_value`: Callback to call when the value changes.
+    * `disabled`: Whether the input is disabled.
+    * `continuous_update`: Whether to call the `on_value` callback on every change or only when the input loses focus or the enter key is pressed.
+    """
+
+    def set_value_cast(value):
+        if on_value is None:
+            return
+        if value is None or value == "":
+            on_value(None)
+            return
+        try:
+            int_value = int(value.replace(",", "").replace(".", ""))
+        except Exception:
+            # TODO: maybe we should show an error message here?
+            return
+        on_value(int_value)
+
+    def on_v_model(value):
+        if continuous_update:
+            set_value_cast(value)
+
+    text_field = v.TextField(
+        v_model=value, on_v_model=on_v_model, label=label, disabled=disabled, type="number", hide_details=hide_details, clearable=clearable
+    )
     use_change(text_field, set_value_cast, enabled=not continuous_update)
     return text_field
