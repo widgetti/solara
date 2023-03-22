@@ -26,7 +26,7 @@ def Page():
             solara.Button("Retry", on_click=data.retry)
         else:
             if json.value:
-                solara.InputText(label="Filter pokemons by name", value=filter, on_value=set_filter)
+                solara.InputText(label="Filter pokemons by name", value=filter, on_value=set_filter, continuous_update=True)
                 pokemons = json.value
                 if filter:
                     pokemons = [k for k in pokemons if filter.lower() in k["name"].lower()]
