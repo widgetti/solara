@@ -281,7 +281,7 @@ def _InputNumeric(
             if optional:
                 set_error(False)
                 if on_value:
-                    on_value(None)
+                    on_value(None)  # type: ignore
             else:
                 set_error(True)
             return
