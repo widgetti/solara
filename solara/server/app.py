@@ -492,21 +492,20 @@ def load_app_widget(app_state, app_script: AppScript, pathname: str):
     assert container is not None
     try:
         render_context = context.app_object
-        with context:
-            app_state = app_state_initial
-            with pdb_guard():
-                widget, render_context = _run_app(
-                    app_state,
-                    app_script,
-                    pathname,
-                    render_context=render_context,
-                )
-                if render_context is None:
-                    assert context.container is not None
-                    context.container.children = [widget]
+        app_state = app_state_initial
+        with pdb_guard():
+            widget, render_context = _run_app(
+                app_state,
+                app_script,
+                pathname,
+                render_context=render_context,
+            )
+            if render_context is None:
+                assert context.container is not None
+                context.container.children = [widget]
 
-            if render_context:
-                context.app_object = render_context
+        if render_context:
+            context.app_object = render_context
 
     except BaseException as e:
         error = ""
