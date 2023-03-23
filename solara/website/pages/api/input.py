@@ -13,6 +13,7 @@ def Page():
     text, set_text = solara.use_state("Hello world")
     password, set_password = solara.use_state("Super secret")
     number, set_number = solara.use_state(42.0)
+    number_int, set_number_int = solara.use_state(42)
 
     continuous_update, set_continuous_update = solara.use_state(False)
 
@@ -37,8 +38,14 @@ def Page():
         with solara.Card("Number (float)"):
             solara.InputFloat("Enter some number", value=number, on_value=set_number, continuous_update=continuous_update)
             with solara.HBox():
-                solara.Button("Reset", on_click=lambda: set_number(42))
+                solara.Button("Reset", on_click=lambda: set_number(42.0))
             solara.Markdown(f"**You entered**: {number}")
+
+        with solara.Card("Number (int)"):
+            solara.InputInt("Enter some number", value=number_int, on_value=set_number_int, continuous_update=continuous_update)
+            with solara.HBox():
+                solara.Button("Reset", on_click=lambda: set_number_int(42))
+            solara.Markdown(f"**You entered**: {number_int}")
 
     return main
 
