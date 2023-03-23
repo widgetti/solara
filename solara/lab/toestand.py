@@ -11,6 +11,7 @@ from typing import (
     Optional,
     Set,
     Tuple,
+    Type,
     TypeVar,
     Union,
     cast,
@@ -149,10 +150,10 @@ class ValueBase(Generic[T]):
         return value, setter
 
     @property
-    def fields(self) -> T:
+    def fields(self) -> Type[T]:
         # we lie about the return type, but in combination with
         # setter we can make type safe setters (see docs/tests)
-        return cast(T, Fields(self))
+        return cast(Type[T], Fields(self))
 
     def setter(self, field: TS) -> Callable[[TS], None]:
         _field = cast(FieldBase, field)
