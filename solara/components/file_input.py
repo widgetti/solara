@@ -55,7 +55,7 @@ def FileInput(
     """
 
     file_info, set_file_info = solara.use_state(None)
-    wired_files, set_wired_files = solara.use_state(cast(Optional[List[FileInfo]], []))
+    wired_files, set_wired_files = solara.use_state(cast(List[FileInfo], []))
 
     file_input = ExtraFileInput.element(
         label=label, on_total_progress=on_total_progress, on_file_info=set_file_info, accept=accept, multiple=multiple, **kwargs
