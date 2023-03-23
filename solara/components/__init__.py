@@ -48,6 +48,7 @@ from .meta import Meta  # noqa: #F401 F403
 from .columns import Columns, ColumnsResponsive  # noqa: #F401 F403
 from .file_drop import FileDrop  # noqa: #F401 F403
 from .file_download import FileDownload  # noqa: #F401 F403
+from .file_input import FileInput  # noqa: #F401 F403
 from .tooltip import Tooltip  # noqa: #F401 F403
 from .card import Card, CardActions  # noqa: #F401 F403
 from .spinner import SpinnerSolara  # noqa: #F401 F403
