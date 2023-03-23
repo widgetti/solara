@@ -77,7 +77,7 @@ def Page():
                     solara.Select("Size", values=columns).connect(State.size)  # type: ignore
                     solara.Select("Color", values=columns).connect(State.color)  # type: ignore
                     if filter is None:
-                        solara.Info("I you select points in the scatter plot, you can download the points here.")
+                        solara.Info("If you select points in the scatter plot, you can download the points here.")
                     else:
 
                         def get_data():
