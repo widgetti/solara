@@ -516,7 +516,7 @@ def load_app_widget(app_state, app_script: AppScript, pathname: str):
 
         error = html.escape(error)
         with context:
-            widget = widgets.HTML(f"<pre>{error}</pre>")
+            widget = widgets.HTML(f"<pre>{error}</pre>", layout=widgets.Layout(overflow="auto"))
             container.children = [widget]
 
 
