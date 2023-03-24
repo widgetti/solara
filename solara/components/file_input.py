@@ -86,7 +86,11 @@ def FileInput(
             for f_info in wired_files:
                 f_info["data"] = f_info["file_obj"].read()
 
-        on_file(wired_files)
+        if multiple:
+                    on_file(wired_files)
+        else:
+                    on_file(wired_files[0])
+  
 
     result: solara.Result = hooks.use_thread(handle_file, [wired_files])
     if result.error:
