@@ -16,7 +16,7 @@ from solara.components.file_drop import FileInfo
 def FileInput(
     label: str = "",
     on_total_progress: Optional[Callable[[float], None]] = None,
-    on_file: Optional[Callable[[List[FileInfo]], None]] = None,
+    on_file: Union[None, Callable[[FileInfo], None], Callable[[List[FileInfo]], None]] = None,
     accept: str = "",
     multiple: bool = True,
     lazy: bool = True,
