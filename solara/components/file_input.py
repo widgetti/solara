@@ -3,7 +3,7 @@ FileInput component.
 """
 
 
-from typing import Callable, List, Optional, cast
+from typing import Callable, List, Optional, cast, Union
 
 from ipyvuetify.extra import FileInput as ExtraFileInput
 
