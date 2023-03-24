@@ -3,7 +3,6 @@ FileInput component.
 """
 
 
-import threading
 from typing import Callable, List, Optional, cast
 
 from ipyvuetify.extra import FileInput as ExtraFileInput
