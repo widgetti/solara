@@ -16,7 +16,7 @@ from solara.components.file_drop import FileInfo
 def FileInput(
     label: str = "",
     on_total_progress: Optional[Callable[[float], None]] = None,
-    on_file: Union[None, Callable[[FileInfo], None], Callable[[List[FileInfo]], None]] = None,
+    on_file: Union[None, Callable[[Optional[FileInfo]], None], Callable[[List[FileInfo]], None]] = None,
     accept: str = "",
     multiple: bool = False,
     lazy: bool = True,
@@ -78,7 +78,7 @@ def FileInput(
         if not on_file:
             return
         if not wired_files:
-            on_file([])
+            on_file([] if multiple else None)
         if lazy:
             for f_info in wired_files:
                 f_info["data"] = None
@@ -87,10 +87,9 @@ def FileInput(
                 f_info["data"] = f_info["file_obj"].read()
 
         if multiple:
-                    on_file(wired_files)
+            on_file(wired_files)
         else:
-                    on_file(wired_files[0])
-  
+            on_file(wired_files[0])
 
     result: solara.Result = hooks.use_thread(handle_file, [wired_files])
     if result.error:
