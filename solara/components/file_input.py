@@ -3,7 +3,7 @@ FileInput component.
 """
 
 
-from typing import Callable, List, Optional, cast, Union
+from typing import Callable, List, Optional, Union, cast
 
 from ipyvuetify.extra import FileInput as ExtraFileInput
 
@@ -78,7 +78,12 @@ def FileInput(
         if not on_file:
             return
         if not wired_files:
-            on_file([] if multiple else None)
+            if multiple:
+                on_file([])
+            else:
+                on_file(None)
+            return
+            # on_file([] if multiple else None)
         if lazy:
             for f_info in wired_files:
                 f_info["data"] = None
