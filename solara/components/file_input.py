@@ -18,7 +18,7 @@ def FileInput(
     on_total_progress: Optional[Callable[[float], None]] = None,
     on_file: Union[None, Callable[[FileInfo], None], Callable[[List[FileInfo]], None]] = None,
     accept: str = "",
-    multiple: bool = True,
+    multiple: bool = False,
     lazy: bool = True,
     **kwargs
 ):
