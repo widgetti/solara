@@ -11,7 +11,7 @@ import solara
 import solara as sol
 import solara.lab
 from solara.lab import State
-from solara.lab.toestand import Reactive, Ref, use_sync_external_store
+from solara.lab.toestand import Field, Reactive, Ref, field, use_sync_external_store
 from solara.server import app, kernel
 
 from ..common import click
@@ -19,8 +19,8 @@ from ..common import click
 
 @dataclasses.dataclass(frozen=True)
 class Bears:
-    type: str
-    count: int = dataclasses.field()
+    count: Field[int]
+    type: Field[str] = field(dataclasses.field(default_factory=str))
 
 
 B = TypeVar("B", bound=Bears)
@@ -28,7 +28,8 @@ B = TypeVar("B", bound=Bears)
 
 class BearReactive(Reactive[B]):
     def increase_population(self):
-        self.update(count=self.get().count + 1)
+        c = self.get().count
+        self.update(count=c + 1)
 
 
 bears: Bears = Bears(type="brown", count=1)
@@ -58,8 +59,8 @@ def test_subscribe():
     mock_count = unittest.mock.Mock()
     unsub = []
     unsub += [bear_store.subscribe(mock)]
-    unsub += [Ref(bear_store.fields.type).subscribe(mock_type)]
-    unsub += [Ref(bear_store.fields.count).subscribe(mock_count)]
+    unsub += [bear_store.fields.type.subscribe(mock_type)]
+    unsub += [bear_store.fields.count.subscribe(mock_count)]
     mock.assert_not_called()
     bear_store.update(type="purple")
     mock.assert_called_with(Bears(type="purple", count=1))
@@ -129,14 +130,14 @@ def test_nested_update():
     mock_count = unittest.mock.Mock()
     unsub = []
     unsub += [bear_store.subscribe(mock)]
-    unsub += [Ref(bear_store.fields.type).subscribe(mock_type)]
-    unsub += [Ref(bear_store.fields.count).subscribe(mock_count)]
+    unsub += [bear_store.fields.type.subscribe(mock_type)]
+    unsub += [bear_store.fields.count.subscribe(mock_count)]
 
     def reset_count(new_type):
         bear_store.update(count=0)
 
-    Ref(bear_store.fields.type).subscribe(reset_count)
-    Ref(bear_store.fields.type).value = "purple"
+    bear_store.fields.type.subscribe(reset_count)
+    bear_store.fields.type.value = "purple"
     mock.assert_called_with(Bears(type="purple", count=0))
     mock_type.assert_called_with("purple")
     mock_count.assert_called_with(0)

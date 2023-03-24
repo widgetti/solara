@@ -1,6 +1,7 @@
 import dataclasses
 import sys
 import threading
+import typing
 from collections import defaultdict
 from operator import getitem
 from typing import (
@@ -15,6 +16,7 @@ from typing import (
     TypeVar,
     Union,
     cast,
+    overload,
 )
 
 import react_ipywidgets as react
@@ -319,6 +321,25 @@ class ValueSubField(ValueBase[T]):
         self._root = field
         assert isinstance(self._root, ValueBase)
 
+    if typing.TYPE_CHECKING:
+
+        @overload
+        def __get__(self, obj: None = None, cls: Any = ...) -> "ValueSubField[T]":
+            ...
+
+        @overload
+        def __get__(self, obj: "Any", cls: Any = ...) -> T:
+            ...
+
+        def __get__(self, obj: Any = None, cls: Any = None) -> Union[T, "ValueSubField[T]"]:
+            if obj is None:
+                return self
+            else:
+                return obj.__dict__["test"]
+
+        def __set__(self, obj: Any, value: T) -> None:
+            pass
+
     def __str__(self):
         return str(self._field)
 
@@ -365,9 +386,20 @@ class FieldBase:
     _parent: Any
 
     def __getattr__(self, key):
-        if key in ["_parent", "set", "_lock"] or key.startswith("__"):
+        if key in ["_parent", "set", "_lock", "subscribe", "value"] or key.startswith("__"):
             return self.__dict__[key]
         return FieldAttr(self, key)
+
+    @property
+    def value(self):
+        return self.get()
+
+    @value.setter
+    def value(self, value):
+        self.set(value)
+
+    def subscribe(self, listener: Callable[[Any], None]):
+        return ValueSubField(self).subscribe(listener)
 
     def __getitem__(self, key):
         return FieldItem(self, key)
@@ -513,3 +545,21 @@ State = Reactive
 
 auto_subscribe_context_manager = AutoSubscribeContextManager
 reacton.core._component_context_manager_classes.append(auto_subscribe_context_manager)
+
+
+if typing.TYPE_CHECKING:
+    Field = ValueSubField
+else:
+
+    class FieldRuntime:
+        def __call__(self, arg):
+            return arg
+
+        def __getitem__(self, item):
+            return item
+
+    Field = FieldRuntime()
+
+
+def field(arg: T) -> Field[T]:
+    return cast(Field[T], arg)
