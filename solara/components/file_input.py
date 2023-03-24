@@ -75,7 +75,7 @@ def FileInput(
 
     solara.use_effect(wire_files, [file_info])
 
-    def handle_file(cancel: threading.Event) -> None:
+    def handle_file() -> None:
         if not on_file:
             return
         if not wired_files:
