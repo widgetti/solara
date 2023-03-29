@@ -13,7 +13,7 @@ from solara.components.file_drop import FileInfo
 
 
 @solara.component
-def FileInput(
+def InputFile(
     label: str = "",
     on_total_progress: Optional[Callable[[float], None]] = None,
     on_file: Union[None, Callable[[Optional[FileInfo]], None], Callable[[List[FileInfo]], None]] = None,
