@@ -25,7 +25,7 @@ dependencies = [
     "mdit-py-plugins",
     "humanize",
     "ipyvuetify",
-    "ipyvue>=1.8.2",
+    "ipyvue>=1.9.0",
     "numpy",
     "pillow",
     "jinja2",
@@ -80,7 +80,7 @@ dev = [
     "pytest-playwright; python_version > '3.6'",
 ]
 assets = [
-    "solara-assets==1.8.2"
+    "solara-assets==1.9.0"
 ]
 flask = [
     "flask",
