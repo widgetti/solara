@@ -7,6 +7,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+env:
+  SOLARA_TELEMETRY_SERVER_USER_ID: "install-test"
+  SOLARA_TELEMETRY_MIXPANEL_TOKEN: adbf863d17cba80db608788e7fce9843
+
 jobs:
   integration-test:
     timeout-minutes: 8
