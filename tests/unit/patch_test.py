@@ -1,9 +1,25 @@
+import sys
+
 import ipywidgets as widgets
+import pytest
 
 from solara.server import app, kernel
 
 
-def test_widget_dict():
+# with python 3.6 we don't use the comm package
+@pytest.mark.skipif(sys.version_info < (3, 7, 0), reason="ipykernel version too low")
+def test_widget_error_message_outside_context(no_app_context):
+    from ipyvuetify.Themes import theme
+
+    theme.get_state()
+    kernel_shared = kernel.Kernel()
+    context1 = app.AppContext(id="1", kernel=kernel_shared)
+    with pytest.raises(RuntimeError):
+        with context1:
+            assert theme.model_id
+
+
+def test_widget_dict(no_app_context):
     kernel_shared = kernel.Kernel()
     context1 = app.AppContext(id="1", kernel=kernel_shared, control_sockets=[], widgets={}, templates={})
     context2 = app.AppContext(id="2", kernel=kernel_shared, control_sockets=[], widgets={}, templates={})

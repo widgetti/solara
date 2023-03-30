@@ -70,10 +70,15 @@ if ipykernel_version >= (6, 18, 0):
 
     class Comm(comm.base_comm.BaseComm):
         def __init__(self, **kwargs) -> None:
-            self.kernel = ipykernel.kernelbase.Kernel.instance()
+            if ipykernel.kernelbase.Kernel.initialized():
+                self.kernel = ipykernel.kernelbase.Kernel.instance()
+            else:
+                self.kernel = None
             super().__init__(**kwargs)
 
         def publish_msg(self, msg_type, data=None, metadata=None, buffers=None, **keys):
+            if self.kernel is None:
+                return
             data = {} if data is None else data
             metadata = {} if metadata is None else metadata
             content = dict(data=data, comm_id=self.comm_id, **keys)

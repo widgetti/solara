@@ -4,6 +4,9 @@ github_url = "https://github.com/widgetti/solara"
 git_branch = "master"
 
 
+from . import comm  # noqa: F401
+
+
 def _using_solara_server():
     import sys
 

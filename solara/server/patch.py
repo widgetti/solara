@@ -268,3 +268,21 @@ def patch():
     ipykernel.kernelbase.Kernel.initialized = classmethod(kernel_initialized_dispatch)  # type: ignore
     ipywidgets.widgets.widget.get_ipython = get_ipython
     IPython.get_ipython = get_ipython
+
+    def model_id_debug(self: ipywidgets.widgets.widget.Widget):
+        from ipyvue.ForceLoad import force_load_instance
+
+        import solara.comm
+
+        if self.comm is None or isinstance(self.comm, solara.comm.DummyComm) and force_load_instance.comm is not self.comm:
+            stack = solara.comm.orphan_comm_stacks.get(self.comm)
+            if stack:
+                raise RuntimeError(
+                    "Widget has no comm, you are probably using a widget that was created at app startup, the stacktrace when the widget was created is:\n"
+                    + stack
+                )
+            else:
+                raise RuntimeError("Widget has no comm, you are probably using a widget that was closed. The widget is:\n" + repr(self))
+        return self.comm.comm_id
+
+    ipywidgets.widget.Widget.model_id = property(model_id_debug)
