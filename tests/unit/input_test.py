@@ -34,6 +34,12 @@ def test_input_int_optional():
     input.widget.fire_event("blur")
     assert on_value.call_count == 2
     assert on_value.call_args[0][0] is None
+    rc.close()
+
+    el = solara.InputInt("label", None, optional=True, on_value=on_value)
+    box, rc = solara.render(el, handle_error=False)
+    input = rc.find(vw.TextField)
+    assert input.widget.v_model is None
 
 
 def test_input_int():

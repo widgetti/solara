@@ -221,7 +221,7 @@ def _InputNumeric(
     * `continuous_update`: Whether to call the `on_value` callback on every change or only when the input loses focus or the enter key is pressed.
     """
     error, set_error = solara.use_state(False)
-    internal_value, set_internal_value = solara.use_state(cast(Union[str, T, None], str(value)))
+    internal_value, set_internal_value = solara.use_state(cast(Union[str, T, None], str(value) if value is not None else None))
 
     def parse(value):
         return ast.literal_eval(value.replace(",", "."))
