@@ -80,7 +80,7 @@ Wrote:  /Users/maartenbreddels/github/widgetti/solara/solara-test-portal
 Install as:
          $ (cd solara-test-portal; pip install -e .)
 Run as:
-         $ solara run solara_test_portal
+         $ solara run solara_test_portal.pages
 ```
 
 You should have the following directory structure:
