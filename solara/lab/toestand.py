@@ -1,4 +1,6 @@
+import contextlib
 import dataclasses
+import logging
 import sys
 import threading
 from collections import defaultdict
@@ -6,6 +8,7 @@ from operator import getitem
 from typing import (
     Any,
     Callable,
+    ContextManager,
     Dict,
     Generic,
     Optional,
@@ -27,6 +30,7 @@ from solara import _using_solara_server
 T = TypeVar("T")
 TS = TypeVar("TS")
 S = TypeVar("S")  # used for state
+logger = logging.getLogger("solara.toestand")
 
 _DEBUG = False
 
@@ -78,8 +82,8 @@ def merge_state(d1: S, **kwargs) -> S:
 class ValueBase(Generic[T]):
     def __init__(self, merge: Callable = merge_state):
         self.merge = merge
-        self.listeners: Dict[str, Set[Callable[[T], None]]] = defaultdict(set)
-        self.listeners2: Dict[str, Set[Callable[[T, T], None]]] = defaultdict(set)
+        self.listeners: Dict[str, Set[Tuple[Callable[[T], None], Optional[ContextManager]]]] = defaultdict(set)
+        self.listeners2: Dict[str, Set[Tuple[Callable[[T, T], None], Optional[ContextManager]]]] = defaultdict(set)
 
     @property
     def lock(self):
@@ -102,30 +106,42 @@ class ValueBase(Generic[T]):
     def _get_scope_key(self):
         raise NotImplementedError
 
-    def subscribe(self, listener: Callable[[T], None]):
+    def subscribe(self, listener: Callable[[T], None], scope: Optional[ContextManager] = None):
         scope_id = self._get_scope_key()
-        self.listeners[scope_id].add(listener)
+        self.listeners[scope_id].add((listener, scope))
 
         def cleanup():
-            self.listeners[scope_id].remove(listener)
+            self.listeners[scope_id].remove((listener, scope))
 
         return cleanup
 
-    def subscribe_change(self, listener: Callable[[T, T], None]):
+    def subscribe_change(self, listener: Callable[[T, T], None], scope: Optional[ContextManager] = None):
         scope_id = self._get_scope_key()
-        self.listeners2[scope_id].add(listener)
+        self.listeners2[scope_id].add((listener, scope))
 
         def cleanup():
-            self.listeners2[scope_id].remove(listener)
+            self.listeners2[scope_id].remove((listener, scope))
 
         return cleanup
 
     def fire(self, new: T, old: T):
+        logger.info("value change from %s to %s, will fire events", old, new)
         scope_id = self._get_scope_key()
-        for listener in self.listeners[scope_id].copy():
-            listener(new)
-        for listener2 in self.listeners2[scope_id].copy():
-            listener2(new, old)
+        scopes = set()
+        for listener, scope in self.listeners[scope_id].copy():
+            if scope is not None:
+                scopes.add(scope)
+        for listener2, scope in self.listeners2[scope_id].copy():
+            if scope is not None:
+                scopes.add(scope)
+        stack = contextlib.ExitStack()
+        with contextlib.ExitStack() as stack:
+            for scope in scopes:
+                stack.enter_context(scope)
+            for listener, scope in self.listeners[scope_id].copy():
+                listener(new)
+            for listener2, scope in self.listeners2[scope_id].copy():
+                listener2(new, old)
 
     def update(self, _f=None, **kwargs):
         if _f is not None:
@@ -279,11 +295,11 @@ class Reactive(ValueBase[S]):
             thread_local.reactive_used.add(self)
         return self._storage.get()
 
-    def subscribe(self, listener: Callable[[S], None]):
-        return self._storage.subscribe(listener)
+    def subscribe(self, listener: Callable[[S], None], scope: Optional[ContextManager] = None):
+        return self._storage.subscribe(listener, scope=scope)
 
-    def subscribe_change(self, listener: Callable[[S, S], None]):
-        return self._storage.subscribe_change(listener)
+    def subscribe_change(self, listener: Callable[[S, S], None], scope: Optional[ContextManager] = None):
+        return self._storage.subscribe_change(listener, scope=scope)
 
     def computed(self, f: Callable[[S], T]) -> "Computed[T]":
         return Computed(f, self)
@@ -297,8 +313,8 @@ class Computed(Generic[T]):
     def get(self) -> T:
         return self.compute(self.state.get())
 
-    def subscribe(self, listener: Callable[[T], None]):
-        return self.state.subscribe(lambda _: listener(self.get()))
+    def subscribe(self, listener: Callable[[T], None], scope: Optional[ContextManager] = None):
+        return self.state.subscribe(lambda _: listener(self.get()), scope=scope)
 
     def use(self, selector: Callable[[T], T]) -> T:
         slice = use_sync_external_store_with_selector(
@@ -329,23 +345,23 @@ class ValueSubField(ValueBase[T]):
     def lock(self):
         return self._root.lock
 
-    def subscribe(self, listener: Callable[[T], None]):
+    def subscribe(self, listener: Callable[[T], None], scope: Optional[ContextManager] = None):
         def on_change(new, old):
             new_value = self._field.get(new)
             old_value = self._field.get(old)
             if not equals(new_value, old_value):
                 listener(new_value)
 
-        return self._root.subscribe_change(on_change)
+        return self._root.subscribe_change(on_change, scope=scope)
 
-    def subscribe_change(self, listener: Callable[[T, T], None]):
+    def subscribe_change(self, listener: Callable[[T, T], None], scope: Optional[ContextManager] = None):
         def on_change(new, old):
             new_value = self._field.get(new)
             old_value = self._field.get(old)
             if not equals(new_value, old_value):
                 listener(new_value, old_value)
 
-        return self._root.subscribe_change(on_change)
+        return self._root.subscribe_change(on_change, scope=scope)
 
     def get(self, obj=None, add_watch=True) -> T:
         if add_watch and thread_local.reactive_used is not None:
@@ -465,7 +481,7 @@ class AutoSubscribeContextManager:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         assert thread_local.reactive_used is self.reactive_used, f"{hex(id(thread_local.reactive_used))} vs {hex(id(self.reactive_used))}"
-        _, set_counter = solara.use_state(0)
+        _, set_counter = solara.use_state(0, key="auto_subscribe_force_update_counter")
 
         def update_listeners():
             assert self.reactive_used is not None
@@ -488,7 +504,7 @@ class AutoSubscribeContextManager:
                         # can we do just x+1 to collapse multiple updates into one?
                         set_counter(lambda x: x + 1)
 
-                    unsubscribe = reactive.subscribe_change(force_update)
+                    unsubscribe = reactive.subscribe_change(force_update, scope=reacton.core.get_render_context(required=True))
                     self.subscribed[reactive] = unsubscribe
             for reactive in removed:
                 unsubscribe = self.subscribed[reactive]

@@ -304,8 +304,8 @@ def test_bear_store_basics_dict():
     assert mock.call_count == 2
     mock.assert_called_with(Bears(type="brown", count=3))
 
-    setter = bear_store.setter(bear_store.fields["count"])
-    setter(5)
+    setter = bear_store.setter(bear_store.fields["count"])  # type: ignore
+    setter(5)  # type: ignore
     assert mock.call_count == 3
     mock.assert_called_with(Bears(type="brown", count=5))
 
@@ -402,7 +402,7 @@ def test_simplest():
     # prints: {"bears": 2, "theme": "light"}
 
     unsub()  # remove event listener
-    theme_accessor = Ref(settings.fields["theme"])
+    theme_accessor = Ref(settings.fields["theme"])  # type: ignore
 
     # Now use it in a React component
 
@@ -416,12 +416,12 @@ def test_simplest():
     def ThemeInfo():
         # the lambda function here is called a selector, it 'selects' out the state you want
         # theme = settings.use(lambda state: state["theme"])
-        theme = Ref(settings.fields["theme"]).use_value()
+        theme = Ref(settings.fields["theme"]).use_value()  # type: ignore
         return sol.Info(f"Using theme {theme}")
 
     @react.component
     def ThemeSelector():
-        theme, set_theme = Ref(settings.fields["theme"]).use_state()
+        theme, set_theme = Ref(settings.fields["theme"]).use_state()  # type: ignore
         with sol.ToggleButtonsSingle(theme, on_value=set_theme) as main:
             sol.Button("dark")
             sol.Button("light")
@@ -863,6 +863,40 @@ def test_reactive_auto_subscribe_subfield_limit(app_context):
     rc.close()
     assert not bears._storage.listeners[app_context.id]
     assert not bears._storage.listeners2[app_context.id]
+
+
+def test_reactive_batch_update():
+    count = Reactive(1)
+    mock1 = unittest.mock.Mock()
+    mock2 = unittest.mock.Mock()
+
+    @solara.component
+    def Test1():
+        mock1(count.value)
+        return solara.IntSlider("test", value=count.value)
+
+    @solara.component
+    def Test2():
+        mock2(count.value)
+        return solara.IntSlider("test", value=count.value)
+
+    @solara.component
+    def Test():
+        Test1()
+        Test2()
+
+    box, rc = solara.render(Test(), handle_error=False)
+    assert rc.find(v.Slider)[0].widget.v_model == 1
+    assert rc.find(v.Slider)[1].widget.v_model == 1
+    assert rc.render_count == 1
+    assert mock1.call_count == 1
+    assert mock2.call_count == 1
+    count.value = 2
+    assert rc.find(v.Slider)[0].widget.v_model == 2
+    assert rc.find(v.Slider)[1].widget.v_model == 2
+    assert mock1.call_count == 2
+    assert mock2.call_count == 2
+    assert rc.render_count == 2
 
 
 def test_repr():
