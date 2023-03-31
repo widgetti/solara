@@ -19,4 +19,5 @@ HTTP/1.1 200 OK
 Solara uses Mixpanel to collect usage of the solara server. We track when a server is started and stopped. To opt out of mixpanel telemetry, either:
 
  * Set the environmental variable `SOLARA_TELEMETRY_MIXPANEL_ENABLE` to `False`.
+ * Run in development mode (e.g. using `$ solara run sol.py --dev`)
  * Install [python-dotenv](https://pypi.org/project/python-dotenv/) and put `SOLARA_TELEMETRY_MIXPANEL_ENABLE=False` in a `.env` file.

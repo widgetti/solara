@@ -64,6 +64,8 @@ def get_server_user_id():
 
 
 def track(event: str, props: Optional[Dict] = None):
+    if settings.main.mode == "development":
+        return
     if not settings.telemetry.mixpanel_enable:
         return
     event_item = {
