@@ -153,7 +153,7 @@ async def kernel_connection(ws: starlette.websockets.WebSocket):
             pass
 
 
-async def close(request: Request):
+def close(request: Request):
     connection_id = request.path_params["connection_id"]
     if connection_id in appmod.contexts:
         context = appmod.contexts[connection_id]
