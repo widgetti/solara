@@ -1,6 +1,6 @@
 import os
 from datetime import date, datetime, timedelta
-from typing import Callable, List, Tuple, TypeVar, cast
+from typing import Callable, List, Optional, Tuple, TypeVar, Union, cast
 
 import ipyvue
 import ipyvuetify
@@ -16,11 +16,11 @@ T = TypeVar("T")
 @solara.value_component(int)
 def SliderInt(
     label: str,
-    value: int = 0,
+    value: Union[int, solara.Reactive[int]] = 0,
     min: int = 0,
     max: int = 10,
     step: int = 1,
-    on_value: Callable[[int], None] = None,
+    on_value: Optional[Callable[[int], None]] = None,
     thumb_label=True,
     disabled: bool = False,
 ):
@@ -37,14 +37,13 @@ def SliderInt(
     * `thumb_label`: Show a thumb label when sliding (True), always ("always"), or never (False).
     * `disabled`: Whether the slider is disabled.
     """
+    reactive_value = solara.use_reactive(value, on_value)
 
     def set_value_cast(value):
-        if on_value is None:
-            return
-        on_value(int(value))
+        reactive_value.value = int(value)
 
     return rv.Slider(
-        v_model=value,
+        v_model=reactive_value.value,
         on_v_model=set_value_cast,
         label=label,
         min=min,

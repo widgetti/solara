@@ -47,11 +47,14 @@ Create a file `myapp.py`, or put the following code in the Jupyter notebook:
 ```solara
 import solara
 
+clicks = solara.reactive(0)
+
+
 @solara.component
 def Page():
-    clicks, set_clicks = solara.use_state(0)
     def increase_clicks():
-        set_clicks(clicks+1)
+        clicks.value += 1
+
     solara.Button(label=f"Clicked {clicks} times", on_click=increase_clicks)
 
 # in the Jupyter notebook, uncomment the next line:

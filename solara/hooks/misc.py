@@ -36,6 +36,7 @@ __all__ = [
     "use_unique_key",
     "use_state_or_update",
     "use_previous",
+    "use_reactive",
 ]
 T = TypeVar("T")
 U = TypeVar("U")
@@ -401,3 +402,58 @@ def use_previous(value: T, condition=True) -> T:
 
     solara.use_effect(assign, [value])
     return ref.current
+
+
+def use_reactive(
+    initial_value: Union[T, solara.Reactive[T]],
+    on_change: Optional[Callable[[T], None]] = None,
+) -> solara.Reactive[T]:
+    """
+    Ensures that the returned value is a `Reactive` object.
+
+    This hook is useful for implementing components that accept either a
+    `Reactive` object or a normal value along with an optional `on_change`
+    callback. It can also be used as an alternative to `use_state` when you
+    want to use a `Reactive` object as the component state.
+
+    ## Arguments:
+        * initial_value (Union[T, solara.Reactive[T]]): The initial value of the
+            reactive variable. If a `Reactive` object is provided, it will be
+            used directly. Otherwise, a new `Reactive` object will be created
+            with the provided initial value.
+        * on_change (Optional[Callable[[T], None]]): An optional callback function
+            that will be called when the reactive variable's value changes.
+
+    Returns:
+        solara.Reactive[T]: A `Reactive` object with the specified initial value
+            or the provided `Reactive` object.
+
+    ## Example:
+    ```python
+    import solara
+
+        @solara.component
+    def MyComponent(value, on_value_change):
+        reactive_value = solara.use_reactive(value, on_value_change)
+        # Use the `reactive_value` in the component
+    ```
+    """
+
+    on_change_ref = solara.use_ref(on_change)
+    on_change_ref.current = on_change
+
+    def create():
+        return solara.reactive(initial_value) if not isinstance(initial_value, solara.Reactive) else initial_value
+
+    reactive_value = solara.use_memo(create, dependencies=[])
+
+    def forward_on_change():
+        def forward(value):
+            if on_change_ref.current:
+                on_change_ref.current(value)
+
+        return reactive_value.subscribe(forward)
+
+    solara.use_effect(forward_on_change, [])
+
+    return reactive_value

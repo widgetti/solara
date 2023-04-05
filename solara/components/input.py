@@ -40,7 +40,7 @@ def use_change(el: reacton.core.Element, on_value: Callable[[Any], Any], enabled
 @solara.component
 def InputText(
     label: str,
-    value: str = "",
+    value: Union[str, solara.Reactive[str]] = "",
     on_value: Callable[[str], None] = None,
     disabled: bool = False,
     password: bool = False,
@@ -57,17 +57,16 @@ def InputText(
     * `password`: Whether the input is a password input (typically shows input text obscured with an asterisk).
     * `continuous_update`: Whether to call the `on_value` callback on every change or only when the input loses focus or the enter key is pressed.
     """
+    reactive_value = solara.use_reactive(value, on_value)
 
     def set_value_cast(value):
-        if on_value is None:
-            return
-        on_value(str(value))
+        reactive_value.value = str(value)
 
     def on_v_model(value):
         if continuous_update:
             set_value_cast(value)
 
-    text_field = v.TextField(v_model=value, on_v_model=on_v_model, label=label, disabled=disabled, type="password" if password else None)
+    text_field = v.TextField(v_model=reactive_value.value, on_v_model=on_v_model, label=label, disabled=disabled, type="password" if password else None)
     use_change(text_field, set_value_cast, enabled=not continuous_update)
     return text_field
 

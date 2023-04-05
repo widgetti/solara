@@ -21,20 +21,20 @@ This will create the `sol.py` file with the following content.
 ```solara
 import solara
 
+clicks = solara.reactive(0)
+
 
 @solara.component
 def Page():
-    clicks, set_clicks = solara.use_state(0)
-
     color = "green"
-    if clicks >= 5:
+    if clicks.value >= 5:
         color = "red"
 
-    def on_click():
-        set_clicks(clicks + 1)
+    def increment():
+        clicks.value += 1
         print("clicks", clicks)
 
-    solara.Button(label=f"Clicked: {clicks}", on_click=on_click, color=color)
+    solara.Button(label=f"Clicked: {clicks}", on_click=increment, color=color)
 ```
 
 

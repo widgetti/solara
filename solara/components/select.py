@@ -1,4 +1,4 @@
-from typing import Callable, List, Optional, TypeVar, cast
+from typing import Callable, List, Optional, TypeVar, Union, cast
 
 import ipyvuetify as v
 import reacton.core
@@ -10,7 +10,9 @@ T = TypeVar("T")
 
 
 @solara.value_component(None)
-def Select(label: str, values: List[T], value: Optional[T] = None, on_value: Callable[[T], None] = None) -> reacton.core.ValueElement[v.Select, T]:
+def Select(
+    label: str, values: List[T], value: Union[Optional[T], solara.Reactive[Optional[T]]] = None, on_value: Optional[Callable[[Optional[T]], None]] = None
+) -> reacton.core.ValueElement[v.Select, T]:
     """Select a single value from a list of values.
 
     ## Arguments
@@ -21,11 +23,12 @@ def Select(label: str, values: List[T], value: Optional[T] = None, on_value: Cal
      * `on_value`: Callback to call when the value changes.
 
     """
+    reactive_value = solara.use_reactive(value, on_value)
     return cast(
         reacton.core.ValueElement[v.Select, T],
         rv.Select(
-            v_model=value,
-            on_v_model=on_value,
+            v_model=reactive_value.value,
+            on_v_model=reactive_value.set,
             items=values,
             label=label,
             dense=True,
