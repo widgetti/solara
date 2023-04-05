@@ -42,6 +42,8 @@ from reacton import (
 from reacton.core import Element  # noqa: F403, F401
 from . import util
 
+from .reactive import *
+
 # flake8: noqa: F402
 from .datatypes import *
 from .hooks import *
