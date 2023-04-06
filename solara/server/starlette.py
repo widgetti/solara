@@ -11,6 +11,13 @@ import uvicorn.server
 import websockets.legacy.http
 
 try:
+    import solara_enterprise
+
+    del solara_enterprise
+    has_solara_enterprise = True
+except ImportError:
+    has_solara_enterprise = False
+if has_solara_enterprise:
     from solara_enterprise.auth.middleware import MutateDetectSessionMiddleware
     from solara_enterprise.auth.starlette import (
         AuthBackend,
@@ -20,9 +27,7 @@ try:
         logout,
     )
 
-    has_solara_enterprise = True
-except ImportError:
-    has_solara_enterprise = False
+
 from starlette.applications import Starlette
 from starlette.exceptions import HTTPException
 from starlette.middleware import Middleware

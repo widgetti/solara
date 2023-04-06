@@ -13,6 +13,15 @@ from flask import Blueprint, Flask, abort, request, send_from_directory, url_for
 from flask_sock import Sock
 
 try:
+    import solara_enterprise  # type: ignore
+
+    del solara_enterprise
+
+    has_solara_enterprise = True
+except ImportError:
+    has_solara_enterprise = False
+
+if has_solara_enterprise:
     from solara_enterprise.auth.flask import allowed  # type: ignore
     from solara_enterprise.auth.flask import (
         authorize,
@@ -21,10 +30,7 @@ try:
         login,
         logout,
     )
-
-    has_solara_enterprise = True
-except ImportError:
-    has_solara_enterprise = False
+else:
 
     def allowed():
         return True
