@@ -22,7 +22,8 @@ ssg = [
 
 auth = [
     "authlib",
-    "itsdangerous"
+    "itsdangerous",
+    "httpx",
 ]
 
 [project.urls]
