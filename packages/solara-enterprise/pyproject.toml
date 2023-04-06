@@ -20,6 +20,11 @@ ssg = [
     "playwright; python_version > '3.6'",
 ]
 
+auth = [
+    "authlib",
+    "itsdangerous"
+]
+
 [project.urls]
 Home = "https://www.github.com/widgetti/solara"
 

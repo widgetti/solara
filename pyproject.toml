@@ -45,8 +45,6 @@ dependencies = [
     "pygments==2.10; python_version < '3.7'",
     "nbformat",
     "ipykernel",
-    "authlib",
-    "itsdangerous"
 ]
 
 [tool.flit.external-data]

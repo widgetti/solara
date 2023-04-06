@@ -266,6 +266,13 @@ def run(
         # during development
         # We exclude the website, that will be handled by solara/server/reload.py
         reload_dirs = [str(solara_root), str(Path(solara.__file__).parent)]
+        try:
+            import solara_enterprise
+
+            reload_dirs.append(str(Path(solara_enterprise.__file__).parent))
+            del solara_enterprise
+        except ImportError:
+            pass
         reload_excludes = reload_excludes if reload_excludes else []
         reload_excludes = [str(solara_root / "website"), str(solara_root / "template")]
         del solara_root

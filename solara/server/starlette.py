@@ -6,20 +6,30 @@ from typing import List, Union, cast
 from uuid import uuid4
 
 import anyio
-import solara
 import starlette.websockets
 import uvicorn.server
 import websockets.legacy.http
-from authlib.integrations.starlette_client import OAuth
-from solara.server.threaded import ServerBase
+from solara_enterprise.auth.middleware import MutateDetectSessionMiddleware
+from solara_enterprise.auth.starlette import (
+    AuthBackend,
+    authorize,
+    get_user,
+    login,
+    logout,
+)
 from starlette.applications import Starlette
+from starlette.exceptions import HTTPException
 from starlette.middleware import Middleware
+from starlette.middleware.authentication import AuthenticationMiddleware
 from starlette.middleware.gzip import GZipMiddleware
-from starlette.middleware.sessions import SessionMiddleware
-from starlette.requests import Request
-from starlette.responses import HTMLResponse, JSONResponse, RedirectResponse
+from starlette.requests import HTTPConnection, Request
+from starlette.responses import HTMLResponse, JSONResponse
 from starlette.routing import Mount, Route, WebSocketRoute
 from starlette.staticfiles import StaticFiles
+from starlette.types import Receive, Scope, Send
+
+import solara
+from solara.server.threaded import ServerBase
 
 from . import app as appmod
 from . import server, settings, telemetry, websocket
@@ -74,6 +84,7 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
 
 class ServerStarlette(ServerBase):
     server: uvicorn.server.Server
+    name = "starlette"
 
     def has_started(self):
         return self.server.started
@@ -115,16 +126,13 @@ async def kernels(id):
 async def kernel_connection(ws: starlette.websockets.WebSocket):
     session_id = ws.cookies.get(server.COOKIE_KEY_SESSION_ID)
 
-    if settings.oauth.required:
-        user = ws.session.get("user")
-        if not user:
-            logger.error("no user cookie")
-            await ws.close()
-            return
-        import json
+    user = get_user(ws)
+    if user is None and settings.oauth.private:
+        await ws.accept()
+        logger.error("app is private, requires login")
+        await ws.close(code=1008, reason="app is private, requires login")
+        return
 
-        user = json.loads(ws.session.get("token"))
-        user["userinfo"] = json.loads(ws.session.get("user"))
     if not session_id:
         logger.error("no session cookie")
         await ws.close()
@@ -174,32 +182,10 @@ def close(request: Request):
     return response
 
 
-oauth = None
-
-if settings.oauth.client_id:
-    oauth = OAuth()
-    oauth.register(
-        name="oauth1",
-        client_id=settings.oauth.client_id,
-        client_secret=settings.oauth.client_secret,
-        api_base_url=f"https://{settings.oauth.api_base_url}",
-        server_metadata_url=f"https://{settings.oauth.api_base_url}/.well-known/openid-configuration",
-        client_kwargs={"scope": settings.oauth.scope},
-    )
-
-
 async def root(request: Request, fullpath: str = ""):
-    if settings.oauth.required:
-        from solara_enterprise import auth
-
-        if not auth.app_base_url:
-            auth.app_base_url = str(request.base_url)
-        user = request.session.get("user")
-        if not user:
-            oauth_client = oauth.create_client("oauth1")
-            request.session["org_url"] = str(request.url.path)
-            return await oauth_client.authorize_redirect(request, str(request.base_url) + "auth/authorize")
     root_path = settings.main.root_path or ""
+    if not settings.main.base_url:
+        settings.main.base_url = str(request.base_url)
     # if not explicltly set,
     if settings.main.root_path is None:
         # use the default root path from the app, which seems to also include the path
@@ -216,6 +202,11 @@ async def root(request: Request, fullpath: str = ""):
             logger.debug("override root_path using x-script-name header from %s to %s", root_path, script_name)
             root_path = script_name
         settings.main.root_path = root_path
+
+    if settings.oauth.private and not request.user.is_authenticated:
+        from solara_enterprise.auth.starlette import login
+
+        return await login(request)
 
     request_path = request.url.path
     if request_path.startswith(root_path):
@@ -238,7 +229,15 @@ async def root(request: Request, fullpath: str = ""):
     return response
 
 
-class StaticNbFiles(StaticFiles):
+class StaticFilesOptionalAuth(StaticFiles):
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        conn = HTTPConnection(scope)
+        if settings.oauth.private and not conn.user.is_authenticated:
+            raise HTTPException(status_code=401, detail="Unauthorized")
+        await super().__call__(scope, receive, send)
+
+
+class StaticNbFiles(StaticFilesOptionalAuth):
     def get_directories(
         self,
         directory: Union[str, "os.PathLike[str]", None] = None,
@@ -260,7 +259,7 @@ class StaticNbFiles(StaticFiles):
         return "", None
 
 
-class StaticPublic(StaticFiles):
+class StaticPublic(StaticFilesOptionalAuth):
     def lookup_path(self, *args, **kwargs):
         self.all_directories = self.get_directories(None, None)
         return super().lookup_path(*args, **kwargs)
@@ -275,7 +274,7 @@ class StaticPublic(StaticFiles):
         return cast(List[Union[str, "os.PathLike[str]"]], [app.directory.parent / "public" for app in appmod.apps.values()])
 
 
-class StaticAssets(StaticFiles):
+class StaticAssets(StaticFilesOptionalAuth):
     def lookup_path(self, *args, **kwargs):
         self.all_directories = self.get_directories(None, None)
         return super().lookup_path(*args, **kwargs)
@@ -292,7 +291,7 @@ class StaticAssets(StaticFiles):
         return cast(List[Union[str, "os.PathLike[str]"]], [*overrides, default])
 
 
-class StaticCdn(StaticFiles):
+class StaticCdn(StaticFilesOptionalAuth):
     def lookup_path(self, path: str) -> typing.Tuple[str, typing.Optional[os.stat_result]]:
         full_path = str(get_path(settings.assets.proxy_cache_dir, path))
         return full_path, os.stat(full_path)
@@ -313,36 +312,23 @@ def readyz(request: Request):
     return JSONResponse(json, status_code=status)
 
 
-async def authorize(request: Request):
-    import json
-
-    token = await oauth.oauth1.authorize_access_token(request)
-    logger.info("got token %s", token)
-
-    # workaround: if token is set in the session in one piece, it is not saved, so we
-    # split it up
-    token.pop("id_token", None)
-    user = token.pop("userinfo", None)
-
-    request.session["token"] = json.dumps(token)
-    request.session["user"] = json.dumps(user)
-    org_url = request.session.pop("org_url", None)
-
-    return RedirectResponse(org_url)
-
-
-async def logout(request: Request):
-    request.session.pop("token", None)
-    request.session.pop("user", None)
-    return RedirectResponse("/")
-
-
-middleware = [Middleware(GZipMiddleware, minimum_size=1000)]
+middleware = [
+    Middleware(GZipMiddleware, minimum_size=1000),
+    Middleware(
+        MutateDetectSessionMiddleware,
+        secret_key=settings.session.secret_key,
+        session_cookie="solara-session",
+        https_only=settings.session.https_only,
+        same_site=settings.session.same_site,
+    ),
+    Middleware(AuthenticationMiddleware, backend=AuthBackend()),
+]
 
 routes = [
     Route("/readyz", endpoint=readyz),
-    Route("/auth/authorize", endpoint=authorize),
-    Route("/auth/logout", endpoint=logout),
+    Route("/_solara/auth/authorize", endpoint=authorize),
+    Route("/_solara/auth/logout", endpoint=logout),
+    Route("/_solara/auth/login", endpoint=login),
     Route("/jupyter/api/kernels/{id}", endpoint=kernels),
     WebSocketRoute("/jupyter/api/kernels/{id}/{name}", endpoint=kernel_connection),
     Route("/", endpoint=root),
@@ -352,17 +338,12 @@ routes = [
     Mount(f"{prefix}/static/public", app=StaticPublic()),
     Mount(f"{prefix}/static/assets", app=StaticAssets()),
     Mount(f"{prefix}/static/nbextensions", app=StaticNbFiles()),
-    Mount(f"{prefix}/static/nbconvert", app=StaticFiles(directory=server.nbconvert_static)),
-    Mount(f"{prefix}/static", app=StaticFiles(directory=server.solara_static)),
+    Mount(f"{prefix}/static/nbconvert", app=StaticFilesOptionalAuth(directory=server.nbconvert_static)),
+    Mount(f"{prefix}/static", app=StaticFilesOptionalAuth(directory=server.solara_static)),
     Route("/{fullpath:path}", endpoint=root),
 ]
 
 app = Starlette(routes=routes, on_startup=[on_startup], on_shutdown=[on_shutdown], middleware=middleware)
-
-app.add_middleware(
-    SessionMiddleware,
-    secret_key=settings.oauth.session_secret_key,
-)
 
 # Uncomment the lines below to test solara mouted under a subpath
 # def myroot(request: Request):
