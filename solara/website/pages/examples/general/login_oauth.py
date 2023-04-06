@@ -1,4 +1,5 @@
-import prettyprinter
+import pprint
+
 import reacton.ipyvuetify as v
 from solara_enterprise import auth
 
@@ -54,7 +55,7 @@ def Page():
                     We use the `picture` field to display an avatar in the [AppBar](/api/appbar).
                 """
                 )
-                sl.Preformatted(prettyprinter.pretty_repr(auth.user.value))
+                sl.Preformatted(pprint.pformat(auth.user.value))
         else:
             sl.Markdown(
                 """
