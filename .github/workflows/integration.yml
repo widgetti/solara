@@ -72,6 +72,11 @@ jobs:
       - name: Install playwright
         run: playwright install
       - name: test
+        env:
+          AUTH0_USERNAME: maartenbreddels+solara-test@gmail.com
+          AUTH0_PASSWORD: ${{ secrets.AUTH0_PASSWORD }}
+          FIEF_USERNAME: maartenbreddels+solara-test@gmail.com
+          FIEF_PASSWORD: ${{ secrets.FIEF_PASSWORD }}
         # TODO: we used to also run the (cheap) unittests, to get better coverage report, but that gives errors
         # it seems on CI that the default playwright timeout is not (always?) respected, also, if the --timeout argument
         # is shorter than the timeout of playwright, we get no good error message, summary: always keep above 30!
