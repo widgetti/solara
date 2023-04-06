@@ -68,14 +68,14 @@ jobs:
       - name: Install
         run: |
           pip install ".[dev,server,flask,documentation,pytest]" "voila~=${{ matrix.voila }}"
-          (cd packages/solara-enterprise && pip install ".[ssg]" "ipywidgets~=${{ matrix.ipywidgets }}")
+          (cd packages/solara-enterprise && pip install ".[ssg,auth]" "ipywidgets~=${{ matrix.ipywidgets }}")
       - name: Install playwright
         run: playwright install
       - name: test
         # TODO: we used to also run the (cheap) unittests, to get better coverage report, but that gives errors
         # it seems on CI that the default playwright timeout is not (always?) respected, also, if the --timeout argument
         # is shorter than the timeout of playwright, we get no good error message, summary: always keep above 30!
-        run: pytest --cov=solara tests/integration --timeout=360 --video=retain-on-failure -vv -s --log-cli-level=warning --assert=plain
+        run: pytest --cov=solara tests/integration --timeout=360 --video=on --output==test-results -vv -s --log-cli-level=warning --assert=plain
       - name: Upload Test artifacts
         if: always()
         uses: actions/upload-artifact@v2

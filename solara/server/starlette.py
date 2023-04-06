@@ -9,14 +9,20 @@ import anyio
 import starlette.websockets
 import uvicorn.server
 import websockets.legacy.http
-from solara_enterprise.auth.middleware import MutateDetectSessionMiddleware
-from solara_enterprise.auth.starlette import (
-    AuthBackend,
-    authorize,
-    get_user,
-    login,
-    logout,
-)
+
+try:
+    from solara_enterprise.auth.middleware import MutateDetectSessionMiddleware
+    from solara_enterprise.auth.starlette import (
+        AuthBackend,
+        authorize,
+        get_user,
+        login,
+        logout,
+    )
+
+    has_solara_enterprise = True
+except ImportError:
+    has_solara_enterprise = False
 from starlette.applications import Starlette
 from starlette.exceptions import HTTPException
 from starlette.middleware import Middleware
@@ -126,12 +132,17 @@ async def kernels(id):
 async def kernel_connection(ws: starlette.websockets.WebSocket):
     session_id = ws.cookies.get(server.COOKIE_KEY_SESSION_ID)
 
-    user = get_user(ws)
-    if user is None and settings.oauth.private:
-        await ws.accept()
-        logger.error("app is private, requires login")
-        await ws.close(code=1008, reason="app is private, requires login")
-        return
+    if settings.oauth.private and has_solara_enterprise:
+        raise RuntimeError("SOLARA_OAUTH_PRIVATE requires solara-enterprise")
+    if has_solara_enterprise:
+        user = get_user(ws)
+        if user is None and settings.oauth.private:
+            await ws.accept()
+            logger.error("app is private, requires login")
+            await ws.close(code=1008, reason="app is private, requires login")
+            return
+    else:
+        user = None
 
     if not session_id:
         logger.error("no session cookie")
@@ -232,7 +243,9 @@ async def root(request: Request, fullpath: str = ""):
 class StaticFilesOptionalAuth(StaticFiles):
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         conn = HTTPConnection(scope)
-        if settings.oauth.private and not conn.user.is_authenticated:
+        if settings.oauth.private and has_solara_enterprise:
+            raise RuntimeError("SOLARA_OAUTH_PRIVATE requires solara-enterprise")
+        if has_solara_enterprise and settings.oauth.private and not conn.user.is_authenticated:
             raise HTTPException(status_code=401, detail="Unauthorized")
         await super().__call__(scope, receive, send)
 
@@ -314,21 +327,31 @@ def readyz(request: Request):
 
 middleware = [
     Middleware(GZipMiddleware, minimum_size=1000),
-    Middleware(
-        MutateDetectSessionMiddleware,
-        secret_key=settings.session.secret_key,
-        session_cookie="solara-session",
-        https_only=settings.session.https_only,
-        same_site=settings.session.same_site,
-    ),
-    Middleware(AuthenticationMiddleware, backend=AuthBackend()),
 ]
 
+if has_solara_enterprise:
+    middleware = [
+        *middleware,
+        Middleware(
+            MutateDetectSessionMiddleware,
+            secret_key=settings.session.secret_key,
+            session_cookie="solara-session",
+            https_only=settings.session.https_only,
+            same_site=settings.session.same_site,
+        ),
+        Middleware(AuthenticationMiddleware, backend=AuthBackend()),
+    ]
+
+routes_auth = []
+if has_solara_enterprise:
+    routes_auth = [
+        Route("/_solara/auth/authorize", endpoint=authorize),  #
+        Route("/_solara/auth/logout", endpoint=logout),
+        Route("/_solara/auth/login", endpoint=login),
+    ]
 routes = [
     Route("/readyz", endpoint=readyz),
-    Route("/_solara/auth/authorize", endpoint=authorize),
-    Route("/_solara/auth/logout", endpoint=logout),
-    Route("/_solara/auth/login", endpoint=login),
+    *routes_auth,
     Route("/jupyter/api/kernels/{id}", endpoint=kernels),
     WebSocketRoute("/jupyter/api/kernels/{id}/{name}", endpoint=kernel_connection),
     Route("/", endpoint=root),

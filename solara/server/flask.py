@@ -11,14 +11,24 @@ import flask
 import simple_websocket
 from flask import Blueprint, Flask, abort, request, send_from_directory, url_for
 from flask_sock import Sock
-from solara_enterprise.auth.flask import (
-    allowed,
-    authorize,
-    get_user,
-    init_flask,
-    login,
-    logout,
-)
+
+try:
+    from solara_enterprise.auth.flask import allowed  # type: ignore
+    from solara_enterprise.auth.flask import (
+        authorize,
+        get_user,
+        init_flask,
+        login,
+        logout,
+    )
+
+    has_solara_enterprise = True
+except ImportError:
+    has_solara_enterprise = False
+
+    def allowed():
+        return True
+
 
 import solara
 from solara.server.threaded import ServerBase
@@ -85,11 +95,16 @@ def kernels(id):
 def kernels_connection(ws: simple_websocket.Server, id: str, name: str):
     if not settings.main.base_url:
         settings.main.base_url = url_for("blueprint-solara.read_root", _external=True)
-    user = get_user()
-    if user is None and settings.oauth.private:
-        logger.error("app is private, requires login")
-        ws.close(1008, "app is private, requires login")  # policy violation
-        return
+    if settings.oauth.private and has_solara_enterprise:
+        raise RuntimeError("SOLARA_OAUTH_PRIVATE requires solara-enterprise")
+    if has_solara_enterprise:
+        user = get_user()
+        if user is None and settings.oauth.private:
+            logger.error("app is private, requires login")
+            ws.close(1008, "app is private, requires login")  # policy violation
+            return
+    else:
+        user = None
 
     try:
         connection_id = request.args["session_id"]
@@ -200,9 +215,10 @@ def read_root(path):
     return response
 
 
-blueprint.route("/_solara/auth/authorize")(authorize)
-blueprint.route("/_solara/auth/logout")(logout)
-blueprint.route("/_solara/auth/login")(login)
+if has_solara_enterprise:
+    blueprint.route("/_solara/auth/authorize")(authorize)
+    blueprint.route("/_solara/auth/logout")(logout)
+    blueprint.route("/_solara/auth/login")(login)
 
 
 @blueprint.route("/readyz")
@@ -215,7 +231,8 @@ def readyz():
 websocket_extension.init_app(blueprint)
 app = Flask(__name__, static_url_path="/_static")  # do not intervere with out static files
 app.register_blueprint(blueprint)
-init_flask(app)
+if has_solara_enterprise:
+    init_flask(app)
 
 if __name__ == "__main__":
     app.run(debug=False, port=8765)
