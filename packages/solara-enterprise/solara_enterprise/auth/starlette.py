@@ -3,6 +3,7 @@ import logging
 from typing import Dict, Optional
 
 from authlib.integrations.starlette_client import OAuth
+from solara.server import settings
 from starlette.authentication import (
     AuthCredentials,
     AuthenticationBackend,
@@ -11,8 +12,6 @@ from starlette.authentication import (
 )
 from starlette.requests import HTTPConnection, Request
 from starlette.responses import RedirectResponse
-
-from solara.server import settings
 
 logger = logging.getLogger("solara.enterprise.auth.starlette")
 
@@ -47,14 +46,14 @@ def check_oauth():
 init()
 
 
-async def authorize(request: Request):
+def authorize(request: Request):
     check_oauth()
     assert oauth is not None
     assert oauth.oauth1 is not None
 
     org_url = request.session.pop("redirect_uri", settings.main.base_url + "/")
 
-    token = await oauth.oauth1.authorize_access_token(request)
+    token = oauth.oauth1.authorize_access_token(request)
     # workaround: if token is set in the session in one piece, it is not saved, so we
     # split it up
     token.pop("id_token", None)
@@ -65,7 +64,7 @@ async def authorize(request: Request):
     return RedirectResponse(org_url)
 
 
-async def logout(request: Request):
+def logout(request: Request):
     redirect_uri = request.query_params.get("redirect_uri", "/")
     # ideally, we only remove these:
     request.session.pop("token", None)
@@ -77,7 +76,7 @@ async def logout(request: Request):
     return RedirectResponse(redirect_uri)
 
 
-async def login(request: Request, redirect_uri: Optional[str] = None):
+def login(request: Request, redirect_uri: Optional[str] = None):
     check_oauth()
     assert oauth is not None
     assert oauth.oauth1 is not None
@@ -90,7 +89,7 @@ async def login(request: Request, redirect_uri: Optional[str] = None):
         # where it detect we the OAuth.required=True setting, leading to a redirect
         request.session["redirect_uri"] = str(request.url.path)
     request.session["client_id"] = settings.oauth.client_id
-    result = await oauth.oauth1.authorize_redirect(request, str(request.base_url) + "_solara/auth/authorize")
+    result = oauth.oauth1.authorize_redirect(request, str(request.base_url) + "_solara/auth/authorize")
     return result
 
 
