@@ -18,7 +18,7 @@ def list_dir(path, filter: Callable[[Path], bool] = lambda x: True, folders_firs
         return {"name": n, "is_file": is_file, "size": humanize.naturalsize(os.stat(full_path).st_size) if is_file else None}
 
     def keyfunc(item):
-        if item['is_file']:
+        if item["is_file"]:
             return str(int(folders_first)) + item["name"].lower()
         else:
             return str(int(not folders_first)) + item["name"].lower()
