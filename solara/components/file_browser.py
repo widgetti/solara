@@ -11,7 +11,7 @@ import solara
 from solara.components import Div
 
 
-def list_dir(path, filter=filter):
+def list_dir(path, filter: Callable[[Path], bool] = lambda x: True):
     def mk_item(n):
         full_path = join(path, n)
         is_file = isfile(full_path)
