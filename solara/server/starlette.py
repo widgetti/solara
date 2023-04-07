@@ -137,7 +137,7 @@ async def kernels(id):
 async def kernel_connection(ws: starlette.websockets.WebSocket):
     session_id = ws.cookies.get(server.COOKIE_KEY_SESSION_ID)
 
-    if settings.oauth.private and has_solara_enterprise:
+    if settings.oauth.private and not has_solara_enterprise:
         raise RuntimeError("SOLARA_OAUTH_PRIVATE requires solara-enterprise")
     if has_solara_enterprise:
         user = get_user(ws)

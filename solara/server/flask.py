@@ -101,7 +101,7 @@ def kernels(id):
 def kernels_connection(ws: simple_websocket.Server, id: str, name: str):
     if not settings.main.base_url:
         settings.main.base_url = url_for("blueprint-solara.read_root", _external=True)
-    if settings.oauth.private and has_solara_enterprise:
+    if settings.oauth.private and not has_solara_enterprise:
         raise RuntimeError("SOLARA_OAUTH_PRIVATE requires solara-enterprise")
     if has_solara_enterprise:
         user = get_user()
