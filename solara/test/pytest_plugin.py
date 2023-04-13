@@ -10,7 +10,7 @@ import textwrap
 import threading
 import typing
 from pathlib import Path
-from typing import Callable, Union, cast
+from typing import Any, Callable, Dict, Generator, List, Union, cast
 
 import ipywidgets as widgets
 import pytest
@@ -31,6 +31,7 @@ if typing.TYPE_CHECKING:
 logger = logging.getLogger("solara.pytest_plugin")
 
 TEST_PORT = int(os.environ.get("PORT", "18765"))  # up to 18770 is a valid callback for auth0
+TIMEOUT = float(os.environ.get("SOLARA_PW_TIMEOUT", "10"))
 
 
 @pytest.fixture(scope="session")
@@ -45,6 +46,76 @@ def solara_server(request):
         yield webserver
     finally:
         webserver.stop_serving()
+
+
+@pytest.fixture(scope="session")
+def context_session(
+    browser: "playwright.sync_api.Browser",
+    browser_context_args: Dict,
+    pytestconfig: Any,
+    request: pytest.FixtureRequest,
+) -> Generator["playwright.sync_api.BrowserContext", None, None]:
+    from playwright.sync_api import Error, Page
+    from pytest_playwright.pytest_playwright import _build_artifact_test_folder
+    from slugify import slugify  # type: ignore
+
+    pages: List[Page] = []
+    context = browser.new_context(**browser_context_args)
+    context.on("page", lambda page: pages.append(page))
+
+    tracing_option = pytestconfig.getoption("--tracing")
+    capture_trace = tracing_option in ["on", "retain-on-failure"]
+    if capture_trace:
+        context.tracing.start(
+            title=slugify(request.node.nodeid),
+            screenshots=True,
+            snapshots=True,
+            sources=True,
+        )
+
+    # decrease timeout from 30s to 10s
+    context.set_default_timeout(TIMEOUT * 1000)
+    yield context
+
+    # If requst.node is missing rep_call, then some error happened during execution
+    # that prevented teardown, but should still be counted as a failure
+    failed = request.node.rep_call.failed if hasattr(request.node, "rep_call") else True
+
+    if capture_trace:
+        retain_trace = tracing_option == "on" or (failed and tracing_option == "retain-on-failure")
+        if retain_trace:
+            trace_path = _build_artifact_test_folder(pytestconfig, request, "trace.zip")
+            context.tracing.stop(path=trace_path)
+        else:
+            context.tracing.stop()
+
+    screenshot_option = pytestconfig.getoption("--screenshot")
+    capture_screenshot = screenshot_option == "on" or (failed and screenshot_option == "only-on-failure")
+    if capture_screenshot:
+        for index, page in enumerate(pages):
+            human_readable_status = "failed" if failed else "finished"
+            screenshot_path = _build_artifact_test_folder(pytestconfig, request, f"test-{human_readable_status}-{index+1}.png")
+            try:
+                page.screenshot(timeout=5000, path=screenshot_path)
+            except Error:
+                pass
+
+    context.close()
+
+    video_option = pytestconfig.getoption("--video")
+    preserve_video = video_option == "on" or (failed and video_option == "retain-on-failure")
+    if preserve_video:
+        for page in pages:
+            video = page.video
+            if not video:
+                continue
+            try:
+                video_path = video.path()
+                file_name = os.path.basename(video_path)
+                video.save_as(path=_build_artifact_test_folder(pytestconfig, request, file_name))
+            except Error:
+                # Silent catch empty videos.
+                pass
 
 
 # page fixture that keeps open all the time, is faster
