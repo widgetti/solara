@@ -36,14 +36,14 @@ class ServerBase(threading.Thread):
         if self.error:
             raise self.error
 
-    def wait_until_serving(self):
-        for n in range(30):
+    def wait_until_serving(self, timeout: float = 10):
+        start = time.time()
+        while time.time() < start + timeout:
             if self.has_started():
                 time.sleep(0.1)  # give some time to really start
                 return
             time.sleep(0.05)
-        else:
-            raise RuntimeError(f"Server at {self.base_url} does not seem to be running")
+        raise RuntimeError(f"Server at {self.base_url} does not seem to be running")
 
     def serve(self):
         raise NotImplementedError
@@ -54,6 +54,7 @@ class ServerBase(threading.Thread):
             self.serve()
         except:  # noqa: E722
             logger.exception("Oops, server stopped unexpectedly")
+            raise
         finally:
             self.stopped.set()
 

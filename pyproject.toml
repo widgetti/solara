@@ -104,6 +104,9 @@ Home = "https://www.github.com/widgetti/solara"
 [project.scripts]
 solara = "solara.__main__:main"
 
+[project.entry-points.pytest11]
+solara = "solara.test.pytest_plugin"
+
 [tool.black]
 line-length = 160
 
