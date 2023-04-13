@@ -1,6 +1,12 @@
 import numpy as np
 
 
+def get_pandas_major():
+    import pandas as pd
+
+    return int(pd.__version__[0])
+
+
 def df_type(df):
     return df.__class__.__module__.split(".")[0]
 
@@ -23,7 +29,10 @@ def df_value_count(df, column, limit=None):
     if df_type(df) == "pandas":
         dfv = df[column].value_counts(dropna=False).to_frame()
         dfv = dfv.reset_index()
-        dfv = dfv.rename({"index": "value", column: "count"}, axis=1)
+        if get_pandas_major() >= 2:
+            dfv = dfv.rename({column: "value"}, axis=1)
+        else:
+            dfv = dfv.rename({"index": "value", column: "count"}, axis=1)
         return dfv[:limit]
     else:
         raise TypeError(f"{type(df)} not supported")
