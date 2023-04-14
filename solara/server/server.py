@@ -170,9 +170,9 @@ def process_kernel_messages(kernel: Kernel, msg: Dict):
 
     if ipykernel_major < 6:
         # the channel argument was added in 6.0
-        kernel.set_parent(None, msg["header"])
+        kernel.set_parent(None, msg)
     else:
-        kernel.set_parent(None, msg["header"], msg["channel"])
+        kernel.set_parent(None, msg, msg["channel"])
     if msg_type == "kernel_info_request":
         content = {
             "status": "ok",
