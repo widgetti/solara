@@ -10,6 +10,7 @@ from unittest import mock
 import ipykernel.kernelbase
 import IPython.display
 import ipywidgets
+import ipywidgets.widgets.widget_output
 from IPython.core.interactiveshell import InteractiveShell
 
 from . import app, reload, settings
@@ -228,6 +229,22 @@ def Thread_debug_run(self):
 _patched = False
 
 
+def Output_enter(self):
+    self._flush()
+
+    def hook(msg):
+        if msg["msg_type"] == "display_data":
+            self.outputs += ({"output_type": "display_data", "data": msg["content"]["data"], "metadata": msg["content"]["metadata"]},)
+            return None
+        return msg
+
+    get_ipython().display_pub.register_hook(hook)
+
+
+def Output_exit(self, exc_type, exc_value, traceback):
+    get_ipython().display_pub._hooks.pop()
+
+
 def patch():
     global _patched
     if _patched:
@@ -274,10 +291,11 @@ def patch():
     # not sure why we cannot reproduce that locally
     ipykernel.kernelbase.Kernel.initialized = classmethod(kernel_initialized_dispatch)  # type: ignore
     ipywidgets.widgets.widget.get_ipython = get_ipython
-
     # TODO: find a way to actually monkeypatch get_ipython
     IPython.get_ipython = get_ipython
-    ipywidgets.widgets.widget_output.get_ipython = get_ipython
+
+    ipywidgets.widgets.widget_output.Output.__enter__ = Output_enter
+    ipywidgets.widgets.widget_output.Output.__exit__ = Output_exit
 
     def model_id_debug(self: ipywidgets.widgets.widget.Widget):
         from ipyvue.ForceLoad import force_load_instance
