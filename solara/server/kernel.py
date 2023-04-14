@@ -16,6 +16,7 @@ from ipykernel.comm import CommManager
 from zmq.eventloop.zmqstream import ZMQStream
 
 import solara
+from solara.server.shell import SolaraInteractiveShell
 
 from . import settings, websocket
 
@@ -257,12 +258,14 @@ class Kernel(ipykernel.kernelbase.Kernel):
                 ipywidgets.widgets.widget.Widget.comm.klass = Comm
         else:
             self.comm_manager = CommManager(parent=self, kernel=self)
-        self.shell = None
         self.log = logging.getLogger("fake")
 
         comm_msg_types = ["comm_open", "comm_msg", "comm_close"]
         for msg_type in comm_msg_types:
             self.shell_handlers[msg_type] = getattr(self.comm_manager, msg_type)
+        self.shell = SolaraInteractiveShell()
+        self.shell.display_pub.session = self.session
+        self.shell.display_pub.pub_socket = self.iopub_socket
 
     async def _flush_control_queue(self):
         pass
@@ -275,3 +278,11 @@ class Kernel(ipykernel.kernelbase.Kernel):
 
     def post_handler_hook(self, *args):
         pass
+
+    def set_parent(self, ident, parent, channel="shell"):
+        """Overridden from parent to tell the display hook and output streams
+        about the parent message.
+        """
+        super().set_parent(ident, parent, channel)
+        if channel == "shell":
+            self.shell.set_parent(parent)

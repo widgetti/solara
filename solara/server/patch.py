@@ -10,6 +10,7 @@ from unittest import mock
 import ipykernel.kernelbase
 import IPython.display
 import ipywidgets
+from IPython.core.interactiveshell import InteractiveShell
 
 from . import app, reload, settings
 from .utils import pdb_guard
@@ -28,7 +29,7 @@ class FakeIPython:
     def __init__(self, context: app.AppContext):
         self.context = context
         self.kernel = context.kernel
-        self.display_pub = mock.MagicMock()
+        self.display_pub = self.kernel.shell.display_pub
         # needed for the pyplot interface of matplotlib
         # (although we don't really support it)
         self.events = mock.MagicMock()
@@ -66,6 +67,11 @@ class FakeIPython:
 def kernel_instance_dispatch(cls, *args, **kwargs):
     context = app.get_current_context()
     return context.kernel
+
+
+def interactive_shell_instance_dispatch(cls, *args, **kwargs):
+    context = app.get_current_context()
+    return context.kernel.shell
 
 
 def kernel_initialized_dispatch(cls):
@@ -261,13 +267,17 @@ def patch():
     #                                     variable has type "Callable[[VarArg(Any), KwArg(Any)], Any]")
     # not sure why we cannot reproduce that locally
     ipykernel.kernelbase.Kernel.instance = classmethod(kernel_instance_dispatch)  # type: ignore
+    InteractiveShell.instance = classmethod(interactive_shell_instance_dispatch)  # type: ignore
     # on CI we get a mypy error:
     # solara/server/patch.py:211: error: Cannot assign to a method
     # solara/server/patch.py:211: error: Incompatible types in assignment (expression has type "classmethod[Any]", variable has type "Callable[[], Any]")
     # not sure why we cannot reproduce that locally
     ipykernel.kernelbase.Kernel.initialized = classmethod(kernel_initialized_dispatch)  # type: ignore
     ipywidgets.widgets.widget.get_ipython = get_ipython
+
+    # TODO: find a way to actually monkeypatch get_ipython
     IPython.get_ipython = get_ipython
+    ipywidgets.widgets.widget_output.get_ipython = get_ipython
 
     def model_id_debug(self: ipywidgets.widgets.widget.Widget):
         from ipyvue.ForceLoad import force_load_instance
