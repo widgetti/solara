@@ -10,6 +10,8 @@ from unittest import mock
 import ipykernel.kernelbase
 import IPython.display
 import ipywidgets
+import ipywidgets.widgets.widget_output
+from IPython.core.interactiveshell import InteractiveShell
 
 from . import app, reload, settings
 from .utils import pdb_guard
@@ -28,7 +30,7 @@ class FakeIPython:
     def __init__(self, context: app.AppContext):
         self.context = context
         self.kernel = context.kernel
-        self.display_pub = mock.MagicMock()
+        self.display_pub = self.kernel.shell.display_pub
         # needed for the pyplot interface of matplotlib
         # (although we don't really support it)
         self.events = mock.MagicMock()
@@ -66,6 +68,11 @@ class FakeIPython:
 def kernel_instance_dispatch(cls, *args, **kwargs):
     context = app.get_current_context()
     return context.kernel
+
+
+def interactive_shell_instance_dispatch(cls, *args, **kwargs):
+    context = app.get_current_context()
+    return context.kernel.shell
 
 
 def kernel_initialized_dispatch(cls):
@@ -222,6 +229,22 @@ def Thread_debug_run(self):
 _patched = False
 
 
+def Output_enter(self):
+    self._flush()
+
+    def hook(msg):
+        if msg["msg_type"] == "display_data":
+            self.outputs += ({"output_type": "display_data", "data": msg["content"]["data"], "metadata": msg["content"]["metadata"]},)
+            return None
+        return msg
+
+    get_ipython().display_pub.register_hook(hook)
+
+
+def Output_exit(self, exc_type, exc_value, traceback):
+    get_ipython().display_pub._hooks.pop()
+
+
 def patch():
     global _patched
     if _patched:
@@ -261,13 +284,18 @@ def patch():
     #                                     variable has type "Callable[[VarArg(Any), KwArg(Any)], Any]")
     # not sure why we cannot reproduce that locally
     ipykernel.kernelbase.Kernel.instance = classmethod(kernel_instance_dispatch)  # type: ignore
+    InteractiveShell.instance = classmethod(interactive_shell_instance_dispatch)  # type: ignore
     # on CI we get a mypy error:
     # solara/server/patch.py:211: error: Cannot assign to a method
     # solara/server/patch.py:211: error: Incompatible types in assignment (expression has type "classmethod[Any]", variable has type "Callable[[], Any]")
     # not sure why we cannot reproduce that locally
     ipykernel.kernelbase.Kernel.initialized = classmethod(kernel_initialized_dispatch)  # type: ignore
     ipywidgets.widgets.widget.get_ipython = get_ipython
+    # TODO: find a way to actually monkeypatch get_ipython
     IPython.get_ipython = get_ipython
+
+    ipywidgets.widgets.widget_output.Output.__enter__ = Output_enter
+    ipywidgets.widgets.widget_output.Output.__exit__ = Output_exit
 
     def model_id_debug(self: ipywidgets.widgets.widget.Widget):
         from ipyvue.ForceLoad import force_load_instance
