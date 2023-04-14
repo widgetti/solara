@@ -210,7 +210,10 @@ class SessionWebsocket(session.Session):
 
     def send(self, stream, msg_or_type, content=None, parent=None, ident=None, buffers=None, track=False, header=None, metadata=None):
         try:
-            msg = self.msg(msg_or_type, content=content, parent=parent, header=header, metadata=metadata)
+            if isinstance(msg_or_type, dict):
+                msg = msg_or_type
+            else:
+                msg = self.msg(msg_or_type, content=content, parent=parent, header=header, metadata=metadata)
             _fix_msg(msg)
             msg["channel"] = stream.channel
             # not using pdb guard for performance reasons
