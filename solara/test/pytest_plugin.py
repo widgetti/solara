@@ -10,12 +10,11 @@ import textwrap
 import threading
 import typing
 from pathlib import Path
-from typing import Any, Callable, Dict, Generator, List, Union, cast
+from typing import Any, Callable, Dict, Generator, List, Union
 
 import ipywidgets as widgets
 import pytest
 import requests
-from IPython.core.interactiveshell import InteractiveShell
 
 import solara.server.app
 import solara.server.server
@@ -163,39 +162,9 @@ def SyncWrapper():
     return w.VBox(children=[w.HTML(value="Test in solara"), w.VBox()])
 
 
-patched = False
-in_test_display = False
-test_output = cast(widgets.Output, None)
-
-
-def patch_display():
-    global patched, ipython_display_formatter_original, original_display_publisher_publish
-    if patched:
-        return
-    patched = True
-    shell = InteractiveShell.instance()
-    original_display_publisher_publish = shell.display_pub.publish
-    shell.display_pub.publish = publish
-
-
-original_display_publisher_publish = None
-
-
-def publish(data, metadata=None, *args, **kwargs):
-    """Will intercept a display call and add to the output widget."""
-    assert original_display_publisher_publish is not None
-    if test_output is not None:
-        test_output.outputs += ({"output_type": "display_data", "data": data, "metadata": metadata},)
-    else:
-        return original_display_publisher_publish(data, metadata, *args, **kwargs)
-
-
-patch_display()
-
-
 @pytest.fixture()
 def solara_test(solara_server, solara_app, page_session: "playwright.sync_api.Page"):
-    global test_output, run_calls
+    global run_calls
     with solara_app("solara.test.pytest_plugin:SyncWrapper"):
         page_session.goto(solara_server.base_url)
         run_event.wait()
@@ -208,7 +177,8 @@ def solara_test(solara_server, solara_app, page_session: "playwright.sync_api.Pa
             page_session.locator("text=Test in solara").wait_for()
             context.container.children[0].children[1].children[1].children = [test_output]  # type: ignore
             try:
-                yield
+                with test_output:
+                    yield
             finally:
                 test_output.close()
                 run_event.clear()
