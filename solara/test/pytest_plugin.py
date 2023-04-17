@@ -9,6 +9,7 @@ import sys
 import textwrap
 import threading
 import typing
+from io import BytesIO
 from pathlib import Path
 from typing import Any, Callable, Dict, Generator, List, Union
 
@@ -413,5 +414,112 @@ def ipywidgets_runner(
     ipywidgets_runner_solara,
     request,
 ):
-    name = f"ipywidgets_runner_{request.param}"
+    runner = request.param
+    name = f"ipywidgets_runner_{runner}"
     return locals()[name]
+
+
+@pytest.fixture(scope="session")
+def solara_snapshots_directory(request: Any) -> Path:
+    path = Path(request.config.rootpath) / "tests" / "ui" / "snapshots"
+    if not path.exists():
+        path.mkdir(exist_ok=True, parents=True)
+    return path
+
+
+def compare_default(reference, result, threshold=0.1):
+    from PIL import Image
+    from pixelmatch.contrib.PIL import pixelmatch
+
+    difference = Image.new("RGB", reference.size)
+    diff = pixelmatch(reference, result, difference, threshold=threshold)
+    return diff, difference
+
+
+@pytest.fixture
+def assert_solara_snapshot(pytestconfig: Any, request: Any, browser_name: str, solara_snapshots_directory) -> Callable:
+    from PIL import Image
+
+    testname = f"{str(Path(request.node.name))}".replace("[", "-").replace("]", "").replace(" ", "-").replace(",", "-")
+    directory = solara_snapshots_directory / request.node.location[0]
+    output_dir = Path(pytestconfig.getoption("--output")) / request.node.location[0]
+    if not directory.exists():
+        directory.mkdir(exist_ok=True, parents=True)
+    if not output_dir.exists():
+        output_dir.mkdir(exist_ok=True, parents=True)
+
+    def assert_implementation(
+        image: bytes,
+        compare: Callable = compare_default,
+        testname=testname,
+        format="{prefix}{testname}-{platform}{postfix}-{type}.png",
+        prefix="",
+        postfix="",
+    ):
+        update_snapshot = pytestconfig.getoption("--solara-update-snapshots")
+        format_kwargs = dict(testname=testname, platform=sys.platform, browser=browser_name, prefix=prefix, postfix=postfix)
+        path_reference = directory / format.format(**format_kwargs, type="reference").format(**format_kwargs)
+        path_reference_output = output_dir / format.format(**format_kwargs, type="reference").format(**format_kwargs)
+        path_previous = output_dir / format.format(**format_kwargs, type="previous").format(**format_kwargs)
+        path_diff = output_dir / format.format(**format_kwargs, type="diff").format(**format_kwargs)
+        if not path_reference.exists():
+            if update_snapshot:
+                path_reference.write_bytes(image)
+            else:
+                # CI run, store the reference, but fail
+                path_reference_output.write_bytes(image)
+                raise AssertionError(
+                    f'Snapshot {path_reference} did not exist, file written. Run `cp "{path_reference_output}" "{path_reference}"` '
+                    "Commit this file and rerun the CI. Or run with --solara-update-snapshots to update it."
+                )
+        else:
+            if update_snapshot:
+                path_reference.write_bytes(image)
+            else:
+                reference = Image.open(path_reference)
+                result = Image.open(BytesIO(image))
+                difference = None
+
+                def write():
+                    if update_snapshot:
+                        path_reference.write_bytes(image)
+                    else:
+                        # CI run, update the reference in the output dir, and store the previous run next to it
+                        path_reference_output.write_bytes(image)
+                        reference.save(path_previous)
+                        if difference is not None:
+                            difference.save(path_diff)
+
+                # the error msg of the default compare is not very helpful
+                if reference.size != result.size:
+                    write()
+                    raise AssertionError(
+                        f"Snapshot {path_reference} has a different size than the result {reference.size} != {result.size}."
+                        f'Run `cp "{path_reference_output}" "{path_reference}"` Commit this file and rerun the CI. '
+                        "Or run with --solara-update-snapshots to update it."
+                    )
+                diff, difference = compare(reference, result)
+                if diff > 0:
+                    write()
+                    raise AssertionError(
+                        f'Snapshot {path_reference} does not match, Run `cp "{path_reference_output}" "{path_reference}"` Commit this file and rerun the CI. '
+                        "Or run with --solara-update-snapshots to update it."
+                    )
+
+    return assert_implementation
+
+
+def pytest_addoption(parser: Any) -> None:
+    group = parser.getgroup("solara", "Solara")
+    group.addoption(
+        "--solara-update-snapshots",
+        action="store_true",
+        default=False,
+        help="Do not compare, but store the snapshots.",
+    )
+    group.addoption(
+        "--solara-update-snapshots-ci",
+        action="store_true",
+        default=False,
+        help="On compare failure, store to the reference image. Useful for running in CI and downloading the snapshots.",
+    )

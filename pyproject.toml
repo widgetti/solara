@@ -97,6 +97,15 @@ documentation = [
     "vaex-core",
     "vaex-hdf5",
 ]
+pytest = [
+    "pytest",
+    "playwright; python_version > '3.6'",
+    "pytest-playwright; python_version > '3.6'",
+    "voila",
+    "jupyterlab",
+    "pillow",
+    "pixelmatch",
+]
 
 [project.urls]
 Home = "https://www.github.com/widgetti/solara"
