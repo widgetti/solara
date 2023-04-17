@@ -9,12 +9,14 @@ import sys
 import textwrap
 import threading
 import typing
+from io import BytesIO
 from pathlib import Path
 from typing import Any, Callable, Dict, Generator, List, Union
 
 import ipywidgets as widgets
 import pytest
 import requests
+from IPython.display import display
 
 import solara.server.app
 import solara.server.server
@@ -178,6 +180,13 @@ def solara_test(solara_server, solara_app, page_session: "playwright.sync_api.Pa
             context.container.children[0].children[1].children[1].children = [test_output]  # type: ignore
             try:
                 with test_output:
+                    warmup()
+                    button = page_session.locator(".solara-warmup-widget")
+                    button.wait_for()
+                    page_session.evaluate("document.fonts.ready")
+                    button.click()
+                    button.wait_for(state="detached")
+                    page_session.evaluate("document.fonts.ready")
                     yield
             finally:
                 test_output.close()
@@ -248,12 +257,12 @@ class ServerJupyter(ServerBase):
 
 
 @pytest.fixture(scope="session")
-def voila_server(voila_notebook):
+def voila_server(notebook_path):
     global TEST_PORT
     port = TEST_PORT
     TEST_PORT += 1
-    write_notebook("print('hello')", voila_notebook)
-    server = ServerVoila(voila_notebook, port)
+    write_notebook(["print('hello')"], notebook_path)
+    server = ServerVoila(notebook_path, port)
     try:
         server.serve_threaded()
         server.wait_until_serving()
@@ -263,12 +272,12 @@ def voila_server(voila_notebook):
 
 
 @pytest.fixture(scope="session")
-def jupyter_server(voila_notebook):
+def jupyter_server(notebook_path):
     global TEST_PORT
     port = TEST_PORT
     TEST_PORT += 1
-    write_notebook("print('hello')", voila_notebook)
-    server = ServerJupyter(voila_notebook, port)
+    write_notebook(["print('hello')"], notebook_path)
+    server = ServerJupyter(notebook_path, port)
     try:
         server.serve_threaded()
         server.wait_until_serving()
@@ -283,9 +292,9 @@ def code_from_function(f) -> str:
     return textwrap.dedent("".join(lines))
 
 
-def write_notebook(code: str, path: str):
+def write_notebook(codes: List[str], path: str):
     notebook = {
-        "cells": [{"cell_type": "code", "execution_count": None, "id": "df77670d", "metadata": {}, "outputs": [], "source": [code]}],
+        "cells": [{"cell_type": "code", "execution_count": None, "id": "df77670d", "metadata": {}, "outputs": [], "source": [code]} for code in codes],
         "metadata": {
             "kernelspec": {"display_name": "Python 3 (ipykernel)", "language": "python", "name": "python3"},
             "language_info": {
@@ -307,13 +316,33 @@ def write_notebook(code: str, path: str):
 
 
 @pytest.fixture(scope="session")
-def voila_notebook(tmp_path_factory):
+def notebook_path(tmp_path_factory):
     path = tmp_path_factory.mktemp("notebooks") / "notebook.ipynb"
     yield str(path)
 
 
-@pytest.fixture(scope="session")
-def ipywidgets_runner_voila(voila_server, voila_notebook, page_session: "playwright.sync_api.Page"):
+def warmup():
+    import ipyvuetify as v
+
+    # give it a scope so we do not collide with the user's code
+    def scoped():
+        button = v.Btn(children=["Warmup js/css/fonts", v.Icon(children=["mdi-check"])], class_="solara-warmup-widget")
+        container = v.Container(
+            children=[button],
+            class_="ma-2 snapshot-container",
+        )
+
+        def remove_button(*ignore):
+            container.children = []
+            container.style_ = "display: none"
+
+        button.on_event("click", remove_button)
+        return container
+
+    display(scoped())
+
+
+def create_runner_voila(voila_server, notebook_path, page_session: "playwright.sync_api.Page"):
     count = 0
     base_url = voila_server.base_url
 
@@ -325,15 +354,20 @@ def ipywidgets_runner_voila(voila_server, voila_notebook, page_session: "playwri
 import os
 os.chdir({cwd!r})
         \n"""
-        write_notebook(code_setup + code_from_function(f), voila_notebook)
+        write_notebook([code_setup, code_from_function(warmup), code_from_function(f)], notebook_path)
         page_session.goto(base_url + f"?v={count}")
+        button = page_session.locator(".solara-warmup-widget")
+        button.wait_for()
+        page_session.evaluate("document.fonts.ready")
+        button.click()
+        button.wait_for(state="detached")
+        page_session.evaluate("document.fonts.ready")
         count += 1
 
     return run
 
 
-@pytest.fixture(scope="session")
-def ipywidgets_runner_jupyter_lab(jupyter_server, voila_notebook, page_session: "playwright.sync_api.Page"):
+def create_runner_jupyter_lab(jupyter_server, notebook_path, page_session: "playwright.sync_api.Page"):
     count = 0
     base_url = jupyter_server.base_url
 
@@ -344,20 +378,35 @@ def ipywidgets_runner_jupyter_lab(jupyter_server, voila_notebook, page_session: 
         code_setup = f"""
 import os
 os.chdir({cwd!r})
+import ipyvuetify as v;
+v.Btn(children=['Warmup js/css/fonts', v.Icon(children=["mdi-check"])], class_="solara-warmup-widget")
         \n"""
-        write_notebook(code_setup + code_from_function(f), voila_notebook)
-        page_session.goto(base_url + f"/lab/tree/notebook.ipynb?v={count}")
+        write_notebook([code_setup, code_from_function(f)], notebook_path)
+        page_session.goto(base_url + f"/lab/workspaces/solara-test/tree/notebook.ipynb?reset&v={count}")
         page_session.locator('css=[data-command="runmenu:run"]').wait_for()
+        # close the file browser tab, it does not give a consistent width each time
+        # which leads to fractional pixel x, which causes the screenshot to be different
+        # by 1 pixel
+        # first make sure the page is loaded
+        page_session.locator('css=[data-id="filebrowser"]').wait_for()
+        page_session.locator('css=[data-command="filebrowser:create-main-launcher"]').wait_for()
+        # close
+        page_session.locator('css=[data-id="filebrowser"]').click()
+        # make sure it is closed
+        page_session.locator('css=[data-command="filebrowser:create-main-launcher"]').wait_for(state="hidden")
+
         page_session.locator('button:has-text("No Kernel")').wait_for(state="detached")
         page_session.locator('css=[data-status="idle"]').wait_for()
+        page_session.locator('css=[data-command="runmenu:run"]').click()
+        page_session.locator(".solara-warmup-widget").wait_for()
+        page_session.evaluate("document.fonts.ready")
         page_session.locator('css=[data-command="runmenu:run"]').click()
         count += 1
 
     return run
 
 
-@pytest.fixture(scope="session")
-def ipywidgets_runner_jupyter_notebook(jupyter_server, voila_notebook, page_session: "playwright.sync_api.Page"):
+def create_runner_jupyter_notebook(jupyter_server, notebook_path, page_session: "playwright.sync_api.Page"):
     count = 0
     base_url = jupyter_server.base_url
 
@@ -368,19 +417,23 @@ def ipywidgets_runner_jupyter_notebook(jupyter_server, voila_notebook, page_sess
         code_setup = f"""
 import os
 os.chdir({cwd!r})
+import ipyvuetify as v;
+v.Btn(children=['Warmup js/css/fonts', v.Icon(children=["mdi-check"])], class_="solara-warmup-widget")
         \n"""
-        write_notebook(code_setup + code_from_function(f), voila_notebook)
+        write_notebook([code_setup, code_from_function(f)], notebook_path)
         page_session.goto(base_url + f"/notebooks/notebook.ipynb?v={count}")
         page_session.locator("text=Kernel starting, please wait...").wait_for(state="detached")
         page_session.locator("Kernel Ready").wait_for(state="detached")
+        page_session.locator('css=[data-jupyter-action="jupyter-notebook:run-cell-and-select-next"]').click()
+        page_session.locator(".solara-warmup-widget").wait_for()
+        page_session.evaluate("document.fonts.ready")
         page_session.locator('css=[data-jupyter-action="jupyter-notebook:run-cell-and-select-next"]').click()
         count += 1
 
     return run
 
 
-@pytest.fixture()
-def ipywidgets_runner_solara(solara_test, solara_server, page_session: "playwright.sync_api.Page"):
+def create_runner_solara(solara_test, solara_server, page_session: "playwright.sync_api.Page"):
     count = 0
 
     def run(f: Callable):
@@ -399,7 +452,35 @@ def ipywidgets_runner_solara(solara_test, solara_server, page_session: "playwrig
             sys.path.remove(cwd)
         count += 1
 
-    yield run
+    return run
+
+
+@pytest.fixture(scope="session")
+def ipywidgets_runner_voila(voila_server, notebook_path, page_session: "playwright.sync_api.Page"):
+    if "voila" not in runners:
+        return None
+    return create_runner_voila(voila_server, notebook_path, page_session)
+
+
+@pytest.fixture(scope="session")
+def ipywidgets_runner_jupyter_lab(jupyter_server, notebook_path, page_session: "playwright.sync_api.Page"):
+    if "jupyter_lab" not in runners:
+        return None
+    return create_runner_jupyter_lab(jupyter_server, notebook_path, page_session)
+
+
+@pytest.fixture(scope="session")
+def ipywidgets_runner_jupyter_notebook(jupyter_server, notebook_path, page_session: "playwright.sync_api.Page"):
+    if "jupyter_notebook" not in runners:
+        return None
+    return create_runner_jupyter_notebook(jupyter_server, notebook_path, page_session)
+
+
+@pytest.fixture()
+def ipywidgets_runner_solara(solara_test, solara_server, page_session: "playwright.sync_api.Page"):
+    if "solara" not in runners:
+        return None
+    return create_runner_solara(solara_test, solara_server, page_session)
 
 
 runners = os.environ.get("SOLARA_TEST_RUNNERS", "solara,voila,jupyter_lab,jupyter_notebook").split(",")
@@ -413,5 +494,112 @@ def ipywidgets_runner(
     ipywidgets_runner_solara,
     request,
 ):
-    name = f"ipywidgets_runner_{request.param}"
+    runner = request.param
+    name = f"ipywidgets_runner_{runner}"
     return locals()[name]
+
+
+@pytest.fixture(scope="session")
+def solara_snapshots_directory(request: Any) -> Path:
+    path = Path(request.config.rootpath) / "tests" / "ui" / "snapshots"
+    if not path.exists():
+        path.mkdir(exist_ok=True, parents=True)
+    return path
+
+
+def compare_default(reference, result, threshold=0.1):
+    from PIL import Image
+    from pixelmatch.contrib.PIL import pixelmatch
+
+    difference = Image.new("RGB", reference.size)
+    diff = pixelmatch(reference, result, difference, threshold=threshold)
+    return diff, difference
+
+
+@pytest.fixture
+def assert_solara_snapshot(pytestconfig: Any, request: Any, browser_name: str, solara_snapshots_directory) -> Callable:
+    from PIL import Image
+
+    testname = f"{str(Path(request.node.name))}".replace("[", "-").replace("]", "").replace(" ", "-").replace(",", "-")
+    directory = solara_snapshots_directory / request.node.location[0]
+    output_dir = Path(pytestconfig.getoption("--output")) / request.node.location[0]
+    if not directory.exists():
+        directory.mkdir(exist_ok=True, parents=True)
+    if not output_dir.exists():
+        output_dir.mkdir(exist_ok=True, parents=True)
+
+    def assert_implementation(
+        image: bytes,
+        compare: Callable = compare_default,
+        testname=testname,
+        format="{prefix}{testname}-{platform}{postfix}-{type}.png",
+        prefix="",
+        postfix="",
+    ):
+        update_snapshot = pytestconfig.getoption("--solara-update-snapshots")
+        format_kwargs = dict(testname=testname, platform=sys.platform, browser=browser_name, prefix=prefix, postfix=postfix)
+        path_reference = directory / format.format(**format_kwargs, type="reference").format(**format_kwargs)
+        path_reference_output = output_dir / format.format(**format_kwargs, type="reference").format(**format_kwargs)
+        path_previous = output_dir / format.format(**format_kwargs, type="previous").format(**format_kwargs)
+        path_diff = output_dir / format.format(**format_kwargs, type="diff").format(**format_kwargs)
+        if not path_reference.exists():
+            if update_snapshot:
+                path_reference.write_bytes(image)
+            else:
+                # CI run, store the reference, but fail
+                path_reference_output.write_bytes(image)
+                raise AssertionError(
+                    f'Snapshot {path_reference} did not exist, file written. Run `cp "{path_reference_output}" "{path_reference}"` '
+                    "Commit this file and rerun the CI. Or run with --solara-update-snapshots to update it."
+                )
+        else:
+            if update_snapshot:
+                path_reference.write_bytes(image)
+            else:
+                reference = Image.open(path_reference)
+                result = Image.open(BytesIO(image))
+                difference = None
+
+                def write():
+                    if update_snapshot:
+                        path_reference.write_bytes(image)
+                    else:
+                        # CI run, update the reference in the output dir, and store the previous run next to it
+                        path_reference_output.write_bytes(image)
+                        reference.save(path_previous)
+                        if difference is not None:
+                            difference.save(path_diff)
+
+                # the error msg of the default compare is not very helpful
+                if reference.size != result.size:
+                    write()
+                    raise AssertionError(
+                        f"Snapshot {path_reference} has a different size than the result {reference.size} != {result.size}."
+                        f'Run `cp "{path_reference_output}" "{path_reference}"` Commit this file and rerun the CI. '
+                        "Or run with --solara-update-snapshots to update it."
+                    )
+                diff, difference = compare(reference, result)
+                if diff > 0:
+                    write()
+                    raise AssertionError(
+                        f'Snapshot {path_reference} does not match, Run `cp "{path_reference_output}" "{path_reference}"` Commit this file and rerun the CI. '
+                        "Or run with --solara-update-snapshots to update it."
+                    )
+
+    return assert_implementation
+
+
+def pytest_addoption(parser: Any) -> None:
+    group = parser.getgroup("solara", "Solara")
+    group.addoption(
+        "--solara-update-snapshots",
+        action="store_true",
+        default=False,
+        help="Do not compare, but store the snapshots.",
+    )
+    group.addoption(
+        "--solara-update-snapshots-ci",
+        action="store_true",
+        default=False,
+        help="On compare failure, store to the reference image. Useful for running in CI and downloading the snapshots.",
+    )

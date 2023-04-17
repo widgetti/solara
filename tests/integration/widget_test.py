@@ -6,7 +6,7 @@ from IPython.display import display
 from .conftest import SERVERS
 
 
-def test_widget_button_solara(solara_test, page_session: playwright.sync_api.Page):
+def test_widget_button_solara(solara_test, page_session: playwright.sync_api.Page, assert_solara_snapshot):
     # this all runs in process, which only works with solara
     # also, this test is only with pure ipywidgets
     button = widgets.Button(description="Click Me!")
@@ -20,10 +20,11 @@ def test_widget_button_solara(solara_test, page_session: playwright.sync_api.Pag
     button_sel.wait_for()
     button_sel.click()
     page_session.locator("text=Tested event").wait_for()
+    assert_solara_snapshot(page_session.locator("text=Tested event").screenshot())
 
 
 @pytest.mark.skip(reason="This test is not working yet, needs a new release of ipyvuetify")
-def test_solara_button_all(ipywidgets_runner, page_session: playwright.sync_api.Page, request):
+def test_solara_button_all(ipywidgets_runner, page_session: playwright.sync_api.Page, request, assert_solara_snapshot):
     if request.node.callspec.params["ipywidgets_runner"] != "solara" and request.node.callspec.params["solara_server"] != SERVERS[0]:
         pytest.skip("No need to run this test for all servers.")
 
@@ -45,6 +46,7 @@ def test_solara_button_all(ipywidgets_runner, page_session: playwright.sync_api.
 
     ipywidgets_runner(kernel_code)
     button_sel = page_session.locator("button >> text=Click Me!")
+    assert_solara_snapshot(button_sel.screenshot())
     button_sel.wait_for()
     button_sel.click()
     page_session.locator("button >> text=Tested event").wait_for()

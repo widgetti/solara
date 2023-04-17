@@ -179,7 +179,7 @@ def test_file_browser_filter():
     list: solara.components.file_browser.FileListWidget = div.children[1]
     items = list.files
     names = {k["name"] for k in items}
-    assert names == {"unit", "integration", ".."}
+    assert names == {"unit", "ui", "integration", ".."}
 
 
 def test_file_browser_test_change_directory():
