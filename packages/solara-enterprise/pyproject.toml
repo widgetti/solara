@@ -14,6 +14,7 @@ dependencies = [
     "solara==1.10.0",
 ]
 
+[project.optional-dependencies]
 ssg = [
     "beautifulsoup4",
     "playwright; python_version > '3.6'",
