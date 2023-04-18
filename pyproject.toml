@@ -24,7 +24,7 @@ dependencies = [
     "markdown-it-py",
     "mdit-py-plugins",
     "humanize",
-    "ipyvuetify",
+    "ipyvuetify>=1.8.10",
     "ipyvue>=1.9.0",
     "numpy",
     "pillow",
@@ -97,12 +97,24 @@ documentation = [
     "vaex-core",
     "vaex-hdf5",
 ]
+pytest = [
+    "pytest",
+    "playwright; python_version > '3.6'",
+    "pytest-playwright; python_version > '3.6'",
+    "voila",
+    "jupyterlab",
+    "pillow",
+    "pixelmatch",
+]
 
 [project.urls]
 Home = "https://www.github.com/widgetti/solara"
 
 [project.scripts]
 solara = "solara.__main__:main"
+
+[project.entry-points.pytest11]
+solara = "solara.test.pytest_plugin"
 
 [tool.black]
 line-length = 160

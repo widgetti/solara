@@ -177,8 +177,11 @@ class context_dict(MutableMapping):
 
 class context_dict_widgets(context_dict):
     def _get_context_dict(self) -> dict:
-        context = app.get_current_context()
-        return context.widgets
+        if app.has_current_context():
+            context = app.get_current_context()
+            return context.widgets
+        else:
+            return global_widgets_dict
 
 
 class context_dict_templates(context_dict):
@@ -230,6 +233,7 @@ def Thread_debug_run(self):
 
 
 _patched = False
+global_widgets_dict = {}
 
 
 def Output_enter(self):
@@ -250,6 +254,7 @@ def Output_exit(self, exc_type, exc_value, traceback):
 
 def patch():
     global _patched
+    global global_widgets_dict
     if _patched:
         warnings.warn("patch() called twice")
         return
@@ -271,11 +276,14 @@ def patch():
     component_mod_vue.vue_component_files = context_dict_user("vue_component_files")  # type: ignore
 
     if ipywidget_version_major < 8:
+        global_widgets_dict = ipywidgets.widget.Widget.widgets
         ipywidgets.widget.Widget.widgets = context_dict_widgets()  # type: ignore
     else:
         if hasattr(ipywidgets.widgets.widget, "_instances"):  # since 8.0.3
+            global_widgets_dict = ipywidgets.widgets.widget._instances
             ipywidgets.widgets.widget._instances = context_dict_widgets()  # type: ignore
         elif hasattr(ipywidgets.widget.Widget, "_instances"):
+            global_widgets_dict = ipywidgets.widget.Widget._instances
             ipywidgets.widget.Widget._instances = context_dict_widgets()  # type: ignore
         else:
             raise RuntimeError("Could not find _instances on ipywidgets version %r" % ipywidgets.__version__)

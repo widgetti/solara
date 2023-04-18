@@ -1,8 +1,6 @@
-import contextlib
 import logging
 import os
-import sys
-from typing import Set, Union
+from typing import Set
 
 import playwright.sync_api
 import pytest
@@ -85,6 +83,8 @@ server_classes = {
     "starlette": ServerStarlette,
 }
 
+# override the fixure, and also test with flask
+
 
 @pytest.fixture(params=SERVERS, scope="session")
 def solara_server(request):
@@ -101,40 +101,9 @@ def solara_server(request):
         webserver.stop_serving()
 
 
-@pytest.fixture(scope="session")
-def page_session(browser: playwright.sync_api.Browser, solara_server):
-    page = browser.new_page()
-    page.set_default_timeout(timeout * 1000)
-    yield page
-    page.close()
-
-
 @pytest.fixture()  # type: ignore # noqa
 def page(page):  # noqa
     # on CI, it seems that the above context.set_default_timeout(timeout * 1000) does not apply to page
     # so we set it here again. Maybe in other situations the page is created early.. ?
     page.set_default_timeout(timeout * 1000)
     yield page
-
-
-@pytest.fixture()
-def solara_app(solara_server):
-    @contextlib.contextmanager
-    def run(app: Union[solara.server.app.AppScript, str]):
-        if "__default__" in solara.server.app.apps:
-            solara.server.app.apps["__default__"].close()
-        if isinstance(app, str):
-            app = solara.server.app.AppScript(app)
-        solara.server.app.apps["__default__"] = app
-        try:
-            yield
-        finally:
-            if app.type == solara.server.app.AppType.MODULE:
-                if app.name in sys.modules and app.name.startswith("tests.integration.testapp"):
-                    del sys.modules[app.name]
-                if app.name in reload.reloader.watched_modules:
-                    reload.reloader.watched_modules.remove(app.name)
-
-            app.close()
-
-    return run
