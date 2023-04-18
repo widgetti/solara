@@ -115,7 +115,6 @@ class AppScript:
             reload.reloader.watcher.add_file(self.path)
             self.directory = self.path.parent.resolve()
             with reload.reloader.watch():
-                local_scope = {}
                 with open(self.path) as f:
                     ast = compile(f.read(), self.path, "exec")
                     exec(ast, local_scope)
