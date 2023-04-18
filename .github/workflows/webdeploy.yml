@@ -37,7 +37,7 @@ jobs:
 
       - name: Install solara
         run: |
-          pip install ".[documentation]"
+          pip install -e ".[documentation]"
           (cd packages/solara-enterprise && pip install ".[ssg]")
 
       - name: Install Playwright
