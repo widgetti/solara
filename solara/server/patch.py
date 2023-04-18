@@ -64,6 +64,9 @@ class FakeIPython:
                 # TODO: should we remove it from the list?
                 pass
 
+    def magic(self, *args):
+        # proplot requires this
+        pass
 
 def kernel_instance_dispatch(cls, *args, **kwargs):
     context = app.get_current_context()
