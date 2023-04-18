@@ -3,8 +3,6 @@
 Click on one of the items on the left.
 """
 
-import inspect
-
 import solara
 from solara.alias import rv
 
@@ -186,25 +184,7 @@ def WithCode(module):
     # if e is not None:
     #     return solara.Error("oops")
     component = getattr(module, "Page", None)
-    show_code, set_show_code = solara.use_state(False)
     with rv.Sheet() as main:
-        with rv.Dialog(v_model=show_code, on_v_model=set_show_code):
-            with rv.Sheet(class_="pa-4"):
-                if component:
-                    if hasattr(module, "sources"):
-                        codes = [inspect.getsource(k) for k in module.sources]
-                        code = "\n".join(codes)
-                    else:
-                        code = inspect.getsource(component.f)
-                    code = code.replace("```", "~~~")
-                    pre = ""
-                    solara.MarkdownIt(
-                        f"""
-```python
-{pre}{code}
-```
-"""
-                    )
         # It renders code better
         solara.Markdown(
             module.__doc__ or "# no docs yet",
@@ -213,10 +193,13 @@ def WithCode(module):
         if component and component != NoPage:
             with solara.Card("Example", margin=0, classes=["mt-8"]):
                 component()
-                solara.Button("Show code", icon_name="mdi-eye", on_click=lambda: set_show_code(True), text=True, class_="mt-8")
-
-                # code = inspect.getsource(module)
-                # code_quoted = urllib.parse.quote_plus(code)
-                # url = f"https://test.solara.dev/try?code={code_quoted}"
-                # solara.Button("Run on solara.dev", icon_name="mdi-pencil", href=url, target="_blank")
+                github_url = solara.util.github_url(module.__file__)
+                solara.Button(
+                    label="View source",
+                    icon_name="mdi-github-circle",
+                    attributes={"href": github_url, "target": "_blank"},
+                    text=True,
+                    outlined=True,
+                    class_="mt-8",
+                )
     return main
