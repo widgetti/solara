@@ -51,7 +51,7 @@ def _get_ip():
         _server_ip = "failed to get IP"
 
 
-threading.Thread(target=_get_ip())
+threading.Thread(target=_get_ip)
 
 
 def override_server_user_id(server_user_id: str):
