@@ -111,6 +111,7 @@ class AppScript:
             app = solara.autorouting.RenderPage()
         elif self.name.endswith(".py"):
             self.type = AppType.SCRIPT
+            local_scope["__name__"] = "__main__"
             # manually add the script to the watcher
             reload.reloader.watcher.add_file(self.path)
             self.directory = self.path.parent.resolve()
