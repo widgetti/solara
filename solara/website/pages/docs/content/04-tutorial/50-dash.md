@@ -1,10 +1,6 @@
 # Tutorial: Dash users
 
 Dash is quite different from Solara. In Dash, state lives in your browser, and via callbacks your app will change from 1 state to another. In Solara, the state lives on the server, and also state transitions happen at the server.
-  <!-- * memory
-  * spin up/down
-  *  -->
-<!-- Dash will scale better to many users than Solara, when you app is not doing much work. However, if you app is doing some CPU intensive work (as many data apps do), the benefit of having state at the frontend is not significant any more. -->
 
 ## Dash example
 To see how Dash and Solara are different, let us start with a typical Dash example:
@@ -40,22 +36,21 @@ This small app creates a dropdown (what we call Select in Solara), and some mark
 
 ## Translated to Solara
 
-In Solara, we need to explicitly create state using `use_state`. We wire this up with the [Select][/api/select] via `value=color, on_value=set_color` and pass the color down to the [Markdown](/api/markdown) component.
+In Solara, we need to explicitly create application state using [`solara.reactive`](/api/reactive). We wire this up with the [Select][/api/select] via `value=color` and pass the color value down to the [Markdown](/api/markdown) component.
 
 ```solara
 import solara
 
+color = solara.reactive("red")
+
 
 @solara.component
 def Page():
-    color, set_color = solara.use_state("red")
-    solara.Select(label="Color",values=["red", "green", "blue", "orange"],
-                    value=color, on_value=set_color)
-    solara.Markdown("## Hello World", style={"color": color})
-
+    solara.Select(label="Color", values=["red", "green", "blue", "orange"], value=color)
+    solara.Markdown("## Hello World", style={"color": color.value})
 ```
 
-Since this component combines two components, we have to put them together in a [container](/docs/understanding/containers) component, here a [Column](/api/column).
+Since this component combines two components, we have to put them together in a [container](/docs/understanding/containers) component, here implicitly a [Column](/api/column).
 
 ## Making a re-usable component
 
@@ -120,8 +115,9 @@ if __name__ == "__main__":
 
 ### In Solara
 
-In Solara, a component is directly reusable. We will rename (from `Page` to `MarkdownWithColor`) the component, and put
-in the markdown text as an argument.
+A big advantage of Solara is that components are reusable by default. However, we need to modify our component to have its own state, rather than using global application state. Creating local component state with [`use_reactive`](/api/use_reactive), or [`use_state`](/api/use_state) hook. Read more about state management in the [state management](/docs/fundamentals/state-management) section.
+
+We will rename (from `Page` to `MarkdownWithColor`) the component, add local state, and put in the markdown text as an argument.
 
 ```solara
 import solara
@@ -129,7 +125,8 @@ import solara
 
 @solara.component
 def MarkdownWithColor(markdown_text : str):
-    color, set_color = solara.use_state("red")
+    # color = solara.use_reactive()  # another possibility
+    color, set_color = solara.use_state("red")  # local state
     solara.Select(label="Color",values=["red", "green", "blue", "orange"],
                     value=color, on_value=set_color)
     solara.Markdown(markdown_text, style={"color": color})

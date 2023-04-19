@@ -117,6 +117,7 @@ def Sidebar(children=[], level=0):
                     add("use_thread")
                     add("use_exception")
                     add("use_previous")
+                    add("use_reactive")
                     add("use_state")
                     add("use_state_or_update")
             with ListItem("Types", icon_name="mdi-fingerprint"):
@@ -142,8 +143,9 @@ def Sidebar(children=[], level=0):
                     add("link")
             with ListItem("Utils", icon_name="mdi-hammer-wrench"):
                 with List():
-                    add("memoize")
                     add("display")
+                    add("memoize")
+                    add("reactive")
                     add("widget")
             with ListItem("Advanced", icon_name="mdi-head-cog-outline"):
                 with List():

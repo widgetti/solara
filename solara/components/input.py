@@ -40,13 +40,52 @@ def use_change(el: reacton.core.Element, on_value: Callable[[Any], Any], enabled
 @solara.component
 def InputText(
     label: str,
-    value: str = "",
+    value: Union[str, solara.Reactive[str]] = "",
     on_value: Callable[[str], None] = None,
     disabled: bool = False,
     password: bool = False,
     continuous_update: bool = False,
 ):
     """Free form text input.
+
+    ### Basic example:
+
+    ```solara
+    import solara
+
+    text = solara.reactive("Hello world!")
+    continuous_update = solara.reactive(True)
+
+    @solara.component
+    def Page():
+        solara.Checkbox(label="Continuous update", value=continuous_update)
+        solara.InputText("Enter some text", value=text, continuous_update=continuous_update.value)
+        with solara.Row():
+            solara.Button("Clear", on_click=lambda: text.set(""))
+            solara.Button("Reset", on_click=lambda: text.set("Hello world"))
+        solara.Markdown(f"**You entered**: {text.value}")
+    ```
+
+    ### Password input:
+
+    This will not show the entered text.
+
+    ```solara
+    import solara
+
+    password = solara.reactive("Super secret")
+    continuous_update = solara.reactive(True)
+
+    @solara.component
+    def Page():
+        solara.Checkbox(label="Continuous update", value=continuous_update)
+        solara.InputText("Enter a passsword", value=password, continuous_update=continuous_update.value, password=True)
+        with solara.Row():
+            solara.Button("Clear", on_click=lambda: password.set(""))
+            solara.Button("Reset", on_click=lambda: password.set("Super secret"))
+        solara.Markdown(f"**You entered**: {password.value}")
+    ```
+
 
     ## Arguments
 
@@ -57,17 +96,17 @@ def InputText(
     * `password`: Whether the input is a password input (typically shows input text obscured with an asterisk).
     * `continuous_update`: Whether to call the `on_value` callback on every change or only when the input loses focus or the enter key is pressed.
     """
+    reactive_value = solara.use_reactive(value, on_value)
+    del value, on_value
 
     def set_value_cast(value):
-        if on_value is None:
-            return
-        on_value(str(value))
+        reactive_value.value = str(value)
 
     def on_v_model(value):
         if continuous_update:
             set_value_cast(value)
 
-    text_field = v.TextField(v_model=value, on_v_model=on_v_model, label=label, disabled=disabled, type="password" if password else None)
+    text_field = v.TextField(v_model=reactive_value.value, on_v_model=on_v_model, label=label, disabled=disabled, type="password" if password else None)
     use_change(text_field, set_value_cast, enabled=not continuous_update)
     return text_field
 
@@ -105,14 +144,32 @@ def InputFloat(
 @solara.component
 def InputFloat(
     label: str,
-    value: Optional[float] = 0,
+    value: Union[Optional[float], solara.Reactive[Optional[float]]] = 0,
     on_value: Union[None, Callable[[Optional[float]], None], Callable[[float], None]] = None,
     disabled: bool = False,
     optional: bool = False,
     continuous_update: bool = False,
     clearable: bool = False,
 ):
-    """Numeric input.
+    """Numeric input (floats).
+
+    Basic example:
+
+    ```solara
+    import solara
+
+    float_value = solara.reactive(42.0)
+    continuous_update = solara.reactive(True)
+
+    @solara.component
+    def Page():
+        solara.Checkbox(label="Continuous update", value=continuous_update)
+        solara.InputFloat("Enter a float number", value=float_value, continuous_update=continuous_update.value)
+        with solara.Row():
+            solara.Button("Clear", on_click=lambda: float_value.set(42.0))
+        solara.Markdown(f"**You entered**: {float_value.value}")
+    ```
+
 
     ## Arguments
 
@@ -175,7 +232,24 @@ def InputInt(
     continuous_update: bool = False,
     clearable: bool = False,
 ):
-    """Numeric input.
+    """Numeric input (integers).
+
+    Basic example:
+
+    ```solara
+    import solara
+
+    int_value = solara.reactive(42)
+    continuous_update = solara.reactive(True)
+
+    @solara.component
+    def Page():
+        solara.Checkbox(label="Continuous update", value=continuous_update)
+        solara.InputInt("Enter an integer number", value=int_value, continuous_update=continuous_update.value)
+        with solara.Row():
+            solara.Button("Clear", on_click=lambda: int_value.set(42))
+        solara.Markdown(f"**You entered**: {int_value.value}")
+    ```
 
     ## Arguments
 
@@ -203,7 +277,7 @@ def InputInt(
 def _InputNumeric(
     str_to_numeric: Callable[[str], T],
     label: str,
-    value: Optional[T],
+    value: Union[Optional[T], solara.Reactive[Optional[T]]],
     on_value: Union[None, Callable[[Optional[T]], None], Callable[[T], None]] = None,
     disabled: bool = False,
     optional: bool = False,
@@ -220,14 +294,19 @@ def _InputNumeric(
     * `disabled`: Whether the input is disabled.
     * `continuous_update`: Whether to call the `on_value` callback on every change or only when the input loses focus or the enter key is pressed.
     """
+    # TODO: make this more type safe
+    reactive_value = solara.use_reactive(value, on_value)  # type: ignore
+    del value, on_value
+
     error, set_error = solara.use_state(False)
-    internal_value, set_internal_value = solara.use_state(cast(Union[str, T, None], str(value) if value is not None else None))
+    internal_value, set_internal_value = solara.use_state(cast(Union[str, T, None], str(reactive_value.value) if reactive_value.value is not None else None))
 
     def parse(value):
         return ast.literal_eval(value.replace(",", "."))
 
     def on_external_value_change():
         nonlocal internal_value
+        value = reactive_value.value
         # only gets called when initial_or_updated changes
         if isinstance(internal_value, str):
             try:
@@ -251,9 +330,10 @@ def _InputNumeric(
     # but if the internal model is in a different representation
     # (e.g. internal_value='1e2' and internal_value=100) we don't want to change
     # our internal model
-    solara.use_memo(on_external_value_change, [value])
+    solara.use_memo(on_external_value_change, [reactive_value.value])
 
     def on_internal_value_change():
+        value = reactive_value.value
         if isinstance(internal_value, str):
             try:
                 numerical_value = ast.literal_eval(internal_value.replace(",", "."))
@@ -273,15 +353,14 @@ def _InputNumeric(
     # make sure that out internal value is not out of sync with the value
     # e.g. internal_value='4' and value=4 -> internal_value='4.1' and value=4.1
     # and we are using int, we want to make sure our internal value is '4'
-    internal_value = solara.use_memo(on_internal_value_change, [value, internal_value])
+    internal_value = solara.use_memo(on_internal_value_change, [reactive_value.value, internal_value])
 
     def set_value_cast(value):
         set_internal_value(value)
         if value is None or value == "":
             if optional:
                 set_error(False)
-                if on_value:
-                    on_value(None)  # type: ignore
+                reactive_value.set(None)  # type: ignore
             else:
                 set_error(True)
             return
@@ -291,8 +370,7 @@ def _InputNumeric(
             set_error(True)
         else:
             set_error(False)
-            if on_value:
-                on_value(numeric_value)
+            reactive_value.set(numeric_value)
 
     def on_v_model(value):
         if continuous_update:
