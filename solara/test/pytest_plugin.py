@@ -219,7 +219,7 @@ class ServerVoila(ServerBase):
             raise RuntimeError("Jupyter server already running, use lsof -i :{self.port} to find the process and kill it")
         cmd = (
             "voila --no-browser --VoilaTest.log_level=DEBUG --Voila.port_retries=0 --VoilaExecutor.timeout=240"
-            f" --Voila.port={self.port} --show_tracebacks=True {self.notebook_path}"
+            f" --Voila.port={self.port} --show_tracebacks=True {self.notebook_path} --enable_nbextensions=True"
         )
         logger.info(f"Starting Voila server at {self.base_url} with command {cmd}")
         args = shlex.split(cmd)
