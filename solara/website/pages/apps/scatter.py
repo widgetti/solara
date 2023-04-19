@@ -68,14 +68,13 @@ def Page():
                 FileDrop(on_file=State.load_from_file, on_total_progress=lambda *args: None, label="Drag file here")
 
                 if df is not None:
-                    solara.FloatSlider("Size", max=60).connect(State.size_max)
-                    solara.Checkbox(label="Log x").connect(State.logx)
-                    solara.Checkbox(label="Log y").connect(State.logy)
+                    solara.Checkbox(label="Log x", value=State.logx)
+                    solara.Checkbox(label="Log y", value=State.logy)
                     columns = list(map(str, df.columns))
-                    solara.Select("Column x", values=columns).connect(State.x)  # type: ignore
-                    solara.Select("Column y", values=columns).connect(State.y)  # type: ignore
-                    solara.Select("Size", values=columns).connect(State.size)  # type: ignore
-                    solara.Select("Color", values=columns).connect(State.color)  # type: ignore
+                    solara.Select("Column x", values=columns, value=State.x)
+                    solara.Select("Column y", values=columns, value=State.y)
+                    solara.Select("Size", values=columns, value=State.size)
+                    solara.Select("Color", values=columns, value=State.color)
                     if filter is None:
                         solara.Info("If you select points in the scatter plot, you can download the points here.")
                     else:
