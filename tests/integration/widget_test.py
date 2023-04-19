@@ -23,7 +23,6 @@ def test_widget_button_solara(solara_test, page_session: playwright.sync_api.Pag
     assert_solara_snapshot(page_session.locator("text=Tested event").screenshot())
 
 
-@pytest.mark.skip(reason="This test is not working yet, needs a new release of ipyvuetify")
 def test_solara_button_all(ipywidgets_runner, page_session: playwright.sync_api.Page, request, assert_solara_snapshot):
     if request.node.callspec.params["ipywidgets_runner"] != "solara" and request.node.callspec.params["solara_server"] != SERVERS[0]:
         pytest.skip("No need to run this test for all servers.")
@@ -40,7 +39,8 @@ def test_solara_button_all(ipywidgets_runner, page_session: playwright.sync_api.
             def on_click():
                 set_text("Tested event")
 
-            solara.Button(text, on_click=on_click)
+            with solara.Row():
+                solara.Button(text, on_click=on_click)
 
         display(Button())
 
