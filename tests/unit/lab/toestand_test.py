@@ -892,6 +892,8 @@ def test_reactive_batch_update():
     assert mock1.call_count == 1
     assert mock2.call_count == 1
     count.value = 2
+    assert mock1.call_count == 2
+    assert mock2.call_count == 2
     assert rc.find(v.Slider)[0].widget.v_model == 2
     assert rc.find(v.Slider)[1].widget.v_model == 2
     assert mock1.call_count == 2

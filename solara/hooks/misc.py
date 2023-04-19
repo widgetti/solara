@@ -454,6 +454,10 @@ def use_reactive(
 
         return reactive_value.subscribe(forward)
 
+    def update():
+        reactive_value.value = initial_value
+
+    solara.use_memo(update, [initial_value])
     solara.use_effect(forward_on_change, [])
 
     return reactive_value

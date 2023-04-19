@@ -107,8 +107,8 @@ def test_input_int_managed():
     input.widget.v_model = "1.1"
     assert on_value.call_count == 2
     input.widget.fire_event("blur")
-    assert on_value.call_count == 3
-    assert on_value.call_args[0][0] == 1
+    # no change
+    assert on_value.call_count == 2
     assert not input.widget.error
     assert input.widget.label == "label"
     assert input.widget.v_model == 1
@@ -142,26 +142,27 @@ def test_input_float_managed():
     input.widget.v_model = "1,1e3"
     assert on_value.call_count == 1
     input.widget.fire_event("blur")
-    assert on_value.call_count == 2
-    assert on_value.call_args[0][0] == 1100
+    assert on_value.call_count == 1
+    # assert on_value.call_args[0][0] == 1100
     assert not input.widget.error
     assert input.widget.label == "label"
     assert input.widget.v_model == "1,1e3"
 
     input.widget.v_model = "1.1e0"
-    assert on_value.call_count == 2
+    assert on_value.call_count == 1
     input.widget.fire_event("blur")
-    assert on_value.call_count == 3
+    assert on_value.call_count == 2
     assert on_value.call_args[0][0] == 1.1
     assert not input.widget.error
     assert input.widget.label == "label"
     assert input.widget.v_model == "1.1e0"
 
+    # same value
     input.widget.v_model = "1.1"
-    assert on_value.call_count == 3
+    assert on_value.call_count == 2
     input.widget.fire_event("blur")
-    assert on_value.call_count == 4
-    assert on_value.call_args[0][0] == 1.1
+    # no change
+    assert on_value.call_count == 2
     assert not input.widget.error
     assert input.widget.label == "label"
     assert input.widget.v_model == "1.1"
