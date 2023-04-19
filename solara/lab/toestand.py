@@ -498,7 +498,7 @@ class AutoSubscribeContextManager:
                     reactive_used.add(reactive_used_subfield)
             added = reactive_used - (self.reactive_added_previous_run or set())
 
-            removed = (self.reactive_added_previous_run or set()) - added
+            removed = (self.reactive_added_previous_run or set()) - reactive_used
 
             for reactive in added:
                 if reactive not in self.subscribed:
@@ -515,15 +515,18 @@ class AutoSubscribeContextManager:
                 del self.subscribed[reactive]
             self.reactive_added_previous_run = added
 
+        solara.use_effect(update_listeners, None)
+
+        def on_close():
             def cleanup():
                 assert self.reactive_added_previous_run is not None
-                for reactive in self.reactive_added_previous_run:
+                for reactive in self.subscribed:
                     unsubscribe = self.subscribed[reactive]
                     unsubscribe()
 
             return cleanup
 
-        solara.use_effect(update_listeners, [])
+        solara.use_effect(on_close, [])
         thread_local.reactive_used = self.reactive_used_before
 
 

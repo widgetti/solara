@@ -823,6 +823,8 @@ def test_reactive_auto_subscribe_cleanup(app_context):
     def Test():
         nonlocal renders
         renders += 1
+        if x.value == 42:
+            _ = y.value  # access conditional
         if x.value == 0:
             _ = y.value  # access conditional
             x.value = 100
@@ -830,8 +832,14 @@ def test_reactive_auto_subscribe_cleanup(app_context):
 
     box, rc = solara.render(Test(), handle_error=False)
     assert rc.find(v.Slider).widget.v_model == 1
+    assert renders == 1
     assert len(x._storage.listeners2) == 1
     assert len(y._storage.listeners2) == 0
+    x.value = 42
+    assert renders == 2
+    assert len(x._storage.listeners2[app_context.id]) == 1
+    assert len(y._storage.listeners2[app_context.id]) == 1
+
     # this triggers two renders, where during the first one we use y, but the seconds we don't
     x.value = 0
     assert rc.find(v.Slider).widget.v_model == 100
