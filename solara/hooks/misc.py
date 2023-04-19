@@ -455,7 +455,7 @@ def use_reactive(
         return reactive_value.subscribe(forward)
 
     def update():
-        reactive_value.value = initial_value
+        reactive_value.value = initial_value if not isinstance(initial_value, solara.Reactive) else initial_value.value
 
     solara.use_memo(update, [initial_value])
     solara.use_effect(forward_on_change, [])

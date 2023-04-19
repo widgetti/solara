@@ -266,10 +266,11 @@ class Reactive(ValueBase[S]):
         self._owner = owner
 
     def __repr__(self):
+        value = self.get(add_watch=False)
         if self._name:
-            return f"<Reactive {self._owner.__name__}.{self._name} value={self.value!r} id={hex(id(self))}>"
+            return f"<Reactive {self._owner.__name__}.{self._name} value={value!r} id={hex(id(self))}>"
         else:
-            return f"<Reactive {self.value!r} id={hex(id(self))}>"
+            return f"<Reactive {value!r} id={hex(id(self))}>"
 
     def __str__(self):
         if self._name:
@@ -288,6 +289,8 @@ class Reactive(ValueBase[S]):
         self._storage.update(**kwargs)
 
     def set(self, value: S):
+        if value is self:
+            raise ValueError("Can't set a reactive to itself")
         self._storage.set(value)
 
     def get(self, add_watch=True) -> S:
