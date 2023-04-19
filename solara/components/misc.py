@@ -145,42 +145,74 @@ def HBox(children=[], grow=True, align_items="stretch", classes: List[str] = [])
 
 
 @solara.component
-def Row(children=[], gap="12px", classes: List[str] = [], style: str = ""):
+def Row(children=[], gap="12px", justify="start", margin: int = 0, classes: List[str] = [], style: Union[str, Dict[str, str], None] = None):
     """Lays out children in a row, side by side, with the given gap between them.
+
+    See also [Column](/api/column).
 
     Example with three children side by side:
 
-    ```python
-    with Row(gap="10px"):
-        solara.Text("On the left")
-        solara.Text("In the middle")
-        solara.Text("On the right")
+    ```solara
+    import solara
+
+    @solara.component
+    def Page():
+        with solara.Row(gap="10px", justify="space-around"):
+            solara.Text("On the left")
+            solara.Text("In the middle")
+            solara.Text("On the right")
     ```
+    ## Arguments
+
+     * `children`: List of children to render in the column.
+     * `gap`: The gap between each child, as a CSS string.
+     * `justify`: How children are distributed along the x/horizontal-axis, can be "start" (default), "center", "end", "space-around",
+        "space-between" or "space-evenly".
+        (*Note: this translates to justify-content in CSS*).
+     * `margin`: The margin around the column, translate to 4*margin pixels.
+     * `classes`: List of CSS classes to apply to the column.
+     * `style`: CSS style to apply to the column.
+
     """
     align_items = "stretch"
-    style = f"flex-direction: row; align-items: {align_items}; column-gap: {gap};" + style + ";"
-    class_ = _combine_classes(["d-flex", *classes])
-    return v.Sheet(class_=class_, style_=style, elevation=0, children=children)
+    style_flat = solara.util._flatten_style(style)
+    style_flat = f"flex-direction: row; align-items: {align_items}; justify-content: {justify}; column-gap: {gap};" + style_flat + ";"
+    class_ = _combine_classes(["d-flex", f"ma-{margin}", *classes])
+    return v.Sheet(class_=class_, style_=style_flat, elevation=0, children=children)
 
 
 @solara.component
-def Column(children=[], gap="12px", margin: int = 0, classes: List[str] = [], style: Union[str, Dict[str, str], None] = None):
+def Column(children=[], gap="12px", align="stretch", margin: int = 0, classes: List[str] = [], style: Union[str, Dict[str, str], None] = None):
     """Lays out children in a column on top of eachother, with the given gap between them.
+
+    See also [Row](/api/row).
 
     Example with three children on top of eachother:
 
-    ```python
+    ```solara
+    import solara
 
-    with Column(gap="10px"):
-        solara.Text("On top")
-        solara.Text("In the middle")
-        solara.Text("On bottom")
+    @solara.component
+    def Page():
+        with solara.Column(gap="10px"):
+            solara.Text("On top")
+            solara.Text("In the middle")
+            solara.Text("On bottom")
     ```
+
+    ## Arguments
+
+     * `children`: List of children to render in the column.
+     * `gap`: The gap between each child, as a CSS string.
+     * `align`: The alignment of the children, can be "start", "center", "end", "stretch" (default).
+        (*Note: this translates to align-items in CSS*).
+     * `margin`: The margin around the column, translate to 4*margin pixels.
+     * `classes`: List of CSS classes to apply to the column.
+     * `style`: CSS style to apply to the column.
 
     """
     style_flat = solara.util._flatten_style(style)
-    align_items = "stretch"
-    style_flat = f"flex-direction: column; align-items: {align_items}; row-gap: {gap};" + style_flat + ";"
+    style_flat = f"flex-direction: column; align-items: {align}; row-gap: {gap};" + style_flat + ";"
     class_ = _combine_classes(["d-flex", f"ma-{margin}", *classes])
     return v.Sheet(class_=class_, style_=style_flat, elevation=0, children=children)
 

@@ -5,23 +5,23 @@ import solara
 import solara.lab
 from solara.website.utils import apidoc
 
-from .common import ColorCard
-
-gap_size = solara.lab.Reactive[str]("12px")
+gap_size = solara.reactive("12px")
+align = solara.reactive("stretch")
 
 
 @solara.component
 def Page():
     with solara.Card("Column demo") as main:
         with solara.Column():
+            solara.ToggleButtonsSingle(align, values=["start", "center", "end", "stretch"])
             solara.Select(
                 label="Gap size",
                 values=["0px", "4px", "8px", "12px", "16px", "20px", "24px"],
             ).connect(gap_size)
-        with solara.Column(gap=gap_size.value):
+        with solara.Column(gap=gap_size.value, align=align.value):
             colors = "green red orange brown yellow pink".split()
             for color in colors:
-                ColorCard(color, color)
+                solara.Button("Solara", color=color)
     return main
 
 
