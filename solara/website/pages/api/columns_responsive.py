@@ -8,16 +8,16 @@ from solara.website.utils import apidoc
 
 title = "ColumnsResponsive"
 
-gutters = solara.lab.Reactive[bool](True)
-gutters_dense = solara.lab.Reactive[bool](True)
-wrap = solara.lab.Reactive[bool](True)
+gutters = solara.reactive(True)
+gutters_dense = solara.reactive(True)
+wrap = solara.reactive(True)
 
-children_count = solara.lab.Reactive[int](12)
-columns_default = solara.lab.Reactive[int](6)
-columns_small = solara.lab.Reactive[int](4)
-columns_medium = solara.lab.Reactive[int](3)
-columns_large = solara.lab.Reactive[int](2)
-columns_xlarge = solara.lab.Reactive[int](1)
+children_count = solara.reactive(12)
+columns_default = solara.reactive(6)
+columns_small = solara.reactive(4)
+columns_medium = solara.reactive(3)
+columns_large = solara.reactive(2)
+columns_xlarge = solara.reactive(1)
 
 
 @solara.component

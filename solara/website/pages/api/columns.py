@@ -6,8 +6,8 @@ import solara
 import solara.lab
 from solara.website.utils import apidoc
 
-gutters = solara.lab.Reactive[bool](True)
-gutters_dense = solara.lab.Reactive[bool](True)
+gutters = solara.reactive(True)
+gutters_dense = solara.reactive(True)
 
 
 @solara.component

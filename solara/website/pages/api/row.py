@@ -7,7 +7,7 @@ from solara.website.utils import apidoc
 
 from .common import ColorCard
 
-gap_size = solara.lab.Reactive[str]("12px")
+gap_size = solara.reactive("12px")
 
 
 @solara.component

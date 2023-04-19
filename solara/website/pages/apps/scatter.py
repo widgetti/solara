@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, cast
 
 import pandas as pd
 
@@ -13,14 +13,14 @@ df_sample = pd.read_csv("https://raw.githubusercontent.com/plotly/datasets/maste
 
 
 class State:
-    size_max = solara.lab.Reactive[float](40)
-    size = solara.lab.Reactive[Optional[str]](None)
-    color = solara.lab.Reactive[Optional[str]](None)
-    x = solara.lab.Reactive[Optional[str]](None)
-    y = solara.lab.Reactive[Optional[str]](None)
-    logx = solara.lab.Reactive[bool](False)
-    logy = solara.lab.Reactive[bool](False)
-    df = solara.lab.Reactive[Optional[pd.DataFrame]](None)
+    size_max = solara.reactive(40.0)
+    size = solara.reactive(cast(Optional[str], None))
+    color = solara.reactive(cast(Optional[str], None))
+    x = solara.reactive(cast(Optional[str], None))
+    y = solara.reactive(cast(Optional[str], None))
+    logx = solara.reactive(False)
+    logy = solara.reactive(False)
+    df = solara.reactive(cast(Optional[pd.DataFrame], None))
 
     @staticmethod
     def load_sample():
@@ -68,6 +68,7 @@ def Page():
                 FileDrop(on_file=State.load_from_file, on_total_progress=lambda *args: None, label="Drag file here")
 
                 if df is not None:
+                    solara.SliderFloat(label="Size", value=State.size_max, min=1, max=100)
                     solara.Checkbox(label="Log x", value=State.logx)
                     solara.Checkbox(label="Log y", value=State.logy)
                     columns = list(map(str, df.columns))
