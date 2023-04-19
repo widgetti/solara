@@ -4,7 +4,7 @@ import sys
 import threading
 import traceback
 import warnings
-from typing import MutableMapping
+from typing import Any, Dict, MutableMapping
 from unittest import mock
 
 import ipykernel.kernelbase
@@ -68,14 +68,21 @@ class FakeIPython:
         # proplot requires this
         pass
 
+
 def kernel_instance_dispatch(cls, *args, **kwargs):
     context = app.get_current_context()
     return context.kernel
 
 
+InteractiveShell_instance_initial = InteractiveShell.instance
+
+
 def interactive_shell_instance_dispatch(cls, *args, **kwargs):
-    context = app.get_current_context()
-    return context.kernel.shell
+    if app.has_current_context():
+        context = app.get_current_context()
+        return context.kernel.shell
+    else:
+        return InteractiveShell_instance_initial(*args, **kwargs)
 
 
 def kernel_initialized_dispatch(cls):
@@ -186,8 +193,11 @@ class context_dict_widgets(context_dict):
 
 class context_dict_templates(context_dict):
     def _get_context_dict(self) -> dict:
-        context = app.get_current_context()
-        return context.templates
+        if app.has_current_context():
+            context = app.get_current_context()
+            return context.templates
+        else:
+            return global_templates_dict
 
 
 class context_dict_user(context_dict):
@@ -234,6 +244,7 @@ def Thread_debug_run(self):
 
 _patched = False
 global_widgets_dict = {}
+global_templates_dict: Dict[Any, Any] = {}
 
 
 def Output_enter(self):
