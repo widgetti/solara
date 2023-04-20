@@ -76,6 +76,8 @@ def Sidebar(children=[], level=0):
                     add("info")
                     add("warning")
                     add("error")
+                    add("spinner")
+                    add("progress")
             with ListItem("Viz", icon_name="mdi-chart-histogram"):
                 with List():
                     add("altair")
