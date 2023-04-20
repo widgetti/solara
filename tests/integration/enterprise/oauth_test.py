@@ -15,14 +15,14 @@ def test_oauth_from_app_auth0(page_session: playwright.sync_api.Page, solara_ser
         settings.oauth.logout_path = settings.AUTH0_LOGOUT_PATH
         page_session.goto(solara_server.base_url + "/examples/general/login_oauth")
         page_session.locator("_vue=v-btn >> text=Login").click()
-        page_session.locator('css=input[name="username"]').type(os.environ["AUTH0_USERNAME"])
-        page_session.locator('css=input[name="password"]').type(os.environ["AUTH0_PASSWORD"])
+        page_session.locator('css=input[name="username"]').fill(os.environ["AUTH0_USERNAME"])
+        page_session.locator('css=input[name="password"]').fill(os.environ["AUTH0_PASSWORD"])
         page_session.locator('css=button[name="action"]').click()
         page_session.locator("_vue=v-btn >> text=Logout").click()
         # do another round, we've
         page_session.locator("_vue=v-btn >> text=Login").click()
-        page_session.locator('css=input[name="username"]').type(os.environ["AUTH0_USERNAME"])
-        page_session.locator('css=input[name="password"]').type(os.environ["AUTH0_PASSWORD"])
+        page_session.locator('css=input[name="username"]').fill(os.environ["AUTH0_USERNAME"])
+        page_session.locator('css=input[name="password"]').fill(os.environ["AUTH0_PASSWORD"])
         page_session.locator('css=button[name="action"]').click()
         page_session.locator("_vue=v-btn >> text=Logout").click()
         page_session.locator("_vue=v-btn >> text=Login").wait_for()
@@ -38,8 +38,8 @@ def test_oauth_from_app_fief(page_session: playwright.sync_api.Page, solara_serv
         settings.oauth.logout_path = settings.FIEF_LOGOUT_PATH
         page_session.goto(solara_server.base_url + "/examples/general/login_oauth")
         page_session.locator("_vue=v-btn >> text=Login").click()
-        page_session.locator('css=input[name="email"]').type(os.environ["FIEF_USERNAME"])
-        page_session.locator('css=input[name="password"]').type(os.environ["FIEF_PASSWORD"])
+        page_session.locator('css=input[name="email"]').fill(os.environ["FIEF_USERNAME"])
+        page_session.locator('css=input[name="password"]').fill(os.environ["FIEF_PASSWORD"])
         page_session.locator('css=button[type="submit"]').click()
         page_session.locator("_vue=v-btn >> text=Logout").click()
         page_session.locator("_vue=v-btn >> text=Login").wait_for()
@@ -55,19 +55,20 @@ def test_oauth_private(page_session: playwright.sync_api.Page, solara_server, so
             settings.oauth.api_base_url = settings.AUTH0_TEST_API_BASE_URL
             settings.oauth.logout_path = settings.AUTH0_LOGOUT_PATH
 
-            response = page_session.goto(solara_server.base_url + "/static/public/beach.jpeg")
+            response = page_session.goto(solara_server.base_url + "/static/public/beach.jpeg?cache=off")
             assert response is not None
             assert response.status == 401
+            assert page_session.goto(solara_server.base_url + "/invalid_url").status == 401
             page_session.goto(solara_server.base_url + "/api/style")
-            page_session.locator('css=input[name="username"]').type(os.environ["AUTH0_USERNAME"])
-            page_session.locator('css=input[name="password"]').type(os.environ["AUTH0_PASSWORD"])
+            page_session.locator('css=input[name="username"]').fill(os.environ["AUTH0_USERNAME"])
+            page_session.locator('css=input[name="password"]').fill(os.environ["AUTH0_PASSWORD"])
             page_session.locator('css=button[name="action"]').click()
             page_session.locator("text=Add a custom piece of CSS").wait_for()
             response = page_session.goto(solara_server.base_url + "/static/public/beach.jpeg")
             assert response is not None
             assert str(response.status)[0] == "2"  # check 2xx
             page_session.goto(get_logout_url("/api/style"))
-            page_session.locator('css=input[name="username"]').type(os.environ["AUTH0_USERNAME"])
+            page_session.locator('css=input[name="username"]').fill(os.environ["AUTH0_USERNAME"])
             response = page_session.goto(solara_server.base_url + "/static/public/beach.jpeg?cache=off")
             assert response is not None
             assert response.status == 401

@@ -219,17 +219,20 @@ async def root(request: Request, fullpath: str = ""):
             root_path = script_name
         settings.main.root_path = root_path
 
-    if settings.oauth.private and not request.user.is_authenticated:
-        from solara_enterprise.auth.starlette import login
-
-        return await login(request)
-
     request_path = request.url.path
     if request_path.startswith(root_path):
         request_path = request_path[len(root_path) :]
     content = server.read_root(request_path, root_path)
     if content is None:
+        if settings.oauth.private and not request.user.is_authenticated:
+            raise HTTPException(status_code=401, detail="Unauthorized")
         return HTMLResponse(content="Page not found by Solara router", status_code=404)
+
+    if settings.oauth.private and not request.user.is_authenticated:
+        from solara_enterprise.auth.starlette import login
+
+        return await login(request)
+
     response = HTMLResponse(content=content)
     session_id = request.cookies.get(server.COOKIE_KEY_SESSION_ID) or str(uuid4())
     samesite = "lax"
@@ -248,7 +251,7 @@ async def root(request: Request, fullpath: str = ""):
 class StaticFilesOptionalAuth(StaticFiles):
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         conn = HTTPConnection(scope)
-        if settings.oauth.private and has_solara_enterprise:
+        if settings.oauth.private and not has_solara_enterprise:
             raise RuntimeError("SOLARA_OAUTH_PRIVATE requires solara-enterprise")
         if has_solara_enterprise and settings.oauth.private and not conn.user.is_authenticated:
             raise HTTPException(status_code=401, detail="Unauthorized")

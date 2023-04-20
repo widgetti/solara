@@ -208,13 +208,16 @@ def read_root(path):
     if not settings.main.base_url:
         settings.main.base_url = url_for("blueprint-solara.read_root", _external=True)
 
-    if not allowed():
-        return login()
-
     session_id = request.cookies.get(server.COOKIE_KEY_SESSION_ID) or str(uuid4())
     content = server.read_root(flask.request.path, root_path=root_path)
     if content is None:
+        if not allowed():
+            abort(401)
         return flask.Response("not found", status=404)
+
+    if not allowed():
+        return login()
+
     assert session_id is not None
     response = flask.Response(content, mimetype="text/html")
     response.set_cookie(server.COOKIE_KEY_SESSION_ID, value=session_id)
