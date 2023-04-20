@@ -13,6 +13,7 @@ align = solara.reactive("stretch")
 def Page():
     with solara.Card("Column demo") as main:
         with solara.Column():
+            solara.Text("Align:")
             solara.ToggleButtonsSingle(align, values=["start", "center", "end", "stretch"])
             solara.Select(
                 label="Gap size",

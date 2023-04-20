@@ -13,6 +13,7 @@ justify = solara.reactive("space-around")
 def Page():
     with solara.Card("Row demo") as main:
         with solara.Column():
+            solara.Text("Justify:")
             solara.ToggleButtonsSingle(justify, values=["start", "center", "end", "space-around", "space-between", "space-evenly"])
             solara.Select(
                 label="Gap size",
