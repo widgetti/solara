@@ -17,7 +17,8 @@ try:
     has_solara_enterprise = True
 except ImportError:
     has_solara_enterprise = False
-if has_solara_enterprise:
+if has_solara_enterprise and sys.version_info[:2] > (3, 6):
+    has_auth_support = True
     from solara_enterprise.auth.middleware import MutateDetectSessionMiddleware
     from solara_enterprise.auth.starlette import (
         AuthBackend,
@@ -26,7 +27,8 @@ if has_solara_enterprise:
         login,
         logout,
     )
-
+else:
+    has_auth_support = False
 
 from starlette.applications import Starlette
 from starlette.exceptions import HTTPException
@@ -137,9 +139,10 @@ async def kernels(id):
 async def kernel_connection(ws: starlette.websockets.WebSocket):
     session_id = ws.cookies.get(server.COOKIE_KEY_SESSION_ID)
 
-    if settings.oauth.private and not has_solara_enterprise:
+    if settings.oauth.private and not has_auth_support:
+        breakpoint()
         raise RuntimeError("SOLARA_OAUTH_PRIVATE requires solara-enterprise")
-    if has_solara_enterprise:
+    if has_auth_support:
         user = get_user(ws)
         if user is None and settings.oauth.private:
             await ws.accept()
@@ -251,9 +254,9 @@ async def root(request: Request, fullpath: str = ""):
 class StaticFilesOptionalAuth(StaticFiles):
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         conn = HTTPConnection(scope)
-        if settings.oauth.private and not has_solara_enterprise:
+        if settings.oauth.private and not has_auth_support:
             raise RuntimeError("SOLARA_OAUTH_PRIVATE requires solara-enterprise")
-        if has_solara_enterprise and settings.oauth.private and not conn.user.is_authenticated:
+        if has_auth_support and settings.oauth.private and not conn.user.is_authenticated:
             raise HTTPException(status_code=401, detail="Unauthorized")
         await super().__call__(scope, receive, send)
 
@@ -337,7 +340,7 @@ middleware = [
     Middleware(GZipMiddleware, minimum_size=1000),
 ]
 
-if has_solara_enterprise:
+if has_auth_support:
     middleware = [
         *middleware,
         Middleware(
@@ -351,7 +354,7 @@ if has_solara_enterprise:
     ]
 
 routes_auth = []
-if has_solara_enterprise:
+if has_auth_support:
     routes_auth = [
         Route("/_solara/auth/authorize", endpoint=authorize),  #
         Route("/_solara/auth/logout", endpoint=logout),

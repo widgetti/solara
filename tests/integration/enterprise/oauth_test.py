@@ -1,9 +1,14 @@
 import os
+import sys
 
 import playwright.sync_api
+import pytest
 from solara_enterprise.auth import get_logout_url
 
 from solara.server import settings
+
+if sys.version_info[:2] <= (3, 6):
+    pytest.skip("Test requires python 3.7 or higher", allow_module_level=True)
 
 
 def test_oauth_from_app_auth0(page_session: playwright.sync_api.Page, solara_server, solara_app):
