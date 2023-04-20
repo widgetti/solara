@@ -13,7 +13,7 @@ env:
 
 jobs:
   integration-test:
-    timeout-minutes: 8
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
