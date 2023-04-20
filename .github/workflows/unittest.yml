@@ -44,7 +44,7 @@ jobs:
       - name: Install
         run: |
           pip install ".[dev]" diskcache redis
-          (cd packages/solara-enterprise && pip install ".[ssg]" "ipywidgets~=${{ matrix.ipywidgets }}")
+          (cd packages/solara-enterprise && pip install ".[ssg,auth]" "ipywidgets~=${{ matrix.ipywidgets }}")
       - name: Start Redis
         if: matrix.os != 'windows'
         uses: shogo82148/actions-setup-redis@v1
