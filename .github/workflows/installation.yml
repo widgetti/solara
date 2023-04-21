@@ -16,24 +16,10 @@ defaults:
     shell: bash {0}
 
 jobs:
-  build:
-    runs-on: ubuntu-20.04
-
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python 3.7
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.7
-      - name: Install flit
-        run: pip install flit
-      - name: Build
-        run: flit build
-      - uses: actions/upload-artifact@v1
-        with:
-          name: dist-${{ github.run_number }}
-          path: ./dist
+  call-workflow-build:
+    uses: ./.github/workflows/build.yml
   install:
+    needs: [call-workflow-build]
     runs-on: ${{ matrix.os }}-${{matrix.os == 'ubuntu' && '20.04' || 'latest' }}
     strategy:
       fail-fast: false
@@ -43,7 +29,6 @@ jobs:
         exclude:
           - os: windows
             python: 3.6
-    needs: [build]
     steps:
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -52,8 +37,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
         with:
-          name: dist-${{ github.run_number }}
-          path: ./dist
+          name: solara-builds-${{ github.run_number }}
       - name: Debug
         run: ls -R dist
       - name: Install
@@ -69,3 +53,7 @@ jobs:
         with:
           resource: http-get://localhost:8765/
           timeout: 20000
+      - name: Install
+        run: pip install packages/solara-enterprise/dist/*.whl
+      - name: Test import
+        run: python -c "import solara_enterprise"

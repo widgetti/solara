@@ -2,11 +2,16 @@ name: Release
 
 on:
   push:
+    branches:
+      - master
     tags:
       - "v*"
 
 jobs:
   build:
+    uses: ./.github/workflows/build.yml
+  release:
+    needs: [build]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -14,33 +19,33 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.7
-      - name: Install flit
-        run: pip install flit
-      - name: Test optional dependencies
-        run: flit install --deps=production --extras=flask,dev,examples,server # exclude assets, since that is not yet build
-      - name: Uninstall
-        run: pip uninstall solara -y
-      - name: Build
-        run: flit build
-      - name: Install
+      - uses: actions/download-artifact@v2
+        with:
+          name: solara-builds-${{ github.run_number }}
+      - name: Install build tools
+        run: pip install flit hatch
+      - name: Install solara
         run: pip install dist/*.whl
       - name: Test import
-        run: python -c "import solara"
-      - name: Install hatch
-        run: pip install hatch
+        run: python -c "import solara; import solara.server.starlette"
+      - name: Install solara-enterprise
+        run: pip install packages/solara-enterprise/dist/*.whl
+      - name: Test import solara-enterprise
+        run: python -c "import solara_enterprise"
       - uses: actions/setup-node@v3
         with:
           node-version: 14
       - name: Build assets
         run: (cd packages/assets; hatch build)
-      - name: Publish solara-assets to PyPI
+      - name: Publish solara-enterprise to PyPI
         env:
           HATCH_INDEX_USER: __token__
-          HATCH_INDEX_AUTH: ${{ secrets.pypi_assets }}
+          HATCH_INDEX_AUTH: ${{ secrets.pypi_enterprise }}
         run: |
-          (cd packages/assets; openssl sha256 dist/*; hatch publish; openssl sha256 dist/*)
-      - name: remove assets
-        run: rm -rf packages/assets/dist
+          cd packages/solara-enterprise
+          openssl sha256 dist/*
+          hatch publish
+          openssl sha256 dist/*
       - name: Publish solara to PyPI
         env:
           FLIT_USERNAME: __token__
@@ -49,7 +54,11 @@ jobs:
           openssl sha256 dist/*
           flit publish
           openssl sha256 dist/*
-      - uses: actions/upload-artifact@v1
-        with:
-          name: distributions
-          path: ./dist
+      - name: Publish solara-assets to PyPI
+        env:
+          HATCH_INDEX_USER: __token__
+          HATCH_INDEX_AUTH: ${{ secrets.pypi_assets }}
+        run: |
+          (cd packages/assets; openssl sha256 dist/*; hatch publish; openssl sha256 dist/*)
+      - name: remove assets
+        run: rm -rf packages/assets/dist

@@ -1,0 +1,60 @@
+name: Build packages
+
+on:
+  workflow_call:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 14
+
+      - name: Cache JS bundle
+        id: cache-js-bundle
+        uses: actions/cache@v3
+        with:
+          path: packages/solara-vuetify-app/dist
+          key: ${{ runner.os }}-js-bundle-${{ hashFiles('packages/solara-vuetify-app/src/**', 'packages/solara-vuetify-app/package.json', 'packages/solara-widget-manager/src/**', 'packages/solara-widget-manager/package.json') }}
+
+      - name: Build solara widget manager
+        if: steps.cache-js-bundle.outputs.cache-hit != 'true'
+        run: |
+          cd packages/solara-widget-manager
+          npm install
+          npm run build
+          cd ../../
+
+      - name: Build solara app package
+        if: steps.cache-js-bundle.outputs.cache-hit != 'true'
+        run: |
+          cd packages/solara-vuetify-app
+          npm install
+          npm run build
+
+      - name: Install build tools
+        run: pip install flit hatch
+
+      - name: Build solara
+        run: flit build
+
+      - name: Build solara-enterprise
+        run: (cd packages/solara-enterprise; hatch build)
+
+      - name: Upload Test artifacts
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: solara-builds-${{ github.run_number }}
+          path: |
+            dist
+            packages/solara-enterprise/dist
+            packages/solara-vuetify-app/dist
