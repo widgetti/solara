@@ -1,0 +1,89 @@
+name: Integration testing
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  workflow_dispatch:
+
+env:
+  SOLARA_TELEMETRY_SERVER_USER_ID: "install-test"
+  SOLARA_TELEMETRY_MIXPANEL_TOKEN: adbf863d17cba80db608788e7fce9843
+
+jobs:
+  integration-test:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # just ubuntu and windows give enough confidence
+        # osx should work fine (and we test that locally often)
+        os: [ubuntu, windows]
+        # just 1 version, it's heavy
+        python-version: [3.8]
+        ipywidgets: ["7.7", "8.0"]
+        include:
+          - ipywidgets: "7.7"
+            voila: "0.3.0"
+          - ipywidgets: "8.0"
+            voila: "0.4.0"
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 14
+      - name: Cache JS bundle
+        id: cache-js-bundle
+        uses: actions/cache@v3
+        with:
+          path: packages/solara-vuetify-app/dist
+          key: ${{ runner.os }}-js-bundle-${{ hashFiles('packages/solara-vuetify-app/src/**', 'packages/solara-vuetify-app/package.json', 'packages/solara-widget-manager/src/**', 'packages/solara-widget-manager/package.json') }}
+
+      - name: Build solara widget manager
+        if: steps.cache-js-bundle.outputs.cache-hit != 'true'
+        run: |
+          cd packages/solara-widget-manager
+          npm install
+          npm run build
+          cd ../../
+      - name: Build solara app package
+        if: steps.cache-js-bundle.outputs.cache-hit != 'true'
+        run: |
+          cd packages/solara-vuetify-app
+          npm install
+          npm run build
+      - name: Link solara app package
+        run: |
+          cd packages/solara-vuetify-app
+          npm run devlink
+      - name: Prepare
+        run: mkdir test-results
+      - name: Install
+        run: |
+          pip install ".[dev,server,flask,documentation,pytest]" "voila~=${{ matrix.voila }}"
+          (cd packages/solara-enterprise && pip install ".[ssg,auth]" "ipywidgets~=${{ matrix.ipywidgets }}")
+      - name: Install playwright
+        run: playwright install
+      - name: test
+        env:
+          AUTH0_USERNAME: maartenbreddels+solara-test@gmail.com
+          AUTH0_PASSWORD: ${{ secrets.AUTH0_PASSWORD }}
+          FIEF_USERNAME: maartenbreddels+solara-test@gmail.com
+          FIEF_PASSWORD: ${{ secrets.FIEF_PASSWORD }}
+        # TODO: we used to also run the (cheap) unittests, to get better coverage report, but that gives errors
+        # it seems on CI that the default playwright timeout is not (always?) respected, also, if the --timeout argument
+        # is shorter than the timeout of playwright, we get no good error message, summary: always keep above 30!
+        run: pytest --cov=solara tests/integration --timeout=360 --video=on --output==test-results -vv -s --log-cli-level=warning --assert=plain
+      - name: Upload Test artifacts
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-results
+          path: test-results

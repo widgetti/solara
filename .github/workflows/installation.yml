@@ -17,23 +17,9 @@ defaults:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
-
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python 3.7
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.7
-      - name: Install flit
-        run: pip install flit
-      - name: Build
-        run: flit build
-      - uses: actions/upload-artifact@v1
-        with:
-          name: dist-${{ github.run_number }}
-          path: ./dist
+    uses: ./.github/workflows/build.yml
   install:
+    needs: [build]
     runs-on: ${{ matrix.os }}-${{matrix.os == 'ubuntu' && '20.04' || 'latest' }}
     strategy:
       fail-fast: false
@@ -43,7 +29,6 @@ jobs:
         exclude:
           - os: windows
             python: 3.6
-    needs: [build]
     steps:
       - name: Set up Python
         uses: actions/setup-python@v4
