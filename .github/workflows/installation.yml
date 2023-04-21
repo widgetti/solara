@@ -54,6 +54,6 @@ jobs:
           resource: http-get://localhost:8765/
           timeout: 20000
       - name: Install
-        run: pip install packages/dist/*.whl
+        run: pip install packages/solara-enterprise/dist/*.whl
       - name: Test import
         run: python -c "import solara_enterprise"
