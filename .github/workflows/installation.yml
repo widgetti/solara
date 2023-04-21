@@ -16,10 +16,10 @@ defaults:
     shell: bash {0}
 
 jobs:
-  build:
+  call-workflow-build:
     uses: ./.github/workflows/build.yml
   install:
-    needs: [build]
+    needs: [call-workflow-build]
     runs-on: ${{ matrix.os }}-${{matrix.os == 'ubuntu' && '20.04' || 'latest' }}
     strategy:
       fail-fast: false
@@ -37,7 +37,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
         with:
-          name: dist-${{ github.run_number }}
+          name: solara-builds-${{ github.run_number }}
           path: ./dist
       - name: Debug
         run: ls -R dist
@@ -54,3 +54,5 @@ jobs:
         with:
           resource: http-get://localhost:8765/
           timeout: 20000
+      - name: Install
+        run: pip install packages/dist/*.whl
