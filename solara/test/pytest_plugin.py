@@ -31,7 +31,7 @@ if typing.TYPE_CHECKING:
 
 logger = logging.getLogger("solara.pytest_plugin")
 
-TEST_PORT = int(os.environ.get("PORT", "18765"))  # up to 18770 is a valid callback for auth0
+TEST_PORT = int(os.environ.get("PORT", "18765")) + 100  # do not interfere with the solara integration tests
 TIMEOUT = float(os.environ.get("SOLARA_PW_TIMEOUT", "10"))
 
 
@@ -248,7 +248,7 @@ class ServerJupyter(ServerBase):
 
     def serve(self):
         if self.has_started():
-            raise RuntimeError("Jupyter server already running, use lsof -i :{self.port} to find the process and kill it")
+            raise RuntimeError(f"Jupyter server already running, use lsof -i :{self.port} to find the process and kill it")
         cmd = f'jupyter lab --port={self.port} --no-browser --ServerApp.token="" --port-retries=0 {self.notebook_path}'
         logger.info(f"Starting Jupyter (lab) server at {self.base_url} with command {cmd}")
         args = shlex.split(cmd)

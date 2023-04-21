@@ -7,6 +7,8 @@ logger = logging.getLogger("solara.server.threaded")
 
 
 class ServerBase(threading.Thread):
+    name = "not set"
+
     def __init__(self, port: int, host: str = "localhost", **kwargs):
         self.port = port
         self.host = host

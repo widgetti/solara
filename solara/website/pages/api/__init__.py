@@ -159,6 +159,11 @@ def Sidebar(children=[], level=0):
                     add("cross_filter_report")
                     add("cross_filter_slider")
                     add("cross_filter_select")
+            with ListItem("Enterprise", icon_name="mdi-office-building"):
+                with List():
+                    add("avatar")
+                    add("avatar_menu")
+
         if routes:
             print(f"Routes not used: {list(routes.keys())}")  # noqa
 

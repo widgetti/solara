@@ -9,9 +9,34 @@ from uuid import uuid4
 
 import flask
 import simple_websocket
-import solara
-from flask import Blueprint, Flask, request, send_from_directory, url_for
+from flask import Blueprint, Flask, abort, request, send_from_directory, url_for
 from flask_sock import Sock
+
+try:
+    import solara_enterprise  # type: ignore
+
+    del solara_enterprise
+
+    has_solara_enterprise = True
+except ImportError:
+    has_solara_enterprise = False
+
+if has_solara_enterprise:
+    from solara_enterprise.auth.flask import allowed  # type: ignore
+    from solara_enterprise.auth.flask import (
+        authorize,
+        get_user,
+        init_flask,
+        login,
+        logout,
+    )
+else:
+
+    def allowed():
+        return True
+
+
+import solara
 from solara.server.threaded import ServerBase
 
 from . import app as appmod
@@ -45,6 +70,7 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
 
 class ServerFlask(ServerBase):
     server: Any
+    name = "flask"
 
     def has_started(self):
         return server.is_ready(f"http://{self.host}:{self.port}")
@@ -54,8 +80,9 @@ class ServerFlask(ServerBase):
         self.server.shutdown()  # type: ignore
 
     def serve(self):
-        from solara.server.flask import app
         from werkzeug.serving import make_server
+
+        from solara.server.flask import app
 
         self.server = make_server(self.host, self.port, app, threaded=True)  # type: ignore
         assert isinstance(self.server, HTTPServer)
@@ -65,11 +92,26 @@ class ServerFlask(ServerBase):
 
 @blueprint.route("/jupyter/api/kernels/<id>")
 def kernels(id):
+    if not allowed():
+        abort(401)
     return {"name": "lala", "id": "dsa"}
 
 
 @websocket_extension.route("/jupyter/api/kernels/<id>/<name>")
 def kernels_connection(ws: simple_websocket.Server, id: str, name: str):
+    if not settings.main.base_url:
+        settings.main.base_url = url_for("blueprint-solara.read_root", _external=True)
+    if settings.oauth.private and not has_solara_enterprise:
+        raise RuntimeError("SOLARA_OAUTH_PRIVATE requires solara-enterprise")
+    if has_solara_enterprise:
+        user = get_user()
+        if user is None and settings.oauth.private:
+            logger.error("app is private, requires login")
+            ws.close(1008, "app is private, requires login")  # policy violation
+            return
+    else:
+        user = None
+
     try:
         connection_id = request.args["session_id"]
         session_id = request.cookies.get(server.COOKIE_KEY_SESSION_ID)
@@ -79,7 +121,7 @@ def kernels_connection(ws: simple_websocket.Server, id: str, name: str):
             ws.close()
             return
         ws_wrapper = WebsocketWrapper(ws)
-        asyncio.run(server.app_loop(ws_wrapper, session_id=session_id, connection_id=connection_id))
+        asyncio.run(server.app_loop(ws_wrapper, session_id=session_id, connection_id=connection_id, user=user))
     except simple_websocket.ws.ConnectionClosed:
         pass  # ok
     except:  # noqa
@@ -97,6 +139,8 @@ def close(connection_id: str):
 
 @blueprint.route("/static/public/<path:path>")
 def public(path):
+    if not allowed():
+        abort(401)
     directories = [app.directory.parent / "public" for app in appmod.apps.values()]
     for directory in directories:
         file = directory / path
@@ -107,6 +151,8 @@ def public(path):
 
 @blueprint.route("/static/assets/<path:path>")
 def assets(path):
+    if not allowed():
+        abort(401)
     overrides = [app.directory.parent / "assets" for app in appmod.apps.values()]
     default = server.solara_static.parent / "assets"
     directories = [*overrides, default]
@@ -119,6 +165,8 @@ def assets(path):
 
 @blueprint.route("/static/nbextensions/<dir>/<filename>")
 def nbext(dir, filename):
+    if not allowed():
+        abort(401)
     for directory in server.nbextensions_directories:
         file = directory / dir / filename
         if file.exists():
@@ -128,16 +176,22 @@ def nbext(dir, filename):
 
 @blueprint.route("/static/nbconvert/<path:path>")
 def serve_nbconvert_static(path):
+    if not allowed():
+        abort(401)
     return send_from_directory(server.nbconvert_static, path)
 
 
 @blueprint.route("/static/<path:path>")
 def serve_static(path):
+    if not allowed():
+        abort(401)
     return send_from_directory(server.solara_static, path)
 
 
 @blueprint.route(f"/{cdn_helper.cdn_url_path}/<path:path>")
 def cdn(path):
+    if not allowed():
+        abort(401)
     cache_directory = settings.assets.proxy_cache_dir
     content = cdn_helper.get_data(Path(cache_directory), path)
     mime = mimetypes.guess_type(path)
@@ -150,14 +204,30 @@ def read_root(path):
     root_path = url_for(".read_root")
     if root_path.endswith("/"):
         root_path = root_path[:-1]
+
+    if not settings.main.base_url:
+        settings.main.base_url = url_for("blueprint-solara.read_root", _external=True)
+
     session_id = request.cookies.get(server.COOKIE_KEY_SESSION_ID) or str(uuid4())
     content = server.read_root(flask.request.path, root_path=root_path)
     if content is None:
+        if not allowed():
+            abort(401)
         return flask.Response("not found", status=404)
+
+    if not allowed():
+        return login()
+
     assert session_id is not None
     response = flask.Response(content, mimetype="text/html")
     response.set_cookie(server.COOKIE_KEY_SESSION_ID, value=session_id)
     return response
+
+
+if has_solara_enterprise:
+    blueprint.route("/_solara/auth/authorize")(authorize)
+    blueprint.route("/_solara/auth/logout")(logout)
+    blueprint.route("/_solara/auth/login")(login)
 
 
 @blueprint.route("/readyz")
@@ -168,8 +238,10 @@ def readyz():
 
 # using the blueprint and websocket blueprint makes it easier to integrate into other applications
 websocket_extension.init_app(blueprint)
-app = Flask(__name__)
+app = Flask(__name__, static_url_path="/_static")  # do not intervere with out static files
 app.register_blueprint(blueprint)
+if has_solara_enterprise:
+    init_flask(app)
 
 if __name__ == "__main__":
     app.run(debug=False, port=8765)

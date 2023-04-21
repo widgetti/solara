@@ -16,7 +16,7 @@ reload.reloader.start()
 logger = logging.getLogger("solara-test.integration")
 
 worker = os.environ.get("PYTEST_XDIST_WORKER", "gw0")
-TEST_PORT = 18765 + 100 + int(worker[2:])
+TEST_PORT = 18765 + int(worker[2:])  # up to 18770 is a valid callback for auth0
 SERVER = os.environ.get("SOLARA_SERVER")
 if SERVER:
     SERVERS = [SERVER]

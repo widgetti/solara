@@ -11,7 +11,6 @@ import ipykernel
 import ipywidgets
 import jinja2
 import requests
-
 import solara
 import solara.routing
 
@@ -106,7 +105,7 @@ def is_ready(url) -> bool:
     return False
 
 
-async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, connection_id: str):
+async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, connection_id: str, user: dict = None):
     initialize_virtual_kernel(connection_id, ws)
     context = app.contexts.get(connection_id)
     if context is None:
@@ -126,6 +125,13 @@ async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, connection_i
 
     kernel = context.kernel
     with run_context:
+        if user:
+            with context:
+                from solara_enterprise.auth import user as solara_user
+
+                solara_user.set(user)
+                logger.warning(f"getting: {solara_user.get()}")
+
         while True:
             try:
                 message = ws.receive()

@@ -14,7 +14,7 @@ packages = [
     { include = "solara" }
 ]
 dependencies = [
-    "reacton>=1.5.0",
+    "reacton>=1.6.0",
     "ipywidgets",
     "cachetools",
     "filelock",
@@ -57,6 +57,7 @@ name = "solara"
 
 [project.optional-dependencies]
 dev = [
+    "python-dotenv",
     "flake8",
     "bqplot",
     "bqplot-image-gl",
