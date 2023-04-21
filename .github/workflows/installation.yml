@@ -38,7 +38,6 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           name: solara-builds-${{ github.run_number }}
-          path: ./dist
       - name: Debug
         run: ls -R dist
       - name: Install
@@ -56,3 +55,5 @@ jobs:
           timeout: 20000
       - name: Install
         run: pip install packages/dist/*.whl
+      - name: Test import
+        run: python -c "import solara_enterprise"

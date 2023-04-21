@@ -12,7 +12,10 @@ env:
   SOLARA_TELEMETRY_MIXPANEL_TOKEN: adbf863d17cba80db608788e7fce9843
 
 jobs:
+  build:
+    uses: ./.github/workflows/build.yml
   integration-test:
+    needs: [build]
     timeout-minutes: 15
     runs-on: ubuntu-latest
     strategy:
@@ -36,29 +39,9 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: actions/setup-node@v3
+      - uses: actions/download-artifact@v2
         with:
-          node-version: 14
-      - name: Cache JS bundle
-        id: cache-js-bundle
-        uses: actions/cache@v3
-        with:
-          path: packages/solara-vuetify-app/dist
-          key: ${{ runner.os }}-js-bundle-${{ hashFiles('packages/solara-vuetify-app/src/**', 'packages/solara-vuetify-app/package.json', 'packages/solara-widget-manager/src/**', 'packages/solara-widget-manager/package.json') }}
-
-      - name: Build solara widget manager
-        if: steps.cache-js-bundle.outputs.cache-hit != 'true'
-        run: |
-          cd packages/solara-widget-manager
-          npm install
-          npm run build
-          cd ../../
-      - name: Build solara app package
-        if: steps.cache-js-bundle.outputs.cache-hit != 'true'
-        run: |
-          cd packages/solara-vuetify-app
-          npm install
-          npm run build
+          name: solara-builds-${{ github.run_number }}
       - name: Link solara app package
         run: |
           cd packages/solara-vuetify-app
