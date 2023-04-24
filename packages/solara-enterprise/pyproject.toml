@@ -26,6 +26,11 @@ auth = [
     "httpx",
 ]
 
+all = [
+    "solara-enterprise[ssg]",
+    "solara-enterprise[auth]",
+]
+
 [project.urls]
 Home = "https://www.github.com/widgetti/solara"
 
