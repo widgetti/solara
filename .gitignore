@@ -82,6 +82,7 @@ build/
 ./examples
 node_modules
 packages/assets/cdn
+packages/assets/dist/*
 
 solara-env
 states
