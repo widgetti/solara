@@ -202,6 +202,8 @@ def close(request: Request):
 
 
 async def root(request: Request, fullpath: str = ""):
+    if settings.oauth.private and not has_auth_support:
+        raise RuntimeError("SOLARA_OAUTH_PRIVATE requires solara-enterprise")
     root_path = settings.main.root_path or ""
     if not settings.main.base_url:
         settings.main.base_url = str(request.base_url)
