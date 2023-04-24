@@ -40,7 +40,6 @@ def Page():
             sl.Button(icon_name="mdi-login", href=auth.get_login_url(), icon=True)
 
     with sl.Column():
-        sl.Text(auth.get_login_url())
         if auth.user.value:
             UserCard()
             with sl.Details("Raw data"):
