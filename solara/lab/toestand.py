@@ -14,7 +14,6 @@ from typing import (
     Optional,
     Set,
     Tuple,
-    Type,
     TypeVar,
     Union,
     cast,
@@ -166,10 +165,10 @@ class ValueBase(Generic[T]):
         return value, setter
 
     @property
-    def fields(self) -> Type[T]:
+    def fields(self) -> T:
         # we lie about the return type, but in combination with
         # setter we can make type safe setters (see docs/tests)
-        return cast(Type[T], Fields(self))
+        return cast(T, Fields(self))
 
     def setter(self, field: TS) -> Callable[[TS], None]:
         _field = cast(FieldBase, field)
@@ -350,7 +349,12 @@ class ValueSubField(ValueBase[T]):
 
     def subscribe(self, listener: Callable[[T], None], scope: Optional[ContextManager] = None):
         def on_change(new, old):
-            new_value = self._field.get(new)
+            try:
+                new_value = self._field.get(new)
+            except IndexError:
+                return  # the current design choice to silently drop the update message
+            except KeyError:
+                return  # same
             old_value = self._field.get(old)
             if not equals(new_value, old_value):
                 listener(new_value)
@@ -359,7 +363,12 @@ class ValueSubField(ValueBase[T]):
 
     def subscribe_change(self, listener: Callable[[T, T], None], scope: Optional[ContextManager] = None):
         def on_change(new, old):
-            new_value = self._field.get(new)
+            try:
+                new_value = self._field.get(new)
+            except IndexError:
+                return  # see subscribe
+            except KeyError:
+                return  # see subscribe
             old_value = self._field.get(old)
             if not equals(new_value, old_value):
                 listener(new_value, old_value)

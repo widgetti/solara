@@ -51,6 +51,44 @@ def test_store_bare():
     unsub_change()
 
 
+def test_list_index_error():
+    mock = unittest.mock.Mock()
+    mock_change = unittest.mock.Mock()
+    values = solara.reactive([1, 2, 3])
+    item3 = Ref(values.fields[2])
+    unsub = item3.subscribe(mock)
+    unsub_change = item3.subscribe_change(mock_change)
+    values.value = [1, 2, 4]
+    mock.assert_called_with(4)
+    mock_change.assert_called_with(4, 3)
+    mock.reset_mock()
+    mock_change.reset_mock()
+    values.value = [1, 2]
+    mock.assert_not_called()
+    mock_change.assert_not_called()
+    unsub()
+    unsub_change()
+
+
+def test_dict_index_error():
+    mock = unittest.mock.Mock()
+    mock_change = unittest.mock.Mock()
+    values = solara.reactive({"a": 1, "b": 2, "c": 3})
+    item3 = Ref(values.fields["c"])
+    unsub = item3.subscribe(mock)
+    unsub_change = item3.subscribe_change(mock_change)
+    values.value = {"a": 1, "b": 2, "c": 4}
+    mock.assert_called_with(4)
+    mock_change.assert_called_with(4, 3)
+    mock.reset_mock()
+    mock_change.reset_mock()
+    values.value = {"a": 1, "b": 2}
+    mock.assert_not_called()
+    mock_change.assert_not_called()
+    unsub()
+    unsub_change()
+
+
 def test_subscribe():
     bear_store = BearReactive(bears)
     mock = unittest.mock.Mock()
