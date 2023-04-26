@@ -1,4 +1,3 @@
-import threading
 import time
 from pathlib import Path
 from typing import Optional, cast
@@ -17,7 +16,7 @@ def Page():
     # the number that proofs it is not a prime
     proof, set_proof = solara.use_state(cast(Optional[int], None))
 
-    def work(cancelled: threading.Event):
+    def work():
         for i in range(3, number):
             reminder = number % i
             if reminder == 0:
