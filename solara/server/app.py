@@ -534,9 +534,9 @@ def solara_comm_target(comm, msg_first):
             context = get_current_context()
             import ipyvuetify
 
-            container = ipyvuetify.Html(tag="div")
-            context.container = container
             with context:
+                container = ipyvuetify.Html(tag="div")
+                context.container = container
                 load_app_widget(None, app, path)
                 comm.send({"method": "finished", "widget_id": context.container._model_id})
         elif method == "check":
