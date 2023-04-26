@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Dict, List, Optional, Union
 
 import reacton.ipyvuetify as v
 
@@ -14,6 +14,7 @@ def Card(
     margin=2,
     children: List[solara.Element] = [],
     classes: List[str] = [],
+    style: Union[str, Dict[str, str], None] = None,
 ):
     """A card combines a title, subtitle, content and actions into a single unit.
 
@@ -44,8 +45,10 @@ def Card(
      * `elevation`: Elevation of the card, gives the appearence of hovering above the page.
      * `margin`: Margin of the card.
      * `children`: Children are placed as the main content of the card.
+     * `style`: CSS style to apply to the top level element.
     """
     class_ = _combine_classes([f"ma-{margin}", *classes])
+    style_flat = solara.util._flatten_style(style)
     children_actions = []
     children_text = []
     for child in children:
@@ -53,7 +56,7 @@ def Card(
             children_actions.extend(child.kwargs.get("children", []))
         else:
             children_text.append(child)
-    with v.Card(elevation=elevation, class_=class_) as main:
+    with v.Card(elevation=elevation, class_=class_, style_=style_flat) as main:
         if title:
             with v.CardTitle(
                 children=[title],
