@@ -14,6 +14,7 @@ if sys.version_info[:2] <= (3, 6):
     pytest.skip("Test requires python 3.7 or higher", allow_module_level=True)
 
 
+@pytest.mark.skipif(os.environ.get("AUTH0_USERNAME") is None, reason="AUTH0_USERNAME not set")
 def test_oauth_from_app_auth0(page_session: playwright.sync_api.Page, solara_server, solara_app):
     with solara_app("solara.website.pages"):
         settings.main.base_url = ""
@@ -37,6 +38,7 @@ def test_oauth_from_app_auth0(page_session: playwright.sync_api.Page, solara_ser
         page_session.locator("_vue=v-btn >> text=Login").wait_for()
 
 
+@pytest.mark.skipif(os.environ.get("FIEF_USERNAME") is None, reason="FIEF_USERNAME not set")
 def test_oauth_from_app_fief(page_session: playwright.sync_api.Page, solara_server, solara_app):
     with solara_app("solara.website.pages"):
         settings.main.base_url = ""
@@ -53,6 +55,7 @@ def test_oauth_from_app_fief(page_session: playwright.sync_api.Page, solara_serv
         page_session.locator("_vue=v-btn >> text=Login").wait_for()
 
 
+@pytest.mark.skipif(os.environ.get("AUTH0_USERNAME") is None, reason="AUTH0_USERNAME not set")
 def test_oauth_private(page_session: playwright.sync_api.Page, solara_server, solara_app):
     settings.oauth.private = True
     try:
