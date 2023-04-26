@@ -285,8 +285,8 @@ class Reactive(ValueBase[S]):
     def __post__init__(self):
         pass
 
-    def update(self, **kwargs):
-        self._storage.update(**kwargs)
+    def update(self, *args, **kwargs):
+        self._storage.update(*args, **kwargs)
 
     def set(self, value: S):
         if value is self:
@@ -375,9 +375,9 @@ class ValueSubField(ValueBase[T]):
         self._field.set(value)
 
 
-def Ref(field: T) -> ValueSubField[T]:
+def Ref(field: T) -> Reactive[T]:
     _field = cast(FieldBase, field)
-    return ValueSubField[T](_field)
+    return Reactive[T](ValueSubField[T](_field))
 
 
 class FieldBase:
