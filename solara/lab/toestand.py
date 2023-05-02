@@ -269,7 +269,7 @@ class Reactive(ValueBase[S]):
         if self._name:
             return f"<Reactive {self._owner.__name__}.{self._name} value={value!r} id={hex(id(self))}>"
         else:
-            return f"<Reactive {value!r} id={hex(id(self))}>"
+            return f"<Reactive value={value!r} id={hex(id(self))}>"
 
     def __str__(self):
         if self._name:

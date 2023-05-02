@@ -949,10 +949,10 @@ def test_reactive_batch_update():
 
 def test_repr():
     x = Reactive(1)
-    assert repr(x).startswith("<Reactive 1")
+    assert repr(x).startswith("<Reactive value=1")
     assert str(x) == "1"
     y = Reactive("hi")
-    assert repr(y).startswith("<Reactive 'hi'")
+    assert repr(y).startswith("<Reactive value='hi'")
     assert str(y) == "'hi'"
 
     class Foo:
