@@ -115,12 +115,11 @@ def InputText(
 @solara.component
 def InputFloat(
     label: str,
-    value: float = 0,
+    value: Union[float, solara.Reactive[float]] = 0,
     on_value: Optional[Callable[[float], None]] = ...,
     disabled: bool = ...,
     optional: Literal[False] = ...,
     continuous_update: bool = ...,
-    hide_details: bool = ...,
     clearable: bool = ...,
 ) -> reacton.core.ValueElement[vw.TextField, Any]:
     ...
@@ -130,12 +129,11 @@ def InputFloat(
 @solara.component
 def InputFloat(
     label: str,
-    value: Optional[float] = 0,
+    value: Union[Optional[float], solara.Reactive[Optional[float]]] = 0,
     on_value: Optional[Callable[[Optional[float]], None]] = ...,
     disabled: bool = ...,
     optional: Literal[True] = ...,
     continuous_update: bool = ...,
-    hide_details: bool = ...,
     clearable: bool = ...,
 ) -> reacton.core.ValueElement[vw.TextField, Any]:
     ...
@@ -144,7 +142,7 @@ def InputFloat(
 @solara.component
 def InputFloat(
     label: str,
-    value: Union[Optional[float], solara.Reactive[Optional[float]]] = 0,
+    value: Union[None, float, solara.Reactive[float], solara.Reactive[Optional[float]]] = 0,
     on_value: Union[None, Callable[[Optional[float]], None], Callable[[float], None]] = None,
     disabled: bool = False,
     optional: bool = False,
@@ -198,7 +196,7 @@ def InputFloat(
 @solara.component
 def InputInt(
     label: str,
-    value: int = 0,
+    value: Union[int, solara.Reactive[int]] = 0,
     on_value: Optional[Callable[[int], None]] = ...,
     disabled: bool = ...,
     optional: Literal[False] = ...,
@@ -212,7 +210,7 @@ def InputInt(
 @solara.component
 def InputInt(
     label: str,
-    value: Optional[int] = 0,
+    value: Union[Optional[int], solara.Reactive[Optional[int]]] = 0,
     on_value: Optional[Callable[[Optional[int]], None]] = ...,
     disabled: bool = ...,
     optional: Literal[True] = ...,
@@ -225,7 +223,7 @@ def InputInt(
 @solara.component
 def InputInt(
     label: str,
-    value: Optional[int] = 0,
+    value: Union[None, int, solara.Reactive[int], solara.Reactive[Optional[int]]] = 0,
     on_value: Union[None, Callable[[Optional[int]], None], Callable[[int], None]] = None,
     disabled: bool = False,
     optional: bool = False,
@@ -277,7 +275,7 @@ def InputInt(
 def _InputNumeric(
     str_to_numeric: Callable[[str], T],
     label: str,
-    value: Union[Optional[T], solara.Reactive[Optional[T]]],
+    value: Union[None, T, solara.Reactive[Optional[T]], solara.Reactive[T]],
     on_value: Union[None, Callable[[Optional[T]], None], Callable[[T], None]] = None,
     disabled: bool = False,
     optional: bool = False,
