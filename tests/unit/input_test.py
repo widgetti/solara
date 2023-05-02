@@ -44,26 +44,37 @@ def test_input_int_optional():
 
 def test_input_int():
     on_value = MagicMock()
+    on_v_model = MagicMock()
     el = solara.InputInt("label", 42, optional=False, on_value=on_value)
     box, rc = solara.render(el, handle_error=False)
     input = rc.find(vw.TextField)
+    input.widget.observe(on_v_model, "v_model")
+
     input.widget.v_model = "43"
     assert on_value.call_count == 0
+    assert on_v_model.call_count == 1
+    on_v_model.reset_mock()
     input.widget.fire_event("blur")
     assert on_value.call_count == 1
     assert on_value.call_args[0][0] == 43
+    assert on_v_model.call_count == 0
 
     input.widget.v_model = ""
     assert on_value.call_count == 1
+    assert on_v_model.call_count == 1
+    on_v_model.reset_mock()
     input.widget.fire_event("blur")
     assert on_value.call_count == 1
     assert on_value.call_args[0][0] == 43
     assert input.widget.error
     assert input.widget.label == "label (invalid)"
+    assert on_v_model.call_count == 0
 
     input.widget.v_model = "44"
     assert on_value.call_count == 1
+    assert on_v_model.call_count == 1
     input.widget.fire_event("blur")
+    assert on_v_model.call_count == 1
     assert on_value.call_count == 2
     assert on_value.call_args[0][0] == 44
     assert not input.widget.error
@@ -72,6 +83,7 @@ def test_input_int():
 
 def test_input_int_managed():
     on_value = MagicMock()
+    on_v_model = MagicMock()
 
     @solara.component
     def Test():
@@ -85,20 +97,25 @@ def test_input_int_managed():
     el = Test()
     box, rc = solara.render(el, handle_error=False)
     input = rc.find(vw.TextField)
+    input.widget.observe(on_v_model, "v_model")
 
     input.widget.v_model = "1e3"
     assert on_value.call_count == 0
+    assert on_v_model.call_count == 1
     input.widget.fire_event("blur")
     assert on_value.call_count == 1
     assert on_value.call_args[0][0] == 1000
     assert not input.widget.error
     assert input.widget.label == "label"
     assert input.widget.v_model == "1e3"
+    assert on_v_model.call_count == 1
 
     input.widget.v_model = "1.1e0"
     assert on_value.call_count == 1
+    assert on_v_model.call_count == 2
     input.widget.fire_event("blur")
     assert on_value.call_count == 2
+    assert on_v_model.call_count == 3
     assert on_value.call_args[0][0] == 1
     assert not input.widget.error
     assert input.widget.label == "label"
@@ -106,16 +123,19 @@ def test_input_int_managed():
 
     input.widget.v_model = "1.1"
     assert on_value.call_count == 2
+    assert on_v_model.call_count == 4
     input.widget.fire_event("blur")
     # no change
     assert on_value.call_count == 2
+    assert on_v_model.call_count == 5
     assert not input.widget.error
     assert input.widget.label == "label"
-    assert input.widget.v_model == 1
+    assert input.widget.v_model == "1"
 
 
 def test_input_float_managed():
     on_value = MagicMock()
+    on_v_model = MagicMock()
 
     @solara.component
     def Test():
@@ -129,11 +149,14 @@ def test_input_float_managed():
     el = Test()
     box, rc = solara.render(el, handle_error=False)
     input = rc.find(vw.TextField)
+    input.widget.observe(on_v_model, "v_model")
 
     input.widget.v_model = "1.1e3"
     assert on_value.call_count == 0
+    assert on_v_model.call_count == 1
     input.widget.fire_event("blur")
     assert on_value.call_count == 1
+    assert on_v_model.call_count == 1
     assert on_value.call_args[0][0] == 1100
     assert not input.widget.error
     assert input.widget.label == "label"
@@ -141,8 +164,10 @@ def test_input_float_managed():
 
     input.widget.v_model = "1,1e3"
     assert on_value.call_count == 1
+    assert on_v_model.call_count == 2
     input.widget.fire_event("blur")
     assert on_value.call_count == 1
+    assert on_v_model.call_count == 2
     # assert on_value.call_args[0][0] == 1100
     assert not input.widget.error
     assert input.widget.label == "label"
@@ -150,8 +175,10 @@ def test_input_float_managed():
 
     input.widget.v_model = "1.1e0"
     assert on_value.call_count == 1
+    assert on_v_model.call_count == 3
     input.widget.fire_event("blur")
     assert on_value.call_count == 2
+    assert on_v_model.call_count == 3
     assert on_value.call_args[0][0] == 1.1
     assert not input.widget.error
     assert input.widget.label == "label"
@@ -159,8 +186,10 @@ def test_input_float_managed():
 
     # same value
     input.widget.v_model = "1.1"
+    assert on_v_model.call_count == 4
     assert on_value.call_count == 2
     input.widget.fire_event("blur")
+    assert on_v_model.call_count == 4
     # no change
     assert on_value.call_count == 2
     assert not input.widget.error

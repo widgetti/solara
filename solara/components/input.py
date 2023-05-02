@@ -332,28 +332,22 @@ def _InputNumeric(
     # our internal model
     solara.use_memo(on_external_value_change, [reactive_value.value])
 
-    def on_internal_value_change():
-        value = reactive_value.value
+    def internal_value_check_type():
         if isinstance(internal_value, str):
             try:
-                numerical_value = ast.literal_eval(internal_value.replace(",", "."))
+                numerical_proper_type = str_to_numeric(parse(internal_value))
+                numerical = parse(internal_value)
             except Exception:
                 return internal_value
             else:
-                if numerical_value != value:
-                    return value
+                if numerical_proper_type != numerical:
+                    return str(numerical_proper_type)
                 else:
                     return internal_value
-        elif internal_value is not None:
-            if internal_value != value:
-                return value
-            else:
-                return internal_value
 
-    # make sure that out internal value is not out of sync with the value
-    # e.g. internal_value='4' and value=4 -> internal_value='4.1' and value=4.1
-    # and we are using int, we want to make sure our internal value is '4'
-    internal_value = solara.use_memo(on_internal_value_change, [reactive_value.value, internal_value])
+    # make sure that when internal_value="1.1", but str_to_numeric=int
+    # internal value becomes "1"
+    internal_value = solara.use_memo(internal_value_check_type, [internal_value])
 
     def set_value_cast(value):
         set_internal_value(value)
