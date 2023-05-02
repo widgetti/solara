@@ -11,7 +11,7 @@ You have probably used OAuth without realizing it when signing into various onli
 To install Solara with OAuth support, make sure you have [Solara Enterprise](/docs/enterprise) install by run the following command:
 
 ```bash
-$ pip install solara solara-enterprise[oauth]
+$ pip install solara solara-enterprise[auth]
 ```
 
 
@@ -75,6 +75,54 @@ You can optionally set the following environment variables:
 SOLARA_OAUTH_SCOPE = "openid profile email"
 ```
 
+### Create your own Auth0 Application
+
+
+To create your own Auth0 application, follow these steps:
+
+1. Go to the [Auth0 dashboard](https://manage.auth0.com/dashboard/) and click on "Applications" on the left side navigation menu.
+
+    ![Auth0 dashboard](/static/public/docs/enterprise/oauth/goto-applications.png)
+
+2. Click on "Create Application".
+
+    ![Create Application](/static/public/docs/enterprise/oauth/click-create-application.png)
+
+3. Enter a name for your application and select "Regular Web Applications" as the application type. Click on "Create".
+
+    ![Create Application](/static/public/docs/enterprise/oauth/name-type-create.png)
+
+4. Click "Skip Integration" to skip the integration step.
+
+5. Click on the "Settings" tabs and enter the following information:
+
+    - Allowed Callback URLs: `http://localhost:8765/_solara/auth/authorize, https://yourdomain.com/_solara/auth/authorize`
+    - Allowed Logout URLs: `http://localhost:8765/_solara/auth/logout, https://yourdomain.com/_solara/auth/logout`
+
+    Note that the localhost URLs are only meant for testing. You can remove them once you are ready to deploy your application.
+    We recommend setting up a new application for each environment (e.g. development, staging, production).
+
+    ![Callback URLs](/static/public/docs/enterprise/oauth/callbacks.png)
+
+6. Configure Solara.
+
+    At the top of the "Settings" tab, you should see your "Domain", "Client ID" and "Client Secret". You will need to set the following environment variables to these values:
+
+    ```bash
+    SOLARA_OAUTH_API_BASE_URL="dev-y02f2bpr8skxu785.us.auth0.com"  # replace with your domain
+    SOLARA_OAUTH_CLIENT_ID="ELOFERLovc7e7dPwkxO6WFAljtYj9UzJ"  # replace with your client ID
+    SOLARA_OAUTH_CLIENT_SECRET="..."  # not shown here, replace with your client secret
+    ```
+
+    ![Settings](/static/public/docs/enterprise/oauth/configuration-values.png)
+
+    Set your `SOLARA_SESSION_SECRET_KEY` to a random string. See the [Generating a secret key](#generating-a-secret-key) for a convenient way to generate a secret key.
+
+    If you want to test on localhost, you might also want to set `SOLARA_SESSION_HTTPS_ONLY="false"`
+
+    Now you can run the above solara example using your own auth0 provider.
+
+
 ### Configuring Fief
 
 You can also configure Solara to use our Fief test account. To do this, you need to set the following environment variables:
@@ -85,7 +133,7 @@ SOLARA_OAUTH_CLIENT_ID="x2np62qgwp6hnEGTP4JYUE3igdZWhT-AvjpjwwDyKXU"  # found in
 SOLARA_OAUTH_CLIENT_SECRET="XQlByE1pVIz5h2SBN2GYDwT_ziqArHJgLD3KqMlCHjg" # found in the Auth0 dashboard Clients->General Tab->ID
 SOLARA_OAUTH_API_BASE_URL="solara-dev.fief.dev"  # found in the Fief dashboard Tenants->Base URL
  # different from Solara's default
-SOLARA_OAUTH_LOGOUT_PATH = "logout"
+SOLARA_OAUTH_LOGOUT_PATH="logout"
 ```
 
 ### Generating a secret key
