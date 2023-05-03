@@ -242,7 +242,7 @@ class ConnectionStore(ValueBase[S]):
             traceback.print_stack(limit=17, file=sys.stdout)
 
             print("change old", old)  # noqa
-            print("change new", old)  # noqa
+            print("change new", value)  # noqa
 
         self.fire(value, old)
 
