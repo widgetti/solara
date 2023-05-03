@@ -963,5 +963,5 @@ def test_repr():
 
     bears = Reactive(Bears(type="brown", count=1))
     s = repr(bears.fields.count)
-    assert s.startswith("<Field <Reactive Bears(type='brown', count=1)")
+    assert s.startswith("<Field <Reactive value=Bears(type='brown', count=1)")
     assert s.endswith(".count>")
