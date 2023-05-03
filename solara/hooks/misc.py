@@ -446,16 +446,21 @@ def use_reactive(
         return solara.reactive(initial_value) if not isinstance(initial_value, solara.Reactive) else initial_value
 
     reactive_value = solara.use_memo(create, dependencies=[])
+    updating = solara.use_ref(False)
 
     def forward_on_change():
         def forward(value):
-            if on_change_ref.current:
+            if on_change_ref.current and not updating.current:
                 on_change_ref.current(value)
 
         return reactive_value.subscribe(forward)
 
     def update():
-        reactive_value.value = initial_value if not isinstance(initial_value, solara.Reactive) else initial_value.value
+        updating.current = True
+        try:
+            reactive_value.value = initial_value if not isinstance(initial_value, solara.Reactive) else initial_value.value
+        finally:
+            updating.current = False
 
     solara.use_memo(update, [initial_value])
     solara.use_effect(forward_on_change, [])
