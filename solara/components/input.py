@@ -288,27 +288,12 @@ def InputInt(
     )
 
 
-@solara.component
-def _InputNumeric(
+def _use_input_numeric(
     str_to_numeric: Callable[[str], T],
-    label: str,
     value: Union[None, T, solara.Reactive[Optional[T]], solara.Reactive[T]],
     on_value: Union[None, Callable[[Optional[T]], None], Callable[[T], None]] = None,
-    disabled: bool = False,
     optional: bool = False,
-    continuous_update: bool = False,
-    clearable: bool = False,
 ):
-    """Numeric input.
-
-    ## Arguments
-
-    * `label`: Label to display next to the slider.
-    * `value`: The currently entered value.
-    * `on_value`: Callback to call when the value changes.
-    * `disabled`: Whether the input is disabled.
-    * `continuous_update`: Whether to call the `on_value` callback on every change or only when the input loses focus or the enter key is pressed.
-    """
     # TODO: make this more type safe
     reactive_value = solara.use_reactive(value, on_value)  # type: ignore
     del value, on_value
@@ -386,6 +371,33 @@ def _InputNumeric(
         else:
             set_error(False)
             reactive_value.set(numeric_value)
+
+    return internal_value, set_value_cast, error
+
+
+@solara.component
+def _InputNumeric(
+    str_to_numeric: Callable[[str], T],
+    label: str,
+    value: Union[None, T, solara.Reactive[Optional[T]], solara.Reactive[T]],
+    on_value: Union[None, Callable[[Optional[T]], None], Callable[[T], None]] = None,
+    disabled: bool = False,
+    optional: bool = False,
+    continuous_update: bool = False,
+    clearable: bool = False,
+):
+    """Numeric input.
+
+    ## Arguments
+
+    * `label`: Label to display next to the slider.
+    * `value`: The currently entered value.
+    * `on_value`: Callback to call when the value changes.
+    * `disabled`: Whether the input is disabled.
+    * `continuous_update`: Whether to call the `on_value` callback on every change or only when the input loses focus or the enter key is pressed.
+    """
+
+    internal_value, set_value_cast, error = _use_input_numeric(str_to_numeric, value, on_value, optional)
 
     def on_v_model(value):
         if continuous_update:
