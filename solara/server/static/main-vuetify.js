@@ -170,6 +170,19 @@ async function solaraInit(mountId, appName) {
     kernel.statusChanged.connect(() => {
         app.$data.kernelBusy = kernel.status == 'busy';
     });
+
+    window.addEventListener('solara.router', function (event) {
+        app.$data.loadingPage = true;
+    });
+    kernel.statusChanged.connect(() => {
+        // the first idle after a loadingPage == true (a router event)
+        // will be used as indicator that the page is loaded
+        if (app.$data.loadingPage && kernel.status == 'idle') {
+            app.$data.loadingPage = false;
+        }
+    });
+
+
     kernel.connectionStatusChanged.connect((s) => {
         if (unloading) {
             // we don't want to show ui changes when hitting refresh
