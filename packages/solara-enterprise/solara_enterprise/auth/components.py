@@ -1,7 +1,6 @@
 from typing import Optional, Union
 
 import reacton.ipyvuetify as v
-
 import solara
 
 from .. import auth
@@ -106,12 +105,12 @@ def Avatar(image_url: Optional[str] = None, size: Union[int, str] = 40, color: s
         if src is None:
             src = user_info.get("picture")
         if src:
-            with v.Avatar(size=40, class_="ma-2"):
+            with v.Avatar(size=size, class_="ma-2"):
                 v.Img(src=src)
         else:
-            with v.Avatar(size=40, color=color):
+            with v.Avatar(size=size, color=color):
                 v.Icon(children=["mdi-account"])
     else:
-        with v.Avatar(size=40, color=color):
+        with v.Avatar(size=size, color=color):
             with solara.Tooltip("No user"):
                 v.Icon(children=["mdi-error"])
