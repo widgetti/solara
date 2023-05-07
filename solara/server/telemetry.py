@@ -47,11 +47,13 @@ def _get_ip():
     try:
         _server_ip = requests.get("https://api.ipify.org").text
     except Exception:
-        logger.exception("Failed to get server IP")
         _server_ip = "failed to get IP"
 
 
-threading.Thread(target=_get_ip)
+_ip_thread = threading.Thread(target=_get_ip)
+_ip_thread.start()
+# only wait for 0.3 seconds, if it takes longer, we may get it at server stop
+_ip_thread.join(timeout=0.3)
 
 
 def override_server_user_id(server_user_id: str):
@@ -96,7 +98,7 @@ def track(event: str, props: Optional[Dict] = None):
             timeout=1,
         )
     except Exception:
-        logger.exception("Failed mixpanel API call")
+        pass
 
 
 def server_start():
