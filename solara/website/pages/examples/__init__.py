@@ -1,6 +1,8 @@
 # import inspect
 # import urllib.parse
 
+from pathlib import Path
+
 import solara
 
 title = "Examples"
@@ -8,8 +10,33 @@ title = "Examples"
 
 @solara.component
 def Page():
-    # TODO: put a gallery here?
-    return solara.Markdown("Click an example on the left")
+    # show a gallery of all the examples
+    router = solara.use_router()
+    route_current = router.path_routes[-2]
+
+    for route in route_current.children:
+        if route.children:
+            solara.Markdown(f"## {route.label}\n" + (route.module.__doc__ or ""))
+            with solara.ColumnsResponsive(
+                4,
+            ):
+                for child in route.children:
+                    path = route.path + "/" + child.path
+                    image = path + ".png"
+                    image_path = Path(__file__).parent.parent.parent / "public" / "examples" / image
+                    image_url = "/static/public/examples/" + image
+                    if not image_path.exists():
+                        image_url = "/static/public/logo.svg"
+
+                    path = getattr(child.module, "redirect", path)
+                    if path:
+                        with solara.Card(child.label, style="height: 100%;"):
+                            with solara.Link(path):
+                                if not image_path.exists():
+                                    with solara.Column(align="center"):
+                                        solara.Image(image_url, width="120px")
+                                else:
+                                    solara.Image(image_url, width="100%")
 
 
 @solara.component

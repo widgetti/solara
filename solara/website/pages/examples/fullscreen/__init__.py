@@ -1,4 +1,4 @@
-""""""
+"""Apps that run fullscreen"""
 import solara
 
 redirect = None

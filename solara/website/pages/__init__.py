@@ -1,3 +1,4 @@
+import contextlib
 from pathlib import Path
 
 import solara
@@ -47,19 +48,25 @@ def Sidebar():
             for route in all_routes:
                 if route.children and route.data is None:
                     path = solara.resolve_path(route.children[0])
-                    with solara.Link(path):
+                    path = getattr(route.module, "redirect", path)
+                    path = getattr(route.children[0].module, "redirect", path)
+                    with solara.Link(path) if path is not None else contextlib.nullcontext():
                         with SimpleListItem(route.label, class_="active" if path == selected else None):
                             with List():
                                 for child in route.children[1:]:
                                     path = solara.resolve_path(child)
-                                    with solara.Link(path):
+                                    path = getattr(child.module, "redirect", path)
+                                    with solara.Link(path) if path is not None else contextlib.nullcontext():
                                         title = child.label or "no label"
                                         if callable(title):
                                             title = "Error: dynamic title"
                                         SimpleListItem(title, class_="active" if path == selected else None)
                 else:
                     path = solara.resolve_path(route)
-                    with solara.Link(path):
+                    path = getattr(route.module, "redirect", path)
+                    if route.children:
+                        path = getattr(route.children[0].module, "redirect", path)
+                    with solara.Link(path) if path is not None else contextlib.nullcontext():
                         SimpleListItem(route.label, class_="active" if path == selected else None)
     return main
 
