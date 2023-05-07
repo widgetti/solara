@@ -202,5 +202,18 @@ class SolaraInteractiveShell(InteractiveShell):
             return None  # do not send to the frontend
         return msg
 
+    def reset(self, new_session=True, aggressive=False):
+        # if we dont override this with a dummy, the unittests will take a long time
+        # to exit. Hitting ctrl-c showed the following stacktrace:
+        # Traceback (most recent call last):
+        # File "/Users/maartenbreddels/miniconda3/envs/dev/lib/python3.9/site-packages/IPython/core/interactiveshell.py", line 3924, in atexit_operations
+        #     self.reset(new_session=False)
+        # File "/Users/maartenbreddels/miniconda3/envs/dev/lib/python3.9/site-packages/IPython/core/interactiveshell.py", line 1456, in reset
+        #     self.displayhook.flush()
+        # File "/Users/maartenbreddels/miniconda3/envs/dev/lib/python3.9/site-packages/IPython/core/displayhook.py", line 311, in flush
+        #     gc.collect()
+        # So this dummy will prevent that.
+        pass
+
 
 InteractiveShellABC.register(SolaraInteractiveShell)
