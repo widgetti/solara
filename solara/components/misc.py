@@ -1,3 +1,4 @@
+import warnings
 from typing import Any, Callable, Dict, List, Union
 
 import reacton
@@ -177,6 +178,10 @@ def Row(children=[], gap="12px", justify="start", margin: int = 0, classes: List
     align_items = "stretch"
     style_flat = solara.util._flatten_style(style)
     style_flat = f"flex-direction: row; align-items: {align_items}; justify-content: {justify}; column-gap: {gap};" + style_flat + ";"
+    # valid css values, but we don't list them as options to avoid confusion
+    extra_justify_options = ["left", "right", "flex-start", "flex-end"]
+    if justify not in (["start", "center", "end", "space-around", "space-between", "space-evenly"] + extra_justify_options):
+        warnings.warn(f"Invalid value for justify: {justify}, possible values are: start, center, end, space-around, space-between, space-evenly")
     class_ = _combine_classes(["d-flex", f"ma-{margin}", *classes])
     return v.Sheet(class_=class_, style_=style_flat, elevation=0, children=children)
 
@@ -211,6 +216,16 @@ def Column(children=[], gap="12px", align="stretch", margin: int = 0, classes: L
      * `style`: CSS style to apply to the column.
 
     """
+    if align == "left":
+        warnings.warn("align='left' does not exists, you probably want align='start' instead")
+        align = "start"
+    if align == "right":
+        warnings.warn("align='right' does not exists, you probably want align='end' instead")
+        align = "end"
+    # valid css options, but we don't list them as options to avoid confusion
+    extra_align_options = ["flex-start", "flex-end", "self-start", "self-end", "baseline"]
+    if align not in (["start", "center", "end", "stretch"] + extra_align_options):
+        warnings.warn(f"Invalid value for align: {align}, possible values are 'start', 'center', 'end' or 'stretch'")
     style_flat = solara.util._flatten_style(style)
     style_flat = f"flex-direction: column; align-items: {align}; row-gap: {gap};" + style_flat + ";"
     class_ = _combine_classes(["d-flex", f"ma-{margin}", *classes])
