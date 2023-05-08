@@ -1,4 +1,4 @@
-from typing import Callable, List
+from typing import Callable, List, Optional
 
 from reacton import ipyvue
 from reacton import ipyvuetify as v
@@ -15,12 +15,30 @@ def Button(
     children: list = [],
     disabled=False,
     text=False,
+    outlined=False,
+    color: Optional[str] = None,
     click_event="click",
     classes: List[str] = [],
     value=None,
     **kwargs,
 ):
     """A button that can be clicked to trigger an event.
+
+    ## Example
+
+    ```solara
+    import solara
+
+
+    @solara.component
+    def Page():
+        with solara.Row():
+            solara.Button(label="Default")
+            solara.Button(label="Default+color", color="primary")
+            solara.Button(label="Text", text=True)
+            solara.Button(label="Outlined", outlined=True)
+            solara.Button(label="Outlined+color", outlined=True, color="primary")
+    ```
 
 
     ## Arguments
@@ -30,6 +48,8 @@ def Button(
     - `icon_name`: The name of the icon to display on the button ([Overview of available icons](https://pictogrammers.github.io/@mdi/font/4.9.95/)).
     - `children`: A list of child elements to display on the button.
     - `disabled`: Whether the button is disabled.
+    - `text`: Whether the button should be displayed as text, it has no shadow and no background.
+    - `outlined`: Whether the button should be displayed as outlined, it has no background.
     - `value`: (Optional) When used as a child of a ToggleButtons component, the value of the selected button, see [ToggleButtons](/api/togglebuttons).
     - `classes`: additional CSS classes to apply.
 
@@ -46,6 +66,6 @@ def Button(
         class_ = solara.util._combine_classes([*classes, kwargs.pop("class_")])
     else:
         class_ = solara.util._combine_classes(classes)
-    btn = v.Btn(children=children, **kwargs, disabled=disabled, text=text, class_=class_)
+    btn = v.Btn(children=children, **kwargs, disabled=disabled, text=text, class_=class_, outlined=outlined, color=color)
     ipyvue.use_event(btn, click_event, lambda *_ignore: on_click and on_click())
     return btn
