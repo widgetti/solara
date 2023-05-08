@@ -61,6 +61,22 @@ def FileDownload(
             solara.Image("https://solara.dev/static/public/beach.jpeg", width="200px")
     ```
 
+    ## Custom button
+
+    If children are provided, they are displayed instead of the button. The children can be any solara component,
+    including a button, markdown text, or an image.
+
+    ```solara
+    import solara
+
+    data = "This is the content of the file"
+
+    @solara.component
+    def Page():
+        with solara.FileDownload(data, "solara-download-2.txt"):
+            solara.Button("Custom download button", icon_name="mdi-cloud-download-outline", color="primary")
+    ```
+
     ## Usage with file
 
     A file object can be used as data. The file will be closed after downloading by default.
