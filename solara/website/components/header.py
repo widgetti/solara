@@ -5,6 +5,11 @@ from solara.alias import rv
 from solara.server import settings
 
 
+@solara._component_vue("algolia.vue")
+def Algolia(app_id: str, index_name: str, api_key: str, debug=False):
+    pass
+
+
 @solara.component
 def Header(
     on_toggle_left_menu: Callable[[], None] = None,
@@ -28,7 +33,7 @@ def Header(
             from solara_enterprise.search.search import Search
 
             Search()
-
+        Algolia(app_id="9KW9L7O5EQ", api_key="ef7495102afff1e16d1b7cf6ec2ab2d0", index_name="solara", debug=True)
         # menu
         with rv.Html(tag="ul", class_="main-menu menu d-none d-md-flex"):
             for route in all_routes:
