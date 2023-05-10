@@ -3,6 +3,8 @@
 Click on one of the items on the left.
 """
 
+from pathlib import Path
+
 import solara
 from solara.alias import rv
 
@@ -12,9 +14,162 @@ from .. import SimpleListItem as ListItem
 _title = "API"
 
 
+# @solara.component
+# def Page():
+#     return solara.Markdown(__doc__)
+
+items = [
+    {
+        "name": "Input",
+        "icon": "mdi-chevron-left-box",
+        "pages": ["button", "checkbox", "input", "select", "slider", "togglebuttons", "file_browser", "file_drop"],
+    },
+    {
+        "name": "Output",
+        "icon": "mdi-chevron-right-box",
+        "pages": ["markdown", "markdown_editor", "html", "image", "sql_code", "file_download", "tooltip"],
+    },
+    {
+        "name": "Status",
+        "icon": "mdi-information",
+        "pages": ["success", "info", "warning", "error", "spinner", "progress"],
+    },
+    {
+        "name": "Viz",
+        "icon": "mdi-chart-histogram",
+        "pages": ["altair", "echarts", "matplotlib", "plotly", "plotly_express"],
+    },
+    {
+        "name": "Layout",
+        "icon": "mdi-page-layout-sidebar-left",
+        "pages": [
+            "card",
+            "card_actions",
+            "columns",
+            "columns_responsive",
+            "column",
+            "row",
+            "hbox",
+            "vbox",
+            "griddraggable",
+            "gridfixed",
+            "app_layout",
+            "app_bar",
+            "sidebar",
+        ],
+    },
+    {
+        "name": "Data",
+        "icon": "mdi-database",
+        "pages": ["dataframe", "pivot_table"],
+    },
+    {
+        "name": "Page",
+        "icon": "mdi-file-code",
+        "pages": ["head", "title"],
+    },
+    {
+        "name": "Hooks",
+        "icon": "mdi-hook",
+        "pages": [
+            "use_cross_filter",
+            "use_thread",
+            "use_exception",
+            "use_previous",
+            "use_reactive",
+            "use_state",
+            "use_state_or_update",
+        ],
+    },
+    {
+        "name": "Types",
+        "icon": "mdi-fingerprint",
+        "pages": ["route"],
+    },
+    {
+        "name": "Routing",
+        "icon": "mdi-router",
+        "pages": ["use_route", "resolve_path", "generate_routes", "generate_routes_directory", "link"],
+    },
+    {
+        "name": "Utils",
+        "icon": "mdi-hammer-wrench",
+        "pages": ["display", "memoize", "reactive", "widget"],
+    },
+    {
+        "name": "Advanced",
+        "icon": "mdi-head-cog-outline",
+        "pages": ["style", "meta"],
+    },
+    {
+        "name": "Cross filter",
+        "icon": "mdi-filter-variant-remove",
+        "pages": ["cross_filter_dataframe", "cross_filter_report", "cross_filter_slider", "cross_filter_select"],
+    },
+    {
+        "name": "Enterprise",
+        "icon": "mdi-office-building",
+        "pages": ["avatar", "avatar_menu"],
+    },
+]
+
+
 @solara.component
 def Page():
-    return solara.Markdown(__doc__)
+    # show a gallery of all the api pages
+    router = solara.use_router()
+    route_current = router.path_routes[-2]
+
+    routes = {r.path: r for r in route_current.children}
+
+    for item in items:
+        solara.Markdown(f"## {item['name']}")
+        with solara.ColumnsResponsive(12, 6, 6, 4, 4):
+            for page in item["pages"]:
+                if page not in routes:
+                    continue
+                route = routes[page]
+                path = route.path
+                image_path = None
+                image_url = None
+                for suffix in [".png", ".gif"]:
+                    image = path + suffix
+                    image_path = Path(__file__).parent.parent.parent / "public" / "api" / image
+                    image_url = "/static/public/api/" + image
+                    if image_path.exists():
+                        break
+                assert image_path is not None
+                assert image_url is not None
+                if not image_path.exists():
+                    image_url = "/static/public/logo.svg"
+
+                path = getattr(route.module, "redirect", path)
+                if path:
+                    with rv.Card(
+                        elevation=2,
+                        dark=False,
+                        height="100%",
+                        style_="display: flex; flex-direction: column; justify-content: space-between;",
+                    ):
+                        rv.CardTitle(children=[route.label])
+                        with rv.CardText():
+
+                            with solara.Link(path):
+                                if not image_path.exists():
+                                    pass
+                                    with solara.Column(align="center"):
+                                        solara.Image(image_url, width="120px")
+                                else:
+                                    solara.Image(image_url, width="100%")
+                        doc = route.module.__doc__ or ""
+                        if doc:
+                            lines = doc.split("\n")
+                            lines = [line.strip() for line in lines if line.strip()]
+                            first = lines[1]
+
+                            rv.CardText(
+                                children=[solara.Markdown(first)],
+                            )
 
 
 @solara.component
@@ -50,119 +205,12 @@ def Sidebar(children=[], level=0):
                 solara.Title("Solara » API » " + name)
         with List():
             add("/")
-            with ListItem("Input", icon_name="mdi-chevron-left-box"):
-                with List():
-                    add("button")
-                    add("checkbox")
-                    add("input")
-                    add("select")
-                    add("slider")
-                    add("togglebuttons")
-                    add("file_browser")
-                    add("file_drop")
-            with ListItem("Output", icon_name="mdi-chevron-right-box"):
-                with List():
-                    add("markdown")
-                    add("markdown_editor")
-                    add("html")
-                    add("image")
-                    # add("code")
-                    add("sql_code")
-                    add("file_download")
-                    add("tooltip")
-            with ListItem("Status", icon_name="mdi-information"):
-                with List():
-                    add("success")
-                    add("info")
-                    add("warning")
-                    add("error")
-                    add("spinner")
-                    add("progress")
-            with ListItem("Viz", icon_name="mdi-chart-histogram"):
-                with List():
-                    add("altair")
-                    add("echarts")
-                    add("matplotlib")
-                    add("plotly")
-                    add("plotly_express")
-                #     ListItem("AltairChart")
-            with ListItem("Layout", icon_name="mdi-page-layout-sidebar-left"):
-                with List():
-                    add("card")
-                    add("card_actions")
-                    add("columns")
-                    add("columns_responsive")
-                    add("column")
-                    add("row")
-                    add("hbox")
-                    add("vbox")
-                    add("griddraggable")
-                    add("gridfixed")
-                    add("app_layout")
-                    add("app_bar")
-                    add("sidebar")
-                    # add("app")
-            with ListItem("Data", icon_name="mdi-database"):
-                with List():
-                    # ListItem("DataTable")
-                    add("dataframe")
-                    # add("pivot_table")
-            with ListItem("Page", icon_name="mdi-file-code"):
-                with List():
-                    add("head")
-                    add("title")
-            with ListItem("Hooks", icon_name="mdi-hook"):
-                with List():
-                    # add("use_fetch")
-                    # add("use_json")
-                    add("use_cross_filter")
-                    add("use_thread")
-                    add("use_exception")
-                    add("use_previous")
-                    add("use_reactive")
-                    add("use_state")
-                    add("use_state_or_update")
-            with ListItem("Types", icon_name="mdi-fingerprint"):
-                with List():
-                    # ListItem("Action")
-                    # ListItem("ColumnAction")
-                    # ListItem("Route")
-                    add("route")
-            with ListItem("Routing", icon_name="mdi-router"):
-                with List():
-                    add("use_route")
-                    add("resolve_path")
-                    add("generate_routes")
-                    add("generate_routes_directory")
-                    # add("use_router")
-                    # add("use_route_level")
 
-                    # add("resolve_path")
-                    # add("use_pathname")
-
-                    # add("RenderPage")
-                    # add("DefaultNavigation")
-                    add("link")
-            with ListItem("Utils", icon_name="mdi-hammer-wrench"):
-                with List():
-                    add("display")
-                    add("memoize")
-                    add("reactive")
-                    add("widget")
-            with ListItem("Advanced", icon_name="mdi-head-cog-outline"):
-                with List():
-                    add("style")
-                    add("meta")
-            with ListItem("Cross filter", icon_name="mdi-filter-variant-remove"):
-                with List():
-                    add("cross_filter_dataframe")
-                    add("cross_filter_report")
-                    add("cross_filter_slider")
-                    add("cross_filter_select")
-            with ListItem("Enterprise", icon_name="mdi-office-building"):
-                with List():
-                    add("avatar")
-                    add("avatar_menu")
+            for item in items:
+                with ListItem(item["name"], icon_name=item["icon"]):
+                    with List():
+                        for component in item["pages"]:
+                            add(component)
 
         if routes:
             print(f"Routes not used: {list(routes.keys())}")  # noqa
@@ -177,7 +225,7 @@ def Layout(children=[]):
         return solara.Error("Page not found")
 
     if route_current.path == "/":
-        return solara.Markdown(__doc__)
+        return Page()
     else:
         with solara.HBox(grow=True) as main:
             with solara.Padding(4):

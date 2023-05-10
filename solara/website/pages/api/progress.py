@@ -1,6 +1,4 @@
-"""# Progress indicators
-
-# ProgressLinear
+"""# ProgressLinear
 """
 import solara
 from solara.website.utils import apidoc
