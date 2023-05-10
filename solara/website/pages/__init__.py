@@ -98,8 +98,8 @@ def Layout(children=[]):
         )
         if route_current is not None and route_current.path == "/":
             Hero(
-                title="Build large and Scalable Web Apps for Jupyter and Production",
-                sub_title="Solara helps you build powerful & scalable data apps <b>faster</b> and <b>easier</b>.",
+                title="A pure Python, React-style web framework",
+                sub_title="Solara helps you build powerful & scalable Jupyter and web apps <b>faster</b> and <b>easier</b>.",
                 button_text="Quickstart",
             )
 
@@ -113,16 +113,20 @@ def Layout(children=[]):
                 solara.Meta(name="twitter:title", content="Solara documentation")
 
                 with rv.Row(class_="ma-2"):
-                    with rv.Col(md=4, offset_md=2, sm=5, offset_sm=1):
+                    with rv.Col(md=6, offset_md=3, sm=8, offset_sm=2):
                         solara.Markdown(
                             """
                         # What is Solara?
 
-                        Solara lets you build web apps from pure Python using ipywidgets.
+                        Solara lets you build web apps from pure Python using ipywidgets or a React-like API on
+                        top of ipywidgets.
+                        These apps work both inside the Jupyter Notebook and as standalone web apps with frameworks like FastAPI.
 
-                        Grow from a one-off experiment in the Jupyter notebook to highly complex production-grade web apps with confidence.
+                        With Solara, you benefit from a paradigm that promotes component-based code and simplifies state management,
+                        making your development process more efficient and your applications more maintainable.
 
-                        Access the full power of the Python ecosystem. Use your favorite libraries.
+                        Solara provides you with access to the full strength of the Python ecosystem.
+                        This means you can continue using your favorite libraries while expanding your web development capabilities.
                         """
                         )
                         with solara.HBox():
@@ -130,11 +134,11 @@ def Layout(children=[]):
                                 solara.Button(label="Read more", class_="ma-1", href="/docs", color="#f19f41", dark=True)
                             with solara.Link("/docs/quickstart"):
                                 solara.Button(label="Quickstart", class_="ma-1", color="#f19f41", dark=True)
-                    with rv.Col(md=4, sm=5):
-                        rv.Img(src="/static/public/landing/what.png", style_="width:900px")
+                    # with rv.Col(md=4, sm=5):
+                    #     rv.Img(src="/static/public/landing/what.png", style_="width:900px")
 
                 with rv.Row(class_="ma-8"):
-                    with rv.Col(md=4, offset_md=2, sm=5, offset_sm=1):
+                    with rv.Col(md=4, offset_md=2, sm=5, offset_sm=1, style_="padding-top: 50px"):
                         rv.Img(src="/static/public/landing/complexity.png", style_="width:500px")
                     with rv.Col(md=4, sm=5):
                         solara.Markdown(
@@ -162,7 +166,7 @@ def Layout(children=[]):
                         a reliable and robust framework to build large scale apps.
                         """
                         )
-                    with rv.Col(md=5, sm=5):
+                    with rv.Col(md=5, sm=5, style_="padding-top: 50px"):
                         rv.Img(src="/static/public/landing/python-love-react.png", style_="width:300px")
                 with rv.Row(class_="ma-8"):
                     with rv.Col(md=4, offset_md=2, cols=10, offset=1):
@@ -255,7 +259,7 @@ def Layout(children=[]):
                 with rv.Row(class_="ma-8"):
                     with rv.Col(md=8, sm=10, offset_sm=1, offset_md=2):
                         solara.Markdown(
-                            """![sponsors](/static/public/sponsors/domino.png)
+                            """[![sponsors](/static/public/sponsors/domino.png)](https://dominodatalab.com)
                             """,
                             style="text-align:center",
                         )
