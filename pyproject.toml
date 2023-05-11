@@ -92,6 +92,7 @@ documentation = [
     "bqplot",
     "altair",
     "ipycanvas",
+    "ipyleaflet",
     "matplotlib",
     "vega_datasets",
     "plotly",
