@@ -62,9 +62,9 @@ you do not share the number of clicks with other people.
 Lets modify the script a little bit, possibly in this way:
 
 ```diff
--    return solara.Button(label=f"Clicked: {clicks}", on_click=on_click, color=color)
-+    label = "Not clicked yet" if clicks == 0 else f"Clicked: {clicks}"
-+    return solara.Button(label=label, on_click=on_click, color=color)
+-    solara.Button(label=f"Clicked: {clicks}", on_click=increment, color=color)
++    label = "Not clicked yet" if clicks.value == 0 else f"Clicked: {clicks}"
++    solara.Button(label=label, on_click=increment, color=color)
 ```
 
 If we save the script, Solara will automatically reload your script and update
