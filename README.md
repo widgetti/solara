@@ -1,4 +1,4 @@
-![](https://solara.dev/static/assets/images/logo.svg)
+[![solara logo](https://solara.dev/static/assets/images/logo.svg)](https://solara.dev)
 
 **A Pure Python, React-style Framework for Scaling Your Jupyter and Web Apps**
 
