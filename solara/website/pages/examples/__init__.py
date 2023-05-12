@@ -17,9 +17,7 @@ def Page():
     for route in route_current.children:
         if route.children:
             solara.Markdown(f"## {route.label}\n" + (route.module.__doc__ or ""))
-            with solara.ColumnsResponsive(
-                4,
-            ):
+            with solara.ColumnsResponsive(12, 6, 6, 6, 4):
                 for child in route.children:
                     path = route.path + "/" + child.path
                     image = path + ".png"
