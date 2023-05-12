@@ -45,6 +45,9 @@ def Header(
         with rv.Btn(icon=True, tag="a", class_="d-none d-md-flex", attributes={"href": solara.github_url, "target": "_blank"}):
             rv.Icon(children=["mdi-github-circle"])
 
+        with rv.Btn(icon=True, tag="a", class_="d-none d-md-flex", attributes={"href": "https://discord.gg/2jAh9P8H", "target": "_blank"}):
+            rv.Icon(children=["mdi-discord"])
+
         with solara.Button(icon=True, class_="hidden-md-and-up", on_click=lambda: on_toggle_right_menu and on_toggle_right_menu()):
             rv.Icon(children=["mdi-menu"])
 
