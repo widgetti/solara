@@ -11,7 +11,7 @@ import solara
 
 x0 = np.linspace(0, 2, 100)
 
-exponent = solara.reactive(1)
+exponent = solara.reactive(1.0)
 log_scale = solara.reactive(False)
 
 
