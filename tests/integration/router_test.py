@@ -6,11 +6,11 @@ def test_landing(page_session: playwright.sync_api.Page, solara_server, solara_a
     # with screenshot_on_error(page, 'tmp/test_docs_basics.png'):
     with solara_app("solara.website.pages"):
         page_session.goto(solara_server.base_url)
-        page_session.locator("text=Jupyter and Production").wait_for()
+        page_session.locator("text=React-style web framework").wait_for()
         page_session.locator("text=API").first.click()
         page_session.locator("text=Matplotlib").first.wait_for()
         page_session.go_back()
-        page_session.locator("text=Jupyter and Production").wait_for()
+        page_session.locator("text=React-style web framework").wait_for()
 
 
 def test_docs_basics(page_session: playwright.sync_api.Page, solara_server, solara_app):
