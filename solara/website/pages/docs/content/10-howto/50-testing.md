@@ -45,7 +45,7 @@ $ playwright install chromium
 
 In this example, use the standard IPython display call to add your widget to the page.
 
-# Testin in the main Jupyter Environments
+# Testing in the main Jupyter Environments
 
 In case you want to test your component in the main Jupyter environments (e.g., Jupyter Notebook, Jupyter Lab, Voila, and Solara) to ensure it renders correctly, use the `ipywidgets_runner` fixture to run code snippets. Here's an example:
 
