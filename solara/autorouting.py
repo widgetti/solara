@@ -92,6 +92,17 @@ def RoutingProvider(children: List[reacton.core.Element] = [], routes: List[sola
     solara.routing._location_context.provide(solara.routing._Location(path, set_path))
     solara.routing.router_context.provide(solara.routing.Router(path, routes=routes, set_path=set_path))
 
+    def get_nav_widget():
+        # not sure why get_widget(nav) does not work
+        nav_widget.current = solara.get_widget(main).children[0]  # type: ignore
+
+    import solara.widgets as w
+
+    nav_widget = solara.use_ref(cast(Optional[w.Navigator], None))
+    if nav_widget.current:
+        nav_widget.current.location = path
+    solara.use_effect(get_nav_widget)
+
     main = solara.VBox(
         children=[
             nav,

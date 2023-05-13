@@ -256,7 +256,7 @@ def AppLayout(
                     for child in children_appbar:
                         solara.display(child)
                     solara.Button(icon_name="mdi-fullscreen", on_click=lambda: set_fullscreen(True), icon=True, dark=False)
-            with v.Row(no_gutters=False):
+            with v.Row(no_gutters=False, class_="solara-content-main"):
                 v.Col(cols=12, children=children_content)
     else:
         with v.Html(tag="div", style_="min-height: 100vh") as main:
@@ -272,6 +272,7 @@ def AppLayout(
                         # disable_resize_watcher=True,
                         disable_route_watcher=True,
                         mobile_break_point="960",
+                        class_="solara-content-main",
                     ):
                         if not show_app_bar:
                             AppIcon(sidebar_open, on_click=lambda: set_sidebar_open(not sidebar_open))
@@ -304,7 +305,7 @@ def AppLayout(
                     if fullscreen:
                         solara.Button(icon_name="mdi-fullscreen-exit", on_click=lambda: set_fullscreen(False), icon=True, dark=False)
 
-            with v.Content():
+            with v.Content(class_="solara-content-main"):
                 v.Col(cols=12, children=children_content)
         if fullscreen:
             with v.Dialog(v_model=True, children=[], fullscreen=True, hide_overlay=True, persistent=True, no_click_animation=True) as dialog:

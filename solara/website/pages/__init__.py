@@ -103,7 +103,7 @@ def Layout(children=[]):
                 button_text="Quickstart",
             )
 
-        with rv.Container(tag="section", fluid=True, ma_0=True, pa_0=True, class_="fill-height mb-8"):
+        with rv.Container(tag="section", fluid=True, ma_0=True, pa_0=True, class_="fill-height mb-8 solara-content-main"):
             if route_current is not None and route_current.path == "/":
                 description = "Use ipywidgets with Solara to build powerful and scalable web apps for Jupyter and production in Python."
                 # both tags in one
