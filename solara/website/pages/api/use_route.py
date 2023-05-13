@@ -1,50 +1,9 @@
 """
 # use_route
-
-See also [Understanding Routing](/docs/understanding/routing).
-
-
-```python
-def use_route() -> Tuple[Optional[solara.Route], List[solara.Route]]:
-    ...
-```
-
-`use_route` returns (if found) the current route that matches the pathname, or None. It also returns all resolved routes of that level
-(i.e. all siblings and itself). This return tuple is useful to build custom navigation (e.g. using tabs or buttons).
-
-
-Routing starts with declaring a set of `routes` in your app (solara picks up the `routes` variable if it exists,
-and it should be in the same namespace as `Page`).
-In the demo below, we declared the following routes.
-
-```python
-routes = [
-    solara.Route(path="/"),
-    solara.Route(
-        path="fruit",
-        component=Fruit,
-        children=[
-            solara.Route(path="/"),
-            solara.Route(path="kiwi"),
-            solara.Route(path="banana"),
-            solara.Route(path="apple"),
-        ],
-    ),
-]
-```
-
-Note that all routes are relative, since a component does not know if it is embedded into a larger application, which may also do routing.
-Therefore you should never use the `route.path` for navigation since the route object has no knowledge of the full url
-(e.g. `/api/use_route/fruit/banana`) but only knows its small piece of the pathname (e.g. `banana`)
-
-Use [`resolve_path`](/api/resolve_path) to request the full url for navigation, or simply use the `Link` component that can do this for us.
-
-If the current route has children, any child component that calls `use_route` will return the matched route and its siblings of our children.
-
-
 """
 
 import solara
+from solara.website.utils import apidoc
 
 title = "use_route"
 
@@ -118,3 +77,4 @@ routes = [
 ]
 
 sources = [Fruit.f, Page.f]  # type: ignore
+__doc__ += apidoc(solara.use_route)  # type: ignore

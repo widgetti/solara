@@ -102,10 +102,57 @@ def use_router() -> Router:
     return solara.use_context(router_context)
 
 
-def use_route(level=0) -> Tuple[Optional[solara.Route], List[solara.Route]]:
+def use_route(
+    level=0,
+    peek=False,
+) -> Tuple[Optional[solara.Route], List[solara.Route]]:
+    """Returns (if found) the current route that matches the pathname, or None
+
+    See also [Understanding Routing](/docs/understanding/routing).
+
+    `use_route` returns (if found) the current route that matches the pathname, or None. It also returns all resolved routes of that level
+    (i.e. all siblings and itself). This return tuple is useful to build custom navigation (e.g. using tabs or buttons).
+
+
+    Routing starts with declaring a set of `routes` in your app (solara picks up the `routes` variable if it exists,
+    and it should be in the same namespace as `Page`).
+    In the demo below, we declared the following routes.
+
+    ```python
+    routes = [
+        solara.Route(path="/"),
+        solara.Route(
+            path="fruit",
+            component=Fruit,
+            children=[
+                solara.Route(path="/"),
+                solara.Route(path="kiwi"),
+                solara.Route(path="banana"),
+                solara.Route(path="apple"),
+            ],
+        ),
+    ]
+    ```
+
+    Note that all routes are relative, since a component does not know if it is embedded into a larger application, which may also do routing.
+    Therefore you should never use the `route.path` for navigation since the route object has no knowledge of the full url
+    (e.g. `/api/use_route/fruit/banana`) but only knows its small piece of the pathname (e.g. `banana`)
+
+    Use [`resolve_path`](/api/resolve_path) to request the full url for navigation, or simply use the `Link` component that can do this for us.
+
+    If the current route has children, any child component that calls `use_route` will return the matched route and its siblings of our children.
+
+
+    ## Arguments
+
+    * `level`: the level of the route to return. 0 is the current route, -1 is the parent route, 1 the child route, etc.
+    * `peek`: if True, the route level is not incremented. This is useful to peek at the next route level without changing the current route level.
+    """
+
     router = solara.use_context(router_context)
     route_level = solara.use_context(route_level_context)
-    route_level_context.provide(route_level + 1)
+    if not peek:
+        route_level_context.provide(route_level + 1)
     route_level += level
     if route_level < len(router.path_routes):
         return router.path_routes[route_level], router.path_routes_siblings[route_level]
