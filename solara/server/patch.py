@@ -319,10 +319,17 @@ def patch():
     ipywidgets.widgets.widget_output.Output.__enter__ = Output_enter
     ipywidgets.widgets.widget_output.Output.__exit__ = Output_exit
 
+    original_close = ipywidgets.widget.Widget.close
+    closed_ids = set()
+    closed_stack: Dict[int, str] = {}
+
     def model_id_debug(self: ipywidgets.widgets.widget.Widget):
         from ipyvue.ForceLoad import force_load_instance
 
         import solara.comm
+
+        if self.comm is None and id(self) in closed_ids and id(self) in closed_stack:
+            raise RuntimeError(f"Widget has been closed, the stacktrace when the widget was closed is:\n{closed_stack[id(self)]}")
 
         if self.comm is None or isinstance(self.comm, solara.comm.DummyComm) and force_load_instance.comm is not self.comm:
             stack = solara.comm.orphan_comm_stacks.get(self.comm)
@@ -333,6 +340,17 @@ def patch():
                 )
             else:
                 raise RuntimeError("Widget has no comm, you are probably using a widget that was closed. The widget is:\n" + repr(self))
+
         return self.comm.comm_id
 
     ipywidgets.widget.Widget.model_id = property(model_id_debug)
+
+    def close_widget_debug(self: ipywidgets.widgets.widget.Widget):
+        # only in development mode, since this leaks memory
+        if settings.main.mode == "development":
+            stacktrace = "".join(traceback.format_stack())
+            closed_stack[id(self)] = stacktrace
+            closed_ids.add(id(self))
+        original_close(self)
+
+    ipywidgets.widget.Widget.close = close_widget_debug
