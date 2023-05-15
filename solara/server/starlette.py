@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import sys
@@ -83,8 +84,10 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
     def send_bytes(self, data: bytes) -> None:
         self.portal.call(self.ws.send_bytes, data)
 
-    def receive(self):
-        message = self.portal.call(self.ws.receive)
+    async def receive(self):
+        fut = self.portal.spawn_task(self.ws.receive)
+
+        message = await asyncio.wrap_future(fut)
         if "text" in message:
             return message["text"]
         elif "bytes" in message:

@@ -22,7 +22,7 @@ class Websocket(WebsocketWrapper):
     def close(self) -> None:
         pass
 
-    def receive(self) -> Union[str, bytes]:
+    async def receive(self) -> Union[str, bytes]:
         return b""
 
 
