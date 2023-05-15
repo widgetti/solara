@@ -103,6 +103,14 @@ class AppScript:
         }
         ignore = list(local_scope)
         routes: Optional[List[solara.Route]] = None
+
+        def add_path():
+            # this is not expected for modules, similar to `python script.py and python -m package.mymodule`
+            if self.type in [AppType.SCRIPT, AppType.NOTEBOOK]:
+                working_directory = str(self.path.parent)
+                if working_directory not in sys.path:
+                    sys.path.insert(0, working_directory)
+
         if self.path.is_dir():
             self.type = AppType.DIRECTORY
             # resolve the directory, because Path("file").parent.parent == "." != ".."
@@ -111,6 +119,7 @@ class AppScript:
             app = solara.autorouting.RenderPage()
         elif self.name.endswith(".py"):
             self.type = AppType.SCRIPT
+            add_path()
             local_scope["__name__"] = "__main__"
             # manually add the script to the watcher
             reload.reloader.watcher.add_file(self.path)
@@ -127,6 +136,7 @@ class AppScript:
                 app = solara.AppLayout(children=[app()])
         elif self.name.endswith(".ipynb"):
             self.type = AppType.NOTEBOOK
+            add_path()
             # manually add the notebook to the watcher
             reload.reloader.watcher.add_file(self.path)
             self.directory = self.path.parent.resolve()
@@ -182,12 +192,6 @@ class AppScript:
                     app = nested_get(local_scope, self.app_name)
                     if app is None:
                         app = solara.autorouting.RenderPage()
-
-        # this is not expected for modules, similar to `python script.py and python -m package.mymodule`
-        if self.type in [AppType.SCRIPT, AppType.NOTEBOOK]:
-            working_directory = str(self.path.parent)
-            if working_directory not in sys.path:
-                sys.path.insert(0, working_directory)
 
         if settings.ssg.build_path is None:
             settings.ssg.build_path = self.directory.parent.resolve() / "build"
