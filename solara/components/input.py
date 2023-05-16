@@ -45,6 +45,8 @@ def InputText(
     disabled: bool = False,
     password: bool = False,
     continuous_update: bool = False,
+    error: Union[bool, str] = False,
+    message: Optional[str] = None,
 ):
     """Free form text input.
 
@@ -95,6 +97,8 @@ def InputText(
     * `disabled`: Whether the input is disabled.
     * `password`: Whether the input is a password input (typically shows input text obscured with an asterisk).
     * `continuous_update`: Whether to call the `on_value` callback on every change or only when the input loses focus or the enter key is pressed.
+    * `error`: If truthy, show the input as having an error (in red). If a string is passed, it will be shown as the error message.
+    * `message`: Message to show below the input. If `error` is a string, this will be ignored.
     """
     reactive_value = solara.use_reactive(value, on_value)
     del value, on_value
@@ -106,7 +110,20 @@ def InputText(
         if continuous_update:
             set_value_cast(value)
 
-    text_field = v.TextField(v_model=reactive_value.value, on_v_model=on_v_model, label=label, disabled=disabled, type="password" if password else None)
+    messages = []
+    if error and isinstance(error, str):
+        messages.append(error)
+    elif message:
+        messages.append(message)
+    text_field = v.TextField(
+        v_model=reactive_value.value,
+        on_v_model=on_v_model,
+        label=label,
+        disabled=disabled,
+        type="password" if password else None,
+        error=bool(error),
+        messages=messages,
+    )
     use_change(text_field, set_value_cast, enabled=not continuous_update)
     return text_field
 
