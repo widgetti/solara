@@ -340,6 +340,10 @@ def _InputNumeric(
                 set_internal_value(value)
                 # this make sure the current value gets updated directly
                 internal_value = value
+        elif internal_value is None:
+            set_internal_value(value)
+            # this make sure the current value gets updated directly
+            internal_value = value
 
     # make sure that if the external value changes, our internal model gets updated
     # but if the internal model is in a different representation
@@ -359,6 +363,8 @@ def _InputNumeric(
                     return str(numerical_proper_type)
                 else:
                     return internal_value
+        else:
+            return internal_value
 
     # make sure that when internal_value="1.1", but str_to_numeric=int
     # internal value becomes "1"

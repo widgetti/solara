@@ -41,6 +41,9 @@ def test_input_int_optional():
     input = rc.find(vw.TextField)
     assert input.widget.v_model is None
 
+    rc.render(solara.InputInt("label", 1, optional=True, on_value=on_value))
+    assert input.widget.v_model == 1
+
 
 def test_input_int():
     on_value = MagicMock()
