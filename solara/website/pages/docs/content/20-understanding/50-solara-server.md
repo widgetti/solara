@@ -16,7 +16,7 @@ HTTP/1.1 200 OK
 
 ## Telemetry
 
-Solara uses Mixpanel to collect usage of the solara server. We track when a server is started and stopped. To opt out of mixpanel telemetry, either:
+Solara uses Mixpanel to collect usage of the solara server. We track when a server is started, stopped and a daily report of the number of unique users and connections made. To opt out of mixpanel telemetry, either:
 
  * Set the environmental variable `SOLARA_TELEMETRY_MIXPANEL_ENABLE` to `False`.
  * Run in development mode (e.g. using `$ solara run sol.py --dev`)

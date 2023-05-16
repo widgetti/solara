@@ -171,10 +171,13 @@ async def kernel_connection(ws: starlette.websockets.WebSocket):
             try:
                 assert session_id is not None
                 assert connection_id is not None
+                telemetry.connection_open(session_id, connection_id)
                 await server.app_loop(ws_wrapper, session_id, connection_id, user)
             except:  # noqa
                 await portal.stop(cancel_remaining=True)
                 raise
+            finally:
+                telemetry.connection_close(session_id, connection_id)
 
         # sometimes throws: RuntimeError: Already running asyncio in this thread
         anyio.run(run)

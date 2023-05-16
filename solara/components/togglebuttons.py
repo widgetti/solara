@@ -1,10 +1,11 @@
-from typing import Callable, List, Optional, TypeVar, Union, cast
+from typing import Callable, Dict, List, Optional, TypeVar, Union, cast
 
 import ipyvuetify as v
 import reacton
 
 import solara
 from solara.alias import rv
+from solara.util import _combine_classes
 
 T = TypeVar("T")
 
@@ -24,6 +25,9 @@ def ToggleButtonsSingle(
     values: List[T] = [],
     children: List[reacton.core.Element] = [],
     on_value: Optional[Callable[[T], None]] = None,
+    dense: bool = False,
+    classes: List[str] = [],
+    style: Union[str, Dict[str, str], None] = None,
 ) -> reacton.core.ValueElement[v.BtnToggle, T]:
     """ToggleButtons for selecting a single value.
 
@@ -68,11 +72,16 @@ def ToggleButtonsSingle(
 
     ## Arguments
 
-    * `value`: The currently selected value.
-    * `values`: List of values to select from.
-    * `children`: List of buttons to use as values.
-    * `on_value`: Callback to call when the value changes.
+     * `value`: The currently selected value.
+     * `values`: List of values to select from.
+     * `children`: List of buttons to use as values.
+     * `on_value`: Callback to call when the value changes.
+     * `dense`: Whether to use a dense (smaller) style.
+     * `style`: CSS style to apply to the top level element.
+     * `classes`: List of CSS classes to be applied to the top level element.
     """
+    class_ = _combine_classes(classes)
+    style_flat = solara.util._flatten_style(style)
     # TODO: make type safe
     reactive_value = solara.use_reactive(value, on_value)  # type: ignore
     children = [solara.Button(label=str(value)) for value in values] + children
@@ -84,7 +93,10 @@ def ToggleButtonsSingle(
         value = values[index]
         reactive_value.set(value)
 
-    return cast(reacton.core.ValueElement[v.BtnToggle, T], rv.BtnToggle(children=children, multiple=False, mandatory=True, v_model=index, on_v_model=on_index))
+    return cast(
+        reacton.core.ValueElement[v.BtnToggle, T],
+        rv.BtnToggle(children=children, multiple=False, mandatory=True, v_model=index, on_v_model=on_index, dense=dense, class_=class_, style_=style_flat),
+    )
 
 
 @solara.value_component(None)
@@ -93,6 +105,9 @@ def ToggleButtonsMultiple(
     values: List[T] = [],
     children: List[reacton.core.Element] = [],
     on_value: Callable[[List[T]], None] = None,
+    dense: bool = False,
+    classes: List[str] = [],
+    style: Union[str, Dict[str, str], None] = None,
 ) -> reacton.core.ValueElement[v.BtnToggle, List[T]]:
     """ToggleButtons for selecting multiple values.
 
@@ -113,11 +128,16 @@ def ToggleButtonsMultiple(
 
     ## Arguments
 
-    * `value`: The currently selected values.
-    * `values`: List of values to select from.
-    * `children`: List of buttons to use as values.
-    * `on_value`: Callback to call when the value changes.
+     * `value`: The currently selected values.
+     * `values`: List of values to select from.
+     * `children`: List of buttons to use as values.
+     * `on_value`: Callback to call when the value changes.
+     * `dense`: Whether to use a dense (smaller) style.
+     * `style`: CSS style to apply to the top level element.
+     * `classes`: List of CSS classes to be applied to the top level element.
     """
+    class_ = _combine_classes(classes)
+    style_flat = solara.util._flatten_style(style)
     reactive_value = solara.use_reactive(value, on_value)
     children = [solara.Button(label=str(value)) for value in values] + children
     allvalues = values + [_get_button_value(button) for button in children]
@@ -129,5 +149,6 @@ def ToggleButtonsMultiple(
         reactive_value.set(value)
 
     return cast(
-        reacton.core.ValueElement[v.BtnToggle, List[T]], rv.BtnToggle(children=children, multiple=True, mandatory=False, v_model=indices, on_v_model=on_indices)
+        reacton.core.ValueElement[v.BtnToggle, List[T]],
+        rv.BtnToggle(children=children, multiple=True, mandatory=False, v_model=indices, on_v_model=on_indices, dense=dense, class_=class_, style_=style_flat),
     )

@@ -5,6 +5,7 @@ import platform
 import threading
 import time
 import uuid
+from collections import defaultdict
 from typing import Dict, Optional
 from urllib.parse import quote
 
@@ -26,6 +27,11 @@ _server_ip = None
 _platform_system = platform.system()
 _platform_release = platform.release()
 _python_version = platform.python_version()
+_connections_per_session_daily: Dict[str, int] = defaultdict(int)
+_connections_per_session_cumulative: Dict[str, int] = defaultdict(int)
+
+_seconds_per_day = 60 * 60 * 24
+_report_timeout = _seconds_per_day
 
 solara_props = {
     "solara_version": solara.__version__,
@@ -48,12 +54,6 @@ def _get_ip():
         _server_ip = requests.get("https://api.ipify.org").text
     except Exception:
         _server_ip = "failed to get IP"
-
-
-_ip_thread = threading.Thread(target=_get_ip)
-_ip_thread.start()
-# only wait for 0.3 seconds, if it takes longer, we may get it at server stop
-_ip_thread.join(timeout=0.3)
 
 
 def override_server_user_id(server_user_id: str):
@@ -101,23 +101,58 @@ def track(event: str, props: Optional[Dict] = None):
         pass
 
 
-def server_start():
-    if _server_ip is None:
-        # wait at most 0.1 second to get the server ip
-        for i in range(10):
-            time.sleep(0.01)
-            if _server_ip is not None:
-                break
-        else:
-            logger.warning("Server IP is not known yet")
+def _usage_stats():
+    unique_session_daily = len(_connections_per_session_daily)
+    unique_session_cumulative = len(_connections_per_session_cumulative)
+    avg_connections_daily = sum(_connections_per_session_daily.values()) / unique_session_daily if unique_session_daily else 0
+    avg_connections_cumulative = sum(_connections_per_session_cumulative.values()) / unique_session_cumulative if unique_session_cumulative else 0
+    uptime_days = (time.time() - _server_start_time) / (_seconds_per_day)
+    return {
+        "uptime_days": uptime_days,
+        "unique_session_daily": unique_session_daily,
+        "avg_connections_daily": avg_connections_daily,
+        "unique_session_cumulative": unique_session_cumulative,
+        "avg_connections_cumulative": avg_connections_cumulative,
+    }
+
+
+def _track():
     global _server_start_time
     _server_start_time = time.time()
+    _get_ip()
     track("Solara server start")
+    while True:
+        try:
+            time.sleep(_report_timeout)
+            track("Solara report", _usage_stats())
+            _connections_per_session_daily.clear()
+        except Exception:
+            pass
+
+
+_thread = threading.Thread(target=_track, daemon=True)
+
+
+def server_start():
+    if settings.main.mode == "development":
+        return
+    if not settings.telemetry.mixpanel_enable:
+        return
+    _thread.start()
 
 
 def server_stop():
     duration = time.time() - _server_start_time
-    track("Solara server stop", {"duration_seconds": duration})
+    track("Solara server stop", {"duration_seconds": duration, **_usage_stats()})
+
+
+def connection_open(session_id, connection_id):
+    _connections_per_session_daily[session_id] += 1
+    _connections_per_session_cumulative[session_id] += 1
+
+
+def connection_close(session_id, connection_id):
+    pass
 
 
 if __name__ == "__main__":
