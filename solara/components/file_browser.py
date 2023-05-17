@@ -11,14 +11,15 @@ import solara
 from solara.components import Div
 
 
-def list_dir(path, filter=filter):
+def list_dir(path, filter: Callable[[Path], bool] = lambda x: True, directory_first: bool = False) -> List[dict]:
     def mk_item(n):
         full_path = join(path, n)
         is_file = isfile(full_path)
         return {"name": n, "is_file": is_file, "size": humanize.naturalsize(os.stat(full_path).st_size) if is_file else None}
 
     files = [mk_item(k) for k in os.listdir(path) if not k.startswith(".") if filter(Path(path) / k)]
-    sorted_files = sorted(files, key=lambda item: ("0" if item["is_file"] else "1") + item["name"].lower())
+    sorted_files = sorted(files, key=lambda item: (item["is_file"] == directory_first, item["name"].lower()))
+
     return sorted_files
 
 
@@ -54,6 +55,7 @@ def FileBrowser(
     on_path_select: Callable[[Optional[Path]], None] = None,
     on_file_open: Callable[[Path], None] = None,
     filter: Callable[[Path], bool] = lambda x: True,
+    directory_first: bool = False,
     on_file_name: Callable[[str], None] = None,
     start_directory=None,
     can_select=False,
@@ -78,6 +80,7 @@ def FileBrowser(
      * `on_path_select`: Depends on mode, see above.
      * `on_file_open`: Depends on mode, see above.
      * `filter`: A function that takes a `Path` and returns `True` if the file/directory should be shown.
+     * `directory_first`: If `True` directories are shown before files. Default: `False`.
      * `on_file_name`: (deprecated) Use on_file_open instead.
      * `start_directory`: (deprecated) Use directory instead.
     """
@@ -160,7 +163,7 @@ def FileBrowser(
     with Div(class_="solara-file-browser") as main:
         Div(children=[current_dir])
         FileListWidget.element(
-            files=[{"name": "..", "is_file": False}] + list_dir(current_dir, filter=filter),
+            files=[{"name": "..", "is_file": False}] + list_dir(current_dir, filter=filter, directory_first=directory_first),
             selected=selected,
             clicked=selected,
             on_clicked=on_click,
