@@ -1,5 +1,5 @@
 import itertools
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import reacton.ipyvuetify as rv
 
@@ -25,6 +25,8 @@ def Columns(
     gutters=True,
     gutters_dense=False,
     children=[],
+    classes: List[str] = [],
+    style: Union[str, Dict[str, str], None] = None,
 ):
     """Lays out children in columns, with relative widths specified as a list of floats or ints.
 
@@ -59,14 +61,18 @@ def Columns(
 
     # Arguments
 
-     * widths: List of floats or ints, specifying the relative widths of the columns.
-     * wrap: Whether to wrap the columns to the next row if there is not enough space available. This only happens when using widths of 0.
-     * gutters: Whether to add gutters between the columns.
-     * gutters_dense: Make gutters smaller.
-     * children: List of children to be laid out in columns.
+     * `widths`: List of floats or ints, specifying the relative widths of the columns.
+     * `wrap`: Whether to wrap the columns to the next row if there is not enough space available. This only happens when using widths of 0.
+     * `gutters`: Whether to add gutters between the columns.
+     * `gutters_dense`: Make gutters smaller.
+     * `children`: List of children to be laid out in columns.
+     * `style`: CSS style to apply to the top level element.
+     * `classes`: List of CSS classes to be applied to the top level element.
 
     """
-    with rv.Row(class_="flex-nowrap" if not wrap else "", no_gutters=not gutters, dense=gutters_dense) as main:
+    class_ = _combine_classes([*(["flex-nowrap"] if not wrap else []), *classes])
+    style_flat = solara.util._flatten_style(style)
+    with rv.Row(class_=class_, no_gutters=not gutters, dense=gutters_dense, style_=style_flat) as main:
         for child, width in zip(children, cycle(widths)):
             with rv.Col(children=[child], style_=f"flex-grow: {width}; overflow: auto" if width != 0 else "flex-grow: 0;"):
                 pass
