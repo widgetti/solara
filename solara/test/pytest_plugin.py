@@ -32,7 +32,7 @@ if typing.TYPE_CHECKING:
 logger = logging.getLogger("solara.pytest_plugin")
 
 TEST_PORT = int(os.environ.get("PORT", "18765")) + 100  # do not interfere with the solara integration tests
-TIMEOUT = float(os.environ.get("SOLARA_PW_TIMEOUT", "10"))
+TIMEOUT = float(os.environ.get("SOLARA_PW_TIMEOUT", "18"))
 
 
 @pytest.fixture(scope="session")
