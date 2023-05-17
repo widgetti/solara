@@ -66,11 +66,10 @@ def Columns(
      * children: List of children to be laid out in columns.
 
     """
-    with rv.Container() as main:
-        with rv.Row(class_="flex-nowrap" if not wrap else "", no_gutters=not gutters, dense=gutters_dense):
-            for child, width in zip(children, cycle(widths)):
-                with rv.Col(children=[child], style_=f"flex-grow: {width}; overflow: auto" if width != 0 else "flex-grow: 0;"):
-                    pass
+    with rv.Row(class_="flex-nowrap" if not wrap else "", no_gutters=not gutters, dense=gutters_dense) as main:
+        for child, width in zip(children, cycle(widths)):
+            with rv.Col(children=[child], style_=f"flex-grow: {width}; overflow: auto" if width != 0 else "flex-grow: 0;"):
+                pass
     return main
 
 
