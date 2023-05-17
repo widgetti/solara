@@ -36,9 +36,9 @@ class WebsocketWrapper(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def receive(self) -> Union[str, bytes]:
+    async def receive(self) -> Union[str, bytes]:
         pass
 
-    def receive_json(self):
-        text = self.receive()
+    async def receive_json(self):
+        text = await self.receive()
         return json.loads(text)

@@ -64,8 +64,10 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
     def send_bytes(self, data: bytes) -> None:
         self.ws.send(data)
 
-    def receive(self):
-        return self.ws.receive()
+    async def receive(self):
+        from anyio import to_thread
+
+        return await to_thread.run_sync(lambda: self.ws.receive())
 
 
 class ServerFlask(ServerBase):

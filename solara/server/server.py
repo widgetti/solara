@@ -135,7 +135,7 @@ async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, connection_i
 
         while True:
             try:
-                message = ws.receive()
+                message = await ws.receive()
             except websocket.WebSocketDisconnect:
                 logger.debug("Disconnected")
                 return
