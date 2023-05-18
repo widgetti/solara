@@ -84,8 +84,17 @@ def Text(text, style: str = None, classes: List[str] = []):
 
 
 @solara.component
-def Div(children=[], **kwargs):
-    return v.Html(tag="div", children=children, **kwargs)
+def Div(children=[], classes: List[str] = [], style: Union[str, Dict[str, str], None] = None, **kwargs):
+    style_flat = solara.util._flatten_style(style)
+    classes = classes.copy()
+    kwargs = kwargs.copy()
+    if "class_" in kwargs:
+        classes.append(kwargs.pop("class_"))
+    if "style_" in kwargs:
+        style_flat += kwargs.pop("style_")
+    class_ = _combine_classes(classes)
+
+    return v.Html(tag="div", children=children, class_=class_, style_=style_flat, **kwargs)
 
 
 @solara.component
