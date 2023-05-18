@@ -1,5 +1,7 @@
 import solara
 
+from . import SharedComponent
+
 github_url = solara.util.github_url(__file__)
 
 
@@ -10,6 +12,7 @@ def Sub():
         with solara.Sidebar():
             with solara.Card("Sidebar of sub component", margin=0, elevation=0):
                 solara.Markdown("*Markdown* **is** 👍")
+            SharedComponent()
 
 
 @solara.component
