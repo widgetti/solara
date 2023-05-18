@@ -193,18 +193,6 @@ def RenderPage():
                     next = routes_siblings[routes_siblings_index + 1]
                     with solara.Link(next):
                         solara.Button(f"{next.label}", text=True, icon_name="mdi-arrow-right")
-            if path.is_relative_to(solara_root):
-                # this is now hardcoded to solara only
-                url = solara.util.github_edit_url(path)
-                with solara.Div(style={"position": "relative"}) as content:
-                    with solara.Tooltip("Edit on GitHub"):
-                        solara.Button(
-                            icon_name="mdi-pencil", icon=True, href=url, target="_blank", style={"position": "absolute", "top": "0px", "right": "0px"}
-                        )
-                    solara.Markdown(path.read_text(), unsafe_solara_execute=True)
-            else:
-                content = solara.Markdown(path.read_text(), unsafe_solara_execute=True)
-
             main = solara.Div(
                 children=[
                     solara.Title(route_current.label or "No title"),

@@ -71,6 +71,19 @@ LOGGING_CONFIG: dict = {
 }
 
 
+def _check_version():
+    import requests
+
+    try:
+        response = requests.get("https://pypi.org/pypi/solara/json")
+        latest_version = response.json()["info"]["version"]
+    except:  # noqa: E722
+        return
+    if latest_version != solara.__version__:
+        print(f"New version of Solara available: {latest_version}. You have {solara.__version__}. Please upgrade using:")  # noqa: T201
+        print(f'\t$ pip install "solara=={latest_version}"')  # noqa: T201
+
+
 def find_all_packages_paths():
     paths = []
     # sitepackages = set([os.path.dirname(k) for k in site.getsitepackages()])
@@ -223,6 +236,12 @@ When in dev mode Solara will:
     default=settings.search.enabled,
     help="Enable search (requires ssg generated pages).",
 )
+@click.option(
+    "--check-version/--no-check-version",
+    is_flag=True,
+    default=True,
+    help="Check installed version again pypi version.",
+)
 def run(
     app,
     host,
@@ -248,8 +267,11 @@ def run(
     theme_variant_user_selectable: bool,
     ssg: bool,
     search: bool,
+    check_version: bool = True,
 ):
     """Run a Solara app."""
+    if check_version:
+        _check_version()
     settings.ssg.enabled = ssg
     settings.search.enabled = search
     reload_dirs = reload_dirs if reload_dirs else None
@@ -326,7 +348,11 @@ def run(
     settings.theme.variant_user_selectable = theme_variant_user_selectable
     settings.main.tracer = tracer
     settings.main.timing = timing
-    for item in "theme_variant_user_selectable theme_variant theme_loader use_pdb server open_browser open url failed dev tracer timing ssg search".split():
+    items = (
+        "theme_variant_user_selectable theme_variant theme_loader use_pdb server open_browser open url failed dev tracer"
+        " timing ssg search check_version".split()
+    )
+    for item in items:
         del kwargs[item]
 
     def start_server():
