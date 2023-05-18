@@ -1,6 +1,6 @@
 # Development
 
-
+See also [the contributing guide](/docs/howto/contribute) for more information on how to contribute to Solara.
 ## Development setup
 
 Assuming you have created a virtual environment as described in [the installation guide](/docs/installing), you can install a development install of Solara using:
@@ -47,12 +47,27 @@ If you want to run the integration tests (uses playwright to open a browser to t
 Pass the `--headed` flag to see what is going on, [or check out the docs](https://playwright.dev/python/docs/intro)
 
 
-## Documentation
+### Creating a PR
 
-If you want to work on the documentation, everything is in the `solara/website/pages/` directory.
+Make sure you forked the repository, and set up the remote and origin correctly.
 
-Run the solara website app:
+```
+# rename origin to upstream
+$ git remote rename origin upstream
+# add your fork as origin
+$ git remote add origin https://github.com/yourusername/solara.git
+```
 
-```bash
-$ solara run solara.website.pages
+Now we will create a branch, push it, and open a PR
+
+```
+# create a branch
+$ git checkout -b fix_some_thing
+# add whatever changes you want to make
+$ git add -p
+# commit your changes
+$ git commit -m "fix: some thing"
+# push your changes
+$ git push
+# click the link that is printed to open a PR
 ```
