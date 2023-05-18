@@ -1,4 +1,4 @@
-from typing import Callable, List, Optional
+from typing import Callable, Dict, List, Optional, Union
 
 from reacton import ipyvue
 from reacton import ipyvuetify as v
@@ -19,6 +19,7 @@ def Button(
     color: Optional[str] = None,
     click_event="click",
     classes: List[str] = [],
+    style: Union[str, Dict[str, str], None] = None,
     value=None,
     **kwargs,
 ):
@@ -52,6 +53,7 @@ def Button(
     - `outlined`: Whether the button should be displayed as outlined, it has no background.
     - `value`: (Optional) When used as a child of a ToggleButtons component, the value of the selected button, see [ToggleButtons](/api/togglebuttons).
     - `classes`: additional CSS classes to apply.
+    - `style`: CSS style to apply to the column.
 
     ### Deprecated arguments
     - click_event: (Deprecated/export option: The event that triggers the on_click callback, which can include vue event modifiers).
@@ -66,6 +68,10 @@ def Button(
         class_ = solara.util._combine_classes([*classes, kwargs.pop("class_")])
     else:
         class_ = solara.util._combine_classes(classes)
-    btn = v.Btn(children=children, **kwargs, disabled=disabled, text=text, class_=class_, outlined=outlined, color=color)
+    kwargs = kwargs.copy()
+    style_flat = solara.util._flatten_style(style)
+    if "style_" in kwargs:
+        style_flat += kwargs.pop("style_")
+    btn = v.Btn(children=children, **kwargs, disabled=disabled, text=text, class_=class_, style_=style_flat, outlined=outlined, color=color)
     ipyvue.use_event(btn, click_event, lambda *_ignore: on_click and on_click())
     return btn
