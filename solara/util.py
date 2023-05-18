@@ -17,6 +17,13 @@ def github_url(file):
     return github_url
 
 
+def github_edit_url(file):
+    # e.g. https://github.com/widgetti/solara/edit/master/solara/__init__.py
+    rel_path = os.path.relpath(file, Path(solara.__file__).parent.parent)
+    github_url = solara.github_url + f"/edit/{solara.git_branch}/" + rel_path
+    return github_url
+
+
 def load_file_as_data_url(file_name, mime):
     with open(file_name, "rb") as f:
         data = f.read()
