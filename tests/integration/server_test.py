@@ -124,3 +124,26 @@ def test_from_thread_two_users(browser: playwright.sync_api.Browser, solara_serv
         page2.locator("text=from thread").wait_for()
         page1.close()
         page2.close()
+
+
+@solara.component
+def StaticPage():
+    return w.Label(value="Hello world")
+
+
+def test_run_in_iframe(page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path):
+    page_session.context.clear_cookies()
+    with extra_include_path(HERE), solara_app("server_test:StaticPage"):
+        page_session.set_content(
+            f"""
+            <html>
+            <body>
+                <iframe name="main" src="{solara_server.base_url}"></iframe>
+            </body>
+            </html>
+        """
+        )
+
+        iframe = page_session.frame("main")
+        el = iframe.locator(".jupyter-widgets")
+        assert el.text_content() == "Hello world"
