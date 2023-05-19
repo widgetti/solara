@@ -102,6 +102,10 @@ class ServerStarlette(ServerBase):
     server: uvicorn.server.Server
     name = "starlette"
 
+    def __init__(self, port: int, host: str = "localhost", starlette_app=None, **kwargs):
+        super().__init__(port, host, **kwargs)
+        self.app = starlette_app or app
+
     def has_started(self):
         return self.server.started
 
@@ -129,7 +133,7 @@ class ServerStarlette(ServerBase):
             asyncio.set_event_loop(loop)
 
         # uvloop will trigger a: RuntimeError: There is no current event loop in thread 'fastapi-thread'
-        config = Config(app, host=self.host, port=self.port, **self.kwargs, loop="asyncio")
+        config = Config(self.app, host=self.host, port=self.port, **self.kwargs, loop="asyncio")
         self.server = Server(config=config)
         self.started.set()
         self.server.run()
@@ -250,7 +254,9 @@ async def root(request: Request, fullpath: str = ""):
     secure = False
     # we want samesite, so we can set a cookie when embedded in an iframe, such as on huggingface
     # however, samesite=none requires Secure https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite
-    if request.headers.get("x-forwarded-proto", "http") == "https":
+    # when hosted on the localhost domain we can always set the Secure flag
+    # to allow samesite https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#restrict_access_to_cookies
+    if request.headers.get("x-forwarded-proto", "http") == "https" or request.base_url.hostname == "localhost":
         samesite = "none"
         secure = True
     response.set_cookie(

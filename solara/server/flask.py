@@ -5,6 +5,7 @@ import os
 from http.server import HTTPServer
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 from uuid import uuid4
 
 import flask
@@ -220,9 +221,20 @@ def read_root(path):
     if not allowed():
         return login()
 
+    samesite = "lax"
+    secure = False
+    # we want samesite, so we can set a cookie when embedded in an iframe, such as on huggingface
+    # however, samesite=none requires Secure https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite
+    # when hosted on the localhost domain we can always set the Secure flag
+    # to allow samesite https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#restrict_access_to_cookies
+    o = urlparse(request.base_url)
+    if request.headers.get("x-forwarded-proto", "http") == "https" or o.hostname == "localhost":
+        samesite = "none"
+        secure = True
+
     assert session_id is not None
     response = flask.Response(content, mimetype="text/html")
-    response.set_cookie(server.COOKIE_KEY_SESSION_ID, value=session_id)
+    response.set_cookie(server.COOKIE_KEY_SESSION_ID, value=session_id, secure=secure, samesite=samesite)
     return response
 
 
