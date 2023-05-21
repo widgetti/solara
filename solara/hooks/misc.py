@@ -411,29 +411,60 @@ def use_reactive(
     """
     Ensures that the returned value is a `Reactive` object.
 
+    See also [our documentation on state management](/docs/fundamentals/state-management).
+
     This hook is useful for implementing components that accept either a
     `Reactive` object or a normal value along with an optional `on_change`
     callback. It can also be used as an alternative to `use_state` when you
     want to use a `Reactive` object as the component state.
 
     ## Arguments:
-        * initial_value (Union[T, solara.Reactive[T]]): The initial value of the
+
+     * initial_value (Union[T, solara.Reactive[T]]): The initial value of the
             reactive variable. If a `Reactive` object is provided, it will be
             used directly. Otherwise, a new `Reactive` object will be created
             with the provided initial value.
-        * on_change (Optional[Callable[[T], None]]): An optional callback function
+     * on_change (Optional[Callable[[T], None]]): An optional callback function
             that will be called when the reactive variable's value changes.
 
     Returns:
         solara.Reactive[T]: A `Reactive` object with the specified initial value
             or the provided `Reactive` object.
 
-    ## Example:
-    ```python
+    ## Examples
+
+    ### Replacement for use_state
+    ```solara
     import solara
 
-        @solara.component
-    def MyComponent(value, on_value_change):
+    @solara.component
+    def ReusableComponent():
+        color = solara.use_reactive("red")  # another possibility
+        solara.Select(label="Color",values=["red", "green", "blue", "orange"],
+                    value=color)
+        solara.Markdown("### Solara is awesome", style={"color": color.value})
+
+    @solara.component
+    def Page():
+        # this component is used twice, but each instance has its own state
+        ReusableComponent()
+        ReusableComponent()
+
+    ```
+
+    ### Flexible arguments
+
+    The `MyComponent` component can be passed a reactive variable or a normal
+    Python variable and a `on_value` callback.
+
+    ```python
+    import solara
+    from typing import Union, Optional, Callable
+
+    @solara.component
+    def MyComponent(value: Union[T, solara.Reactive[T]],
+                    on_value: Optional[Callable[[T], None]] = None,
+        ):
         reactive_value = solara.use_reactive(value, on_value_change)
         # Use the `reactive_value` in the component
     ```

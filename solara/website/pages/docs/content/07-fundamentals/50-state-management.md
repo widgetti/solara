@@ -38,7 +38,7 @@ import solara
 
 @solara.component
 def ReusableComponent():
-    # color = solara.use_reactive()  # another possibility
+    # color = solara.use_reactive("red")  # another possibility
     color, set_color = solara.use_state("red")  # local state
     solara.Select(label="Color",values=["red", "green", "blue", "orange"],
                     value=color, on_value=set_color)
@@ -52,8 +52,30 @@ def Page():
 
 ```
 
+## Local component state using solara.use_reactive
+
+
 `use_reactive` is the middle ground between `use_state` and `reactive`. It allows you to create a reactive variable that is scoped to a specific component. This is more a matter of taste, we generally recommend using `use_reactive`, but if you prefer a little less magic, you can use `use_state` instead.
 
+
+If we take the previous example using `use_state`, are replace `use_state` by `use_reactive`, we get:
+```solara
+import solara
+
+@solara.component
+def ReusableComponent():
+    color = solara.use_reactive("red")  # another possibility
+    solara.Select(label="Color",values=["red", "green", "blue", "orange"],
+                  value=color)
+    solara.Markdown("### Solara is awesome", style={"color": color.value})
+
+@solara.component
+def Page():
+    # this component is used twice, but each instance has its own state
+    ReusableComponent()
+    ReusableComponent()
+
+```
 
 ## Conclusion
 Understanding the advantages and disadvantages of reusable components and application-specific code can help you strike the right balance between modularity and simplicity when building your Solara applications.
