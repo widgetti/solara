@@ -81,7 +81,7 @@ For instance, when our pathname is `/docs/basics/react`, the following code show
 @reacton.component
 def MyRootComponent():
     level = solara.use_route_level()  # returns 0
-    route_current, routes_current_level = solara.routes()
+    route_current, routes_current_level = solara.use_routes()
     # route_current is routes[1], i.e. solara.Route(path="docs", children=[...])
     # routes_current_level is [routes[0], routes[1], routes[2], routes[3]], i.e.:
     #    [solara.Route(path="/"), solara.Route(path="docs", children=[...]),
@@ -96,7 +96,7 @@ def MyRootComponent():
 @reacton.component
 def MyFirstLevelChildComponent():
     level = solara.use_route_level()  # returns 1
-    route_current, routes_current_level = solara.routes()
+    route_current, routes_current_level = solara.use_routes()
     # route_current is routes[1].children[0], i.e. solara.Route(path="basics", children=[...])
     # routes_current_level is [routes[1].children[0], routes[1].children[1]], i.e.:
     #    [solara.Route(path="basics", children=[...]), solara.Route(path="advanced")]
@@ -109,7 +109,7 @@ def MyFirstLevelChildComponent():
 @reacton.component
 def MySecondLevelChildComponent():
     level = solara.use_route_level()  # returns 2
-    route_current, routes_current_level = solara.routes()
+    route_current, routes_current_level = solara.use_routes()
     # route_current is routes[1].children[0].children[0], i.e. solara.Route(path="react")
     # routes_current_level is [routes[1].children[0].children[0], routes[1].children[0].children[1], routes[1].children[0].children[2]], i.e.
     #    [solara.Route(path="react"), solara.Route(path="ipywidgets"), solara.Route(path="solara")]
