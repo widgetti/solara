@@ -14,7 +14,7 @@ import dataclasses
 import solara
 from solara.lab import Ref
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class TodoItem:
     text: str
     done: bool
