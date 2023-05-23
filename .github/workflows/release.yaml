@@ -50,7 +50,7 @@ jobs:
           FLIT_PASSWORD: ${{ secrets.pypi_password }}
         run: |
           openssl sha256 dist/*
-          flit publish
+          flit publish || true
           openssl sha256 dist/*
       - name: Publish solara-assets to PyPI
         env:
