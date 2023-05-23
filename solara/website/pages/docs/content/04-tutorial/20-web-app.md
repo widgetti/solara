@@ -72,6 +72,8 @@ your browser (we call this feature [hot reloading](/docs/reference/reloading)).
 
 Note that Solara will remember your state (e.g., the number of buttons clicked) when the app reloads.
 
+(*Note: Upgrade to solara 1.14.0 for a fix in hot reloading using `pip install "solara>=1.14.0"`*)
+
 ## What you have learned
 
    * How to create a Python script `sol.py` by running `solara create button`

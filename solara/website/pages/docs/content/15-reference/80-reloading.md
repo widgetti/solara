@@ -4,6 +4,8 @@
 
 Solara will auto detect if your script or the sourcecode of an imported module has changes. If so, Solara will reload the page.
 
+(*Note: Upgrade to solara 1.14.0 for a fix in hot reloading using `pip install "solara>=1.14.0"`*)
+
 ## Reloading of .vue files
 
 The solara server automatically watches all `.vue` files that are used by vue templates (there are some used in solara.components for example).

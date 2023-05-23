@@ -63,6 +63,8 @@ Again, slightly different for a different environment.
 
 If you are using [Solara server](/docs/understanding/solara-server), try editing `sol.py`, and watch the page reload automatically after you save your file. Notebook users can simply edit and re-run.
 
+(*Note: Upgrade to solara 1.14.0 for a fix in hot reloading using `pip install "solara>=1.14.0"`*)
+
 ## How are streamlit and Solara different?
 
 ### Execution model
