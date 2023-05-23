@@ -282,6 +282,13 @@ class AppScript:
         # if multiple files change in a short time, we want to do this
         # not concurrently. Even better would be to do a debounce?
         with thread_lock:
+            # TODO: clearing the type_counter is a bit of a hack
+            # and we should introduce reload 'hooks', so there is
+            # less interdependency between modules
+            import solara.lab.toestand
+
+            solara.lab.toestand.ConnectionStore._type_counter.clear()
+
             context_values = list(contexts.values())
             # save states into the context so the hot reload will
             # keep the same state

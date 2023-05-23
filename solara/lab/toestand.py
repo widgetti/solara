@@ -14,6 +14,7 @@ from typing import (
     Optional,
     Set,
     Tuple,
+    Type,
     TypeVar,
     Union,
     cast,
@@ -185,13 +186,20 @@ class ValueBase(Generic[T]):
 
 class ConnectionStore(ValueBase[S]):
     _global_dict: Dict[str, S] = {}  # outside of solara context, this is used
+    # we keep a counter per type, so the storage keys we generate are deterministic
+    _type_counter: Dict[Type, int] = defaultdict(int)
     scope_lock = threading.Lock()
 
     def __init__(self, default_value: S = None, key=None):
         super().__init__()
         self.default_value = default_value
         cls = type(default_value)
-        self.storage_key = key or (cls.__module__ + ":" + cls.__name__ + "-" + str(id(default_value)))
+        if key is None:
+            with ConnectionStore.scope_lock:
+                index = self._type_counter[cls]
+                self._type_counter[cls] += 1
+            key = cls.__module__ + ":" + cls.__name__ + ":" + str(index)
+        self.storage_key = key
         self._global_dict = {}
         # since a set can trigger events, which can trigger new updates, we need a recursive lock
         self._lock = threading.RLock()
@@ -250,10 +258,10 @@ class ConnectionStore(ValueBase[S]):
 class Reactive(ValueBase[S]):
     _storage: ValueBase[S]
 
-    def __init__(self, default_value: Union[S, ValueBase[S]]):
+    def __init__(self, default_value: Union[S, ValueBase[S]], key=None):
         super().__init__()
         if not isinstance(default_value, ValueBase):
-            self._storage = ConnectionStore(default_value, key=id(self))
+            self._storage = ConnectionStore(default_value, key=key)
         else:
             self._storage = default_value
         self.__post__init__()
