@@ -2,9 +2,9 @@
 
 [![solara logo](https://solara.dev/static/assets/images/logo.svg)](https://solara.dev)
 
-Come chat with us on [Discord](https://discord.gg/2jAh9P8H) to ask questions or share your thoughts or creations!
+Come chat with us on [Discord](https://discord.gg/T2nsHVxMQc) to ask questions or share your thoughts or creations!
 
-[![Discord Shield](https://discordapp.com/api/guilds/1106593685241614489/widget.png?style=banner2)](https://discord.gg/2jAh9P8H)
+[![Discord Shield](https://discordapp.com/api/guilds/1106593685241614489/widget.png?style=banner2)](https://discord.gg/T2nsHVxMQc)
 
 
 
