@@ -347,7 +347,8 @@ def patch():
 
     def close_widget_debug(self: ipywidgets.widgets.widget.Widget):
         # only in development mode, since this leaks memory
-        if settings.main.mode == "development":
+        # can be called during shutdown/gc, so we need to check if the module is still there
+        if settings and settings.main.mode == "development":
             stacktrace = "".join(traceback.format_stack())
             closed_stack[id(self)] = stacktrace
             closed_ids.add(id(self))
