@@ -1,10 +1,11 @@
-from typing import Callable, List, Optional, TypeVar, Union, cast, overload
+from typing import Callable, Dict, List, Optional, TypeVar, Union, cast, overload
 
 import ipyvuetify as v
 import reacton.core
 
 import solara
 from solara.alias import rv
+from solara.util import _combine_classes
 
 T = TypeVar("T")
 
@@ -15,6 +16,8 @@ def Select(
     values: List[T],
     value: None = ...,
     on_value: Optional[Callable[[Optional[T]], None]] = ...,
+    classes: List[str] = [],
+    style: Union[str, Dict[str, str], None] = None,
 ) -> reacton.core.ValueElement[v.Select, T]:
     ...
 
@@ -45,6 +48,8 @@ def Select(
     values: List[T],
     value: solara.Reactive[T] = ...,
     on_value: Optional[Callable[[T], None]] = None,
+    classes: List[str] = [],
+    style: Union[str, Dict[str, str], None] = None,
 ) -> reacton.core.ValueElement[v.Select, T]:
     ...
 
@@ -55,6 +60,8 @@ def Select(
     values: List[T],
     value: Union[None, T, solara.Reactive[T], solara.Reactive[Optional[T]]] = None,
     on_value: Union[None, Callable[[T], None], Callable[[Optional[T]], None]] = None,
+    classes: List[str] = [],
+    style: Union[str, Dict[str, str], None] = None,
 ) -> reacton.core.ValueElement[v.Select, T]:
     """Select a single value from a list of values.
 
@@ -79,12 +86,16 @@ def Select(
      * `value`: The currently selected value.
      * `values`: List of values to select from.
      * `on_value`: Callback to call when the value changes.
+     * `classes`: List of CSS classes to apply to the select.
+     * `style`: CSS style to apply to the select.
 
     """
     # next line is very hard to get right with typing
     # might need an overload on use_reactive, when value is None
     reactive_value = solara.use_reactive(value, on_value)  # type: ignore
     del value, on_value
+    style_flat = solara.util._flatten_style(style)
+    class_ = _combine_classes(classes)
     return cast(
         reacton.core.ValueElement[v.Select, T],
         rv.Select(
@@ -93,6 +104,8 @@ def Select(
             items=values,
             label=label,
             dense=True,
+            class_=class_,
+            style_=style_flat,
         ),
     )
 
@@ -103,6 +116,8 @@ def SelectMultiple(
     values: List[T],
     all_values: List[T],
     on_value: Callable[[List[T]], None] = None,
+    classes: List[str] = [],
+    style: Union[str, Dict[str, str], None] = None,
 ) -> reacton.core.ValueElement[v.Select, List[T]]:
     """Select multiple values from a list of values.
 
@@ -123,13 +138,17 @@ def SelectMultiple(
 
     ## Arguments
 
-        * `label`: Label to display next to the select.
-        * `values`: List of currently selected values.
-        * `all_values`: List of all values to select from.
-        * `on_value`: Callback to call when the value changes.
+     * `label`: Label to display next to the select.
+     * `values`: List of currently selected values.
+     * `all_values`: List of all values to select from.
+     * `on_value`: Callback to call when the value changes.
+     * `classes`: List of CSS classes to apply to the select.
+     * `style`: CSS style to apply to the select.
     """
     reactive_values = solara.use_reactive(values, on_value)
     del values, on_value
+    style_flat = solara.util._flatten_style(style)
+    class_ = _combine_classes(classes)
     return cast(
         reacton.core.ValueElement[v.Select, List[T]],
         rv.Select(
@@ -139,5 +158,7 @@ def SelectMultiple(
             label=label,
             multiple=True,
             dense=False,
+            class_=class_,
+            style_=style_flat,
         ),
     )
