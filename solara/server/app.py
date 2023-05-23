@@ -130,10 +130,9 @@ class AppScript:
                     exec(ast, local_scope)
             app = nested_get(local_scope, self.app_name)
             routes = cast(Optional[List[solara.Route]], local_scope.get("routes"))
-            if isinstance(app, Element):
-                app = solara.AppLayout(children=[app])
+            layout_class = local_scope.get("Layout", solara.AppLayout)
             if isinstance(app, reacton.core.Component):
-                app = solara.AppLayout(children=[app()])
+                app = cast(reacton.core.Component, layout_class)(children=[app()])
         elif self.name.endswith(".ipynb"):
             self.type = AppType.NOTEBOOK
             add_path()
