@@ -117,7 +117,7 @@ $ (cd solara-test-portal; pip install -e .)
 
 Run it with
 ```bash
-$ solara run solara_test_portal
+$ solara run solara_test_portal.pages
 Solara server is starting at http://localhost:8765
 ```
 
