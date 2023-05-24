@@ -75,8 +75,13 @@ class ServerFlask(ServerBase):
     server: Any
     name = "flask"
 
+    def __init__(self, port: int, host: str = "localhost", flask_app=None, url_prefix="", **kwargs):
+        super().__init__(port, host, **kwargs)
+        self.app = flask_app or app
+        self.url_prefix = url_prefix
+
     def has_started(self):
-        return server.is_ready(f"http://{self.host}:{self.port}")
+        return server.is_ready(f"http://{self.host}:{self.port}{self.url_prefix}")
 
     def signal_stop(self):
         assert isinstance(self.server, HTTPServer)
@@ -85,9 +90,7 @@ class ServerFlask(ServerBase):
     def serve(self):
         from werkzeug.serving import make_server
 
-        from solara.server.flask import app
-
-        self.server = make_server(self.host, self.port, app, threaded=True)  # type: ignore
+        self.server = make_server(self.host, self.port, self.app, threaded=True)  # type: ignore
         assert isinstance(self.server, HTTPServer)
         self.started.set()
         self.server.serve_forever(poll_interval=0.05)  # type: ignore
@@ -212,7 +215,9 @@ def read_root(path):
         settings.main.base_url = url_for("blueprint-solara.read_root", _external=True)
 
     session_id = request.cookies.get(server.COOKIE_KEY_SESSION_ID) or str(uuid4())
-    content = server.read_root(flask.request.path, root_path=root_path)
+    if root_path:
+        path = flask.request.path[len(root_path) :]
+    content = server.read_root(path, root_path=root_path)
     if content is None:
         if not allowed():
             abort(401)
