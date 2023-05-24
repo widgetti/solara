@@ -89,7 +89,7 @@ items = [
     {
         "name": "Routing",
         "icon": "mdi-router",
-        "pages": ["use_route", "resolve_path", "generate_routes", "generate_routes_directory", "link"],
+        "pages": ["use_route", "use_router", "resolve_path", "generate_routes", "generate_routes_directory", "link"],
     },
     {
         "name": "Utils",

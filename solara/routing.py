@@ -99,6 +99,20 @@ def use_route_level():
 
 
 def use_router() -> Router:
+    """Returns the current router object.
+
+    See also [Understanding Routing](/docs/understanding/routing).
+
+    `use_router` returns the current router object. This is useful to build custom routing.
+
+    the router object contains the following properties/methods:
+
+     * `path` - the current pathname (e.g. `/fruit/banana`)
+     * `parts` - the current pathname split into parts (e.g. `['fruit', 'banana']`)
+     * `search` - the current search string (e.g. `color=yellow`)
+     * `push(path: str)` - navigate to path (e.g. `router.push('/fruit/banana')`)
+
+    """
     return solara.use_context(router_context)
 
 

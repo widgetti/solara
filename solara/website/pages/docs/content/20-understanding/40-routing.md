@@ -64,7 +64,7 @@ routes = [
     solara.Route(path="contact")  # matches '/contact'
 ]
 
-@reacton.component
+@solara.component
 def Page():
     ...
 ```
@@ -78,7 +78,7 @@ For instance, when our pathname is `/docs/basics/react`, the following code show
 `solara.use_route_level` and `solara.use_route` will return:
 
 ```python
-@reacton.component
+@solara.component
 def MyRootComponent():
     level = solara.use_route_level()  # returns 0
     route_current, routes_current_level = solara.use_routes()
@@ -93,7 +93,7 @@ def MyRootComponent():
         return MyFirstLevelChildComponent()
 
 
-@reacton.component
+@solara.component
 def MyFirstLevelChildComponent():
     level = solara.use_route_level()  # returns 1
     route_current, routes_current_level = solara.use_routes()
@@ -106,7 +106,7 @@ def MyFirstLevelChildComponent():
         # we could render some mid level navigation here based on route_current_level and route_current
         return MySecondLevelChildComponent()
 
-@reacton.component
+@solara.component
 def MySecondLevelChildComponent():
     level = solara.use_route_level()  # returns 2
     route_current, routes_current_level = solara.use_routes()
@@ -171,7 +171,7 @@ def resolve_path(path_or_route: Union[str, solara.Route], level=0) -> str:
 We can pass this full URL to the [`solara.Link`](/api/link) component, e.g. like:
 
 ```python
-@reacton.component
+@solara.component
 def LinkToIpywidgets():
     route_ipywidgets = routes.children[1].children[0].children[1]
     # route_ipywidgets.path == "ipywidgets"
@@ -180,4 +180,24 @@ def LinkToIpywidgets():
     with solara.Link(path) as main:
         solara.Button("read about ipywidgets")
     return main
+```
+
+## Fully manual routing
+
+If you want to do routing fully manually, you can use the [`solara.use_router`](/api/use_router) hook, and use the `.path` attribute.
+
+```python
+import solara
+
+
+@solara.component
+def Page():
+    router = solara.use_router()
+    path = router.path
+    parts = path.split("/")
+    solara.Markdown(f"Path = {path!r}, and split up into {parts!r}")
+    # now you can do anything with path or parts.
+    # e.g.
+    # if parts[0] == "docs":
+    #   solara.Markdown("You are in the docs section")
 ```
