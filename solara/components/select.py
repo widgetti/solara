@@ -16,6 +16,7 @@ def Select(
     values: List[T],
     value: None = ...,
     on_value: Optional[Callable[[Optional[T]], None]] = ...,
+    dense: bool = ...,
     classes: List[str] = [],
     style: Union[str, Dict[str, str], None] = None,
 ) -> reacton.core.ValueElement[v.Select, T]:
@@ -28,6 +29,9 @@ def Select(
     values: List[T],
     value: T = ...,
     on_value: Optional[Callable[[T], None]] = ...,
+    dense: bool = ...,
+    classes: List[str] = [],
+    style: Union[str, Dict[str, str], None] = None,
 ) -> reacton.core.ValueElement[v.Select, T]:
     ...
 
@@ -38,6 +42,9 @@ def Select(
     values: List[T],
     value: solara.Reactive[Optional[T]] = ...,
     on_value: Optional[Callable[[Optional[T]], None]] = ...,
+    dense: bool = ...,
+    classes: List[str] = [],
+    style: Union[str, Dict[str, str], None] = None,
 ) -> reacton.core.ValueElement[v.Select, T]:
     ...
 
@@ -48,6 +55,7 @@ def Select(
     values: List[T],
     value: solara.Reactive[T] = ...,
     on_value: Optional[Callable[[T], None]] = None,
+    dense: bool = ...,
     classes: List[str] = [],
     style: Union[str, Dict[str, str], None] = None,
 ) -> reacton.core.ValueElement[v.Select, T]:
@@ -60,6 +68,7 @@ def Select(
     values: List[T],
     value: Union[None, T, solara.Reactive[T], solara.Reactive[Optional[T]]] = None,
     on_value: Union[None, Callable[[T], None], Callable[[Optional[T]], None]] = None,
+    dense: bool = False,
     classes: List[str] = [],
     style: Union[str, Dict[str, str], None] = None,
 ) -> reacton.core.ValueElement[v.Select, T]:
@@ -86,6 +95,7 @@ def Select(
      * `value`: The currently selected value.
      * `values`: List of values to select from.
      * `on_value`: Callback to call when the value changes.
+     * `dense`: Whether to use a denser style.
      * `classes`: List of CSS classes to apply to the select.
      * `style`: CSS style to apply to the select.
 
@@ -103,7 +113,7 @@ def Select(
             on_v_model=reactive_value.set,
             items=values,
             label=label,
-            dense=True,
+            dense=dense,
             class_=class_,
             style_=style_flat,
         ),
@@ -116,6 +126,7 @@ def SelectMultiple(
     values: List[T],
     all_values: List[T],
     on_value: Callable[[List[T]], None] = None,
+    dense: bool = False,
     classes: List[str] = [],
     style: Union[str, Dict[str, str], None] = None,
 ) -> reacton.core.ValueElement[v.Select, List[T]]:
@@ -142,6 +153,7 @@ def SelectMultiple(
      * `values`: List of currently selected values.
      * `all_values`: List of all values to select from.
      * `on_value`: Callback to call when the value changes.
+     * `dense`: Whether to use a denser style.
      * `classes`: List of CSS classes to apply to the select.
      * `style`: CSS style to apply to the select.
     """
