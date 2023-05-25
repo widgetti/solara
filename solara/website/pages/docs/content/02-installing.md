@@ -45,3 +45,37 @@ solara @ https://github.com/widgetti/solara/package/archive/master.tar.gz
 ```
 
 If you want to do development on Solara, read the [development documentation](/docs/development).
+
+## Air-gapped installation / Firewalled network
+
+If you want to have Solara running in an air-gapped environment or where access to a CDN is not possible due to firewall rules, you have two options
+
+
+### Pre-install assets
+
+Normally, Solara fetches assets (CSS, JavaScript and fonts) from a CDN on the fly, if that is not possible, you can pre-install the assets by running
+
+```
+$ pip install "solara[assets]"
+```
+
+### Airgapped install
+
+If you cannot install `solara` or `solara-assets` from pypi because the server is not connected to the internet, you can
+follow the following steps to install Solara:
+
+```bash
+# Download the required wheels from pypi.
+$ pip wheel --wheel-dir solara-air-gapped "solara[assets]"
+# Zip them in a tarball.
+$ tar zcfv solara-air-gapped.tar.gz solara-air-gapped
+# Copy the tarball to your server.
+$ scp solara-air-gapped.tar.gz yourusername@youmachine:~/solara-air-gapped.tar.gz
+# ssh into your server.
+$ ssh yourusername@yourmachine
+...
+#  Unzip the tarball.
+$ tar zxfv solara-air-gapped.tar.gz
+# Install all wheels.
+$ pip install solara-air-gapped/*.whl
+```
