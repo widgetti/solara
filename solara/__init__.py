@@ -40,10 +40,10 @@ from reacton import (
     use_state_widget,
 )  # noqa: F403, F401
 from reacton.core import Element  # noqa: F403, F401
+import reacton.ipyvuetify as v
 from . import util
 
 from .reactive import *
-import reacton.ipyvuetify as v
 
 # flake8: noqa: F402
 from .datatypes import *

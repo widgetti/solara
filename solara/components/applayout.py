@@ -86,7 +86,10 @@ appbar_portal = ElementPortal()
 @solara.component
 def AppBar(children=[]):
     """Puts its children in the app bar of the AppLayout (or any layout that supports it).
+
     This component does not need to be a direct child of the AppLayout, it can be at any level in your component tree.
+
+    If a [Tabs](/api/tabs) component is used as direct child of the app bar, it will be shown under the app bar.
 
     ## Example showing an app bar
     ```solara
@@ -221,23 +224,37 @@ def AppLayout(
     show_app_bar = title or (len(routes) > 1 and navigation) or children_appbar or use_drawer
     if not show_app_bar and not children_sidebar and len(children) == 1:
         return children[0]
+
+    def set_path(index):
+        path = paths[index]
+        location.pathname = path
+
+    v_slots = []
+
+    tabs = None
+    for child_appbar in children_appbar.copy():
+        if child_appbar.component == solara.lab.Tabs:
+            if tabs is not None:
+                raise ValueError("Only one Tabs component is allowed in the AppBar")
+            tabs = child_appbar
+            children_appbar.remove(tabs)
+
+    if (tabs is None) and routes and navigation and (len(routes) > 1):
+        with solara.lab.Tabs(value=index, on_value=set_path, align="center") as tabs:
+            for route in routes:
+                name = route.path if route.path != "/" else "Home"
+                solara.lab.Tab(name)
+        # with v.Tabs(v_model=index, on_v_model=set_path, centered=True) as tabs:
+        #     for route in routes:
+        #         name = route.path if route.path != "/" else "Home"
+        #         v.Tab(children=[name])
+    if tabs is not None:
+        v_slots = [{"name": "extension", "children": tabs}]
     if embedded_mode and not fullscreen:
         # this version doesn't need to run fullscreen
         # also ideal in jupyter notebooks
         with v.Html(tag="div") as main:
             if show_app_bar or use_drawer:
-
-                def set_path(index):
-                    path = paths[index]
-                    location.pathname = path
-
-                v_slots = []
-                if routes and navigation and len(routes) > 1:
-                    with v.Tabs(v_model=index, on_v_model=set_path, centered=True) as tabs:
-                        for route in routes:
-                            name = route.path if route.path != "/" else "Home"
-                            v.Tab(children=[name])
-                    v_slots = [{"name": "extension", "children": tabs}]
                 with v.AppBar(color="primary" if toolbar_dark else None, dark=toolbar_dark, v_slots=v_slots):
                     if use_drawer:
                         icon = AppIcon(sidebar_open, on_click=lambda: set_sidebar_open(not sidebar_open), v_on="x.on")
@@ -280,18 +297,6 @@ def AppLayout(
                 else:
                     AppIcon(sidebar_open, on_click=lambda: set_sidebar_open(not sidebar_open), style_="position: absolute; z-index: 2")
             if show_app_bar:
-
-                def set_path(index):
-                    path = paths[index]
-                    location.pathname = path
-
-                v_slots = []
-                if routes and navigation and len(routes) > 1:
-                    with v.Tabs(v_model=index, on_v_model=set_path, centered=True) as tabs:
-                        for route in routes:
-                            name = route.path if route.path != "/" else "Home"
-                            v.Tab(children=[name])
-                    v_slots = [{"name": "extension", "children": tabs}]
                 # if hide_on_scroll is True, and we have a little bit of scrolling, vuetify seems to act strangely
                 # when scolling (on @mariobuikhuizen/vuetify v2.2.26-rc.0
                 with v.AppBar(color="primary", dark=True, app=True, clipped_left=True, hide_on_scroll=False, v_slots=v_slots):

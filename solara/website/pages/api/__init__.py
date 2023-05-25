@@ -43,19 +43,19 @@ items = [
         "name": "Layout",
         "icon": "mdi-page-layout-sidebar-left",
         "pages": [
+            "app_layout",
+            "app_bar",
             "card",
             "card_actions",
             "columns",
             "columns_responsive",
             "column",
             "row",
-            "hbox",
-            "vbox",
             "griddraggable",
             "gridfixed",
-            "app_layout",
-            "app_bar",
             "sidebar",
+            "hbox",
+            "vbox",
         ],
     },
     {
@@ -110,6 +110,14 @@ items = [
         "name": "Enterprise",
         "icon": "mdi-office-building",
         "pages": ["avatar", "avatar_menu"],
+    },
+    {
+        "name": "Lab (experimental)",
+        "icon": "mdi-flask-outline",
+        "pages": [
+            "tab",
+            "tabs",
+        ],
     },
 ]
 

@@ -10,6 +10,7 @@ import dataclasses
 from typing import Optional, cast
 
 import solara
+import solara.lab
 
 github_url = solara.util.github_url(__file__)
 
@@ -96,8 +97,18 @@ def Layout(children=[]):
 
     children = check_auth(route, children)
 
-    with solara.AppLayout(children=children):
+    with solara.AppLayout(children=children, navigation=True):
         with solara.AppBar():
+            with solara.lab.Tabs(align="center"):
+                for route in routes:
+                    name = route.path if route.path != "/" else "Home"
+                    is_admin = user.value and user.value.admin
+                    # we could skip the admin tab if the user is not an admin
+                    # if route.path == "admin" and not is_admin:
+                    #     continue
+                    # in this case we disable the tab
+                    disabled = route.path == "admin" and not is_admin
+                    solara.lab.Tab(name, path_or_route=route, disabled=disabled)
             if user.value:
                 solara.Text(f"Logged in as {user.value.username} as {'admin' if user.value.admin else 'user'}")
                 with solara.Tooltip("Logout"):
