@@ -52,8 +52,8 @@ def Button(
     - `text`: Whether the button should be displayed as text, it has no shadow and no background.
     - `outlined`: Whether the button should be displayed as outlined, it has no background.
     - `value`: (Optional) When used as a child of a ToggleButtons component, the value of the selected button, see [ToggleButtons](/api/togglebuttons).
-    - `classes`: additional CSS classes to apply.
-    - `style`: CSS style to apply to the column.
+    - `classes`: Additional CSS classes to apply.
+    - `style`: CSS style to apply.
 
     ### Deprecated arguments
     - click_event: (Deprecated/export option: The event that triggers the on_click callback, which can include vue event modifiers).
