@@ -39,7 +39,7 @@ def use_title_set(title: str, offset: int):
     _titles, set_titles = solara.use_context(titles_context)
 
     def update():
-        set_titles(lambda titles: {key: (offset, title), **titles})
+        set_titles(lambda titles: {**titles, key: (offset, title)})
 
     solara.use_effect(update, [title])
 
