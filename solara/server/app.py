@@ -130,9 +130,13 @@ class AppScript:
                     exec(ast, local_scope)
             app = nested_get(local_scope, self.app_name)
             routes = cast(Optional[List[solara.Route]], local_scope.get("routes"))
-            layout_class = local_scope.get("Layout", solara.AppLayout)
-            if isinstance(app, reacton.core.Component):
-                app = cast(reacton.core.Component, layout_class)(children=[app()])
+            if app is None and routes is not None:
+                app = solara.autorouting.RenderPage()
+            # does this make sense?
+            # else:
+            #     layout_class = local_scope.get("Layout")
+            #     if layout_class and isinstance(app, reacton.core.Component):
+            #         app = cast(reacton.core.Component, layout_class)(children=[app()])
         elif self.name.endswith(".ipynb"):
             self.type = AppType.NOTEBOOK
             add_path()
@@ -150,12 +154,10 @@ class AppScript:
                         cell_path = f"{self.path} input cell {cell_index}"
                         ast = compile(source, cell_path, "exec")
                         exec(ast, local_scope)
-                app = nested_get(local_scope, self.app_name)
-                routes = cast(Optional[List[solara.Route]], local_scope.get("routes"))
-            if isinstance(app, Element):
-                app = solara.AppLayout(children=[app])
-            if isinstance(app, reacton.core.Component):
-                app = solara.AppLayout(children=[app()])
+            app = nested_get(local_scope, self.app_name)
+            routes = cast(Optional[List[solara.Route]], local_scope.get("routes"))
+            if app is None and routes is not None:
+                app = solara.autorouting.RenderPage()
         else:
             # the module itself will be added by reloader
             # automatically
@@ -222,7 +224,7 @@ class AppScript:
 
             options = [k for k in list(local_scope) if k not in ignore and not k.startswith("_")]
             matches = difflib.get_close_matches(self.app_name, options)
-            msg = f"No object with name {self.app_name} found for {self.name} at {self.path}."
+            msg = f"No object with name {self.app_name} found for {self.name} at {self.path} and no routes defined."
             if matches:
                 msg += " Did you mean: " + " or ".join(map(repr, matches))
             else:

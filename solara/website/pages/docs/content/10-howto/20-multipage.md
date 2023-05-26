@@ -124,6 +124,32 @@ Solara server is starting at http://localhost:8765
 Go to http://localhost:8765 ([or click here](http://localhost:8765)), explore the source code, edit it, save it, and watch the web app reload instantly.
 
 
+## In a single script
+
+If you want to setup a multipage app in a single script, you do not need to define a `Page` component, but you can define a list of routes.
+
+```python
+import solara
+
+
+@solara.component
+def Home():
+    solara.Markdown("Home")
+
+
+@solara.component
+def About():
+    solara.Markdown("About")
+
+
+routes = [
+    solara.Route(path="/", component=Home, label="home"),
+    solara.Route(path="about", component=About, label="about"),
+]
+```
+
+See more details in the [Route section](/docs/understanding/routing).
+
 ## Dynamic pages
 
 In the previous section we created the example portal app. Taking a look at

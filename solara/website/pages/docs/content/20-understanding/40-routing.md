@@ -26,9 +26,40 @@ Similar to the previous section [`generate_routes(module: ModuleType) -> List[so
 ## Manually defining routes
 
 In Solara, we set up routing by defining a list of `solara.Route` objects, where each route can have another list of routes, its children, forming
-a tree of routes. We assign this list to the `routes` variable in your main app script or module, so Solara can find it and it should be in the same namespace as your `Page` component.
+a tree of routes. We assign this list to the `routes` variable in your main app script or module.
 
-Routes are matched by splitting the pathname around the slash ("/") and matching each part to the routes.
+### Defining route components
+
+If no `Page` component is found in your main script or module, Solara will assume you have either set the `component` or the `module` argument of the `solara.Route` object.
+
+For example
+
+```python
+import solara
+from solara.website.pages.examples.utilities import calculator
+
+
+@solara.component
+def Home():
+    solara.Markdown("Home")
+
+
+@solara.component
+def About():
+    solara.Markdown("About")
+
+
+routes = [
+    solara.Route(path="/", component=Home, label="Home"),
+    # the calculator module should have a Page component
+    solara.Route(path="calculator", module=calculator, label="Calculator"),
+    solara.Route(path="about", component=About, label="About"),
+]
+```
+
+### Defining route components
+
+If you do define a `Page` component, you are fully responsible for how routing is done, but we recommend using [use_route](/api/use_route).
 
 An example route definition could be something like this:
 
@@ -64,22 +95,9 @@ routes = [
     solara.Route(path="contact")  # matches '/contact'
 ]
 
+# Lets assume our pathname is `/docs/basics/react`,
 @solara.component
 def Page():
-    ...
-```
-
-The level of the depth into the tree is what we call the `route_level`, which starts at 0, the top level.
-Each call to `use_route` will return the current route (if there is a match to the current path) and the list of siblings including itself.
-
-## Rendering based on routes
-
-For instance, when our pathname is `/docs/basics/react`, the following code shows what
-`solara.use_route_level` and `solara.use_route` will return:
-
-```python
-@solara.component
-def MyRootComponent():
     level = solara.use_route_level()  # returns 0
     route_current, routes_current_level = solara.use_routes()
     # route_current is routes[1], i.e. solara.Route(path="docs", children=[...])
@@ -91,8 +109,15 @@ def MyRootComponent():
     else:
         # we could render some top level navigation here based on route_current_level and route_current
         return MyFirstLevelChildComponent()
+```
+
+Routes are matched by splitting the pathname around the slash ("/") and matching each part to the routes. The level of the depth into the tree is what we call the `route_level`, which starts at 0, the top level.
+Each call to `use_route` will return the current route (if there is a match to the current path) and the list of siblings including itself.
 
 
+Now the `MyFirstLevelChildComponent` component is responsible for rendering the second level navigation:
+
+```python
 @solara.component
 def MyFirstLevelChildComponent():
     level = solara.use_route_level()  # returns 1
@@ -106,6 +131,11 @@ def MyFirstLevelChildComponent():
         # we could render some mid level navigation here based on route_current_level and route_current
         return MySecondLevelChildComponent()
 
+```
+
+And the `MySecondLevelChildComponent` component is responsible for rendering the third level navigation:
+
+```python
 @solara.component
 def MySecondLevelChildComponent():
     level = solara.use_route_level()  # returns 2
@@ -135,7 +165,8 @@ From this code, we can see we are free how we transform the routes into the stat
 Often, your render logic needs some extra data on what to display. For instance, you may want to dynamically render tabs based on the routes,
 which requires you to have a label, and know which component to add.
 For this purposed we added `label: str` and the `component' attributes, so you can defines routes likes:
-```
+
+```python
 routes = [
     solara.Route("/", component=Home, label="What is Solara ☀️?"),
     solara.Route("docs", component=docs.App, label="Docs", children=docs.routes),
@@ -148,6 +179,8 @@ routes = [
     ...
 ]
 ```
+
+In the case where you did not specify a `Page` component, label is used for the [Title](/api/title) component.
 
 If you need to store more data in the route, you are free to put whatever you want in the `data` attribute, see also [Route](/api/route).
 

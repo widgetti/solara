@@ -164,8 +164,8 @@ def RenderPage():
             layouts = []
         else:
             layouts = [DefaultLayout]
-    if route_current.data is None and route_current.module is None:
-        return solara.Error(f"Page not found: {router.path}, route does not link to a path or module")
+    if route_current.data is None and route_current.module is None and route_current.component is None:
+        return solara.Error(f"Page not found: {router.path}, route does not link to a path or module or component")
 
     def wrap_in_layouts(element: reacton.core.Element, layouts):
         for Layout in reversed(layouts):
@@ -217,14 +217,18 @@ def RenderPage():
         else:
             main = solara.Error(f"Suffix {path.suffix} not supported")
     else:
-        assert route_current.module is not None
         title = route_current.label or "No title"
         title_element = solara.Title(title)
-        module = route_current.module
-        namespace = module.__dict__
-        Page = namespace.get("Page", None)
-        # app is for backwards compatibility
-        page = namespace.get("page", namespace.get("app"))
+        if route_current.module is not None:
+            assert route_current.module is not None
+            module = route_current.module
+            namespace = module.__dict__
+            Page = namespace.get("Page", None)
+            # app is for backwards compatibility
+            page = namespace.get("page", namespace.get("app"))
+        else:
+            Page = route_current.component
+            page = None
         if page is not None:
             if isinstance(page, reacton.core.Element):
                 pass  # we are good
