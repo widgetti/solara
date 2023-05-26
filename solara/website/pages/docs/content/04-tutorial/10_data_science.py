@@ -6,6 +6,7 @@ import nbformat
 
 import solara
 import solara.components.applayout
+from solara.components.markdown import ExceptionGuard
 
 HERE = Path(__file__).parent
 
@@ -67,7 +68,8 @@ def Page():
                 )
                 if page != last_page and page is not None:
                     with solara.AppLayout(navigation=False, toolbar_dark=False):
-                        page()
+                        with ExceptionGuard():
+                            page()
                 last_page = page
             elif cell.cell_type == "markdown":
                 solara.Markdown(cell.source)

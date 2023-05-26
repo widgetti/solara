@@ -1,6 +1,7 @@
 import hashlib
 import logging
 import textwrap
+import traceback
 from typing import Any, Dict, List, Union
 
 import ipyvuetify as v
@@ -18,6 +19,21 @@ logger = logging.getLogger(__name__)
 html_no_execute_enabled = "<div><i>Solara execution is not enabled</i></div>"
 
 
+@solara.component
+def ExceptionGuard(children=[]):
+    exception, clear_exception = solara.use_exception()
+    if exception:
+        solara.Error(f"Oops, an error occured: {str(exception)}")
+        with solara.Details("Exception details"):
+            error = "".join(traceback.format_exception(None, exception, exception.__traceback__))
+            solara.Preformatted(error)
+    else:
+        if len(children) == 1:
+            return children[0]
+        else:
+            solara.Column(children=children)
+
+
 def _run_solara(code):
     ast = compile(code, "markdown", "exec")
     local_scope: Dict[Any, Any] = {}
@@ -27,7 +43,7 @@ def _run_solara(code):
         app = local_scope["app"]
     elif "Page" in local_scope:
         Page = local_scope["Page"]
-        app = solara.components.applayout._AppLayoutEmbed(children=[Page()])
+        app = solara.components.applayout._AppLayoutEmbed(children=[ExceptionGuard(children=[Page()])])
     else:
         raise NameError("No Page of app defined")
     box = v.Html(tag="div")
