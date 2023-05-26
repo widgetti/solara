@@ -12,15 +12,14 @@ module.exports = {
         require.config({
             map: {
                 '*': {
-                    'vega': `${this.getCdn()}/vega@5.21.0`,
-                    'vega-lite': `${this.getCdn()}/vega-lite@5.2.0`,
-                    'vega-embed': `${this.getCdn()}/vega-embed@6.20.2`,
+                    'vega': `${this.getCdn()}/vega@5`,
+                    'vega-lite': `${this.getCdn()}/vega-lite@5.8.0`,
+                    'vega-embed': `${this.getCdn()}/vega-embed@6`,
                 }
             }
         })
         // pre load
         require(['vega', 'vega-lite', 'vega-embed'], () => {
-            console.log('yeah')
         })
         this.do_plot_debounced = _.debounce(() => this.do_plot(), 100)
     },
@@ -39,12 +38,13 @@ module.exports = {
         do_plot() {
             require(['vega', 'vega-lite', 'vega-embed'], (vega, vl, vegaEmbed) => {
                 (async () => {
-                    const { view } = await vegaEmbed(this.$refs.plotElement, this.spec);
+                    const spec = {
+                        ...this.spec,
+                    };
+                    const { view } = await vegaEmbed(this.$refs.plotElement, spec);
                     // events https://github.com/vega/vega-view#event-handling
-                    console.log(view)
                     if (this.listen_to_click) {
                         view.addEventListener('click', (event, item) => {
-                            console.log(item, event)
                             if (item && item.datum) {
                                 this.altair_click(item.datum);
                             } else {
@@ -54,7 +54,6 @@ module.exports = {
                     }
                     if (this.listen_to_hover) {
                         view.addEventListener('mouseover', (event, item) => {
-                            // console.log(item)
                             if (item && item.datum) {
                                 this.altair_hover(item.datum);
                             } else {
