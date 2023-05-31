@@ -131,7 +131,6 @@ async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, connection_i
                 from solara_enterprise.auth import user as solara_user
 
                 solara_user.set(user)
-                logger.warning(f"getting: {solara_user.get()}")
 
         while True:
             try:
