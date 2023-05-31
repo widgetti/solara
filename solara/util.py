@@ -2,6 +2,7 @@ import base64
 import contextlib
 import os
 import sys
+from collections import abc
 from pathlib import Path
 from typing import Dict, List, Union
 
@@ -142,3 +143,19 @@ def parse_size(size: str) -> int:
         return int(float(size[:-1]))
     else:
         return int(size)
+
+
+def nested_get(object, dotted_name: str, default=None):
+    names = dotted_name.split(".")
+    for name in names:
+        if isinstance(object, abc.Mapping):
+            if name == names[-1]:
+                object = object.get(name, default)
+            else:
+                object = object.get(name)
+        else:
+            if name == names[-1]:
+                object = getattr(object, name, default)
+            else:
+                object = getattr(object, name)
+    return object

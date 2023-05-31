@@ -1,4 +1,5 @@
 import dataclasses
+import difflib
 import importlib
 import inspect
 import pkgutil
@@ -14,7 +15,7 @@ import reacton.core
 
 import solara
 from solara.alias import rv
-from solara.util import cwd
+from solara.util import cwd, nested_get
 
 autoroute_level_context = solara.create_context(0)
 DEBUG = False
@@ -24,10 +25,11 @@ solara_root = Path(solara.__file__).parent
 DefaultLayout = solara.AppLayout
 
 
-def source_to_module(path: Path) -> ModuleType:
+def source_to_module(path: Path, initial_namespace={}) -> ModuleType:
     fullname = path.stem
     mod = ModuleType(fullname)
     mod.__file__ = str(path)
+    mod.__dict__.update(initial_namespace)
     if path.suffix == ".py":
         with open(path) as f:
             ast = compile(f.read(), path, "exec")
@@ -115,7 +117,7 @@ def RoutingProvider(children: List[reacton.core.Element] = [], routes: List[sola
 
 
 @solara.component
-def RenderPage():
+def RenderPage(main_name: str = "Page"):
     """Renders the page that matches the route."""
     level_start = solara.use_route_level()
     router = solara.use_context(solara.routing.router_context)
@@ -159,11 +161,7 @@ def RenderPage():
     routes_siblings_index = routes_siblings.index(route_current)
     # if no layouts are found, we use the default layout
     if layouts == []:
-        # except when the root routes has no siblings (maybe we should include no children?)
-        if len(router.path_routes_siblings[level_start]) == 1:
-            layouts = []
-        else:
-            layouts = [DefaultLayout]
+        layouts = [DefaultLayout]
     if route_current.data is None and route_current.module is None and route_current.component is None:
         return solara.Error(f"Page not found: {router.path}, route does not link to a path or module or component")
 
@@ -219,44 +217,56 @@ def RenderPage():
     else:
         title = route_current.label or "No title"
         title_element = solara.Title(title)
+        module = None
         if route_current.module is not None:
             assert route_current.module is not None
             module = route_current.module
             namespace = module.__dict__
-            Page = namespace.get("Page", None)
-            # app is for backwards compatibility
-            page = namespace.get("page", namespace.get("app"))
+            Page = nested_get(namespace, main_name, None)
+            if Page is None:
+                # app is for backwards compatibility
+                Page = namespace.get("page", namespace.get("app"))
+                Page = nested_get(namespace, main_name, Page)
         else:
             Page = route_current.component
-            page = None
-        if page is not None:
-            if isinstance(page, reacton.core.Element):
-                pass  # we are good
-            elif isinstance(page, ipywidgets.Widget):
-                # If we have a widget, we need to execute this again for each
-                # connection, since we cannot share widgets between connections/users.
-                # We also cannot tear them down, so we cache the widget based pages.
-                # To support hot reload, we manualy need to check the mtimes
-                # because the reload support for modules in reloader.py only works
-                # for modules.
-                if route_current.file is None:
-                    page = solara.Error(f"{route_current.path} is not associated with a file")
+        if isinstance(Page, ipywidgets.Widget):
+            # If we have a widget, we need to execute this again for each
+            # connection, since we cannot share widgets between connections/users.
+            # We also cannot tear them down, so we cache the widget based pages.
+            # To support hot reload, we manualy need to check the mtimes
+            # because the reload support for modules in reloader.py only works
+            # for modules.
+            if route_current.file is None:
+                page = solara.Error(f"{route_current.path} is not associated with a file")
+            else:
+                assert route_current.file is not None
+                if route_current.path not in modules:
+                    modules[route_current.path] = source_to_module(route_current.file)
+                    modules_modified_times[route_current.path] = route_current.file.stat().st_mtime
                 else:
-                    assert route_current.file is not None
-                    if route_current.path not in modules:
+                    if modules_modified_times[route_current.path] != route_current.file.stat().st_mtime:
+                        # out of date, 'reload'
                         modules[route_current.path] = source_to_module(route_current.file)
                         modules_modified_times[route_current.path] = route_current.file.stat().st_mtime
-                    else:
-                        if modules_modified_times[route_current.path] != route_current.file.stat().st_mtime:
-                            # out of date, 'reload'
-                            modules[route_current.path] = source_to_module(route_current.file)
-                            modules_modified_times[route_current.path] = route_current.file.stat().st_mtime
-                    page = getattr(modules[route_current.path], "app", None)
-                    page = getattr(modules[route_current.path], "page", page)
-                    if page is None:
-                        page = solara.Error(f"{module} does not have a `Page` component of a `page` element or widget")
+                Page = nested_get(modules[route_current.path], main_name, None)
+                if Page is None:
+                    Page = getattr(modules[route_current.path], "app", None)
+                    Page = getattr(modules[route_current.path], "page", Page)
+            main = solara.Div(
+                children=[
+                    title_element,
+                    Page,
+                ]
+            )
+            main = wrap_in_layouts(main, layouts)
+        elif Page is not None:
+            if isinstance(Page, reacton.core.ComponentFunction):
+                args = get_args(Page)
+                page = Page(*args)
+            elif isinstance(Page, solara.Element):
+                page = Page
             else:
-                page = solara.Error(f"{module} page variable not a Solara element or ipywidget")
+                page = solara.Error(f"{Page} is not a component or element, but {type(Page)}")
             main = solara.Div(
                 children=[
                     title_element,
@@ -264,18 +274,23 @@ def RenderPage():
                 ]
             )
             main = wrap_in_layouts(main, layouts)
-        elif Page is not None:
-            args = get_args(Page)
-            main = solara.Div(
-                children=[
-                    title_element,
-                    Page(*args),
-                ]
-            )
-            main = wrap_in_layouts(main, layouts)
         else:
+            if route_current.module:
+                path = route_current.module.__file__
+                local_scope = route_current.module.__dict__
+                ignore = ["display"]
+                options = [k for k in list(local_scope) if k not in ignore and not k.startswith("_")]
+                matches = difflib.get_close_matches(main_name, options)
+                msg = f"No object with name {main_name} found for {path}"
+                if matches:
+                    msg += " Did you mean: " + " or ".join(map(repr, matches))
+                else:
+                    msg += " We did find: " + " or ".join(map(repr, options))
+            else:
+                msg = f"{module} does not have a Page component or an app element"
+
             with DefaultLayout() as main:
-                solara.Error(f"{module} does not have a Page component or an app element")
+                solara.Error(msg)
     return main
 
 
@@ -420,53 +435,59 @@ def generate_routes_directory(path: Path) -> List[solara.Route]:
     Automatic titles will be [generated as explained in the multipage guide](/docs/howto/multipage).
 
     """
-    from .server import reload
 
     subpaths = list(sorted(path.iterdir()))
     routes = []
     first = True
     has_index = len([k for k in subpaths if k.name == "__init__"]) > 0
-    suffixes = [".py", ".ipynb", ".md"]
     init = path / "__init__.py"
     layout = None
     if init.exists():
         init_module = source_to_module(init)
         layout = getattr(init_module, "Layout", None)
 
+    suffixes = [".py", ".ipynb", ".md"]
     for subpath in subpaths:
         # only handle directories and recognized file types
         if not (subpath.is_dir() or subpath.suffix in suffixes):
             continue
         if subpath.stem.startswith("_") or subpath.stem.startswith("."):
             continue
-        name = subpath.stem
-        match = re.match("([0-9\\-_ ]*)(.*)", name)
-        if match:
-            _prefix, name = match.groups()
-        title_parts = re.split("[\\-_ ]+", name)
-        title = " ".join(k.title() for k in title_parts)
-        if not has_index and first:
-            route_path = "/"
-        else:
-            route_path = "-".join([k.lower() for k in title_parts])
-        # used as a 'sentinel' to find the deepest level of the route tree we need to render in 'RenderPage'
-        component = RenderPage
-        children = []
-        module: Optional[ModuleType] = None
-        data: Any = None
-        module_layout = layout if first else None
-        if subpath.suffix == ".md":
-            data = subpath
-            reload.reloader.watcher.add_file(subpath)
-        elif subpath.is_dir():
-            children = generate_routes_directory(subpath)
-        else:
-            reload.reloader.watcher.add_file(subpath)
-            module = source_to_module(subpath)
-            children = getattr(module, "routes", children)
-            children = fix_routes(children, subpath)
-            module_layout = getattr(module, "Layout", module_layout)
+        route = _generate_route_path(subpath, layout=layout, first=first, has_index=has_index)
         first = False
-        route = solara.Route(route_path, component=component, module=module, label=title, children=children, data=data, layout=module_layout, file=subpath)
         routes.append(route)
     return routes
+
+
+def _generate_route_path(subpath: Path, layout=None, first=False, has_index=False) -> solara.Route:
+    from .server import reload
+
+    name = subpath.stem
+    match = re.match("([0-9\\-_ ]*)(.*)", name)
+    if match:
+        _prefix, name = match.groups()
+    title_parts = re.split("[\\-_ ]+", name)
+    title = " ".join(k.title() for k in title_parts)
+    if not has_index and first:
+        route_path = "/"
+    else:
+        route_path = "-".join([k.lower() for k in title_parts])
+    # used as a 'sentinel' to find the deepest level of the route tree we need to render in 'RenderPage'
+    component = RenderPage
+    children = []
+    module: Optional[ModuleType] = None
+    data: Any = None
+    module_layout = layout if first else None
+    if subpath.suffix == ".md":
+        data = subpath
+        reload.reloader.watcher.add_file(subpath)
+    elif subpath.is_dir():
+        children = generate_routes_directory(subpath)
+    else:
+        reload.reloader.watcher.add_file(subpath)
+        module = source_to_module(subpath)
+        children = getattr(module, "routes", children)
+        children = fix_routes(children, subpath)
+        module_layout = getattr(module, "Layout", module_layout)
+    route = solara.Route(route_path, component=component, module=module, label=title, children=children, data=data, layout=module_layout, file=subpath)
+    return route

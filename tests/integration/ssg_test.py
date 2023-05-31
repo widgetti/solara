@@ -3,11 +3,11 @@ from pathlib import Path
 from typing import Optional
 
 import playwright.sync_api
+from solara_enterprise import ssg
+
 import solara
 from solara.server import settings
 from solara.server.app import AppContext, get_current_context
-
-from solara_enterprise import ssg
 
 HERE = Path(__file__).parent
 
@@ -59,7 +59,7 @@ def test_ssg(page_session: playwright.sync_api.Page, solara_server, solara_app, 
         assert "My page description" in html, "SSG did not render meta correctly"
 
         page_session.goto(solara_server.base_url)
-        page_session.locator("text=SSG Test").wait_for()
+        page_session.locator('h1:has-text("SSG Test")').wait_for()
         page_session.locator("#pre-rendered-html-present").wait_for(state="detached")
         assert context is not None
         # we need to use set_value with the right context, set_value is not aware of solara's context

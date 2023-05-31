@@ -180,7 +180,7 @@ def test_routes_directory():
 
     nav.location = "/some-other-python-script"
     alert = rc._find(v.Alert).widget
-    assert "does not have a" in alert.children[0]
+    assert "No object with name Page found" in alert.children[0]
 
     nav.location = "/a-directory"
     title = rc._find(TitleWidget).widget

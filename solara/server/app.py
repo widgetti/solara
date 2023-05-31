@@ -18,10 +18,9 @@ from reacton.core import Element, render
 
 import solara
 
-from ..util import cwd
 from . import kernel, reload, settings, websocket
 from .kernel import Kernel, WebsocketStreamWrapper
-from .utils import nested_get, pdb_guard
+from .utils import pdb_guard
 
 WebSocket = Any
 apps: Dict[str, "AppScript"] = {}
@@ -43,19 +42,6 @@ class AppType(str, Enum):
 
 def display(*args, **kwargs):
     print("display not implemented", args, kwargs)  # noqa
-
-
-_warned_is_widget = False
-
-
-def warn_is_widget():
-    global _warned_is_widget
-    if not _warned_is_widget:
-        _warned_is_widget = True
-        print(  # noqa
-            "The app you are running is a widget, note that your app is run once before any user connected. "
-            "If this causes a performance issue, please open an issue on GitHub."
-        )
 
 
 class AppScript:
@@ -88,10 +74,7 @@ class AppScript:
             app = self._execute()
 
         self._first_execute_app = app
-        self._is_widget = isinstance(self._first_execute_app, widgets.Widget)
         app_context.close()
-        if self._is_widget:
-            warn_is_widget()
 
     def _execute(self):
         logger.info("Executing %s", self.name)
@@ -101,7 +84,6 @@ class AppScript:
             "__name__": "__main__",
             "__file__": str(self.path),
         }
-        ignore = list(local_scope)
         routes: Optional[List[solara.Route]] = None
 
         def add_path():
@@ -116,7 +98,6 @@ class AppScript:
             # resolve the directory, because Path("file").parent.parent == "." != ".."
             self.directory = self.path.resolve()
             routes = solara.generate_routes_directory(self.path)
-            app = solara.autorouting.RenderPage()
         elif self.name.endswith(".py"):
             self.type = AppType.SCRIPT
             add_path()
@@ -125,39 +106,16 @@ class AppScript:
             reload.reloader.watcher.add_file(self.path)
             self.directory = self.path.parent.resolve()
             with reload.reloader.watch():
-                with open(self.path) as f:
-                    ast = compile(f.read(), self.path, "exec")
-                    exec(ast, local_scope)
-            app = nested_get(local_scope, self.app_name)
-            routes = cast(Optional[List[solara.Route]], local_scope.get("routes"))
-            if app is None and routes is not None:
-                app = solara.autorouting.RenderPage()
-            # does this make sense?
-            # else:
-            #     layout_class = local_scope.get("Layout")
-            #     if layout_class and isinstance(app, reacton.core.Component):
-            #         app = cast(reacton.core.Component, layout_class)(children=[app()])
+                routes = [solara.autorouting._generate_route_path(self.path, first=True)]
+
         elif self.name.endswith(".ipynb"):
             self.type = AppType.NOTEBOOK
             add_path()
             # manually add the notebook to the watcher
             reload.reloader.watcher.add_file(self.path)
             self.directory = self.path.parent.resolve()
-            import nbformat
-
-            nb: nbformat.NotebookNode = nbformat.read(self.path, 4)
-            with reload.reloader.watch(), cwd(Path(self.path).parent):
-                for cell_index, cell in enumerate(nb.cells):
-                    cell_index += 1  # used 1 based
-                    if cell.cell_type == "code":
-                        source = cell.source
-                        cell_path = f"{self.path} input cell {cell_index}"
-                        ast = compile(source, cell_path, "exec")
-                        exec(ast, local_scope)
-            app = nested_get(local_scope, self.app_name)
-            routes = cast(Optional[List[solara.Route]], local_scope.get("routes"))
-            if app is None and routes is not None:
-                app = solara.autorouting.RenderPage()
+            with reload.reloader.watch():
+                routes = [solara.autorouting._generate_route_path(self.path, first=True)]
         else:
             # the module itself will be added by reloader
             # automatically
@@ -179,20 +137,11 @@ class AppScript:
                 self.directory = self.path.parent
 
                 mod = importlib.import_module(self.name)
+                routes = solara.generate_routes(mod)
 
-                local_scope = mod.__dict__
-                if not hasattr(mod, "routes"):
-                    if self.app_name == "Page":
-                        routes = solara.generate_routes(mod)
-                        app = solara.RenderPage()
-                    else:
-                        app = nested_get(local_scope, self.app_name)
-                        routes = None
-                else:
-                    routes = mod.routes
-                    app = nested_get(local_scope, self.app_name)
-                    if app is None:
-                        app = solara.autorouting.RenderPage()
+        app = solara.autorouting.RenderPage(self.app_name)
+        if not hasattr(routes[0].module, self.app_name) and routes[0].children:
+            routes = routes[0].children
 
         if settings.ssg.build_path is None:
             settings.ssg.build_path = self.directory.parent.resolve() / "build"
@@ -214,26 +163,7 @@ class AppScript:
         # os.environ["SCRIPT_NAME"] = self.name
         os.environ["PATH_TRANSLATED"] = str(self.path.resolve())
 
-        if app is None:
-            # workaround for backward compatibility
-            app = local_scope.get("app")
-        if app is None:
-            app = local_scope.get("page")
-        if app is None:
-            import difflib
-
-            options = [k for k in list(local_scope) if k not in ignore and not k.startswith("_")]
-            matches = difflib.get_close_matches(self.app_name, options)
-            msg = f"No object with name {self.app_name} found for {self.name} at {self.path} and no routes defined."
-            if matches:
-                msg += " Did you mean: " + " or ".join(map(repr, matches))
-            else:
-                msg += " We did find: " + " or ".join(map(repr, options))
-            raise NameError(msg)
-        if routes is None:
-            self.routes = [solara.Route("/")]
-        else:
-            self.routes = routes
+        self.routes = routes
 
         # this might be useful for development
         # but requires reloading of react in solara iself
@@ -256,14 +186,11 @@ class AppScript:
             context.close()
 
     def run(self):
-        if self._is_widget:
-            return self._execute()
-        else:
-            if reload.reloader.requires_reload:
-                with thread_lock:
-                    if reload.reloader.requires_reload:
-                        self._first_execute_app = self._execute()
-            return self._first_execute_app
+        if reload.reloader.requires_reload:
+            with thread_lock:
+                if reload.reloader.requires_reload:
+                    self._first_execute_app = self._execute()
+        return self._first_execute_app
 
     def on_file_change(self, name):
         path = Path(name)

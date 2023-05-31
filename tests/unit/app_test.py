@@ -3,10 +3,12 @@ import logging
 # import sys
 from pathlib import Path
 
+import ipyvuetify as v
 import ipywidgets
+import reacton.core
 
 # import pytest
-import reacton.core
+import solara
 
 # import solara.server.app
 from solara.server import reload
@@ -38,7 +40,7 @@ def test_notebook_component(app_context, no_app_context):
     try:
         with app_context:
             el = app.run()
-            assert isinstance(el, reacton.core.Component)
+            assert isinstance(el, reacton.core.Element)
             el2 = app.run()
             assert el is el2
     finally:
@@ -50,10 +52,53 @@ def test_notebook_widget(app_context, no_app_context):
     app = AppScript(name)
     try:
         with app_context:
-            widget = app.run()
-            assert isinstance(widget, ipywidgets.Button)
-            widget2 = app.run()
-        assert widget is not widget2
+            el = app.run()
+            root = solara.RoutingProvider(children=[el], routes=app.routes, pathname="/")
+            _box, rc = solara.render(root, handle_error=False)
+            widget1 = rc.find(ipywidgets.Button, description="Click me").widget
+            assert isinstance(widget1, ipywidgets.Button)
+            _box, rc = solara.render(root, handle_error=False)
+            widget2 = rc.find(ipywidgets.Button, description="Click me").widget
+        assert widget1 is not widget2
+    finally:
+        app.close()
+
+
+def test_sidebar_single_file_multiple_routes(app_context, no_app_context):
+    name = str(HERE / "solara_test_apps" / "single_file_multiple_routes.py")
+    app = AppScript(name)
+    try:
+        with app_context:
+            c = app.run()
+            root = solara.RoutingProvider(children=[c], routes=app.routes, pathname="/")
+            box, rc = solara.render(root, handle_error=False)
+            assert rc.find(v.Slider, label="in sidebar")
+    finally:
+        app.close()
+
+
+def test_sidebar_single_file(app_context, no_app_context):
+    name = str(HERE / "solara_test_apps" / "single_file.py")
+    app = AppScript(name)
+    try:
+        with app_context:
+            c = app.run()
+            root = solara.RoutingProvider(children=[c], routes=app.routes, pathname="/")
+            box, rc = solara.render(root, handle_error=False)
+            assert rc.find(v.Slider, label="in sidebar")
+    finally:
+        app.close()
+
+
+def test_sidebar_single_file_missing(app_context, no_app_context):
+    name = str(HERE / "solara_test_apps" / "single_file.py:doesnotexist")
+    app = AppScript(name)
+    try:
+        with app_context:
+            c = app.run()
+            root = solara.RoutingProvider(children=[c], routes=app.routes, pathname="/")
+            box, rc = solara.render(root, handle_error=False)
+            assert "No object with name doesnotexist" in rc.find(v.Alert).widget.children[0]
     finally:
         app.close()
 
