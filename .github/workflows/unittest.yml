@@ -49,4 +49,4 @@ jobs:
         if: matrix.os != 'windows'
         uses: shogo82148/actions-setup-redis@v1
       - name: test
-        run: pytest --cov=solara tests/unit --doctest-modules --timeout=60
+        run: pytest tests/unit --doctest-modules --timeout=60
