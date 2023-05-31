@@ -17,7 +17,7 @@ The web framework that is used when you use `solara run` uses Starlette, which m
 
 If you do not use `solara run` to run your Solara app, configuration should go via environment variables instead of command-line argument. For instance, if you run the development server like `solara run myapp.py`, set the `SOLARA_APP` environment variable to `myapp.py`. For instance
 
-    $ export SOLARA_APP=myapp.py
+    $ export SOLARA_APP=sol.py
     # run flask or starlette
 
 or look at the examples below.
@@ -30,7 +30,7 @@ A common solution is to use [gunicorn](https://gunicorn.org/) as the WSGI HTTP S
 
 A typical command would be:
 ```
-$ SOLARA_APP=myapp.py gunicorn --workers 4 --threads=20 -b 0.0.0.0:8765 solara.server.flask:app
+$ SOLARA_APP=sol.py gunicorn --workers 4 --threads=20 -b 0.0.0.0:8765 solara.server.flask:app
 ```
 
 Note that we need at least 1 thread per user due to the use of a websocket.
@@ -53,45 +53,58 @@ def hello_world():
 
 Save this file as `"app.py"` and run
 
-    $ flask run
+    $  SOLARA_APP=sol.py flask run
      * Running on http://127.0.0.1:5000/
+
+If you navigate to [http://127.0.0.1:5000/solara](http://127.0.0.1:5000/solara) you should see the Solara app.
 
 ## Starlette
 
 For [Starlette](https://www.starlette.io/) we will assume [uvicorn](http://www.uvicorn.org/) for the ASGI webserver and follow their [deployment documentation](https://www.uvicorn.org/deployment/):
 
 ```
-$ SOLARA_APP=myapp.py uvicorn --workers 4 --host 0.0.0.0 --port 8765 solara.server.starlette:app
+$ SOLARA_APP=sol.py uvicorn --workers 4 --host 0.0.0.0 --port 8765 solara.server.starlette:app
 ```
 
 ### Embedding in an existing Starlette application
 
-If you already have a Starlette app and want to add your Solara app behind a prefix, say `'/solara/'`, you can mount the Solara routes to your existing app as follows.
+If you already have a Starlette app and want to add your Solara app behind a prefix, say `'/solara/'`, you can mount the Starlette routes for Solara to your existing app as follows.
 
 ```python
 from starlette.applications import Starlette
-from starlette.routing import Mount, Route, WebSocketRoute
-from starlette.responses import JSONResponse
 from starlette.requests import Request
+from starlette.responses import JSONResponse
+from starlette.routing import Mount, Route
+
 import solara.server.starlette
 
 
 def myroot(request: Request):
-    return JSONResponse({'framework': 'solara'})
+    return JSONResponse({"framework": "solara"})
 
 
 routes = [
     Route("/", endpoint=myroot),
-    Mount("/solara/", routes=solara.server.starlette.routes)
+    Mount("/solara/", routes=solara.server.starlette.routes),
 ]
 
-app = Starlette(routes)
+app = Starlette(routes=routes)
 ```
 
+Save this file as `"solara_on_starlette.py"` and run
+
+```
+$  SOLARA_APP=sol.py uvicorn solara_on_starlette:app
+...
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+...
+```
+
+If you navigate to [http://127.0.0.1:8000/solara](http://127.0.0.1:8000/solara) you should see the Solara app.
 
 ## FastAPI
 
-Since FastAPI is built on Starlette, see the section on [Starlette](#starlette) how to deploy a Starlette app.
+Since FastAPI is built on Starlette, see the section on [Starlette](#starlette) about how to deploy a Starlette app.
 
 ### Embedding in an existing FastAPI application
 
@@ -111,6 +124,17 @@ def read_root():
 
 app.mount("/solara/", app=solara.server.fastapi.app)
 ```
+
+Save this file as `"solara_on_fastapi.py"` and run
+
+```
+$  SOLARA_APP=sol.py uvicorn solara_on_fastapi:app
+...
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+...
+```
+
+If you navigate to [http://127.0.0.1:8000/solara](http://127.0.0.1:8000/solara) you should see the Solara app.
 
 
 ## Voila
@@ -192,5 +216,5 @@ Note that if we use `location /` instead of `location /solara/`, we can skip the
 An alternative to using the `X-Script-Name` header with uvicorn, would be to pass the `--root-path` flag, e.g.:
 
 ```
-$ SOLARA_APP=myapp.py uvicorn --workers 1 --root-path /solara -b 0.0.0.0:8765 solara.server.flask:app
+$ SOLARA_APP=sol.py uvicorn --workers 1 --root-path /solara -b 0.0.0.0:8765 solara.server.flask:app
 ```

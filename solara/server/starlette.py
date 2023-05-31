@@ -149,7 +149,7 @@ async def kernel_connection(ws: starlette.websockets.WebSocket):
     if settings.oauth.private and not has_auth_support:
         breakpoint()
         raise RuntimeError("SOLARA_OAUTH_PRIVATE requires solara-enterprise")
-    if has_auth_support:
+    if has_auth_support and "session" in ws.scope:
         user = get_user(ws)
         if user is None and settings.oauth.private:
             await ws.accept()
