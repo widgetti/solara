@@ -14,6 +14,7 @@ import ipywidgets.widgets.widget_output
 from IPython.core.interactiveshell import InteractiveShell
 
 from . import app, reload, settings
+from .io import OutStream
 from .utils import pdb_guard
 
 logger = logging.getLogger("solara.server.app")
@@ -260,6 +261,8 @@ def Thread_debug_run(self):
 _patched = False
 global_widgets_dict = {}
 global_templates_dict: Dict[Any, Any] = {}
+stdout = sys.stdout
+stderr = sys.stderr
 
 
 def Output_enter(self):
@@ -269,16 +272,23 @@ def Output_enter(self):
         if msg["msg_type"] == "display_data":
             self.outputs += ({"output_type": "display_data", "data": msg["content"]["data"], "metadata": msg["content"]["metadata"]},)
             return None
+        if msg["msg_type"] == "stream":
+            self.outputs += ({"output_type": "stream", "name": msg["content"]["name"], "text": msg["content"]["text"]},)
+            return None
         if msg["msg_type"] == "clear_output":
             self.outputs = ()
             return None
         return msg
 
     get_ipython().display_pub.register_hook(hook)
+    assert isinstance(sys.stdout, OutStream)
+    sys.stdout.register_hook(hook)
 
 
 def Output_exit(self, exc_type, exc_value, traceback):
     get_ipython().display_pub._hooks.pop()
+    assert isinstance(sys.stdout, OutStream)
+    sys.stdout._hooks.pop()
 
 
 def patch():
@@ -336,6 +346,9 @@ def patch():
 
     ipywidgets.widgets.widget_output.Output.__enter__ = Output_enter
     ipywidgets.widgets.widget_output.Output.__exit__ = Output_exit
+
+    sys.stdout = OutStream(sys.stdout, "stdout")  # type: ignore
+    sys.stderr = OutStream(sys.stderr, "stderr")  # type: ignore
 
     original_close = ipywidgets.widget.Widget.close
     closed_ids = set()
