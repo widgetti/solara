@@ -94,7 +94,7 @@ items = [
     {
         "name": "Utils",
         "icon": "mdi-hammer-wrench",
-        "pages": ["display", "memoize", "reactive", "widget"],
+        "pages": ["display", "memoize", "reactive", "widget", "component_vue"],
     },
     {
         "name": "Advanced",
