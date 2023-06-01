@@ -27,8 +27,6 @@ apps: Dict[str, "AppScript"] = {}
 thread_lock = threading.Lock()
 
 logger = logging.getLogger("solara.server.app")
-state_directory = Path(".") / "states"
-state_directory.mkdir(exist_ok=True)
 
 reload.reloader.start()
 
@@ -296,6 +294,8 @@ class AppContext:
             del contexts[self.id]
 
     def _state_reset(self):
+        state_directory = Path(".") / "states"
+        state_directory.mkdir(exist_ok=True)
         path = state_directory / f"{self.id}.pickle"
         path = path.absolute()
         try:
