@@ -23,7 +23,7 @@ html_no_execute_enabled = "<div><i>Solara execution is not enabled</i></div>"
 def ExceptionGuard(children=[]):
     exception, clear_exception = solara.use_exception()
     if exception:
-        solara.Error(f"Oops, an error occured: {str(exception)}")
+        solara.Error(f"Oops, an error occurred: {str(exception)}")
         with solara.Details("Exception details"):
             error = "".join(traceback.format_exception(None, exception, exception.__traceback__))
             solara.Preformatted(error)

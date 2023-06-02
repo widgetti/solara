@@ -13,7 +13,7 @@ title = "AppLayout"
 def Page():
     return solara.Markdown(
         """
-    An example cannot be shown embeddded in this page, Visit the [AppLayout page](/apps/scatter) to see an example.
+    An example cannot be shown embedded in this page, Visit the [AppLayout page](/apps/scatter) to see an example.
 
     [![AppLayout screenshot](/static/public/docs/app-layout.png)](/apps/scatter)
     """

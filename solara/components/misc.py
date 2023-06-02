@@ -197,11 +197,11 @@ def Row(children=[], gap="12px", justify="start", margin: int = 0, classes: List
 
 @solara.component
 def Column(children=[], gap="12px", align="stretch", margin: int = 0, classes: List[str] = [], style: Union[str, Dict[str, str], None] = None):
-    """Lays out children in a column on top of eachother, with the given gap between them.
+    """Lays out children in a column on top of each other, with the given gap between them.
 
     See also [Row](/api/row).
 
-    Example with three children on top of eachother:
+    Example with three children on top of each other:
 
     ```solara
     import solara

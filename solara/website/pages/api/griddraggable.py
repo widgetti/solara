@@ -1,7 +1,7 @@
 """
 # GridDraggable
 
-Child components are layed out on a grid, which can be dragged and resized.
+Child components are laid out on a grid, which can be dragged and resized.
 """
 import pprint
 import textwrap

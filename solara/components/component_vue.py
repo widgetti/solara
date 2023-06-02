@@ -45,7 +45,7 @@ def component_vue(vue_path: str, vuetify=True) -> Callable[[Callable[P, None]], 
     """Decorator to create a component backed by a Vue template.
 
     Although many components can be made from the Python side, sometimes it is easier to write components using Vue directly.
-    It can also be benefical for performance, since instead of creating many widgets from the Python side we only send data to
+    It can also be beneficial for performance, since instead of creating many widgets from the Python side we only send data to
     the frontend. If event handling is also done on the frontend, this reduces latency and makes you app feel much smoother.
 
 

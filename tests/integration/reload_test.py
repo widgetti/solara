@@ -94,7 +94,7 @@ def replace(path, text):
 
 # def test_reload_syntax_error(page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path):
 #     with extra_include_path(app_path.parent), solara_app("testapp:ButtonClick"):
-#         # use as module, otherwise pickle wil not work
+#         # use as module, otherwise pickle will not work
 #         page_session.goto(solara_server.base_url)
 #         assert page_session.title() == "Solara ☀️"
 #         page_session.locator("text=Clicked 0 times").click()
@@ -126,7 +126,7 @@ def replace(path, text):
 # def test_reload_many(page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path):
 #     with extra_include_path(app_path.parent), solara_app("testapp:app"):
 #         logger.info("test_reload_many:run app")
-#         # use as module, otherwise pickle wil not work
+#         # use as module, otherwise pickle will not work
 #         page_session.goto(solara_server.base_url)
 #         page_session.locator("text=Clicked 0 times").click()
 #         page_session.locator("text=Clicked 1 times").click()
@@ -137,7 +137,7 @@ def replace(path, text):
 #         page_session.locator("text=Clicked 2 times").click()
 #         page_session.locator("text=Clicked 3 times").wait_for(state="visible")
 
-#         logger.info("test_reload_many:Touch app 2st time")
+#         logger.info("test_reload_many:Touch app 2nd time")
 #         app_path.touch()
 #         reload.reloader.reload_event_next.wait()
 #         page_session.locator("text=Clicked 3 times").click()

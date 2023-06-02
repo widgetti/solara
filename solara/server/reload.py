@@ -171,7 +171,7 @@ class Reloader:
             # that may cause issues (like 2 Element classes existing)
             logger.debug("Reloading module %s", mod)
             sys.modules.pop(mod, None)
-        # if all succesfull...
+        # if all successful...
         self.requires_reload = False
 
     @contextlib.contextmanager

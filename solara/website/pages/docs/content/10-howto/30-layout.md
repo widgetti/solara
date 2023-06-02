@@ -15,11 +15,11 @@ def Page():
             solara.Markdown("## I am in the sidebar")
             solara.SliderInt(label="Ideal for placing controls")
         solara.Info("I'm in the main content area, put your main content here")
-        with solara.Card("Use solara.Columns([1, 2]) to create relativly sized columns"):
+        with solara.Card("Use solara.Columns([1, 2]) to create relatively sized columns"):
             with solara.Columns([1, 2]):
                 solara.Success("I'm in the first column")
                 solara.Warning("I'm in the second column, I am twice as wide")
-                solara.Info("I am like the first colum")
+                solara.Info("I am like the first column")
 
         with solara.Card("Use solara.Column() to create a full width column"):
             with solara.Column():

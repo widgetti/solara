@@ -144,7 +144,7 @@ initial_items = [
 # purposes, but this is not required.
 # Note that all the above components do not refer to this class, but only
 # to do the Todo items.
-# This means all above components are resuable, and can be used in other
+# This means all above components are reusable, and can be used in other
 # places, while the components below use 'application'/'global' state.
 # They are not suited for reuse.
 

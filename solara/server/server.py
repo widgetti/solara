@@ -89,7 +89,7 @@ def wait_ready(url, timeout=10) -> None:
 
 
 def is_ready(url) -> bool:
-    """Returns wether a solara server at root url is ready.
+    """Returns whether a solara server at root url is ready.
 
     This uses the /readyz endpoint to check if the server is ready.
 

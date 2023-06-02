@@ -150,7 +150,7 @@ class AppScript:
             settings.search.enabled = True
 
         # this might be useful for development
-        # but requires reloading of react in solara iself
+        # but requires reloading of react in solara itself
         # for name, module in sys.modules.items():
         #     if name.startswith("reacton"):
         #         file = inspect.getfile(module)
@@ -164,7 +164,7 @@ class AppScript:
         self.routes = routes
 
         # this might be useful for development
-        # but requires reloading of react in solara iself
+        # but requires reloading of react in solara itself
         # for name, module in sys.modules.items():
         #     if name.startswith("reacton"):
         #         file = inspect.getfile(module)
@@ -287,7 +287,7 @@ class AppContext:
                         logger.exception("Could not close render context: %s", e)
                         # we want to continue, so we at least close all widgets
             widgets.Widget.close_all()
-            # what if we reference eachother
+            # what if we reference each other
             # import gc
             # gc.collect()
         if self.id in contexts:

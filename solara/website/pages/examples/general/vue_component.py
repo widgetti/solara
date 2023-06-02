@@ -1,7 +1,7 @@
 """Demonstrates how to use Vue components in Solara.
 
 Although many components can be made from the Python side, sometimes it is easier to write components using Vue directly.
-It can also be benefical for performance, since instead of creating many widgets from the Python side we only send data to
+It can also be beneficial for performance, since instead of creating many widgets from the Python side we only send data to
 the frontend. If event handling is also done on the frontend, this reduces latency and makes you app feel much smoother.
 
 See [the API documentation on component_vue](/api/component_vue) for more information.

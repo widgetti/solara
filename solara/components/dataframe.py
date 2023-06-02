@@ -119,7 +119,7 @@ def HistogramCard(df, column=None, max_unique=100):
             with v.Dialog(v_slots=[{"name": "activator", "variable": "x", "children": btn}], width="500"):
                 with v.Sheet():
                     with v.Card(elevation=2):
-                        with v.CardTitle(children=["Histgram input"]):
+                        with v.CardTitle(children=["Histogram input"]):
                             pass
                         with v.CardText():
                             column = items[0] if column not in items else column
@@ -218,7 +218,7 @@ def ScatterCard(df, x=None, y=None, color=None):
             with v.Dialog(v_slots=[{"name": "activator", "variable": "x", "children": btn}], width="500"):
                 with v.Sheet():
                     with v.Card(elevation=2):
-                        with v.CardTitle(children=["Histgram input"]):
+                        with v.CardTitle(children=["Histogram input"]):
                             pass
                         with v.CardText():
                             xcol = x
@@ -365,7 +365,7 @@ def HeatmapCard(df, x=None, y=None, debounce=True):
             with v.Dialog(v_slots=[{"name": "activator", "variable": "x", "children": btn}], width="700"):
                 with v.Sheet():
                     with v.Card(elevation=2):
-                        with v.CardTitle(children=["Histgram input"]):
+                        with v.CardTitle(children=["Histogram input"]):
                             pass
                         with v.CardText():
                             xcol = x

@@ -15,7 +15,7 @@ The `solara.cache.storage` cache object is used by [memoize](/api/memoize), if n
 
 ## Types of cache
 
-Solara core comes by default with an in-memory cache using a [LRU](https://en.wikipedia.org/wiki/Cache_replacement_policies#Least_recently_used_(LRU)) (Least recenty used) strategy. When the
+Solara core comes by default with an in-memory cache using a [LRU](https://en.wikipedia.org/wiki/Cache_replacement_policies#Least_recently_used_(LRU)) (Least recently used) strategy. When the
 cache becomes too full, this removes entries used least recently.
 
 The cache is set by default to:

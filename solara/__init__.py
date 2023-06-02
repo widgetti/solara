@@ -101,7 +101,7 @@ def display(*objs, **kwargs):
     Note that this is a dispatch call to the
     [IPython display function](https://ipython.readthedocs.io/en/stable/api/generated/IPython.display.html#IPython.display.display),
     with a slimmer API. The main purpose of this function is the have type safety, since tools like mypy do now know about
-    the existance of the IPython display function, and will complain if you use it without importing it.
+    the existence of the IPython display function, and will complain if you use it without importing it.
     Since solara is always imported, this saves you from having to import IPython in your code.
 
     ## Arguments

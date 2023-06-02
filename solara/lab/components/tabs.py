@@ -151,13 +151,13 @@ def Tabs(
                         with solara.lab.Tabs(vertical=True, slider_color="green"):
                             with solara.lab.Tab("User", icon_name="mdi-account"):
                                 solara.Markdown("User settings")
-                            with solara.lab.Tab("Sytem", icon_name="mdi-access-point"):
+                            with solara.lab.Tab("System", icon_name="mdi-access-point"):
                                 solara.Markdown("System settings")
                     with solara.lab.Tab("Analytics", icon_name="mdi-chart-line"):
                         with solara.lab.Tabs(vertical=True):
                             with solara.lab.Tab("User", icon_name="mdi-account"):
                                 solara.Markdown("User analytics")
-                            with solara.lab.Tab("Sytem", icon_name="mdi-access-point"):
+                            with solara.lab.Tab("System", icon_name="mdi-access-point"):
                                 solara.Markdown("System analytics")
 
     ```

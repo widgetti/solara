@@ -67,7 +67,7 @@ def arg_cast(args: List[str], f: Callable):
         if i >= len(args):
             break
             # TODO: can we give a better error message?
-            # raise TypeError(f"{f} expected positional argument {param}, but not enought argument supplied")
+            # raise TypeError(f"{f} expected positional argument {param}, but not enough argument supplied")
         annotation = param.annotation
         value = args[i]
         check_optional_types = [str, int, float]
@@ -233,7 +233,7 @@ def RenderPage(main_name: str = "Page"):
             # If we have a widget, we need to execute this again for each
             # connection, since we cannot share widgets between connections/users.
             # We also cannot tear them down, so we cache the widget based pages.
-            # To support hot reload, we manualy need to check the mtimes
+            # To support hot reload, we manually need to check the mtimes
             # because the reload support for modules in reloader.py only works
             # for modules.
             if route_current.file is None:

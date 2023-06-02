@@ -62,7 +62,7 @@ def numpy_to_image(data: "np.ndarray", format="png"):
         im.save(f, format)
         return f.getvalue()
     else:
-        raise ValueError(f"Expected an image with 3 dimensions (height, width, channe), not {data.shape}")
+        raise ValueError(f"Expected an image with 3 dimensions (height, width, channel), not {data.shape}")
 
 
 @contextlib.contextmanager

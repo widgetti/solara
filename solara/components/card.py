@@ -42,7 +42,7 @@ def Card(
 
      * `title`: Title of the card.
      * `subtitle`: Subtitle of the card.
-     * `elevation`: Elevation of the card, gives the appearence of hovering above the page.
+     * `elevation`: Elevation of the card, gives the appearance of hovering above the page.
      * `margin`: Margin of the card.
      * `children`: Children are placed as the main content of the card.
      * `style`: CSS style to apply to the top level element.

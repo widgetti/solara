@@ -52,4 +52,4 @@ The downsides of this method, is that users or crawlers may request a page when 
 
  * `SOLARA_SSG_BUILD_PATH`: Override the directory where there html pages are stored.
  * `SOLARA_SSG_ENABLED`: Alternative to passing the `--ssg` flag. Should be used when running solara without `solara run` (e.g. using gunicorn/uvicorn).
- * `SOLARA_SSG_HEADED`: Run playwright using `headed` mode (in contrast to `headless`). Usefull for debugging.
+ * `SOLARA_SSG_HEADED`: Run playwright using `headed` mode (in contrast to `headless`). Useful for debugging.
