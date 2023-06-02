@@ -1,8 +1,6 @@
 [build-system]
-requires = ["flit_core >=3.2,<4"]
-build-backend = "flit_core.buildapi"
-
-
+requires = ["hatchling >=0.25"]
+build-backend = "hatchling.build"
 
 [project]
 name = "solara-portal"
@@ -13,8 +11,9 @@ dependencies = [
     "solara",
 ]
 
-[tool.flit.module]
-name = "solara_portal"
+[tool.hatch.version]
+path = "solara_portal/__init__.py"
+
 
 
 [project.urls]
