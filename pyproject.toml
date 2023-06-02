@@ -57,6 +57,7 @@ name = "solara"
 
 [project.optional-dependencies]
 dev = [
+    "codespell",
     "python-dotenv",
     "flake8",
     "bqplot",
@@ -131,3 +132,7 @@ profile = "black"
 [tool.pytest.ini_options]
 addopts = "--disable-warnings --ignore=tests/integration/app_widget.py  --ignore=tests/unit/solara_test_apps"
 timeout = 180
+
+
+[tool.codespell]
+skip='equis-in-vidi.md,substiterat-vati.md,.*,solara/website/build,*.svg,highlight-dark.css,packages/**/dist/*,node_modules,packages/assets,package-lock.json,tsconfig.tsbuildinfo'
