@@ -30,7 +30,7 @@ def Page():
         f"""
         ## Demo
 
-        Below we show display the titanic dataset, and demonstrate a user colum and cell action. Try clicking on the triple icon when hovering
+        Below we show display the titanic dataset, and demonstrate a user column and cell action. Try clicking on the triple icon when hovering
         above a column or cell. And see the following values changes:
 
         * Column action on: `{column}`

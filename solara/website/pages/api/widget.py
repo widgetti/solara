@@ -54,7 +54,7 @@ def LocationSelect(value, on_value, countries=countries_demo_data):
     # reset to None if not in the list of countries
     if city not in cities:
         city = None
-        # update the state if we changed/resetted city
+        # update the state if we changed/reset city
         on_value((country, city))
 
     with solara.Card("Location"):

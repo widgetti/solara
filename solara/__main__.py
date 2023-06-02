@@ -283,7 +283,7 @@ def run(
 
         reload_dirs = list(reload_dirs if reload_dirs else [])
 
-        # we restart the server when solara or react changes, in priciple we should do
+        # we restart the server when solara or react changes, in principle we should do
         # that for all dependencies of the server, but these are changing most often
         # during development
         # We exclude the website, that will be handled by solara/server/reload.py
@@ -462,7 +462,7 @@ def search(app: str):
 
 
 class run_with_settings:
-    """This cross a process boundry, and takes the serialized settings with it"""
+    """This cross a process boundary, and takes the serialized settings with it"""
 
     def __init__(self, server: uvicorn.Server, main: typing.Dict, theme: typing.Dict, ssg: typing.Dict, search: typing.Dict):
         self.server = server
@@ -629,7 +629,7 @@ def write_script(name: str, target: typing.Optional[Path]):
     rprint(f"Run as:\n\t $ solara run {target.resolve()}")
 
 
-# recursivly copy a directory and allow for existing directories
+# recursively copy a directory and allow for existing directories
 def copytree(src: Path, dst: Path, copy_function=shutil.copy2, ignore: typing.Callable[[Path], bool] = lambda x: False, rename=lambda x: x):
     print(src, " -> ", dst)  # noqa
     if not src.exists():

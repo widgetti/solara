@@ -115,6 +115,6 @@ Note that we did not include the `:page` here, since solara will automatically l
   * Running `$ solara run filename.py:variablename` tells Solara which script to execute and which variable name from the script to render.
   * The script is executed:
     * Once, when the solara server starts.
-    * On each page reqest.
+    * On each page request.
     * For each open browser page/tab, when the script is saved (hot reloading).
   * Using the [.widget(...)](/api/widget) method we can start using Solara components in classic ipywidget app.

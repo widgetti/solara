@@ -54,7 +54,7 @@ and be a [Reacton](/docs/understanding/reacton) component. (See the [IPywidget t
 
 Since your script is only run once, you could put in the main body of your script code that only needs to run once (e.g. loading data from disk)
 
-Every browser/user that connects will get an independant version of the state (in this case the number of clicks), so
+Every browser/user that connects will get an independent version of the state (in this case the number of clicks), so
 you do not share the number of clicks with other people.
 
 ## Modify the script

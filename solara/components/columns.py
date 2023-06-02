@@ -54,8 +54,8 @@ def Columns(
     def Page():
         with solara.Columns([0, 1, 2]):
             solara.Text("I am as small as possible")
-            solara.Select("I strech", values=["a", "b", "c"], value="a")
-            solara.Select("I strech twice the amount", values=["a", "b", "c"], value="a")
+            solara.Select("I stretch", values=["a", "b", "c"], value="a")
+            solara.Select("I stretch twice the amount", values=["a", "b", "c"], value="a")
     ```
 
 
@@ -113,7 +113,7 @@ def ColumnsResponsive(
         ...
     ```
 
-    If you want your columns to be full width on large screen, and next to eachother on larger screens.
+    If you want your columns to be full width on large screen, and next to each other on larger screens.
 
     ```python
     with ColumnsResponsive(12, large=[4, 8]):

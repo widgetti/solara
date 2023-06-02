@@ -410,7 +410,7 @@ def _InputNumeric(
         on_v_model=on_v_model,
         label=label,
         disabled=disabled,
-        # we are not using the numer type, since we cannot validate invalid input
+        # we are not using the number type, since we cannot validate invalid input
         # see https://stackoverflow.blog/2022/12/26/why-the-number-input-is-the-worst-input/
         # type="number",
         hide_details=True,

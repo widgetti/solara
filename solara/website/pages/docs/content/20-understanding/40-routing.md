@@ -9,7 +9,7 @@ Routing includes navigation (hitting the back and forward button of your browser
 
 ## Automatic routing
 
-Setting up routing can be repetative, and thefore Solara comes also with a more opinionated method for setting up routing automatically.
+Setting up routing can be repetitive, and therefore Solara comes also with a more opinionated method for setting up routing automatically.
 
 ### Based on a directory
 

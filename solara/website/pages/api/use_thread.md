@@ -19,7 +19,7 @@ def use_thread(
 `use_thread` takes a function as argument that takes a `threading.Event` object as argument to check whether it should stop,
 and should return it's resulting value, or yield it multiple times (thus an iterator).
 
-The return value of `use_thread` is a `Result[T]`, making it easy to have the UI reflect the state of the work beging done.
+The return value of `use_thread` is a `Result[T]`, making it easy to have the UI reflect the state of the work being done.
 
 When an iterator is passed, the state only enters the `FINISHED` state after the last element is yielded. Partial, or incremental results can be detected when the state is still in `RUNNING`, but `Result[T].value` is not None.
 

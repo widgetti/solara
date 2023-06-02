@@ -65,12 +65,12 @@ def FileBrowser(
     There are two modes possible
 
      * `can_select=False`
-        * `on_file_open`: Triggered when **single** clicking a file or directoy.
+        * `on_file_open`: Triggered when **single** clicking a file or directory.
         * `on_path_select`: Never triggered
         * `on_directory_change`: Triggered when clicking a directory
      * `can_select=True`
-        * `on_file_open`: Triggered when **double** clicking a file or directoy.
-        * `on_path_select`: Triggered when clicking a file or directoy
+        * `on_file_open`: Triggered when **double** clicking a file or directory.
+        * `on_path_select`: Triggered when clicking a file or directory
         * `on_directory_change`: Triggered when double clicking a directory
 
     ## Arguments

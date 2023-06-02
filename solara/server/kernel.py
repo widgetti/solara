@@ -110,7 +110,7 @@ else:
 
     global_comm_manager = _CommManager()
 # from notebook.base.zmqhandlers import serialize_binary_message
-# this saves us a depdendency on notebook/jupyter_server when e.g.
+# this saves us a dependency on notebook/jupyter_server when e.g.
 # running on pyodide
 
 

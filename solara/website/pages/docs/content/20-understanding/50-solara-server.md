@@ -2,7 +2,7 @@
 
 The solara server enables running ipywidgets based applications without a real Jupyter kernel, allowing multiple "Virtual kernels" to share the same process for better performance and scalability.
 
-## Readyness check
+## Readiness check
 
 To check if the server is ready to accept request, the `/readyz` endpoint is added, and should return a 200 HTTP status code, e.g.:
 

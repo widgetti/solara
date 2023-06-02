@@ -19,7 +19,7 @@ class SqlCodeWidget(ipyvue.VueTemplate):
 def SqlCode(label="Query", query: str = None, tables: Dict[str, List[str]] = None, on_query=None, height="180px"):
     """SQL textfield input with auto complete and SQL syntax highlighting.
 
-    To get auto complete for the colum names, prefix it with the table name, i.e. "titanic.sur ctrl+space"
+    To get auto complete for the column names, prefix it with the table name, i.e. "titanic.sur ctrl+space"
 
     ## Arguments
 

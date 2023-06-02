@@ -37,7 +37,7 @@ def FigureMatplotlib(
     If you still must use pyplot to create the figure, make sure you call `plt.switch_backend("agg")`
     before creating the figure, to avoid starting an interactive backend.
 
-    For performance reasons, you might want to pass in a list of depenendencies that indicate when
+    For performance reasons, you might want to pass in a list of dependencies that indicate when
     the figure changed, to avoid re-rendering it on every render.
 
 
