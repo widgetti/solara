@@ -8,7 +8,7 @@ Solara lets you use and build data-focused web apps (data apps) using reusable U
 
 Solara uses proven technologies and mature standards. Grow from a one-off experiment in the Jupyter notebook or a dynamic data portal in production.  Built on top of Reacton keeps your code complexity under control.
 
-We care about developer experience. Solara will give your hot code reloading and type hints for faster development.
+We care about developer experience. Solara provides hot code reloading and type hints for faster development.
 
 [![Introduction](https://dabuttonfactory.com/button.png?t=Introduction&f=Open+Sans-Bold&ts=20&tc=fff&hp=45&vp=12&c=8&bgt=unicolored&bgc=f19f41)](/docs)
 [![Quickstart](https://dabuttonfactory.com/button.png?t=Quickstart&f=Open+Sans-Bold&ts=20&tc=fff&hp=45&vp=12&c=8&bgt=unicolored&bgc=f19f41)](/docs/quickstart)
