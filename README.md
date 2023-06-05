@@ -8,7 +8,7 @@ Come chat with us on [Discord](https://discord.gg/T2nsHVxMQc) to ask questions o
 
 
 
-## Introducing Solara?
+## Introducing Solara
 
 While there are many Python web frameworks out there, most are designed for small data apps or use paradigms unproven for larger scale. Code organization, reusability, and state tend to suffer as apps grow in complexity, resulting in either spaghetti code or offloading to a React application.
 
