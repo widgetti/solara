@@ -386,7 +386,6 @@ routes = [
     Mount(f"{prefix}/static/public", app=StaticPublic()),
     Mount(f"{prefix}/static/assets", app=StaticAssets()),
     Mount(f"{prefix}/static/nbextensions", app=StaticNbFiles()),
-    Mount(f"{prefix}/static/nbconvert", app=StaticFilesOptionalAuth(directory=server.nbconvert_static)),
     Mount(f"{prefix}/static", app=StaticFilesOptionalAuth(directory=server.solara_static)),
     Route("/{fullpath:path}", endpoint=root),
 ]

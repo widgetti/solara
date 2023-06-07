@@ -180,13 +180,6 @@ def nbext(dir, filename):
     return flask.Response("not found", status=404)
 
 
-@blueprint.route("/static/nbconvert/<path:path>")
-def serve_nbconvert_static(path):
-    if not allowed():
-        abort(401)
-    return send_from_directory(server.nbconvert_static, path)
-
-
 @blueprint.route("/static/<path:path>")
 def serve_static(path):
     if not allowed():

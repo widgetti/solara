@@ -570,12 +570,6 @@ def staticbuild():
     for path in [Path(f"dist/solara-{version}-py2.py3-none-any.whl")]:
         shutil.copy(path, target_dir_wheels)
 
-    target_dir_nbconvert_static = target_dir / "static/nbconvert"
-    target_dir_nbconvert_static.mkdir(exist_ok=True, parents=True)
-    nbconvert = Path(solara.server.server.nbconvert_static)
-    for path in list(nbconvert.glob("*.js")) + list(nbconvert.glob("*.css")):
-        shutil.copy(path, target_dir_nbconvert_static)
-
     target_dir_static_dist = target_dir / "static/dist"
     target_dir_static_dist.mkdir(exist_ok=True)
     voila = server_path / "dist"
