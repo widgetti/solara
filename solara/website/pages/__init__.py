@@ -1,5 +1,4 @@
 import contextlib
-from pathlib import Path
 
 import solara
 from solara.alias import rv
@@ -7,10 +6,6 @@ from solara.components.title import Title
 
 from ..components import Header, Hero
 
-directory = Path(__file__).parent
-
-# md file
-md = open(directory / "README.md").read()
 
 title = "Home"
 
@@ -19,9 +14,7 @@ route_order = ["/", "showcase", "docs", "api", "examples", "apps"]
 
 @solara.component
 def Page():
-    with solara.GridFixed(1, justify_items="center") as main:
-        solara.Markdown(md)
-    return main
+    solara.Markdown("should not see me")
 
 
 @solara.component
