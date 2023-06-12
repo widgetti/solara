@@ -15,9 +15,13 @@ def Style(value: str = ""):
 
     - `value`: The CSS string to insert into the page.
     """
+    uuid = solara.use_unique_key()
     hash = hashlib.sha256(value.encode("utf-8")).hexdigest()
-    id = hash
-    # ipyvue does not remove the css itself
+    # the key is unique for this component + value
+    # so that we create a new component if the value changes
+    # but we do not remove the css of a component with the same value
+    key = uuid + "-" + hash
+    # ipyvue does not remove the css itself, so we need to do it manually
     script = (
         """
 <script>
@@ -28,7 +32,7 @@ module.exports = {
 };
 </script>
     """
-        % id
+        % key
     )
 
     template = f"""
@@ -37,9 +41,9 @@ module.exports = {
     </span>
 </template>
 {script}
-<style id="{id}">
+<style id="{key}">
 {value}
 </style>
     """
     # using .key avoids re-using the template, which causes a flicker (due to ipyvue)
-    return v.VuetifyTemplate.element(template=template).key(id)
+    return v.VuetifyTemplate.element(template=template).key(key)
