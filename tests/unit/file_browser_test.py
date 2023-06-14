@@ -188,3 +188,40 @@ def test_file_browser_test_change_directory():
     assert "file_browser_test.py" in list
     rc.render(solara.FileBrowser(HERE.parent.parent))
     assert "file_browser_test.py" not in list
+
+
+def test_file_browser_control_directory():
+    import solara
+
+    def directory_filter(path: Path) -> bool:
+        return path.is_dir() and not path.name.startswith("_")
+
+    BASE_PATH = HERE.parent.parent
+    directory = solara.reactive(BASE_PATH)
+
+    @solara.component
+    def Page():
+        def protect():
+            def check_base_path(value):
+                if not str(value).startswith(str(BASE_PATH)):
+                    directory.value = BASE_PATH
+
+            return directory.subscribe(check_base_path)
+
+        solara.use_effect(protect, [])
+        solara.FileBrowser(directory, filter=directory_filter)
+
+    top, rc = solara.render(Page(), handle_error=False)
+    list = rc.find(solara.components.file_browser.FileListWidget).widget
+    mock = unittest.mock.MagicMock()
+    list.observe(mock, "files")
+    items = list.files
+    names = {k["name"] for k in items}
+    assert names == {"unit", "ui", "integration", ".."}
+    list.test_click("..")
+    assert mock.call_count == 0
+    list.test_click("integration")
+    items = list.files
+    names = {k["name"] for k in items}
+    assert names != {"unit", "ui", "integration", ".."}
+    assert mock.call_count == 1

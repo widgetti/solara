@@ -50,7 +50,7 @@ class FileListWidget(vy.VuetifyTemplate):
 
 @solara.component
 def FileBrowser(
-    directory: Union[str, Path] = None,
+    directory: Union[None, str, Path, solara.Reactive[Path]] = None,
     on_directory_change: Callable[[Path], None] = None,
     on_path_select: Callable[[Optional[Path]], None] = None,
     on_file_open: Callable[[Path], None] = None,
@@ -88,7 +88,9 @@ def FileBrowser(
         directory = start_directory  # pragma: no cover
     if directory is None:
         directory = os.getcwd()  # pragma: no cover
-    current_dir, set_current_dir = solara.use_state_or_update(str(directory))
+    if isinstance(directory, str):
+        directory = Path(directory)
+    current_dir = solara.use_reactive(directory)
     selected, set_selected = solara.use_state(None)
     double_clicked, set_double_clicked = solara.use_state(None)
     warning, set_warning = solara.use_state(cast(Optional[str], None))
@@ -96,9 +98,9 @@ def FileBrowser(
     scroll_pos, set_scroll_pos = solara.use_state(0)
     selected, set_selected = solara.use_state(None)
 
-    def change_dir(new_dir):
+    def change_dir(new_dir: str):
         if os.access(new_dir, os.R_OK):
-            set_current_dir(new_dir)
+            current_dir.value = Path(new_dir)
             if on_directory_change:
                 on_directory_change(Path(new_dir))
             set_warning(None)
@@ -112,7 +114,8 @@ def FileBrowser(
                 on_path_select(None)
             return
         if item["name"] == "..":
-            new_dir = current_dir[: current_dir.rfind(os.path.sep)]
+            current_dir_str = str(current_dir.value)
+            new_dir = current_dir_str[: current_dir_str.rfind(os.path.sep)]
             action_change_directory = (can_select and double_click) or (not can_select and not double_click)
             if action_change_directory and change_dir(new_dir):
                 if scroll_pos_stack:
@@ -128,7 +131,7 @@ def FileBrowser(
                     on_path_select(Path(new_dir))
             return
 
-        path = os.path.join(current_dir, item["name"])
+        path = os.path.join(current_dir.value, item["name"])
         is_file = item["is_file"]
         if (can_select and double_click) or (not can_select and not double_click):
             if is_file:
@@ -160,10 +163,11 @@ def FileBrowser(
             on_item(item, True)
         # otherwise we can ignore it, single click will handle it
 
+    files = [{"name": "..", "is_file": False}] + list_dir(current_dir.value, filter=filter, directory_first=directory_first)
     with Div(class_="solara-file-browser") as main:
-        Div(children=[current_dir])
+        Div(children=[str(current_dir.value)])
         FileListWidget.element(
-            files=[{"name": "..", "is_file": False}] + list_dir(current_dir, filter=filter, directory_first=directory_first),
+            files=files,
             selected=selected,
             clicked=selected,
             on_clicked=on_click,
