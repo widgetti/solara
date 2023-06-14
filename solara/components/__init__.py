@@ -37,7 +37,7 @@ from .pivot_table import PivotTableView, PivotTable, PivotTableCard  # noqa: #F4
 from .head import Head  # noqa: #F401 F403
 from .title import Title  # noqa: #F401 F403
 from .link import Link  # noqa: #F401 F403
-from .applayout import AppLayout, Sidebar, AppBar  # noqa: #F401 F403
+from .applayout import AppLayout, Sidebar, AppBar, AppBarTitle  # noqa: #F401 F403
 from .tab_navigation import TabNavigation  # noqa: #F401 F403
 from .markdown_editor import MarkdownEditor  # noqa: #F401 F403
 from .select import Select, SelectMultiple  # noqa: #F401 F403

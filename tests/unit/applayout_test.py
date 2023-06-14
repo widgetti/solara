@@ -49,6 +49,16 @@ def test_sidebar():
             solara.Markdown("This is the content4")
         return content
 
+    @solara.component
+    def Content5():
+        with solara.Card("Content") as content:
+            with solara.AppBarTitle():
+                solara.Markdown("Title4")
+                solara.Markdown("Title4b")
+                solara.Markdown("Title4c")
+            solara.Markdown("This is the content4")
+        return content
+
     set_content = None
 
     @solara.component
@@ -64,6 +74,8 @@ def test_sidebar():
                 Content3()
             if content == 4:
                 Content4()
+            if content == 5:
+                Content5()
         return main
 
     box, rc = solara.render(Layout(), handle_error=False)
@@ -82,3 +94,5 @@ def test_sidebar():
     assert len(rc.find(v.ToolbarTitle, children=["Title3"])) == 1
     set_content(4)
     rc.find(v.NavigationDrawer).assert_empty()
+    set_content(5)
+    assert len(rc.find(v.ToolbarTitle).widget.children) == 3

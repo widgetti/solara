@@ -45,6 +45,7 @@ items = [
         "pages": [
             "app_layout",
             "app_bar",
+            "app_bar_title",
             "card",
             "card_actions",
             "columns",

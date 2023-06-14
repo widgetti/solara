@@ -81,6 +81,7 @@ class ElementPortal:
 
 sidebar_portal = ElementPortal()
 appbar_portal = ElementPortal()
+apptitle_portal = ElementPortal()
 
 
 @solara.component
@@ -120,6 +121,36 @@ def AppBar(children=[]):
         context = context.parent
     offset = 2**level
     appbar_portal.use_portal_add(children, offset)
+
+    return solara.Div(style="display; none")
+
+
+@solara.component
+def AppBarTitle(children=[]):
+    """Puts its children in the title section of the AppBar (or any layout that supports it).
+
+    This component does not need to be a direct child of the AppBar, it can be at any level in your component tree.
+
+    ## Example
+
+    ```solara
+    import solara
+
+    @solara.component
+    def Page():
+        with solara.AppBarTitle():
+            solara.Text("Hi there")
+            solara.Button("Click me", outlined=True, classes=["mx-2"])
+    ```
+    """
+    level = 0
+    rc = reacton.core.get_render_context()
+    context = rc.context
+    while context and context.parent:
+        level += 1
+        context = context.parent
+    offset = 2**level
+    apptitle_portal.use_portal_add(children, offset)
 
     return solara.Div(style="display; none")
 
@@ -218,10 +249,9 @@ def AppLayout(
     children_appbar = appbar_portal.use_portal()
     if children_sidebar:
         use_drawer = True
-
     title = t.use_title_get() or title
-
-    show_app_bar = (title and (len(routes) > 1 and navigation)) or children_appbar or use_drawer
+    children_appbartitle = apptitle_portal.use_portal()
+    show_app_bar = (title and (len(routes) > 1 and navigation)) or children_appbar or use_drawer or children_appbartitle
     if not show_app_bar and not children_sidebar and len(children) == 1:
         return children[0]
 
@@ -267,8 +297,8 @@ def AppLayout(
                         ):
                             pass
                             v.Html(tag="div", children=children_sidebar, style_="background-color: white; padding: 12px; min-width: 400px")
-                    if title:
-                        v.ToolbarTitle(children=[title])
+                    if title or children_appbartitle:
+                        v.ToolbarTitle(children=children_appbartitle or [title])
                     v.Spacer()
                     for child in children_appbar:
                         solara.display(child)
@@ -302,8 +332,8 @@ def AppLayout(
                 with v.AppBar(color="primary", dark=True, app=True, clipped_left=True, hide_on_scroll=False, v_slots=v_slots):
                     if use_drawer:
                         AppIcon(sidebar_open, on_click=lambda: set_sidebar_open(not sidebar_open))
-                    if title:
-                        v.ToolbarTitle(children=[title])
+                    if title or children_appbartitle:
+                        v.ToolbarTitle(children=children_appbartitle or [title])
                     v.Spacer()
                     for child in children_appbar:
                         solara.display(child)
