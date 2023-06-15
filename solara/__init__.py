@@ -43,6 +43,7 @@ from reacton.core import Element  # noqa: F403, F401
 import reacton.ipyvuetify as v
 from . import util
 
+from . import html
 from .reactive import *
 
 # flake8: noqa: F402
