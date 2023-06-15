@@ -16,6 +16,12 @@ import { output } from '@jupyter-widgets/jupyterlab-manager';
 
 import * as base from '@jupyter-widgets/base';
 import * as controls from '@jupyter-widgets/controls';
+// there two imports came 'for free' with webpack 4, from the jupyter-lab-manager plugin
+// it seems webpack 5 is better at tree-shaking, so we didn't need to import them explicitly before
+import '@jupyter-widgets/base/css/index.css';
+import '@jupyter-widgets/controls/css/widgets-base.css';
+// Voila imports the following css file, not sure why
+// import '@jupyter-widgets/controls/css/widgets.built.css';
 
 import * as Application from '@jupyterlab/application';
 import * as AppUtils from '@jupyterlab/apputils';

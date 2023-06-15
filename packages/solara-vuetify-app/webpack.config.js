@@ -6,8 +6,8 @@ var rules = [
     {
         test: /\.(woff|woff2|eot|ttf|otf)$/,
         loader: 'file-loader',
-    }
-]
+    },
+];
 
 module.exports = [
     {
