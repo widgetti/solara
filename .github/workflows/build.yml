@@ -41,10 +41,10 @@ jobs:
           npm run build
 
       - name: Install build tools
-        run: pip install flit hatch
+        run: pip install hatch
 
       - name: Build solara
-        run: flit build
+        run: hatch build
 
       - name: Build solara-enterprise
         run: (cd packages/solara-enterprise; hatch build)

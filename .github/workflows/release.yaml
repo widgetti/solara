@@ -21,7 +21,7 @@ jobs:
         with:
           name: solara-builds-${{ github.run_number }}
       - name: Install build tools
-        run: pip install flit hatch
+        run: pip install hatch
       - name: Install solara
         run: pip install dist/*.whl
       - name: Test import
@@ -46,11 +46,11 @@ jobs:
           openssl sha256 dist/*
       - name: Publish solara to PyPI
         env:
-          FLIT_USERNAME: __token__
-          FLIT_PASSWORD: ${{ secrets.pypi_password }}
+          HATCH_INDEX_USER: __token__
+          HATCH_INDEX_AUTH: ${{ secrets.pypi_password }}
         run: |
           openssl sha256 dist/*
-          flit publish || true
+          hatch publish
           openssl sha256 dist/*
       - name: Publish solara-assets to PyPI
         env:

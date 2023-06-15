@@ -24,10 +24,10 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 14
-      - name: Install flit
-        run: pip install flit
+      - name: Install hatch
+        run: pip install hatch
       - name: Build
-        run: flit build
+        run: hatch build
       - name: Install solara Python package
         run: pip install dist/*.whl
       - name: Build solara widget manager

@@ -88,7 +88,7 @@ You should have the following directory structure:
 ├── LICENSE
 ├── Procfile # will make it run on heroku
 ├── mypy.ini # adds strict type checking
-├── pyproject.toml  # make it installable with pip/flit etc
+├── pyproject.toml  # make it installable with pip/hatch etc
 └── solara_test_portal  # Python package containing all code
     ├── __init__.py
     ├── components # contains general react components
