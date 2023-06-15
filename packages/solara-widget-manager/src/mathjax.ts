@@ -20,8 +20,10 @@ RegisterHTMLHandler(browserAdaptor());
 
 // Override dynamically generated fonts in favor
 // of our font css that is picked up by webpack.
+// @ts-ignore
 class emptyFont extends TeXFont {
-  readonly defaultFonts = {};
+  // @ts-ignore
+  static defaultFonts = {};
 }
 
 const chtml = new CHTML({
@@ -56,4 +58,20 @@ export function renderMathJax(): void {
     .typeset()
     .updateDocument()
     .reset();
+}
+// this makes it compatible with the old MathJax
+// see https://github.com/voila-dashboards/voila/pull/531
+// @ts-ignore
+window.MathJax = {
+  Hub: {
+    // @ts-ignore
+    Queue: ([_ignore, _ignore2, node]) => {
+      html.findMath({ elements: [node] })
+        .compile()
+        .getMetrics()
+        .typeset()
+        .updateDocument()
+        .reset()
+    }
+  }
 }
