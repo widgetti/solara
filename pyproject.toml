@@ -52,6 +52,10 @@ dependencies = [
 [tool.hatch.version]
 path = "solara/__init__.py"
 
+# we ignore build/ but on the website we add solara/website/build
+# when using SSG
+[tool.hatch.build]
+ignore-vcs = true
 
 [project.optional-dependencies]
 dev = [
