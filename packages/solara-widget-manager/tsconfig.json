@@ -1,8 +1,15 @@
 {
-  "extends": "../../tsconfigbase",
   "compilerOptions": {
-    "outDir": "lib",
-    "rootDir": "src"
+    "module": "commonjs",
+    "target": "es2015",
+    "declaration": true,
+    "outDir": "./lib",
+    "rootDir": "src",
+    "sourceMap": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true
   },
-  "include": ["src/**/*"]
+  "include": [
+    "src/**/*"
+  ],
 }

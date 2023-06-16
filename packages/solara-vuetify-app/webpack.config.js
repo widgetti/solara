@@ -3,11 +3,28 @@ const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 
 var rules = [
     { test: /\.css$/, use: [MiniCssExtractPlugin.loader, 'css-loader'] },
+    // required to load font-awesome
     {
-        test: /\.(woff|woff2|eot|ttf|otf)$/,
-        loader: 'file-loader',
+        test: /\.woff2(\?v=\d+\.\d+\.\d+)?$/,
+        type: 'asset',
+    },
+    {
+        test: /\.woff(\?v=\d+\.\d+\.\d+)?$/,
+        type: 'asset',
+    },
+    {
+        test: /\.ttf(\?v=\d+\.\d+\.\d+)?$/,
+        type: 'asset',
+    },
+    {
+        test: /\.eot(\?v=\d+\.\d+\.\d+)?$/,
+        type: 'asset',
+    },
+    {
+        test: /\.svg(\?v=\d+\.\d+\.\d+)?$/,
+        type: 'asset',
     }
-]
+];
 
 module.exports = [
     {
@@ -23,11 +40,6 @@ module.exports = [
             rules: rules
         },
         mode: 'production',
-        resolve: {
-            alias: {
-                "@widgetti/solara-widget-manager": "@widgetti/solara-widget-manager/dist/solara-widget-manager7.min.js"
-            }
-        },
     },
     {
         plugins: [new MiniCssExtractPlugin()],
@@ -41,11 +53,6 @@ module.exports = [
         },
         module: {
             rules: rules
-        },
-        resolve: {
-            alias: {
-                "@widgetti/solara-widget-manager": "@widgetti/solara-widget-manager/dist/solara-widget-manager7.js"
-            }
         },
         mode: 'development',
     },
@@ -64,7 +71,9 @@ module.exports = [
         },
         resolve: {
             alias: {
-                "@widgetti/solara-widget-manager": "@widgetti/solara-widget-manager/dist/solara-widget-manager8.min.js"
+                "@jupyter-widgets/base": "@jupyter-widgets/base8",
+                "@jupyter-widgets/controls": "@jupyter-widgets/controls8",
+                "@jupyter-widgets/jupyterlab-manager": "@jupyter-widgets/jupyterlab-manager8",
             }
         },
         mode: 'production',
@@ -84,7 +93,9 @@ module.exports = [
         },
         resolve: {
             alias: {
-                "@widgetti/solara-widget-manager": "@widgetti/solara-widget-manager/dist/solara-widget-manager8.js"
+                "@jupyter-widgets/base": "@jupyter-widgets/base8",
+                "@jupyter-widgets/controls": "@jupyter-widgets/controls8",
+                "@jupyter-widgets/jupyterlab-manager": "@jupyter-widgets/jupyterlab-manager8",
             }
         },
         mode: 'development',

@@ -175,11 +175,12 @@ def solara_test(solara_server, solara_app, page_session: "playwright.sync_api.Pa
         assert len(keys) == 1, "expected only one context, got %s" % keys
         context = solara.server.app.contexts[keys[0]]
         with context:
+            test_output_warmup = widgets.Output()
             test_output = widgets.Output()
             page_session.locator("text=Test in solara").wait_for()
-            context.container.children[0].children[1].children[1].children = [test_output]  # type: ignore
+            context.container.children[0].children[1].children[1].children = [test_output_warmup]  # type: ignore
             try:
-                with test_output:
+                with test_output_warmup:
                     warmup()
                     button = page_session.locator(".solara-warmup-widget")
                     button.wait_for()
@@ -187,6 +188,8 @@ def solara_test(solara_server, solara_app, page_session: "playwright.sync_api.Pa
                     button.click()
                     button.wait_for(state="detached")
                     page_session.evaluate("document.fonts.ready")
+                context.container.children[0].children[1].children[1].children = [test_output]  # type: ignore
+                with test_output:
                     yield
             finally:
                 test_output.close()
