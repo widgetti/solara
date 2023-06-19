@@ -15,12 +15,16 @@ P = typing_extensions.ParamSpec("P")
 def _widget_from_signature(name, base_class: Type[widgets.Widget], func: Callable[..., None]) -> Type[widgets.Widget]:
     traits = {}
 
-    for name, param in inspect.signature(func).parameters.items():
+    parameters = inspect.signature(func).parameters
+    for name, param in parameters.items():
+        if name.startswith("on_") and name[3:] in parameters:
+            # callback, will be handled by reacton
+            continue
         if param.default == inspect.Parameter.empty:
             trait = traitlets.Any()
         else:
             trait = traitlets.Any(default_value=param.default)
-        traits[name] = trait.tag(sync=True)
+        traits[name] = trait.tag(sync=True, **widgets.widget_serialization)
     widget_class = type(name, (base_class,), traits)
     return widget_class
 
