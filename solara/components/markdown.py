@@ -70,7 +70,11 @@ def _markdown_template(html, style=""):
 <script>
 module.exports = {
     mounted() {
-        mermaid.init()
+        if(window.mermaid)
+            mermaid.init()
+        if(window.MathJax && MathJax.Hub) {
+            MathJax.Hub.Queue(['Typeset', MathJax.Hub, this.$el]);
+        }
         this.$el.querySelectorAll("a").forEach(a => this.setupRouter(a))
         window.md = this.$el
     },
@@ -105,7 +109,11 @@ module.exports = {
     },
     updated() {
         // if the html gets update, re-run mermaid
-        mermaid.init()
+        if(window.mermaid)
+            mermaid.init()
+        if(window.MathJax && MathJax.Hub) {
+            MathJax.Hub.Queue(['Typeset', MathJax.Hub, this.$el]);
+        }
     }
 }
 </script>
@@ -166,6 +174,35 @@ def Markdown(md_text: str, unsafe_solara_execute=False, style: Union[str, Dict, 
     """Renders markdown text
 
     Renders markdown using https://python-markdown.github.io/
+
+    Math rendering is done using Latex syntax, using https://www.mathjax.org/.
+
+    ## Examples
+
+    ### Basic
+
+    ```solara
+    import solara
+
+
+    @solara.component
+    def Page():
+        return solara.Markdown(r'''
+        # This is a title
+
+        ## This is a subtitle
+        This is a markdown text, **bold** and *italic* text is supported.
+
+        ## Math
+        Also, $x^2$ is rendered as math.
+
+        Or multiline math:
+        $$
+        \\int_0^1 x^2 dx = \\frac{1}{3}
+        $$
+
+        ''')
+    ```
 
     ## Arguments
 
