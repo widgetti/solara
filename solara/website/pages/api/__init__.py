@@ -162,7 +162,6 @@ def Page():
                     ):
                         rv.CardTitle(children=[route.label])
                         with rv.CardText():
-
                             with solara.Link(path):
                                 if not image_path.exists():
                                     pass

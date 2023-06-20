@@ -54,7 +54,6 @@ def get_data(base_cache_dir: pathlib.Path, path):
 
 
 def get_path(base_cache_dir: pathlib.Path, path) -> pathlib.Path:
-
     parts = path.replace("\\", "/").split("/")
     store_path = path if len(parts) != 1 else pathlib.Path(path) / "__main.js"
     cache_path = base_cache_dir / store_path

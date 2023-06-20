@@ -432,7 +432,6 @@ def test_bear_store_react():
 
 
 def test_simplest():
-
     settings = State({"bears": 2, "theme": "dark"})
     unsub = settings.subscribe(print)  # noqa
 
@@ -702,6 +701,7 @@ def test_use_external_store():
 #         assert rc._find(v.Alert).widget.children[0] == "1 bears around here"
 #         bear_store.increase_population()
 #         assert rc._find(v.Alert).widget.children[0] == "2 bears around here"
+
 
 #         storage_key = bear_store.storage_key
 #         redis_dict = bear_store._storage.observable_dict

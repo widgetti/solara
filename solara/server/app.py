@@ -379,7 +379,6 @@ def _run_app(
     pathname: str,
     render_context: reacton.core._RenderContext = None,
 ):
-
     # app.signal_hook_install()
     main_object = app_script.run()
     app_state = pickle.loads(app_state) if app_state is not None else None

@@ -88,7 +88,6 @@ def test_routes_portal():
 
 
 def test_routes_examples_api_button():
-
     routes = solara.autorouting.generate_routes(solara.website.pages.api.button)
 
     assert len(routes) == 1
@@ -103,7 +102,6 @@ def test_routes_examples_api_button():
 
 
 def test_routes_examples_docs():
-
     routes = solara.autorouting.generate_routes(solara.website.pages.docs)
 
     assert len(routes) == 15

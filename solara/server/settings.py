@@ -18,6 +18,7 @@ if site.getuserbase() and __file__.startswith(site.getuserbase()):
 else:
     prefix = sys.prefix
 
+
 class ThemeVariant(str, Enum):
     light = "light"
     dark = "dark"

@@ -121,7 +121,6 @@ class ServerStarlette(ServerBase):
         self.server.lifespan.should_exit = True
 
     def serve(self):
-
         from uvicorn.config import Config
         from uvicorn.server import Server
 

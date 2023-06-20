@@ -70,7 +70,6 @@ def component_vue(vue_path: str, vuetify=True) -> Callable[[Callable[P, None]], 
     """
 
     def decorator(func: Callable[P, None]):
-
         VueWidgetSolaraSub = _widget_vue(vue_path, vuetify=vuetify)(func)
 
         def wrapper(*args, **kwargs):
