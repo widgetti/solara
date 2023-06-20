@@ -13,11 +13,10 @@ from .. import (  # noqa  # sidefx is that this module creates the ~/.solara dir
 )
 from ..util import get_solara_home
 
-if __file__.startswith(site.getuserbase()):
+if site.getuserbase() and __file__.startswith(site.getuserbase()):
     prefix = site.getuserbase()
 else:
     prefix = sys.prefix
-
 
 class ThemeVariant(str, Enum):
     light = "light"
