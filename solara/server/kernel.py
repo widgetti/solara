@@ -208,14 +208,18 @@ def send_websockets(websockets: Set[websocket.WebsocketWrapper], binary_msg):
         try:
             ws.send(binary_msg)
         except:  # noqa
-            # in case of any issue, we simply remove it from the list
-            websockets.remove(ws)
+            # use discard because via the frontend we also send
+            # window.navigator.sendBeacon(close_url);
+            # which executes in a different thread and can cause
+            # the websocket to be removed because both threads
+            # are blocking on the above send call
+            websockets.discard(ws)
 
 
 class SessionWebsocket(session.Session):
     def __init__(self, *args, **kwargs):
         super(SessionWebsocket, self).__init__(*args, **kwargs)
-        self.websockets: Set[websocket.WebsocketWrapper] = set()  # map from .. msg id to websocket?
+        self.websockets: Set[websocket.WebsocketWrapper] = set()
 
     def send(self, stream, msg_or_type, content=None, parent=None, ident=None, buffers=None, track=False, header=None, metadata=None):
         try:

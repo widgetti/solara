@@ -330,7 +330,7 @@ def patch():
         import solara.comm
 
         if self.comm is None and id(self) in closed_ids and id(self) in closed_stack:
-            raise RuntimeError(f"Widget has been closed, the stacktrace when the widget was closed is:\n{closed_stack[id(self)]}")
+            raise RuntimeError(f"Widget {type(self)} has been closed, the stacktrace when the widget was closed is:\n{closed_stack[id(self)]}")
 
         if self.comm is None or isinstance(self.comm, solara.comm.DummyComm) and force_load_instance.comm is not self.comm:
             stack = solara.comm.orphan_comm_stacks.get(self.comm)
