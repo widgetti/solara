@@ -21,7 +21,8 @@ try:
     from reacton.patch_display import patch as patch_display
 except:  # noqa
     patch_display = None  # type: ignore
-if patch_display is not None:
+
+if patch_display is not None and sys.platform != "emscripten":
     patch_display()
 ipywidget_version_major = int(ipywidgets.__version__.split(".")[0])
 
