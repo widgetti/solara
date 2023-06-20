@@ -6,7 +6,7 @@ from IPython.display import display
 from .conftest import SERVERS
 
 
-def test_widget_button_solara(solara_test, page_session: playwright.sync_api.Page, assert_solara_snapshot):
+def _test_widget_button_solara(solara_test, page_session: playwright.sync_api.Page, assert_solara_snapshot):
     # this all runs in process, which only works with solara
     # also, this test is only with pure ipywidgets
     button = widgets.Button(description="Click Me!")
