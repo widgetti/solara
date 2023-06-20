@@ -13,7 +13,9 @@ Solara runs on several web frameworks, such as
  * [Flask](https://flask.palletsprojects.com/)
  * [Starlette](https://www.starlette.io/) (and thus [FastAPI](https://fastapi.tiangolo.com/))
 
-The web framework that is used when you use `solara run` uses Starlette, which means it is most battle-tested, but all solutions get tested in CI. Deploying using these frameworks thus is the same as deploying that framework.
+The simplest and most battle-tested way to deploy solara is via the `solara run` command. This uses Starlette under the hood:
+
+    $ solara run app.py
 
 If you do not use `solara run` to run your Solara app, configuration should go via environment variables instead of command-line argument. For instance, if you run the development server like `solara run myapp.py`, set the `SOLARA_APP` environment variable to `myapp.py`. For instance
 
