@@ -31,7 +31,7 @@ def source_to_module(path: Path, initial_namespace={}) -> ModuleType:
     mod.__file__ = str(path)
     mod.__dict__.update(initial_namespace)
     if path.suffix == ".py":
-        with open(path) as f:
+        with open(path, encoding="utf8") as f:
             ast = compile(f.read(), path, "exec")
             exec(ast, mod.__dict__)
     elif path.suffix == ".ipynb":
