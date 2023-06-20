@@ -123,6 +123,12 @@ def context_session(
 @pytest.fixture(scope="session")
 def page_session(context_session: "playwright.sync_api.BrowserContext"):
     page = context_session.new_page()
+
+    def log(msg):
+        print("PAGE LOG:", msg.text)  # noqa
+        logger.debug("PAGE LOG: %s", msg.text)
+
+    page.on("console", log)
     yield page
     page.close()
 
