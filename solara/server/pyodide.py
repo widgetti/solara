@@ -17,7 +17,7 @@ class Websocket(WebsocketWrapper):
         js.sendToPage(data)
 
     def send_bytes(self, data: bytes) -> None:
-        js.sendToPage(data)
+        js.sendToPage(memoryview(data))
 
     def close(self) -> None:
         pass
