@@ -140,16 +140,16 @@ def ColumnsResponsive(
         else:
             raise ValueError(f"Invalid value for columns: {value}, should be None, int, or list/tuple.")
 
-    with rv.Container(class_=_combine_classes(classes), style_=style) as main:
-        with rv.Row(class_="flex-nowrap" if not wrap else "", no_gutters=not gutters, dense=gutters_dense):
-            for child, xsmall, small, medium, large, xlarge in zip(children, cycle(default), cycle(small), cycle(medium), cycle(large), cycle(xlarge)):
-                with rv.Col(
-                    cols=xsmall,
-                    sm=small,
-                    md=medium,
-                    lg=large,
-                    xl=xlarge,
-                    children=[child],
-                ):
-                    pass
+    class_ = _combine_classes([*(["flex-nowrap"] if not wrap else []), *classes])
+    with rv.Row(class_=class_ if not wrap else "", style_=style, no_gutters=not gutters, dense=gutters_dense) as main:
+        for child, xsmall, small, medium, large, xlarge in zip(children, cycle(default), cycle(small), cycle(medium), cycle(large), cycle(xlarge)):
+            with rv.Col(
+                cols=xsmall,
+                sm=small,
+                md=medium,
+                lg=large,
+                xl=xlarge,
+                children=[child],
+            ):
+                pass
     return main
