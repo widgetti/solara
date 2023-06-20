@@ -128,7 +128,7 @@ def page_session(context_session: "playwright.sync_api.BrowserContext"):
         print("PAGE LOG:", msg.text)  # noqa
         logger.debug("PAGE LOG: %s", msg.text)
 
-    page.on("console", log)
+    # page.on("console", log)
     yield page
     page.close()
 
