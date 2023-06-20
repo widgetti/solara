@@ -1,8 +1,11 @@
 import pprint
 
 import reacton.ipyvuetify as v
-from solara_enterprise import auth
 
+try:
+    from solara_enterprise import auth
+except ImportError:
+    auth = None
 import solara as sl
 
 
@@ -67,3 +70,7 @@ def Page():
             )
             with sl.Row():
                 sl.Button("login", icon_name="mdi-login", href=auth.get_login_url())
+
+
+if auth is None:
+    del Page

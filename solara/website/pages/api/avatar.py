@@ -2,8 +2,10 @@
 # Avatar
 
 """
-from solara_enterprise import auth
-
+try:
+    from solara_enterprise import auth
+except ImportError:
+    auth = None
 from solara.website.utils import apidoc
 
 from . import NoPage
@@ -12,5 +14,7 @@ title = "Avatar"
 
 Page = NoPage
 
-
-__doc__ += apidoc(auth.Avatar.f)  # type: ignore
+if auth:
+    __doc__ += apidoc(auth.Avatar.f)  # type: ignore
+else:
+    __doc__ += "solara-enterprise not installed."

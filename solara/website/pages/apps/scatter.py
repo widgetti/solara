@@ -9,7 +9,11 @@ from solara.components.columns import Columns
 from solara.components.file_drop import FileDrop
 
 github_url = solara.util.github_url(__file__)
-df_sample = pd.read_csv("https://raw.githubusercontent.com/plotly/datasets/master/gapminderDataFiveYear.csv")
+try:
+    # fails on pyodide
+    df_sample = pd.read_csv("https://raw.githubusercontent.com/plotly/datasets/master/gapminderDataFiveYear.csv")
+except:  # noqa
+    df_sample = None
 
 
 class State:
@@ -63,7 +67,7 @@ def Page():
         with solara.Card("Controls", margin=0, elevation=0):
             with solara.Column():
                 with solara.Row():
-                    solara.Button("Sample dataset", color="primary", text=True, outlined=True, on_click=State.load_sample)
+                    solara.Button("Sample dataset", color="primary", text=True, outlined=True, on_click=State.load_sample, disabled=df is None)
                     solara.Button("Clear dataset", color="primary", text=True, outlined=True, on_click=State.reset)
                 FileDrop(on_file=State.load_from_file, on_total_progress=lambda *args: None, label="Drag file here")
 

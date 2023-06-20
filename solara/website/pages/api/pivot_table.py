@@ -12,12 +12,14 @@ We provide three version of the pivot table
 """
 
 import solara
-import vaex.datasets
 
 try:
+    import vaex.datasets
+
     df = vaex.datasets.titanic()
 except Exception:
     df = None
+    vaex = None
 
 
 @solara.component
@@ -48,6 +50,8 @@ def View():
 
 @solara.component
 def Page():
+    if vaex is None:
+        return solara.Markdown("This example requires vaex, please install it with `pip install vaex`")
     with solara.Div() as main:
         solara.Markdown("# Titanic")
         selected, on_selected = solara.use_state({"x": [0, 0]})
