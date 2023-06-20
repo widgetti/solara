@@ -27,7 +27,7 @@ dependencies = [
     "numpy",
     "pillow",
     "jinja2",
-    "MarkupSafe<2.1",
+    "MarkupSafe",
     "pydantic",
     "click>=7.1.0",
     "rich_click",
