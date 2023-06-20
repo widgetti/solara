@@ -177,9 +177,9 @@ def solara_test(solara_server, solara_app, page_session: "playwright.sync_api.Pa
         with context:
             test_output_warmup = widgets.Output()
             test_output = widgets.Output()
-            page_session.locator("text=Test in solara").wait_for()
-            context.container.children[0].children[1].children[1].children = [test_output_warmup]  # type: ignore
             try:
+                page_session.locator("text=Test in solara").wait_for()
+                context.container.children[0].children[1].children[1].children = [test_output_warmup]  # type: ignore
                 with test_output_warmup:
                     warmup()
                     button = page_session.locator(".solara-warmup-widget")
