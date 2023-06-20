@@ -94,20 +94,18 @@ class WebSocketRedirectWebWorker {
         setTimeout(() => this.start(), 10)
     }
     send(msg) {
-        // console.log('send msg', msg)
-        solaraWorker.postMessage({ 'type': 'send', 'value': msg })
+        // console.log('WebSocketRedirectWebWorker: send msg', msg)
+        window.parent.postMessage({ 'type': 'send', 'value': msg })
     }
     start() {
-        solaraWorker.addEventListener('message', async (event) => {
+        self.addEventListener('message', async (event) => {
             let msg = event.data
-            // console.log('on msg', msg)
-            if (msg.type == 'opened') {
-                this.onopen()
-            }
+            // console.log('WebSocketRedirectWebWorker on msg', msg)
             if (msg.type == 'send') {
                 this.onmessage({ data: msg.value })
             }
         });
+        this.onopen()
         // solaraWorker.postMessage({ 'type': 'open' })
     }
 }
@@ -155,8 +153,8 @@ async function solaraInit(mountId, appName) {
         kernel.dispose()
         window.navigator.sendBeacon(close_url);
     });
-
-    if (for_pyodide) {
+    console.log("solara.browser_platform", solara.browser_platform);
+    if (solara.browser_platform) {
         options = { WebSocket: WebSocketRedirectWebWorker }
     } else {
         options = {}

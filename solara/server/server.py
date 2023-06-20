@@ -261,6 +261,7 @@ def read_root(path: str, root_path: str = "", render_kwargs={}, use_nbextensions
         "assets": settings.assets.dict(),
         "cdn": cdn,
         "ipywidget_major_version": ipywidgets_major,
+        "platform": settings.main.platform,
         **render_kwargs,
     }
     response = template.render(**render_settings)

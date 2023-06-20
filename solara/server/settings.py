@@ -124,6 +124,7 @@ class MainSettings(pydantic.BaseSettings):
     timing: bool = False
     root_path: Optional[str] = None  # e.g. /myapp/
     base_url: str = ""  # e.g. https://myapp.solara.run/myapp/
+    platform: str = sys.platform
 
     class Config:
         env_prefix = "solara_"

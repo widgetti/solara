@@ -249,10 +249,9 @@
     </script>
 
     <script>
-        window.for_pyodide = false;
-        {% if for_pyodide == True %}
-        const solaraWorker = new Worker("./static/webworker.js");
-        window.for_pyodide = true;
+        window.solara.browser_platform = false;
+        {% if platform == "emscripten" %}
+        window.solara.browser_platform = true;
         {% endif %}
         var debug = true;
         var app = new Vue({
