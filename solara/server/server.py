@@ -325,7 +325,5 @@ def get_nbextensions() -> List[str]:
     return nbextensions
 
 
-if "pyodide" not in sys.modules:
-    nbextensions_directories = get_nbextensions_directories()
-    nbconvert_static = find_prefixed_directory("/share/jupyter/nbconvert/templates/lab/static")
-    solara_static = Path(__file__).parent / "static"
+nbextensions_directories = get_nbextensions_directories()
+solara_static = Path(__file__).parent / "static"
