@@ -297,6 +297,7 @@ def run(
             pass
         reload_excludes = reload_excludes if reload_excludes else []
         reload_excludes = [str(solara_root / "website"), str(solara_root / "template")]
+        reload_excludes.append(app)
         del solara_root
         reload = True
         settings.main.mode = "development"
