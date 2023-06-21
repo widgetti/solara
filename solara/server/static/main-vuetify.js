@@ -151,7 +151,7 @@ async function solaraInit(mountId, appName) {
     window.addEventListener('beforeunload', function (e) {
         unloading = true;
         kernel.dispose()
-        // window.navigator.sendBeacon(close_url);
+        window.navigator.sendBeacon(close_url);
     });
     console.log("solara.browser_platform", solara.browser_platform);
     if (solara.browser_platform) {
