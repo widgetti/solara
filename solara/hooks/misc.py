@@ -405,31 +405,34 @@ def use_previous(value: T, condition=True) -> T:
 
 
 def use_reactive(
-    initial_value: Union[T, solara.Reactive[T]],
+    value: Union[T, solara.Reactive[T]],
     on_change: Optional[Callable[[T], None]] = None,
 ) -> solara.Reactive[T]:
-    """
-    Ensures that the returned value is a `Reactive` object.
+    """Creates a reactive variable with the a local component scope.
 
+    It is a useful alternative to `use_state` when you want to use a
+    reactive variable for the component state.
     See also [our documentation on state management](/docs/fundamentals/state-management).
 
-    This hook is useful for implementing components that accept either a
-    `Reactive` object or a normal value along with an optional `on_change`
-    callback. It can also be used as an alternative to `use_state` when you
-    want to use a `Reactive` object as the component state.
+    If the variable passed is a reactive variable, it will be returned instead and no
+    new reactive variable will be created. This is useful for implementing component
+    that accept either a reactive variable or a normal value along with an optional `on_change`
+    callback.
 
     ## Arguments:
 
-     * initial_value (Union[T, solara.Reactive[T]]): The initial value of the
-            reactive variable. If a `Reactive` object is provided, it will be
-            used directly. Otherwise, a new `Reactive` object will be created
-            with the provided initial value.
+     * value (Union[T, solara.Reactive[T]]): The value of the
+            reactive variable. If a reactive variable is provided, it will be
+            used directly. Otherwise, a new reactive variable will be created
+            with the provided initial value. If the argument passed changes
+            the reactive variable will be updated.
+
      * on_change (Optional[Callable[[T], None]]): An optional callback function
             that will be called when the reactive variable's value changes.
 
     Returns:
-        solara.Reactive[T]: A `Reactive` object with the specified initial value
-            or the provided `Reactive` object.
+        solara.Reactive[T]: A reactive variable with the specified initial value
+            or the provided reactive variable.
 
     ## Examples
 
@@ -474,9 +477,13 @@ def use_reactive(
     on_change_ref.current = on_change
 
     def create():
-        return solara.reactive(initial_value) if not isinstance(initial_value, solara.Reactive) else initial_value
+        if not isinstance(value, solara.Reactive):
+            return solara.reactive(value)
 
     reactive_value = solara.use_memo(create, dependencies=[])
+    if isinstance(value, solara.Reactive):
+        reactive_value = value
+    assert reactive_value is not None
     updating = solara.use_ref(False)
 
     def forward_on_change():
@@ -489,11 +496,12 @@ def use_reactive(
     def update():
         updating.current = True
         try:
-            reactive_value.value = initial_value if not isinstance(initial_value, solara.Reactive) else initial_value.value
+            if not isinstance(value, solara.Reactive):
+                reactive_value.value = value
         finally:
             updating.current = False
 
-    solara.use_memo(update, [initial_value])
+    solara.use_memo(update, [value])
     solara.use_effect(forward_on_change, [])
 
     return reactive_value

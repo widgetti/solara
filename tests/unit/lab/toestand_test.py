@@ -965,3 +965,31 @@ def test_repr():
     s = repr(bears.fields.count)
     assert s.startswith("<Field <Reactive value=Bears(type='brown', count=1)")
     assert s.endswith(".count>")
+
+
+def test_use_reactive_update():
+    control = Reactive(0)
+    var1 = Reactive(1)
+    var2 = Reactive(2)
+
+    @solara.component
+    def Test():
+        var: Reactive[int]
+        if control.value == 0:
+            var = solara.use_reactive(var1)
+        else:
+            var = solara.use_reactive(var2)
+
+        return solara.IntSlider("test: " + str(var.value), value=var)
+
+    box, rc = solara.render(Test(), handle_error=False)
+    assert rc.find(v.Slider).widget.v_model == 1
+    assert rc.find(v.Slider).widget.label == "test: 1"
+    control.value = 1
+    assert rc.find(v.Slider).widget.v_model == 2
+    assert rc.find(v.Slider).widget.label == "test: 2"
+    # the slider should be using the same reactive variable (var2)
+    rc.find(v.Slider).widget.v_model = 1
+    assert var2.value == 1
+    assert rc.find(v.Slider).widget.label == "test: 1"
+    rc.close()
