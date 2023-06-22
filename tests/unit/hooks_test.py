@@ -9,7 +9,7 @@ from reacton import render_fixed
 
 import solara
 from solara.datatypes import FileContentResult
-from solara.hooks.misc import use_download, use_fetch, use_json, use_thread
+from solara.hooks import use_download, use_fetch, use_json, use_thread
 
 from .common import busy_wait_compare
 
