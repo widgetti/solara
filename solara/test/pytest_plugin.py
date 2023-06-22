@@ -32,13 +32,14 @@ if typing.TYPE_CHECKING:
 logger = logging.getLogger("solara.pytest_plugin")
 
 TEST_PORT = int(os.environ.get("PORT", "18765")) + 100  # do not interfere with the solara integration tests
+TEST_HOST = os.environ.get("SOLARA_TEST_HOST", "localhost")
 TIMEOUT = float(os.environ.get("SOLARA_PW_TIMEOUT", "18"))
 
 
 @pytest.fixture(scope="session")
 def solara_server(request):
     global TEST_PORT
-    webserver = ServerStarlette(TEST_PORT)
+    webserver = ServerStarlette(TEST_PORT, TEST_HOST)
     TEST_PORT += 1
 
     try:
@@ -265,7 +266,7 @@ def voila_server(notebook_path):
     port = TEST_PORT
     TEST_PORT += 1
     write_notebook(["print('hello')"], notebook_path)
-    server = ServerVoila(notebook_path, port)
+    server = ServerVoila(notebook_path, port, TEST_HOST)
     try:
         server.serve_threaded()
         server.wait_until_serving()
@@ -280,7 +281,7 @@ def jupyter_server(notebook_path):
     port = TEST_PORT
     TEST_PORT += 1
     write_notebook(["print('hello')"], notebook_path)
-    server = ServerJupyter(notebook_path, port)
+    server = ServerJupyter(notebook_path, port, TEST_HOST)
     try:
         server.serve_threaded()
         server.wait_until_serving()
