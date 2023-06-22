@@ -28,7 +28,9 @@ def InputFile(
 ):
     """A file input widget the user can click on and select one or multiple files for uploading.
 
-     If lazy=True, no file content will be loaded into memory,
+
+
+    If lazy=True, no file content will be loaded into memory,
     nor will any data be transferred by default.
     A list of file objects is passed to the `on_file` callback, and data will be transferred
     when needed.
@@ -44,6 +46,7 @@ def InputFile(
         file_obj: typing.BinaryIO
         data: Optional[bytes]: bytes  # only present if lazy=False
     ```
+
 
      ## Arguments
      * `on_total_progress`: Will be called with the progress in % of the file upload.
@@ -92,6 +95,9 @@ def InputFile(
         if not on_file:
             return
         if not wired_files:
+            # TODO: we don't want to directly trigger this
+            # but we do want it on clear.
+            return
             if multiple:
                 empty: List[FileInfo] = []
                 on_file(empty)
