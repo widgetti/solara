@@ -20,7 +20,11 @@ def InputFile(
     accept: str = "",
     multiple: bool = False,
     lazy: bool = True,
-    **kwargs
+    disabled: bool = False,
+    clearable: bool = False,
+    # TODO: in ipyvuetify we need to expose this
+    # classes: List[str] = [],
+    # style: Union[str, Dict[str, str], None] = None,
 ):
     """A file input widget the user can click on and select one or multiple files for uploading.
 
@@ -48,16 +52,26 @@ def InputFile(
      * `multiple`: Whether to allow multiple files to be selected.
      * `lazy`: Whether to load the file content into memory or not. If `False`,
         the file content will be loaded into memory and passed to the `on_file` callback via the `.data` attribute.
-     * `**kwargs`: Additional keyword arguments to pass to the underlying `FileInput` widget.
+     * `disabled`: Whether the input is disabled.
+     * `clearable`: Whether the input can be cleared.
 
 
     """
+    # TODO: in ipyvuetify we need to expose this
+    # class_ = solara.util._combine_classes(classes)
+    # style_ = solara.util._flatten_style(style)
 
     file_info, set_file_info = solara.use_state(None)
     wired_files, set_wired_files = solara.use_state(cast(List[FileInfo], []))
 
     file_input = ExtraFileInput.element(
-        label=label, on_total_progress=on_total_progress, on_file_info=set_file_info, accept=accept, multiple=multiple, **kwargs
+        label=label,
+        on_total_progress=on_total_progress,
+        on_file_info=set_file_info,
+        accept=accept,
+        multiple=multiple,
+        disabled=disabled,
+        clearable=clearable,
     )
 
     def wire_files() -> None:
