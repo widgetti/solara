@@ -103,6 +103,8 @@ def use_reactive(
             updating.current = False
 
     solara.use_memo(update, [value])
-    solara.use_effect(forward_on_change, [])
+    # if value is a reactive variable, and it changes, we need to subscribe to the latest
+    # reactive variable, otherwise we only link to it once
+    solara.use_effect(forward_on_change, [value] if isinstance(value, solara.Reactive) else [])
 
     return reactive_value

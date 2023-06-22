@@ -993,3 +993,46 @@ def test_use_reactive_update():
     assert var2.value == 1
     assert rc.find(v.Slider).widget.label == "test: 1"
     rc.close()
+
+
+def test_use_reactive_on_change():
+    control = Reactive(0)
+    var1 = Reactive(1)
+    var2 = Reactive(2)
+    mock1 = unittest.mock.Mock()
+    mock2 = unittest.mock.Mock()
+
+    @solara.component
+    def Test():
+        var: Reactive[int]
+        if control.value == 0:
+            var = solara.use_reactive(var1, on_change=mock1)
+        else:
+            var = solara.use_reactive(var2, on_change=mock2)
+
+        return solara.IntSlider("test", value=var)
+
+    box, rc = solara.render(Test(), handle_error=False)
+    assert rc.find(v.Slider).widget.v_model == 1
+    assert mock1.call_count == 0
+    assert mock2.call_count == 0
+    # if it changes downstream, it should trigger on_change
+    rc.find(v.Slider).widget.v_model = 10
+    assert mock1.call_count == 1
+    assert mock2.call_count == 0
+
+    control.value = 1
+    assert mock1.call_count == 1
+    assert mock2.call_count == 0
+    assert rc.find(v.Slider).widget.v_model == 2
+    rc.find(v.Slider).widget.v_model = 20
+    assert mock1.call_count == 1
+    assert mock2.call_count == 1
+
+    control.value = 0
+    assert rc.find(v.Slider).widget.v_model == 10
+    rc.find(v.Slider).widget.v_model = 100
+    assert mock1.call_count == 2
+    assert mock2.call_count == 1
+
+    rc.close()
