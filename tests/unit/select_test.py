@@ -14,13 +14,13 @@ def test_select():
     on_value_multiple = MagicMock()
 
     @solara.component
-    def under_test():
+    def Test():
         nonlocal disabled
         disabled = solara.use_reactive(False)
         solara.Select(label="single", values=["test0", "test1", "test2"], on_value=on_value, disabled=disabled.value)
         solara.SelectMultiple(label="multiple", values=[], all_values=["test0", "test1", "test2"], on_value=on_value_multiple, disabled=disabled.value)
 
-    _, rc = solara.render(under_test(), handle_error=False)
+    _, rc = solara.render(Test(), handle_error=False)
     select = rc.find(vw.Select, label="single").widget
     select_multi = rc.find(vw.Select, label="multiple").widget
 

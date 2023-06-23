@@ -101,7 +101,7 @@ def Select(
      * `values`: List of values to select from.
      * `on_value`: Callback to call when the value changes.
      * `dense`: Whether to use a denser style.
-     * `disabled`: Whether widget should allow user interact
+     * `disabled`: Whether the select widget allow user interaction
      * `classes`: List of CSS classes to apply to the select.
      * `style`: CSS style to apply to the select.
 
@@ -162,7 +162,7 @@ def SelectMultiple(
      * `all_values`: List of all values to select from.
      * `on_value`: Callback to call when the value changes.
      * `dense`: Whether to use a denser style.
-     * `disabled`: Whether widget should allow user interact
+     * `disabled`: Whether the select widget allow user interaction
      * `classes`: List of CSS classes to apply to the select.
      * `style`: CSS style to apply to the select.
     """
