@@ -125,12 +125,11 @@ async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, connection_i
         run_context = contextlib.nullcontext()
 
     kernel = context.kernel
-    with run_context:
+    with run_context, context:
         if user:
-            with context:
-                from solara_enterprise.auth import user as solara_user
+            from solara_enterprise.auth import user as solara_user
 
-                solara_user.set(user)
+            solara_user.set(user)
 
         while True:
             try:
@@ -144,11 +143,10 @@ async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, connection_i
             else:
                 msg = deserialize_binary_message(message)
             t1 = time.time()
-            with context:
-                process_kernel_messages(kernel, msg)
-                t2 = time.time()
-                if settings.main.timing:
-                    print(f"timing: total={t2-t0:.3f}s, deserialize={t1-t0:.3f}s, kernel={t2-t1:.3f}s")  # noqa: T201
+            process_kernel_messages(kernel, msg)
+            t2 = time.time()
+            if settings.main.timing:
+                print(f"timing: total={t2-t0:.3f}s, deserialize={t1-t0:.3f}s, kernel={t2-t1:.3f}s")  # noqa: T201
 
 
 def process_kernel_messages(kernel: Kernel, msg: Dict):
