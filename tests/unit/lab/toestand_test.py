@@ -1036,3 +1036,22 @@ def test_use_reactive_on_change():
     assert mock2.call_count == 1
 
     rc.close()
+
+
+def test_reactive_var_in_use_effect():
+
+    var = Reactive(1)
+
+    @solara.component
+    def Test():
+        def modify():
+            var.value = 2
+
+        solara.use_effect(modify)
+        # note: just pass the value, not the reactive variable
+        # otherwise the test passes. It is important *this*
+        # component listens to the reactive variable.
+        return solara.IntSlider("test", value=var.value)
+
+    box, rc = solara.render(Test(), handle_error=False)
+    assert rc.find(v.Slider).widget.v_model == 2

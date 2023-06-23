@@ -486,7 +486,6 @@ class FieldItem(FieldBase):
 class AutoSubscribeContextManager:
     # a render loop might trigger a new render loop of a differtent render context
     # so we want to save, and restore the current reactive_used
-    reactive_used_before: Optional[Set[ValueBase]] = None
     reactive_used: Optional[Set[ValueBase]] = None
     reactive_added_previous_run: Optional[Set[ValueBase]] = None
     subscribed: Dict[ValueBase, Callable]
@@ -499,7 +498,6 @@ class AutoSubscribeContextManager:
         self.reactive_used_before = thread_local.reactive_used
         self.reactive_used = thread_local.reactive_used = set()
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
         assert thread_local.reactive_used is self.reactive_used, f"{hex(id(thread_local.reactive_used))} vs {hex(id(self.reactive_used))}"
         _, set_counter = solara.use_state(0, key="auto_subscribe_force_update_counter")
 
@@ -544,7 +542,9 @@ class AutoSubscribeContextManager:
             return cleanup
 
         solara.use_effect(on_close, [])
-        thread_local.reactive_used = self.reactive_used_before
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass
 
 
 # alias for compatibility
