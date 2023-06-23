@@ -22,6 +22,10 @@ jobs:
           npm install
           npm run build
           cd ..
+          cd solara-widget-manager8
+          npm install
+          npm run build
+          cd ..
           cd solara-vuetify-app
           npm install
           npm run build

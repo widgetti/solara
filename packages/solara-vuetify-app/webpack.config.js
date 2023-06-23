@@ -71,9 +71,7 @@ module.exports = [
         },
         resolve: {
             alias: {
-                "@jupyter-widgets/base": "@jupyter-widgets/base8",
-                "@jupyter-widgets/controls": "@jupyter-widgets/controls8",
-                "@jupyter-widgets/jupyterlab-manager": "@jupyter-widgets/jupyterlab-manager8",
+                "@widgetti/solara-widget-manager": "@widgetti/solara-widget-manager8",
             }
         },
         mode: 'production',
@@ -93,9 +91,7 @@ module.exports = [
         },
         resolve: {
             alias: {
-                "@jupyter-widgets/base": "@jupyter-widgets/base8",
-                "@jupyter-widgets/controls": "@jupyter-widgets/controls8",
-                "@jupyter-widgets/jupyterlab-manager": "@jupyter-widgets/jupyterlab-manager8",
+                "@widgetti/solara-widget-manager": "@widgetti/solara-widget-manager8",
             }
         },
         mode: 'development',
