@@ -23,12 +23,16 @@ jobs:
         uses: actions/cache@v3
         with:
           path: packages/solara-vuetify-app/dist
-          key: ${{ runner.os }}-js-bundle-${{ hashFiles('packages/solara-vuetify-app/src/**', 'packages/solara-vuetify-app/package.json', 'packages/solara-widget-manager/src/**', 'packages/solara-widget-manager/package.json') }}
+          key: ${{ runner.os }}-js-bundle-${{ hashFiles('packages/solara-vuetify-app/src/**', 'packages/solara-vuetify-app/package.json', 'packages/solara-widget-manager/src/**', 'packages/solara-widget-manager/package.json', 'packages/solara-widget-manager8/src/**', 'packages/solara-widget-manager8/package.json') }}
 
       - name: Build solara widget manager
         if: steps.cache-js-bundle.outputs.cache-hit != 'true'
         run: |
           cd packages/solara-widget-manager
+          npm install
+          npm run build
+          cd ../../
+          cd packages/solara-widget-manager8
           npm install
           npm run build
           cd ../../
