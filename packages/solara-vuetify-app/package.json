@@ -1,13 +1,13 @@
 {
   "name": "@widgetti/solara-vuetify-app",
-  "version": "5.0.1",
+  "version": "5.0.2",
   "description": "Solara Vuetify App",
   "main": "dist/solara-vuetify-app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "webpack",
     "watch": "webpack --watch --mode=development",
-    "devlink": "TARGET_DIR=`python -c \"import sys; print(sys.prefix)\"`/share/solara/cdn/@widgetti/solara-vuetify-app@5.0.1/; mkdir -p $TARGET_DIR && rm -rf $TARGET_DIR/dist && ln -sf $PWD/dist $TARGET_DIR/dist"
+    "devlink": "TARGET_DIR=`python -c \"import sys; print(sys.prefix)\"`/share/solara/cdn/@widgetti/solara-vuetify-app@5.0.2/; mkdir -p $TARGET_DIR && rm -rf $TARGET_DIR/dist && ln -sf $PWD/dist $TARGET_DIR/dist"
   },
   "author": "",
   "license": "MIT",
