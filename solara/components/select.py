@@ -17,6 +17,7 @@ def Select(
     value: None = ...,
     on_value: Optional[Callable[[Optional[T]], None]] = ...,
     dense: bool = ...,
+    disabled: bool = ...,
     classes: List[str] = [],
     style: Union[str, Dict[str, str], None] = None,
 ) -> reacton.core.ValueElement[v.Select, T]:
@@ -30,6 +31,7 @@ def Select(
     value: T = ...,
     on_value: Optional[Callable[[T], None]] = ...,
     dense: bool = ...,
+    disabled: bool = ...,
     classes: List[str] = [],
     style: Union[str, Dict[str, str], None] = None,
 ) -> reacton.core.ValueElement[v.Select, T]:
@@ -43,6 +45,7 @@ def Select(
     value: solara.Reactive[Optional[T]] = ...,
     on_value: Optional[Callable[[Optional[T]], None]] = ...,
     dense: bool = ...,
+    disabled: bool = ...,
     classes: List[str] = [],
     style: Union[str, Dict[str, str], None] = None,
 ) -> reacton.core.ValueElement[v.Select, T]:
@@ -56,6 +59,7 @@ def Select(
     value: solara.Reactive[T] = ...,
     on_value: Optional[Callable[[T], None]] = None,
     dense: bool = ...,
+    disabled: bool = ...,
     classes: List[str] = [],
     style: Union[str, Dict[str, str], None] = None,
 ) -> reacton.core.ValueElement[v.Select, T]:
@@ -69,6 +73,7 @@ def Select(
     value: Union[None, T, solara.Reactive[T], solara.Reactive[Optional[T]]] = None,
     on_value: Union[None, Callable[[T], None], Callable[[Optional[T]], None]] = None,
     dense: bool = False,
+    disabled: bool = False,
     classes: List[str] = [],
     style: Union[str, Dict[str, str], None] = None,
 ) -> reacton.core.ValueElement[v.Select, T]:
@@ -96,6 +101,7 @@ def Select(
      * `values`: List of values to select from.
      * `on_value`: Callback to call when the value changes.
      * `dense`: Whether to use a denser style.
+     * `disabled`: Whether widget should allow user interact
      * `classes`: List of CSS classes to apply to the select.
      * `style`: CSS style to apply to the select.
 
@@ -114,6 +120,7 @@ def Select(
             items=values,
             label=label,
             dense=dense,
+            disabled=disabled,
             class_=class_,
             style_=style_flat,
         ),
@@ -127,6 +134,7 @@ def SelectMultiple(
     all_values: List[T],
     on_value: Callable[[List[T]], None] = None,
     dense: bool = False,
+    disabled: bool = False,
     classes: List[str] = [],
     style: Union[str, Dict[str, str], None] = None,
 ) -> reacton.core.ValueElement[v.Select, List[T]]:
@@ -154,6 +162,7 @@ def SelectMultiple(
      * `all_values`: List of all values to select from.
      * `on_value`: Callback to call when the value changes.
      * `dense`: Whether to use a denser style.
+     * `disabled`: Whether widget should allow user interact
      * `classes`: List of CSS classes to apply to the select.
      * `style`: CSS style to apply to the select.
     """
@@ -170,6 +179,7 @@ def SelectMultiple(
             label=label,
             multiple=True,
             dense=False,
+            disabled=disabled,
             class_=class_,
             style_=style_flat,
         ),
