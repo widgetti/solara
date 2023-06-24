@@ -123,7 +123,7 @@ class MainSettings(pydantic.BaseSettings):
     mode: str = "production"
     tracer: bool = False
     timing: bool = False
-    root_path: Optional[str] = None  # e.g. /myapp/
+    root_path: Optional[str] = None  # e.g. /myapp (without trailing slash)
     base_url: str = ""  # e.g. https://myapp.solara.run/myapp/
     platform: str = sys.platform
 

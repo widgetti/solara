@@ -32,4 +32,5 @@ def get_login_url(return_to_path: Optional[str] = None):
         return_to_path = return_to_path[1:]
     assert settings.main.base_url is not None
     redirect_uri = urllib.parse.quote(settings.main.base_url + return_to_path)
-    return f"/_solara/auth/login?redirect_uri={redirect_uri}"
+    root = settings.main.root_path or ""
+    return f"{root}/_solara/auth/login?redirect_uri={redirect_uri}"
