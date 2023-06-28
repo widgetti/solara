@@ -8,6 +8,7 @@ import typing
 import webbrowser
 from enum import Enum
 from pathlib import Path
+from platform import uname
 
 import rich
 import rich_click as click
@@ -28,7 +29,7 @@ except ImportError:
 
 HERE = Path(__file__).parent
 HOST_DEFAULT = os.environ.get("HOST", "localhost")
-if "arm64-apple-darwin" in HOST_DEFAULT:  # conda activate script
+if "arm64-apple-darwin" in HOST_DEFAULT or "microsoft-standard" in uname().release:  # conda activate script
     HOST_DEFAULT = "localhost"
 
 LOGGING_CONFIG: dict = {

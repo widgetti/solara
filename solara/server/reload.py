@@ -127,7 +127,6 @@ class Reloader:
         self.on_change: Optional[Callable[[str], None]] = on_change
         self.watcher = WatcherType([], self._on_change)
         self.requires_reload = False
-        self.ignore_modules: Set[str] = set()
         self.reload_event_next = threading.Event()
 
     def start(self):
@@ -135,8 +134,6 @@ class Reloader:
             # although we try to keep track of modules loaded (which we will watch)
             # it can happen that an import is done at runtime, that we miss (could be in a thread)
             # so we always reload all modules except the ignore_modules
-            self.ignore_modules = set(sys.modules)
-            logger.info("Ignoring reloading modules: %s", self.ignore_modules)
             self._first = False
 
     def _on_change(self, name):
@@ -153,16 +150,11 @@ class Reloader:
         self.watcher.close()
 
     def reload(self):
-        # before we did this:
-        # # don't reload modules like solara.server and react
-        # # that may cause issues (like 2 Element classes existing)
-        # not sure why, but if we reload pandas, the integration/reload_test.py fails
+        # Only reload modules that are on our current working directory (cwd) path.
+        cwd_import_path = sys.path[0]
         reload_modules = {
-            k for k in set(sys.modules) - set(self.ignore_modules) if not (k.startswith("solara.server") or k.startswith("anyio") or k.startswith("pandas"))
+            key: module for key, module in sys.modules.items() if module.__file__.startswith(cwd_import_path)
         }
-        # which picks up import that are done in threads etc, but it will also reload starlette, httptools etc
-        # which causes issues with exceptions and isinstance checks.
-        # reload_modules = self.watched_modules
         logger.info("Reloading modules... %s", reload_modules)
         # not sure if this is needed
         importlib.invalidate_caches()
