@@ -131,3 +131,13 @@ After inspecting and approving the screenshots, you can copy them to the `solara
 Visual testing with solara is based on [Playwright for Python](https://playwright.dev/python/), which provides a `page` fixture. However, this fixture will make a new page for each test, which is not what we want. Therefore, we provide a `page_session` fixture that will reuse the same page for all tests. This is important because it will make the tests faster.
 
 By following these recommendations and guidelines, you can efficiently test your Solara applications and ensure a smooth developer experience.
+
+# Configuration
+
+## Changing the Hostname
+
+To configure the hostname the socket is bound to when starting the test server, use the `HOST` or `SOLARA_HOST` environment variable (e.g. `SOLARA_HOST=0.0.0.0`). This hostname is also used for the jupyter server and voila. Alternatively the `--solara-host` argument can be passed on the command line for pytest.
+
+## Changing the Port
+
+To configure the ports the socket is bound to when starting the test servers, use the `PORT` environment variable (e.g. `PORT=18865`). This port and subsequent port will be used for solara-server, jupyter-server and voila. Alternatively the `--solara-port` argument can be passed on the command line for pytest for the solara server, and `--jupyter-port` and `--voila-port` for the ports of jupyter server and voila respectively.

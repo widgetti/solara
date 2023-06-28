@@ -31,16 +31,16 @@ if typing.TYPE_CHECKING:
 
 logger = logging.getLogger("solara.pytest_plugin")
 
-TEST_PORT = int(os.environ.get("PORT", "18765")) + 100  # do not interfere with the solara integration tests
-TEST_HOST = os.environ.get("SOLARA_TEST_HOST", "localhost")
+TEST_PORT_START = int(os.environ.get("PORT", "18765")) + 100  # do not interfere with the solara integration tests
+TEST_HOST = solara.server.settings.main.host
 TIMEOUT = float(os.environ.get("SOLARA_PW_TIMEOUT", "18"))
 
 
 @pytest.fixture(scope="session")
-def solara_server(request):
-    global TEST_PORT
-    webserver = ServerStarlette(TEST_PORT, TEST_HOST)
-    TEST_PORT += 1
+def solara_server(pytestconfig: Any, request):
+    port = pytestconfig.getoption("--solara-port")
+    host = pytestconfig.getoption("--solara-host")
+    webserver = ServerStarlette(port, host)
 
     try:
         webserver.serve_threaded()
@@ -261,12 +261,11 @@ class ServerJupyter(ServerBase):
 
 
 @pytest.fixture(scope="session")
-def voila_server(notebook_path):
-    global TEST_PORT
-    port = TEST_PORT
-    TEST_PORT += 1
+def voila_server(pytestconfig: Any, notebook_path):
+    port = pytestconfig.getoption("--voila-port")
+    host = pytestconfig.getoption("--solara-host")
     write_notebook(["print('hello')"], notebook_path)
-    server = ServerVoila(notebook_path, port, TEST_HOST)
+    server = ServerVoila(notebook_path, port, host)
     try:
         server.serve_threaded()
         server.wait_until_serving()
@@ -276,12 +275,11 @@ def voila_server(notebook_path):
 
 
 @pytest.fixture(scope="session")
-def jupyter_server(notebook_path):
-    global TEST_PORT
-    port = TEST_PORT
-    TEST_PORT += 1
+def jupyter_server(pytestconfig: Any, notebook_path):
+    port = pytestconfig.getoption("--jupyter-port")
+    host = pytestconfig.getoption("--solara-host")
     write_notebook(["print('hello')"], notebook_path)
-    server = ServerJupyter(notebook_path, port, TEST_HOST)
+    server = ServerJupyter(notebook_path, port, host)
     try:
         server.serve_threaded()
         server.wait_until_serving()
@@ -606,4 +604,27 @@ def pytest_addoption(parser: Any) -> None:
         action="store_true",
         default=False,
         help="On compare failure, store to the reference image. Useful for running in CI and downloading the snapshots.",
+    )
+    group.addoption(
+        "--solara-host",
+        default=TEST_HOST,
+        help="Host or IP all servers will bind to (solara, jupyter, voila)",
+    )
+    group.addoption(
+        "--solara-port",
+        type=int,
+        default=TEST_PORT_START + 0,
+        help="Port the solara server is running on for the test",
+    )
+    group.addoption(
+        "--jupyter-port",
+        type=int,
+        default=TEST_PORT_START + 1,
+        help="Port the jupyter server is running on for the test (for classic notebook and juptyer lab)",
+    )
+    group.addoption(
+        "--voila-port",
+        type=int,
+        default=TEST_PORT_START + 2,
+        help="Port the voila server is running on for the test (for classic notebook and juptyer lab)",
     )
