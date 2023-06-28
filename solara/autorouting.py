@@ -205,11 +205,12 @@ def RenderPage(main_name: str = "Page"):
                 content = solara.Markdown(path.read_text(), unsafe_solara_execute=True)
 
             main = solara.Div(
+                classes=["solara-autorouter-content"],
                 children=[
                     solara.Title(route_current.label or "No title"),
                     content,
                     navigation,
-                ]
+                ],
             )
             main = wrap_in_layouts(main, layouts)
         else:
@@ -261,10 +262,11 @@ def RenderPage(main_name: str = "Page"):
                     Page = getattr(modules[route_current.path], "app", None)
                     Page = getattr(modules[route_current.path], "page", Page)
             main = solara.Div(
+                classes=["solara-autorouter-content"],
                 children=[
                     title_element,
                     Page,
-                ]
+                ],
             )
             main = wrap_in_layouts(main, layouts)
         elif Page is not None:
@@ -276,10 +278,11 @@ def RenderPage(main_name: str = "Page"):
             else:
                 page = solara.Error(f"{Page} is not a component or element, but {type(Page)}")
             main = solara.Div(
+                classes=["solara-autorouter-content"],
                 children=[
                     title_element,
                     page,
-                ]
+                ],
             )
             main = wrap_in_layouts(main, layouts)
         else:

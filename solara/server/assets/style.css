@@ -109,3 +109,7 @@ div.highlight {
 .solara-content-main {
     animation: solara-fade-in 0.5s ease;
 }
+
+.solara-autorouter-content {
+    height: 100%;
+}
