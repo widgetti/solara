@@ -176,7 +176,7 @@ class Reloader:
                 if name in self.ignore_modules:
                     continue  # nothing we imported from solara itself like starlette etc
                 # we only reload modules that are in the root path
-                if getattr(mod, "__file__", "").startswith(str(self.root_path)):
+                if (getattr(mod, "__file__", None) or "").startswith(str(self.root_path)):
                     reload.append(name)
             return reload
 
