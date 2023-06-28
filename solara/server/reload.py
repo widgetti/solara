@@ -151,7 +151,6 @@ class Reloader:
     def _on_change(self, name):
         # used for testing
         self.reload_event_next.set()
-        self.reload_event_next.clear()
         # flag that we need to reload all modules next time
         self.requires_reload = True
         # and forward callback

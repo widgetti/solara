@@ -116,6 +116,7 @@ def test_reload_change(page_session: playwright.sync_api.Page, solara_server, so
         page_session.locator("text=Clicked 1 times").click()
         with append(button_code):
             reload.reloader.reload_event_next.wait()
+            reload.reloader.reload_event_next.clear()
             # page_session.locator("text=Clicked 2 times").click()
             # page_session.locator("text=SyntaxError").wait_for()
             page_session.locator("text=!!! 2 times").click()
@@ -132,12 +133,14 @@ def test_reload_many(page_session: playwright.sync_api.Page, solara_server, sola
         logger.info("test_reload_many:Touch app 1st time")
         app_path.touch()
         reload.reloader.reload_event_next.wait()
+        reload.reloader.reload_event_next.clear()
         page_session.locator("text=Clicked 2 times").click()
         page_session.locator("text=Clicked 3 times").wait_for(state="visible")
 
         logger.info("test_reload_many:Touch app 2nd time")
         app_path.touch()
         reload.reloader.reload_event_next.wait()
+        reload.reloader.reload_event_next.clear()
         page_session.locator("text=Clicked 3 times").click()
         page_session.locator("text=Clicked 4 times").wait_for(state="visible")
 
