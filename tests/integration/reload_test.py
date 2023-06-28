@@ -4,11 +4,9 @@ import logging
 # import subprocess
 from pathlib import Path
 
-# import playwright.sync_api
+import playwright.sync_api
 
-# import solara.server.server
-
-# from . import conftest
+from solara.server import reload
 
 app_path = Path(__file__).parent / "testapp.py"
 
@@ -45,15 +43,15 @@ def replace(path, text):
             f.write(content)
 
 
-# button_code = """
-# @solara.component
-# def ButtonClick():
-#     clicks, set_clicks = solara.use_state(Clicks(0))
-#     return rw.Button(description=f"!!! {clicks.value} times", on_click=lambda: set_clicks(Clicks(clicks.value + 1)))
+button_code = """
+@solara.component
+def ButtonClick():
+    clicks, set_clicks = solara.use_state(Clicks(0))
+    return rw.Button(description=f"!!! {clicks.value} times", on_click=lambda: set_clicks(Clicks(clicks.value + 1)))
 
 
-# app = ButtonClick()
-# """
+app = ButtonClick()
+"""
 
 
 # def test_reload_with_pickle(page_session: playwright.sync_api.Page):
@@ -109,39 +107,39 @@ def replace(path, text):
 #         page_session.locator("text=Clicked 3 times").wait_for()
 
 
-# def test_reload_change(page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path):
-#     with extra_include_path(app_path.parent), solara_app("testapp:app"):
-#         logger.info("test_reload_many:run app")
-#         page_session.goto(solara_server.base_url)
-#         # assert page_session.title() == "Solara ☀️"
-#         page_session.locator("text=Clicked 0 times").click()
-#         page_session.locator("text=Clicked 1 times").click()
-#         with append(button_code):
-#             reload.reloader.reload_event_next.wait()
-#             # page_session.locator("text=Clicked 2 times").click()
-#             # page_session.locator("text=SyntaxError").wait_for()
-#             page_session.locator("text=!!! 0 times").click()
+def test_reload_change(page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path):
+    with extra_include_path(app_path.parent), solara_app("testapp:app"):
+        logger.info("test_reload_many:run app")
+        page_session.goto(solara_server.base_url)
+        # assert page_session.title() == "Solara ☀️"
+        page_session.locator("text=Clicked 0 times").click()
+        page_session.locator("text=Clicked 1 times").click()
+        with append(button_code):
+            reload.reloader.reload_event_next.wait()
+            # page_session.locator("text=Clicked 2 times").click()
+            # page_session.locator("text=SyntaxError").wait_for()
+            page_session.locator("text=!!! 2 times").click()
 
 
-# def test_reload_many(page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path):
-#     with extra_include_path(app_path.parent), solara_app("testapp:app"):
-#         logger.info("test_reload_many:run app")
-#         # use as module, otherwise pickle will not work
-#         page_session.goto(solara_server.base_url)
-#         page_session.locator("text=Clicked 0 times").click()
-#         page_session.locator("text=Clicked 1 times").click()
+def test_reload_many(page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path):
+    with extra_include_path(app_path.parent), solara_app("testapp:app"):
+        logger.info("test_reload_many:run app")
+        # use as module, otherwise pickle will not work
+        page_session.goto(solara_server.base_url)
+        page_session.locator("text=Clicked 0 times").click()
+        page_session.locator("text=Clicked 1 times").click()
 
-#         logger.info("test_reload_many:Touch app 1st time")
-#         app_path.touch()
-#         reload.reloader.reload_event_next.wait()
-#         page_session.locator("text=Clicked 2 times").click()
-#         page_session.locator("text=Clicked 3 times").wait_for(state="visible")
+        logger.info("test_reload_many:Touch app 1st time")
+        app_path.touch()
+        reload.reloader.reload_event_next.wait()
+        page_session.locator("text=Clicked 2 times").click()
+        page_session.locator("text=Clicked 3 times").wait_for(state="visible")
 
-#         logger.info("test_reload_many:Touch app 2nd time")
-#         app_path.touch()
-#         reload.reloader.reload_event_next.wait()
-#         page_session.locator("text=Clicked 3 times").click()
-#         page_session.locator("text=Clicked 4 times").wait_for(state="visible")
+        logger.info("test_reload_many:Touch app 2nd time")
+        app_path.touch()
+        reload.reloader.reload_event_next.wait()
+        page_session.locator("text=Clicked 3 times").click()
+        page_session.locator("text=Clicked 4 times").wait_for(state="visible")
 
 
 # def test_reload_vue(page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path):
