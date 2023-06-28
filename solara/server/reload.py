@@ -6,6 +6,7 @@ import logging
 import os
 import sys
 import threading
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Set, Type
 
 NO_WATCHDOG = False
@@ -129,6 +130,14 @@ class Reloader:
         self.requires_reload = False
         self.ignore_modules: Set[str] = set()
         self.reload_event_next = threading.Event()
+        # should be set at app.directory
+        self.root_path: Optional[Path] = None
+        # maybe we want this mode enabled in the future via configuration
+        # this is useful if you have some packages installed in editable mode
+        # and you want to quick reload. However this does not always work:
+        #  * https://github.com/widgetti/solara/issues/177
+        #  * https://github.com/widgetti/solara/issues/148
+        self.aggresive_reload = False
 
     def start(self):
         if self._first:
@@ -142,7 +151,6 @@ class Reloader:
     def _on_change(self, name):
         # used for testing
         self.reload_event_next.set()
-        self.reload_event_next.clear()
         # flag that we need to reload all modules next time
         self.requires_reload = True
         # and forward callback
@@ -152,25 +160,41 @@ class Reloader:
     def close(self):
         self.watcher.close()
 
+    def get_reload_module_names(self):
+        if self.aggresive_reload:
+            # not sure why, but if we reload pandas, the integration/reload_test.py fails
+            return {
+                k for k in set(sys.modules) - set(self.ignore_modules) if not (k.startswith("solara.server") or k.startswith("anyio") or k.startswith("pandas"))
+            }
+        else:
+            reload = []
+            for name in sorted(sys.modules):
+                mod = sys.modules[name]
+                if name.startswith("solara.server"):
+                    continue  # this will break everything
+                if name in self.ignore_modules:
+                    continue  # nothing we imported from solara itself like starlette etc
+                # we only reload modules that are in the root path
+                if (getattr(mod, "__file__", None) or "").startswith(str(self.root_path)):
+                    reload.append(name)
+            return reload
+
     def reload(self):
         # before we did this:
         # # don't reload modules like solara.server and react
         # # that may cause issues (like 2 Element classes existing)
-        # not sure why, but if we reload pandas, the integration/reload_test.py fails
-        reload_modules = {
-            k for k in set(sys.modules) - set(self.ignore_modules) if not (k.startswith("solara.server") or k.startswith("anyio") or k.startswith("pandas"))
-        }
+        reload_modules = self.get_reload_module_names()
         # which picks up import that are done in threads etc, but it will also reload starlette, httptools etc
         # which causes issues with exceptions and isinstance checks.
         # reload_modules = self.watched_modules
         logger.info("Reloading modules... %s", reload_modules)
         # not sure if this is needed
         importlib.invalidate_caches()
-        for mod in sorted(reload_modules):
+        for mod_name in sorted(reload_modules):
             # don't reload modules like solara.server and react
             # that may cause issues (like 2 Element classes existing)
-            logger.debug("Reloading module %s", mod)
-            sys.modules.pop(mod, None)
+            logger.debug("Reloading module %s", mod_name)
+            sys.modules.pop(mod_name, None)
         # if all successful...
         self.requires_reload = False
 
