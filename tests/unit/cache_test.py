@@ -1,8 +1,12 @@
-import sys
 from typing import Any, Dict
 
 import ipyvuetify as v
 import pytest
+
+try:
+    import redis
+except ImportError:
+    redis = None
 
 import solara
 import solara.cache
@@ -162,7 +166,7 @@ def test_cache_disk(tmpdir):
     assert len(c) == 2
 
 
-@pytest.mark.skipif(condition=sys.platform.startswith("win"), reason="skipping windows, no redis on windows+GHA")
+@pytest.mark.skipif(condition=redis is None, reason="redis not installed")
 def test_cache_redis(tmpdir):
     c = solara.cache.create("redis", clear=True, prefix=b"solara-test:cache:")
     c["a"] = 1
