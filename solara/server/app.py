@@ -79,6 +79,7 @@ class AppScript:
             app = self._execute()
 
         self._first_execute_app = app
+        reload.reloader.root_path = self.directory
         app_context.close()
 
     def _execute(self):
