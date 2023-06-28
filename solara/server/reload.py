@@ -174,15 +174,10 @@ class Reloader:
                 if name.startswith("solara.server"):
                     continue  # this will break everything
                 if name in self.ignore_modules:
-                    continue  # nothing we imported from solara itself
-                if hasattr(mod, "__file__") and mod.__file__:
-                    if not mod.__file__.startswith(str(self.root_path)):
-                        logger.debug("Ignoring module %s", mod)
-                        continue
-                else:
-                    logger.debug("Ignoring module %s because we do not know the path", mod)
-                    continue
-                reload.append(name)
+                    continue  # nothing we imported from solara itself like starlette etc
+                # we only reload modules that are in the root path
+                if getattr(mod, "__file__", "").startswith(str(self.root_path)):
+                    reload.append(name)
             return reload
 
     def reload(self):
