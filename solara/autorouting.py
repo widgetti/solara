@@ -218,17 +218,25 @@ def RenderPage(main_name: str = "Page"):
         title = route_current.label or "No title"
         title_element = solara.Title(title)
         module = None
-        if route_current.module is not None:
+        Page = route_current.component
+        # translate the default RenderPage as no value given (None)
+        if Page is RenderPage:
+            Page = None
+        if route_current.module is not None and (Page is None):
+            # if not a custom component is given, we try to find a Page component
+            # in the module
             assert route_current.module is not None
             module = route_current.module
             namespace = module.__dict__
-            Page = nested_get(namespace, main_name, None)
+            Page = nested_get(namespace, main_name, Page)
             if Page is None:
                 # app is for backwards compatibility
-                Page = namespace.get("page", namespace.get("app"))
+                Page = namespace.get("page", namespace.get("app", Page))
                 Page = nested_get(namespace, main_name, Page)
-        else:
-            Page = route_current.component
+
+        if Page is None and route_current.children:
+            # we we did not get a component, but we recursively render
+            Page = RenderPage
         if isinstance(Page, ipywidgets.Widget):
             # If we have a widget, we need to execute this again for each
             # connection, since we cannot share widgets between connections/users.
@@ -393,7 +401,7 @@ def generate_routes(module: ModuleType) -> List[solara.Route]:
                     continue
             else:
                 # skip empty modules
-                if get_renderable(submod) is None:
+                if get_renderable(submod) is None and not hasattr(submod, "routes"):
                     continue
                 children = getattr(submod, "routes", [])
                 if subfile:
