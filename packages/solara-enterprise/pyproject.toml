@@ -20,6 +20,10 @@ ssg = [
     "playwright; python_version > '3.6'",
 ]
 
+cache = [
+    "diskcache",
+]
+
 auth = [
     "authlib",
     "itsdangerous",
@@ -29,6 +33,7 @@ auth = [
 all = [
     "solara-enterprise[ssg]",
     "solara-enterprise[auth]",
+    "solara-enterprise[cache]",
 ]
 
 [project.urls]
