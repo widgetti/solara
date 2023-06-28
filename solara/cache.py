@@ -16,6 +16,7 @@ from typing import (
 
 import cachetools
 import typing_extensions
+from reacton.utils import equals
 
 import solara
 import solara.settings
@@ -48,35 +49,6 @@ def _default_key(*args, **kwargs):
     for key, value in kwargs.items():
         kwargs_tuple += (key, value)
     return (args, kwargs_tuple)
-
-
-# TODO: use reacton.utils.equals
-def equals(a, b):
-    try:
-        return bool(a == b)
-    except Exception:
-        pass
-    if a is b:
-        return True
-    if type(a) != type(b):  # is this always true? after a == b failed?
-        return False
-    if isinstance(a, dict) and isinstance(b, dict):
-        if len(a) != len(b):
-            return False
-        for key in a:
-            if key not in b:
-                return False
-            if not equals(a[key], b[key]):
-                return False
-        return True
-    elif isinstance(a, (list, tuple)) and isinstance(b, (list, tuple)):
-        if len(a) != len(b):
-            return False
-        for i in range(len(a)):
-            if not equals(a[i], b[i]):
-                return False
-        return True
-    return False
 
 
 class MemoizedFunction(Generic[P, R]):
