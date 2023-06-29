@@ -176,6 +176,8 @@ def test_hook_use_fetch():
         nonlocal result
         result = use_fetch(url)
         data = result.value
+        if result.error:
+            raise result.error
         return w.Label(value=f"{len(data) if data else '-'}")
 
     label, rc = render_fixed(FetchFile(), handle_error=False)
