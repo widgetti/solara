@@ -51,6 +51,7 @@ from .file_download import FileDownload  # noqa: #F401 F403
 from .tooltip import Tooltip  # noqa: #F401 F403
 from .card import Card, CardActions  # noqa: #F401 F403
 from .spinner import SpinnerSolara  # noqa: #F401 F403
+from .switch import Switch  # noqa: #F401 F403
 from .progress import ProgressLinear  # noqa: #F401 F403
 from .component_vue import _component_vue, component_vue  # noqa: #F401 F403
 import reacton.core
