@@ -1,26 +1,17 @@
-import contextlib
 import functools
 import inspect
 import logging
 import os
-import sys
 import threading
 from typing import Callable, Iterator, Optional, TypeVar, Union, cast
 
-import reacton
-
 import solara
 from solara.datatypes import Result, ResultState
+from solara.util import cancel_guard, nullcontext
 
 SOLARA_ALLOW_OTHER_TRACER = os.environ.get("SOLARA_ALLOW_OTHER_TRACER", False) in (True, "True", "true", "1")
 T = TypeVar("T")
 logger = logging.getLogger("solara.hooks.use_thread")
-
-
-# inherit from BaseException so less change of being caught
-# in an except
-class CancelledError(BaseException):
-    pass
 
 
 def use_thread(
@@ -49,39 +40,6 @@ def use_thread(
     running_thread = solara.use_ref(cast(Optional[threading.Thread], None))
     counter, retry = use_retry()
     cancel: threading.Event = solara.use_memo(make_event, [*dependencies, counter])
-
-    @contextlib.contextmanager
-    def cancel_guard():
-        if not intrusive_cancel:
-            yield
-            return
-
-        def tracefunc(frame, event, arg):
-            # this gets called at least for every line executed
-            if cancel.is_set():
-                rc = reacton.core._get_render_context(required=False)
-                # we do not want to cancel the rendering cycle
-                if rc is None or not rc._is_rendering:
-                    # this will bubble up
-                    raise CancelledError()
-            if prev and SOLARA_ALLOW_OTHER_TRACER:
-                prev(frame, event, arg)
-            # keep tracing:
-            return tracefunc
-
-        # see https://docs.python.org/3/library/sys.html#sys.settrace
-        # it is for the calling thread only
-        # not every Python implementation has it
-        prev = None
-        if hasattr(sys, "gettrace"):
-            prev = sys.gettrace()
-        if hasattr(sys, "settrace"):
-            sys.settrace(tracefunc)
-        try:
-            yield
-        finally:
-            if hasattr(sys, "settrace"):
-                sys.settrace(prev)
 
     def run():
         set_result_state(ResultState.STARTING)
@@ -122,12 +80,12 @@ def use_thread(
                     # the function calls to f. We don't want to guard around
                     # a call to react, since that might slow down rendering
                     # during rendering
-                    with cancel_guard():
+                    with cancel_guard(cancel) if intrusive_cancel else nullcontext():
                         value = f()
                     if inspect.isgenerator(value):
                         while True:
                             try:
-                                with cancel_guard():
+                                with cancel_guard(cancel) if intrusive_cancel else nullcontext():
                                     result.current = next(value)
                                     error.current = None
                             except StopIteration:
@@ -147,7 +105,7 @@ def use_thread(
                         logger.exception(e)
                         set_result_state(ResultState.ERROR)
                     return
-                except CancelledError:
+                except solara.util.CancelledError:
                     pass
                     # this means this thread is cancelled not be request, but because
                     # a new thread is running, we can ignore this

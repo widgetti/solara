@@ -2,14 +2,18 @@ import base64
 import contextlib
 import os
 import sys
+import threading
 from collections import abc
 from pathlib import Path
 from typing import Dict, List, Union
 
 import numpy as np
 import PIL.Image
+import reacton
 
 import solara
+
+SOLARA_ALLOW_OTHER_TRACER = os.environ.get("SOLARA_ALLOW_OTHER_TRACER", False) in (True, "True", "true", "1")
 
 
 def github_url(file):
@@ -159,3 +163,51 @@ def nested_get(object, dotted_name: str, default=None):
             else:
                 object = getattr(object, name)
     return object
+
+
+# inherit from BaseException so less change of being caught
+# in an except
+class CancelledError(BaseException):
+    pass
+
+
+# not available in python 3.6
+class nullcontext(contextlib.AbstractContextManager):
+    def __init__(self, enter_result=None):
+        self.enter_result = enter_result
+
+    def __enter__(self):
+        return self.enter_result
+
+    def __exit__(self, *excinfo):
+        pass
+
+
+@contextlib.contextmanager
+def cancel_guard(cancelled: threading.Event):
+    def tracefunc(frame, event, arg):
+        # this gets called at least for every line executed
+        if cancelled.is_set():
+            rc = reacton.core.get_render_context(required=False)
+            # we do not want to cancel the rendering cycle
+            if rc is None or not rc._is_rendering:
+                # this will bubble up
+                raise CancelledError()
+        if prev and SOLARA_ALLOW_OTHER_TRACER:
+            prev(frame, event, arg)
+        # keep tracing:
+        return tracefunc
+
+    # see https://docs.python.org/3/library/sys.html#sys.settrace
+    # it is for the calling thread only
+    # not every Python implementation has it
+    prev = None
+    if hasattr(sys, "gettrace"):
+        prev = sys.gettrace()
+    if hasattr(sys, "settrace"):
+        sys.settrace(tracefunc)
+    try:
+        yield
+    finally:
+        if hasattr(sys, "settrace"):
+            sys.settrace(prev)
