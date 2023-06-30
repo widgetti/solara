@@ -18,6 +18,7 @@ dependencies = [
     "cachetools",
     "filelock",
     "markdown",
+    "pydantic<2.0",
     "pygments",
     "pymdown-extensions",
     "humanize",
