@@ -1,13 +1,13 @@
 import os
+import re
 import site
 import sys
 import uuid
 from enum import Enum
 from pathlib import Path
-import re
 from typing import Optional
 
-import pydantic
+import pydantic_settings
 from filelock import FileLock
 
 from .. import (  # noqa  # sidefx is that this module creates the ~/.solara directory
@@ -27,7 +27,7 @@ class ThemeVariant(str, Enum):
     auto = "auto"
 
 
-class ThemeSettings(pydantic.BaseSettings):
+class ThemeSettings(pydantic_settings.BaseSettings):
     variant: ThemeVariant = ThemeVariant.light
     variant_user_selectable: bool = True
     loader: str = "solara"
@@ -38,7 +38,7 @@ class ThemeSettings(pydantic.BaseSettings):
         env_file = ".env"
 
 
-class SSG(pydantic.BaseSettings):
+class SSG(pydantic_settings.BaseSettings):
     # the first app create will initialize this if it is not set
     build_path: Optional[Path] = None
     enabled: bool = False
@@ -50,11 +50,11 @@ class SSG(pydantic.BaseSettings):
         env_file = ".env"
 
 
-class Search(pydantic.BaseSettings):
+class Search(pydantic_settings.BaseSettings):
     enabled: bool = False
 
 
-class Telemetry(pydantic.BaseSettings):
+class Telemetry(pydantic_settings.BaseSettings):
     mixpanel_token: str = "91845eb13a68e3db4e58d64ad23673b7"
     mixpanel_enable: bool = True
     server_user_id: str = "not_set"
@@ -67,7 +67,7 @@ class Telemetry(pydantic.BaseSettings):
         env_file = ".env"
 
 
-class Assets(pydantic.BaseSettings):
+class Assets(pydantic_settings.BaseSettings):
     cdn: str = "https://cdn.jsdelivr.net/npm/"
     proxy: bool = True
     proxy_cache_dir: Path = Path(prefix + "/share/solara/cdn/")
@@ -94,7 +94,7 @@ SESSION_SECRET_KEY_DEFAULT = "change me"
 OAUTH_TEST_CLIENT_IDs = [AUTH0_TEST_CLIENT_ID, FIEF_TEST_CLIENT_ID]
 
 
-class Session(pydantic.BaseSettings):
+class Session(pydantic_settings.BaseSettings):
     secret_key: str = SESSION_SECRET_KEY_DEFAULT
     https_only: Optional[bool] = None
     same_site: str = "lax"
@@ -105,7 +105,7 @@ class Session(pydantic.BaseSettings):
         env_file = ".env"
 
 
-class OAuth(pydantic.BaseSettings):
+class OAuth(pydantic_settings.BaseSettings):
     private: bool = False
 
     client_id: str = AUTH0_TEST_CLIENT_ID
@@ -127,7 +127,7 @@ if is_mac_os_conda or is_wsl_windows:
     HOST_DEFAULT = "localhost"
 
 
-class MainSettings(pydantic.BaseSettings):
+class MainSettings(pydantic_settings.BaseSettings):
     use_pdb: bool = False
     mode: str = "production"
     tracer: bool = False
