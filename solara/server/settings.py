@@ -1,8 +1,10 @@
+import os
 import site
 import sys
 import uuid
 from enum import Enum
 from pathlib import Path
+import re
 from typing import Optional
 
 import pydantic
@@ -118,6 +120,13 @@ class OAuth(pydantic.BaseSettings):
         env_file = ".env"
 
 
+HOST_DEFAULT = os.environ.get("HOST", "localhost")
+is_mac_os_conda = "arm64-apple-darwin" in HOST_DEFAULT
+is_wsl_windows = re.match(r".*?-w1[0-9]", HOST_DEFAULT)
+if is_mac_os_conda or is_wsl_windows:
+    HOST_DEFAULT = "localhost"
+
+
 class MainSettings(pydantic.BaseSettings):
     use_pdb: bool = False
     mode: str = "production"
@@ -126,6 +135,7 @@ class MainSettings(pydantic.BaseSettings):
     root_path: Optional[str] = None  # e.g. /myapp (without trailing slash)
     base_url: str = ""  # e.g. https://myapp.solara.run/myapp/
     platform: str = sys.platform
+    host = HOST_DEFAULT
 
     class Config:
         env_prefix = "solara_"
