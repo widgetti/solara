@@ -1,3 +1,4 @@
+import os
 import site
 import sys
 import uuid
@@ -118,6 +119,11 @@ class OAuth(pydantic.BaseSettings):
         env_file = ".env"
 
 
+HOST_DEFAULT = os.environ.get("HOST", "localhost")
+if "arm64-apple-darwin" in HOST_DEFAULT:  # conda activate script
+    HOST_DEFAULT = "localhost"
+
+
 class MainSettings(pydantic.BaseSettings):
     use_pdb: bool = False
     mode: str = "production"
@@ -126,6 +132,7 @@ class MainSettings(pydantic.BaseSettings):
     root_path: Optional[str] = None  # e.g. /myapp (without trailing slash)
     base_url: str = ""  # e.g. https://myapp.solara.run/myapp/
     platform: str = sys.platform
+    host = HOST_DEFAULT
 
     class Config:
         env_prefix = "solara_"
