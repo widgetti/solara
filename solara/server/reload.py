@@ -128,6 +128,7 @@ class Reloader:
         self.on_change: Optional[Callable[[str], None]] = on_change
         self.watcher = WatcherType([], self._on_change)
         self.requires_reload = False
+        self.ignore_modules: Set[str] = set()
         self.reload_event_next = threading.Event()
         # should be set at app.directory
         self.root_path: Optional[Path] = None
@@ -143,6 +144,8 @@ class Reloader:
             # although we try to keep track of modules loaded (which we will watch)
             # it can happen that an import is done at runtime, that we miss (could be in a thread)
             # so we always reload all modules except the ignore_modules
+            self.ignore_modules = set(sys.modules)
+            logger.info("Ignoring reloading modules: %s", self.ignore_modules)
             self._first = False
 
     def _on_change(self, name):
