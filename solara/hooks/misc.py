@@ -1,4 +1,3 @@
-import contextlib
 import dataclasses
 import io
 import json
@@ -33,18 +32,6 @@ T = TypeVar("T")
 U = TypeVar("U")
 
 MaybeResult = Union[T, Result[T]]
-
-
-# not available in python 3.6
-class nullcontext(contextlib.AbstractContextManager):
-    def __init__(self, enter_result=None):
-        self.enter_result = enter_result
-
-    def __enter__(self):
-        return self.enter_result
-
-    def __exit__(self, *excinfo):
-        pass
 
 
 def use_retry(*actions: Callable[[], Any]):
@@ -85,7 +72,7 @@ def use_download(
 
         context: Any = None
         if file_object:
-            context = nullcontext()
+            context = solara.util.nullcontext()
             output_file = cast(IO, f.value)
         else:
             # f = cast(Result[Union[str, os.PathLike]], f)

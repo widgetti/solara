@@ -1,5 +1,5 @@
 import itertools
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Union
 
 import reacton.ipyvuetify as rv
 
@@ -91,7 +91,7 @@ def ColumnsResponsive(
     gutters=True,
     gutters_dense=False,
     classes: List[str] = [],
-    style: Optional[str] = None,
+    style: Union[str, Dict[str, str], None] = None,
 ):
     """Lay our children in columns, on a 12 point grid system that is responsive to screen size.
 
@@ -141,7 +141,8 @@ def ColumnsResponsive(
             raise ValueError(f"Invalid value for columns: {value}, should be None, int, or list/tuple.")
 
     class_ = _combine_classes([*(["flex-nowrap"] if not wrap else []), *classes])
-    with rv.Row(class_=class_ if not wrap else "", style_=style, no_gutters=not gutters, dense=gutters_dense) as main:
+    style_flat = solara.util._flatten_style(style)
+    with rv.Row(class_=class_ if not wrap else "", style_=style_flat, no_gutters=not gutters, dense=gutters_dense) as main:
         for child, xsmall, small, medium, large, xlarge in zip(children, cycle(default), cycle(small), cycle(medium), cycle(large), cycle(xlarge)):
             with rv.Col(
                 cols=xsmall,

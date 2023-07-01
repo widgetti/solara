@@ -122,7 +122,7 @@ async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, connection_i
         run_context = viztracer.VizTracer(output_file=output_file, max_stack_depth=10)
         logger.warning(f"Running with tracer: {output_file}")
     else:
-        run_context = contextlib.nullcontext()
+        run_context = solara.util.nullcontext()
 
     kernel = context.kernel
     with run_context, context:

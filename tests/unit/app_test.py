@@ -1,6 +1,5 @@
 import logging
-
-# import sys
+import sys
 from pathlib import Path
 
 import ipyvuetify as v
@@ -104,46 +103,51 @@ def test_sidebar_single_file_missing(app_context, no_app_context):
 
 
 # these make other test fail on CI (vaex is used, which causes a blake3 reload, which fails)
-# def test_watch_module_reload(tmpdir, app_context, extra_include_path, no_app_context):
-#     import ipyvuetify as v
+def test_watch_module_reload(tmpdir, app_context, extra_include_path, no_app_context):
+    import ipyvuetify as v
 
-#     with extra_include_path(str(tmpdir)):
-#         py_file = tmpdir / "test.py"
-#         py_mod_file = tmpdir / "somemod.py"
+    with extra_include_path(str(tmpdir)):
+        py_file = tmpdir / "test.py"
+        py_mod_file = tmpdir / "somemod.py"
 
-#         logger.info("writing files")
-#         with open(py_mod_file, "w") as f:
-#             f.write("import ipyvuetify as v; App = v.Btn.element\n")
-#         with open(py_file, "w") as f:
-#             f.write("import somemod; app=somemod.App\n")
+        logger.info("writing files")
+        with open(py_mod_file, "w") as f:
+            f.write("import ipyvuetify as v; page = v.Btn.element(children=['first'])\n")
+        with open(py_file, "w") as f:
+            f.write("import somemod; page=somemod.page\n")
 
-#         logger.info("wrote files")
+        logger.info("wrote files")
 
-#         app = AppScript(f"{py_file}")
-#         try:
-#             result = app.run()
-#             assert "somemod" in sys.modules
-#             assert "somemod" in reload.reloader.watched_modules
-#             somemod1 = sys.modules["somemod"]
-#             assert result().component.widget == v.Btn
+        app = AppScript(f"{py_file}")
+        try:
+            result = app.run()
+            assert "somemod" in sys.modules
+            assert "somemod" in reload.reloader.watched_modules
+            somemod1 = sys.modules["somemod"]
+            root = solara.RoutingProvider(children=[result], routes=app.routes, pathname="/")
+            box, rc = solara.render(root, handle_error=False)
+            assert rc.find(v.Btn, children=["first"])
+            # assert result.component.widget == v.Btn
 
-#             # change depending module
-#             with open(py_mod_file, "w") as f:
-#                 f.write("import ipyvuetify as v; App = v.Card.element\n")
-#             # wait for the event to trigger
-#             reload.reloader.reload_event_next.wait()
-#             # assert "somemod" not in sys.modules
-#             # breakpoint()
-#             result = app.run()
-#             assert "somemod" in sys.modules
-#             assert result().component.widget == v.Card
-#             somemod2 = sys.modules["somemod"]
-#             assert somemod1 is not somemod2
-#         finally:
-#             app.close()
-#             if "somemod" in sys.modules:
-#                 del sys.modules["somemod"]
-#             reload.reloader.watched_modules.remove("somemod")
+            # change depending module
+            with open(py_mod_file, "w") as f:
+                f.write("import ipyvuetify as v; page = v.Card.element(children=['second'])\n")
+            # wait for the event to trigger
+            reload.reloader.reload_event_next.wait()
+            # assert "somemod" not in sys.modules
+            # breakpoint()
+            result = app.run()
+            assert "somemod" in sys.modules
+            root = solara.RoutingProvider(children=[result], routes=app.routes, pathname="/")
+            box, rc = solara.render(root, handle_error=False)
+            assert rc.find(v.Card, children=["second"])
+            somemod2 = sys.modules["somemod"]
+            assert somemod1 is not somemod2
+        finally:
+            app.close()
+            if "somemod" in sys.modules:
+                del sys.modules["somemod"]
+            reload.reloader.watched_modules.remove("somemod")
 
 
 # def test_script_reload_component(tmpdir, app_context, extra_include_path, no_app_context):

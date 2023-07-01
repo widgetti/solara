@@ -18,8 +18,7 @@ class ServerBase(threading.Thread):
         self.started = threading.Event()
         self.stopped = threading.Event()
         self.error: Optional[BaseException] = None
-        super().__init__(name="test-server-thread")
-        self.setDaemon(True)
+        super().__init__(name="test-server-thread", daemon=True)
 
     def run(self):
         try:

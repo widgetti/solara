@@ -134,7 +134,7 @@ def test_routes_examples_docs():
 
 def test_routes_directory():
     routes = solara.autorouting.generate_routes_directory(HERE.parent / "solara_test_apps" / "multipage")
-    assert len(routes) == 7
+    assert len(routes) == 8
     assert routes[0].path == "/"
     assert routes[0].label == "Home"
 
@@ -152,11 +152,18 @@ def test_routes_directory():
     assert routes[4].path == "and-notebooks"
     assert routes[4].label == "And Notebooks"
 
-    assert routes[5].path == "single-file-directory"
-    assert routes[5].label == "Single File Directory"
+    assert routes[5].path == "custom-routes"
+    assert routes[5].label == "Custom Routes"
+    assert routes[5].children[0].path == "/"
+    assert routes[5].children[0].label == "Hi1"
+    assert routes[5].children[1].path == "page2"
+    assert routes[5].children[1].label == "Hi2"
 
-    assert routes[6].path == "some-other-python-script"
-    assert routes[6].label == "Some Other Python Script"
+    assert routes[6].path == "single-file-directory"
+    assert routes[6].label == "Single File Directory"
+
+    assert routes[7].path == "some-other-python-script"
+    assert routes[7].label == "Some Other Python Script"
 
     main_object = solara.autorouting.RenderPage()
     solara_context = solara.RoutingProvider(children=[main_object], routes=routes, pathname="/")
@@ -200,6 +207,16 @@ def test_routes_directory():
 
     nav.location = "/a-directory/wrong-path"
     assert "Page not found" in rc._find(v.Alert).widget.children[0]
+
+    # custom routes in a single file
+
+    nav.location = "/custom-routes"
+    button = rc._find(v.Btn, children=["hi1"]).widget
+    assert button.children[0] == "hi1"
+
+    nav.location = "/custom-routes/page2"
+    button = rc._find(v.Btn, children=["hi2"]).widget
+    assert button.children[0] == "hi2"
 
 
 def test_routes_regular_widgets():
