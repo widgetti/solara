@@ -8,7 +8,6 @@ import typing
 import webbrowser
 from enum import Enum
 from pathlib import Path
-from platform import uname
 
 import rich
 import rich_click as click
