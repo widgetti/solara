@@ -326,8 +326,11 @@ def run(
 
     if open:
         threading.Thread(target=open_browser, daemon=True).start()
-    extra_info = " ($HOST)" if url == os.environ.get("HOST") else ""
-    rich.print(f"Solara server is starting at {url}{extra_info}")
+    extra_info = " ($HOST)" if  else ""
+    if url == os.environ.get("HOST"):
+        rich.print(f"Solara server is starting at {url} ($HOST)")
+    else:
+        rich.print(f"Solara server is starting at {url}")
 
     if log_level is not None:
         LOGGING_CONFIG["loggers"]["solara"]["level"] = log_level.upper()
