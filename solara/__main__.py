@@ -326,6 +326,7 @@ def run(
 
     if open:
         threading.Thread(target=open_browser, daemon=True).start()
+
     rich.print(f"Solara server is starting at {url}")
 
     if log_level is not None:

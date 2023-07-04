@@ -4,6 +4,7 @@ import sys
 import uuid
 from enum import Enum
 from pathlib import Path
+import re
 from typing import Optional
 
 import pydantic
@@ -120,7 +121,9 @@ class OAuth(pydantic.BaseSettings):
 
 
 HOST_DEFAULT = os.environ.get("HOST", "localhost")
-if "arm64-apple-darwin" in HOST_DEFAULT:  # conda activate script
+is_mac_os_conda = "arm64-apple-darwin" in HOST_DEFAULT
+is_wsl_windows = re.match(r".*?-w1[0-9]", HOST_DEFAULT)
+if is_mac_os_conda or is_wsl_windows:
     HOST_DEFAULT = "localhost"
 
 
