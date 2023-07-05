@@ -1,9 +1,10 @@
 import os
 from datetime import date, datetime, timedelta
-from typing import Callable, List, Optional, Tuple, TypeVar, Union, cast
+from typing import Callable, List, Literal, Optional, Tuple, TypeVar, Union, cast
 
 import ipyvue
 import ipyvuetify
+import numpy as np
 import reacton.core
 import traitlets
 
@@ -21,7 +22,8 @@ def SliderInt(
     max: int = 10,
     step: int = 1,
     on_value: Optional[Callable[[int], None]] = None,
-    thumb_label=True,
+    thumb_label: bool | Literal['always'] | None = 'always',
+    show_end_ticks: bool = True,
     disabled: bool = False,
 ):
     """Slider for controlling an integer value.
@@ -60,6 +62,11 @@ def SliderInt(
     def set_value_cast(value):
         reactive_value.value = int(value)
 
+    if show_end_ticks:
+        ticks = [str(i) for i in np.arange(min, max, step) if i == min or i == max]
+    else:
+        ticks = None
+
     return rv.Slider(
         v_model=reactive_value.value,
         on_v_model=set_value_cast,
@@ -68,6 +75,7 @@ def SliderInt(
         max=max,
         step=step,
         thumb_label=thumb_label,
+        tick_labels=ticks,
         dense=False,
         hide_details=True,
         disabled=disabled,
@@ -82,7 +90,8 @@ def SliderRangeInt(
     max: int = 10,
     step: int = 1,
     on_value: Callable[[Tuple[int, int]], None] = None,
-    thumb_label=True,
+    thumb_label: bool | Literal['always'] = 'always',
+    show_end_ticks: bool = True,
     disabled: bool = False,
 ) -> reacton.core.ValueElement[ipyvuetify.RangeSlider, Tuple[int, int]]:
     """Slider for controlling a range of integer values.
@@ -120,6 +129,11 @@ def SliderRangeInt(
         v1, v2 = value
         reactive_value.set((int(v1), int(v2)))
 
+    if show_end_ticks:
+        ticks = [str(i) for i in np.arange(min, max, step) if i == min or i == max]
+    else:
+        ticks = None
+
     return cast(
         reacton.core.ValueElement[ipyvuetify.RangeSlider, Tuple[int, int]],
         rv.RangeSlider(
@@ -130,6 +144,7 @@ def SliderRangeInt(
             max=max,
             step=step,
             thumb_label=thumb_label,
+            tick_labels=ticks,
             dense=False,
             hide_details=True,
             disabled=disabled,
@@ -145,7 +160,8 @@ def SliderFloat(
     max: float = 10.0,
     step: float = 0.1,
     on_value: Callable[[float], None] = None,
-    thumb_label=True,
+    thumb_label: bool | Literal['always'] | None = 'always',
+    show_end_ticks: bool = True,
     disabled: bool = False,
 ):
     """Slider for controlling a float value.
@@ -182,6 +198,11 @@ def SliderFloat(
     def set_value_cast(value):
         reactive_value.set(float(value))
 
+    if show_end_ticks:
+        ticks = [str(i) for i in np.arange(min, max, step) if i == min or i == max]
+    else:
+        ticks = None
+
     return rv.Slider(
         v_model=reactive_value.value,
         on_v_model=set_value_cast,
@@ -190,6 +211,7 @@ def SliderFloat(
         max=max,
         step=step,
         thumb_label=thumb_label,
+        tick_labels=ticks,
         dense=False,
         hide_details=True,
         disabled=disabled,
@@ -204,7 +226,8 @@ def SliderRangeFloat(
     max: float = 10.0,
     step: float = 0.1,
     on_value: Callable[[Tuple[float, float]], None] = None,
-    thumb_label=True,
+    thumb_label: bool | Literal['always'] = 'always',
+    show_end_ticks: bool = True,
     disabled: bool = False,
 ) -> reacton.core.ValueElement[ipyvuetify.RangeSlider, Tuple[float, float]]:
     """Slider for controlling a range of float values.
@@ -242,6 +265,11 @@ def SliderRangeFloat(
         v1, v2 = value
         reactive_value.set((float(v1), float(v2)))
 
+    if show_end_ticks:
+        ticks = [str(i) for i in np.arange(min, max, step) if i == min or i == max]
+    else:
+        ticks = None
+
     return cast(
         reacton.core.ValueElement[ipyvuetify.RangeSlider, Tuple[float, float]],
         rv.RangeSlider(
@@ -252,6 +280,7 @@ def SliderRangeFloat(
             max=max,
             step=step,
             thumb_label=thumb_label,
+            tick_labels=ticks,
             dense=False,
             hide_details=True,
             disabled=disabled,
