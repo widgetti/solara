@@ -20,7 +20,7 @@ class FileDownloadWidget(vy.VuetifyTemplate):
 @solara.component
 def FileDownload(
     data: Union[str, bytes, BinaryIO, Callable[[], Union[str, bytes, BinaryIO]]],
-    filename: Optional[str] = None,
+    filename: Union[str, Callable[[], str], None] = None,
     label: Optional[str] = None,
     icon_name: Optional[str] = "mdi-cloud-download-outline",
     close_file: bool = True,
@@ -180,11 +180,15 @@ def FileDownload(
         return None
 
     bytes_result: solara.Result[Optional[bytes]] = solara.use_thread(get_data, dependencies=[request_download, data])
+
+    if callable(filename):
+        filename = filename()
     if filename is None and hasattr(data, "name"):
         try:
             filename = Path(data.name).name  # type: ignore
         except Exception:
             pass
+
     filename = filename or "solara-download.dat"
     label = label or ("Download: " + filename)
     FileDownloadWidget.element(
