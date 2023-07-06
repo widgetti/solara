@@ -16,7 +16,7 @@ We consider Solara a superset of Reacton, and that's why the full namespace of t
 Therefore, you can write `solara.use_state` or `reacton.use_state`, they are the same function.
 
 The reason for this is simplicity for newcomers, who don't care about the difference between `solara` and `reacton`.
-But in practive, it also saves having to import both `solara` and `reacton`.
+But in practice, it also saves having to import both `solara` and `reacton`.
 Also, when writing Solara based apps, one does not think about Reacton anymore, it is all Solara.
 
 ## How do I use Reacton or Solara with ipywidget library X
