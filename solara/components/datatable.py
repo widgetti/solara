@@ -108,6 +108,8 @@ def DataTable(
 
     if df_type(df) == "pandas":
         column_data = dfs[columns].to_dict("records")
+    elif df_type(df) == "polars":
+        column_data = dfs[columns].to_dicts()
     else:
         column_data = dfs[columns].to_records()
     for i in range(i2 - i1):
