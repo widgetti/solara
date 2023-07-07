@@ -153,7 +153,7 @@ class MainSettings(BaseSettings):  # type: ignore
     root_path: Optional[str] = None  # e.g. /myapp (without trailing slash)
     base_url: str = ""  # e.g. https://myapp.solara.run/myapp/
     platform: str = sys.platform
-    host = HOST_DEFAULT
+    host: str = HOST_DEFAULT
 
     class Config:
         env_prefix = "solara_"
