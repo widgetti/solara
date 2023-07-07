@@ -13,7 +13,7 @@ import pydantic
 # with pydantic 2.0, we require pydantic_settings
 try:
     import pydantic_settings
-except ImportError:
+except ModuleNotFoundError:
     # we should be on pydantic 1.x
     BaseSettings = pydantic.BaseSettings
 else:
