@@ -7,7 +7,25 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional
 
-import pydantic_settings
+import pydantic
+
+# BaseSettings : Optional[ClassVar] = None
+# with pydantic 2.0, we require pydantic_settings
+try:
+    import pydantic_settings
+except ImportError:
+    # we should be on pydantic 1.x
+    BaseSettings = pydantic.BaseSettings
+else:
+    major = pydantic_settings.__version__.split(".")[0]
+    if major != "0":
+        # but the old pydantic_settings is unrelated
+        BaseSettings = pydantic_settings.BaseSettings
+    else:
+        # we should be on pydantic 2.x
+        BaseSettings = pydantic.BaseSettings
+
+
 from filelock import FileLock
 
 from .. import (  # noqa  # sidefx is that this module creates the ~/.solara directory
@@ -27,7 +45,7 @@ class ThemeVariant(str, Enum):
     auto = "auto"
 
 
-class ThemeSettings(pydantic_settings.BaseSettings):
+class ThemeSettings(BaseSettings):  # type: ignore
     variant: ThemeVariant = ThemeVariant.light
     variant_user_selectable: bool = True
     loader: str = "solara"
@@ -38,7 +56,7 @@ class ThemeSettings(pydantic_settings.BaseSettings):
         env_file = ".env"
 
 
-class SSG(pydantic_settings.BaseSettings):
+class SSG(BaseSettings):  # type: ignore
     # the first app create will initialize this if it is not set
     build_path: Optional[Path] = None
     enabled: bool = False
@@ -50,11 +68,11 @@ class SSG(pydantic_settings.BaseSettings):
         env_file = ".env"
 
 
-class Search(pydantic_settings.BaseSettings):
+class Search(BaseSettings):  # type: ignore
     enabled: bool = False
 
 
-class Telemetry(pydantic_settings.BaseSettings):
+class Telemetry(BaseSettings):  # type: ignore
     mixpanel_token: str = "91845eb13a68e3db4e58d64ad23673b7"
     mixpanel_enable: bool = True
     server_user_id: str = "not_set"
@@ -67,7 +85,7 @@ class Telemetry(pydantic_settings.BaseSettings):
         env_file = ".env"
 
 
-class Assets(pydantic_settings.BaseSettings):
+class Assets(BaseSettings):  # type: ignore
     cdn: str = "https://cdn.jsdelivr.net/npm/"
     proxy: bool = True
     proxy_cache_dir: Path = Path(prefix + "/share/solara/cdn/")
@@ -94,7 +112,7 @@ SESSION_SECRET_KEY_DEFAULT = "change me"
 OAUTH_TEST_CLIENT_IDs = [AUTH0_TEST_CLIENT_ID, FIEF_TEST_CLIENT_ID]
 
 
-class Session(pydantic_settings.BaseSettings):
+class Session(BaseSettings):  # type: ignore
     secret_key: str = SESSION_SECRET_KEY_DEFAULT
     https_only: Optional[bool] = None
     same_site: str = "lax"
@@ -105,7 +123,7 @@ class Session(pydantic_settings.BaseSettings):
         env_file = ".env"
 
 
-class OAuth(pydantic_settings.BaseSettings):
+class OAuth(BaseSettings):  # type: ignore
     private: bool = False
 
     client_id: str = AUTH0_TEST_CLIENT_ID
@@ -127,7 +145,7 @@ if is_mac_os_conda or is_wsl_windows:
     HOST_DEFAULT = "localhost"
 
 
-class MainSettings(pydantic_settings.BaseSettings):
+class MainSettings(BaseSettings):  # type: ignore
     use_pdb: bool = False
     mode: str = "production"
     tracer: bool = False
