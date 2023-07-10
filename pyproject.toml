@@ -27,8 +27,6 @@ dependencies = [
     "pillow",
     "jinja2",
     "MarkupSafe",
-    "pydantic",
-    "pydantic-settings; python_version > '3.6'",
     "click>=7.1.0",
     "rich_click",
     "uvicorn",

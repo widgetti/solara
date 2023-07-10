@@ -7,26 +7,9 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional
 
-import pydantic
-
-# BaseSettings : Optional[ClassVar] = None
-# with pydantic 2.0, we require pydantic_settings
-try:
-    import pydantic_settings
-except ModuleNotFoundError:
-    # we should be on pydantic 1.x
-    BaseSettings = pydantic.BaseSettings
-else:
-    major = pydantic_settings.__version__.split(".")[0]
-    if major != "0":
-        # but the old pydantic_settings is unrelated
-        BaseSettings = pydantic_settings.BaseSettings
-    else:
-        # we should be on pydantic 2.x
-        BaseSettings = pydantic.BaseSettings
-
-
 from filelock import FileLock
+
+from solara.minisettings import BaseSettings
 
 from .. import (  # noqa  # sidefx is that this module creates the ~/.solara directory
     settings,
@@ -70,6 +53,9 @@ class SSG(BaseSettings):  # type: ignore
 
 class Search(BaseSettings):  # type: ignore
     enabled: bool = False
+
+    class Config:
+        env_prefix = "solara_search_"
 
 
 class Telemetry(BaseSettings):  # type: ignore
