@@ -28,7 +28,7 @@ class ThemeVariant(str, Enum):
     auto = "auto"
 
 
-class ThemeSettings(BaseSettings):  # type: ignore
+class ThemeSettings(BaseSettings):
     variant: ThemeVariant = ThemeVariant.light
     variant_user_selectable: bool = True
     loader: str = "solara"
@@ -39,7 +39,7 @@ class ThemeSettings(BaseSettings):  # type: ignore
         env_file = ".env"
 
 
-class SSG(BaseSettings):  # type: ignore
+class SSG(BaseSettings):
     # the first app create will initialize this if it is not set
     build_path: Optional[Path] = None
     enabled: bool = False
@@ -51,14 +51,14 @@ class SSG(BaseSettings):  # type: ignore
         env_file = ".env"
 
 
-class Search(BaseSettings):  # type: ignore
+class Search(BaseSettings):
     enabled: bool = False
 
     class Config:
         env_prefix = "solara_search_"
 
 
-class Telemetry(BaseSettings):  # type: ignore
+class Telemetry(BaseSettings):
     mixpanel_token: str = "91845eb13a68e3db4e58d64ad23673b7"
     mixpanel_enable: bool = True
     server_user_id: str = "not_set"
@@ -71,7 +71,7 @@ class Telemetry(BaseSettings):  # type: ignore
         env_file = ".env"
 
 
-class Assets(BaseSettings):  # type: ignore
+class Assets(BaseSettings):
     cdn: str = "https://cdn.jsdelivr.net/npm/"
     proxy: bool = True
     proxy_cache_dir: Path = Path(prefix + "/share/solara/cdn/")
@@ -98,7 +98,7 @@ SESSION_SECRET_KEY_DEFAULT = "change me"
 OAUTH_TEST_CLIENT_IDs = [AUTH0_TEST_CLIENT_ID, FIEF_TEST_CLIENT_ID]
 
 
-class Session(BaseSettings):  # type: ignore
+class Session(BaseSettings):
     secret_key: str = SESSION_SECRET_KEY_DEFAULT
     https_only: Optional[bool] = None
     same_site: str = "lax"
@@ -109,7 +109,7 @@ class Session(BaseSettings):  # type: ignore
         env_file = ".env"
 
 
-class OAuth(BaseSettings):  # type: ignore
+class OAuth(BaseSettings):
     private: bool = False
 
     client_id: str = AUTH0_TEST_CLIENT_ID
@@ -131,7 +131,7 @@ if is_mac_os_conda or is_wsl_windows:
     HOST_DEFAULT = "localhost"
 
 
-class MainSettings(BaseSettings):  # type: ignore
+class MainSettings(BaseSettings):
     use_pdb: bool = False
     mode: str = "production"
     tracer: bool = False

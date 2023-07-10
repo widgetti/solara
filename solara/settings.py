@@ -17,7 +17,7 @@ if not home.exists():
     home.mkdir(parents=True, exist_ok=True)
 
 
-class Cache(BaseSettings):  # type: ignore
+class Cache(BaseSettings):
     type: str = Field("memory", env="SOLARA_CACHE", title="Type of cache, e.g. 'memory', 'disk', 'redis', or a multilevel cache, e.g. 'memory,disk'")
     disk_max_size: str = Field("10GB", title="Maximum size for'disk' cache , e.g. 10GB, 500MB")
     memory_max_size: str = Field("1GB", title="Maximum size for 'memory-size' cache, e.g. 10GB, 500MB")
