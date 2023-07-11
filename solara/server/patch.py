@@ -69,6 +69,10 @@ class FakeIPython:
         # proplot requires this
         pass
 
+    def set_custom_exc(self, exc_tuple, handler):
+        # make dask work
+        pass
+
 
 def kernel_instance_dispatch(cls, *args, **kwargs):
     context = app.get_current_context()
