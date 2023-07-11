@@ -16,8 +16,7 @@ def Switch(
     classes: List[str] = [],
     style: Optional[Union[str, Dict[str, str]]] = None,
 ):
-    """A switch component provides users the ability to choose between two distinct values. But aesthetically different
-    from a checkbox.
+    """A switch component provides users the ability to choose between two distinct values. But aesthetically different from a checkbox.
 
     Basic examples
 
