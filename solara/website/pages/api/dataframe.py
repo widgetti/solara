@@ -26,7 +26,7 @@ def Page():
 
     column_actions = [solara.ColumnAction(icon="mdi-sunglasses", name="User column action", on_click=on_action_column)]
     cell_actions = [solara.CellAction(icon="mdi-white-balance-sunny", name="User cell action", on_click=on_action_cell)]
-    solara.MarkdownIt(
+    solara.Markdown(
         f"""
         ## Demo
 

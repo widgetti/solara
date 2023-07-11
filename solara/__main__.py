@@ -27,9 +27,6 @@ except ImportError:
 
 
 HERE = Path(__file__).parent
-HOST_DEFAULT = os.environ.get("HOST", "localhost")
-if "arm64-apple-darwin" in HOST_DEFAULT:  # conda activate script
-    HOST_DEFAULT = "localhost"
 
 LOGGING_CONFIG: dict = {
     "version": 1,
@@ -121,7 +118,11 @@ def cli():
 
 @cli.command()
 @click.option("--port", default=int(os.environ.get("PORT", 8765)))
-@click.option("--host", default=HOST_DEFAULT)
+@click.option(
+    "--host",
+    default=settings.main.host,
+    help="Host to listen on. Defaults to the $HOST environment or $SOLARA_HOST when available or localhost when not given.",
+)
 @click.option(
     "--dev/--no-dev",
     default=False,
@@ -325,6 +326,7 @@ def run(
 
     if open:
         threading.Thread(target=open_browser, daemon=True).start()
+
     rich.print(f"Solara server is starting at {url}")
 
     if log_level is not None:
@@ -419,7 +421,7 @@ def run(
 @cli.command()
 @click.argument("app")
 @click.option("--port", default=int(os.environ.get("PORT", 8765)))
-@click.option("--host", default=HOST_DEFAULT)
+@click.option("--host", default=settings.main.host)
 @click.option(
     "--headed/--no-headed",
     is_flag=True,

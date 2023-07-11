@@ -14,7 +14,7 @@ title = "use_state_or_update"
 
 @solara.component
 def SliderWithoutState(value: int):
-    # Note that this is very bad practive, if value is an input change and the slider
+    # Note that this is a very bad practice, if value is an input change and the slider
     # can change it, this component should have a on_value callback to allow the parent
     # component to manage its state.
     # This component is only for demoing/understanding.
