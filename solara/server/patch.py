@@ -89,7 +89,7 @@ def interactive_shell_instance_dispatch(cls, *args, **kwargs):
 def kernel_initialized_dispatch(cls):
     try:
         app.get_current_context()
-    except RuntimeError:
+    except (AttributeError, RuntimeError):
         return False
     return True
 
