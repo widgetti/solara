@@ -22,7 +22,7 @@ items = [
     {
         "name": "Input",
         "icon": "mdi-chevron-left-box",
-        "pages": ["button", "checkbox", "input", "select", "slider", "togglebuttons", "file_browser", "file_drop"],
+        "pages": ["button", "checkbox", "input", "select", "slider", "togglebuttons", "file_browser", "file_drop", "file"],
     },
     {
         "name": "Output",
