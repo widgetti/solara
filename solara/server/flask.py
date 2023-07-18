@@ -187,14 +187,16 @@ def serve_static(path):
     return send_from_directory(server.solara_static, path)
 
 
-@blueprint.route(f"/{cdn_helper.cdn_url_path}/<path:path>")
-def cdn(path):
-    if not allowed():
-        abort(401)
-    cache_directory = settings.assets.proxy_cache_dir
-    content = cdn_helper.get_data(Path(cache_directory), path)
-    mime = mimetypes.guess_type(path)
-    return flask.Response(content, mimetype=mime[0])
+if settings.assets:
+
+    @blueprint.route(f"/{cdn_helper.cdn_url_path}/<path:path>")
+    def cdn(path):
+        if not allowed():
+            abort(401)
+        cache_directory = settings.assets.proxy_cache_dir
+        content = cdn_helper.get_data(Path(cache_directory), path)
+        mime = mimetypes.guess_type(path)
+        return flask.Response(content, mimetype=mime[0])
 
 
 @blueprint.route("/", defaults={"path": ""})
