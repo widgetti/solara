@@ -79,38 +79,6 @@ function injectDebugMessageInterceptor(kernel) {
 }
 
 
-class WebSocketRedirectWebWorker {
-    // redirects to webworker
-    constructor(url) {
-        console.log('connect url intercepted', url)
-        function make_default(name) {
-            return () => {
-                console.log("default ", name)
-            }
-        }
-        this.onopen = make_default('onopen')
-        this.onclose = make_default('onclose')
-        this.onmessage = make_default('onmessage')
-        setTimeout(() => this.start(), 10)
-    }
-    send(msg) {
-        // console.log('WebSocketRedirectWebWorker: send msg', msg)
-        window.parent.postMessage({ 'type': 'send', 'value': msg })
-    }
-    start() {
-        self.addEventListener('message', async (event) => {
-            let msg = event.data
-            // console.log('WebSocketRedirectWebWorker on msg', msg)
-            if (msg.type == 'send') {
-                this.onmessage({ data: msg.value })
-            }
-        });
-        this.onopen()
-        // solaraWorker.postMessage({ 'type': 'open' })
-    }
-}
-
-
 function getCookiesMap(cookiesString) {
     return cookiesString.split(";")
         .map(function (cookieString) {
@@ -153,13 +121,7 @@ async function solaraInit(mountId, appName) {
         kernel.dispose()
         window.navigator.sendBeacon(close_url);
     });
-    console.log("solara.browser_platform", solara.browser_platform);
-    if (solara.browser_platform) {
-        options = { WebSocket: WebSocketRedirectWebWorker }
-    } else {
-        options = {}
-    }
-    let kernel = await solara.connectKernel(solara.rootPath + '/jupyter', uuid, options)
+    let kernel = await solara.connectKernel(solara.rootPath + '/jupyter', uuid)
     if (!kernel) {
         return;
     }
