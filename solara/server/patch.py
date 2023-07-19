@@ -74,9 +74,15 @@ class FakeIPython:
         pass
 
 
+kernel_instance_dispatch_initial = ipykernel.kernelbase.Kernel.instance.__func__
+
+
 def kernel_instance_dispatch(cls, *args, **kwargs):
-    context = app.get_current_context()
-    return context.kernel
+    if not app.has_current_context():
+        return kernel_instance_dispatch_initial(cls, *args, **kwargs)
+    else:
+        context = app.get_current_context()
+        return context.kernel
 
 
 InteractiveShell_instance_initial = InteractiveShell.instance
