@@ -160,7 +160,7 @@ session = Session()
 if assets.proxy:
     try:
         assets.proxy_cache_dir.mkdir(exist_ok=True, parents=True)
-    except Exception as e:
+    except OSError as e:
         assets.proxy = False
         warnings.warn(
             f"Could not create {assets.proxy_cache_dir} due to {e}. We will automatically disable the assets proxy for you. "
@@ -173,10 +173,13 @@ if assets.proxy:
 if telemetry.server_user_id == "not_set":
     home = get_solara_home()
     server_user_id_file = home / "server_user_id.txt"
-    with FileLock(str(server_user_id_file) + ".lock"):
-        if not server_user_id_file.exists():
-            server_user_id_file.write_text(str(uuid.uuid4()))
-        telemetry.server_user_id = server_user_id_file.read_text()
+    try:
+        with FileLock(str(server_user_id_file) + ".lock"):
+            if not server_user_id_file.exists():
+                server_user_id_file.write_text(str(uuid.uuid4()))
+            telemetry.server_user_id = server_user_id_file.read_text()
+    except OSError:
+        pass  # it's ok
 
 if oauth.client_id:
     if oauth.client_id not in OAUTH_TEST_CLIENT_IDs:
