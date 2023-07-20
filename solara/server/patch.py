@@ -69,6 +69,10 @@ class FakeIPython:
         # proplot requires this
         pass
 
+    def set_custom_exc(self, exc_tuple, handler):
+        # make dask work
+        pass
+
 
 Kernel_instance_original = ipykernel.kernelbase.Kernel.instance.__func__
 
