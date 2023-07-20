@@ -94,7 +94,7 @@ def kernel_initialized_dispatch(cls):
     if app.has_current_context():
         return True
     else:
-        return Kernel_initialized_initial()
+        return Kernel_initialized_initial(cls)
 
 
 InteractiveShell_instance_initial = InteractiveShell.instance.__func__
