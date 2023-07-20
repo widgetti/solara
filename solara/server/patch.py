@@ -105,7 +105,7 @@ def interactive_shell_instance_dispatch(cls, *args, **kwargs):
         context = app.get_current_context()
         return context.kernel.shell
     else:
-        return InteractiveShell_instance_initial(*args, **kwargs)
+        return InteractiveShell_instance_initial(cls, *args, **kwargs)
 
 
 def display_solara(
