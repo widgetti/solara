@@ -74,7 +74,7 @@ class FakeIPython:
         pass
 
 
-Kernel_instance_original = ipykernel.kernelbase.Kernel.instance.__func__
+Kernel_instance_original = ipykernel.kernelbase.Kernel.instance.__func__  # type: ignore
 
 
 def kernel_instance_dispatch(cls, *args, **kwargs):
@@ -85,7 +85,7 @@ def kernel_instance_dispatch(cls, *args, **kwargs):
         return Kernel_instance_original(cls, *args, **kwargs)
 
 
-Kernel_initialized_initial = ipykernel.kernelbase.Kernel.initialized.__func__
+Kernel_initialized_initial = ipykernel.kernelbase.Kernel.initialized.__func__  # type: ignore
 
 
 def kernel_initialized_dispatch(cls):
