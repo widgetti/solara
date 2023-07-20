@@ -3,6 +3,7 @@ import re
 import site
 import sys
 import uuid
+import warnings
 from enum import Enum
 from pathlib import Path
 from typing import Optional
@@ -156,7 +157,18 @@ assets = Assets()
 oauth = OAuth()
 session = Session()
 
-assets.proxy_cache_dir.mkdir(exist_ok=True, parents=True)
+if assets.proxy:
+    try:
+        assets.proxy_cache_dir.mkdir(exist_ok=True, parents=True)
+    except Exception as e:
+        assets.proxy = False
+        warnings.warn(
+            f"Could not create {assets.proxy_cache_dir} due to {e}. We will automatically disable the assets proxy for you. "
+            "If you want to disable this warning, set SOLARA_ASSETS_PROXY to False (e.g. export SOLARA_ASSETS_PROXY=false)."
+        )
+        # that's ok, the user probably doesn't have permission to create the directory
+        # in this case, we would need to install solara-assets?
+        pass
 
 if telemetry.server_user_id == "not_set":
     home = get_solara_home()
