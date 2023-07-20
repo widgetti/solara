@@ -470,7 +470,7 @@ def generate_routes_directory(path: Path) -> List[solara.Route]:
     return routes
 
 
-def _generate_route_path(subpath: Path, layout=None, first=False, has_index=False) -> solara.Route:
+def _generate_route_path(subpath: Path, layout=None, first=False, has_index=False, initial_namespace={}) -> solara.Route:
     from .server import reload
 
     name = subpath.stem
@@ -496,7 +496,7 @@ def _generate_route_path(subpath: Path, layout=None, first=False, has_index=Fals
         children = generate_routes_directory(subpath)
     else:
         reload.reloader.watcher.add_file(subpath)
-        module = source_to_module(subpath)
+        module = source_to_module(subpath, initial_namespace=initial_namespace)
         children = getattr(module, "routes", children)
         children = fix_routes(children, subpath)
         module_layout = getattr(module, "Layout", module_layout)

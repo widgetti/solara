@@ -10,7 +10,6 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, cast
 
-import IPython.display
 import ipywidgets as widgets
 import reacton
 from ipywidgets import DOMWidget, Widget
@@ -85,11 +84,6 @@ class AppScript:
     def _execute(self):
         logger.info("Executing %s", self.name)
         app = None
-        local_scope = {
-            "display": IPython.display.display,
-            "__name__": "__main__",
-            "__file__": str(self.path),
-        }
         routes: Optional[List[solara.Route]] = None
 
         def add_path():
@@ -107,13 +101,14 @@ class AppScript:
         elif self.name.endswith(".py"):
             self.type = AppType.SCRIPT
             add_path()
-            local_scope["__name__"] = "__main__"
             # manually add the script to the watcher
             reload.reloader.watcher.add_file(self.path)
             self.directory = self.path.parent.resolve()
+            initial_namespace = {
+                "__name__": "__main__",
+            }
             with reload.reloader.watch():
-                routes = [solara.autorouting._generate_route_path(self.path, first=True)]
-
+                routes = [solara.autorouting._generate_route_path(self.path, first=True, initial_namespace=initial_namespace)]
         elif self.name.endswith(".ipynb"):
             self.type = AppType.NOTEBOOK
             add_path()
