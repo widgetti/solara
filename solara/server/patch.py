@@ -70,12 +70,30 @@ class FakeIPython:
         pass
 
 
+Kernel_instance_original = ipykernel.kernelbase.Kernel.instance.__func__
+
+
 def kernel_instance_dispatch(cls, *args, **kwargs):
-    context = app.get_current_context()
-    return context.kernel
+    if app.has_current_context():
+        context = app.get_current_context()
+        return context.kernel
+    else:
+        return Kernel_instance_original(cls, *args, **kwargs)
 
 
-InteractiveShell_instance_initial = InteractiveShell.instance
+Kernel_initialized_initial = ipykernel.kernelbase.Kernel.initialized.__func__
+
+
+def kernel_initialized_dispatch(cls):
+    if app is None:  # python is shutting down, and the comm dtor wants to send a close message
+        return False
+    if app.has_current_context():
+        return True
+    else:
+        return Kernel_initialized_initial()
+
+
+InteractiveShell_instance_initial = InteractiveShell.instance.__func__
 
 
 def interactive_shell_instance_dispatch(cls, *args, **kwargs):
@@ -84,14 +102,6 @@ def interactive_shell_instance_dispatch(cls, *args, **kwargs):
         return context.kernel.shell
     else:
         return InteractiveShell_instance_initial(*args, **kwargs)
-
-
-def kernel_initialized_dispatch(cls):
-    try:
-        app.get_current_context()
-    except (AttributeError, RuntimeError):
-        return False
-    return True
 
 
 def display_solara(
