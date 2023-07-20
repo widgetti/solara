@@ -306,7 +306,12 @@ def AppLayout(
             with v.Row(no_gutters=False, class_="solara-content-main"):
                 v.Col(cols=12, children=children_content)
     else:
-        with v.Html(tag="div", style_="min-height: 100vh") as main:
+        # this limits the height of the app to the height of the screen
+        # and further down we use overflow: auto to add scrollbars to the main content
+        # the navigation drawer adds it own scrollbars
+        # NOTE: while developing this we added overflow: hidden, but this does not seem
+        # to be necessary anymore
+        with v.Html(tag="div", style_="height: 100vh") as main:
             with solara.HBox():
                 if use_drawer:
                     with v.NavigationDrawer(
@@ -340,8 +345,13 @@ def AppLayout(
                     if fullscreen:
                         solara.Button(icon_name="mdi-fullscreen-exit", on_click=lambda: set_fullscreen(False), icon=True, dark=False)
 
-            with v.Content(class_="solara-content-main"):
-                v.Col(cols=12, children=children_content)
+            with v.Content(class_="solara-content-main", style_="height: 100%;"):
+                # make sure the scrollbar does no go under the appbar by adding overflow: auto
+                # to a child of content, because content has padding-top: 64px (set by vuetify)
+                # the padding: 12px is needed for backward compatibility with the previously used
+                # v.Col which has this by default. If we do not use this, a solara.Column will
+                # use a margin: -12px which will make a horizontal scrollbar appear
+                solara.Div(style_="height: 100%; overflow: auto; padding: 12px;", children=children_content)
         if fullscreen:
             with v.Dialog(v_model=True, children=[], fullscreen=True, hide_overlay=True, persistent=True, no_click_animation=True) as dialog:
                 v.Sheet(class_="overflow-y-auto overflow-x-auto", children=[main])
