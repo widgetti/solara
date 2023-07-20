@@ -29,7 +29,6 @@ dependencies = [
     "uvicorn",
     "websockets",
     "starlette",
-    "jupyter_server",
     "jupyter_client>=7.0.0",
     "watchdog",
     "requests",

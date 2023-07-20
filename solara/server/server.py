@@ -15,7 +15,7 @@ import requests
 import solara
 import solara.routing
 
-from . import app, settings, websocket
+from . import app, jupytertools, settings, websocket
 from .app import initialize_virtual_kernel
 from .kernel import Kernel, deserialize_binary_message
 
@@ -295,28 +295,15 @@ def get_nbextensions_directories() -> List[Path]:
 def get_nbextensions() -> List[str]:
     from jupyter_core.paths import jupyter_config_path
 
-    read_config_path = [os.path.join(p, "serverconfig") for p in jupyter_config_path()]
-    read_config_path += [os.path.join(p, "nbconfig") for p in jupyter_config_path()]
-    # import inline since we don't want this dep for pyiodide
-    from jupyter_server.services.config import ConfigManager
+    paths = [Path(p) / "nbconfig" for p in jupyter_config_path()]
 
-    config_manager = ConfigManager(read_config_path=read_config_path)
-    notebook_config = config_manager.get("notebook")
-    # except for the widget extension itself, since Voilà has its own
-    load_extensions = notebook_config.get("load_extensions", {})
-    if "jupyter-js-widgets/extension" in load_extensions:
-        load_extensions["jupyter-js-widgets/extension"] = False
-    if "voila/extension" in load_extensions:
-        load_extensions["voila/extension"] = False
-    if "voila/extension" in load_extensions:
-        load_extensions["voila/extension"] = False
-    directories = get_nbextensions_directories()
+    load_extensions = jupytertools.get_config(paths, "notebook")["load_extensions"]
 
     def exists(name):
-        for directory in directories:
+        for directory in nbextensions_directories:
             if (directory / (name + ".js")).exists():
                 return True
-        logger.error(f"nbextension {name} not found")
+        logger.info(f"nbextension {name} not found")
         return False
 
     nbextensions = [name for name, enabled in load_extensions.items() if enabled and (name not in nbextensions_ignorelist) and exists(name)]
