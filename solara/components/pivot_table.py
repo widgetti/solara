@@ -4,7 +4,11 @@ from functools import reduce
 from typing import Any, Callable, Dict, List, NoReturn
 
 import ipyvuetify as v
-import numpy as np
+
+try:
+    import numpy as np
+except ModuleNotFoundError:
+    np = None  # type: ignore
 import traitlets
 
 import solara

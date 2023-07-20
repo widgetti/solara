@@ -23,8 +23,6 @@ dependencies = [
     "humanize",
     "ipyvuetify>=1.8.10",
     "ipyvue>=1.9.0",
-    "numpy",
-    "pillow",
     "jinja2",
     "MarkupSafe",
     "click>=7.1.0",
