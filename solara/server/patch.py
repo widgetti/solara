@@ -97,7 +97,7 @@ def kernel_initialized_dispatch(cls):
         return Kernel_initialized_initial(cls)
 
 
-InteractiveShell_instance_initial = InteractiveShell.instance.__func__
+InteractiveShell_instance_initial = InteractiveShell.instance.__func__  # type: ignore
 
 
 def interactive_shell_instance_dispatch(cls, *args, **kwargs):
