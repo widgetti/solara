@@ -28,7 +28,6 @@ dependencies = [
     "click>=7.1.0",
     "rich_click",
     "uvicorn",
-    "watchgod",
     "websockets",
     "starlette",
     "jupyter_server",
