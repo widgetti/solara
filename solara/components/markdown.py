@@ -245,6 +245,7 @@ def Markdown(md_text: str, unsafe_solara_execute=False, style: Union[str, Dict, 
                 "pymdownx.superfences",
                 "pymdownx.emoji",
                 "toc",  # so we get anchors for h1 h2 etc
+                "tables",
             ],
             extension_configs={
                 "pymdownx.superfences": {
