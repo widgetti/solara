@@ -269,6 +269,9 @@ def Output_enter(self):
         if msg["msg_type"] == "display_data":
             self.outputs += ({"output_type": "display_data", "data": msg["content"]["data"], "metadata": msg["content"]["metadata"]},)
             return None
+        if msg["msg_type"] == "clear_output":
+            self.outputs = ()
+            return None
         return msg
 
     get_ipython().display_pub.register_hook(hook)
