@@ -345,7 +345,7 @@ def create_dummy_context():
 
 
 def get_current_thread_key() -> str:
-    thread = threading.currentThread()
+    thread = threading.current_thread()
     return get_thread_key(thread)
 
 
