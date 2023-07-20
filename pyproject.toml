@@ -18,26 +18,20 @@ dependencies = [
     "cachetools",
     "filelock",
     "markdown",
-    "pygments",
     "pymdown-extensions",
     "humanize",
     "ipyvuetify>=1.8.10",
     "ipyvue>=1.9.0",
-    "numpy",
-    "pillow",
     "jinja2",
     "MarkupSafe",
     "click>=7.1.0",
     "rich_click",
     "uvicorn",
-    "watchgod",
     "websockets",
     "starlette",
-    "jupyter_server",
     "jupyter_client>=7.0.0",
     "watchdog",
     "requests",
-    "pygments==2.10; python_version < '3.7'",
     "nbformat",
     "ipykernel",
 ]
@@ -54,6 +48,13 @@ path = "solara/__init__.py"
 ignore-vcs = true
 
 [project.optional-dependencies]
+extra = [
+    "pygments",
+    "numpy",
+    "pillow",
+    "pygments",
+    "pygments==2.10; python_version < '3.7'",
+]
 dev = [
     "codespell",
     "python-dotenv",

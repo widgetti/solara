@@ -1,6 +1,3 @@
-import numpy as np
-
-
 def get_pandas_major():
     import pandas as pd
 
@@ -84,6 +81,8 @@ def df_py_types(df):
     If a type is not supported, the internal type is returned.
 
     """
+    import numpy as np
+
     if df_type(df) == "vaex":
         schema = df.schema()
         py_types = [int, float, str, bool]

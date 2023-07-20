@@ -5,10 +5,11 @@ import sys
 import threading
 from collections import abc
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import TYPE_CHECKING, Dict, List, Union
 
-import numpy as np
-import PIL.Image
+if TYPE_CHECKING:
+    import numpy as np
+
 import reacton
 
 import solara
@@ -56,6 +57,10 @@ def numpy_to_image(data: "np.ndarray", format="png"):
     import io
 
     if data.ndim == 3:
+        try:
+            import PIL.Image
+        except ModuleNotFoundError:
+            raise ModuleNotFoundError("Pillow is required to convert numpy array to image, use pip install pillow to install it.")
         if data.shape[2] == 3:
             im = PIL.Image.fromarray(data[::], "RGB")
         elif data.shape[2] == 4:
@@ -80,6 +85,8 @@ def cwd(path):
 
 
 def numpy_equals(a, b):
+    import numpy as np
+
     if a is b:
         return True
     if a is None or b is None:
