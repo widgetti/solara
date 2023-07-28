@@ -21,6 +21,7 @@ from solara.server.shell import SolaraInteractiveShell
 from . import settings, websocket
 
 logger = logging.getLogger("solara.server.kernel")
+ipykernel_major = int(ipykernel.__version__.split(".")[0])
 
 jsonmodule = json
 
@@ -291,6 +292,10 @@ class Kernel(ipykernel.kernelbase.Kernel):
         """Overridden from parent to tell the display hook and output streams
         about the parent message.
         """
-        super().set_parent(ident, parent, channel)
+        if ipykernel_major < 6:
+            # the channel argument was added in 6.0
+            super().set_parent(ident, parent)
+        else:
+            super().set_parent(ident, parent, channel)
         if channel == "shell":
             self.shell.set_parent(parent)
