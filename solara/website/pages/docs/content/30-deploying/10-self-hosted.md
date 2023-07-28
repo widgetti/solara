@@ -6,6 +6,7 @@
  * [Voila](#voila)
  * [Panel](#panel)
  * [Nginx](#nginx)
+ * [Docker](#docker)
 
 
 Solara runs on several web frameworks, such as
@@ -220,3 +221,24 @@ An alternative to using the `X-Script-Name` header with uvicorn, would be to pas
 ```
 $ SOLARA_APP=sol.py uvicorn --workers 1 --root-path /solara -b 0.0.0.0:8765 solara.server.flask:app
 ```
+
+## Docker
+
+There is nothing special about running Solara in Docker. The only things you probably need to change is the interface the server binds to.
+Solara by default binds to localhost, so that it is not accessible from the outside world. Apart from that localhost (or `::1` in case of IPv6)
+might not be available, you probably want the outside world to see your Solara app. For that, you can use `--host=0.0.0.0` or `--host=::` option to bind to all interfaces.
+
+Your Dockerfile could look like:
+
+```Dockerfile
+FROM ....
+
+...
+CMD ["solara", "run", "sol.py", "--host=0.0.0.0"]
+
+```
+
+For a complete example, you can take a look at:
+
+  * https://huggingface.co/spaces/giswqs/solara-template/tree/main
+  * https://github.com/opengeos/solara-template
