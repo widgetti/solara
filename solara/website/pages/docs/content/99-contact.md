@@ -14,4 +14,4 @@ to other people using and developing on Solara, consider using [GitHub discussio
 or consider joining discord for more synchronous discussions.
 
 
-[![Discord Shield](https://discordapp.com/api/guilds/1106593685241614489/widget.png?style=banner2)](https://discord.gg/2jAh9P8H)
+[![Discord Shield](https://discordapp.com/api/guilds/1106593685241614489/widget.png?style=banner2)](https://discord.gg/dm4GKNDjXN)
