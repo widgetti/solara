@@ -14,7 +14,7 @@ def Page():
         solara.Button(label="View source", icon_name="mdi-github-circle", attributes={"href": github_url, "target": "_blank"}, text=True, outlined=True)
         SharedComponent()
 
-        with solara.Card("Shown only on page2", style={"max-width": "500px"}):
+        with solara.Card("Shown only on page2", style={"max-width": "500px"}, margin=0, classes=["my-2"]):
             solara.Markdown(
                 f"""
                 The lifetime of `component_state` if bound to this page. If you navigate away from it,
