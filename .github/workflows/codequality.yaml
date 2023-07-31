@@ -21,6 +21,9 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Install solara
+        run: |
+          pip install -e ".[dev]"
       - name: Run pre commit
         run: |
           pip install pre-commit
