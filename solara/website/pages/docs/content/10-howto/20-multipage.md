@@ -180,7 +180,7 @@ def Page(name: str = "foo"):
 
 By giving the name argument a default value of `"foo"`, Solara will also accept the `/tabular` url.
 
-# What you have leared
+# What you have learned
 
   * Putting multiple Solara app script into a directory allows Solara to show a multipage app.
   * If no `Layout` component is provided, Solara adds a default navigation sidebar.
