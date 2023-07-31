@@ -222,7 +222,7 @@ def test_multi_level_cache():
     assert l2 == {"key1": 1}
 
     cache2 = solara.cache.create("memory,disk")
-    assert type(cache) == type(cache2)
+    assert type(cache) is type(cache2)
 
 
 def test_memoize_hook():
