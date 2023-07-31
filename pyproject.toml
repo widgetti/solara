@@ -125,8 +125,10 @@ line-length = 160
 [tool.ruff]
 line-length = 160
 
+
 [tool.isort]
 profile = "black"
+known_first_party = ["solara", "solara_enterprise"]
 
 
 [tool.pytest.ini_options]
