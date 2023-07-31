@@ -1,4 +1,5 @@
 import ipyvuetify as vy
+
 import solara
 
 

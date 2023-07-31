@@ -5,6 +5,7 @@ so we can render content dynamically.
 from typing import Optional
 
 import plotly.express as px
+
 import solara
 
 from ... import data

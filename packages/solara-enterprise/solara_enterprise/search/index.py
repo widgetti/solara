@@ -2,10 +2,11 @@ import json
 from pathlib import Path
 from typing import Any, List
 
-import solara
 from rich import print as rprint
-from solara.server import settings
 from typing_extensions import TypedDict
+
+import solara
+from solara.server import settings
 
 from .. import license
 

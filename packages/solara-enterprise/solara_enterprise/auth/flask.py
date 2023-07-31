@@ -4,6 +4,7 @@ from typing import Dict, Optional
 
 from authlib.integrations.flask_client import OAuth
 from flask import redirect, request, session
+
 from solara.server import settings
 
 logger = logging.getLogger("solara.enterprise.auth.starlette")

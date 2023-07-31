@@ -1,6 +1,7 @@
 import pytest
-import solara
 import vaex
+
+import solara
 from solara.components.datatable import DataTable, DataTableWidget
 
 df_vaex = vaex.datasets.titanic()

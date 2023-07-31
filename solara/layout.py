@@ -1,4 +1,5 @@
 import reacton.ipyvuetify as v
+
 import solara
 from solara.kitchensink import vue
 
