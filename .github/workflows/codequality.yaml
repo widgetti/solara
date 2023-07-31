@@ -21,15 +21,7 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
+      - name: Run pre commit
         run: |
-          pip install ".[dev]" mypy==0.991 black==22.12.0 codespell==2.2.4 "click<8.1.4"
-          mypy --install-types --non-interactive solara
-      - name: Run codespell
-        run: codespell
-      - name: Run black
-        run: black solara
-      - name: Run flake8
-        uses: suo/flake8-github-action@releases/v1
-      - name: mypy
-        run: mypy solara
+          pip install pre-commit
+          pre-commit run --all-files --show-diff-on-failure
