@@ -65,7 +65,7 @@ def SliderInt(
         reactive_value.value = int(value)
 
     if tick_labels == "end_points":
-        num_repeats = int(np.ceil((max - min) / step)) - 2
+        num_repeats = int(np.ceil((max - min) / step)) - 1
         tick_labels = [str(min), *([None] * num_repeats), str(max)]
 
     return rv.Slider(
@@ -133,7 +133,7 @@ def SliderRangeInt(
         reactive_value.set((int(v1), int(v2)))
 
     if tick_labels == "end_points":
-        num_repeats = int(np.ceil((max - min) / step)) - 2
+        num_repeats = int(np.ceil((max - min) / step)) - 1
         tick_labels = [str(min), *([None] * num_repeats), str(max)]
 
     return cast(
@@ -203,7 +203,7 @@ def SliderFloat(
         reactive_value.set(float(value))
 
     if tick_labels == "end_points":
-        num_repeats = int(np.ceil((max - min) / step)) - 2
+        num_repeats = int(np.ceil((max - min) / step)) - 1
         tick_labels = [str(min), *([None] * num_repeats), str(max)]
 
     return rv.Slider(
@@ -271,7 +271,7 @@ def SliderRangeFloat(
         reactive_value.set((float(v1), float(v2)))
 
     if tick_labels == "end_points":
-        num_repeats = int(np.ceil((max - min) / step)) - 2
+        num_repeats = int(np.ceil((max - min) / step)) - 1
         tick_labels = [str(min), *([None] * num_repeats), str(max)]
 
     return cast(
