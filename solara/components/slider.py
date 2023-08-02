@@ -23,8 +23,8 @@ def SliderInt(
     max: int = 10,
     step: int = 1,
     on_value: Optional[Callable[[int], None]] = None,
-    thumb_label: bool | Literal["always"] | None = "always",
-    tick_labels: list | Literal["end_points"] | None = "end_points",
+    thumb_label: Union[bool, Literal["always"], None] = "always",
+    tick_labels: Union[list, Literal["end_points"], None] = "end_points",
     disabled: bool = False,
 ):
     """Slider for controlling an integer value.
@@ -92,8 +92,8 @@ def SliderRangeInt(
     max: int = 10,
     step: int = 1,
     on_value: Callable[[Tuple[int, int]], None] = None,
-    thumb_label: bool | Literal["always"] = "always",
-    tick_labels: list | Literal["end_points"] | None = "end_points",
+    thumb_label: Union[bool | Literal["always"], None] = "always",
+    tick_labels: Union[list, Literal["end_points"], None] = "end_points",
     disabled: bool = False,
 ) -> reacton.core.ValueElement[ipyvuetify.RangeSlider, Tuple[int, int]]:
     """Slider for controlling a range of integer values.
@@ -163,8 +163,8 @@ def SliderFloat(
     max: float = 10.0,
     step: float = 0.1,
     on_value: Callable[[float], None] = None,
-    thumb_label: bool | Literal["always"] | None = "always",
-    tick_labels: list | Literal["end_points"] | None = "end_points",
+    thumb_label: Union[bool | Literal["always"], None] | None = "always",
+    tick_labels: Union[list, Literal["end_points"], None] = "end_points",
     disabled: bool = False,
 ):
     """Slider for controlling a float value.
@@ -230,8 +230,8 @@ def SliderRangeFloat(
     max: float = 10.0,
     step: float = 0.1,
     on_value: Callable[[Tuple[float, float]], None] = None,
-    thumb_label: bool | Literal["always"] = "always",
-    tick_labels: list | Literal["end_points"] | None = "end_points",
+    thumb_label: Union[bool | Literal["always"], None] = "always",
+    tick_labels: Union[list, Literal["end_points"], None] = "end_points",
     disabled: bool = False,
 ) -> reacton.core.ValueElement[ipyvuetify.RangeSlider, Tuple[float, float]]:
     """Slider for controlling a range of float values.
