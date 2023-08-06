@@ -163,7 +163,6 @@ async def kernel_connection(ws: starlette.websockets.WebSocket):
         user = None
 
     if not session_id:
-        logger.error("not work for Safari")
         logger.error("no session cookie")
         await ws.close()
         return
