@@ -29,14 +29,18 @@ template_name = "index.html.j2"
 ipykernel_major = int(ipykernel.__version__.split(".")[0])
 ipywidgets_major = int(ipywidgets.__version__.split(".")[0])
 cache_memory = solara.cache.Memory(max_items=128)
-
+template_dir_env_name = 'SOLARA_TEMPLATES_DIR'
 # first look at the project directory, then the builtin solara directory
 
 
 def get_jinja_env(app_name: str) -> jinja2.Environment:
+    template_dir_from_env = os.getenv(template_dir_env_name)
+    template_dirs_from_env =  [template_dir_from_env] if template_dir_from_env else []
     jinja_loader = jinja2.FileSystemLoader(
+        template_dirs_from_env +
         [
-            os.getenv('SOLARA_TEMPLATES_DIR') or 'templates',
+            '../templates',
+            'templates',
             app.apps["__default__"].directory.parent / "templates",
             str(directory / "templates"),
         ]
