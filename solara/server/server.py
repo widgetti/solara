@@ -36,6 +36,7 @@ cache_memory = solara.cache.Memory(max_items=128)
 def get_jinja_env(app_name: str) -> jinja2.Environment:
     jinja_loader = jinja2.FileSystemLoader(
         [
+            os.getenv('SOLARA_TEMPLATES_DIR') or 'templates',
             app.apps["__default__"].directory.parent / "templates",
             str(directory / "templates"),
         ]
