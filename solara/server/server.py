@@ -39,8 +39,8 @@ def get_jinja_env(app_name: str) -> jinja2.Environment:
     jinja_loader = jinja2.FileSystemLoader(
         template_dirs_from_env +
         [
-            '../templates',
             'templates',
+            '../templates',
             app.apps["__default__"].directory.parent / "templates",
             str(directory / "templates"),
         ]
