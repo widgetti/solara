@@ -34,7 +34,7 @@ def Page():
             solara.Select("columns medium", values=[1, 2, 3, 4, 6, 12]).connect(columns_medium)  # type: ignore
             solara.Select("columns large", values=[1, 2, 3, 4, 6, 12]).connect(columns_large)  # type: ignore
             solara.Select("columns xlarge", values=[1, 2, 3, 4, 6, 12]).connect(columns_xlarge)  # type: ignore
-        # taken from https://vuetifyjs.com/en/styles/display/#display
+        # taken from https://v2.vuetifyjs.com/en/styles/display/#display
         solara.HTML(
             "h2", unsafe_innerHTML=f"Current screensize is xsmall/default, each child is {columns_default.value} points wide", class_="ma-2 d-flex d-sm-none ma"
         )

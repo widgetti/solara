@@ -4,7 +4,7 @@
  * [GitHub](https://github.com/widgetti/ipyvuetify)
 
 
-ipyvuetify is an [ipywidget based](./ipywidgets) library, that wraps the [Vuetify component library](https://vuetifyjs.com/) to give beautiful
+ipyvuetify is an [ipywidget based](./ipywidgets) library, that wraps the [Vuetify component library](https://v2.vuetifyjs.com/) to give beautiful
 material design based widgets.
 
 ![ipyvuetify screencast demo](https://user-images.githubusercontent.com/46192475/79730684-78954880-82f1-11ea-855b-43a2b619ca04.gif)
