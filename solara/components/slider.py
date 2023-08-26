@@ -23,8 +23,8 @@ def SliderInt(
     max: int = 10,
     step: int = 1,
     on_value: Optional[Callable[[int], None]] = None,
-    thumb_label: Union[bool, Literal["always"], None] = "always",
-    tick_labels: Union[list, Literal["end_points"], None] = "end_points",
+    thumb_label: Union[bool, Literal["always"]] = "always",
+    tick_labels: Union[List[str], Literal["end_points"], bool] = False,
     disabled: bool = False,
 ):
     """Slider for controlling an integer value.
@@ -55,7 +55,9 @@ def SliderInt(
     * `step`: Step size.
     * `on_value`: Callback to call when the value changes.
     * `thumb_label`: Show a thumb label when sliding (True), always ("always"), or never (False).
-    * `tick_labels`: Show tick labels by list (list), only end_points ("end_points") or never (None).
+    * `tick_labels`: Show tick labels corresponding to the values (True),
+            custom tick labels by passing a list of strings, only end_points ("end_points"),
+            or no labels at all (False, the default).
     * `disabled`: Whether the slider is disabled.
     """
     reactive_value = solara.use_reactive(value, on_value)
@@ -76,7 +78,6 @@ def SliderInt(
         max=max,
         step=step,
         thumb_label=thumb_label,
-        thumb_size=24,
         tick_labels=tick_labels,
         dense=False,
         hide_details=True,
@@ -92,8 +93,8 @@ def SliderRangeInt(
     max: int = 10,
     step: int = 1,
     on_value: Callable[[Tuple[int, int]], None] = None,
-    thumb_label: Union[bool, Literal["always"], None] = "always",
-    tick_labels: Union[list, Literal["end_points"], None] = "end_points",
+    thumb_label: Union[bool, Literal["always"]] = "always",
+    tick_labels: Union[List[str], Literal["end_points"], bool] = False,
     disabled: bool = False,
 ) -> reacton.core.ValueElement[ipyvuetify.RangeSlider, Tuple[int, int]]:
     """Slider for controlling a range of integer values.
@@ -122,7 +123,9 @@ def SliderRangeInt(
     * `step`: Step size.
     * `on_value`: Callback to call when the value changes.
     * `thumb_label`: Show a thumb label when sliding (True), always ("always"), or never (False).
-    * `tick_labels`: Show tick labels by list (list), only end_points ("end_points") or never (None).
+    * `tick_labels`: Show tick labels corresponding to the values (True),
+            custom tick labels by passing a list of strings, only end_points ("end_points"),
+            or no labels at all (False, the default).
     * `disabled`: Whether the slider is disabled.
     """
     reactive_value = solara.use_reactive(value, on_value)
@@ -146,7 +149,6 @@ def SliderRangeInt(
             max=max,
             step=step,
             thumb_label=thumb_label,
-            thumb_size=24,
             tick_labels=tick_labels,
             dense=False,
             hide_details=True,
@@ -163,8 +165,8 @@ def SliderFloat(
     max: float = 10.0,
     step: float = 0.1,
     on_value: Callable[[float], None] = None,
-    thumb_label: Union[bool, Literal["always"], None] = "always",
-    tick_labels: Union[list, Literal["end_points"], None] = "end_points",
+    thumb_label: Union[bool, Literal["always"]] = "always",
+    tick_labels: Union[List[str], Literal["end_points"], bool] = False,
     disabled: bool = False,
 ):
     """Slider for controlling a float value.
@@ -193,7 +195,9 @@ def SliderFloat(
     * `step`: The step size.
     * `on_value`: Callback to call when the value changes.
     * `thumb_label`: Show a thumb label when sliding (True), always ("always"), or never (False).
-    * `tick_labels`: Show tick labels by list (list), only end_points ("end_points") or never (None).
+    * `tick_labels`: Show tick labels corresponding to the values (True),
+            custom tick labels by passing a list of strings, only end_points ("end_points"),
+            or no labels at all (False, the default).
     * `disabled`: Whether the slider is disabled.
     """
     reactive_value = solara.use_reactive(value, on_value)
@@ -214,7 +218,6 @@ def SliderFloat(
         max=max,
         step=step,
         thumb_label=thumb_label,
-        thumb_size=24,
         tick_labels=tick_labels,
         dense=False,
         hide_details=True,
@@ -230,8 +233,8 @@ def SliderRangeFloat(
     max: float = 10.0,
     step: float = 0.1,
     on_value: Callable[[Tuple[float, float]], None] = None,
-    thumb_label: Union[bool, Literal["always"], None] = "always",
-    tick_labels: Union[list, Literal["end_points"], None] = "end_points",
+    thumb_label: Union[bool, Literal["always"]] = "always",
+    tick_labels: Union[List[str], Literal["end_points"], bool] = False,
     disabled: bool = False,
 ) -> reacton.core.ValueElement[ipyvuetify.RangeSlider, Tuple[float, float]]:
     """Slider for controlling a range of float values.
@@ -260,7 +263,9 @@ def SliderRangeFloat(
     * `step`: The step size.
     * `on_value`: Callback to call when the value changes.
     * `thumb_label`: Show a thumb label when sliding (True), always ("always"), or never (False).
-    * `tick_labels`: Show tick labels by list (list), only end_points ("end_points") or never (None).
+    * `tick_labels`: Show tick labels corresponding to the values (True),
+            custom tick labels by passing a list of strings, only end_points ("end_points"),
+            or no labels at all (False, the default).
     * `disabled`: Whether the slider is disabled.
     """
     reactive_value = solara.use_reactive(value, on_value)
@@ -284,7 +289,6 @@ def SliderRangeFloat(
             max=max,
             step=step,
             thumb_label=thumb_label,
-            thumb_size=24,
             tick_labels=tick_labels,
             dense=False,
             hide_details=True,
