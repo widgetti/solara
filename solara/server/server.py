@@ -135,6 +135,10 @@ async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, connection_i
             try:
                 message = await ws.receive()
             except websocket.WebSocketDisconnect:
+                try:
+                    context.kernel.session.websockets.remove(ws)
+                except KeyError:
+                    pass
                 logger.debug("Disconnected")
                 return
             t0 = time.time()
