@@ -68,7 +68,10 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
     async def receive(self):
         from anyio import to_thread
 
-        return await to_thread.run_sync(lambda: self.ws.receive())
+        try:
+            return await to_thread.run_sync(lambda: self.ws.receive())
+        except simple_websocket.ws.ConnectionClosed:
+            raise websocket.WebSocketDisconnect()
 
 
 class ServerFlask(ServerBase):
@@ -128,8 +131,6 @@ def kernels_connection(ws: simple_websocket.Server, id: str, name: str):
             return
         ws_wrapper = WebsocketWrapper(ws)
         asyncio.run(server.app_loop(ws_wrapper, session_id=session_id, connection_id=connection_id, user=user))
-    except simple_websocket.ws.ConnectionClosed:
-        pass  # ok
     except:  # noqa
         logger.exception("Error in kernel handler")
         raise
