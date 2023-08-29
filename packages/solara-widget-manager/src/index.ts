@@ -13,7 +13,7 @@ export {
   RenderMimeRegistry,
   standardRendererFactories
 } from '@jupyterlab/rendermime';
-export { connectKernel } from './kernel';
+export { connectKernel, shutdownKernel } from './kernel';
 export { WidgetManager } from './manager';
 export { renderMathJax } from './mathjax';
 export { extendedRendererFactories } from './rendermime';

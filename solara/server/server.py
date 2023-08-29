@@ -143,14 +143,18 @@ async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, connection_i
             else:
                 msg = deserialize_binary_message(message)
             t1 = time.time()
-            process_kernel_messages(kernel, msg)
+            if not process_kernel_messages(kernel, msg):
+                # if we shut down the kernel, we do not keep the page session alive
+                context.close()
+                return
             t2 = time.time()
             if settings.main.timing:
                 print(f"timing: total={t2-t0:.3f}s, deserialize={t1-t0:.3f}s, kernel={t2-t1:.3f}s")  # noqa: T201
 
 
-def process_kernel_messages(kernel: Kernel, msg: Dict):
+def process_kernel_messages(kernel: Kernel, msg: Dict) -> bool:
     session = kernel.session
+    assert session is not None
     comm_manager = kernel.comm_manager
 
     def send_status(status, parent):
@@ -189,9 +193,11 @@ def process_kernel_messages(kernel: Kernel, msg: Dict):
         }
         with busy_idle(msg["header"]):
             msg = kernel.session.send(kernel.shell_stream, "kernel_info_reply", content, msg["header"], None)
+        return True
     elif msg_type in ["comm_open", "comm_msg", "comm_close"]:
         with busy_idle(msg["header"]):
             getattr(comm_manager, msg_type)(kernel.shell_stream, None, msg)
+        return True
     elif msg_type in ["comm_info_request"]:
         content = msg["content"]
         target_name = msg.get("target_name", None)
@@ -206,8 +212,13 @@ def process_kernel_messages(kernel: Kernel, msg: Dict):
                 msg["header"],
                 None,
             )
+        return True
+    elif msg_type == "shutdown_request":
+        send_status("dead", parent=msg["header"])
+        return False
     else:
         logger.error("Unsupported msg with msg_type %r", msg_type)
+        return False
 
 
 def read_root(path: str, root_path: str = "", render_kwargs={}, use_nbextensions=True) -> Optional[str]:
