@@ -16,7 +16,7 @@ from IPython.core.interactiveshell import InteractiveShell
 from . import app, reload, settings
 from .utils import pdb_guard
 
-logger = logging.getLogger("solara.server.app")
+logger = logging.getLogger("solara.server.patch")
 try:
     from reacton.patch_display import patch as patch_display
 except:  # noqa
