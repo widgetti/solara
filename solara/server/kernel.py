@@ -6,7 +6,7 @@ import struct
 import warnings
 from binascii import b2a_base64
 from datetime import datetime
-from typing import Set
+from typing import List, Set
 
 import ipykernel
 import ipykernel.kernelbase
@@ -16,6 +16,7 @@ from ipykernel.comm import CommManager
 from zmq.eventloop.zmqstream import ZMQStream
 
 import solara
+from solara.server import app
 from solara.server.shell import SolaraInteractiveShell
 
 from . import settings, websocket
@@ -204,19 +205,20 @@ class WebsocketStreamWrapper(ZMQStream):
         pass
 
 
-def send_websockets(websockets: Set[websocket.WebsocketWrapper], binary_msg):
-    for ws in list(websockets):
-        try:
-            ws.send(binary_msg)
-        except:  # noqa
-            # in case of any issue, we simply remove it from the list
-            websockets.remove(ws)
-
-
 class SessionWebsocket(session.Session):
     def __init__(self, *args, **kwargs):
         super(SessionWebsocket, self).__init__(*args, **kwargs)
         self.websockets: Set[websocket.WebsocketWrapper] = set()  # map from .. msg id to websocket?
+        self.message_queue: List[bytes] = []
+        self.has_dropped_messges = False
+        self.reconnect_buffer_length_bytes = solara.util.parse_size(settings.page_session.queue_size)
+
+    def close(self):
+        for ws in list(self.websockets):
+            try:
+                ws.close()
+            except:  # noqa
+                pass
 
     def send(self, stream, msg_or_type, content=None, parent=None, ident=None, buffers=None, track=False, header=None, metadata=None):
         try:
@@ -238,9 +240,45 @@ class SessionWebsocket(session.Session):
                 if settings.main.use_pdb:
                     pdb.post_mortem()
                 raise
-            send_websockets(self.websockets, wire_message)
+            self.send_websockets(wire_message)
         except Exception as e:
             logger.exception("Error sending message: %s", e)
+
+    def send_websockets(self, binary_msg):
+        for ws in list(self.websockets):
+            try:
+                ws.send(binary_msg)
+            except:  # noqa
+                # in case of any issue, we simply remove it from the list
+                # logger.exception("Error sending websocket message: %s", binary_msg)
+                try:
+                    self.websockets.remove(ws)
+                except KeyError:
+                    # this can happen when..
+                    pass
+                # if we dropped messages, we will not store missed messages anymore
+                if not self.has_dropped_messges:
+                    self.message_queue.append(binary_msg)
+                    message_queue_bytes = sum(len(m) for m in self.message_queue)
+                    logger.info("Message queue size: %s (max size is %s)", message_queue_bytes, self.reconnect_buffer_length_bytes)
+                    if message_queue_bytes > self.reconnect_buffer_length_bytes:
+                        self.message_queue.clear()
+                        logger.info("Clearing message queue, too many bytes: %s", message_queue_bytes)
+                        self.has_dropped_messges = True
+                        # our current strategy is to close the page session / kernel
+                        # once the message queue is too large
+                        # in the future we may want to find a new strategy of recovering the
+                        # widget state like Voila. However, we currently do not believe that
+                        # recovery strategy is stable (e.g. while getting the state, a thread
+                        # could mutate it giving the frontend an invalid state)
+                        app_context = app.get_current_context()
+                        # if we close the page session, we also close the Reacton context
+                        # but we are most likely already in it, which will give a deadlock
+                        # app_context.close()
+                        # instead, we just spawn a thread
+                        import threading
+
+                        threading.Thread(target=app_context.close).start()
 
 
 class Kernel(ipykernel.kernelbase.Kernel):
@@ -299,3 +337,7 @@ class Kernel(ipykernel.kernelbase.Kernel):
             super().set_parent(ident, parent, channel)
         if channel == "shell":
             self.shell.set_parent(parent)
+
+    def close(self):
+        # called when the PageSession/AppContext is closed
+        self.session.close()

@@ -121,8 +121,8 @@ def test_scopes(no_app_context):
     kernel_shared = kernel.Kernel()
     assert app.current_context[app.get_current_thread_key()] is None
 
-    context1 = app.AppContext(id="toestand-1", kernel=kernel_shared, control_sockets=[], widgets={}, templates={})
-    context2 = app.AppContext(id="toestand-2", kernel=kernel_shared, control_sockets=[], widgets={}, templates={})
+    context1 = app.AppContext(id="toestand-1", kernel=kernel_shared, control_sockets=[], widgets={}, templates={}, session_id="session-1")
+    context2 = app.AppContext(id="toestand-2", kernel=kernel_shared, control_sockets=[], widgets={}, templates={}, session_id="session-2")
 
     with context1:
         mock1 = unittest.mock.Mock()
@@ -378,8 +378,8 @@ def test_bear_store_react():
 
     # the storage should live in the app context to support multiple users/connections
     kernel_shared = kernel.Kernel()
-    context1 = app.AppContext(id="bear-1", kernel=kernel_shared, control_sockets=[], widgets={}, templates={})
-    context2 = app.AppContext(id="bear-2", kernel=kernel_shared, control_sockets=[], widgets={}, templates={})
+    context1 = app.AppContext(id="bear-1", kernel=kernel_shared, control_sockets=[], widgets={}, templates={}, session_id="session-1")
+    context2 = app.AppContext(id="bear-2", kernel=kernel_shared, control_sockets=[], widgets={}, templates={}, session_id="session-2")
     rcs = []
     for context in [context1, context2]:
         with context:

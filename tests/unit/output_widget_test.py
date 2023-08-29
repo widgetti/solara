@@ -13,8 +13,8 @@ def test_interactive_shell(no_app_context):
     kernel2 = kernel.Kernel()
     kernel1.session.websockets.add(ws1)
     kernel2.session.websockets.add(ws2)
-    context1 = app.AppContext(id="1", kernel=kernel1)
-    context2 = app.AppContext(id="2", kernel=kernel2)
+    context1 = app.AppContext(id="1", kernel=kernel1, session_id="session-1")
+    context2 = app.AppContext(id="2", kernel=kernel2, session_id="session-2")
 
     with context1:
         output1 = widgets.Output()

@@ -156,6 +156,36 @@ def parse_size(size: str) -> int:
         return int(size)
 
 
+def parse_timedelta(size: str) -> int:
+    """Turn a human readable time delta into seconds.
+
+    Supports days(d), hours (h), minutes (m) and seconds (s).
+
+    If not unit is specified, seconds is assumed.
+
+    >>> parse_timedelta("1d")
+    86400
+    >>> parse_timedelta("1h")
+    3600
+    >>> parse_timedelta("30m")
+    1800
+    >>> parse_timedelta("10s")
+    10
+    >>> parse_timedelta("10")
+    10
+    """
+    if size.endswith("d"):
+        return int(float(size[:-1]) * 24 * 60 * 60)
+    elif size.endswith("h"):
+        return int(float(size[:-1]) * 60 * 60)
+    elif size.endswith("m"):
+        return int(float(size[:-1]) * 60)
+    elif size.endswith("s"):
+        return int(float(size[:-1]))
+    else:
+        return int(size)
+
+
 def nested_get(object, dotted_name: str, default=None):
     names = dotted_name.split(".")
     for name in names:

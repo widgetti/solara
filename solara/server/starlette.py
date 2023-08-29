@@ -76,7 +76,7 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
         self.portal = portal
 
     def close(self):
-        self.portal.call(self.close)
+        self.portal.call(self.ws.close)
 
     def send_text(self, data: str) -> None:
         self.portal.call(self.ws.send_text, data)

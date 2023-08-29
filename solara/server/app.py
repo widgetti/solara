@@ -259,7 +259,10 @@ class AppScript:
 @dataclasses.dataclass
 class AppContext:
     id: str
+    session_id: str
     kernel: kernel.Kernel
+    # some object to identify the thread/eventloop/callstack that created the context
+    owner: Any = dataclasses.field(default_factory=lambda: object())
     control_sockets: List[WebSocket] = dataclasses.field(default_factory=list)
     # this is the 'private' version of the normally global ipywidgets.Widgets.widget dict
     # see patch.py
@@ -274,6 +277,13 @@ class AppContext:
     reload: Callable = lambda: None
     state: Any = None
     container: Optional[DOMWidget] = None
+    # did the client miss any messages?
+    missed_messages: bool = False
+    # was this page session created from a reconnected kernel?
+    # this information is used to determine if a reconnected websocket
+    # is connected to the same worker or not. If connected to a new worker
+    # we failed to reconnect the app
+    reconnected_kernel: bool = False
 
     def display(self, *args):
         print(args)  # noqa
@@ -303,6 +313,7 @@ class AppContext:
             # what if we reference each other
             # import gc
             # gc.collect()
+        self.kernel.close()
         if self.id in contexts:
             del contexts[self.id]
 
@@ -340,6 +351,7 @@ def create_dummy_context():
 
     app_context = AppContext(
         id="dummy",
+        session_id="dummy-id",
         kernel=kernel.Kernel(),
     )
     return app_context
@@ -491,6 +503,13 @@ def solara_comm_target(comm, msg_first):
             comm.send({"method": "finished", "widget_id": context.container._model_id})
         elif method == "check":
             context = get_current_context()
+            if context.missed_messages:
+                comm.send({"method": "check", "ok": False, "message": "Missed messages"})
+            else:
+                if context.reconnected_kernel:
+                    comm.send({"method": "check", "ok": True, "message": "All fine"})
+                else:
+                    comm.send({"method": "check", "ok": False, "message": "Not reconnected"})
         elif method == "reload":
             assert app is not None
             context = get_current_context()
@@ -500,6 +519,11 @@ def solara_comm_target(comm, msg_first):
                 comm.send({"method": "finished"})
 
     comm.on_msg(on_msg)
+
+    def on_close(msg):
+        logger.info("solara control comm closed: %r", msg)
+
+    comm.on_close(on_close)
 
     def reload():
         # we don't reload the app ourself, we send a message to the client
@@ -517,17 +541,37 @@ def register_solara_comm_target(kernel: Kernel):
     kernel.comm_manager.register_target("solara.control", solara_comm_target)
 
 
-def initialize_virtual_kernel(context_id: str, websocket: websocket.WebsocketWrapper):
-    kernel = Kernel()
-    logger.info("new virtual kernel: %s", context_id)
-    context = contexts[context_id] = AppContext(id=context_id, kernel=kernel, control_sockets=[], widgets={}, templates={})
+def initialize_virtual_kernel(session_id: str, context_id: str, websocket: websocket.WebsocketWrapper):
+    if context_id in contexts:
+        logger.info("reusing virtual kernel: %s", context_id)
+        context = contexts[context_id]
+        if context.session_id != session_id:
+            logger.critical("Session id mismatch when reusing kernel (hack attempt?): %s != %s", context.session_id, session_id)
+            websocket.send_text("Session id mismatch when reusing kernel (hack attempt?)")
+            websocket.close()
+            raise ValueError("Session id mismatch")
+        kernel = context.kernel
+        context.reconnected_kernel = True
+    else:
+        kernel = Kernel()
+        logger.info("new virtual kernel: %s", context_id)
+        context = contexts[context_id] = AppContext(id=context_id, session_id=session_id, kernel=kernel, control_sockets=[], widgets={}, templates={})
+        context.reconnected_kernel = False
+        with context:
+            widgets.register_comm_target(kernel)
+            register_solara_comm_target(kernel)
     with context:
-        widgets.register_comm_target(kernel)
-        register_solara_comm_target(kernel)
         assert kernel is Kernel.instance()
         kernel.shell_stream = WebsocketStreamWrapper(websocket, "shell")
         kernel.control_stream = WebsocketStreamWrapper(websocket, "control")
         kernel.session.websockets.add(websocket)
+        context.missed_messages = kernel.session.has_dropped_messges
+        if not kernel.session.has_dropped_messges:
+            if kernel.session.message_queue:
+                logger.info("Sending messages from queue (due to reconnect)")
+            for message in kernel.session.message_queue:
+                kernel.session.send_websockets(message)
+            kernel.session.message_queue.clear()
 
 
 from . import patch  # noqa

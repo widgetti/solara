@@ -13,7 +13,7 @@ def test_widget_error_message_outside_context(no_app_context):
 
     theme.get_state()
     kernel_shared = kernel.Kernel()
-    context1 = app.AppContext(id="1", kernel=kernel_shared)
+    context1 = app.AppContext(id="1", kernel=kernel_shared, session_id="session-1")
     with pytest.raises(RuntimeError):
         with context1:
             assert theme.model_id
@@ -21,8 +21,8 @@ def test_widget_error_message_outside_context(no_app_context):
 
 def test_widget_dict(no_app_context):
     kernel_shared = kernel.Kernel()
-    context1 = app.AppContext(id="1", kernel=kernel_shared, control_sockets=[], widgets={}, templates={})
-    context2 = app.AppContext(id="2", kernel=kernel_shared, control_sockets=[], widgets={}, templates={})
+    context1 = app.AppContext(id="1", kernel=kernel_shared, control_sockets=[], widgets={}, templates={}, session_id="session-1")
+    context2 = app.AppContext(id="2", kernel=kernel_shared, control_sockets=[], widgets={}, templates={}, session_id="session-2")
 
     with context1:
         btn1 = widgets.Button(description="context1")

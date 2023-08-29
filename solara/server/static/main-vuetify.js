@@ -154,8 +154,12 @@ async function solaraInit(mountId, appName) {
         }
         if (s.connectionStatus == 'connected' && !skipReconnectedCheck) {
             (async () => {
-                let ok = await widgetManager.check()
-                if (!ok) {
+                if (app.$data.needsRefresh) {
+                    // give up
+                    return;
+                }
+                const msg = await widgetManager.check()
+                if (!msg.ok) {
                     app.$data.needsRefresh = true;
                     await solara.shutdownKernel(kernel);
                 }

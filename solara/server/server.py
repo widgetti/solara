@@ -1,3 +1,4 @@
+import asyncio
 import contextlib
 import json
 import logging
@@ -14,6 +15,7 @@ import requests
 
 import solara
 import solara.routing
+import solara.server.settings
 
 from . import app, jupytertools, settings, websocket
 from .app import initialize_virtual_kernel
@@ -107,13 +109,15 @@ def is_ready(url) -> bool:
 
 
 async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, connection_id: str, user: dict = None):
-    initialize_virtual_kernel(connection_id, ws)
+    initialize_virtual_kernel(session_id, connection_id, ws)
     context = app.contexts.get(connection_id)
     if context is None:
         logging.warning("invalid context id: %r", connection_id)
         # to avoid very fast reconnects (we are in a thread anyway)
         time.sleep(0.5)
         return
+    # we track if we still have the ownership using this object
+    context.owner = owner_idetifier = object()
 
     if settings.main.tracer:
         import viztracer
@@ -140,7 +144,7 @@ async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, connection_i
                 except KeyError:
                     pass
                 logger.debug("Disconnected")
-                return
+                break
             t0 = time.time()
             if isinstance(message, str):
                 msg = json.loads(message)
@@ -154,6 +158,20 @@ async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, connection_i
             t2 = time.time()
             if settings.main.timing:
                 print(f"timing: total={t2-t0:.3f}s, deserialize={t1-t0:.3f}s, kernel={t2-t1:.3f}s")  # noqa: T201
+
+    if context.owner is owner_idetifier:
+        wait_seconds = solara.util.parse_timedelta(solara.server.settings.page_session.reconnect_window)
+        # max_reconnect_seconds = 1
+        # max_reconnect_time = 10
+        logger.info("Disconncted websocket, exiting app_loop, will wait for max %s to restore the page session", wait_seconds)
+        # We could cancel this sleep task if another websocket reconnects, but the benefit is small and the code is more complex
+        await asyncio.sleep(wait_seconds)
+        if context.owner is owner_idetifier:
+            logger.info("No reconnect detected, closing context")
+            context.close()
+            # app.contexts.pop(connection_id, None)
+        else:
+            logger.info("Reconnect detected, keeping context")
 
 
 def process_kernel_messages(kernel: Kernel, msg: Dict) -> bool:

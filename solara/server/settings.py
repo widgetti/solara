@@ -85,6 +85,16 @@ class Assets(BaseSettings):
         env_file = ".env"
 
 
+class PageSession(BaseSettings):
+    reconnect_window: str = "24h"
+    queue_size: str = "1MB"
+
+    class Config:
+        env_prefix = "solara_page_session_"
+        case_sensitive = False
+        env_file = ".env"
+
+
 AUTH0_TEST_CLIENT_ID = "cW7owP5Q52YHMZAnJwT8FPlH2ZKvvL3U"
 AUTH0_TEST_CLIENT_SECRET = "zxITXxoz54OjuSmdn-PluQgAwbeYyoB7ALlnLoodftvAn81usDXW0quchvoNvUYD"
 AUTH0_TEST_API_BASE_URL = "dev-y02f2bpr8skxu785.us.auth0.com"
@@ -156,6 +166,7 @@ search = Search()
 assets = Assets()
 oauth = OAuth()
 session = Session()
+page_session = PageSession()
 
 if assets.proxy:
     try:

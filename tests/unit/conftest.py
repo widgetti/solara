@@ -8,7 +8,7 @@ from solara.server.app import AppContext
 @pytest.fixture(autouse=True)
 def app_context():
     kernel_shared = kernel.Kernel()
-    context = AppContext(id="1", kernel=kernel_shared)
+    context = AppContext(id="1", kernel=kernel_shared, session_id="session-1")
     try:
         with context:
             yield context
