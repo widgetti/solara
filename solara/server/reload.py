@@ -145,7 +145,7 @@ class Reloader:
             # it can happen that an import is done at runtime, that we miss (could be in a thread)
             # so we always reload all modules except the ignore_modules
             self.ignore_modules = set(sys.modules)
-            logger.info("Ignoring reloading modules: %s", self.ignore_modules)
+            logger.debug("Ignoring reloading modules: %s", self.ignore_modules)
             self._first = False
 
     def _on_change(self, name):
