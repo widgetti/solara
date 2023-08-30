@@ -179,26 +179,26 @@ def solara_test(solara_server, solara_app, page_session: "playwright.sync_api.Pa
                 pass
         assert len(solara.server.app.contexts) == 0
         page_session.goto(solara_server.base_url)
-        run_event.wait()
-        # for some reason, we still get 2 context sometimes, it could be the reconnection
-        # code of the websocket of the previous page still running. We wait a bit
-        # till we end up with only one context
-        n = 0
-        # we wait till the all contexts are closed
-        while len(solara.server.app.contexts) != 1:
-            page_session.wait_for_timeout(100)
-            n += 1
-            if n > 50:
-                raise RuntimeError("Timeout waiting for a single context")
+        try:
+            run_event.wait()
+            # for some reason, we still get 2 context sometimes, it could be the reconnection
+            # code of the websocket of the previous page still running. We wait a bit
+            # till we end up with only one context
+            n = 0
+            # we wait till the all contexts are closed
+            while len(solara.server.app.contexts) != 1:
+                page_session.wait_for_timeout(100)
+                n += 1
+                if n > 50:
+                    raise RuntimeError("Timeout waiting for a single context, contexts found: %r", list(solara.server.app.contexts))
 
-        assert run_calls == 1
-        keys = list(solara.server.app.contexts)
-        assert len(keys) == 1, "expected only one context, got %s" % keys
-        context = solara.server.app.contexts[keys[0]]
-        with context:
-            test_output_warmup = widgets.Output()
-            test_output = widgets.Output()
-            try:
+            assert run_calls == 1
+            keys = list(solara.server.app.contexts)
+            assert len(keys) == 1, "expected only one context, got %s" % keys
+            context = solara.server.app.contexts[keys[0]]
+            with context:
+                test_output_warmup = widgets.Output()
+                test_output = widgets.Output()
                 page_session.locator("text=Test in solara").wait_for()
                 context.container.children[0].children[1].children[1].children = [test_output_warmup]  # type: ignore
                 with test_output_warmup:
@@ -212,11 +212,10 @@ def solara_test(solara_server, solara_app, page_session: "playwright.sync_api.Pa
                 context.container.children[0].children[1].children[1].children = [test_output]  # type: ignore
                 with test_output:
                     yield
-            finally:
                 test_output.close()
-                run_event.clear()
-                test_output = None
-                run_calls = 0
+        finally:
+            run_calls = 0
+            run_event.clear()
 
 
 class ServerVoila(ServerBase):
