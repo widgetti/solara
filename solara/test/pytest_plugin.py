@@ -169,8 +169,28 @@ def SyncWrapper():
 def solara_test(solara_server, solara_app, page_session: "playwright.sync_api.Page"):
     global run_calls
     with solara_app("solara.test.pytest_plugin:SyncWrapper"):
+        # a currently open page will try to connect to solara, creating a
+        # new context, so we navigate away first, then close all contexts
+        page_session.goto("about:blank")
+        for key in list(solara.server.app.contexts):
+            try:
+                solara.server.app.contexts[key].close()
+            except:  # noqa
+                pass
+        assert len(solara.server.app.contexts) == 0
         page_session.goto(solara_server.base_url)
         run_event.wait()
+        # for some reason, we still get 2 context sometimes, it could be the reconnection
+        # code of the websocket of the previous page still running. We wait a bit
+        # till we end up with only one context
+        n = 0
+        # we wait till the all contexts are closed
+        while len(solara.server.app.contexts) != 1:
+            page_session.wait_for_timeout(100)
+            n += 1
+            if n > 50:
+                raise RuntimeError("Timeout waiting for a single context")
+
         assert run_calls == 1
         keys = list(solara.server.app.contexts)
         assert len(keys) == 1, "expected only one context, got %s" % keys
