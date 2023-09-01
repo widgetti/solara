@@ -3,6 +3,7 @@ import time
 from pathlib import Path
 from typing import Optional
 
+import ipyvuetify as v
 from reacton import component
 from reacton import ipywidgets as w
 from reacton import render_fixed
@@ -253,3 +254,39 @@ def test_use_state_or_update():
     assert values == [3, 5]
     rc.render(Test(9))
     assert values == [3, 5, 9, 9]  # we render twice, since we call set_state in or_update
+
+
+def test_use_thread_dont_finish_with_old_value():
+
+    selected = solara.Reactive("1")
+    results = []
+
+    @solara.component
+    def Test():
+        def work():
+            import time
+
+            time.sleep(0.2)
+            return selected.value
+
+        result: solara.Result[str] = use_thread(work, dependencies=[selected.value])
+
+        nonlocal results
+
+        results.append((result.state.name, result.value))
+
+        if result.state == solara.ResultState.FINISHED:
+            solara.Text(result.value)
+        else:
+            solara.Text("Loading...")
+
+    box, rc = solara.render(Test(), handle_error=False)
+
+    rc.find(v.Html, children=["1"]).wait_for(timeout=2)
+
+    assert results == [(solara.ResultState.INITIAL.name, None), (solara.ResultState.RUNNING.name, None), (solara.ResultState.FINISHED.name, "1")]
+
+    results = []
+    selected.set("2")
+    rc.find(v.Html, children=["2"]).wait_for(timeout=2)
+    assert results == [(solara.ResultState.RUNNING.name, "1"), (solara.ResultState.FINISHED.name, "2")]
