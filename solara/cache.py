@@ -128,8 +128,9 @@ class MemoizedFunction(Generic[P, R]):
                 self.storage[key] = new_value
                 return new_value
             else:
-                # we don't use the return value if value is _DOES_NOT_EXIST
-                return None
+                # although we don't use the return value directly, it's still used on the next time result_thread is
+                # returned.
+                return value
 
         result_thread: solara.Result[R] = solara.use_thread(do_work, dependencies=[key], intrusive_cancel=self.intrusive_cancel)
         if value is _DOES_NOT_EXIST:
