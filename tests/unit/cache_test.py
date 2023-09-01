@@ -252,3 +252,41 @@ def test_memoize_hook():
     # we should directly get the result from the cache, so we don't go into running state
     assert result_values[0].state == solara.ResultState.FINISHED
     assert result_values[0].value == 100
+
+
+def test_memoize_hook_no_None_after_hit():
+    has_been_none = False
+
+    selected = solara.Reactive("1")
+
+    @solara.memoize
+    def something(i):
+        return i
+
+    @solara.component
+    def Test():
+        result = something.use_thread(selected.value)
+
+        if result.state == solara.ResultState.FINISHED:
+            if result.value is None:
+                # this should not happen
+                nonlocal has_been_none
+                has_been_none = True
+
+            solara.Text(str(result.value))
+
+    box, rc = solara.render(Test(), handle_error=False)
+    rc.find(v.Html, children=["1"]).wait_for(timeout=2)
+
+    assert not has_been_none
+    selected.set("2")
+    rc.find(v.Html, children=["2"]).wait_for(timeout=2)
+    assert not has_been_none
+
+    selected.set("1")
+    rc.find(v.Html, children=["1"]).wait_for(timeout=2)
+    assert not has_been_none
+
+    selected.set("3")
+    rc.find(v.Html, children=["3"]).wait_for(timeout=2)
+    assert not has_been_none
