@@ -8,6 +8,7 @@ import solara
 
 zoom = solara.reactive(5)
 center = solara.reactive((53.2305799, 6.5323552))
+bounds = solara.reactive(None)
 
 
 @solara.component
@@ -22,7 +23,9 @@ def Page():
             on_zoom=zoom.set,
             center=center.value,
             on_center=center.set,
+            on_bounds=bounds.set,
             scroll_wheel_zoom=True,
         )
         solara.Text(f"Zoom: {zoom.value}")
         solara.Text(f"Center: {center.value}")
+        solara.Text(f"Bounds: {bounds.value}")
