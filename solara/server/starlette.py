@@ -89,7 +89,7 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
             # version 3+
             fut = self.portal.start_task_soon(self.ws.receive)
         else:
-            fut = self.portal.spawn_task(self.ws.receive)
+            fut = self.portal.spawn_task(self.ws.receive)  # type: ignore
 
         message = await asyncio.wrap_future(fut)
         if "text" in message:
