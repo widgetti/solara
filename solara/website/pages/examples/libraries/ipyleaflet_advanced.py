@@ -14,6 +14,8 @@ zoom_default = 5
 maps = {
     "OpenStreetMap.Mapnik": ipyleaflet.basemaps.OpenStreetMap.Mapnik,
     "OpenTopoMap": ipyleaflet.basemaps.OpenTopoMap,
+    "Esri.WorldTopoMap": ipyleaflet.basemaps.Esri.WorldTopoMap,
+    "Stamen.Watercolor": ipyleaflet.basemaps.Stamen.Watercolor,
 }
 
 zoom = solara.reactive(zoom_default)
@@ -33,7 +35,7 @@ def Page():
         solara.Markdown(f"Market set to: {marker_location.value}", style={"color": "#6e6e6e"})
 
         map = maps[map_name.value]
-        url = map["url"]
+        url = map.build_url()
 
         # leaflet takes a high z-index, so we need to set it higher than that otherwise the dropdown will be hidden
         # where it overlaps with the map
