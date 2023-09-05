@@ -10,7 +10,7 @@ class EchartsWidget(ipyvuetify.VuetifyTemplate):
     template_file = (__file__, "echarts.vue")
 
     attributes = traitlets.Dict(default_value=None, allow_none=True).tag(sync=True)
-
+    responsive = traitlets.Bool(False).tag(sync=True)
     maps = traitlets.Any({}).tag(sync=True)
     option = traitlets.Any({}).tag(sync=True)
     on_click = traitlets.Callable(None, allow_none=True)
@@ -49,7 +49,8 @@ def FigureEcharts(
     on_mouseover: Callable[[Any], Any] = None,
     on_mouseout: Callable[[Any], Any] = None,
     maps: dict = {},
-    attributes={"style": "height: 400px"},
+    attributes={"style": "height: 400px;"},
+    responsive: bool = False,
 ):
     """Create a Echarts figure.
 
@@ -68,6 +69,7 @@ def FigureEcharts(
     * on_mouseout: Callable, a function that will be called when the user moves the mouse out of a certain component.
     * maps: dict, a dictionary of maps to be used in the figure.
     * attributes: dict, a dictionary of attributes to be passed to the container (like style, class).
+    * responsive: bool, whether the chart should resize when the container changes size.
 
 
     """
@@ -80,4 +82,5 @@ def FigureEcharts(
         on_mouseout=on_mouseout,
         on_mouseout_enabled=on_mouseout is not None,
         attributes=attributes,
+        responsive=responsive,
     )

@@ -1,7 +1,5 @@
 <template>
-  <div>
-    <div ref="echarts" class="solara-echarts" v-bind="attributes"></div>
-  </div>
+  <div ref="echarts" class="solara-echarts" v-bind="attributes"></div>
 </template>
 <script>
 module.exports = {
@@ -14,6 +12,22 @@ module.exports = {
       this.echarts = echarts;
       this.create();
     })();
+    if(this.responsive){
+      this.resizeObserver = new ResizeObserver(entries => {
+        for (let entry of entries) {
+          if (entry.target === this.$refs.echarts) {
+            this.handleContainerResize();
+          }
+        }
+      });
+      this.resizeObserver.observe(this.$refs.echarts);
+    };
+  },
+  beforeDestroy() {
+    if (this.resizeObserver) {
+      this.resizeObserver.unobserve(this.$refs.echarts);
+      this.resizeObserver.disconnect();
+    }
   },
   watch: {
     option() {
@@ -65,6 +79,11 @@ module.exports = {
         });
         if (this.on_mouseout_enabled) this.on_mouseout(eventData);
       });
+    },
+    handleContainerResize() {
+      if (this.chart) {
+        this.chart.resize();
+      }
     },
     import(deps) {
       return this.loadRequire().then(() => {
