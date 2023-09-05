@@ -15,7 +15,7 @@ def Page():
     The sidebar can only be shown in embedded mode on this page.
     Visit the [Scatter app demo](/apps/scatter) to see an example of a full sidebar used in Soalra server.
 
-    [![AppLayout screenshot](/static/public/docs/app-layout.png)](/app/scatter)
+    [![AppLayout screenshot](/static/public/docs/app-layout.png)](/apps/scatter)
     """
     )
 
