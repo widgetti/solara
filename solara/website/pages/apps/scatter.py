@@ -67,7 +67,7 @@ def Page():
         with solara.Card("Controls", margin=0, elevation=0):
             with solara.Column():
                 with solara.Row():
-                    solara.Button("Sample dataset", color="primary", text=True, outlined=True, on_click=State.load_sample, disabled=df is None)
+                    solara.Button("Sample dataset", color="primary", text=True, outlined=True, on_click=State.load_sample, disabled=df is not None)
                     solara.Button("Clear dataset", color="primary", text=True, outlined=True, on_click=State.reset)
                 FileDrop(on_file=State.load_from_file, on_total_progress=lambda *args: None, label="Drag file here")
 
