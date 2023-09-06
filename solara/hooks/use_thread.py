@@ -125,5 +125,16 @@ def use_thread(
 
         return cleanup
 
-    solara.use_side_effect(run, dependencies + [counter])
+    solara.use_effect(run, dependencies + [counter])
+
+    # since use_effect only runs after the render phase, but we do not want to
+    # return the old result when the dependencies change, we use use_memo
+    # to avoid this, while also using set_result_state.
+    def on_dependency_change():
+        nonlocal result_state
+        if result_state != ResultState.INITIAL:
+            result_state = ResultState.INITIAL
+            set_result_state(result_state)
+
+    solara.use_memo(on_dependency_change, dependencies + [counter])
     return Result[T](value=result.current, error=error.current, state=result_state, cancel=cancel.set, _retry=retry)

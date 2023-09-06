@@ -289,4 +289,9 @@ def test_use_thread_dont_finish_with_old_value():
     results = []
     selected.set("2")
     rc.find(v.Html, children=["2"]).wait_for(timeout=2)
-    assert results == [(solara.ResultState.RUNNING.name, "1"), (solara.ResultState.FINISHED.name, "2")]
+    assert results == [
+        (solara.ResultState.INITIAL.name, "1"),
+        (solara.ResultState.INITIAL.name, "1"),
+        (solara.ResultState.RUNNING.name, "1"),
+        (solara.ResultState.FINISHED.name, "2"),
+    ]
