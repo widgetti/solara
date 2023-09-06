@@ -156,7 +156,8 @@ async function solaraInit(mountId, appName) {
             (async () => {
                 let ok = await widgetManager.check()
                 if (!ok) {
-                    app.$data.needsRefresh = true
+                    app.$data.needsRefresh = true;
+                    await solara.shutdownKernel(kernel);
                 }
             })();
         }
