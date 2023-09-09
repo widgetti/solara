@@ -23,7 +23,7 @@ def SliderInt(
     max: int = 10,
     step: int = 1,
     on_value: Optional[Callable[[int], None]] = None,
-    thumb_label: Union[bool, Literal["always"]] = "always",
+    thumb_label: Union[bool, Literal["always"]] = True,
     tick_labels: Union[List[str], Literal["end_points"], bool] = False,
     disabled: bool = False,
 ):
@@ -68,7 +68,7 @@ def SliderInt(
 
     if tick_labels == "end_points":
         num_repeats = int(math.ceil((max - min) / step)) - 1
-        tick_labels = [str(min), *([None] * num_repeats), str(max)]
+        tick_labels = [str(min), *([""] * num_repeats), str(max)]
 
     return rv.Slider(
         v_model=reactive_value.value,
@@ -93,7 +93,7 @@ def SliderRangeInt(
     max: int = 10,
     step: int = 1,
     on_value: Callable[[Tuple[int, int]], None] = None,
-    thumb_label: Union[bool, Literal["always"]] = "always",
+    thumb_label: Union[bool, Literal["always"]] = True,
     tick_labels: Union[List[str], Literal["end_points"], bool] = False,
     disabled: bool = False,
 ) -> reacton.core.ValueElement[ipyvuetify.RangeSlider, Tuple[int, int]]:
@@ -137,7 +137,7 @@ def SliderRangeInt(
 
     if tick_labels == "end_points":
         num_repeats = int(math.ceil((max - min) / step)) - 1
-        tick_labels = [str(min), *([None] * num_repeats), str(max)]
+        tick_labels = [str(min), *([""] * num_repeats), str(max)]
 
     return cast(
         reacton.core.ValueElement[ipyvuetify.RangeSlider, Tuple[int, int]],
@@ -165,7 +165,7 @@ def SliderFloat(
     max: float = 10.0,
     step: float = 0.1,
     on_value: Callable[[float], None] = None,
-    thumb_label: Union[bool, Literal["always"]] = "always",
+    thumb_label: Union[bool, Literal["always"]] = True,
     tick_labels: Union[List[str], Literal["end_points"], bool] = False,
     disabled: bool = False,
 ):
@@ -208,7 +208,7 @@ def SliderFloat(
 
     if tick_labels == "end_points":
         num_repeats = int(math.ceil((max - min) / step)) - 1
-        tick_labels = [str(min), *([None] * num_repeats), str(max)]
+        tick_labels = [str(min), *([""] * num_repeats), str(max)]
 
     return rv.Slider(
         v_model=reactive_value.value,
@@ -233,7 +233,7 @@ def SliderRangeFloat(
     max: float = 10.0,
     step: float = 0.1,
     on_value: Callable[[Tuple[float, float]], None] = None,
-    thumb_label: Union[bool, Literal["always"]] = "always",
+    thumb_label: Union[bool, Literal["always"]] = True,
     tick_labels: Union[List[str], Literal["end_points"], bool] = False,
     disabled: bool = False,
 ) -> reacton.core.ValueElement[ipyvuetify.RangeSlider, Tuple[float, float]]:
@@ -277,7 +277,7 @@ def SliderRangeFloat(
 
     if tick_labels == "end_points":
         num_repeats = int(math.ceil((max - min) / step)) - 1
-        tick_labels = [str(min), *([None] * num_repeats), str(max)]
+        tick_labels = [str(min), *([""] * num_repeats), str(max)]
 
     return cast(
         reacton.core.ValueElement[ipyvuetify.RangeSlider, Tuple[float, float]],
