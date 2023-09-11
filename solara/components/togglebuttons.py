@@ -1,6 +1,6 @@
 from typing import Callable, Dict, List, Optional, TypeVar, Union, cast, overload
 
-import ipyvuetify as v  # type: ignore
+import ipyvuetify as v
 import reacton
 from typing_extensions import Literal
 
@@ -41,37 +41,7 @@ def ToggleButtonsSingle(
     value: Union[Optional[T], solara.Reactive[Optional[T]]] = None,
     values: List[T] = ...,
     children: List[reacton.core.Element] = ...,
-    on_value: Optional[Callable[[T], None]] = ...,
-    dense: bool = ...,
-    mandatory: Literal[False] = ...,
-    classes: List[str] = ...,
-    style: Union[str, Dict[str, str], None] = ...,
-) -> reacton.core.ValueElement[v.BtnToggle, T]:
-    ...
-
-
-@overload
-@solara.value_component(None)
-def ToggleButtonsSingle(
-    value: Union[T, solara.Reactive[T]],
-    values: List[T] = ...,
-    children: List[reacton.core.Element] = ...,
-    on_value: Optional[Callable[[T], None]] = ...,
-    dense: bool = ...,
-    mandatory: Literal[True] = ...,
-    classes: List[str] = ...,
-    style: Union[str, Dict[str, str], None] = ...,
-) -> reacton.core.ValueElement[v.BtnToggle, T]:
-    ...
-
-
-@overload
-@solara.value_component(None)
-def ToggleButtonsSingle(
-    value: Union[Optional[T], solara.Reactive[Optional[T]]] = None,
-    values: List[T] = ...,
-    children: List[reacton.core.Element] = ...,
-    on_value: Optional[Callable[[T], None]] = ...,
+    on_value: Optional[Callable[[Optional[T]], None]] = ...,
     dense: bool = ...,
     mandatory: Literal[False] = ...,
     classes: List[str] = ...,
@@ -146,13 +116,12 @@ def ToggleButtonsSingle(
     class_ = _combine_classes(classes)
     style_flat = solara.util._flatten_style(style)
     # TODO: make type safe
+    # typing is ignored below due to an issue with the typing; The combination of value being T and on_value being of type Callback[[Optional[T]], None] is
+    # not allowed to be passed to use_reactive. We also do not allow this by using our overloads, but this information seems lost at this point by
+    # the typechecker
     reactive_value = solara.use_reactive(value, on_value)  # type: ignore
     children = [solara.Button(label=str(value)) for value in values] + children
     values = values + [_get_button_value(button) for button in children]  # type: ignore
-    # When mandatory = True, index should not be None, but we are letting the front-end take care of setting index to 0 because of a bug
-    # (see https://github.com/widgetti/solara/issues/282)
-    # TODO: set index to 0 on python side (after #282 is resolved)
-    index, set_index = solara.use_state_or_update(values.index(reactive_value.value) if reactive_value.value is not None else None, key="index")
     # When mandatory = True, index should not be None, but we are letting the front-end take care of setting index to 0 because of a bug
     # (see https://github.com/widgetti/solara/issues/282)
     # TODO: set index to 0 on python side (after #282 is resolved)
@@ -162,13 +131,9 @@ def ToggleButtonsSingle(
         set_index(index)
         if mandatory:
             value = values[index]
-            reactive_value.set(value)
         else:
-            if index is not None:
-                value = values[index]
-                reactive_value.set(value)
-            else:
-                reactive_value.set(None)
+            value = values[index] if index is not None else None
+        reactive_value.set(value)
 
     return cast(
         reacton.core.ValueElement[v.BtnToggle, T],
@@ -176,43 +141,12 @@ def ToggleButtonsSingle(
     )
 
 
-@overload
-@overload
 @solara.value_component(None)
 def ToggleButtonsMultiple(
-    value: Union[List[T], solara.Reactive[List[T]]],
-    values: List[T] = ...,
-    children: List[reacton.core.Element] = ...,
-    on_value: Union[Callable[[Optional[List[T]]], None], None] = ...,
-    dense: bool = ...,
-    mandatory: Literal[True] = ...,
-    classes: List[str] = ...,
-    style: Union[str, Dict[str, str], None] = ...,
-) -> reacton.core.ValueElement[v.BtnToggle, List[T]]:
-    ...
-
-
-@overload
-@solara.value_component(None)
-def ToggleButtonsMultiple(
-    value: Union[Optional[List[T]], solara.Reactive[Optional[List[T]]]] = [],
-    values: List[T] = ...,
-    children: List[reacton.core.Element] = ...,
-    on_value: Union[Callable[[Optional[List[T]]], None], None] = ...,
-    dense: bool = ...,
-    mandatory: Literal[False] = ...,
-    classes: List[str] = ...,
-    style: Union[str, Dict[str, str], None] = ...,
-) -> reacton.core.ValueElement[v.BtnToggle, List[T]]:
-    ...
-
-
-@solara.value_component(None)
-def ToggleButtonsMultiple(
-    value: Union[Optional[List[T]], solara.Reactive[List[T]], solara.Reactive[Optional[List[T]]]] = [],
+    value: Union[List[T], solara.Reactive[List[T]]] = [],
     values: List[T] = [],
     children: List[reacton.core.Element] = [],
-    on_value: Union[Callable[[Optional[List[T]]], None], None] = None,
+    on_value: Union[Callable[[List[T]], None], None] = None,
     dense: bool = False,
     mandatory: bool = False,
     classes: List[str] = [],
@@ -248,13 +182,11 @@ def ToggleButtonsMultiple(
     """
     class_ = _combine_classes(classes)
     style_flat = solara.util._flatten_style(style)
-    # Similar approach to select.py
+    # See comment regarding typing issue in ToggleButtonsSingle
     reactive_value = solara.use_reactive(value, on_value)  # type: ignore
     children = [solara.Button(label=str(value)) for value in values] + children
     allvalues = values + [_get_button_value(button) for button in children]
-    indices, set_indices = solara.use_state_or_update(
-        [allvalues.index(k) for k in reactive_value.value] if reactive_value.value is not None else None, key="index"
-    )
+    indices, set_indices = solara.use_state_or_update([allvalues.index(k) for k in reactive_value.value], key="index")
 
     def on_indices(indices):
         set_indices(indices)
