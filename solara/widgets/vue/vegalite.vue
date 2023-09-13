@@ -6,22 +6,11 @@
 <script>
 module.exports = {
     created() {
-        requirejs.undef("vega")
-        requirejs.undef("vega-lite")
-        requirejs.undef("vega-embed")
-        require.config({
-            map: {
-                '*': {
-                    'vega': `${this.getCdn()}/vega@5/build/vega.min.js`,
-                    'vega-lite': `${this.getCdn()}/vega-lite@5.8.0/build/vega-lite.min.js`,
-                    'vega-embed': `${this.getCdn()}/vega-embed@6/build/vega-embed.min.js`,
-                }
-            }
-        })
-        // pre load
-        require(['vega', 'vega-lite', 'vega-embed'], () => {
-        })
-        this.do_plot_debounced = _.debounce(() => this.do_plot(), 100)
+        this.vegaLoaded = this.loadVega();
+        this.do_plot_debounced = _.debounce(async () => {
+            await this.vegaLoaded;
+            this.do_plot()
+        }, 100)
     },
     mounted() {
         this.do_plot_debounced();
@@ -62,6 +51,41 @@ module.exports = {
                         })
                     }
                 })();
+            });
+        },
+        async loadVega() {
+            await this.loadRequire();
+            requirejs.undef("vega")
+            requirejs.undef("vega-lite")
+            requirejs.undef("vega-embed")
+            require.config({
+                map: {
+                    '*': {
+                        'vega': `${this.getCdn()}/vega@5/build/vega.min.js`,
+                        'vega-lite': `${this.getCdn()}/vega-lite@5/build/vega-lite.min.js`,
+                        'vega-embed': `${this.getCdn()}/vega-embed@6/build/vega-embed.min.js`,
+                    }
+                }
+            })
+            // pre load
+            await new Promise((resolve, reject) => {
+                require(['vega', 'vega-lite', 'vega-embed'], () => {
+                    resolve()
+                }, reject)
+            });
+        },
+        loadRequire() {
+            /* Needed in lab */
+            if (window.requirejs) {
+                console.log('require found');
+                return Promise.resolve()
+            }
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = `${this.getCdn()}/requirejs@2.3.6/require.js`;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
             });
         },
         getBaseUrl() {
