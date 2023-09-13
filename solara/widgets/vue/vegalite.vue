@@ -12,9 +12,9 @@ module.exports = {
         require.config({
             map: {
                 '*': {
-                    'vega': `${this.getCdn()}/vega@5`,
-                    'vega-lite': `${this.getCdn()}/vega-lite@5.8.0`,
-                    'vega-embed': `${this.getCdn()}/vega-embed@6`,
+                    'vega': `${this.getCdn()}/vega@5/build/vega.min.js`,
+                    'vega-lite': `${this.getCdn()}/vega-lite@5.8.0/build/vega-lite.min.js`,
+                    'vega-embed': `${this.getCdn()}/vega-embed@6/build/vega-embed.min.js`,
                 }
             }
         })
