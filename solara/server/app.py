@@ -79,6 +79,11 @@ class AppScript:
 
         self._first_execute_app = app
         reload.reloader.root_path = self.directory
+        if self.type == AppType.MODULE:
+            package_name = self.name.split(".")[0]
+            mod = importlib.import_module(package_name)
+            package_root_path = Path(mod.__file__).parent
+            reload.reloader.root_path = package_root_path
         app_context.close()
 
     def _execute(self):
