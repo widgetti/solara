@@ -85,9 +85,9 @@ def ConfirmationDialog(
                         action = ok.kwargs.get("on_click")
                         if action:
                             # perform both on_ok and the on_click action of the custom Button
-                            ok.kwargs = ok.kwargs | {"on_click": lambda: perform_action(callback=action)}
+                            ok.kwargs = {**ok.kwargs, "on_click": lambda: perform_action(callback=action)}
                         else:
-                            ok.kwargs = ok.kwargs | {"on_click": perform_action}
+                            ok.kwargs = {**ok.kwargs, "on_click": perform_action}
                     if isinstance(cancel, str):
                         solara.Button(label=cancel, on_click=close)
                     else:

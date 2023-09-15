@@ -52,7 +52,7 @@ def test_confirmation_dialog_custom_button_with_onclick():
         values.append(1)
 
     def on_click():
-        lambda: values.append(2)
+        values.append(2)
 
     my_button = solara.Button(label="Not OK", on_click=on_click)
     el = ConfirmationDialog(is_open, on_ok=on_ok, ok=my_button, content="Are you sure?")
