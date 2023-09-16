@@ -5,6 +5,7 @@ from typing import Callable, List, Optional, Tuple, TypeVar, Union, cast
 
 import ipyvue
 import ipyvuetify
+import numpy as np
 import reacton.core
 import traitlets
 from typing_extensions import Literal
@@ -66,9 +67,7 @@ def SliderInt(
     def set_value_cast(value):
         reactive_value.value = int(value)
 
-    if tick_labels == "end_points":
-        num_repeats = int(math.ceil((max - min) / step)) - 1
-        tick_labels = [str(min), *([""] * num_repeats), str(max)]
+    tick_labels = _produce_tick_labels(tick_labels, min, max, step)
 
     return rv.Slider(
         v_model=reactive_value.value,
@@ -135,9 +134,7 @@ def SliderRangeInt(
         v1, v2 = value
         reactive_value.set((int(v1), int(v2)))
 
-    if tick_labels == "end_points":
-        num_repeats = int(math.ceil((max - min) / step)) - 1
-        tick_labels = [str(min), *([""] * num_repeats), str(max)]
+    tick_labels = _produce_tick_labels(tick_labels, min, max, step)
 
     return cast(
         reacton.core.ValueElement[ipyvuetify.RangeSlider, Tuple[int, int]],
@@ -206,9 +203,7 @@ def SliderFloat(
     def set_value_cast(value):
         reactive_value.set(float(value))
 
-    if tick_labels == "end_points":
-        num_repeats = int(math.ceil((max - min) / step)) - 1
-        tick_labels = [str(min), *([""] * num_repeats), str(max)]
+    tick_labels = _produce_tick_labels(tick_labels, min, max, step)
 
     return rv.Slider(
         v_model=reactive_value.value,
@@ -275,9 +270,7 @@ def SliderRangeFloat(
         v1, v2 = value
         reactive_value.set((float(v1), float(v2)))
 
-    if tick_labels == "end_points":
-        num_repeats = int(math.ceil((max - min) / step)) - 1
-        tick_labels = [str(min), *([""] * num_repeats), str(max)]
+    tick_labels = _produce_tick_labels(tick_labels, min, max, step)
 
     return cast(
         reacton.core.ValueElement[ipyvuetify.RangeSlider, Tuple[float, float]],
@@ -423,6 +416,18 @@ def SliderDate(
         reactive_value.set(date)
 
     return DateSliderWidget.element(label=label, min=dt_min, days=days, on_value=set_value_cast, value=days_value, disabled=disabled)
+
+
+def _produce_tick_labels(tick_labels: Union[List[str], Literal["end_points"], bool], min: float, max: float, step: float) -> Optional[List[str]]:
+    if tick_labels == "end_points":
+        num_repeats = int(math.ceil((max - min) / step)) - 1
+        tick_labels = [str(min), *([""] * num_repeats), str(max)]
+    elif tick_labels is False:
+        tick_labels = None
+    elif tick_labels is True:
+        tick_labels = list(map(str, np.arange(min, max, step=step)))
+
+    return tick_labels
 
 
 FloatSlider = SliderFloat
