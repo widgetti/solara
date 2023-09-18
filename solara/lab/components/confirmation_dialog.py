@@ -18,20 +18,28 @@ def ConfirmationDialog(
     max_width: Union[int, str] = 500,
     persistent: bool = True,
 ):
-    """A dialog used to confirm a user action. By default, has a title, a text explaining the
+    """A dialog used to confirm a user action.
+
+    (*Note: [This component is experimental and its API may change in the future](/docs/lab).*)
+
+    By default, has a title, a text explaining the
     decision to be made, and two buttons "OK" and "Cancel".
 
     ## Basic examples
 
     ```solara
     import solara
+    from solara.lab.components.confirmation_dialog import ConfirmationDialog
 
     is_open = solara.reactive(False)
 
     def delete_user():
-        ...
+        print("User being deleted...")
 
-    solara.ConfirmationDialog(is_open, delete_user, content="Are you sure you want to delete this user?")
+    @solara.component
+    def Page():
+        solara.Button(label="Delete user", on_click=lambda: is_open.set(True))
+        ConfirmationDialog(is_open, delete_user, content="Are you sure you want to delete this user?")
     ```
 
     ## Arguments
