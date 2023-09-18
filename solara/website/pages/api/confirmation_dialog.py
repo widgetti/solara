@@ -3,12 +3,14 @@
 
 """
 
+from typing import Union
+
 import solara
 from solara.lab.components.confirmation_dialog import ConfirmationDialog
 from solara.website.utils import apidoc
 
 users = solara.reactive("Alice Bob Cindy Dirk Eve Fred".split())
-user_to_be_deleted = solara.reactive(users.value[0])
+user_to_be_deleted: solara.Reactive[Union[str, None]] = solara.reactive(users.value[0])
 is_open = solara.reactive(False)
 
 
@@ -21,9 +23,9 @@ def delete_user():
     if user_to_be_deleted.value:
         users.set([u for u in users.value if u != user_to_be_deleted.value])
     if users.value:
-        user_to_be_deleted.value = users.value[0]
+        user_to_be_deleted.set(users.value[0])
     else:
-        user_to_be_deleted.value = None
+        user_to_be_deleted.set(None)
 
 
 @solara.component
