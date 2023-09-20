@@ -300,13 +300,13 @@ def FigurePlotly(
     )
 
     def update_data():
-        fig_widget = solara.get_widget(fig_element)
+        fig_widget: FigureWidget = solara.get_widget(fig_element)
         fig_widget.layout = fig.layout
+
+        length = len(fig_widget.data)
         fig_widget.add_traces(fig.data)
-        if hasattr(fig_widget, 'data'):
-            length = len(fig_widget.data)
-            data = list(fig_widget.data)
-            fig_widget.data = data[length:]
+        data = list(fig_widget.data)
+        fig_widget.data = data[length:]
 
     solara.use_effect(update_data, dependencies or fig)
     return fig_element

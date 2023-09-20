@@ -4,7 +4,7 @@ import solara
 from solara.alias import rv
 from solara.components.title import Title
 
-from ..components import Header, Hero
+#from ..components import Header, Hero
 
 
 title = "Home"
@@ -85,6 +85,7 @@ def Layout(children=[]):
         solara.Meta(property="og:url", content="https://solara.dev" + router.path)
         solara.Meta(property="og:image", content="https://solara.dev/static/assets/images/logo-small.png")
         solara.Meta(property="og:type", content="website")
+        """
         Header(
             on_toggle_left_menu=lambda: set_show_left_menu(not show_left_menu),
             on_toggle_right_menu=lambda: set_show_right_menu(not show_right_menu),
@@ -95,7 +96,7 @@ def Layout(children=[]):
                 sub_title="Solara helps you build powerful & scalable Jupyter and web apps <b>faster</b> and <b>easier</b>.",
                 button_text="Quickstart",
             )
-
+"""
         with rv.Container(tag="section", fluid=True, ma_0=True, pa_0=True, class_="fill-height mb-8 solara-content-main"):
             if route_current is not None and route_current.path == "/":
                 description = "Use ipywidgets with Solara to build powerful and scalable web apps for Jupyter and production in Python."
