@@ -3,7 +3,6 @@ import logging
 from typing import Dict, Optional
 
 from authlib.integrations.starlette_client import OAuth
-from solara.server import settings
 from starlette.authentication import (
     AuthCredentials,
     AuthenticationBackend,
@@ -12,6 +11,8 @@ from starlette.authentication import (
 )
 from starlette.requests import HTTPConnection, Request
 from starlette.responses import RedirectResponse
+
+from solara.server import settings
 
 logger = logging.getLogger("solara.enterprise.auth.starlette")
 

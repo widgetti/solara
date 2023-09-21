@@ -1,5 +1,6 @@
-import solara
 from matplotlib.figure import Figure
+
+import solara
 
 
 @solara.component

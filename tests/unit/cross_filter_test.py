@@ -1,7 +1,8 @@
 from typing import Optional
 
-import solara
 import vaex
+
+import solara
 
 df = vaex.from_arrays(x=[0, 1, 2, 3, 4], y=[0, 1, 4, 9, 16])
 

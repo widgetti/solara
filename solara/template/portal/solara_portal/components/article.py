@@ -1,4 +1,5 @@
 import reacton.ipyvuetify as rv
+
 import solara
 
 from ..data import articles

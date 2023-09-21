@@ -125,8 +125,10 @@ line-length = 160
 [tool.ruff]
 line-length = 160
 
+
 [tool.isort]
 profile = "black"
+known_first_party = ["solara", "solara_enterprise"]
 
 
 [tool.pytest.ini_options]
@@ -136,3 +138,4 @@ timeout = 180
 
 [tool.codespell]
 skip='equis-in-vidi.md,substiterat-vati.md,.*,solara/website/build,*.svg,highlight-dark.css,packages/**/dist/*,node_modules,packages/assets,package*.json,tsconfig.tsbuildinfo'
+ignore-words-list='nd,convertor,prolem,ore,limite,sive,currus'

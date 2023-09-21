@@ -2,11 +2,11 @@ import logging
 import pickle
 from typing import Any, Callable, MutableMapping
 
+from cachetools import LRUCache
+from solara_enterprise.cache.base import Base, make_key
+
 import solara.settings
 import solara.util
-from cachetools import LRUCache
-
-from solara_enterprise.cache.base import Base, make_key
 
 logger = logging.getLogger("solara-enterprise.cache.memory")
 

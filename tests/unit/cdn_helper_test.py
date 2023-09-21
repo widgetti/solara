@@ -2,7 +2,13 @@ import hashlib
 import os
 from pathlib import Path
 
-from solara.server.cdn_helper import get_cdn_url, get_data, get_from_cache, put_in_cache, get_path
+from solara.server.cdn_helper import (
+    get_cdn_url,
+    get_data,
+    get_from_cache,
+    get_path,
+    put_in_cache,
+)
 
 
 def norm(path):

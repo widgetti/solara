@@ -1,9 +1,9 @@
 from typing import Any, Callable, Optional
 
 import redis
-import solara.settings
-
 from solara_enterprise.cache.base import Base, make_key
+
+import solara.settings
 
 
 class Redis(Base):

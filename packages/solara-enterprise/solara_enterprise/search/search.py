@@ -1,6 +1,7 @@
 import ipyvue
-import solara
 import traitlets
+
+import solara
 
 
 class SearchWidget(ipyvue.VueTemplate):
