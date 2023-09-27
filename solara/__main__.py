@@ -207,7 +207,7 @@ When in dev mode Solara will:
 @click.option(
     "--theme-variant",
     type=settings.ThemeVariant,
-    default=settings.ThemeVariant.light.name,
+    default=settings.theme.variant.name,
     help=f"Use light or dark variant, or auto detect (auto). [default: {settings.theme.variant.name}",
 )
 @click.option(
