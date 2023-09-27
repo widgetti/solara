@@ -71,32 +71,31 @@ def ConfirmationDialog(
         on_close()  # possible additional actions when closing
         is_open_reactive.set(False)
 
-    if is_open_reactive.value:
-        with v.Dialog(
-            v_model=is_open_reactive.value,
-            on_v_model=is_open_reactive.set,
-            persistent=True,
-            max_width=max_width,
-        ):
-            with solara.Card(title=title):
-                if isinstance(content, str):
-                    solara.Markdown(content)
+    with v.Dialog(
+        v_model=is_open_reactive.value,
+        on_v_model=is_open_reactive.set,
+        persistent=True,
+        max_width=max_width,
+    ):
+        with solara.Card(title=title):
+            if isinstance(content, str):
+                solara.Markdown(content)
+            else:
+                solara.display(content)
+            if children:
+                solara.display(*children)
+            with solara.CardActions():
+                if isinstance(ok, str):
+                    solara.Button(label=ok, on_click=perform_action)
                 else:
-                    solara.display(content)
-                if children:
-                    solara.display(*children)
-                with solara.CardActions():
-                    if isinstance(ok, str):
-                        solara.Button(label=ok, on_click=perform_action)
+                    solara.display(ok)
+                    action = ok.kwargs.get("on_click")
+                    if action:
+                        # perform both on_ok and the on_click action of the custom Button
+                        ok.kwargs = {**ok.kwargs, "on_click": lambda: perform_action(callback=action)}
                     else:
-                        solara.display(ok)
-                        action = ok.kwargs.get("on_click")
-                        if action:
-                            # perform both on_ok and the on_click action of the custom Button
-                            ok.kwargs = {**ok.kwargs, "on_click": lambda: perform_action(callback=action)}
-                        else:
-                            ok.kwargs = {**ok.kwargs, "on_click": perform_action}
-                    if isinstance(cancel, str):
-                        solara.Button(label=cancel, on_click=close)
-                    else:
-                        solara.display(cancel)
+                        ok.kwargs = {**ok.kwargs, "on_click": perform_action}
+                if isinstance(cancel, str):
+                    solara.Button(label=cancel, on_click=close)
+                else:
+                    solara.display(cancel)
