@@ -1,6 +1,6 @@
 from typing import TypeVar
 
-from solara.lab.toestand import Reactive
+from solara.toestand import Reactive
 
 __all__ = ["reactive", "Reactive"]
 
