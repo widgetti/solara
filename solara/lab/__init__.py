@@ -1,6 +1,5 @@
 # isort: skip_file
 from .components import *  # noqa: F401, F403
-from .toestand import Reactive, Ref, State  # noqa: F401
 
 
 def __getattr__(name):
@@ -11,6 +10,7 @@ def __getattr__(name):
         CrossFilterSelect,
         CrossFilterSlider,
     )
+    from solara.toestand import Reactive, Ref, State  # noqa: F401
 
     if name == "CrossFilterDataFrame":
         return CrossFilterDataFrame
@@ -20,5 +20,11 @@ def __getattr__(name):
         return CrossFilterSelect
     elif name == "CrossFilterSlider":
         return CrossFilterSlider
+    elif name == "Reactive":
+        return Reactive
+    elif name == "Ref":
+        return Ref
+    elif name == "State":
+        return State
     else:
         raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
