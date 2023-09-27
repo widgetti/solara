@@ -9,6 +9,7 @@ import solara
 from solara.lab.components.confirmation_dialog import ConfirmationDialog
 from solara.website.utils import apidoc
 
+title = "ConfirmationDialog"
 users = solara.reactive("Alice Bob Cindy Dirk Eve Fred".split())
 user_to_be_deleted: solara.Reactive[Union[str, None]] = solara.reactive(users.value[0])
 is_open = solara.reactive(False)
@@ -46,7 +47,7 @@ def Page():
         style="max-width: 400px;",
         disabled=not users.value,
     )
-    ConfirmationDialog(is_open, delete_user, title="Delete user", content=f"Are you sure you want to delete user **{user_to_be_deleted.value}**?")
+    ConfirmationDialog(is_open, on_ok=delete_user, title="Delete user", content=f"Are you sure you want to delete user **{user_to_be_deleted.value}**?")
 
 
 __doc__ += apidoc(solara.lab.components.confirmation_dialog.ConfirmationDialog.f)  # type: ignore
