@@ -42,3 +42,10 @@ def test_settings():
     assert settings.value_no_field_other == 50
     assert settings.path == Path("/tmp/test")
     assert settings.path_optional == Path("/tmp/test/optional")
+
+
+def test_dict():
+    settings = MySettings()
+    test_value = "some-other-value"
+    settings.value = test_value
+    assert settings.dict()["value"] == test_value

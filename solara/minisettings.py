@@ -56,6 +56,9 @@ class _Field:
             return self
         return instance._values[self.name]
 
+    def __set__(self, instance, value):
+        instance._values[self.name] = value
+
 
 def convert(annotation, value: str) -> Any:
     check_optional_types = [str, int, float, bool, Path]
