@@ -47,7 +47,13 @@ def Page():
         style="max-width: 400px;",
         disabled=not users.value,
     )
-    ConfirmationDialog(is_open, on_ok=delete_user, title="Delete user", content=f"Are you sure you want to delete user **{user_to_be_deleted.value}**?")
+    with ConfirmationDialog(
+        is_open,
+        on_ok=delete_user,
+        ok="Ok, Delete",
+        title="Delete user",
+    ):
+        solara.Markdown(f"Are you sure you want to delete user **{user_to_be_deleted.value}**?")
 
 
 __doc__ += apidoc(solara.lab.components.confirmation_dialog.ConfirmationDialog.f)  # type: ignore

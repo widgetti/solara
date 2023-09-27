@@ -14,7 +14,7 @@ def test_confirmation_dialog_ok():
     _, rc = solara.render(el, handle_error=False)
     buttons = rc.find(vw.Btn)
     assert len(buttons) == 2
-    buttons[0].widget.click()
+    buttons[1].widget.click()
     assert on_ok.call_count == 1  # was OK button clicked?
     assert on_open.call_count == 1  # always triggered
     assert not is_open.value  # is dialog closed?
@@ -28,7 +28,7 @@ def test_confirmation_dialog_cancel():
     _, rc = solara.render(el, handle_error=False)
     buttons = rc.find(vw.Btn)
     assert len(buttons) == 2
-    buttons[1].widget.click()
+    buttons[0].widget.click()
     assert on_ok.call_count == 0  # on_ok action should not have been executed
     assert on_open.call_count == 1  # always triggered
     assert not is_open.value  # is dialog closed?
@@ -59,9 +59,9 @@ def test_confirmation_dialog_custom_button_no_onclick():
     _, rc = solara.render(el, handle_error=False)
     buttons = rc.find(vw.Btn)
     assert len(buttons) == 2
-    assert buttons[0].widget.children == ["Not OK"]
-    assert buttons[1].widget.children == ["Cancel"]
-    buttons[0].widget.click()
+    assert buttons[0].widget.children == ["Cancel"]
+    assert buttons[1].widget.children == ["Not OK"]
+    buttons[1].widget.click()
     assert on_ok.call_count == 1  # should still be called
 
 
@@ -87,11 +87,11 @@ def test_confirmation_dialog_custom_button_with_onclick():
     _, rc = solara.render(el, handle_error=False)
     buttons = rc.find(vw.Btn)
     assert len(buttons) == 2
-    assert buttons[0].widget.children == ["Not OK"]
-    assert buttons[1].widget.children == ["Not Cancel"]
-    buttons[0].widget.click()
+    assert buttons[1].widget.children == ["Not OK"]
+    assert buttons[0].widget.children == ["Not Cancel"]
+    buttons[1].widget.click()
     assert values == ["on_click_ok", "on_ok"]  # assert on_ok and on_click were both called, in that order
     values.clear()
     # now the same for cancel
-    buttons[1].widget.click()
+    buttons[0].widget.click()
     assert values == ["on_click_cancel", "on_cancel"]

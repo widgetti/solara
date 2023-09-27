@@ -40,7 +40,7 @@ def ConfirmationDialog(
     @solara.component
     def Page():
         solara.Button(label="Delete user", on_click=lambda: open_delete_confirmation.set(True))
-        solara.lab.ConfirmationDialog(open_delete_confirmation, on_ok=delete_user, content="Are you sure you want to delete this user?")
+        solara.lab.ConfirmationDialog(open_delete_confirmation, ok="Ok, Delete", on_ok=delete_user, content="Are you sure you want to delete this user?")
     ```
 
     ## Arguments
@@ -92,28 +92,29 @@ def ConfirmationDialog(
         persistent=persistent,
         max_width=max_width,
     ):
-        with solara.Card(title=title):
-            if isinstance(content, str):
-                solara.Markdown(content)
-            else:
-                solara.display(content)
-            if children:
-                solara.display(*children)
-            with solara.CardActions():
-
-                if isinstance(ok, str):
-                    solara.Button(label=ok, on_click=perform_ok)
+        with solara.v.Card():
+            solara.v.Toolbar(color="primary", dark=True, children=[title])
+            with solara.v.CardText(class_="pa-4"):
+                if isinstance(content, str):
+                    solara.Text(content)
+                else:
+                    solara.display(content)
+                if children:
+                    solara.display(*children)
+            with solara.v.CardActions(class_="justify-end"):
+                if isinstance(cancel, str):
+                    solara.Button(label=cancel, on_click=perform_cancel, outlined=True, color="primary")
                 else:
                     # the user may have passed in on_click already
-                    user_on_click_ok = ok.kwargs.get("on_click")
-                    # override or add our own on_click handler
-                    ok.kwargs = {**ok.kwargs, "on_click": perform_ok}
-                    solara.display(ok)
-
-                # similar as ok
-                if isinstance(cancel, str):
-                    solara.Button(label=cancel, on_click=perform_cancel)
-                else:
                     user_on_click_cancel = cancel.kwargs.get("on_click")
+                    # override or add our own on_click handler
                     cancel.kwargs = {**cancel.kwargs, "on_click": perform_cancel}
                     solara.display(cancel)
+
+                # similar as cancel
+                if isinstance(ok, str):
+                    solara.Button(label=ok, on_click=perform_ok, color="primary")
+                else:
+                    user_on_click_ok = ok.kwargs.get("on_click")
+                    ok.kwargs = {**ok.kwargs, "on_click": perform_ok}
+                    solara.display(ok)
