@@ -46,7 +46,7 @@ def ConfirmationDialog(
     ## Arguments
 
     * `open`: Indicates whether the dialog is being shown or not.
-    * `on_open`: lalalal read about two-way binding vs ...
+    * `on_open`: Callback to call when the dialog opens of closes.
     * `content`: Message that is displayed.
     * `title`: Title of the dialog.
     * `ok`: If a string, this text will be displayed on the confirmation button (default is "OK"). If a Button, it will be used instead of the default button.
