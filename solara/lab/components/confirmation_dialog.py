@@ -93,8 +93,8 @@ def ConfirmationDialog(
         max_width=max_width,
     ):
         with solara.v.Card():
-            solara.v.Toolbar(color="primary", dark=True, children=[title])
-            with solara.v.CardText(class_="pa-4"):
+            solara.v.CardTitle(children=[title])
+            with solara.v.CardText(style_="min-height: 64px"):
                 if isinstance(content, str):
                     solara.Text(content)
                 else:
@@ -103,7 +103,7 @@ def ConfirmationDialog(
                     solara.display(*children)
             with solara.v.CardActions(class_="justify-end"):
                 if isinstance(cancel, str):
-                    solara.Button(label=cancel, on_click=perform_cancel, outlined=True, color="primary")
+                    solara.Button(label=cancel, on_click=perform_cancel, text=True, classes=["grey--text", "text--darken-2"])
                 else:
                     # the user may have passed in on_click already
                     user_on_click_cancel = cancel.kwargs.get("on_click")
@@ -113,7 +113,7 @@ def ConfirmationDialog(
 
                 # similar as cancel
                 if isinstance(ok, str):
-                    solara.Button(label=ok, on_click=perform_ok, color="primary")
+                    solara.Button(label=ok, on_click=perform_ok, dark=True, color="primary", elevation=0)
                 else:
                     user_on_click_ok = ok.kwargs.get("on_click")
                     ok.kwargs = {**ok.kwargs, "on_click": perform_ok}
