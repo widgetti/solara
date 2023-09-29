@@ -424,6 +424,7 @@ v.Btn(children=['Warmup js/css/fonts', v.Icon(children=["mdi-check"])], class_="
         \n"""
         write_notebook([code_setup, code_from_function(f)], notebook_path)
         page_session.goto(base_url + f"/notebooks/notebook.ipynb?v={count}")
+        page_session.locator(".prompt_container >> nth=0").wait_for()
         page_session.locator("text=Kernel starting, please wait...").wait_for(state="detached")
         page_session.locator("Kernel Ready").wait_for(state="detached")
         page_session.locator('css=[data-jupyter-action="jupyter-notebook:run-cell-and-select-next"]').click()
