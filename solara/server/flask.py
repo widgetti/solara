@@ -2,6 +2,7 @@ import asyncio
 import logging
 import mimetypes
 import os
+import threading
 from http.server import HTTPServer
 from pathlib import Path
 from typing import Any
@@ -55,15 +56,19 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
 
     def __init__(self, ws: simple_websocket.Server) -> None:
         self.ws = ws
+        self.lock = threading.Lock()
 
     def close(self):
-        self.ws.close()
+        with self.lock:
+            self.ws.close()
 
     def send_text(self, data: str) -> None:
-        self.ws.send(data)
+        with self.lock:
+            self.ws.send(data)
 
     def send_bytes(self, data: bytes) -> None:
-        self.ws.send(data)
+        with self.lock:
+            self.ws.send(data)
 
     async def receive(self):
         from anyio import to_thread
