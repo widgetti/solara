@@ -1,15 +1,53 @@
-from typing import Callable, List, Union
+from typing import Callable, List, Union, overload
 
 import reacton.ipyvuetify as v
 
 import solara
 
 
+@overload
+def ConfirmationDialog(
+    open: solara.Reactive[bool],
+    *,
+    on_close: Union[None, Callable[[], None]] = None,
+    content: Union[str, solara.Element] = "",
+    title: str = "Confirm action",
+    ok: Union[str, solara.Element] = "OK",
+    on_ok: Callable[[], None] = lambda: None,
+    cancel: Union[str, solara.Element] = "Cancel",
+    on_cancel: Callable[[], None] = lambda: None,
+    children: List[solara.Element] = [],
+    max_width: Union[int, str] = 500,
+    persistent: bool = False,
+):
+    ...
+
+
+# when open is a boolean, on_close should be given, otherwise a dialog can never be closed
+# TODO: copy this pattern to many other components
+@overload
+def ConfirmationDialog(
+    open: bool,
+    *,
+    on_close: Callable[[], None],
+    content: Union[str, solara.Element] = "",
+    title: str = "Confirm action",
+    ok: Union[str, solara.Element] = "OK",
+    on_ok: Callable[[], None] = lambda: None,
+    cancel: Union[str, solara.Element] = "Cancel",
+    on_cancel: Callable[[], None] = lambda: None,
+    children: List[solara.Element] = [],
+    max_width: Union[int, str] = 500,
+    persistent: bool = False,
+):
+    ...
+
+
 @solara.component
 def ConfirmationDialog(
     open: Union[solara.Reactive[bool], bool],
     *,
-    on_open: Callable[[bool], None] = lambda open: None,
+    on_close: Union[None, Callable[[], None]] = None,
     content: Union[str, solara.Element] = "",
     title: str = "Confirm action",
     ok: Union[str, solara.Element] = "OK",
@@ -35,6 +73,7 @@ def ConfirmationDialog(
     open_delete_confirmation = solara.reactive(False)
 
     def delete_user():
+        # put your code to perform the action here
         print("User being deleted...")
 
     @solara.component
@@ -60,6 +99,12 @@ def ConfirmationDialog(
     * `persistent`: When False (the default), clicking outside of the element or pressing esc key will trigger cancel.
 
     """
+
+    def on_open(open_value):
+        if not open_value:
+            if on_close:
+                on_close()
+
     open_reactive = solara.use_reactive(open, on_open)
     del open
 

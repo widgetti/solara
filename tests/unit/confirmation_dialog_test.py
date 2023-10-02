@@ -9,28 +9,28 @@ from solara.lab.components.confirmation_dialog import ConfirmationDialog
 def test_confirmation_dialog_ok():
     is_open = solara.reactive(True)
     on_ok = MagicMock()
-    on_open = MagicMock()
-    el = ConfirmationDialog(is_open, on_ok=on_ok, on_open=on_open, content="Hello")
+    on_close = MagicMock()
+    el = ConfirmationDialog(is_open, on_ok=on_ok, on_close=on_close, content="Hello")
     _, rc = solara.render(el, handle_error=False)
     buttons = rc.find(vw.Btn)
     assert len(buttons) == 2
     buttons[1].widget.click()
     assert on_ok.call_count == 1  # was OK button clicked?
-    assert on_open.call_count == 1  # always triggered
+    assert on_close.call_count == 1  # always triggered
     assert not is_open.value  # is dialog closed?
 
 
 def test_confirmation_dialog_cancel():
     is_open = solara.reactive(True)
     on_ok = MagicMock()
-    on_open = MagicMock()
-    el = ConfirmationDialog(is_open, on_ok=on_ok, on_open=on_open, content="Hello")
+    on_close = MagicMock()
+    el = ConfirmationDialog(is_open, on_ok=on_ok, on_close=on_close, content="Hello")
     _, rc = solara.render(el, handle_error=False)
     buttons = rc.find(vw.Btn)
     assert len(buttons) == 2
     buttons[0].widget.click()
     assert on_ok.call_count == 0  # on_ok action should not have been executed
-    assert on_open.call_count == 1  # always triggered
+    assert on_close.call_count == 1  # always triggered
     assert not is_open.value  # is dialog closed?
 
 
@@ -39,8 +39,8 @@ def test_confirm_external_close():
     is_open = solara.reactive(True)
     on_ok = MagicMock()
     on_cancel = MagicMock()
-    on_open = MagicMock()
-    el = ConfirmationDialog(is_open, on_ok=on_ok, on_cancel=on_cancel, on_open=on_open, content="Hello")
+    on_close = MagicMock()
+    el = ConfirmationDialog(is_open, on_ok=on_ok, on_cancel=on_cancel, on_close=on_close, content="Hello")
     _, rc = solara.render(el, handle_error=False)
     dialog = rc.find(vw.Dialog)[0].widget
     assert dialog.v_model
@@ -48,7 +48,7 @@ def test_confirm_external_close():
     assert not is_open.value  # is dialog closed?
     assert on_ok.call_count == 0  # on_ok action should not have been executed
     assert on_cancel.call_count == 1  # on_cancel action should not have been executed
-    assert on_open.call_count == 1  # always triggered
+    assert on_close.call_count == 1  # always triggered
 
 
 def test_confirmation_dialog_custom_button_no_onclick():

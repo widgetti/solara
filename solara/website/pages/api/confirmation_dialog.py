@@ -11,45 +11,41 @@ from solara.website.utils import apidoc
 
 title = "ConfirmationDialog"
 users = solara.reactive("Alice Bob Cindy Dirk Eve Fred".split())
-user_to_be_deleted: solara.Reactive[Union[str, None]] = solara.reactive(users.value[0])
-is_open = solara.reactive(False)
+user_to_be_deleted: solara.Reactive[Union[str, None]] = solara.reactive(None)
 
 
-def confirm_delete():
-    if user_to_be_deleted.value:
-        is_open.set(True)
+def ask_to_delete_user(user):
+    user_to_be_deleted.value = user
+
+
+def clear_user_to_be_deleted():
+    user_to_be_deleted.value = None
 
 
 def delete_user():
-    if user_to_be_deleted.value:
-        users.set([u for u in users.value if u != user_to_be_deleted.value])
-    if users.value:
-        user_to_be_deleted.set(users.value[0])
-    else:
-        user_to_be_deleted.set(None)
+    users.set([u for u in users.value if u != user_to_be_deleted.value])
+    clear_user_to_be_deleted()
 
 
 @solara.component
 def Page():
-    """Create a list of users, a dropdown to select one, and a button to delete the
-    selected user. A confirmation dialog will pop up first before deletion."""
+    """Create a list of users with a button to delete them.
+
+    A confirmation dialog will pop up first before deletion."""
     solara.Markdown("#### Users:")
-    with solara.Column():
+    with solara.Column(style={"max-width": "300px"}):
         for user in users.value:
-            bgcolor = user.lower()[0] * 3
-            solara.Text(user, style=f"width: 300px; background-color: #{bgcolor}; padding: 10px;")
+            with solara.Row(style={"align-items": "center"}):
+                solara.Text(user)
+                solara.v.Spacer()
+                solara.Button(icon_name="mdi-delete", on_click=lambda user=user: ask_to_delete_user(user), icon=True)
         if not users.value:
             solara.Text("(no users left)")
-    solara.Select(label="User to be deleted:", value=user_to_be_deleted, values=users.value, style="max-width: 400px;")
-    solara.Button(
-        on_click=confirm_delete,
-        label=(f"Delete user: {user_to_be_deleted.value}" if user_to_be_deleted.value else "Delete user"),
-        style="max-width: 400px;",
-        disabled=not users.value,
-    )
+
     with ConfirmationDialog(
-        is_open,
+        user_to_be_deleted.value is not None,
         on_ok=delete_user,
+        on_close=clear_user_to_be_deleted,
         ok="Ok, Delete",
         title="Delete user",
     ):
