@@ -7,6 +7,7 @@ below to draw shapes and visualize the canvas callback.
 Check [plotly docs](https://dash.plotly.com/annotations) for more information about image annotation.
 """
 import json
+
 import plotly.graph_objects as go
 
 import solara
@@ -14,21 +15,28 @@ import solara
 title = "Plotly Image Annotator"
 shapes = solara.reactive(None)
 
+
 class CustomEncoder(json.JSONEncoder):
+    """
+    Custom JSON encoder for Plotly objects.
+
+    Plotly may return objects that the standard JSON encoder can't handle. This
+    encoder converts such objects to str, allowing serialization by json.dumps
+    """
+
     def default(self, o):
-        # Convert object instances to their string representation
         if isinstance(o, object):
             return str(o)
         return super().default(o)
 
+
 @solara.component
 def Page():
     def on_relayout(data):
-        print(data)
         if data is None:
             return
 
-        relayout_data = data['relayout_data']
+        relayout_data = data["relayout_data"]
 
         if "shapes" in relayout_data:
             shapes.value = relayout_data["shapes"]
@@ -46,12 +54,12 @@ def Page():
                     "drawrect",
                     "eraseshape",
                 ]
-            }
+            },
         )
     )
 
     solara.FigurePlotly(fig, on_relayout=on_relayout)
-    
+
     if not shapes.value:
         solara.Markdown("## Draw on the canvas")
     else:
