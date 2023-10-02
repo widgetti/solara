@@ -1,34 +1,19 @@
-import os
 from typing import Dict, List, Optional, Union
 
-import ipyvuetify as v
-import ipywidgets
-import traitlets
-
 import solara
-
-# For a potential future component_vue implementation
-#
-# @solara.component_vue("menu.vue")
-# def MenuWidget(
-#     activator: List[solara.Element],
-#     children: List[solara.Element] = [],
-#     show_menu: bool = False,
-#     style: Optional[str] = None,
-#     context: bool = False,
-#     use_absolute: bool = True,
-# ):
-#     pass
+from solara.components.component_vue import component_vue
 
 
-class MenuWidget(v.VuetifyTemplate):
-    template_file = os.path.realpath(os.path.join(os.path.dirname(__file__), "menu.vue"))
-    activator = traitlets.Union([traitlets.List(), traitlets.Dict(), traitlets.Any()], default_value=[]).tag(sync=True, **ipywidgets.widget_serialization)
-    children = traitlets.List(default_value=[]).tag(sync=True, **ipywidgets.widget_serialization)
-    show_menu = traitlets.Bool(default_value=False).tag(sync=True)
-    style = traitlets.Unicode(None, allow_none=True).tag(sync=True)
-    context = traitlets.Bool(default_value=False).tag(sync=True)
-    use_absolute = traitlets.Bool(default_value=True).tag(sync=True)
+@component_vue("menu.vue")
+def MenuWidget(
+    activator: List[solara.Element],
+    children: List[solara.Element] = [],
+    show_menu: bool = False,
+    style: Optional[str] = None,
+    context: bool = False,
+    use_absolute: bool = True,
+):
+    pass
 
 
 @solara.component
@@ -71,7 +56,7 @@ def ClickMenu(
     if not isinstance(activator, list):
         activator = [activator]
 
-    return MenuWidget.element(activator=activator, children=children, show_menu=show.value, style=style_flat)
+    return MenuWidget(activator=activator, children=children, show_menu=show.value, style=style_flat)
 
 
 @solara.component
@@ -114,7 +99,7 @@ def ContextMenu(
     if not isinstance(activator, list):
         activator = [activator]
 
-    return MenuWidget.element(activator=activator, children=children, show_menu=show.value, style=style_flat, context=True)
+    return MenuWidget(activator=activator, children=children, show_menu=show.value, style=style_flat, context=True)
 
 
 @solara.component
@@ -155,4 +140,4 @@ def Menu(
     if not isinstance(activator, list):
         activator = [activator]
 
-    return MenuWidget.element(activator=activator, children=children, show_menu=show.value, style=style_flat, use_absolute=False)
+    return MenuWidget(activator=activator, children=children, show_menu=show.value, style=style_flat, use_absolute=False)
