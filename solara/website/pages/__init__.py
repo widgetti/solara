@@ -4,7 +4,7 @@ import solara
 from solara.alias import rv
 from solara.components.title import Title
 
-#from ..components import Header, Hero
+from ..components import Header, Hero
 
 
 title = "Home"
