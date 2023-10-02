@@ -59,7 +59,6 @@ def Page():
     )
 
     solara.FigurePlotly(fig, on_relayout=on_relayout)
-
     if not shapes.value:
         solara.Markdown("## Draw on the canvas")
     else:

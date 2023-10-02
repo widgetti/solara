@@ -10,11 +10,10 @@ from typing_extensions import TypedDict
 import solara
 import solara as sol
 import solara.lab
-from solara.lab import State
-from solara.lab.toestand import Reactive, Ref, use_sync_external_store
 from solara.server import app, kernel
+from solara.toestand import Reactive, Ref, State, use_sync_external_store
 
-from ..common import click
+from .common import click
 
 
 @dataclasses.dataclass(frozen=True)
