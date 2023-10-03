@@ -218,3 +218,30 @@ def cancel_guard(cancelled: threading.Event):
     finally:
         if hasattr(sys, "settrace"):
             sys.settrace(prev)
+
+
+def parse_timedelta(size: str) -> float:
+    """Turn a human readable time delta into seconds.
+    Supports days(d), hours (h), minutes (m) and seconds (s).
+    If not unit is specified, seconds is assumed.
+    >>> parse_timedelta("1d")
+    86400
+    >>> parse_timedelta("1h")
+    3600
+    >>> parse_timedelta("30m")
+    1800
+    >>> parse_timedelta("10s")
+    10
+    >>> parse_timedelta("10")
+    10
+    """
+    if size.endswith("d"):
+        return float(size[:-1]) * 24 * 60 * 60
+    elif size.endswith("h"):
+        return float(size[:-1]) * 60 * 60
+    elif size.endswith("m"):
+        return float(size[:-1]) * 60
+    elif size.endswith("s"):
+        return float(size[:-1])
+    else:
+        return float(size)

@@ -12,8 +12,8 @@ def test_shell(no_kernel_context):
     kernel2 = kernel.Kernel()
     kernel1.session.websockets.add(ws1)
     kernel2.session.websockets.add(ws2)
-    context1 = kernel_context.VirtualKernelContext(id="1", kernel=kernel1)
-    context2 = kernel_context.VirtualKernelContext(id="2", kernel=kernel2)
+    context1 = kernel_context.VirtualKernelContext(id="1", kernel=kernel1, session_id="session-1")
+    context2 = kernel_context.VirtualKernelContext(id="2", kernel=kernel2, session_id="session-2")
 
     with context1:
         IPython.display.display("test1")

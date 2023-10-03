@@ -135,6 +135,11 @@ export class WidgetManager extends JupyterLabManager {
     }
   }
 
+  async fetchAll() {
+    // fetch all widgets
+    await this._loadFromKernel();
+  }
+
   async run(appName: string, path: string) {
     // used for routing
     // should be similar to what we do in navigator.vue

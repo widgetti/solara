@@ -114,18 +114,22 @@ async function solaraInit(mountId, appName) {
     define("vue", [], () => Vue);
     define("vuetify", [], { framework: app.$vuetify });
     cookies = getCookiesMap(document.cookie);
-    uuid = generateUuid()
+    const searchParams = new URLSearchParams(window.location.search);
+    let kernelId = searchParams.get('kernelid') || generateUuid()
     let unloading = false;
     window.addEventListener('beforeunload', function (e) {
         unloading = true;
         kernel.dispose()
-        window.navigator.sendBeacon(close_url);
+        // allow to opt-out to make testing easier
+        if (!searchParams.has('solara-no-close-beacon')) {
+            window.navigator.sendBeacon(close_url);
+        }
     });
-    let kernel = await solara.connectKernel(solara.rootPath + '/jupyter', uuid)
+    let kernel = await solara.connectKernel(solara.rootPath + '/jupyter', kernelId)
     if (!kernel) {
         return;
     }
-    const close_url = solara.rootPath + '/_solara/api/close/' + kernel.clientId;
+    const close_url = `${solara.rootPath}/_solara/api/close/${kernelId}?session_id=${kernel.clientId}`;
     let skipReconnectedCheck = true;
     kernel.statusChanged.connect(() => {
         app.$data.kernelBusy = kernel.status == 'busy';
@@ -202,8 +206,17 @@ async function solaraInit(mountId, appName) {
     // it seems if we attach this to early, it will not be called
     app.$data.loading_text = 'Loading app';
     const path = window.location.pathname.slice(solara.rootPath.length) + window.location.search;
-    const widgetId = await widgetManager.run(appName, path);
-    await solaraMount(widgetManager, mountId || 'content', widgetId);
+    let widgetModelId = searchParams.get('modelid');
+    // if kernelid and modelid are given as query parameters, we will use them
+    // instead of running the current solara app. This allows usage such as
+    // ipypopout, which reconnects to an existing kernel and shows a particular
+    // widget.
+    if (kernelId && widgetModelId) {
+        await widgetManager.fetchAll();
+    } else {
+        widgetModelId = await widgetManager.run(appName, path);
+    }
+    await solaraMount(widgetManager, mountId || 'content', widgetModelId);
     skipReconnectedCheck = false;
     solara.renderMathJax();
 }
