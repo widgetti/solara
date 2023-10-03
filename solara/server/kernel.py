@@ -97,7 +97,7 @@ if ipykernel_version >= (6, 18, 0):
     comm.create_comm = Comm
 
     def get_comm_manager():
-        from .app import get_current_context, has_current_context
+        from .kernel_context import get_current_context, has_current_context
 
         if has_current_context():
             return get_current_context().kernel.comm_manager

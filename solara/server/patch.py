@@ -13,7 +13,7 @@ import ipywidgets
 import ipywidgets.widgets.widget_output
 from IPython.core.interactiveshell import InteractiveShell
 
-from . import app, reload, settings
+from . import app, kernel_context, reload, settings
 from .utils import pdb_guard
 
 logger = logging.getLogger("solara.server.patch")
@@ -28,7 +28,7 @@ ipywidget_version_major = int(ipywidgets.__version__.split(".")[0])
 
 
 class FakeIPython:
-    def __init__(self, context: app.AppContext):
+    def __init__(self, context: kernel_context.VirtualKernelContext):
         self.context = context
         self.kernel = context.kernel
         self.display_pub = self.kernel.shell.display_pub
@@ -78,8 +78,8 @@ Kernel_instance_original = ipykernel.kernelbase.Kernel.instance.__func__  # type
 
 
 def kernel_instance_dispatch(cls, *args, **kwargs):
-    if app.has_current_context():
-        context = app.get_current_context()
+    if kernel_context.has_current_context():
+        context = kernel_context.get_current_context()
         return context.kernel
     else:
         return Kernel_instance_original(cls, *args, **kwargs)
@@ -91,7 +91,7 @@ Kernel_initialized_initial = ipykernel.kernelbase.Kernel.initialized.__func__  #
 def kernel_initialized_dispatch(cls):
     if app is None:  # python is shutting down, and the comm dtor wants to send a close message
         return False
-    if app.has_current_context():
+    if kernel_context.has_current_context():
         return True
     else:
         return Kernel_initialized_initial(cls)
@@ -101,8 +101,8 @@ InteractiveShell_instance_initial = InteractiveShell.instance.__func__  # type: 
 
 
 def interactive_shell_instance_dispatch(cls, *args, **kwargs):
-    if app.has_current_context():
-        context = app.get_current_context()
+    if kernel_context.has_current_context():
+        context = kernel_context.get_current_context()
         return context.kernel.shell
     else:
         return InteractiveShell_instance_initial(cls, *args, **kwargs)
@@ -169,8 +169,8 @@ def display_solara(
 
 
 def get_ipython():
-    if app.has_current_context():
-        context = app.get_current_context()
+    if kernel_context.has_current_context():
+        context = kernel_context.get_current_context()
         our_fake_ipython = FakeIPython(context)
         return our_fake_ipython
     else:
@@ -199,8 +199,8 @@ class context_dict(MutableMapping):
 
 class context_dict_widgets(context_dict):
     def _get_context_dict(self) -> dict:
-        if app.has_current_context():
-            context = app.get_current_context()
+        if kernel_context.has_current_context():
+            context = kernel_context.get_current_context()
             return context.widgets
         else:
             return global_widgets_dict
@@ -208,8 +208,8 @@ class context_dict_widgets(context_dict):
 
 class context_dict_templates(context_dict):
     def _get_context_dict(self) -> dict:
-        if app.has_current_context():
-            context = app.get_current_context()
+        if kernel_context.has_current_context():
+            context = kernel_context.get_current_context()
             return context.templates
         else:
             return global_templates_dict
@@ -220,7 +220,7 @@ class context_dict_user(context_dict):
         self.name = name
 
     def _get_context_dict(self) -> dict:
-        context = app.get_current_context()
+        context = kernel_context.get_current_context()
         if self.name not in context.user_dicts:
             context.user_dicts[self.name] = {}
         return context.user_dicts[self.name]
@@ -245,14 +245,14 @@ def WidgetContextAwareThread__init__(self, *args, **kwargs):
     Thread__init__(self, *args, **kwargs)
     self.current_context = None
     try:
-        self.current_context = app.get_current_context()
+        self.current_context = kernel_context.get_current_context()
     except RuntimeError:
         logger.debug(f"No context for thread {self}")
 
 
 def Thread_debug_run(self):
     if self.current_context:
-        app.set_context_for_thread(self.current_context, self)
+        kernel_context.set_context_for_thread(self.current_context, self)
     with pdb_guard():
         Thread__run(self)
 

@@ -16,8 +16,8 @@ import solara
 import solara.routing
 
 from . import app, jupytertools, settings, websocket
-from .app import initialize_virtual_kernel
 from .kernel import Kernel, deserialize_binary_message
+from .kernel_context import initialize_virtual_kernel
 
 COOKIE_KEY_SESSION_ID = "solara-session-id"
 
@@ -106,11 +106,10 @@ def is_ready(url) -> bool:
     return False
 
 
-async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, connection_id: str, user: dict = None):
-    initialize_virtual_kernel(connection_id, ws)
-    context = app.contexts.get(connection_id)
+async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, kernel_id: str, page_id: str, user: dict = None):
+    context = initialize_virtual_kernel(kernel_id, ws)
     if context is None:
-        logging.warning("invalid context id: %r", connection_id)
+        logging.warning("invalid kernel id: %r", kernel_id)
         # to avoid very fast reconnects (we are in a thread anyway)
         time.sleep(0.5)
         return
@@ -118,7 +117,7 @@ async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, connection_i
     if settings.main.tracer:
         import viztracer
 
-        output_file = f"viztracer-{connection_id}.html"
+        output_file = f"viztracer-{page_id}.html"
         run_context = viztracer.VizTracer(output_file=output_file, max_stack_depth=10)
         logger.warning(f"Running with tracer: {output_file}")
     else:

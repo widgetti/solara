@@ -20,11 +20,11 @@ HERE = Path(__file__).parent
 reload.reloader.start()
 
 
-def test_notebook_element(app_context, no_app_context):
+def test_notebook_element(kernel_context, no_kernel_context):
     name = str(HERE / "solara_test_apps" / "notebookapp_element.ipynb")
     app = AppScript(name)
     try:
-        with app_context:
+        with kernel_context:
             el = app.run()
             assert isinstance(el, reacton.core.Element)
             el2 = app.run()
@@ -33,11 +33,11 @@ def test_notebook_element(app_context, no_app_context):
         app.close()
 
 
-def test_notebook_component(app_context, no_app_context):
+def test_notebook_component(kernel_context, no_kernel_context):
     name = str(HERE / "solara_test_apps" / "notebookapp_component.ipynb")
     app = AppScript(name)
     try:
-        with app_context:
+        with kernel_context:
             el = app.run()
             assert isinstance(el, reacton.core.Element)
             el2 = app.run()
@@ -46,11 +46,11 @@ def test_notebook_component(app_context, no_app_context):
         app.close()
 
 
-def test_notebook_widget(app_context, no_app_context):
+def test_notebook_widget(kernel_context, no_kernel_context):
     name = str(HERE / "solara_test_apps" / "notebookapp_widget.ipynb")
     app = AppScript(name)
     try:
-        with app_context:
+        with kernel_context:
             el = app.run()
             root = solara.RoutingProvider(children=[el], routes=app.routes, pathname="/")
             _box, rc = solara.render(root, handle_error=False)
@@ -63,11 +63,11 @@ def test_notebook_widget(app_context, no_app_context):
         app.close()
 
 
-def test_sidebar_single_file_multiple_routes(app_context, no_app_context):
+def test_sidebar_single_file_multiple_routes(kernel_context, no_kernel_context):
     name = str(HERE / "solara_test_apps" / "single_file_multiple_routes.py")
     app = AppScript(name)
     try:
-        with app_context:
+        with kernel_context:
             c = app.run()
             root = solara.RoutingProvider(children=[c], routes=app.routes, pathname="/")
             box, rc = solara.render(root, handle_error=False)
@@ -76,11 +76,11 @@ def test_sidebar_single_file_multiple_routes(app_context, no_app_context):
         app.close()
 
 
-def test_sidebar_single_file(app_context, no_app_context):
+def test_sidebar_single_file(kernel_context, no_kernel_context):
     name = str(HERE / "solara_test_apps" / "single_file.py")
     app = AppScript(name)
     try:
-        with app_context:
+        with kernel_context:
             c = app.run()
             root = solara.RoutingProvider(children=[c], routes=app.routes, pathname="/")
             box, rc = solara.render(root, handle_error=False)
@@ -89,11 +89,11 @@ def test_sidebar_single_file(app_context, no_app_context):
         app.close()
 
 
-def test_sidebar_single_file_missing(app_context, no_app_context):
+def test_sidebar_single_file_missing(kernel_context, no_kernel_context):
     name = str(HERE / "solara_test_apps" / "single_file.py:doesnotexist")
     app = AppScript(name)
     try:
-        with app_context:
+        with kernel_context:
             c = app.run()
             root = solara.RoutingProvider(children=[c], routes=app.routes, pathname="/")
             box, rc = solara.render(root, handle_error=False)
@@ -103,7 +103,7 @@ def test_sidebar_single_file_missing(app_context, no_app_context):
 
 
 # these make other test fail on CI (vaex is used, which causes a blake3 reload, which fails)
-def test_watch_module_reload(tmpdir, app_context, extra_include_path, no_app_context):
+def test_watch_module_reload(tmpdir, kernel_context, extra_include_path, no_kernel_context):
     import ipyvuetify as v
 
     with extra_include_path(str(tmpdir)):
@@ -150,7 +150,7 @@ def test_watch_module_reload(tmpdir, app_context, extra_include_path, no_app_con
             reload.reloader.watched_modules.remove("somemod")
 
 
-# def test_script_reload_component(tmpdir, app_context, extra_include_path, no_app_context):
+# def test_script_reload_component(tmpdir, kernel_context, extra_include_path, no_kernel_context):
 #     import ipyvuetify as v
 
 #     with extra_include_path(str(tmpdir)):
@@ -176,7 +176,7 @@ def test_watch_module_reload(tmpdir, app_context, extra_include_path, no_app_con
 #             app.close()
 
 
-# def test_watch_module_import_error(tmpdir, app_context, extra_include_path, no_app_context):
+# def test_watch_module_import_error(tmpdir, kernel_context, extra_include_path, no_kernel_context):
 #     import ipyvuetify as v
 
 #     with extra_include_path(str(tmpdir)):

@@ -173,14 +173,14 @@ def SyncWrapper():
 def _solara_test(solara_server, solara_app, page_session: "playwright.sync_api.Page"):
     global run_calls
     with solara_app("solara.test.pytest_plugin:SyncWrapper"):
-        assert len(solara.server.app.contexts) == 0
+        assert len(solara.server.kernel_context.contexts) == 0
         page_session.goto(solara_server.base_url)
         try:
             run_event.wait()
             assert run_calls == 1
-            keys = list(solara.server.app.contexts)
+            keys = list(solara.server.kernel_context.contexts)
             assert len(keys) == 1, "expected only one context, got %s" % keys
-            context = solara.server.app.contexts[keys[-1]]
+            context = solara.server.kernel_context.contexts[keys[-1]]
             with context:
                 test_output_warmup = widgets.Output()
                 test_output = widgets.Output()

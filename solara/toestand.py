@@ -217,11 +217,11 @@ class ConnectionStore(ValueBase[S]):
         scope_dict = self._global_dict
         scope_id = "global"
         if _using_solara_server():
-            import solara.server.app
+            import solara.server.kernel_context
 
             try:
-                context = solara.server.app.get_current_context()
-            except:  # noqa
+                context = solara.server.kernel_context.get_current_context()
+            except RuntimeError:  # noqa
                 pass  # do we need to be more strict?
             else:
                 scope_dict = cast(Dict[str, S], context.user_dicts)

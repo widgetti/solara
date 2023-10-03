@@ -18,9 +18,9 @@ class ConnectionScope(ObservableMutableMapping):
 
     def _get_dict(self) -> MutableMapping:
         if _in_solara_server():
-            import solara.server.app
+            import solara.server.kernel_context
 
-            context = solara.server.app.get_current_context()
+            context = solara.server.kernel_context.get_current_context()
             if self.name not in context.user_dicts:
                 with self.lock:
                     if self.name not in context.user_dicts:

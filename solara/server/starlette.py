@@ -46,7 +46,7 @@ import solara
 from solara.server.threaded import ServerBase
 
 from . import app as appmod
-from . import server, settings, telemetry, websocket
+from . import kernel_context, server, settings, telemetry, websocket
 from .cdn_helper import cdn_url_path, get_path
 
 os.environ["SERVER_SOFTWARE"] = "solara/" + str(solara.__version__)
@@ -166,12 +166,17 @@ async def kernel_connection(ws: starlette.websockets.WebSocket):
         logger.error("no session cookie")
         await ws.close()
         return
-    connection_id = ws.query_params["session_id"]
-    if not connection_id:
-        logger.error("no session_id/connection_id")
+    # we use the jupyter session_id query parameter as the key/id
+    # for a page scope.
+    page_id = ws.query_params["session_id"]
+    if not page_id:
+        logger.error("no page_id")
+    kernel_id = ws.path_params["kernel_id"]
+    if not kernel_id:
+        logger.error("no kernel_id")
         await ws.close()
         return
-    logger.info("Solara kernel requested for session_id=%s connection_id=%s", session_id, connection_id)
+    logger.info("Solara kernel requested for session_id=%s kernel_id=%s", session_id, kernel_id)
     await ws.accept()
 
     def websocket_thread_runner(ws: starlette.websockets.WebSocket, portal: anyio.from_thread.BlockingPortal):
@@ -180,14 +185,14 @@ async def kernel_connection(ws: starlette.websockets.WebSocket):
         async def run():
             try:
                 assert session_id is not None
-                assert connection_id is not None
-                telemetry.connection_open(session_id, connection_id)
-                await server.app_loop(ws_wrapper, session_id, connection_id, user)
+                assert kernel_id is not None
+                telemetry.connection_open(session_id)
+                await server.app_loop(ws_wrapper, session_id, kernel_id, page_id, user)
             except:  # noqa
                 await portal.stop(cancel_remaining=True)
                 raise
             finally:
-                telemetry.connection_close(session_id, connection_id)
+                telemetry.connection_close(session_id)
 
         # sometimes throws: RuntimeError: Already running asyncio in this thread
         anyio.run(run)
@@ -206,9 +211,9 @@ async def kernel_connection(ws: starlette.websockets.WebSocket):
 
 
 def close(request: Request):
-    connection_id = request.path_params["connection_id"]
-    if connection_id in appmod.contexts:
-        context = appmod.contexts[connection_id]
+    kernel_id = request.path_params["kernel_id"]
+    if kernel_id in kernel_context.contexts:
+        context = kernel_context.contexts[kernel_id]
         context.close()
     response = HTMLResponse(content="", status_code=200)
     return response
@@ -381,10 +386,10 @@ routes = [
     Route("/readyz", endpoint=readyz),
     *routes_auth,
     Route("/jupyter/api/kernels/{id}", endpoint=kernels),
-    WebSocketRoute("/jupyter/api/kernels/{id}/{name}", endpoint=kernel_connection),
+    WebSocketRoute("/jupyter/api/kernels/{kernel_id}/{name}", endpoint=kernel_connection),
     Route("/", endpoint=root),
     Route("/{fullpath}", endpoint=root),
-    Route("/_solara/api/close/{connection_id}", endpoint=close, methods=["POST"]),
+    Route("/_solara/api/close/{kernel_id}", endpoint=close, methods=["POST"]),
     # only enable when the proxy is turned on, otherwise if the directory does not exists we will get an exception
     *([Mount(f"/{cdn_url_path}", app=StaticCdn(directory=settings.assets.proxy_cache_dir))] if settings.assets.proxy else []),
     Mount(f"{prefix}/static/public", app=StaticPublic()),

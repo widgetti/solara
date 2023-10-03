@@ -1,14 +1,15 @@
 import pytest
 
 import solara.server.app
+import solara.server.kernel_context
 from solara.server import kernel
-from solara.server.app import AppContext
+from solara.server.kernel_context import VirtualKernelContext
 
 
 @pytest.fixture(autouse=True)
-def app_context():
+def kernel_context():
     kernel_shared = kernel.Kernel()
-    context = AppContext(id="1", kernel=kernel_shared)
+    context = VirtualKernelContext(id="1", kernel=kernel_shared)
     try:
         with context:
             yield context
@@ -18,10 +19,10 @@ def app_context():
 
 
 @pytest.fixture()
-def no_app_context(app_context):
-    context = solara.server.app.get_current_context()
-    solara.server.app.set_current_context(None)
+def no_kernel_context(kernel_context):
+    context = solara.server.kernel_context.get_current_context()
+    solara.server.kernel_context.set_current_context(None)
     try:
         yield
     finally:
-        solara.server.app.set_current_context(context)
+        solara.server.kernel_context.set_current_context(context)
