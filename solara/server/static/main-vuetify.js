@@ -158,10 +158,21 @@ async function solaraInit(mountId, appName) {
         }
         if (s.connectionStatus == 'connected' && !skipReconnectedCheck) {
             (async () => {
-                let ok = await widgetManager.check()
-                if (!ok) {
+                if (app.$data.needsRefresh) {
+                    // give up
+                    return;
+                }
+                // if we are reconnected, we expected the app to be in a started
+                // state. If it is not started, we will shutdown the kernel and
+                // Recommend to refresh the page. This situation can happen if
+                // we reconnect to a different node/worker, or when the server
+                // was restarted.
+                const status = await widgetManager.appStatus()
+                if (!status.started) {
                     app.$data.needsRefresh = true;
                     await solara.shutdownKernel(kernel);
+                } else {
+                    await widgetManager.fetchAll();
                 }
             })();
         }
