@@ -201,7 +201,7 @@ async function solaraInit(mountId, appName) {
     let widgetManager = new solara.WidgetManager(context, rendermime, settings);
     // it seems if we attach this to early, it will not be called
     app.$data.loading_text = 'Loading app';
-    const path = window.location.pathname.slice(solara.rootPath.length);
+    const path = window.location.pathname.slice(solara.rootPath.length) + window.location.search;
     const widgetId = await widgetManager.run(appName, path);
     await solaraMount(widgetManager, mountId || 'content', widgetId);
     skipReconnectedCheck = false;
