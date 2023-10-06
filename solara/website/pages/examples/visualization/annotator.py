@@ -47,6 +47,7 @@ def Page():
             autosize=False,
             width=600,
             height=600,
+            dragmode="drawrect",
             modebar={
                 "add": [
                     "drawclosedpath",
