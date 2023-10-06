@@ -6,7 +6,6 @@ from solara.components.title import Title
 
 from ..components import Header, Hero
 
-
 title = "Home"
 
 route_order = ["/", "showcase", "docs", "api", "examples", "apps"]
