@@ -84,7 +84,6 @@ def Layout(children=[]):
         solara.Meta(property="og:url", content="https://solara.dev" + router.path)
         solara.Meta(property="og:image", content="https://solara.dev/static/assets/images/logo-small.png")
         solara.Meta(property="og:type", content="website")
-
         Header(
             on_toggle_left_menu=lambda: set_show_left_menu(not show_left_menu),
             on_toggle_right_menu=lambda: set_show_right_menu(not show_right_menu),
