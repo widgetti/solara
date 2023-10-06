@@ -130,12 +130,16 @@ def page_session(context_session: "playwright.sync_api.BrowserContext"):
 
 @pytest.fixture()
 def solara_app(solara_server):
+    used_app = None
+
     @contextlib.contextmanager
     def run(app: Union[solara.server.app.AppScript, str]):
+        nonlocal used_app
         if "__default__" in solara.server.app.apps:
             solara.server.app.apps["__default__"].close()
         if isinstance(app, str):
             app = solara.server.app.AppScript(app)
+        used_app = app
         solara.server.app.apps["__default__"] = app
         try:
             yield
@@ -146,9 +150,9 @@ def solara_app(solara_server):
                 if app.name in reload.reloader.watched_modules:
                     reload.reloader.watched_modules.remove(app.name)
 
-            app.close()
-
-    return run
+    yield run
+    if used_app:
+        used_app.close()
 
 
 run_event = threading.Event()
@@ -165,20 +169,21 @@ def SyncWrapper():
     return w.VBox(children=[w.HTML(value="Test in solara"), w.VBox()])
 
 
-@pytest.fixture()
-def solara_test(solara_server, solara_app, page_session: "playwright.sync_api.Page"):
+@contextlib.contextmanager
+def _solara_test(solara_server, solara_app, page_session: "playwright.sync_api.Page"):
     global run_calls
     with solara_app("solara.test.pytest_plugin:SyncWrapper"):
+        assert len(solara.server.app.contexts) == 0
         page_session.goto(solara_server.base_url)
-        run_event.wait()
-        assert run_calls == 1
-        keys = list(solara.server.app.contexts)
-        assert len(keys) == 1, "expected only one context, got %s" % keys
-        context = solara.server.app.contexts[keys[0]]
-        with context:
-            test_output_warmup = widgets.Output()
-            test_output = widgets.Output()
-            try:
+        try:
+            run_event.wait()
+            assert run_calls == 1
+            keys = list(solara.server.app.contexts)
+            assert len(keys) == 1, "expected only one context, got %s" % keys
+            context = solara.server.app.contexts[keys[-1]]
+            with context:
+                test_output_warmup = widgets.Output()
+                test_output = widgets.Output()
                 page_session.locator("text=Test in solara").wait_for()
                 context.container.children[0].children[1].children[1].children = [test_output_warmup]  # type: ignore
                 with test_output_warmup:
@@ -192,11 +197,16 @@ def solara_test(solara_server, solara_app, page_session: "playwright.sync_api.Pa
                 context.container.children[0].children[1].children[1].children = [test_output]  # type: ignore
                 with test_output:
                     yield
-            finally:
                 test_output.close()
-                run_event.clear()
-                test_output = None
-                run_calls = 0
+        finally:
+            run_calls = 0
+            run_event.clear()
+
+
+@pytest.fixture()
+def solara_test(solara_server, solara_app, page_session: "playwright.sync_api.Page"):
+    with _solara_test(solara_server, solara_app, page_session):
+        yield
 
 
 class ServerVoila(ServerBase):
@@ -436,7 +446,8 @@ v.Btn(children=['Warmup js/css/fonts', v.Icon(children=["mdi-check"])], class_="
     return run
 
 
-def create_runner_solara(solara_test, solara_server, page_session: "playwright.sync_api.Page"):
+@contextlib.contextmanager
+def create_runner_solara(solara_server, solara_app, page_session: "playwright.sync_api.Page"):
     count = 0
 
     def run(f: Callable):
@@ -455,35 +466,8 @@ def create_runner_solara(solara_test, solara_server, page_session: "playwright.s
             sys.path.remove(cwd)
         count += 1
 
-    return run
-
-
-@pytest.fixture(scope="session")
-def ipywidgets_runner_voila(voila_server, notebook_path, page_session: "playwright.sync_api.Page"):
-    if "voila" not in runners:
-        return None
-    return create_runner_voila(voila_server, notebook_path, page_session)
-
-
-@pytest.fixture(scope="session")
-def ipywidgets_runner_jupyter_lab(jupyter_server, notebook_path, page_session: "playwright.sync_api.Page"):
-    if "jupyter_lab" not in runners:
-        return None
-    return create_runner_jupyter_lab(jupyter_server, notebook_path, page_session)
-
-
-@pytest.fixture(scope="session")
-def ipywidgets_runner_jupyter_notebook(jupyter_server, notebook_path, page_session: "playwright.sync_api.Page"):
-    if "jupyter_notebook" not in runners:
-        return None
-    return create_runner_jupyter_notebook(jupyter_server, notebook_path, page_session)
-
-
-@pytest.fixture()
-def ipywidgets_runner_solara(solara_test, solara_server, page_session: "playwright.sync_api.Page"):
-    if "solara" not in runners:
-        return None
-    return create_runner_solara(solara_test, solara_server, page_session)
+    with _solara_test(solara_server, solara_app, page_session):
+        yield run
 
 
 runners = os.environ.get("SOLARA_TEST_RUNNERS", "solara,voila,jupyter_lab,jupyter_notebook").split(",")
@@ -491,15 +475,26 @@ runners = os.environ.get("SOLARA_TEST_RUNNERS", "solara,voila,jupyter_lab,jupyte
 
 @pytest.fixture(params=runners)
 def ipywidgets_runner(
-    ipywidgets_runner_jupyter_notebook,
-    ipywidgets_runner_jupyter_lab,
-    ipywidgets_runner_voila,
-    ipywidgets_runner_solara,
+    solara_server,
+    solara_app,
+    voila_server,
+    jupyter_server,
+    notebook_path,
+    page_session: "playwright.sync_api.Page",
     request,
 ):
     runner = request.param
-    name = f"ipywidgets_runner_{runner}"
-    return locals()[name]
+    if runner == "solara":
+        with create_runner_solara(solara_server, solara_app, page_session) as runner:
+            yield runner
+    elif runner == "voila":
+        yield create_runner_voila(voila_server, notebook_path, page_session)
+    elif runner == "jupyter_lab":
+        yield create_runner_jupyter_lab(jupyter_server, notebook_path, page_session)
+    elif runner == "jupyter_notebook":
+        yield create_runner_jupyter_notebook(jupyter_server, notebook_path, page_session)
+    else:
+        raise RuntimeError(f"Unknown runner {runner}")
 
 
 @pytest.fixture(scope="session")
