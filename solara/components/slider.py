@@ -426,6 +426,8 @@ def _produce_tick_labels(tick_labels: Union[List[str], Literal["end_points"], bo
         _tick_labels = None
     elif tick_labels is True:
         _tick_labels = list(map(str, np.arange(min, max, step=step)))
+    else:
+        _tick_labels = tick_labels
 
     return _tick_labels
 
