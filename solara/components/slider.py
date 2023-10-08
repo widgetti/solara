@@ -421,13 +421,13 @@ def SliderDate(
 def _produce_tick_labels(tick_labels: Union[List[str], Literal["end_points"], bool], min: float, max: float, step: float) -> Optional[List[str]]:
     if tick_labels == "end_points":
         num_repeats = int(math.ceil((max - min) / step)) - 1
-        tick_labels = [str(min), *([""] * num_repeats), str(max)]
+        _tick_labels = [str(min), *([""] * num_repeats), str(max)]
     elif tick_labels is False:
-        tick_labels = None
+        _tick_labels = None
     elif tick_labels is True:
-        tick_labels = list(map(str, np.arange(min, max, step=step)))
+        _tick_labels = list(map(str, np.arange(min, max, step=step)))
 
-    return tick_labels
+    return _tick_labels
 
 
 FloatSlider = SliderFloat
