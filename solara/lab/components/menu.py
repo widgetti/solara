@@ -23,7 +23,7 @@ def ClickMenu(
     style: Optional[Union[str, Dict[str, str]]] = None,
 ):
     """
-    A pop-up menu activated by clicking on an element. `ClickMenu` appears at the cursor position.
+    Show a pop-up menu by clicking on the `activator` element. The menu appears at the cursor position.
 
     ```solara
     import solara
@@ -66,8 +66,9 @@ def ContextMenu(
     style: Optional[Union[str, Dict[str, str]]] = None,
 ):
     """
-    Opens a context menu when the contextmenu event is triggered on the element `activator`.
-    `ContextMenu` also renders the activator element, so rendering it is not necessary separately.
+    Show a context menu by triggering the contextmenu event on the `activator` element. The menu appears at the cursor position.
+    
+    A contextmenu event is typically triggered by clicking the right mouse button, or by pressing the context menu key.
 
     ```solara
     import solara
@@ -109,7 +110,7 @@ def Menu(
     style: Optional[Union[str, Dict[str, str]]] = None,
 ):
     """
-    Opens a menu when the `activator` element is clicked. Is attached to the bottom of the `activator` component.
+    Show a pop-up menu by clicking on the `activator` element. The menu appears below the `activator` element.
 
     ```solara
     import solara

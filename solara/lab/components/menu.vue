@@ -30,6 +30,8 @@
 module.exports = {
     methods: {
         show(e, on) {
+            // hide menu, and trigger the event on the next tick, otherwise vue does not see
+            // `show_menu` changing and will no do any animation
             this.show_menu = false;
             this.$nextTick(() => {
                 on.click(e)
