@@ -5,7 +5,6 @@ from typing import Callable, List, Optional, Tuple, TypeVar, Union, cast
 
 import ipyvue
 import ipyvuetify
-import numpy as np
 import reacton.core
 import traitlets
 from typing_extensions import Literal
@@ -425,7 +424,12 @@ def _produce_tick_labels(tick_labels: Union[List[str], Literal["end_points"], bo
     elif tick_labels is False:
         _tick_labels = None
     elif tick_labels is True:
-        _tick_labels = list(map(str, np.arange(min, max, step=step)))
+        _tick_labels, start = [], min
+
+        while start < max:
+            _tick_labels.append(str(start))
+            start += step
+        _tick_labels.append(str(max))
     else:
         _tick_labels = tick_labels
 
