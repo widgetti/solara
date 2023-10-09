@@ -67,7 +67,7 @@ def SliderInt(
     def set_value_cast(value):
         reactive_value.value = int(value)
 
-    tick_labels = _produce_tick_labels(tick_labels, min, max, step)
+    updated_tick_labels = _produce_tick_labels(tick_labels, min, max, step)
 
     return rv.Slider(
         v_model=reactive_value.value,
@@ -77,7 +77,7 @@ def SliderInt(
         max=max,
         step=step,
         thumb_label=thumb_label,
-        tick_labels=tick_labels,
+        tick_labels=updated_tick_labels,
         dense=False,
         hide_details=True,
         disabled=disabled,
@@ -134,7 +134,7 @@ def SliderRangeInt(
         v1, v2 = value
         reactive_value.set((int(v1), int(v2)))
 
-    tick_labels = _produce_tick_labels(tick_labels, min, max, step)
+    updated_tick_labels = _produce_tick_labels(tick_labels, min, max, step)
 
     return cast(
         reacton.core.ValueElement[ipyvuetify.RangeSlider, Tuple[int, int]],
@@ -146,7 +146,7 @@ def SliderRangeInt(
             max=max,
             step=step,
             thumb_label=thumb_label,
-            tick_labels=tick_labels,
+            tick_labels=updated_tick_labels,
             dense=False,
             hide_details=True,
             disabled=disabled,
@@ -203,7 +203,7 @@ def SliderFloat(
     def set_value_cast(value):
         reactive_value.set(float(value))
 
-    tick_labels = _produce_tick_labels(tick_labels, min, max, step)
+    updated_tick_labels = _produce_tick_labels(tick_labels, min, max, step)
 
     return rv.Slider(
         v_model=reactive_value.value,
@@ -213,7 +213,7 @@ def SliderFloat(
         max=max,
         step=step,
         thumb_label=thumb_label,
-        tick_labels=tick_labels,
+        tick_labels=updated_tick_labels,
         dense=False,
         hide_details=True,
         disabled=disabled,
@@ -270,7 +270,7 @@ def SliderRangeFloat(
         v1, v2 = value
         reactive_value.set((float(v1), float(v2)))
 
-    tick_labels = _produce_tick_labels(tick_labels, min, max, step)
+    updated_tick_labels = _produce_tick_labels(tick_labels, min, max, step)
 
     return cast(
         reacton.core.ValueElement[ipyvuetify.RangeSlider, Tuple[float, float]],
@@ -282,7 +282,7 @@ def SliderRangeFloat(
             max=max,
             step=step,
             thumb_label=thumb_label,
-            tick_labels=tick_labels,
+            tick_labels=updated_tick_labels,
             dense=False,
             hide_details=True,
             disabled=disabled,
