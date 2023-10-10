@@ -14,7 +14,9 @@
         <template v-else v-slot:activator="{ on }">
             <div v-for="(element, index) in activator"
                 :key="index"
-                v-on="on">
+                v-on="on"
+                style="width: fit-content;"
+                >
                 <jupyter-widget :widget="element"></jupyter-widget>
             </div>
         </template>
