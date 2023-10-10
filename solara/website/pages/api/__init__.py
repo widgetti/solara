@@ -116,9 +116,10 @@ items = [
         "name": "Lab (experimental)",
         "icon": "mdi-flask-outline",
         "pages": [
+            "confirmation_dialog",
+            "menu",
             "tab",
             "tabs",
-            "menu",
         ],
     },
 ]

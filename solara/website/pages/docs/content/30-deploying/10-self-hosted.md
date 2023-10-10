@@ -14,16 +14,41 @@ Solara runs on several web frameworks, such as
  * [Flask](https://flask.palletsprojects.com/)
  * [Starlette](https://www.starlette.io/) (and thus [FastAPI](https://fastapi.tiangolo.com/))
 
-The simplest and most battle-tested way to deploy solara is via the `solara run` command. This uses Starlette under the hood:
+The most straightforward and well-tested method to deploy Solara is through the `solara run` command:
 
-    $ solara run app.py
+    $ solara run sol.py
 
-If you do not use `solara run` to run your Solara app, configuration should go via environment variables instead of command-line argument. For instance, if you run the development server like `solara run myapp.py`, set the `SOLARA_APP` environment variable to `myapp.py`. For instance
+which uses Starlette under the hood.
+
+Your `sol.py` file could resemble the following:
+
+```python
+import solara
+
+clicks = solara.reactive(0)
+
+
+@solara.component
+def Page():
+    color = "green"
+    if clicks.value >= 5:
+        color = "red"
+
+    def increment():
+        clicks.value += 1
+        print("clicks", clicks)  # noqa
+
+    solara.Button(label=f"Clicked: {clicks}", on_click=increment, color=color)
+```
+
+
+If you're aiming to integrate Solara with other web frameworks such as [Flask](https://flask.palletsprojects.com/deploying/), [Starlette](https://www.starlette.io/), or [FastAPI](https://fastapi.tiangolo.com/), you shouldn't execute `solara run sol.py`.
+Instead, start your chosen web framework as directed by their documentation and configure Solara via environment variables. For instance, instead of running the development server like `solara run sol.py`, set the `SOLARA_APP` environment variable to `sol.py`:
 
     $ export SOLARA_APP=sol.py
     # run flask or starlette
 
-or look at the examples below.
+or look at the examples below for more detailed instructions per web framework.
 
 ## Flask
 
@@ -107,7 +132,7 @@ If you navigate to [http://127.0.0.1:8000/solara](http://127.0.0.1:8000/solara) 
 
 ## FastAPI
 
-Since FastAPI is built on Starlette, see the section on [Starlette](#starlette) about how to deploy a Starlette app.
+Since [FastAPI](https://fastapi.tiangolo.com/) is built on Starlette, see the section on [Starlette](#starlette) about how to deploy a Starlette app.
 
 ### Embedding in an existing FastAPI application
 
@@ -240,5 +265,5 @@ CMD ["solara", "run", "sol.py", "--host=0.0.0.0"]
 
 For a complete example, you can take a look at:
 
-  * https://huggingface.co/spaces/giswqs/solara-template/tree/main
-  * https://github.com/opengeos/solara-template
+  * [https://huggingface.co/spaces/giswqs/solara-template/tree/main](https://huggingface.co/spaces/giswqs/solara-template/tree/main)
+  * [https://github.com/opengeos/solara-template](https://github.com/opengeos/solara-template)
