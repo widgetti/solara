@@ -18,7 +18,7 @@
         <v-divider></v-divider>
 
         <v-card-actions class="justify-center">
-            <v-btn block text>
+            <v-btn block text @click="goto_report">
                 Go to Report
             </v-btn>
         </v-card-actions>
