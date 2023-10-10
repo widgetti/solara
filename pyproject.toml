@@ -82,7 +82,7 @@ dev = [
     "pytest-playwright; python_version > '3.6'",
 ]
 assets = [
-    "solara-assets==1.20.0"
+    "solara-assets==1.21.0"
 ]
 flask = [
     "flask",

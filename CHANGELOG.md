@@ -1,5 +1,31 @@
 # Changelog for Solara
 
+## Changelog for solara v1.21
+
+[Github Repository](https://github.com/widgetti/solara)
+
+### New Features
+- **docs**: Added an example demonstrating menu, context menu, and dialog. (Commit: b617d4c)
+- **docs**: Added a live update example which demonstrates pushing data from the python/server side. ([#229](https://github.com/widgetti/solara/pull/229))
+- **feat**: Added a warning to the user when modules can potentially be loaded twice. This can lead to behaviors like reactive variables existing twice. ([#284](https://github.com/widgetti/solara/pull/284))
+- **feat**: Implemented event support in `component_vue` for calling Python callbacks. Now, arguments like 'event_foo' will be available as the function foo in the Vue template. ([#312](https://github.com/widgetti/solara/pull/312))
+- **feat**: Introduced new components `Menu`, `ClickMenu`, and `ContextMenu` for `solara.lab` which facilitate popup menus for buttons and context menus. ([#295](https://github.com/widgetti/solara/pull/295))
+- **feat**: Support added for `on_relayout` in plotly, enabling image annotation. This update also brings an example demonstrating this feature. ([#285](https://github.com/widgetti/solara/pull/285))
+
+### Refactors
+- **refactor**: Optimized the `ipywidgets_runner` fixture to avoid running all runners every time it's invoked. This is aimed to improve the performance of the tests and possibly reduce their flakiness. ([#310](https://github.com/widgetti/solara/pull/310))
+
+### Documentation Updates
+- **docs**: Added a how-to guide for debuggers. ([#184](https://github.com/widgetti/solara/pull/184))
+- **docs**: Provided clarity on integrating `solara` into existing web frameworks. (Commit: 14fd00f)
+
+### Bug Fixes
+- **fix**: The `baseUrl` is no longer suffixed with `/jupyter`. This was discovered to be unnecessary and a potential bug when working with `ipypopout`. ([#318](https://github.com/widgetti/solara/pull/318))
+- **fix**: The search query is now passed directly to solara, preventing a UI flicker previously caused by updating the search query post initialization. ([#320](https://github.com/widgetti/solara/pull/320))
+- **fix**: Resolved an issue with `starlette websocket` where the close function was calling itself recursively. It now correctly calls close on the websocket implementation. ([#317](https://github.com/widgetti/solara/pull/317))
+- **fix**: Removed unnecessary special support for `pyodide`. (Commit: 4191fd0)
+
+
 ## Changelog for v1.20.0
 
 [Github Repository](https://github.com/widgetti/solara)
