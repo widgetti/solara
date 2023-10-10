@@ -34,11 +34,8 @@ def ClickMenu(
         image_url = "/static/public/beach.jpeg"
         image = solara.Image(image=image_url)
 
-        with solara.lab.ClickMenu(
-            activator=image,
-            style="row-gap: 0;",
-        ):
-            with solara.Column():
+        with solara.lab.ClickMenu(activator=image):
+            with solara.Column(gap="0px"):
                 [solara.Button(f"Click me {i}!", text=True) for i in range(5)]
 
     ```
@@ -67,7 +64,7 @@ def ContextMenu(
 ):
     """
     Show a context menu by triggering the contextmenu event on the `activator` element. The menu appears at the cursor position.
-    
+
     A contextmenu event is typically triggered by clicking the right mouse button, or by pressing the context menu key.
 
     ```solara
@@ -79,11 +76,8 @@ def ContextMenu(
         image_url = "/static/public/beach.jpeg"
         image = solara.Image(image=image_url)
 
-        with solara.lab.ContextMenu(
-            activator=image,
-            style="row-gap: 0;",
-        ):
-            with solara.Column():
+        with solara.lab.ContextMenu(activator=image):
+            with solara.Column(gap="0px"):
                 [solara.Button(f"Click me {i}!", text=True) for i in range(5)]
 
     ```
@@ -120,11 +114,8 @@ def Menu(
     def Page():
         btn = solara.Button("Show suboptions")
 
-        with solara.lab.Menu(
-            activator=btn,
-            style="row-gap: 0;",
-        ):
-            with solara.Column():
+        with solara.lab.Menu(activator=btn):
+            with solara.Column(gap="0px"):
                 [solara.Button(f"Click me {str(i)}!", text=True) for i in range(5)]
 
     ```
