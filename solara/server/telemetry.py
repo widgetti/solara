@@ -146,12 +146,12 @@ def server_stop():
     track("Solara server stop", {"duration_seconds": duration, **_usage_stats()})
 
 
-def connection_open(session_id, connection_id):
+def connection_open(session_id):
     _connections_per_session_daily[session_id] += 1
     _connections_per_session_cumulative[session_id] += 1
 
 
-def connection_close(session_id, connection_id):
+def connection_close(session_id):
     pass
 
 

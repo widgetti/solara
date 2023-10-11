@@ -7,14 +7,14 @@ from solara_enterprise import ssg
 
 import solara
 from solara.server import settings
-from solara.server.app import AppContext, get_current_context
+from solara.server.kernel_context import VirtualKernelContext, get_current_context
 
 HERE = Path(__file__).parent
 
 
 text_ssg = "# SSG Test"
 text_live = "# Live render"
-context: Optional[AppContext] = None
+context: Optional[VirtualKernelContext] = None
 
 
 def set_value(x: str):

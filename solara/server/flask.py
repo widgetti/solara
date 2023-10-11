@@ -42,7 +42,7 @@ import solara
 from solara.server.threaded import ServerBase
 
 from . import app as appmod
-from . import cdn_helper, server, settings, websocket
+from . import cdn_helper, kernel_context, server, settings, websocket
 
 os.environ["SERVER_SOFTWARE"] = "solara/" + str(solara.__version__)
 
@@ -111,8 +111,8 @@ def kernels(id):
     return {"name": "lala", "id": "dsa"}
 
 
-@websocket_extension.route("/jupyter/api/kernels/<id>/<name>")
-def kernels_connection(ws: simple_websocket.Server, id: str, name: str):
+@websocket_extension.route("/jupyter/api/kernels/<kernel_id>/<name>")
+def kernels_connection(ws: simple_websocket.Server, kernel_id: str, name: str):
     if not settings.main.base_url:
         settings.main.base_url = url_for("blueprint-solara.read_root", _external=True)
     if settings.oauth.private and not has_solara_enterprise:
@@ -127,24 +127,24 @@ def kernels_connection(ws: simple_websocket.Server, id: str, name: str):
         user = None
 
     try:
-        connection_id = request.args["session_id"]
+        page_id = request.args["session_id"]
         session_id = request.cookies.get(server.COOKIE_KEY_SESSION_ID)
-        logger.info("Solara kernel requested for session_id=%s connection_id=%s", session_id, connection_id)
+        logger.info("Solara kernel requested for session_id=%s kernel_id=%s", session_id, kernel_id)
         if session_id is None:
             logger.error("no session cookie")
             ws.close()
             return
         ws_wrapper = WebsocketWrapper(ws)
-        asyncio.run(server.app_loop(ws_wrapper, session_id=session_id, connection_id=connection_id, user=user))
+        asyncio.run(server.app_loop(ws_wrapper, session_id=session_id, kernel_id=kernel_id, page_id=page_id, user=user))
     except:  # noqa
         logger.exception("Error in kernel handler")
         raise
 
 
-@blueprint.route("/_solara/api/close/<connection_id>", methods=["GET", "POST"])
-def close(connection_id: str):
-    if connection_id in appmod.contexts:
-        context = appmod.contexts[connection_id]
+@blueprint.route("/_solara/api/close/<kernel_id>", methods=["GET", "POST"])
+def close(kernel_id: str):
+    if kernel_id in kernel_context.contexts:
+        context = kernel_context.contexts[kernel_id]
         context.close()
     return ""
 

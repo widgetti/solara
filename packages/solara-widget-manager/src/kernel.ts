@@ -27,7 +27,7 @@ export async function connectKernel(
   // if (!model) {
   //   return;
   // }
-  const model = { 'id': 'solara-id', 'name': 'solara-name' }
+  const model = { 'id': kernelId, 'name': 'solara-name' }
   const kernel = new KernelConnection({ model, serverSettings });
   return kernel;
 }
