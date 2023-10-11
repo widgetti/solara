@@ -358,8 +358,16 @@ def solara_comm_target(comm, msg_first):
             context.container = container
             load_app_widget(None, app, path)
             comm.send({"method": "finished", "widget_id": context.container._model_id})
-        elif method == "check":
+        elif method == "app-status":
             context = kernel_context.get_current_context()
+            # if there is no container, we never ran the app
+            if context.container is not None:
+                logger.info("app-status check: %s app started", context.id)
+                comm.send({"method": "app-status", "started": True})
+            else:
+                logger.info("app-status check: %s app not started", context.id)
+                comm.send({"method": "app-status", "started": False})
+
         elif method == "reload":
             assert app is not None
             context = kernel_context.get_current_context()
@@ -367,6 +375,8 @@ def solara_comm_target(comm, msg_first):
             with context:
                 load_app_widget(context.state, app, path)
                 comm.send({"method": "finished"})
+        else:
+            logger.error("Unknown comm method called on solara.control comm: %s", method)
 
     comm.on_msg(on_msg)
 
