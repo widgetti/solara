@@ -1,5 +1,7 @@
 # Cloud hosted
 
+## Integrated solution (in development)
+
 Are you interested in a cloud hosted solution?
 
 ```bash
@@ -65,3 +67,10 @@ Sign up for our waiting list to get early access.
 </div>
 <script type='text/javascript' src='//s3.amazonaws.com/downloads.mailchimp.com/js/mc-validate.js'></script><script type='text/javascript'>(function($) {window.fnames = new Array(); window.ftypes = new Array();fnames[0]='EMAIL';ftypes[0]='email';fnames[1]='FNAME';ftypes[1]='text';fnames[2]='LNAME';ftypes[2]='text';fnames[3]='ADDRESS';ftypes[3]='address';fnames[4]='PHONE';ftypes[4]='phone';fnames[5]='BIRTHDAY';ftypes[5]='birthday';fnames[6]='USECASE';ftypes[6]='text';fnames[7]='COMPANY';ftypes[7]='text';fnames[8]='POSITION';ftypes[8]='text';}(jQuery));var $mcj = jQuery.noConflict(true);</script>
 <!--End mc_embed_signup-->
+
+
+## Ploomber Cloud
+
+You can use [Ploomber Cloud](https://www.platform.ploomber.io) to deploy Solara apps for free (no credit card required).
+
+To learn more, check out their [documentation.](https://docs.cloud.ploomber.io/en/latest/apps/solara.html)
