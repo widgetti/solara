@@ -71,6 +71,6 @@ Sign up for our waiting list to get early access.
 
 ## Ploomber Cloud
 
-You can use [Ploomber Cloud](https://www.platform.ploomber.io/dashboards) to deploy Solara apps for free (no credit card required).
+You can use [Ploomber Cloud](https://www.platform.ploomber.io) to deploy Solara apps for free (no credit card required).
 
 To learn more, check out their [documentation.](https://docs.cloud.ploomber.io/en/latest/apps/solara.html)
