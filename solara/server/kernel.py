@@ -218,6 +218,13 @@ class SessionWebsocket(session.Session):
         super(SessionWebsocket, self).__init__(*args, **kwargs)
         self.websockets: Set[websocket.WebsocketWrapper] = set()  # map from .. msg id to websocket?
 
+    def close(self):
+        for ws in list(self.websockets):
+            try:
+                ws.close()
+            except:  # noqa
+                pass
+
     def send(self, stream, msg_or_type, content=None, parent=None, ident=None, buffers=None, track=False, header=None, metadata=None):
         try:
             if isinstance(msg_or_type, dict):

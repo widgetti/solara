@@ -10,6 +10,7 @@ from typing import Optional
 
 from filelock import FileLock
 
+import solara.util
 from solara.minisettings import BaseSettings
 
 from .. import (  # noqa  # sidefx is that this module creates the ~/.solara directory
@@ -85,6 +86,15 @@ class Assets(BaseSettings):
         env_file = ".env"
 
 
+class Kernel(BaseSettings):
+    cull_timeout: str = "24h"
+
+    class Config:
+        env_prefix = "solara_kernel_"
+        case_sensitive = False
+        env_file = ".env"
+
+
 AUTH0_TEST_CLIENT_ID = "cW7owP5Q52YHMZAnJwT8FPlH2ZKvvL3U"
 AUTH0_TEST_CLIENT_SECRET = "zxITXxoz54OjuSmdn-PluQgAwbeYyoB7ALlnLoodftvAn81usDXW0quchvoNvUYD"
 AUTH0_TEST_API_BASE_URL = "dev-y02f2bpr8skxu785.us.auth0.com"
@@ -156,6 +166,9 @@ search = Search()
 assets = Assets()
 oauth = OAuth()
 session = Session()
+kernel = Kernel()
+# fail early
+solara.util.parse_timedelta(kernel.cull_timeout)
 
 if assets.proxy:
     try:

@@ -212,8 +212,11 @@ def _solara_test(solara_server, solara_app, page_session: "playwright.sync_api.P
                     test_output_warmup.close()
         finally:
             del run_events[id]
+            page_session.goto("about:blank")
             if id in used_contexts:
+                # handle when run_event.wait(10) fails
                 del used_contexts[id]
+                assert context.closed_event.wait(10)
 
 
 @pytest.fixture()

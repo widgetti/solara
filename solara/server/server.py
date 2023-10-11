@@ -107,7 +107,7 @@ def is_ready(url) -> bool:
 
 
 async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, kernel_id: str, page_id: str, user: dict = None):
-    context = initialize_virtual_kernel(kernel_id, ws)
+    context = initialize_virtual_kernel(session_id, kernel_id, ws)
     if context is None:
         logging.warning("invalid kernel id: %r", kernel_id)
         # to avoid very fast reconnects (we are in a thread anyway)
@@ -124,35 +124,39 @@ async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, kernel_id: s
         run_context = solara.util.nullcontext()
 
     kernel = context.kernel
-    with run_context, context:
-        if user:
-            from solara_enterprise.auth import user as solara_user
+    try:
+        context.page_connect(page_id)
+        with run_context, context:
+            if user:
+                from solara_enterprise.auth import user as solara_user
 
-            solara_user.set(user)
+                solara_user.set(user)
 
-        while True:
-            try:
-                message = await ws.receive()
-            except websocket.WebSocketDisconnect:
+            while True:
                 try:
-                    context.kernel.session.websockets.remove(ws)
-                except KeyError:
-                    pass
-                logger.debug("Disconnected")
-                return
-            t0 = time.time()
-            if isinstance(message, str):
-                msg = json.loads(message)
-            else:
-                msg = deserialize_binary_message(message)
-            t1 = time.time()
-            if not process_kernel_messages(kernel, msg):
-                # if we shut down the kernel, we do not keep the page session alive
-                context.close()
-                return
-            t2 = time.time()
-            if settings.main.timing:
-                print(f"timing: total={t2-t0:.3f}s, deserialize={t1-t0:.3f}s, kernel={t2-t1:.3f}s")  # noqa: T201
+                    message = await ws.receive()
+                except websocket.WebSocketDisconnect:
+                    try:
+                        context.kernel.session.websockets.remove(ws)
+                    except KeyError:
+                        pass
+                    logger.debug("Disconnected")
+                    break
+                t0 = time.time()
+                if isinstance(message, str):
+                    msg = json.loads(message)
+                else:
+                    msg = deserialize_binary_message(message)
+                t1 = time.time()
+                if not process_kernel_messages(kernel, msg):
+                    # if we shut down the kernel, we do not keep the page session alive
+                    context.close()
+                    return
+                t2 = time.time()
+                if settings.main.timing:
+                    print(f"timing: total={t2-t0:.3f}s, deserialize={t1-t0:.3f}s, kernel={t2-t1:.3f}s")  # noqa: T201
+    finally:
+        context.page_disconnect(page_id)
 
 
 def process_kernel_messages(kernel: Kernel, msg: Dict) -> bool:

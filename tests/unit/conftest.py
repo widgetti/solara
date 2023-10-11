@@ -9,7 +9,7 @@ from solara.server.kernel_context import VirtualKernelContext
 @pytest.fixture(autouse=True)
 def kernel_context():
     kernel_shared = kernel.Kernel()
-    context = VirtualKernelContext(id="1", kernel=kernel_shared)
+    context = VirtualKernelContext(id="1", kernel=kernel_shared, session_id="session-1")
     try:
         with context:
             yield context
