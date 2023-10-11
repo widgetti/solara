@@ -9,6 +9,8 @@ import sys
 import textwrap
 import threading
 import typing
+import urllib.parse
+import uuid
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Callable, Dict, Generator, List, Union
@@ -19,6 +21,7 @@ import requests
 from IPython.display import display
 
 import solara.server.app
+import solara.server.kernel_context
 import solara.server.server
 import solara.server.settings
 from solara.server import reload
@@ -155,37 +158,43 @@ def solara_app(solara_server):
         used_app.close()
 
 
-run_event = threading.Event()
-run_calls = 0
+run_events: Dict[str, threading.Event] = {}
+used_contexts: Dict[str, solara.server.kernel_context.VirtualKernelContext] = {}
 
 
 @solara.component
 def SyncWrapper():
     global run_calls
-    import reacton.ipywidgets as w
+    router = solara.use_router()
+    values = urllib.parse.parse_qs(router.search, keep_blank_values=True)
+    id = values.get("id", [None])[0]  # type: ignore
+    if id is None:
+        solara.Error("No id found in url")
+    else:
 
-    run_calls += 1
-    run_event.set()
-    return w.VBox(children=[w.HTML(value="Test in solara"), w.VBox()])
+        import reacton.ipywidgets as w
+
+        used_contexts[id] = solara.server.kernel_context.get_current_context()
+        run_events[id].set()
+
+        return w.VBox(children=[w.HTML(value="Test in solara"), w.VBox()])
 
 
 @contextlib.contextmanager
 def _solara_test(solara_server, solara_app, page_session: "playwright.sync_api.Page"):
-    global run_calls
     with solara_app("solara.test.pytest_plugin:SyncWrapper"):
-        assert len(solara.server.kernel_context.contexts) == 0
-        page_session.goto(solara_server.base_url)
+        id = str(uuid.uuid4())
+        run_events[id] = run_event = threading.Event()
+        page_session.goto(solara_server.base_url + f"?id={id}")
         try:
-            run_event.wait()
-            assert run_calls == 1
-            keys = list(solara.server.kernel_context.contexts)
-            assert len(keys) == 1, "expected only one context, got %s" % keys
-            context = solara.server.kernel_context.contexts[keys[-1]]
+            assert run_event.wait(10)
+            context = used_contexts[id]
             with context:
                 test_output_warmup = widgets.Output()
                 test_output = widgets.Output()
                 try:
                     page_session.locator("text=Test in solara").wait_for()
+                    assert context.container
                     context.container.children[0].children[1].children[1].children = [test_output_warmup]  # type: ignore
                     with test_output_warmup:
                         warmup()
@@ -202,8 +211,9 @@ def _solara_test(solara_server, solara_app, page_session: "playwright.sync_api.P
                     test_output.close()
                     test_output_warmup.close()
         finally:
-            run_calls = 0
-            run_event.clear()
+            del run_events[id]
+            if id in used_contexts:
+                del used_contexts[id]
 
 
 @pytest.fixture()
