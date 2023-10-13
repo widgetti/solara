@@ -112,6 +112,22 @@ def use_router() -> Router:
      * `search` - the current search string (e.g. `color=yellow`)
      * `push(path: str)` - navigate to path (e.g. `router.push('/fruit/banana')`)
 
+    ## Typical usage:
+
+    ```python
+    import solara
+
+
+    @solara.component
+    def Page():
+        router = solara.use_router()
+
+        def redirect():
+            router.push(f"/api/use_route")
+
+        solara.Button("Navigate using an event", on_click=redirect)
+    ```
+
     """
     return solara.use_context(router_context)
 
