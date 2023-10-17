@@ -49,6 +49,13 @@ def json_default(obj):
         return obj.isoformat().replace("+00:00", "Z")
     elif isinstance(obj, bytes):
         return b2a_base64(obj).decode("ascii")
+    if type(obj).__module__ == "numpy":
+        import numpy as np
+
+        if isinstance(obj, np.number):
+            return repr(obj.item())
+        else:
+            raise TypeError("%r is not JSON serializable" % obj)
     else:
         raise TypeError("%r is not JSON serializable" % obj)
 
