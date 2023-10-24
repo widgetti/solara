@@ -22,13 +22,14 @@ import solara.lab
 tokenizer = tiktoken.encoding_for_model("gpt-4")
 
 # Create dataframe mapping token IDs and tokens
+MAX_TOKENS = 50257
 df = pd.DataFrame()
-df["token ID"] = range(50257)
-df["token"] = [tokenizer.decode([i]) for i in range(50257)]
+df["token ID"] = range(MAX_TOKENS)
+df["token"] = [tokenizer.decode([i]) for i in range(MAX_TOKENS)]
 
-text1 = solara.reactive("Example text is here")
-text2 = solara.reactive("")
-text3 = solara.reactive("")
+sentence = solara.reactive("Example text is here")
+tokens_ids_to_lookup = solara.reactive("")
+tokens_filter = solara.reactive("")
 
 
 @solara.component
@@ -67,19 +68,19 @@ def Page():
     with solara.Column(margin=10) as main:
         solara.Markdown("#GPT-4 token encoder and decoder")
         solara.Markdown("This is an educational tool for understanding how tokenization works.")
-        solara.InputText("Enter text to tokenize it:", value=text1, continuous_update=True)
-        tokens = tokenizer.encode(text1.value)
+        solara.InputText("Enter text to tokenize it:", value=sentence, continuous_update=True)
+        tokens = tokenizer.encode(sentence.value)
         with solara.Div(style="display: inline;"):
             for i, token in enumerate(tokens):
                 Token(token)
         # create random color dependent on the position
-        solara.InputText("Or convert space separated tokens to text:", value=text2, continuous_update=True)
-        token_input = [int(span) for span in text2.value.split(" ") if span != ""]
+        solara.InputText("Or convert space separated tokens to text:", value=tokens_ids_to_lookup, continuous_update=True)
+        token_input = [int(span) for span in tokens_ids_to_lookup.value.split(" ") if span != ""]
         text_output = tokenizer.decode(token_input)
         solara.Markdown(f"{text_output}")
         solara.Markdown("##Search tokens")
-        solara.InputText("Search for a token:", value=text3, continuous_update=True)
-        df_subset = df[df["token"].str.startswith(text3.value)]
+        solara.InputText("Search for a token:", value=tokens_filter, continuous_update=True)
+        df_subset = df[df["token"].str.startswith(tokens_filter.value)]
         solara.Markdown(f"{df_subset.shape[0]:,} results")
         solara.DataFrame(df_subset, items_per_page=10)
     return main
