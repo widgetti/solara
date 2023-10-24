@@ -2,7 +2,7 @@
 
 This example shows how to use a language model tokenizer to encode and decode and how to search for a token
 
-Inspired by the Understanding GPT tokenizers by Simon Willison
+Inspired by the [Understanding GPT tokenizers by Simon Willison](https://simonwillison.net/2023/Jun/8/gpt-tokenizers/)
 
 
 ## Note
@@ -34,6 +34,7 @@ tokens_filter = solara.reactive("")
 
 @solara.component
 def Token(token: int):
+    # create random color dependent on the position
     random.seed(token)
     random_color = "".join([random.choice("0123456789ABCDEF") for k in range(6)])
     with solara.Div(style="display: inline;"):
@@ -66,19 +67,20 @@ def Token(token: int):
 @solara.component
 def Page():
     with solara.Column(margin=10):
-        solara.Markdown("#GPT-4 token encoder and decoder")
+        solara.Markdown("# GPT-4 token encoder and decoder")
         solara.Markdown("This is an educational tool for understanding how tokenization works.")
         solara.InputText("Enter text to tokenize it:", value=sentence, continuous_update=True)
         tokens = tokenizer.encode(sentence.value)
         with solara.Div(style="display: inline;"):
-            for i, token in enumerate(tokens):
+            for token in tokens:
                 Token(token)
-        # create random color dependent on the position
+
         solara.InputText("Or convert space separated tokens to text:", value=tokens_ids_to_lookup, continuous_update=True)
         token_input = [int(span) for span in tokens_ids_to_lookup.value.split(" ") if span != ""]
         text_output = tokenizer.decode(token_input)
         solara.Markdown(f"{text_output}")
-        solara.Markdown("##Search tokens")
+
+        solara.Markdown("## Search tokens")
         solara.InputText("Search for a token:", value=tokens_filter, continuous_update=True)
         df_subset = df[df["token"].str.startswith(tokens_filter.value)]
         solara.Markdown(f"{df_subset.shape[0]:,} results")
