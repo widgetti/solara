@@ -1,4 +1,9 @@
+"""Large Language Models and Generative AI examples."""
 import solara
+
+title = "AI"
+redirect = None
+
 
 @solara.component
 def Page():
