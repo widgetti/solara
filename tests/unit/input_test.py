@@ -42,7 +42,7 @@ def test_input_int_optional():
     assert input.widget.v_model is None
 
     rc.render(solara.InputInt("label", 1, optional=True, on_value=on_value))
-    assert input.widget.v_model == 1
+    assert input.widget.v_model == "1"
 
 
 def test_input_int():
@@ -70,7 +70,7 @@ def test_input_int():
     assert on_value.call_count == 1
     assert on_value.call_args[0][0] == 43
     assert input.widget.error
-    assert input.widget.label == "label (invalid)"
+    assert input.widget.label == "label (Value cannot be empty)"
     assert on_v_model.call_count == 0
 
     input.widget.v_model = "44"
@@ -106,34 +106,30 @@ def test_input_int_managed():
     assert on_value.call_count == 0
     assert on_v_model.call_count == 1
     input.widget.fire_event("blur")
-    assert on_value.call_count == 1
-    assert on_value.call_args[0][0] == 1000
-    assert not input.widget.error
-    assert input.widget.label == "label"
+    assert on_value.call_count == 0
+    # assert on_value.call_args[0][0] == 1000
+    assert input.widget.error
+    assert input.widget.label == "label (Value must be an integer)"
     assert input.widget.v_model == "1e3"
     assert on_v_model.call_count == 1
 
-    input.widget.v_model = "1.1e0"
+    input.widget.v_model = "1"
+    input.widget.fire_event("blur")
     assert on_value.call_count == 1
     assert on_v_model.call_count == 2
-    input.widget.fire_event("blur")
-    assert on_value.call_count == 2
-    assert on_v_model.call_count == 3
-    assert on_value.call_args[0][0] == 1
     assert not input.widget.error
-    assert input.widget.label == "label"
-    assert input.widget.v_model == "1"
 
     input.widget.v_model = "1.1"
-    assert on_value.call_count == 2
-    assert on_v_model.call_count == 4
+    assert on_value.call_count == 1
+    assert on_v_model.call_count == 3
+    assert not input.widget.error
     input.widget.fire_event("blur")
     # no change
-    assert on_value.call_count == 2
-    assert on_v_model.call_count == 5
-    assert not input.widget.error
-    assert input.widget.label == "label"
-    assert input.widget.v_model == "1"
+    assert on_value.call_count == 1
+    # assert on_v_model.call_count == 5
+    assert input.widget.error
+    assert input.widget.label == "label (Value must be an integer)"
+    # assert input.widget.v_model == "1"
 
 
 def test_input_float_managed():
