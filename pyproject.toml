@@ -99,6 +99,7 @@ documentation = [
     "plotly",
     "vaex-core",
     "vaex-hdf5",
+    "tiktoken",
 ]
 pytest = [
     "pytest",
