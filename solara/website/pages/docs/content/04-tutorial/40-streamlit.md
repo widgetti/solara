@@ -10,7 +10,7 @@ Let us start with a typical streamlit example:
 import streamlit as st
 
 with st.sidebar:
-    st.markdown("## y First Solara tutorial ☀️")
+    st.markdown("## My First Solara tutorial ☀️")
     x = st.slider("x")
 x_squared = x**2
 st.markdown(f"{x} squared = {x_squared}")
