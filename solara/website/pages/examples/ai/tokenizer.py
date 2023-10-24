@@ -65,7 +65,7 @@ def Token(token: int):
 
 @solara.component
 def Page():
-    with solara.Column(margin=10) as main:
+    with solara.Column(margin=10):
         solara.Markdown("#GPT-4 token encoder and decoder")
         solara.Markdown("This is an educational tool for understanding how tokenization works.")
         solara.InputText("Enter text to tokenize it:", value=sentence, continuous_update=True)
@@ -83,4 +83,3 @@ def Page():
         df_subset = df[df["token"].str.startswith(tokens_filter.value)]
         solara.Markdown(f"{df_subset.shape[0]:,} results")
         solara.DataFrame(df_subset, items_per_page=10)
-    return main
