@@ -20,8 +20,8 @@ def MenuWidget(
 @solara.component
 def ClickMenu(
     activator: Union[solara.Element, List[solara.Element]],
-    open: Union[solara.Reactive[bool], bool] = False,
-    on_open: Optional[Callable] = None,
+    open_value: Union[solara.Reactive[bool], bool] = False,
+    on_open_value: Optional[Callable] = None,
     children: List[solara.Element] = [],
     style: Optional[Union[str, Dict[str, str]]] = None,
 ):
@@ -47,18 +47,13 @@ def ClickMenu(
     ## Arguments
 
     * activator: Clicking on this element will open the menu. Accepts either a `solara.Element`, or a list of elements.
-    * open: Controls and communicates the state of the menu. If True, the menu is open. If False, the menu is closed.
+    * open_value: Controls and communicates the state of the menu. If True, the menu is open. If False, the menu is closed.
+    * on_open_value: Function to call when the menu is opened or closed.
     * menu_contents: List of Elements to be contained in the menu.
     * style: CSS style to apply. Applied directly onto the `v-menu` component.
     """
-
-    def _on_open(open_value):
-        if open_value:
-            if on_open:
-                on_open()
-
-    open_reactive = solara.use_reactive(open, _on_open)
-    del open
+    open_reactive = solara.use_reactive(open_value, on_open_value)
+    del open_value
 
     style_flat = solara.util._flatten_style(style)
 
@@ -77,8 +72,8 @@ def ClickMenu(
 @solara.component
 def ContextMenu(
     activator: Union[solara.Element, List[solara.Element]],
-    open: Union[solara.Reactive[bool], bool] = False,
-    on_open: Optional[Callable] = None,
+    open_value: Union[solara.Reactive[bool], bool] = False,
+    on_open_value: Optional[Callable] = None,
     children: List[solara.Element] = [],
     style: Optional[Union[str, Dict[str, str]]] = None,
 ):
@@ -105,18 +100,13 @@ def ContextMenu(
     ## Arguments
 
     * activator: Clicking on this element will open the menu. Accepts either a `solara.Element`, or a list of elements.
-    * open: Controls and communicates the state of the menu. If True, the menu is open. If False, the menu is closed.
+    * open_value: Controls and communicates the state of the menu. If True, the menu is open. If False, the menu is closed.
+    * on_open_value: Function to call when the menu is opened or closed.
     * children: List of Elements to be contained in the menu
     * style: CSS style to apply. Applied directly onto the `v-menu` component.
     """
-
-    def _on_open(open_value):
-        if open_value:
-            if on_open:
-                on_open()
-
-    open_reactive = solara.use_reactive(open, _on_open)
-    del open
+    open_reactive = solara.use_reactive(open_value, on_open_value)
+    del open_value
     style_flat = solara.util._flatten_style(style)
 
     if not isinstance(activator, list):
@@ -135,8 +125,8 @@ def ContextMenu(
 @solara.component
 def Menu(
     activator: Union[solara.Element, List[solara.Element]],
-    open: Union[solara.Reactive[bool], bool] = False,
-    on_open: Optional[Callable] = None,
+    open_value: Union[solara.Reactive[bool], bool] = False,
+    on_open_value: Optional[Callable] = None,
     children: List[solara.Element] = [],
     style: Optional[Union[str, Dict[str, str]]] = None,
 ):
@@ -160,18 +150,13 @@ def Menu(
     ## Arguments
 
     * activator: Clicking on this element will open the menu. Accepts either a `solara.Element`, or a list of elements.
-    * open: Controls and communicates the state of the menu. If True, the menu is open. If False, the menu is closed.
+    * open_value: Controls and communicates the state of the menu. If True, the menu is open. If False, the menu is closed.
+    * on_open_value: Function to call when the menu is opened or closed.
     * children: List of Elements to be contained in the menu
     * style: CSS style to apply. Applied directly onto the `v-menu` component.
     """
-
-    def _on_open(open_value):
-        if open_value:
-            if on_open:
-                on_open()
-
-    open_reactive = solara.use_reactive(open, _on_open)
-    del open
+    open_reactive = solara.use_reactive(open_value, on_open_value)
+    del open_value
 
     style_flat = solara.util._flatten_style(style)
 
