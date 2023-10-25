@@ -335,8 +335,14 @@ def _use_input_type(
     def sync_back_input_value():
         def on_external_value_change(new_value: Optional[T]):
             new_string_value = stringify(new_value)
-            if new_value != parse(string_value_ref.current):
+            try:
+                parse(string_value_ref.current)
+            except ValueError:
+                # String value could be invalid when external value is changed by a different component
                 set_string_value(new_string_value)
+            else:
+                if new_value != parse(string_value_ref.current):
+                    set_string_value(new_string_value)
 
         return reactive_value.subscribe(on_external_value_change)
 
