@@ -1,5 +1,38 @@
 # Changelog for Solara
 
+## Changelog for solara v1.22
+
+### NEw Features
+1. **WebSocket Reconnection**: Solara now supports a WebSocket that can reconnect, attempting to restore the page session, which enhances the user experience by removing the necessity for browser refreshes.
+   - Addresses issues #254 and #161.
+
+2. **Kernel Reconnection**: Added the ability to reconnect to an existing kernel and display a widget by its ID. This facilitates utilities like ipypopout to open a new browser window and display a widget that's operational in the main window.
+   - This feature is limited to the same browser for security reasons, as the session_id must match.
+
+3. **Kernel ID Usage**: The software has transitioned from using the jupyter `session_id` to `kernel_id` for identifying "AppContexts". The newly defined "AppContext" is now named "VirtualKernelContext".
+
+### Fixes
+1. **Loader Display**: Resolved an issue where the loader was placed inside a max-width container, causing it to not be centered.
+
+2. **Test Fixture**: Addressed a problem in the `solara_test` fixture. If one test failed, it would cause all following tests to fail due to improper cleanup.
+
+3. **Other Minor Fixes**:
+   - Adjusted the centering method of the spinner for a better appearance with `ipypopout`.
+   - Solara's documentation includes a new example demonstrating `use_router`.
+   - Ploomber Cloud has been added to the documentation as a hosted option.
+   - Improvements to test robustness and stability.
+
+### Refactors
+1. **Spinner Display**: The spinner display method was revamped for better compatibility with `ipypopout`.
+
+### Documentation
+Several documentation updates have been made, particularly around how to integrate Solara in different contexts and scenarios.
+
+---
+
+Overall, this version emphasizes better connection stability, especially for WebSockets and kernels. The improvements aim for a more seamless user experience and enhanced test robustness.
+
+
 ## Changelog for solara v1.21
 
 [Github Repository](https://github.com/widgetti/solara)

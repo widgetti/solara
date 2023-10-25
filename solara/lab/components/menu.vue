@@ -15,7 +15,7 @@
             <div v-for="(element, index) in activator"
                 :key="index"
                 v-on="on"
-                style="width: fit-content;"
+                style="width: fit-content; display: inline-block;"
                 >
                 <jupyter-widget :widget="element"></jupyter-widget>
             </div>
