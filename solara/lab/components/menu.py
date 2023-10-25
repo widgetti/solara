@@ -127,6 +127,7 @@ def Menu(
     activator: Union[solara.Element, List[solara.Element]],
     open_value: Union[solara.Reactive[bool], bool] = False,
     on_open_value: Optional[Callable] = None,
+    close_on_content_click: bool = True,
     children: List[solara.Element] = [],
     style: Optional[Union[str, Dict[str, str]]] = None,
 ):
