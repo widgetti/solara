@@ -121,7 +121,6 @@ def InputTextArea(
         on_v_model=on_v_model,
         label=label,
         disabled=disabled,
-        #type="password" if password else None,
         error=bool(error),
         messages=messages,
         **kwargs,
