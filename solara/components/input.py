@@ -198,7 +198,7 @@ def InputFloat(
     """
 
     def str_to_float(value: Optional[str]):
-        if value is not None and value != "":
+        if value:
             try:
                 value = value.replace(",", ".")
                 return float(value)
@@ -290,7 +290,7 @@ def InputInt(
     """
 
     def str_to_int(value: Optional[str]):
-        if value is not None and value != "":
+        if value:
             try:
                 return int(value)
             except ValueError:
@@ -321,7 +321,7 @@ def _use_input_type(
     reactive_value = solara.use_reactive(input_value, on_value)  # type: ignore
     del input_value, on_value
     string_value, set_string_value = solara.use_state(stringify(reactive_value.value) if reactive_value.value is not None else None)
-    # Workaround to hook() getting a stale string_value
+    # Use a ref to make sure sync_back_input_value() does not get a stale string_value
     string_value_ref = solara.use_ref(string_value)
     string_value_ref.current = string_value
 
@@ -332,7 +332,7 @@ def _use_input_type(
     except ValueError as e:
         error_message = str(e.args[0])
 
-    def hook():
+    def sync_back_input_value():
         def on_external_value_change(new_value: Optional[T]):
             new_string_value = stringify(new_value)
             if new_value != parse(string_value_ref.current):
@@ -340,7 +340,7 @@ def _use_input_type(
 
         return reactive_value.subscribe(on_external_value_change)
 
-    solara.use_effect(hook, [reactive_value.value])
+    solara.use_effect(sync_back_input_value, [reactive_value])
 
     return string_value, error_message, set_string_value
 

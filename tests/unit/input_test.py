@@ -107,7 +107,6 @@ def test_input_int_managed():
     assert on_v_model.call_count == 1
     input.widget.fire_event("blur")
     assert on_value.call_count == 0
-    # assert on_value.call_args[0][0] == 1000
     assert input.widget.error
     assert input.widget.label == "label (Value must be an integer)"
     assert input.widget.v_model == "1e3"
@@ -126,10 +125,9 @@ def test_input_int_managed():
     input.widget.fire_event("blur")
     # no change
     assert on_value.call_count == 1
-    # assert on_v_model.call_count == 5
     assert input.widget.error
     assert input.widget.label == "label (Value must be an integer)"
-    # assert input.widget.v_model == "1"
+    assert input.widget.v_model == "1.1"
 
 
 def test_input_float_managed():
