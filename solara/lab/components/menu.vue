@@ -3,6 +3,7 @@
         v-model="show_menu"
         :absolute="use_absolute"
         offset-y
+        :close-on-content-click="close_on_content_click"
     >
         <template v-if="context" v-slot:activator="{ on }">
             <div v-for="(element, index) in activator"

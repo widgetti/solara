@@ -1,9 +1,33 @@
 import datetime as dt
 from typing import Callable, Dict, List, Optional, Tuple, Union, cast
 
+import ipyvue
+import reacton
+
 import solara
 import solara.lab
 from solara.components.input import _use_input_type
+
+
+def use_close_menu(el: reacton.core.Element, is_open: solara.Reactive[bool]):
+    is_open_ref = solara.use_ref(is_open)
+    is_open_ref.current = is_open
+
+    def monitor_events():
+        def close_menu(*ignore_args):
+            is_open_ref.current.set(False)
+
+        widget = cast(ipyvue.VueWidget, solara.get_widget(el))
+        widget.on_event("keyup.enter", close_menu)
+        widget.on_event("keydown.tab", close_menu)
+
+        def cleanup():
+            widget.on_event("keyup.enter", close_menu, remove=True)
+            widget.on_event("keydown.tab", close_menu, remove=True)
+
+        return cleanup
+
+    solara.use_effect(monitor_events, [])
 
 
 @solara.component
@@ -18,6 +42,7 @@ def InputDate(
     date_format: str = "%Y/%m/%d",
     first_day_of_the_week: int = 1,
     style: Optional[Union[str, Dict[str, str]]] = None,
+    classes: Optional[List[str]] = None,
 ):
     """
     Show a textfield, which when clicked, opens a datepicker. The input date should be a reactive variable of type `datetime.date`.
@@ -102,7 +127,10 @@ def InputDate(
         append_icon="mdi-calendar",
         error=bool(error_message),
         style_=style_flat,
+        class_=", ".join(classes) if classes else "",
     )
+
+    use_close_menu(input, datepicker_is_open)
 
     with solara.lab.Menu(
         activator=input,
@@ -134,6 +162,7 @@ def InputDateRange(
     date_format: str = "%Y/%m/%d",
     first_day_of_the_week: int = 1,
     style: Optional[Union[str, Dict[str, str]]] = None,
+    classes: Optional[List[str]] = None,
 ):
     """
     Show a textfield, which when clicked, opens a datepicker that allows users to select a range of dates by choosing a starting and ending date.
@@ -242,7 +271,11 @@ def InputDateRange(
         error=bool(error_message),
         style_=style_flat,
         readonly=True,
+        class_=", ".join(classes) if classes else "",
     )
+
+    # We include closing on tab in case users want to skip the field with tab
+    use_close_menu(input, datepicker_is_open)
 
     with solara.lab.Menu(
         activator=input,

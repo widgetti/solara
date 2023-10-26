@@ -9,6 +9,7 @@ def MenuWidget(
     activator: List[solara.Element],
     show_menu: bool,
     on_show_menu: Optional[Callable] = None,
+    close_on_content_click: bool = True,
     children: List[solara.Element] = [],
     style: Optional[str] = None,
     context: bool = False,
@@ -169,6 +170,7 @@ def Menu(
         children=children,
         show_menu=open_reactive.value,
         on_show_menu=open_reactive.set,
+        close_on_content_click=close_on_content_click,
         style=style_flat,
         use_absolute=False,
     )
