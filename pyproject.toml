@@ -130,7 +130,7 @@ profile = "black"
 
 
 [tool.pytest.ini_options]
-addopts = "--disable-warnings --ignore=tests/integration/app_widget.py  --ignore=tests/unit/solara_test_apps"
+addopts = "--ignore=tests/integration/app_widget.py  --ignore=tests/unit/solara_test_apps"
 timeout = 180
 
 
