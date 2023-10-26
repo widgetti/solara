@@ -6,6 +6,8 @@ on:
       - master
   pull_request:
   workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * 1'
 
 env:
   SOLARA_TELEMETRY_SERVER_USER_ID: "install-test"
