@@ -3,6 +3,8 @@
         v-model="show_menu"
         :absolute="use_absolute"
         offset-y
+        :close-on-content-click="close_on_content_click"
+        :min-width="!use_activator_width ? 'auto' : null"
     >
         <template v-if="context" v-slot:activator="{ on }">
             <div v-for="(element, index) in activator"
@@ -12,13 +14,7 @@
             </div>
         </template>
         <template v-else v-slot:activator="{ on }">
-            <div v-for="(element, index) in activator"
-                :key="index"
-                v-on="on"
-                style="width: fit-content; display: inline-block;"
-                >
-                <jupyter-widget :widget="element"></jupyter-widget>
-            </div>
+            <jupyter-widget :widget="element" v-for="(element, index) in activator" :key="index" @click.native="on.click"></jupyter-widget>
         </template>
         <v-list v-for="(element, index) in children" :key="index" style="padding: 0;">
             <jupyter-widget :widget="element"  :style="style" ></jupyter-widget>
