@@ -52,17 +52,18 @@ def InputDate(
     ```solara
     import solara
     import solara.lab as lab
+    import datetime as dt
 
 
     @solara.component
     def Page():
-        date = solara.use_reactive(None)
+        date = solara.use_reactive(dt.date.today())
         range_is_open = solara.use_reactive(False)
 
         with solara.Column():
             lab.InputDate(
                 date,
-                open=range_is_open,
+                open_value=range_is_open,
             )
             solara.Text(str(date.value))
     ```
@@ -70,13 +71,18 @@ def InputDate(
     ## Arguments
 
     * value: Reactive variable of type `datetime.date`, or `None`. This date is selected the first time the component is rendered.
+    * on_value: a callback function for when value changes. The callback function receives the new value as an argument.
     * label: Text used to label the text field that triggers the datepicker.
     * children: List of Elements to be rendered under the calendar. If empty, a close button is rendered.
-    * open: Controls and communicates the state of the datepicker. If True, the datepicker is open. If False, the datepicker is closed.
+    * open_value: Controls and communicates the state of the datepicker. If True, the datepicker is open. If False, the datepicker is closed.
     Intended to be used in conjunction with a custom set of controls to close the datepicker.
+    * on_open_value: a callback function for when open_value changes. Also receives the new value as an argument.
+    * optional: Determines whether go show an error when value is `None`. If `True`, no error is shown.
     * date_format: Sets the format of the date displayed in the text field. Defaults to `"%Y/%m/%d"`. For more information, see
     <a href="https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes" target="_blank">here</a>.
     * first_day_of_the_week: Sets the first day of the week, as an `int` starting count from Sunday (`=0`). Defaults to `1`, which is Monday.
+    * style: CSS style to apply to the text field. Either a string or a dictionary of CSS properties (i.e. `{"property": "value"}`).
+    * classes: List of CSS classes to apply to the text field.
     """
 
     def set_date_typed_cast(value: Optional[str]):
@@ -126,7 +132,7 @@ def InputDate(
         on_v_model=set_value_cast,
         append_icon="mdi-calendar",
         error=bool(error_message),
-        style_=style_flat,
+        style_="min-width: 290px;" + style_flat,
         class_=", ".join(classes) if classes else "",
     )
 
@@ -136,6 +142,7 @@ def InputDate(
         activator=input,
         close_on_content_click=False,
         open_value=datepicker_is_open,
+        use_activator_width=False,
     ):
         with solara.v.DatePicker(
             v_model=date_standard_str,
@@ -174,30 +181,36 @@ def InputDateRange(
     ```solara
     import solara
     import solara.lab as lab
+    import datetime as dt
 
 
     @solara.component
     def Page():
-        dates = solara.use_reactive([])
+        dates = solara.use_reactive(tuple([dt.date.today(), dt.date.today() + dt.timedelta(days=1)]))
         range_is_open = solara.use_reactive(False)
 
         with solara.Column():
             lab.InputDateRange(
                 dates,
-                open=range_is_open,
+                open_value=range_is_open,
             )
     ```
 
     ## Arguments
 
     * value: Reactive tuple with elements of type `datetime.date`. For an empty pre-selection of dates, pass a reactive empty tuple.
+    * on_value: a callback function for when value changes. The callback function receives the new value as an argument.
     * label: Text used to label the text field that triggers the datepicker.
     * children: List of Elements to be rendered under the calendar. If empty, a close button is rendered.
-    * open: Controls and communicates the state of the datepicker. If True, the datepicker is open. If False, the datepicker is closed.
+    * open_value: Controls and communicates the state of the datepicker. If True, the datepicker is open. If False, the datepicker is closed.
     Intended to be used in conjunction with a custom set of controls to close the datepicker.
+    * on_open_value: a callback function for when open_value changes. Also receives the new value as an argument.
     * date_format: Sets the format of the date displayed in the text field. Defaults to `"%Y/%m/%d"`. For more information,
+    * optional: Determines whether go show an error when value is `None`. If `True`, no error is shown.
     see <a href="https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes" target="_blank">here</a>.
     * first_day_of_the_week: Sets the first day of the week, as an `int` starting count from Sunday (`=0`). Defaults to `1`, which is Monday.
+    * style: CSS style to apply to the text field. Either a string or a dictionary of CSS properties (i.e. `{"property": "value"}`).
+    * classes: List of CSS classes to apply to the text field.
 
     ## A More Advanced Example
 
@@ -209,20 +222,15 @@ def InputDateRange(
 
     @solara.component
     def Page():
-        date = solara.use_reactive([])
+        date = solara.use_reactive(tuple([dt.date.today(), None]))
         range_is_open = solara.use_reactive(False)
         stay_length = solara.use_reactive(1)
 
         controls = [
-            solara.Button(
-                label="Book",
-                color="primary",
-                on_click=lambda: range_is_open.set(not range_is_open.value),
-            )
         ]
 
         def select_next_day(value):
-            if len(value) != 0:
+            if value and value[0]:
                 value = value[0]
                 second_date = value + dt.timedelta(days=stay_length.value)
                 date.set([value, second_date])
@@ -234,9 +242,15 @@ def InputDateRange(
             with lab.InputDateRange(
                 date,
                 on_value=select_next_day,
-                open=range_is_open,
+                open_value=range_is_open,
             ):
-                solara.Row(children=controls, justify="end", style="width: 100%;")
+                with solara.Row(justify="end", style="width: 100%;"):
+                    solara.Button(
+                        label="Book",
+                        color="primary",
+                        on_click=lambda: range_is_open.set(not range_is_open.value),
+                    )
+
     ```
     """
     value_reactive = solara.use_reactive(value)
@@ -269,7 +283,7 @@ def InputDateRange(
         v_model=string_dates,
         append_icon="mdi-calendar",
         error=bool(error_message),
-        style_=style_flat,
+        style_="min-width: 290px;" + style_flat,
         readonly=True,
         class_=", ".join(classes) if classes else "",
     )
@@ -281,6 +295,7 @@ def InputDateRange(
         activator=input,
         close_on_content_click=False,
         open_value=datepicker_is_open,
+        use_activator_width=False,
     ):
         with solara.v.DatePicker(
             v_model=date_standard_strings,
