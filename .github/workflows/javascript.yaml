@@ -11,7 +11,7 @@ on:
       - 'packages/**/*'
   workflow_dispatch:
   schedule:
-    - cron: '0 6 * * 1'
+    - cron: '0 6 * * 1,4'  # at 06:00 UTC on Monday and Thursday
 
 jobs:
   build:
