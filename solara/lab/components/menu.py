@@ -156,7 +156,8 @@ def Menu(
     * on_open_value: Function to call when the menu is opened or closed.
     * children: List of Elements to be contained in the menu
     * style: CSS style to apply. Applied directly onto the `v-menu` component.
-    * use_activator_width: If True, the menu will be the same width as the activator element. If False, the menu width will be determined by the content.
+    * use_activator_width: If True, the menu will have a minimum width equal to the activator element.
+    If False, the menu width will be determined by the content.
     """
     open_reactive = solara.use_reactive(open_value, on_open_value)
     del open_value
