@@ -15,7 +15,6 @@ maps = {
     "OpenStreetMap.Mapnik": ipyleaflet.basemaps.OpenStreetMap.Mapnik,
     "OpenTopoMap": ipyleaflet.basemaps.OpenTopoMap,
     "Esri.WorldTopoMap": ipyleaflet.basemaps.Esri.WorldTopoMap,
-    "Stamen.Watercolor": ipyleaflet.basemaps.Stamen.Watercolor,
 }
 
 zoom = solara.reactive(zoom_default)
