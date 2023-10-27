@@ -20,7 +20,9 @@
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
 
-    gtag('config', 'G-G985FTLWGQ');
+    gtag('config', 'G-G985FTLWGQ', {
+        cookie_flags: 'secure;samesite=none'
+    });
     </script>
     <!-- End Google Analytics -->
     {{ super() }}

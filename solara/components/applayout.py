@@ -364,6 +364,9 @@ def AppLayout(
 def _AppLayoutEmbed(children=[], sidebar_open=True, title=None):
     """Forces the embed more for a AppLayout. This is used by default in Jupyter."""
     should_use_embed.provide(True)
+
+    if solara.checks.should_perform_jupyter_check():
+        children = [solara.Column(children=children + [solara.checks.JupyterCheck()])]
     return AppLayout(children=children, sidebar_open=sidebar_open, title=title)
 
 
