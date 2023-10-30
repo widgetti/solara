@@ -264,6 +264,6 @@ CMD ["solara", "run", "sol.py", "--host=0.0.0.0", "--production"]
 ```
 
 For a complete example, you can take a look at:
-
+  * [https://huggingface.co/spaces/solara-dev/template](https://huggingface.co/spaces/solara-dev/template)
   * [https://huggingface.co/spaces/giswqs/solara-template/tree/main](https://huggingface.co/spaces/giswqs/solara-template/tree/main)
   * [https://github.com/opengeos/solara-template](https://github.com/opengeos/solara-template)
