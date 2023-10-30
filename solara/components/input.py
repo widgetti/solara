@@ -1,4 +1,4 @@
-from typing import Any, Callable, Optional, TypeVar, Union, cast, overload
+from typing import Any, Callable, Optional, TypeVar, Union, cast, overload, List, Dict
 
 import ipyvue
 import ipyvuetify as vw
@@ -46,6 +46,8 @@ def InputText(
     continuous_update: bool = False,
     error: Union[bool, str] = False,
     message: Optional[str] = None,
+    classes: List[str] = [],
+    style: Optional[Union[str, Dict[str, str]]] = None,
 ):
     """Free form text input.
 
@@ -101,6 +103,8 @@ def InputText(
     """
     reactive_value = solara.use_reactive(value, on_value)
     del value, on_value
+    style_flat = solara.util._flatten_style(style)
+    classes_flat = solara.util._combine_classes(classes)
 
     def set_value_cast(value):
         reactive_value.value = str(value)
@@ -122,6 +126,8 @@ def InputText(
         type="password" if password else None,
         error=bool(error),
         messages=messages,
+        class_=classes_flat,
+        style_=style_flat,
     )
     use_change(text_field, set_value_cast, enabled=not continuous_update)
     return text_field
@@ -137,6 +143,8 @@ def InputFloat(
     optional: Literal[False] = ...,
     continuous_update: bool = ...,
     clearable: bool = ...,
+    classes: List[str] = ...,
+    style: Optional[Union[str, Dict[str, str]]] = ...,
 ) -> reacton.core.ValueElement[vw.TextField, Any]:
     ...
 
@@ -151,6 +159,8 @@ def InputFloat(
     optional: Literal[True] = ...,
     continuous_update: bool = ...,
     clearable: bool = ...,
+    classes: List[str] = ...,
+    style: Optional[Union[str, Dict[str, str]]] = ...,
 ) -> reacton.core.ValueElement[vw.TextField, Any]:
     ...
 
@@ -164,6 +174,8 @@ def InputFloat(
     optional: bool = False,
     continuous_update: bool = False,
     clearable: bool = False,
+    classes: List[str] = [],
+    style: Optional[Union[str, Dict[str, str]]] = None,
 ):
     """Numeric input (floats).
 
@@ -218,6 +230,8 @@ def InputFloat(
         disabled=disabled,
         continuous_update=continuous_update,
         clearable=clearable,
+        classes=classes,
+        style=style,
     )
 
 
@@ -231,6 +245,8 @@ def InputInt(
     optional: Literal[False] = ...,
     continuous_update: bool = ...,
     clearable: bool = ...,
+    classes: List[str] = ...,
+    style: Optional[Union[str, Dict[str, str]]] = ...,
 ) -> reacton.core.ValueElement[vw.TextField, Any]:
     ...
 
@@ -245,6 +261,8 @@ def InputInt(
     optional: Literal[True] = ...,
     continuous_update: bool = ...,
     clearable: bool = ...,
+    classes: List[str] = ...,
+    style: Optional[Union[str, Dict[str, str]]] = ...,
 ) -> reacton.core.ValueElement[vw.TextField, Any]:
     ...
 
@@ -258,6 +276,8 @@ def InputInt(
     optional: bool = False,
     continuous_update: bool = False,
     clearable: bool = False,
+    classes: List[str] = [],
+    style: Optional[Union[str, Dict[str, str]]] = None,
 ):
     """Numeric input (integers).
 
@@ -309,6 +329,8 @@ def InputInt(
         disabled=disabled,
         continuous_update=continuous_update,
         clearable=clearable,
+        classes=classes,
+        style=style,
     )
 
 
@@ -360,6 +382,8 @@ def _InputNumeric(
     disabled: bool = False,
     continuous_update: bool = False,
     clearable: bool = False,
+    classes: List[str] = [],
+    style: Optional[Union[str, Dict[str, str]]] = None,
 ):
     """Numeric input.
 
@@ -371,6 +395,9 @@ def _InputNumeric(
     * `disabled`: Whether the input is disabled.
     * `continuous_update`: Whether to call the `on_value` callback on every change or only when the input loses focus or the enter key is pressed.
     """
+    style_flat = solara.util._flatten_style(style)
+    classes_flat = solara.util._combine_classes(classes)
+
     internal_value, error, set_value_cast = _use_input_type(
         value,
         str_to_numeric,
@@ -395,6 +422,8 @@ def _InputNumeric(
         hide_details=True,
         clearable=clearable,
         error=bool(error),
+        class_=classes_flat,
+        style_=style_flat,
     )
     use_change(text_field, set_value_cast, enabled=not continuous_update)
     return text_field
