@@ -9,6 +9,8 @@ import threading
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Set, Type
 
+import solara.server.settings as settings
+
 NO_WATCHDOG = False
 try:
     from watchdog.events import FileSystemEventHandler
@@ -126,7 +128,8 @@ class Reloader:
         self.watched_modules: Set[str] = set()
         self._first = True
         self.on_change: Optional[Callable[[str], None]] = on_change
-        self.watcher = WatcherType([], self._on_change)
+        WatcherCls = WatcherType if settings.main.mode == "development" else WatcherDummy
+        self.watcher = WatcherCls([], self._on_change)
         self.requires_reload = False
         self.ignore_modules: Set[str] = set()
         self.reload_event_next = threading.Event()

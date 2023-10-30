@@ -10,16 +10,15 @@ Assuming you have created a virtual environment as described in [the installatio
     $ pip install ".[dev,documentation]"  # documentation is optional
 
 
-## Running Solara in dev mode
+## Running Solara server in auto restart mode
 
-By passing the `--dev` flag, solara enters "dev" mode, which makes it friendlier for development
+By passing the `--auto-restart/-a` flag, the solara server will automatically restart when the sourcecode of the solara server changes, which makes it friendlier for development
 
-    $ solara run myscript.py --dev
+    $ solara run myscript.py -a
 
 This will:
 
     * Automatically restart the server if any of the source code of solara changes (excluding solara.website)
-    * Load non-minified JS/CSS to make debugging easier)
 
 ## Contributing
 
