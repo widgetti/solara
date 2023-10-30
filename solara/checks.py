@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import subprocess
 import sys
 import warnings
@@ -11,9 +12,109 @@ from IPython.core.interactiveshell import InteractiveShell
 from IPython.display import display
 
 import solara
+from solara.util import get_solara_home
 
 HERE = Path(__file__).parent
 logger = logging.getLogger(__name__)
+
+jupyter_checked_path = get_solara_home() / ".jupyter_checked"
+solara_checked_path = get_solara_home() / ".solara_checked"
+
+
+def _should_perform_check(path: Path):
+    if path.exists():
+        return False
+    try:
+        home = get_solara_home()
+        if not home.exists():
+            home.mkdir(parents=True, exist_ok=True)
+        # try writing, if we cannot, we will not check
+        if not path.exists():
+            path.write_text("")
+            path.unlink()
+    except OSError:
+        return False
+    return True
+
+
+def should_perform_jupyter_check():
+    if "PYTEST_CURRENT_TEST" in os.environ:
+        return False
+    return _should_perform_check(jupyter_checked_path)
+
+
+def should_perform_solara_check():
+    if "PYTEST_CURRENT_TEST" in os.environ:
+        return False
+    import solara.server.settings
+
+    if solara.server.settings.main.mode == "production":
+        return False
+    return _should_perform_check(solara_checked_path)
+
+
+@solara.component
+def JupyterCheck():
+    # We do 2 calls home:
+    #  * 1 from pure js (should always work)
+    #  * 1 from a widget (might not work)
+    # This way we can see how many installations actually fail
+    # Note that we only do this once, we touch ~/.solara/.jupyter_checked
+    # to avoid doing it multiple times
+    def inject_pure_js_check():
+        # do this as an effect, otherwise we will use the display
+        # that gets dispatched to solara, which will not come through
+        # if the widgets do not work
+        IPython.display.display(
+            IPython.display.Javascript(
+                data="""
+const prevIframe = document.getElementById("solara-jupyter-check");
+if(prevIframe)
+    prevIframe.remove();
+const iframe = document.createElement('iframe')
+iframe.setAttribute("src", "https://solara.dev/static/public/success.html?check=purejs");
+iframe.style.width = "0px";
+iframe.style.height = "0px";
+iframe.style.display = "none";
+iframe.id = "solara-jupyter-check";
+document.body.appendChild(iframe);
+            """
+            )
+        )
+
+    # this should always get through, even if widgets do not work
+    solara.use_effect(inject_pure_js_check, [])
+
+    def flag_jupyter_checked():
+        try:
+            jupyter_checked_path.write_text("")
+        except OSError:
+            pass
+
+    solara.use_effect(flag_jupyter_checked, [])
+    # this iframe should only get through if the widget installation succeeded
+    return solara.v.Html(
+        tag="iframe",
+        attributes={"src": "https://solara.dev/static/public/success.html?check=widget", "width": "0px", "height": "0px"},
+        style_="display: none;",
+    )
+
+
+@solara.component
+def SolaraCheck():
+    def flag_solara_checked():
+        try:
+            return
+            solara_checked_path.write_text("")
+        except OSError:
+            pass
+
+    solara.use_effect(flag_solara_checked, [])
+    return solara.v.Html(
+        tag="iframe",
+        attributes={"src": "https://solara.dev/static/public/success.html?system=solara&check=widget", "width": "0px", "height": "0px"},
+        style_="display: none;",
+    )
 
 
 def getcmdline(pid):

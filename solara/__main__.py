@@ -123,40 +123,34 @@ def cli():
     default=settings.main.host,
     help="Host to listen on. Defaults to the $HOST environment or $SOLARA_HOST when available or localhost when not given.",
 )
-@click.option(
-    "--dev/--no-dev",
-    default=False,
-    help="""Tell Solara to work in production(default) or development mode.
-When in dev mode Solara will:
-  Auto reload server when the server code changes
-  Prefer non-minized js/css assets for easier debugging.
-""",
-)
+@click.option("--dev/--no-dev", default=None, help="Deprecated: use --auto-restart/-a", hidden=True)
+@click.option("--production", is_flag=True, default=False, help="Run in production mode: https://solara.dev/docs/understanding/solara-server", hidden=True)
+@click.option("--reload", is_flag=True, default=None, help="Deprecated: use --auto-restart/-a", hidden=True)
+@click.option("-a", "--auto-restart", is_flag=True, default=False, help="Enable auto-restarting of server when the solara server code changes.")
 @click.option("--tracer/--no-tracer", default=False)
 @click.option("--timing/--no-timing", default=False)
 @click.option("--open/--no-open", default=True)
-@click.option("--reload", is_flag=True, default=False, help="Enable auto-reload.")
 @click.option(
-    "--reload-dir",
-    "reload_dirs",
+    "--restart-dir",
+    "restart_dirs",
     multiple=True,
-    help="Set reload directories explicitly, instead of using the current working" " directory.",
+    help="Set restart directories explicitly, instead of using the current working" " directory.",
     type=click.Path(exists=True),
 )
 @click.option(
-    "--reload-exclude",
-    "reload_excludes",
+    "--restart-exclude",
+    "restart_excludes",
     multiple=True,
     help="Set glob patterns to exclude while watching for files. Includes "
     "'.*, .py[cod], .sw.*, ~*' by default; these defaults can be overridden "
-    "with `--reload-include`. This option has no effect unless watchgod is "
+    "with `--restart-include`. This option has no effect unless watchgod is "
     "installed.",
 )
 @click.option(
     "--workers",
     default=None,
     type=int,
-    help="Number of worker processes. Defaults to the $WEB_CONCURRENCY environment" " variable if available, or 1. Not valid with --reload.",
+    help="Number of worker processes. Defaults to the $WEB_CONCURRENCY environment" " variable if available, or 1. Not valid with --auto-restart/-a.",
 )
 @click.option(
     "--env-file",
@@ -248,12 +242,14 @@ def run(
     host,
     port,
     open,
+    auto_restart: bool,
     reload: bool,
-    reload_dirs: typing.Optional[typing.List[str]],
+    restart_dirs: typing.Optional[typing.List[str]],
+    restart_excludes: typing.List[str],
     dev: bool,
+    production: bool,
     tracer: bool,
     timing: bool,
-    reload_excludes: typing.List[str],
     loop: str,
     workers: int,
     env_file: str,
@@ -271,15 +267,26 @@ def run(
     check_version: bool = True,
 ):
     """Run a Solara app."""
+    if dev is not None:
+        print("solara: --dev is deprecated, use --auto-restart/-a instead", file=sys.stderr)  # noqa: T201
+        auto_restart = dev
+    if reload is not None:
+        print("solara: --reload is deprecated, use --auto-restart/-a instead", file=sys.stderr)  # noqa: T201
+        auto_restart = reload
     if check_version:
         _check_version()
+
+    # uvicorn calls it reload, we call it auto restart
+    reload = auto_restart
+    del auto_restart
     settings.ssg.enabled = ssg
     settings.search.enabled = search
-    reload_dirs = reload_dirs if reload_dirs else None
+    reload_dirs = restart_dirs if restart_dirs else None
+    del restart_dirs
     url = f"http://{host}:{port}"
 
     failed = False
-    if dev:
+    if reload:
         solara_root = Path(solara.__file__).parent
 
         reload_dirs = list(reload_dirs if reload_dirs else [])
@@ -296,13 +303,21 @@ def run(
             del solara_enterprise
         except ImportError:
             pass
-        reload_excludes = reload_excludes if reload_excludes else []
+        reload_excludes = restart_excludes if restart_excludes else []
+        del restart_excludes
         reload_excludes = [str(solara_root / "website"), str(solara_root / "template")]
         reload_excludes.append(app)
         del solara_root
         reload = True
-        settings.main.mode = "development"
+        # avoid sending many restarts
+        settings.telemetry.mixpanel_enable = False
+    else:
+        del restart_excludes
 
+    if production:
+        settings.main.mode = "production"
+    else:
+        settings.main.mode = "development"
     server = None
 
     # TODO: we might want to support this, but it needs to be started from the main thread
@@ -353,7 +368,7 @@ def run(
     settings.main.timing = timing
     items = (
         "theme_variant_user_selectable theme_variant theme_loader use_pdb server open_browser open url failed dev tracer"
-        " timing ssg search check_version".split()
+        " timing ssg search check_version production".split()
     )
     for item in items:
         del kwargs[item]

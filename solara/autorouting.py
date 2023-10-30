@@ -14,6 +14,7 @@ import reacton
 import reacton.core
 
 import solara
+import solara.checks
 from solara.alias import rv
 from solara.util import cwd, nested_get
 
@@ -105,6 +106,9 @@ def RoutingProvider(children: List[reacton.core.Element] = [], routes: List[sola
     if nav_widget.current:
         nav_widget.current.location = path
     solara.use_effect(get_nav_widget)
+
+    if solara.checks.should_perform_solara_check():
+        children = [solara.checks.SolaraCheck(), *children]
 
     main = solara.VBox(
         children=[

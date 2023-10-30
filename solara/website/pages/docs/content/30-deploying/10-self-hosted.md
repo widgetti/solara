@@ -16,7 +16,7 @@ Solara runs on several web frameworks, such as
 
 The most straightforward and well-tested method to deploy Solara is through the `solara run` command:
 
-    $ solara run sol.py
+    $ solara run sol.py --production
 
 which uses Starlette under the hood.
 
@@ -42,13 +42,13 @@ def Page():
 ```
 
 
-If you're aiming to integrate Solara with other web frameworks such as [Flask](https://flask.palletsprojects.com/deploying/), [Starlette](https://www.starlette.io/), or [FastAPI](https://fastapi.tiangolo.com/), you shouldn't execute `solara run sol.py`.
+If you're aiming to integrate Solara with other web frameworks such as [Flask](https://flask.palletsprojects.com/deploying/), [Starlette](https://www.starlette.io/), or [FastAPI](https://fastapi.tiangolo.com/), you normally do not execute `solara run sol.py`.
 Instead, start your chosen web framework as directed by their documentation and configure Solara via environment variables. For instance, instead of running the development server like `solara run sol.py`, set the `SOLARA_APP` environment variable to `sol.py`:
 
     $ export SOLARA_APP=sol.py
     # run flask or starlette
 
-or look at the examples below for more detailed instructions per web framework.
+or look at the examples below for more detailed instructions per web framework. Note that when solara is used this way it [by default runs in production mode](https://solara.dev/docs/understanding/solara-server).
 
 ## Flask
 
@@ -259,11 +259,11 @@ Your Dockerfile could look like:
 FROM ....
 
 ...
-CMD ["solara", "run", "sol.py", "--host=0.0.0.0"]
+CMD ["solara", "run", "sol.py", "--host=0.0.0.0", "--production"]
 
 ```
 
 For a complete example, you can take a look at:
-
+  * [https://huggingface.co/spaces/solara-dev/template](https://huggingface.co/spaces/solara-dev/template)
   * [https://huggingface.co/spaces/giswqs/solara-template/tree/main](https://huggingface.co/spaces/giswqs/solara-template/tree/main)
   * [https://github.com/opengeos/solara-template](https://github.com/opengeos/solara-template)

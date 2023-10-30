@@ -278,6 +278,7 @@ def read_root(path: str, root_path: str = "", render_kwargs={}, use_nbextensions
         "cdn": cdn,
         "ipywidget_major_version": ipywidgets_major,
         "platform": settings.main.platform,
+        "perform_check": settings.main.mode != "production" and solara.checks.should_perform_solara_check(),
         **render_kwargs,
     }
     response = template.render(**render_settings)
