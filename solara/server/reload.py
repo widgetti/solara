@@ -228,7 +228,7 @@ class Reloader:
                     path = inspect.getfile(module)
                 except Exception:
                     pass
-                if path:
+                if path and Path(path).exists():
                     if not path.startswith(sys.prefix):
                         self.watcher.add_file(path)
                         self.watched_modules.add(modname)
