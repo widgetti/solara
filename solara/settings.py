@@ -14,7 +14,10 @@ else:
 
 home = get_solara_home()
 if not home.exists():
-    home.mkdir(parents=True, exist_ok=True)
+    try:
+        home.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        pass  # can fail in for instance docker when $HOME is not set/writable
 
 
 class Cache(BaseSettings):
