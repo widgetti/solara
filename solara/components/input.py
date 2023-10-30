@@ -100,6 +100,8 @@ def InputText(
     * `continuous_update`: Whether to call the `on_value` callback on every change or only when the input loses focus or the enter key is pressed.
     * `error`: If truthy, show the input as having an error (in red). If a string is passed, it will be shown as the error message.
     * `message`: Message to show below the input. If `error` is a string, this will be ignored.
+    * `classes`: List of CSS classes to apply to the input.
+    * `style`: CSS style to apply to the input.
     """
     reactive_value = solara.use_reactive(value, on_value)
     del value, on_value
@@ -206,6 +208,8 @@ def InputFloat(
     * `optional`: Whether the value can be None.
     * `continuous_update`: Whether to call the `on_value` callback on every change or only when the input loses focus or the enter key is pressed.
     * `clearable`: Whether the input can be cleared.
+    * `classes`: List of CSS classes to apply to the input.
+    * `style`: CSS style to apply to the input.
 
     """
 
@@ -307,6 +311,8 @@ def InputInt(
     * `optional`: Whether the value can be None.
     * `continuous_update`: Whether to call the `on_value` callback on every change or only when the input loses focus or the enter key is pressed.
     * `clearable`: Whether the input can be cleared.
+    * `classes`: List of CSS classes to apply to the input.
+    * `style`: CSS style to apply to the input.
     """
 
     def str_to_int(value: Optional[str]):
@@ -394,6 +400,8 @@ def _InputNumeric(
     * `on_value`: Callback to call when the value changes.
     * `disabled`: Whether the input is disabled.
     * `continuous_update`: Whether to call the `on_value` callback on every change or only when the input loses focus or the enter key is pressed.
+    * `classes`: List of CSS classes to apply to the input.
+    * `style`: CSS style to apply to the input.
     """
     style_flat = solara.util._flatten_style(style)
     classes_flat = solara.util._combine_classes(classes)
