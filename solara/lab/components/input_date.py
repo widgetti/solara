@@ -59,7 +59,7 @@ def InputDate(
     def Page():
         date = solara.use_reactive(dt.date.today())
 
-        lab.InputDate(date)
+        solara.lab.InputDate(date)
         solara.Text(str(date.value))
     ```
 
@@ -175,20 +175,16 @@ def InputDateRange(
 
     ```solara
     import solara
-    import solara.lab as lab
+    import solara.lab
     import datetime as dt
 
 
     @solara.component
     def Page():
         dates = solara.use_reactive(tuple([dt.date.today(), dt.date.today() + dt.timedelta(days=1)]))
-        range_is_open = solara.use_reactive(False)
 
-        with solara.Column():
-            lab.InputDateRange(
-                dates,
-                open_value=range_is_open,
-            )
+        solara.lab.InputDateRange(dates)
+        solara.Text(str(dates.value))
     ```
 
     ## Arguments
@@ -211,7 +207,7 @@ def InputDateRange(
 
     ```solara
     import solara
-    import solara.lab as lab
+    import solara.lab
     import datetime as dt
 
 
@@ -221,29 +217,30 @@ def InputDateRange(
         range_is_open = solara.use_reactive(False)
         stay_length = solara.use_reactive(1)
 
-        controls = [
-        ]
-
-        def select_next_day(value):
+        def set_end_date(value):
             if value and value[0]:
                 value = value[0]
                 second_date = value + dt.timedelta(days=stay_length.value)
                 date.set([value, second_date])
 
-        solara.use_memo(lambda: select_next_day(date.value), [stay_length.value])
+        def book():
+            # Do some stuff here
+            range_is_open.set(False)
+
+        solara.use_memo(lambda: set_end_date(date.value), [stay_length.value])
 
         with solara.Column(style="width: 400px;"):
             solara.IntSlider("Length of stay", stay_length, min=1, max=10)
-            with lab.InputDateRange(
+            with solara.lab.InputDateRange(
                 date,
-                on_value=select_next_day,
+                on_value=set_end_date,
                 open_value=range_is_open,
             ):
                 with solara.Row(justify="end", style="width: 100%;"):
                     solara.Button(
                         label="Book",
                         color="primary",
-                        on_click=lambda: range_is_open.set(not range_is_open.value),
+                        on_click=book,
                     )
 
     ```
