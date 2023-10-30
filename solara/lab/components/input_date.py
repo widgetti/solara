@@ -51,21 +51,16 @@ def InputDate(
 
     ```solara
     import solara
-    import solara.lab as lab
+    import solara.lab
     import datetime as dt
 
 
     @solara.component
     def Page():
         date = solara.use_reactive(dt.date.today())
-        range_is_open = solara.use_reactive(False)
 
-        with solara.Column():
-            lab.InputDate(
-                date,
-                open_value=range_is_open,
-            )
-            solara.Text(str(date.value))
+        lab.InputDate(date)
+        solara.Text(str(date.value))
     ```
 
     ## Arguments
