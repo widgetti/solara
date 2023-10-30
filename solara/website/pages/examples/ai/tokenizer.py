@@ -2,7 +2,7 @@
 
 This example shows how to use a language model tokenizer to encode and decode and how to search for a token
 
-Inspired by the [Understanding GPT tokenizers by Simon Willison](https://simonwillison.net/2023/Jun/8/gpt-tokenizers/)
+Inspired by: [Understanding GPT tokenizers by Simon Willison](https://simonwillison.net/2023/Jun/8/gpt-tokenizers/)
 
 
 ## Note
@@ -30,6 +30,19 @@ df["token"] = [tokenizer.decode([i]) for i in range(MAX_TOKENS)]
 sentence = solara.reactive("Example text is here")
 tokens_ids_to_lookup = solara.reactive("")
 tokens_filter = solara.reactive("")
+
+
+@solara.component
+def GithubAvatar(name: str, handle: str, img: str):
+    with solara.v.Html(tag="a", attributes={"href": f"https://github.com/{handle}/", "target": "_blank"}):
+        with solara.v.ListItem(class_="pa-0"):
+            with solara.v.ListItemAvatar(color="grey darken-3"):
+                solara.v.Img(
+                    class_="elevation-6",
+                    src=img,
+                )
+            with solara.v.ListItemContent():
+                solara.v.ListItemTitle(children=["By " + name])
 
 
 @solara.component
@@ -69,6 +82,12 @@ def Page():
     with solara.Column(margin=10):
         solara.Markdown("# GPT-4 token encoder and decoder")
         solara.Markdown("This is an educational tool for understanding how tokenization works.")
+        GithubAvatar(
+            "Alonso Silva Allende",
+            "alonsosilvaallende",
+            "https://avatars.githubusercontent.com/u/30263736?v=4",
+        )
+
         solara.InputText("Enter text to tokenize it:", value=sentence, continuous_update=True)
         tokens = tokenizer.encode(sentence.value)
         with solara.Div(style="display: inline;"):
