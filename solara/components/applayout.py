@@ -367,6 +367,13 @@ def _AppLayoutEmbed(children=[], sidebar_open=True, title=None):
 
     if solara.checks.should_perform_jupyter_check():
         children = [solara.Column(children=children + [solara.checks.JupyterCheck()])]
+
+    def once():
+        import solara.server.telemetry
+
+        solara.server.telemetry.jupyter_start()
+
+    solara.use_effect(once, [])
     return AppLayout(children=children, sidebar_open=sidebar_open, title=title)
 
 
