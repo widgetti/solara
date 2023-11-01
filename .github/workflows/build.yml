@@ -19,14 +19,16 @@ jobs:
           node-version: 14
 
       - name: Cache JS bundle
-        id: cache-js-bundle
+        id: cache-js-bundle-v2
         uses: actions/cache@v3
         with:
-          path: packages/solara-vuetify-app/dist
-          key: ${{ runner.os }}-js-bundle-${{ hashFiles('packages/solara-vuetify-app/src/**', 'packages/solara-vuetify-app/package.json', 'packages/solara-widget-manager/src/**', 'packages/solara-widget-manager/package.json', 'packages/solara-widget-manager8/src/**', 'packages/solara-widget-manager8/package.json') }}
+          path: |
+            packages/solara-vuetify-app/dist
+            packages/solara-vuetify-app3/dist
+          key: ${{ runner.os }}-js-bundle-${{ hashFiles('packages/solara-vuetify-app/src/**', 'packages/solara-vuetify-app3/src/**', 'packages/solara-vuetify-app/package.json', 'packages/solara-widget-manager/src/**', 'packages/solara-widget-manager/package.json', 'packages/solara-widget-manager8/src/**', 'packages/solara-widget-manager8/package.json') }}
 
       - name: Build solara widget manager
-        if: steps.cache-js-bundle.outputs.cache-hit != 'true'
+        if: steps.cache-js-bundle-v2.outputs.cache-hit != 'true'
         run: |
           cd packages/solara-widget-manager
           npm install
@@ -38,9 +40,13 @@ jobs:
           cd ../../
 
       - name: Build solara app package
-        if: steps.cache-js-bundle.outputs.cache-hit != 'true'
+        if: steps.cache-js-bundle-v2.outputs.cache-hit != 'true'
         run: |
           cd packages/solara-vuetify-app
+          npm install
+          npm run build
+          cd ../../
+          cd packages/solara-vuetify-app3
           npm install
           npm run build
 
@@ -62,3 +68,4 @@ jobs:
             dist
             packages/solara-enterprise/dist
             packages/solara-vuetify-app/dist
+            packages/solara-vuetify-app3/dist

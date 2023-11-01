@@ -1,6 +1,5 @@
-Vue.use(Vuetify);
 
-Vue.component('jupyter-widget-mount-point', {
+var jupyterWidgetMountPoint = {
     data() {
         return {
             renderFn: undefined,
@@ -12,10 +11,17 @@ Vue.component('jupyter-widget-mount-point', {
         requestWidget(this.mountId);
     },
     mounted() {
+        const vue3 = Vue.version.startsWith('3');
         requestWidget(this.mountId)
             .then(widgetView => {
                 if (['VuetifyView', 'VuetifyTemplateView'].includes(widgetView.model.get('_view_name'))) {
-                    this.renderFn = createElement => widgetView.vueRender(createElement);
+                    if (vue3) {
+                        requirejs(['jupyter-vue'], jupyterVue => {
+                            this.renderFn = createElement => jupyterVue.vueRender(widgetView.model, widgetView, {})
+                        });
+                    } else {
+                        this.renderFn = createElement => widgetView.vueRender(createElement);
+                    }
                 } else {
                     while (this.$el.firstChild) {
                         this.$el.removeChild(this.$el.firstChild);
@@ -29,6 +35,8 @@ Vue.component('jupyter-widget-mount-point', {
             );
     },
     render(createElement) {
+        // in vue3 we have Vue.h, otherwise fall back to createElement (vue2)
+        let h = Vue.h || createElement;
         if (this.renderFn) {
             /* workaround for v-menu click */
             if (!this.elem) {
@@ -36,10 +44,10 @@ Vue.component('jupyter-widget-mount-point', {
             }
             return this.elem;
         }
-        return createElement('div', this.$slots.default ||
-            [createElement('v-chip', `[${this.mountId}]`)]);
+        return h('div', this.$slots.default ||
+            [h('v-chip', `[${this.mountId}]`)]);
     }
-});
+};
 
 const widgetResolveFns = {};
 const widgetPromises = {};

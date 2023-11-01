@@ -10,11 +10,13 @@ from typing import TYPE_CHECKING, Dict, List, Union
 if TYPE_CHECKING:
     import numpy as np
 
+import ipyvuetify
 import reacton
 
 import solara
 
 SOLARA_ALLOW_OTHER_TRACER = os.environ.get("SOLARA_ALLOW_OTHER_TRACER", False) in (True, "True", "true", "1")
+ipyvuetify_major_version = int(ipyvuetify.__version__.split(".")[0])
 
 
 def github_url(file):
