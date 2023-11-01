@@ -81,7 +81,9 @@ def test_solara_button_all(ipywidgets_runner, page_session: playwright.sync_api.
     page_session.wait_for_timeout(1000)
 ```
 
-Note that the function in the code will be executed in a different process, which will make it harder to debug and slower to run.
+Note that the function in the code will be executed in a different process (a Jupyter kernel), which will make it harder to debug and slower to run.
+Because the function code executes in the kernel, you do not have access to local variables. However, by passing a dictionary as second argument
+to `ipywidgets_runner` we can pass in extra local variables (e.g. `ipywidgets_runner(kernel_code, {"extra_argument": extra_argument})`).
 
 ## Limiting the Jupyter Environments
 To limit the ipywidgets_runner fixture to only run in a specific environment, use the `SOLARA_TEST_RUNNERS` environment variable:
