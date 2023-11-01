@@ -141,3 +141,7 @@ To configure the hostname the socket is bound to when starting the test server, 
 ## Changing the Port
 
 To configure the ports the socket is bound to when starting the test servers, use the `PORT` environment variable (e.g. `PORT=18865`). This port and subsequent port will be used for solara-server, jupyter-server and voila. Alternatively the `--solara-port` argument can be passed on the command line for pytest for the solara server, and `--jupyter-port` and `--voila-port` for the ports of jupyter server and voila respectively.
+
+## Vuetify warmup
+
+By default, we insert an ipyvuetify widget with an icon into the frontend to force loading all the vuetify assets, such as CSS and fonts. However, if you are using the solara test plugin to test pure ipywidgets or a 3rd ipywidget based party library you might not need this. Disable this vuetify warmup phase by passing the `--no-solara-vuetify-warmup` argument to pytest, or setting the environment variable `SOLARA_TEST_VUETIFY_WARMUP` to a falsey value (e.g. `SOLARA_TEST_VUETIFY_WARMUP=0`).
