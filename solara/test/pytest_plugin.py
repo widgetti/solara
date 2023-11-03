@@ -376,7 +376,7 @@ def create_runner_voila(voila_server, notebook_path, page_session: "playwright.s
     count = 0
     base_url = voila_server.base_url
 
-    def run(f: Callable):
+    def run(f: Callable, locals={}):
         nonlocal count
         path = Path(f.__code__.co_filename)
         cwd = str(path.parent)
@@ -384,6 +384,8 @@ def create_runner_voila(voila_server, notebook_path, page_session: "playwright.s
 import os
 os.chdir({cwd!r})
         \n"""
+        for name, value in locals.items():
+            code_setup += f"{name} = {value!r}\n"
         if require_vuetify_warmup:
             write_notebook([code_setup, code_from_function(warmup), code_from_function(f)], notebook_path)
         else:
@@ -405,7 +407,7 @@ def create_runner_jupyter_lab(jupyter_server, notebook_path, page_session: "play
     count = 0
     base_url = jupyter_server.base_url
 
-    def run(f: Callable):
+    def run(f: Callable, locals={}):
         nonlocal count
         path = Path(f.__code__.co_filename)
         cwd = str(path.parent)
@@ -418,6 +420,8 @@ os.chdir({cwd!r})
 import ipyvuetify as v;
 display(v.Btn(children=['Warmup js/css/fonts', v.Icon(children=["mdi-check"])], class_="solara-warmup-widget"))
         \n"""
+        for name, value in locals.items():
+            code_setup += f"{name} = {value!r}\n"
 
         write_notebook([code_setup, code_from_function(f)], notebook_path)
         page_session.goto(base_url + f"/lab/workspaces/solara-test/tree/notebook.ipynb?reset&v={count}")
@@ -449,7 +453,7 @@ def create_runner_jupyter_notebook(jupyter_server, notebook_path, page_session: 
     count = 0
     base_url = jupyter_server.base_url
 
-    def run(f: Callable):
+    def run(f: Callable, locals={}):
         nonlocal count
         path = Path(f.__code__.co_filename)
         cwd = str(path.parent)
@@ -462,6 +466,8 @@ os.chdir({cwd!r})
 import ipyvuetify as v;
 display(v.Btn(children=['Warmup js/css/fonts', v.Icon(children=["mdi-check"])], class_="solara-warmup-widget"))
         \n"""
+        for name, value in locals.items():
+            code_setup += f"{name} = {value!r}\n"
         write_notebook([code_setup, code_from_function(f)], notebook_path)
         page_session.goto(base_url + f"/notebooks/notebook.ipynb?v={count}")
         page_session.locator(".prompt_container >> nth=0").wait_for()
@@ -481,7 +487,7 @@ display(v.Btn(children=['Warmup js/css/fonts', v.Icon(children=["mdi-check"])], 
 def create_runner_solara(solara_server, solara_app, page_session: "playwright.sync_api.Page", require_vuetify_warmup: bool):
     count = 0
 
-    def run(f: Callable):
+    def run(f: Callable, locals={}):
         nonlocal count
         path = Path(f.__code__.co_filename)
         cwd = str(path.parent)
