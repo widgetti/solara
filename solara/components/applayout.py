@@ -252,8 +252,6 @@ def AppLayout(
     title = t.use_title_get() or title
     children_appbartitle = apptitle_portal.use_portal()
     show_app_bar = (title and (len(routes) > 1 and navigation)) or children_appbar or use_drawer or children_appbartitle
-    if not show_app_bar and not children_sidebar and len(children) == 1:
-        return children[0]
 
     def set_path(index):
         path = paths[index]
@@ -329,23 +327,25 @@ def AppLayout(
                         if not show_app_bar:
                             AppIcon(sidebar_open, on_click=lambda: set_sidebar_open(not sidebar_open))
                         v.Html(tag="div", children=children_sidebar, style_="padding: 12px;").meta(ref="sidebar-content")
-                else:
-                    AppIcon(sidebar_open, on_click=lambda: set_sidebar_open(not sidebar_open), style_="position: absolute; z-index: 2")
             if show_app_bar:
                 # if hide_on_scroll is True, and we have a little bit of scrolling, vuetify seems to act strangely
                 # when scrolling (on @mariobuikhuizen/vuetify v2.2.26-rc.0
-                with v.AppBar(color="primary", dark=True, app=True, clipped_left=True, hide_on_scroll=False, v_slots=v_slots):
+                with v.AppBar(color="primary", dark=True, app=True, clipped_left=True, hide_on_scroll=False, v_slots=v_slots).key("app-layout-appbar"):
                     if use_drawer:
                         AppIcon(sidebar_open, on_click=lambda: set_sidebar_open(not sidebar_open))
                     if title or children_appbartitle:
                         v.ToolbarTitle(children=children_appbartitle or [title])
                     v.Spacer()
-                    for child in children_appbar:
-                        solara.display(child)
+                    for i, child in enumerate(children_appbar):
+                        # if the user already provided a key, don't override it
+                        if child._key is None:
+                            solara.display(child.key(f"app-layout-appbar-user-child-{i}"))
+                        else:
+                            solara.display(child)
                     if fullscreen:
                         solara.Button(icon_name="mdi-fullscreen-exit", on_click=lambda: set_fullscreen(False), icon=True, dark=False)
 
-            with v.Content(class_="solara-content-main", style_="height: 100%;"):
+            with v.Content(class_="solara-content-main", style_="height: 100%;").key("app-layout-content"):
                 # make sure the scrollbar does no go under the appbar by adding overflow: auto
                 # to a child of content, because content has padding-top: 64px (set by vuetify)
                 # the padding: 12px is needed for backward compatibility with the previously used
