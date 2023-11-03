@@ -12,11 +12,16 @@ def test_toggle_buttons_single():
             solara.Button("Aap", value="aap")
             solara.Button("Noot", value="noot")
             solara.Button("Mies", value="mies")
+            solara.Button("Nobody", value=None)
 
     group, rc = solara.render_fixed(Test())
     assert group.v_model == 1
     group.v_model = 2
     assert value.value == "mies"
+    group.v_model = 3
+    assert value.value is None
+    # we don't want it to change the index to None
+    assert group.v_model == 3
 
 
 def test_toggle_buttons_multiple():
