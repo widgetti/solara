@@ -12,11 +12,12 @@ T = TypeVar("T")
 
 
 def _get_button_value(button: reacton.core.Element):
-    value = button.kwargs.get("value")
-    if value is None:
+    if "value" in button.kwargs:
+        value = button.kwargs["value"]
+    else:
         value = button.kwargs.get("label")
-    if value is None and button.args:
-        value = button.args[0]
+        if value is None and button.args:
+            value = button.args[0]
     return value
 
 
@@ -125,7 +126,7 @@ def ToggleButtonsSingle(
     # When mandatory = True, index should not be None, but we are letting the front-end take care of setting index to 0 because of a bug
     # (see https://github.com/widgetti/solara/issues/282)
     # TODO: set index to 0 on python side (after #282 is resolved)
-    index, set_index = solara.use_state_or_update(values.index(reactive_value.value) if reactive_value.value is not None else None, key="index")
+    index, set_index = solara.use_state_or_update(values.index(reactive_value.value) if reactive_value.value in values else None, key="index")
 
     def on_index(index):
         set_index(index)
