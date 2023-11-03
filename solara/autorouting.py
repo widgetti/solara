@@ -428,9 +428,10 @@ def generate_routes(module: ModuleType) -> List[solara.Route]:
     else:
         children = getattr(module, "routes", [])
         children = fix_routes(children, file)
+        layout = getattr(module, "Layout", None)
         # children = []
         # single module, single route
-        return [solara.Route(path="/", component=RenderPage, data=None, module=module, label=get_title(module), children=children, file=file)]
+        return [solara.Route(path="/", component=RenderPage, data=None, module=module, label=get_title(module), layout=layout, children=children, file=file)]
 
     return routes
 
