@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List, Tuple, cast
+from typing import Callable, Dict, List, Optional, Tuple, Union, cast
 
 import reacton
 import reacton.core
@@ -198,6 +198,9 @@ def AppLayout(
     title=None,
     navigation=True,
     toolbar_dark=True,
+    color: Optional[str] = "primary",
+    classes: List[str] = [],
+    style: Optional[Union[str, Dict[str, str]]] = "height: 100%; overflow: auto; padding: 12px;",
 ):
     """The default layout for Solara apps. It consists of an toolbar bar, a sidebar and a main content area.
 
@@ -224,7 +227,11 @@ def AppLayout(
      * `title`: The title of the app shown in the app bar, can also be set using the [Title](/api/title) component.
      * `toolbar_dark`: Whether the toolbar should be dark or not.
      * `navigation`: Whether the navigation tabs based on routing should be shown.
-
+     * `color`: The color of the toolbar.
+     * `classes`: List of CSS classes to apply to the direct parent of the childred.
+     * `style`: CSS style to apply to the direct parent of the children. By default we apply some padding, and set the height to
+       100% to make sure the layout fills the screen. In combination with overflow: auto, this will make sure the scrollbars
+       will appear when needed.
     """
     route, routes = solara.use_route()
     paths = [solara.resolve_path(r, level=0) for r in routes]
@@ -283,7 +290,7 @@ def AppLayout(
         # also ideal in jupyter notebooks
         with v.Html(tag="div") as main:
             if show_app_bar or use_drawer:
-                with v.AppBar(color="primary" if toolbar_dark else None, dark=toolbar_dark, v_slots=v_slots):
+                with v.AppBar(color=color, dark=toolbar_dark, v_slots=v_slots):
                     if use_drawer:
                         icon = AppIcon(sidebar_open, on_click=lambda: set_sidebar_open(not sidebar_open), v_on="x.on")
                         with v.Menu(
@@ -330,7 +337,7 @@ def AppLayout(
             if show_app_bar:
                 # if hide_on_scroll is True, and we have a little bit of scrolling, vuetify seems to act strangely
                 # when scrolling (on @mariobuikhuizen/vuetify v2.2.26-rc.0
-                with v.AppBar(color="primary", dark=True, app=True, clipped_left=True, hide_on_scroll=False, v_slots=v_slots).key("app-layout-appbar"):
+                with v.AppBar(color=color, dark=True, app=True, clipped_left=True, hide_on_scroll=False, v_slots=v_slots).key("app-layout-appbar"):
                     if use_drawer:
                         AppIcon(sidebar_open, on_click=lambda: set_sidebar_open(not sidebar_open))
                     if title or children_appbartitle:
@@ -351,7 +358,7 @@ def AppLayout(
                 # the padding: 12px is needed for backward compatibility with the previously used
                 # v.Col which has this by default. If we do not use this, a solara.Column will
                 # use a margin: -12px which will make a horizontal scrollbar appear
-                solara.Div(style_="height: 100%; overflow: auto; padding: 12px;", children=children_content)
+                solara.Div(style=style, classes=classes, children=children_content)
         if fullscreen:
             with v.Dialog(v_model=True, children=[], fullscreen=True, hide_overlay=True, persistent=True, no_click_animation=True) as dialog:
                 v.Sheet(class_="overflow-y-auto overflow-x-auto", children=[main])
