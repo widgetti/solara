@@ -87,13 +87,15 @@ class ServerFlask(ServerBase):
         super().__init__(port, host, **kwargs)
         self.app = flask_app or app
         self.url_prefix = url_prefix
+        self.server = None
 
     def has_started(self):
         return server.is_ready(f"http://{self.host}:{self.port}{self.url_prefix}")
 
     def signal_stop(self):
-        assert isinstance(self.server, HTTPServer)
-        self.server.shutdown()  # type: ignore
+        if self.server:
+            assert isinstance(self.server, HTTPServer)
+            self.server.shutdown()  # type: ignore
 
     def serve(self):
         from werkzeug.serving import make_server
