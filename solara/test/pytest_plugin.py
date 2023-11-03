@@ -197,6 +197,13 @@ def _solara_test(solara_server, solara_app, page_session: "playwright.sync_api.P
                     assert context.container
                     context.container.children[0].children[1].children[1].children = [test_output_warmup]  # type: ignore
                     with test_output_warmup:
+                        page_session.add_style_tag(
+                            content="""
+                            .solara-content-main {
+                                animation-duration: 0s !important;
+                            }
+                        """
+                        )
                         if require_vuetify_warmup:
                             warmup()
                             button = page_session.locator(".solara-warmup-widget")
