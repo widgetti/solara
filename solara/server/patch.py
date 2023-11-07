@@ -278,11 +278,15 @@ def Output_enter(self):
             return None
         return msg
 
-    get_ipython().display_pub.register_hook(hook)
+    ip = get_ipython()
+    if ip:
+        ip.display_pub.register_hook(hook)
 
 
 def Output_exit(self, exc_type, exc_value, traceback):
-    get_ipython().display_pub._hooks.pop()
+    ip = get_ipython()
+    if ip:
+        ip.display_pub._hooks.pop()
 
 
 def patch():
