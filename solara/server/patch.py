@@ -216,14 +216,18 @@ class context_dict_templates(context_dict):
 
 
 class context_dict_user(context_dict):
-    def __init__(self, name):
+    def __init__(self, name, default_dict):
         self.name = name
+        self.default_dict = default_dict
 
     def _get_context_dict(self) -> dict:
-        context = kernel_context.get_current_context()
-        if self.name not in context.user_dicts:
-            context.user_dicts[self.name] = {}
-        return context.user_dicts[self.name]
+        if kernel_context.has_current_context():
+            context = kernel_context.get_current_context()
+            if self.name not in context.user_dicts:
+                context.user_dicts[self.name] = {}
+            return context.user_dicts[self.name]
+        else:
+            return self.default_dict
 
 
 def auto_watch_get_template(get_template):
@@ -301,8 +305,8 @@ def patch():
     template_mod_vue.get_template = template_mod.get_template  # type: ignore
 
     component_mod_vue = sys.modules["ipyvue.VueComponentRegistry"]
-    component_mod_vue.vue_component_registry = context_dict_user("vue_component_registry")  # type: ignore
-    component_mod_vue.vue_component_files = context_dict_user("vue_component_files")  # type: ignore
+    component_mod_vue.vue_component_registry = context_dict_user("vue_component_registry", component_mod_vue.vue_component_registry)  # type: ignore
+    component_mod_vue.vue_component_files = context_dict_user("vue_component_files", component_mod_vue.vue_component_files)  # type: ignore
 
     if ipywidget_version_major < 8:
         global_widgets_dict = ipywidgets.widget.Widget.widgets
