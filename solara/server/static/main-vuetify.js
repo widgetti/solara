@@ -120,7 +120,7 @@ function generateUuid() {
 async function solaraInit(mountId, appName) {
     console.log('solara init', mountId, appName);
     define("vue", [], () => Vue);
-    define("vuetify", [], { framework: app.$vuetify });
+    define("vuetify", [], () => Vuetify);
     cookies = getCookiesMap(document.cookie);
     const searchParams = new URLSearchParams(window.location.search);
     let kernelId = searchParams.get('kernelid') || generateUuid()
