@@ -226,3 +226,11 @@ blockquote p:last-child {
 .sidebar li.active {
     font-weight: bolder;
 }
+
+.solara-autorouter-content {
+    max-width: 100%;
+}
+
+.jp-RenderedHTMLCommon {
+    padding-right: 0;
+}
