@@ -92,6 +92,7 @@ documentation = [
     "numpy",
     "bqplot",
     "altair",
+    "folium",
     "ipycanvas",
     "ipyleaflet",
     "matplotlib",
