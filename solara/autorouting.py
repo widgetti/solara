@@ -339,6 +339,9 @@ def get_title(module: ModuleType, required=True):
     elif hasattr(module, "title") and isinstance(module.title, str):
         title = module.title
     else:
+        match = re.match("([0-9\\-_ ]*)(.*)", name)
+        if match:
+            _prefix, name = match.groups()
         title_parts = re.split("[\\-_ ]+", name)
         title = " ".join(k.title() for k in title_parts)
     return title
@@ -502,6 +505,7 @@ def _generate_route_path(subpath: Path, layout=None, first=False, has_index=Fals
     else:
         reload.reloader.watcher.add_file(subpath)
         module = source_to_module(subpath, initial_namespace=initial_namespace)
+        title = get_title(module)
         children = getattr(module, "routes", children)
         children = fix_routes(children, subpath)
         module_layout = getattr(module, "Layout", module_layout)
