@@ -15,13 +15,7 @@ var jupyterWidgetMountPoint = {
         requestWidget(this.mountId)
             .then(widgetView => {
                 if (['VuetifyView', 'VuetifyTemplateView'].includes(widgetView.model.get('_view_name'))) {
-                    if (vue3) {
-                        requirejs(['jupyter-vue'], jupyterVue => {
-                            this.renderFn = createElement => jupyterVue.vueRender(widgetView.model, widgetView, {})
-                        });
-                    } else {
-                        this.renderFn = createElement => widgetView.vueRender(createElement);
-                    }
+                    this.renderFn = createElement => widgetView.vueRender(createElement);
                 } else {
                     while (this.$el.firstChild) {
                         this.$el.removeChild(this.$el.firstChild);
