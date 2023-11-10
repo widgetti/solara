@@ -8,6 +8,7 @@ df_vaex = vaex.datasets.titanic()
 df_pandas = df_vaex.to_pandas_df()
 df_polars = pl.from_pandas(df_pandas)
 
+
 @pytest.mark.parametrize("df", [df_vaex, df_pandas, df_polars])
 def test_render(df):
     @solara.component
