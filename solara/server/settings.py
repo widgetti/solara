@@ -1,14 +1,17 @@
 import os
+import re
 import site
 import sys
 import uuid
+import warnings
 from enum import Enum
 from pathlib import Path
-import re
 from typing import Optional
 
-import pydantic
 from filelock import FileLock
+
+import solara.util
+from solara.minisettings import BaseSettings
 
 from .. import (  # noqa  # sidefx is that this module creates the ~/.solara directory
     settings,
@@ -27,7 +30,7 @@ class ThemeVariant(str, Enum):
     auto = "auto"
 
 
-class ThemeSettings(pydantic.BaseSettings):
+class ThemeSettings(BaseSettings):
     variant: ThemeVariant = ThemeVariant.light
     variant_user_selectable: bool = True
     loader: str = "solara"
@@ -38,7 +41,7 @@ class ThemeSettings(pydantic.BaseSettings):
         env_file = ".env"
 
 
-class SSG(pydantic.BaseSettings):
+class SSG(BaseSettings):
     # the first app create will initialize this if it is not set
     build_path: Optional[Path] = None
     enabled: bool = False
@@ -50,11 +53,14 @@ class SSG(pydantic.BaseSettings):
         env_file = ".env"
 
 
-class Search(pydantic.BaseSettings):
+class Search(BaseSettings):
     enabled: bool = False
 
+    class Config:
+        env_prefix = "solara_search_"
 
-class Telemetry(pydantic.BaseSettings):
+
+class Telemetry(BaseSettings):
     mixpanel_token: str = "91845eb13a68e3db4e58d64ad23673b7"
     mixpanel_enable: bool = True
     server_user_id: str = "not_set"
@@ -67,7 +73,7 @@ class Telemetry(pydantic.BaseSettings):
         env_file = ".env"
 
 
-class Assets(pydantic.BaseSettings):
+class Assets(BaseSettings):
     cdn: str = "https://cdn.jsdelivr.net/npm/"
     proxy: bool = True
     proxy_cache_dir: Path = Path(prefix + "/share/solara/cdn/")
@@ -76,6 +82,15 @@ class Assets(pydantic.BaseSettings):
 
     class Config:
         env_prefix = "solara_assets_"
+        case_sensitive = False
+        env_file = ".env"
+
+
+class Kernel(BaseSettings):
+    cull_timeout: str = "24h"
+
+    class Config:
+        env_prefix = "solara_kernel_"
         case_sensitive = False
         env_file = ".env"
 
@@ -94,7 +109,7 @@ SESSION_SECRET_KEY_DEFAULT = "change me"
 OAUTH_TEST_CLIENT_IDs = [AUTH0_TEST_CLIENT_ID, FIEF_TEST_CLIENT_ID]
 
 
-class Session(pydantic.BaseSettings):
+class Session(BaseSettings):
     secret_key: str = SESSION_SECRET_KEY_DEFAULT
     https_only: Optional[bool] = None
     same_site: str = "lax"
@@ -105,7 +120,7 @@ class Session(pydantic.BaseSettings):
         env_file = ".env"
 
 
-class OAuth(pydantic.BaseSettings):
+class OAuth(BaseSettings):
     private: bool = False
 
     client_id: str = AUTH0_TEST_CLIENT_ID
@@ -127,7 +142,7 @@ if is_mac_os_conda or is_wsl_windows:
     HOST_DEFAULT = "localhost"
 
 
-class MainSettings(pydantic.BaseSettings):
+class MainSettings(BaseSettings):
     use_pdb: bool = False
     mode: str = "production"
     tracer: bool = False
@@ -135,7 +150,7 @@ class MainSettings(pydantic.BaseSettings):
     root_path: Optional[str] = None  # e.g. /myapp (without trailing slash)
     base_url: str = ""  # e.g. https://myapp.solara.run/myapp/
     platform: str = sys.platform
-    host = HOST_DEFAULT
+    host: str = HOST_DEFAULT
 
     class Config:
         env_prefix = "solara_"
@@ -151,16 +166,33 @@ search = Search()
 assets = Assets()
 oauth = OAuth()
 session = Session()
+kernel = Kernel()
+# fail early
+solara.util.parse_timedelta(kernel.cull_timeout)
 
-assets.proxy_cache_dir.mkdir(exist_ok=True, parents=True)
+if assets.proxy:
+    try:
+        assets.proxy_cache_dir.mkdir(exist_ok=True, parents=True)
+    except OSError as e:
+        assets.proxy = False
+        warnings.warn(
+            f"Could not create {assets.proxy_cache_dir} due to {e}. We will automatically disable the assets proxy for you. "
+            "If you want to disable this warning, set SOLARA_ASSETS_PROXY to False (e.g. export SOLARA_ASSETS_PROXY=false)."
+        )
+        # that's ok, the user probably doesn't have permission to create the directory
+        # in this case, we would need to install solara-assets?
+        pass
 
 if telemetry.server_user_id == "not_set":
     home = get_solara_home()
     server_user_id_file = home / "server_user_id.txt"
-    with FileLock(str(server_user_id_file) + ".lock"):
-        if not server_user_id_file.exists():
-            server_user_id_file.write_text(str(uuid.uuid4()))
-        telemetry.server_user_id = server_user_id_file.read_text()
+    try:
+        with FileLock(str(server_user_id_file) + ".lock"):
+            if not server_user_id_file.exists():
+                server_user_id_file.write_text(str(uuid.uuid4()))
+            telemetry.server_user_id = server_user_id_file.read_text()
+    except OSError:
+        pass  # it's ok
 
 if oauth.client_id:
     if oauth.client_id not in OAUTH_TEST_CLIENT_IDs:

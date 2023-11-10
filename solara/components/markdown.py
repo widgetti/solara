@@ -1,18 +1,27 @@
 import hashlib
+import html
 import logging
 import textwrap
 import traceback
+import warnings
 from typing import Any, Dict, List, Union
 
 import ipyvuetify as v
-import pygments
 import pymdownx.highlight
 import pymdownx.superfences
-from pygments.formatters import HtmlFormatter
-from pygments.lexers import get_lexer_by_name
 
 import solara
 import solara.components.applayout
+
+try:
+    import pygments
+
+    has_pygments = True
+except ModuleNotFoundError:
+    has_pygments = False
+else:
+    from pygments.formatters import HtmlFormatter
+    from pygments.lexers import get_lexer_by_name
 
 logger = logging.getLogger(__name__)
 
@@ -124,6 +133,11 @@ module.exports = {
 def _highlight(src, language, unsafe_solara_execute, extra, *args, **kwargs):
     """Highlight a block of code"""
 
+    if not has_pygments:
+        warnings.warn("Pygments is not installed, code highlighting will not work, use pip install pygments to install it.")
+        src_safe = html.escape(src)
+        return f"<pre><code>{src_safe}</code></pre>"
+
     run_src_with_solara = False
     if language == "solara":
         run_src_with_solara = True
@@ -131,16 +145,16 @@ def _highlight(src, language, unsafe_solara_execute, extra, *args, **kwargs):
 
     lexer = get_lexer_by_name(language)
     formatter = HtmlFormatter()
-    html = pygments.highlight(src, lexer, formatter)
+    src_html = pygments.highlight(src, lexer, formatter)
 
     if run_src_with_solara:
         if unsafe_solara_execute:
             html_widget = _run_solara(src)
-            return html + html_widget
+            return src_html + html_widget
         else:
-            return html + html_no_execute_enabled
+            return src_html + html_no_execute_enabled
     else:
-        return html
+        return src_html
 
 
 @solara.component
@@ -231,6 +245,7 @@ def Markdown(md_text: str, unsafe_solara_execute=False, style: Union[str, Dict, 
                 "pymdownx.superfences",
                 "pymdownx.emoji",
                 "toc",  # so we get anchors for h1 h2 etc
+                "tables",
             ],
             extension_configs={
                 "pymdownx.superfences": {

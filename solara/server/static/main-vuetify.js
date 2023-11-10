@@ -79,38 +79,6 @@ function injectDebugMessageInterceptor(kernel) {
 }
 
 
-class WebSocketRedirectWebWorker {
-    // redirects to webworker
-    constructor(url) {
-        console.log('connect url intercepted', url)
-        function make_default(name) {
-            return () => {
-                console.log("default ", name)
-            }
-        }
-        this.onopen = make_default('onopen')
-        this.onclose = make_default('onclose')
-        this.onmessage = make_default('onmessage')
-        setTimeout(() => this.start(), 10)
-    }
-    send(msg) {
-        // console.log('WebSocketRedirectWebWorker: send msg', msg)
-        window.parent.postMessage({ 'type': 'send', 'value': msg })
-    }
-    start() {
-        self.addEventListener('message', async (event) => {
-            let msg = event.data
-            // console.log('WebSocketRedirectWebWorker on msg', msg)
-            if (msg.type == 'send') {
-                this.onmessage({ data: msg.value })
-            }
-        });
-        this.onopen()
-        // solaraWorker.postMessage({ 'type': 'open' })
-    }
-}
-
-
 function getCookiesMap(cookiesString) {
     return cookiesString.split(";")
         .map(function (cookieString) {
@@ -146,24 +114,22 @@ async function solaraInit(mountId, appName) {
     define("vue", [], () => Vue);
     define("vuetify", [], { framework: app.$vuetify });
     cookies = getCookiesMap(document.cookie);
-    uuid = generateUuid()
+    const searchParams = new URLSearchParams(window.location.search);
+    let kernelId = searchParams.get('kernelid') || generateUuid()
     let unloading = false;
     window.addEventListener('beforeunload', function (e) {
         unloading = true;
         kernel.dispose()
-        window.navigator.sendBeacon(close_url);
+        // allow to opt-out to make testing easier
+        if (!searchParams.has('solara-no-close-beacon')) {
+            window.navigator.sendBeacon(close_url);
+        }
     });
-    console.log("solara.browser_platform", solara.browser_platform);
-    if (solara.browser_platform) {
-        options = { WebSocket: WebSocketRedirectWebWorker }
-    } else {
-        options = {}
-    }
-    let kernel = await solara.connectKernel(solara.rootPath + '/jupyter', uuid, options)
+    let kernel = await solara.connectKernel(solara.rootPath + '/jupyter', kernelId)
     if (!kernel) {
         return;
     }
-    const close_url = solara.rootPath + '/_solara/api/close/' + kernel.clientId;
+    const close_url = `${solara.rootPath}/_solara/api/close/${kernelId}?session_id=${kernel.clientId}`;
     let skipReconnectedCheck = true;
     kernel.statusChanged.connect(() => {
         app.$data.kernelBusy = kernel.status == 'busy';
@@ -192,9 +158,21 @@ async function solaraInit(mountId, appName) {
         }
         if (s.connectionStatus == 'connected' && !skipReconnectedCheck) {
             (async () => {
-                let ok = await widgetManager.check()
-                if (!ok) {
-                    app.$data.needsRefresh = true
+                if (app.$data.needsRefresh) {
+                    // give up
+                    return;
+                }
+                // if we are reconnected, we expected the app to be in a started
+                // state. If it is not started, we will shutdown the kernel and
+                // Recommend to refresh the page. This situation can happen if
+                // we reconnect to a different node/worker, or when the server
+                // was restarted.
+                const status = await widgetManager.appStatus()
+                if (!status.started) {
+                    app.$data.needsRefresh = true;
+                    await solara.shutdownKernel(kernel);
+                } else {
+                    await widgetManager.fetchAll();
                 }
             })();
         }
@@ -238,9 +216,18 @@ async function solaraInit(mountId, appName) {
     let widgetManager = new solara.WidgetManager(context, rendermime, settings);
     // it seems if we attach this to early, it will not be called
     app.$data.loading_text = 'Loading app';
-    const path = window.location.pathname.slice(solara.rootPath.length);
-    const widgetId = await widgetManager.run(appName, path);
-    await solaraMount(widgetManager, mountId || 'content', widgetId);
+    const path = window.location.pathname.slice(solara.rootPath.length) + window.location.search;
+    let widgetModelId = searchParams.get('modelid');
+    // if kernelid and modelid are given as query parameters, we will use them
+    // instead of running the current solara app. This allows usage such as
+    // ipypopout, which reconnects to an existing kernel and shows a particular
+    // widget.
+    if (kernelId && widgetModelId) {
+        await widgetManager.fetchAll();
+    } else {
+        widgetModelId = await widgetManager.run(appName, path);
+    }
+    await solaraMount(widgetManager, mountId || 'content', widgetModelId);
     skipReconnectedCheck = false;
     solara.renderMathJax();
 }

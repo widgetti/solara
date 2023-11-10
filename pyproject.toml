@@ -18,27 +18,20 @@ dependencies = [
     "cachetools",
     "filelock",
     "markdown",
-    "pygments",
     "pymdown-extensions",
     "humanize",
     "ipyvuetify>=1.8.10",
     "ipyvue>=1.9.0",
-    "numpy",
-    "pillow",
     "jinja2",
     "MarkupSafe",
-    "pydantic<2.0",
     "click>=7.1.0",
     "rich_click",
     "uvicorn",
-    "watchgod",
     "websockets",
     "starlette",
-    "jupyter_server",
     "jupyter_client>=7.0.0",
     "watchdog",
     "requests",
-    "pygments==2.10; python_version < '3.7'",
     "nbformat",
     "ipykernel",
 ]
@@ -55,6 +48,13 @@ path = "solara/__init__.py"
 ignore-vcs = true
 
 [project.optional-dependencies]
+extra = [
+    "pygments",
+    "numpy",
+    "pillow",
+    "pygments",
+    "pygments==2.10; python_version < '3.7'",
+]
 dev = [
     "codespell",
     "python-dotenv",
@@ -82,7 +82,7 @@ dev = [
     "pytest-playwright; python_version > '3.6'",
 ]
 assets = [
-    "solara-assets==1.17.5"
+    "solara-assets==1.22.0"
 ]
 flask = [
     "flask",
@@ -92,6 +92,7 @@ documentation = [
     "numpy",
     "bqplot",
     "altair",
+    "folium",
     "ipycanvas",
     "ipyleaflet",
     "matplotlib",
@@ -99,6 +100,7 @@ documentation = [
     "plotly",
     "vaex-core",
     "vaex-hdf5",
+    "tiktoken",
 ]
 pytest = [
     "pytest",
@@ -130,9 +132,9 @@ profile = "black"
 
 
 [tool.pytest.ini_options]
-addopts = "--disable-warnings --ignore=tests/integration/app_widget.py  --ignore=tests/unit/solara_test_apps"
+addopts = "--ignore=tests/integration/app_widget.py  --ignore=tests/unit/solara_test_apps"
 timeout = 180
 
 
 [tool.codespell]
-skip='equis-in-vidi.md,substiterat-vati.md,.*,solara/website/build,*.svg,highlight-dark.css,packages/**/dist/*,node_modules,packages/assets,package*.json,tsconfig.tsbuildinfo'
+skip='equis-in-vidi.md,substiterat-vati.md,.*,solara/website/build,*.svg,highlight-dark.css,packages/**/dist/*,node_modules,packages/assets,package*.json,tsconfig.tsbuildinfo,*.csv'

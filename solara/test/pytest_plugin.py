@@ -9,6 +9,8 @@ import sys
 import textwrap
 import threading
 import typing
+import urllib.parse
+import uuid
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Callable, Dict, Generator, List, Union
@@ -19,6 +21,7 @@ import requests
 from IPython.display import display
 
 import solara.server.app
+import solara.server.kernel_context
 import solara.server.server
 import solara.server.settings
 from solara.server import reload
@@ -130,12 +133,16 @@ def page_session(context_session: "playwright.sync_api.BrowserContext"):
 
 @pytest.fixture()
 def solara_app(solara_server):
+    used_app = None
+
     @contextlib.contextmanager
     def run(app: Union[solara.server.app.AppScript, str]):
+        nonlocal used_app
         if "__default__" in solara.server.app.apps:
             solara.server.app.apps["__default__"].close()
         if isinstance(app, str):
             app = solara.server.app.AppScript(app)
+        used_app = app
         solara.server.app.apps["__default__"] = app
         try:
             yield
@@ -146,57 +153,85 @@ def solara_app(solara_server):
                 if app.name in reload.reloader.watched_modules:
                     reload.reloader.watched_modules.remove(app.name)
 
-            app.close()
+    yield run
+    if used_app:
+        used_app.close()
 
-    return run
 
-
-run_event = threading.Event()
-run_calls = 0
+run_events: Dict[str, threading.Event] = {}
+used_contexts: Dict[str, solara.server.kernel_context.VirtualKernelContext] = {}
 
 
 @solara.component
 def SyncWrapper():
     global run_calls
-    import reacton.ipywidgets as w
+    router = solara.use_router()
+    values = urllib.parse.parse_qs(router.search, keep_blank_values=True)
+    id = values.get("id", [None])[0]  # type: ignore
+    if id is None:
+        solara.Error("No id found in url")
+    else:
 
-    run_calls += 1
-    run_event.set()
-    return w.VBox(children=[w.HTML(value="Test in solara"), w.VBox()])
+        import reacton.ipywidgets as w
+
+        used_contexts[id] = solara.server.kernel_context.get_current_context()
+        run_events[id].set()
+
+        return w.VBox(children=[w.HTML(value="Test in solara"), w.VBox()])
+
+
+@contextlib.contextmanager
+def _solara_test(solara_server, solara_app, page_session: "playwright.sync_api.Page", require_vuetify_warmup: bool):
+    with solara_app("solara.test.pytest_plugin:SyncWrapper"):
+        id = str(uuid.uuid4())
+        run_events[id] = run_event = threading.Event()
+        page_session.goto(solara_server.base_url + f"?id={id}")
+        try:
+            assert run_event.wait(10)
+            context = used_contexts[id]
+            with context:
+                test_output_warmup = widgets.Output()
+                test_output = widgets.Output()
+                try:
+                    page_session.locator("text=Test in solara").wait_for()
+                    assert context.container
+                    context.container.children[0].children[1].children[1].children = [test_output_warmup]  # type: ignore
+                    with test_output_warmup:
+                        page_session.add_style_tag(
+                            content="""
+                            .solara-content-main {
+                                animation-duration: 0s !important;
+                            }
+                        """
+                        )
+                        if require_vuetify_warmup:
+                            warmup()
+                            button = page_session.locator(".solara-warmup-widget")
+                            button.wait_for()
+                            page_session.evaluate("document.fonts.ready")
+                            button.click()
+                            button.wait_for(state="detached")
+                            page_session.evaluate("document.fonts.ready")
+                    context.container.children[0].children[1].children[1].children = [test_output]  # type: ignore
+                    with test_output:
+                        yield
+                finally:
+                    test_output.close()
+                    test_output_warmup.close()
+        finally:
+            del run_events[id]
+            page_session.goto("about:blank")
+            if id in used_contexts:
+                # handle when run_event.wait(10) fails
+                del used_contexts[id]
+                assert context.closed_event.wait(10)
 
 
 @pytest.fixture()
-def solara_test(solara_server, solara_app, page_session: "playwright.sync_api.Page"):
-    global run_calls
-    with solara_app("solara.test.pytest_plugin:SyncWrapper"):
-        page_session.goto(solara_server.base_url)
-        run_event.wait()
-        assert run_calls == 1
-        keys = list(solara.server.app.contexts)
-        assert len(keys) == 1, "expected only one context, got %s" % keys
-        context = solara.server.app.contexts[keys[0]]
-        with context:
-            test_output_warmup = widgets.Output()
-            test_output = widgets.Output()
-            try:
-                page_session.locator("text=Test in solara").wait_for()
-                context.container.children[0].children[1].children[1].children = [test_output_warmup]  # type: ignore
-                with test_output_warmup:
-                    warmup()
-                    button = page_session.locator(".solara-warmup-widget")
-                    button.wait_for()
-                    page_session.evaluate("document.fonts.ready")
-                    button.click()
-                    button.wait_for(state="detached")
-                    page_session.evaluate("document.fonts.ready")
-                context.container.children[0].children[1].children[1].children = [test_output]  # type: ignore
-                with test_output:
-                    yield
-            finally:
-                test_output.close()
-                run_event.clear()
-                test_output = None
-                run_calls = 0
+def solara_test(solara_server, solara_app, page_session: "playwright.sync_api.Page", pytestconfig: Any):
+    require_vuetify_warmup = pytestconfig.getoption("solara_vuetify_warmup")
+    with _solara_test(solara_server, solara_app, page_session, require_vuetify_warmup):
+        yield
 
 
 class ServerVoila(ServerBase):
@@ -344,11 +379,11 @@ def warmup():
     display(scoped())
 
 
-def create_runner_voila(voila_server, notebook_path, page_session: "playwright.sync_api.Page"):
+def create_runner_voila(voila_server, notebook_path, page_session: "playwright.sync_api.Page", require_vuetify_warmup: bool):
     count = 0
     base_url = voila_server.base_url
 
-    def run(f: Callable):
+    def run(f: Callable, locals={}):
         nonlocal count
         path = Path(f.__code__.co_filename)
         cwd = str(path.parent)
@@ -356,33 +391,45 @@ def create_runner_voila(voila_server, notebook_path, page_session: "playwright.s
 import os
 os.chdir({cwd!r})
         \n"""
-        write_notebook([code_setup, code_from_function(warmup), code_from_function(f)], notebook_path)
+        for name, value in locals.items():
+            code_setup += f"{name} = {value!r}\n"
+        if require_vuetify_warmup:
+            write_notebook([code_setup, code_from_function(warmup), code_from_function(f)], notebook_path)
+        else:
+            write_notebook([code_setup, code_from_function(f)], notebook_path)
         page_session.goto(base_url + f"?v={count}")
-        button = page_session.locator(".solara-warmup-widget")
-        button.wait_for()
-        page_session.evaluate("document.fonts.ready")
-        button.click()
-        button.wait_for(state="detached")
-        page_session.evaluate("document.fonts.ready")
+        if require_vuetify_warmup:
+            button = page_session.locator(".solara-warmup-widget")
+            button.wait_for()
+            page_session.evaluate("document.fonts.ready")
+            button.click()
+            button.wait_for(state="detached")
+            page_session.evaluate("document.fonts.ready")
         count += 1
 
     return run
 
 
-def create_runner_jupyter_lab(jupyter_server, notebook_path, page_session: "playwright.sync_api.Page"):
+def create_runner_jupyter_lab(jupyter_server, notebook_path, page_session: "playwright.sync_api.Page", require_vuetify_warmup: bool):
     count = 0
     base_url = jupyter_server.base_url
 
-    def run(f: Callable):
+    def run(f: Callable, locals={}):
         nonlocal count
         path = Path(f.__code__.co_filename)
         cwd = str(path.parent)
         code_setup = f"""
 import os
 os.chdir({cwd!r})
-import ipyvuetify as v;
-v.Btn(children=['Warmup js/css/fonts', v.Icon(children=["mdi-check"])], class_="solara-warmup-widget")
         \n"""
+        if require_vuetify_warmup:
+            code_setup += """
+import ipyvuetify as v;
+display(v.Btn(children=['Warmup js/css/fonts', v.Icon(children=["mdi-check"])], class_="solara-warmup-widget"))
+        \n"""
+        for name, value in locals.items():
+            code_setup += f"{name} = {value!r}\n"
+
         write_notebook([code_setup, code_from_function(f)], notebook_path)
         page_session.goto(base_url + f"/lab/workspaces/solara-test/tree/notebook.ipynb?reset&v={count}")
         page_session.locator('css=[data-command="runmenu:run"]').wait_for()
@@ -400,45 +447,54 @@ v.Btn(children=['Warmup js/css/fonts', v.Icon(children=["mdi-check"])], class_="
         page_session.locator('button:has-text("No Kernel")').wait_for(state="detached")
         page_session.locator('css=[data-status="idle"]').wait_for()
         page_session.locator('css=[data-command="runmenu:run"]').click()
-        page_session.locator(".solara-warmup-widget").wait_for()
-        page_session.evaluate("document.fonts.ready")
+        if require_vuetify_warmup:
+            page_session.locator(".solara-warmup-widget").wait_for()
+            page_session.evaluate("document.fonts.ready")
         page_session.locator('css=[data-command="runmenu:run"]').click()
         count += 1
 
     return run
 
 
-def create_runner_jupyter_notebook(jupyter_server, notebook_path, page_session: "playwright.sync_api.Page"):
+def create_runner_jupyter_notebook(jupyter_server, notebook_path, page_session: "playwright.sync_api.Page", require_vuetify_warmup: bool):
     count = 0
     base_url = jupyter_server.base_url
 
-    def run(f: Callable):
+    def run(f: Callable, locals={}):
         nonlocal count
         path = Path(f.__code__.co_filename)
         cwd = str(path.parent)
         code_setup = f"""
 import os
 os.chdir({cwd!r})
+"""
+        if require_vuetify_warmup:
+            code_setup += """
 import ipyvuetify as v;
-v.Btn(children=['Warmup js/css/fonts', v.Icon(children=["mdi-check"])], class_="solara-warmup-widget")
+display(v.Btn(children=['Warmup js/css/fonts', v.Icon(children=["mdi-check"])], class_="solara-warmup-widget"))
         \n"""
+        for name, value in locals.items():
+            code_setup += f"{name} = {value!r}\n"
         write_notebook([code_setup, code_from_function(f)], notebook_path)
         page_session.goto(base_url + f"/notebooks/notebook.ipynb?v={count}")
+        page_session.locator(".prompt_container >> nth=0").wait_for()
         page_session.locator("text=Kernel starting, please wait...").wait_for(state="detached")
         page_session.locator("Kernel Ready").wait_for(state="detached")
         page_session.locator('css=[data-jupyter-action="jupyter-notebook:run-cell-and-select-next"]').click()
-        page_session.locator(".solara-warmup-widget").wait_for()
-        page_session.evaluate("document.fonts.ready")
+        if require_vuetify_warmup:
+            page_session.locator(".solara-warmup-widget").wait_for()
+            page_session.evaluate("document.fonts.ready")
         page_session.locator('css=[data-jupyter-action="jupyter-notebook:run-cell-and-select-next"]').click()
         count += 1
 
     return run
 
 
-def create_runner_solara(solara_test, solara_server, page_session: "playwright.sync_api.Page"):
+@contextlib.contextmanager
+def create_runner_solara(solara_server, solara_app, page_session: "playwright.sync_api.Page", require_vuetify_warmup: bool):
     count = 0
 
-    def run(f: Callable):
+    def run(f: Callable, locals={}):
         nonlocal count
         path = Path(f.__code__.co_filename)
         cwd = str(path.parent)
@@ -454,35 +510,8 @@ def create_runner_solara(solara_test, solara_server, page_session: "playwright.s
             sys.path.remove(cwd)
         count += 1
 
-    return run
-
-
-@pytest.fixture(scope="session")
-def ipywidgets_runner_voila(voila_server, notebook_path, page_session: "playwright.sync_api.Page"):
-    if "voila" not in runners:
-        return None
-    return create_runner_voila(voila_server, notebook_path, page_session)
-
-
-@pytest.fixture(scope="session")
-def ipywidgets_runner_jupyter_lab(jupyter_server, notebook_path, page_session: "playwright.sync_api.Page"):
-    if "jupyter_lab" not in runners:
-        return None
-    return create_runner_jupyter_lab(jupyter_server, notebook_path, page_session)
-
-
-@pytest.fixture(scope="session")
-def ipywidgets_runner_jupyter_notebook(jupyter_server, notebook_path, page_session: "playwright.sync_api.Page"):
-    if "jupyter_notebook" not in runners:
-        return None
-    return create_runner_jupyter_notebook(jupyter_server, notebook_path, page_session)
-
-
-@pytest.fixture()
-def ipywidgets_runner_solara(solara_test, solara_server, page_session: "playwright.sync_api.Page"):
-    if "solara" not in runners:
-        return None
-    return create_runner_solara(solara_test, solara_server, page_session)
+    with _solara_test(solara_server, solara_app, page_session, require_vuetify_warmup):
+        yield run
 
 
 runners = os.environ.get("SOLARA_TEST_RUNNERS", "solara,voila,jupyter_lab,jupyter_notebook").split(",")
@@ -490,15 +519,28 @@ runners = os.environ.get("SOLARA_TEST_RUNNERS", "solara,voila,jupyter_lab,jupyte
 
 @pytest.fixture(params=runners)
 def ipywidgets_runner(
-    ipywidgets_runner_jupyter_notebook,
-    ipywidgets_runner_jupyter_lab,
-    ipywidgets_runner_voila,
-    ipywidgets_runner_solara,
+    solara_server,
+    solara_app,
+    voila_server,
+    jupyter_server,
+    notebook_path,
+    page_session: "playwright.sync_api.Page",
     request,
+    pytestconfig: Any,
 ):
     runner = request.param
-    name = f"ipywidgets_runner_{runner}"
-    return locals()[name]
+    require_vuetify_warmup = pytestconfig.getoption("solara_vuetify_warmup")
+    if runner == "solara":
+        with create_runner_solara(solara_server, solara_app, page_session, require_vuetify_warmup) as runner:
+            yield runner
+    elif runner == "voila":
+        yield create_runner_voila(voila_server, notebook_path, page_session, require_vuetify_warmup)
+    elif runner == "jupyter_lab":
+        yield create_runner_jupyter_lab(jupyter_server, notebook_path, page_session, require_vuetify_warmup)
+    elif runner == "jupyter_notebook":
+        yield create_runner_jupyter_notebook(jupyter_server, notebook_path, page_session, require_vuetify_warmup)
+    else:
+        raise RuntimeError(f"Unknown runner {runner}")
 
 
 @pytest.fixture(scope="session")
@@ -628,3 +670,23 @@ def pytest_addoption(parser: Any) -> None:
         default=TEST_PORT_START + 2,
         help="Port the voila server is running on for the test (for classic notebook and juptyer lab)",
     )
+    vuetify_warmup = os.environ.get("SOLARA_TEST_VUETIFY_WARMUP", "true") in ["true", "True", "1", "on", "On"]
+    help = (
+        "Load/not load the vuetify fonts and css before running the test, leading to more stable screenshots. If (ipy)vuetify is not used this can be disabled."
+    )
+    if vuetify_warmup:
+        group.addoption(
+            "--no-solara-vuetify-warmup",
+            action="store_false",
+            default=vuetify_warmup,
+            help=help,
+            dest="solara_vuetify_warmup",
+        )
+    else:
+        group.addoption(
+            "--solara-vuetify-warmup",
+            action="store_false",
+            default=vuetify_warmup,
+            help=help,
+            dest="solara_vuetify_warmup",
+        )

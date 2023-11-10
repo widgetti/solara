@@ -6,7 +6,7 @@ from solara import v
 
 @solara.component
 def Tab(
-    label: Union[None, str, solara.Element],
+    label: Union[None, str, solara.Element] = None,
     icon_name: Optional[str] = None,
     path_or_route: Union[None, str, "solara.Route"] = None,
     disabled=False,

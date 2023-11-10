@@ -15,9 +15,9 @@ import requests
 import solara
 import solara.routing
 
-from . import app, settings, websocket
-from .app import initialize_virtual_kernel
+from . import app, jupytertools, settings, websocket
 from .kernel import Kernel, deserialize_binary_message
+from .kernel_context import initialize_virtual_kernel
 
 COOKIE_KEY_SESSION_ID = "solara-session-id"
 
@@ -106,11 +106,10 @@ def is_ready(url) -> bool:
     return False
 
 
-async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, connection_id: str, user: dict = None):
-    initialize_virtual_kernel(connection_id, ws)
-    context = app.contexts.get(connection_id)
+async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, kernel_id: str, page_id: str, user: dict = None):
+    context = initialize_virtual_kernel(session_id, kernel_id, ws)
     if context is None:
-        logging.warning("invalid context id: %r", connection_id)
+        logging.warning("invalid kernel id: %r", kernel_id)
         # to avoid very fast reconnects (we are in a thread anyway)
         time.sleep(0.5)
         return
@@ -118,39 +117,51 @@ async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, connection_i
     if settings.main.tracer:
         import viztracer
 
-        output_file = f"viztracer-{connection_id}.html"
+        output_file = f"viztracer-{page_id}.html"
         run_context = viztracer.VizTracer(output_file=output_file, max_stack_depth=10)
         logger.warning(f"Running with tracer: {output_file}")
     else:
         run_context = solara.util.nullcontext()
 
     kernel = context.kernel
-    with run_context, context:
-        if user:
-            from solara_enterprise.auth import user as solara_user
+    try:
+        context.page_connect(page_id)
+        with run_context, context:
+            if user:
+                from solara_enterprise.auth import user as solara_user
 
-            solara_user.set(user)
+                solara_user.set(user)
 
-        while True:
-            try:
-                message = await ws.receive()
-            except websocket.WebSocketDisconnect:
-                logger.debug("Disconnected")
-                return
-            t0 = time.time()
-            if isinstance(message, str):
-                msg = json.loads(message)
-            else:
-                msg = deserialize_binary_message(message)
-            t1 = time.time()
-            process_kernel_messages(kernel, msg)
-            t2 = time.time()
-            if settings.main.timing:
-                print(f"timing: total={t2-t0:.3f}s, deserialize={t1-t0:.3f}s, kernel={t2-t1:.3f}s")  # noqa: T201
+            while True:
+                try:
+                    message = await ws.receive()
+                except websocket.WebSocketDisconnect:
+                    try:
+                        context.kernel.session.websockets.remove(ws)
+                    except KeyError:
+                        pass
+                    logger.debug("Disconnected")
+                    break
+                t0 = time.time()
+                if isinstance(message, str):
+                    msg = json.loads(message)
+                else:
+                    msg = deserialize_binary_message(message)
+                t1 = time.time()
+                if not process_kernel_messages(kernel, msg):
+                    # if we shut down the kernel, we do not keep the page session alive
+                    context.close()
+                    return
+                t2 = time.time()
+                if settings.main.timing:
+                    print(f"timing: total={t2-t0:.3f}s, deserialize={t1-t0:.3f}s, kernel={t2-t1:.3f}s")  # noqa: T201
+    finally:
+        context.page_disconnect(page_id)
 
 
-def process_kernel_messages(kernel: Kernel, msg: Dict):
+def process_kernel_messages(kernel: Kernel, msg: Dict) -> bool:
     session = kernel.session
+    assert session is not None
     comm_manager = kernel.comm_manager
 
     def send_status(status, parent):
@@ -189,14 +200,18 @@ def process_kernel_messages(kernel: Kernel, msg: Dict):
         }
         with busy_idle(msg["header"]):
             msg = kernel.session.send(kernel.shell_stream, "kernel_info_reply", content, msg["header"], None)
+        return True
     elif msg_type in ["comm_open", "comm_msg", "comm_close"]:
         with busy_idle(msg["header"]):
             getattr(comm_manager, msg_type)(kernel.shell_stream, None, msg)
+        return True
     elif msg_type in ["comm_info_request"]:
         content = msg["content"]
         target_name = msg.get("target_name", None)
 
-        comms = {k: dict(target_name=v.target_name) for (k, v) in comm_manager.comms.items() if v.target_name == target_name or target_name is None}
+        comms = {
+            k: dict(target_name=v.target_name) for (k, v) in comm_manager.comms.items() if v.target_name == target_name or target_name is None  # type: ignore
+        }
         reply_content = dict(comms=comms, status="ok")
         with busy_idle(msg["header"]):
             msg = session.send(
@@ -206,8 +221,13 @@ def process_kernel_messages(kernel: Kernel, msg: Dict):
                 msg["header"],
                 None,
             )
+        return True
+    elif msg_type == "shutdown_request":
+        send_status("dead", parent=msg["header"])
+        return False
     else:
         logger.error("Unsupported msg with msg_type %r", msg_type)
+        return False
 
 
 def read_root(path: str, root_path: str = "", render_kwargs={}, use_nbextensions=True) -> Optional[str]:
@@ -260,6 +280,7 @@ def read_root(path: str, root_path: str = "", render_kwargs={}, use_nbextensions
         "cdn": cdn,
         "ipywidget_major_version": ipywidgets_major,
         "platform": settings.main.platform,
+        "perform_check": settings.main.mode != "production" and solara.checks.should_perform_solara_check(),
         **render_kwargs,
     }
     response = template.render(**render_settings)
@@ -295,28 +316,15 @@ def get_nbextensions_directories() -> List[Path]:
 def get_nbextensions() -> List[str]:
     from jupyter_core.paths import jupyter_config_path
 
-    read_config_path = [os.path.join(p, "serverconfig") for p in jupyter_config_path()]
-    read_config_path += [os.path.join(p, "nbconfig") for p in jupyter_config_path()]
-    # import inline since we don't want this dep for pyiodide
-    from jupyter_server.services.config import ConfigManager
+    paths = [Path(p) / "nbconfig" for p in jupyter_config_path()]
 
-    config_manager = ConfigManager(read_config_path=read_config_path)
-    notebook_config = config_manager.get("notebook")
-    # except for the widget extension itself, since Voilà has its own
-    load_extensions = notebook_config.get("load_extensions", {})
-    if "jupyter-js-widgets/extension" in load_extensions:
-        load_extensions["jupyter-js-widgets/extension"] = False
-    if "voila/extension" in load_extensions:
-        load_extensions["voila/extension"] = False
-    if "voila/extension" in load_extensions:
-        load_extensions["voila/extension"] = False
-    directories = get_nbextensions_directories()
+    load_extensions = jupytertools.get_config(paths, "notebook")["load_extensions"]
 
     def exists(name):
-        for directory in directories:
+        for directory in nbextensions_directories:
             if (directory / (name + ".js")).exists():
                 return True
-        logger.error(f"nbextension {name} not found")
+        logger.info(f"nbextension {name} not found")
         return False
 
     nbextensions = [name for name, enabled in load_extensions.items() if enabled and (name not in nbextensions_ignorelist) and exists(name)]

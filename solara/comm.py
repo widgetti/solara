@@ -4,7 +4,7 @@ from typing import Any, Dict
 try:
     import comm
 except ImportError:
-    comm = None
+    comm = None  # type: ignore
 
 orphan_comm_stacks: Dict[Any, str] = {}
 

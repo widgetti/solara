@@ -1,4 +1,3 @@
-import dataclasses
 import importlib.util
 import logging
 import os
@@ -8,18 +7,16 @@ import threading
 import traceback
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional, cast
 
-import IPython.display
 import ipywidgets as widgets
 import reacton
-from ipywidgets import DOMWidget, Widget
 from reacton.core import Element, render
 
 import solara
 
-from . import kernel, reload, settings, websocket
-from .kernel import Kernel, WebsocketStreamWrapper
+from . import kernel_context, reload, settings
+from .kernel import Kernel
 from .utils import pdb_guard
 
 WebSocket = Any
@@ -29,13 +26,6 @@ thread_lock = threading.Lock()
 logger = logging.getLogger("solara.server.app")
 
 reload.reloader.start()
-
-
-class Local(threading.local):
-    app_context_stack: Optional[List[Optional["AppContext"]]] = None
-
-
-local = Local()
 
 
 class AppType(str, Enum):
@@ -69,27 +59,28 @@ class AppScript:
             self.name = name
         self.path: Path = Path(self.name).resolve()
         try:
-            context = get_current_context()
+            context = kernel_context.get_current_context()
         except RuntimeError:
             context = None
         if context is not None:
             raise RuntimeError(f"We should not have an existing Solara app context when running an app for the first time: {context}")
-        app_context = create_dummy_context()
-        with app_context:
+        dummy_kernel_context = kernel_context.create_dummy_context()
+        with dummy_kernel_context:
             app = self._execute()
 
         self._first_execute_app = app
         reload.reloader.root_path = self.directory
-        app_context.close()
+        if self.type == AppType.MODULE:
+            package_name = self.name.split(".")[0]
+            mod = importlib.import_module(package_name)
+            if mod.__file__ is not None:
+                package_root_path = Path(mod.__file__).parent
+                reload.reloader.root_path = package_root_path
+        dummy_kernel_context.close()
 
     def _execute(self):
         logger.info("Executing %s", self.name)
         app = None
-        local_scope = {
-            "display": IPython.display.display,
-            "__name__": "__main__",
-            "__file__": str(self.path),
-        }
         routes: Optional[List[solara.Route]] = None
 
         def add_path():
@@ -104,16 +95,25 @@ class AppScript:
             # resolve the directory, because Path("file").parent.parent == "." != ".."
             self.directory = self.path.resolve()
             routes = solara.generate_routes_directory(self.path)
+
+            if any(name for name in sys.modules.keys() if name.startswith(self.name)):
+                logger.warn(
+                    f"Directory {self.name} is also used as a package. This can cause modules to be loaded twice, and might "
+                    "cause unexpected behavior. If you run solara from a different directory (e.g. the parent directory) you "
+                    "can avoid this ambiguity."
+                )
+
         elif self.name.endswith(".py"):
             self.type = AppType.SCRIPT
             add_path()
-            local_scope["__name__"] = "__main__"
             # manually add the script to the watcher
             reload.reloader.watcher.add_file(self.path)
             self.directory = self.path.parent.resolve()
+            initial_namespace = {
+                "__name__": "__main__",
+            }
             with reload.reloader.watch():
-                routes = [solara.autorouting._generate_route_path(self.path, first=True)]
-
+                routes = [solara.autorouting._generate_route_path(self.path, first=True, initial_namespace=initial_namespace)]
         elif self.name.endswith(".ipynb"):
             self.type = AppType.NOTEBOOK
             add_path()
@@ -186,8 +186,8 @@ class AppScript:
 
     def close(self):
         reload.reloader.on_change = None
-        context_values = list(contexts.values())
-        contexts.clear()
+        context_values = list(kernel_context.contexts.values())
+        kernel_context.contexts.clear()
         for context in context_values:
             context.close()
 
@@ -203,7 +203,7 @@ class AppScript:
         if path.suffix == ".vue":
             logger.info("Vue file changed: %s", name)
             template_content = path.read_text()
-            for context in list(contexts.values()):
+            for context in list(kernel_context.contexts.values()):
                 with context:
                     for filepath, widget in context.templates.items():
                         if filepath == str(path):
@@ -223,7 +223,7 @@ class AppScript:
 
             solara.lab.toestand.ConnectionStore._type_counter.clear()
 
-            context_values = list(contexts.values())
+            context_values = list(kernel_context.contexts.values())
             # save states into the context so the hot reload will
             # keep the same state
             for context in context_values:
@@ -255,136 +255,6 @@ class AppScript:
                     context.reload()
 
 
-@dataclasses.dataclass
-class AppContext:
-    id: str
-    kernel: kernel.Kernel
-    control_sockets: List[WebSocket] = dataclasses.field(default_factory=list)
-    # this is the 'private' version of the normally global ipywidgets.Widgets.widget dict
-    # see patch.py
-    widgets: Dict[str, Widget] = dataclasses.field(default_factory=dict)
-    # same, for ipyvue templates
-    # see patch.py
-    templates: Dict[str, Widget] = dataclasses.field(default_factory=dict)
-    user_dicts: Dict[str, Dict] = dataclasses.field(default_factory=dict)
-    # anything we need to attach to the context
-    # e.g. for a react app the render context, so that we can store/restore the state
-    app_object: Optional[Any] = None
-    reload: Callable = lambda: None
-    state: Any = None
-    container: Optional[DOMWidget] = None
-
-    def display(self, *args):
-        print(args)  # noqa
-
-    def __enter__(self):
-        if local.app_context_stack is None:
-            local.app_context_stack = []
-        key = get_current_thread_key()
-        local.app_context_stack.append(current_context.get(key, None))
-        current_context[key] = self
-
-    def __exit__(self, *args):
-        key = get_current_thread_key()
-        assert local.app_context_stack is not None
-        current_context[key] = local.app_context_stack.pop()
-
-    def close(self):
-        with self:
-            if self.app_object is not None:
-                if isinstance(self.app_object, reacton.core._RenderContext):
-                    try:
-                        self.app_object.close()
-                    except Exception as e:
-                        logger.exception("Could not close render context: %s", e)
-                        # we want to continue, so we at least close all widgets
-            widgets.Widget.close_all()
-            # what if we reference each other
-            # import gc
-            # gc.collect()
-        if self.id in contexts:
-            del contexts[self.id]
-
-    def _state_reset(self):
-        state_directory = Path(".") / "states"
-        state_directory.mkdir(exist_ok=True)
-        path = state_directory / f"{self.id}.pickle"
-        path = path.absolute()
-        try:
-            path.unlink()
-        except:  # noqa
-            pass
-        del contexts[self.id]
-        key = get_current_thread_key()
-        del current_context[key]
-
-    def state_save(self, state_directory: os.PathLike):
-        path = Path(state_directory) / f"{self.id}.pickle"
-        render_context = self.app_object
-        if render_context is not None:
-            render_context = cast(reacton.core._RenderContext, render_context)
-            state = render_context.state_get()
-            with path.open("wb") as f:
-                logger.debug("State: %r", state)
-                pickle.dump(state, f)
-
-
-contexts: Dict[str, AppContext] = {}
-# maps from thread key to AppContext, if AppContext is None, it exists, but is not set as current
-current_context: Dict[str, Optional[AppContext]] = {}
-
-
-def create_dummy_context():
-    from . import kernel
-
-    app_context = AppContext(
-        id="dummy",
-        kernel=kernel.Kernel(),
-    )
-    return app_context
-
-
-def get_current_thread_key() -> str:
-    thread = threading.currentThread()
-    return get_thread_key(thread)
-
-
-def get_thread_key(thread: threading.Thread) -> str:
-    thread_key = thread._name + str(thread._ident)  # type: ignore
-    return thread_key
-
-
-def set_context_for_thread(context: AppContext, thread: threading.Thread):
-    key = get_thread_key(thread)
-    current_context[key] = context
-
-
-def has_current_context() -> bool:
-    thread_key = get_current_thread_key()
-    return (thread_key in current_context) and (current_context[thread_key] is not None)
-
-
-def get_current_context() -> AppContext:
-    thread_key = get_current_thread_key()
-    if thread_key not in current_context:
-        raise RuntimeError(
-            f"Tried to get the current context for thread {thread_key}, but no known context found. This might be a bug in Solara. "
-            f"(known contexts: {list(current_context.keys())}"
-        )
-    context = current_context[thread_key]
-    if context is None:
-        raise RuntimeError(
-            f"Tried to get the current context for thread {thread_key!r}, although the context is know, it was not set for this thread. "
-            + "This might be a bug in Solara."
-        )
-    return context
-
-
-def set_current_context(context: Optional[AppContext]):
-    thread_key = get_current_thread_key()
-    current_context[thread_key] = context
-
-
 def _run_app(
     app_state,
     app_script: AppScript,
@@ -397,7 +267,7 @@ def _run_app(
     if app_state:
         logger.info("Restoring state: %r", app_state)
 
-    context = get_current_context()
+    context = kernel_context.get_current_context()
     container = context.container
     if isinstance(main_object, widgets.Widget):
         return main_object, render_context
@@ -437,7 +307,7 @@ def _run_app(
 def load_app_widget(app_state, app_script: AppScript, pathname: str):
     # load the app, and set it at the child of the context's container
     app_state_initial = app_state
-    context = get_current_context()
+    context = kernel_context.get_current_context()
     container = context.container
     assert container is not None
     try:
@@ -481,22 +351,32 @@ def solara_comm_target(comm, msg_first):
             path = data.get("path", "")
             app_name = data.get("appName") or "__default__"
             app = apps[app_name]
-            context = get_current_context()
+            context = kernel_context.get_current_context()
             import ipyvuetify
 
             container = ipyvuetify.Html(tag="div")
             context.container = container
             load_app_widget(None, app, path)
             comm.send({"method": "finished", "widget_id": context.container._model_id})
-        elif method == "check":
-            context = get_current_context()
+        elif method == "app-status":
+            context = kernel_context.get_current_context()
+            # if there is no container, we never ran the app
+            if context.container is not None:
+                logger.info("app-status check: %s app started", context.id)
+                comm.send({"method": "app-status", "started": True})
+            else:
+                logger.info("app-status check: %s app not started", context.id)
+                comm.send({"method": "app-status", "started": False})
+
         elif method == "reload":
             assert app is not None
-            context = get_current_context()
+            context = kernel_context.get_current_context()
             path = data.get("path", "")
             with context:
                 load_app_widget(context.state, app, path)
                 comm.send({"method": "finished"})
+        else:
+            logger.error("Unknown comm method called on solara.control comm: %s", method)
 
     comm.on_msg(on_msg)
 
@@ -508,25 +388,12 @@ def solara_comm_target(comm, msg_first):
         logger.debug(f"Send reload to client: {context.id}")
         comm.send({"method": "reload"})
 
-    context = get_current_context()
+    context = kernel_context.get_current_context()
     context.reload = reload
 
 
 def register_solara_comm_target(kernel: Kernel):
     kernel.comm_manager.register_target("solara.control", solara_comm_target)
-
-
-def initialize_virtual_kernel(context_id: str, websocket: websocket.WebsocketWrapper):
-    kernel = Kernel()
-    logger.info("new virtual kernel: %s", context_id)
-    context = contexts[context_id] = AppContext(id=context_id, kernel=kernel, control_sockets=[], widgets={}, templates={})
-    with context:
-        widgets.register_comm_target(kernel)
-        register_solara_comm_target(kernel)
-        assert kernel is Kernel.instance()
-        kernel.shell_stream = WebsocketStreamWrapper(websocket, "shell")
-        kernel.control_stream = WebsocketStreamWrapper(websocket, "control")
-        kernel.session.websockets.add(websocket)
 
 
 from . import patch  # noqa

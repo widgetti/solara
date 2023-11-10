@@ -6,6 +6,8 @@ on:
       - master
   pull_request:
   workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * 1,4'  # at 06:00 UTC on Monday and Thursday
 
 env:
   SOLARA_TELEMETRY_SERVER_USER_ID: "install-test"
@@ -43,7 +45,7 @@ jobs:
           cache: "pip"
       - name: Install
         run: |
-          pip install ".[dev]" diskcache redis
+          pip install ".[dev,extra]" diskcache redis
           (cd packages/solara-enterprise && pip install ".[ssg,auth]" "ipywidgets~=${{ matrix.ipywidgets }}")
       - name: Start Redis
         if: matrix.os != 'windows'

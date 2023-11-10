@@ -99,20 +99,12 @@ body {
     margin: 0;
     padding: 0;
     z-index: 998;
+    display: flex;
+    align-items: center;
 }
 
 #loader {
     position: absolute;
-    width: 100vw;
-    top: 50%;
-    /* position the top  edge of the element at the middle of the parent */
-    left: 50%;
-    /* position the left edge of the element at the middle of the parent */
-
-    margin-left: auto;
-    margin-right: auto;
-    left: 0;
-    right: 0;
     text-align: center;
     z-index: 1000;
     overflow: hidden;

@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List, Tuple, cast
+from typing import Callable, Dict, List, Optional, Tuple, Union, cast
 
 import reacton
 import reacton.core
@@ -198,6 +198,9 @@ def AppLayout(
     title=None,
     navigation=True,
     toolbar_dark=True,
+    color: Optional[str] = "primary",
+    classes: List[str] = [],
+    style: Optional[Union[str, Dict[str, str]]] = "height: 100%; overflow: auto; padding: 12px;",
 ):
     """The default layout for Solara apps. It consists of an toolbar bar, a sidebar and a main content area.
 
@@ -224,7 +227,11 @@ def AppLayout(
      * `title`: The title of the app shown in the app bar, can also be set using the [Title](/api/title) component.
      * `toolbar_dark`: Whether the toolbar should be dark or not.
      * `navigation`: Whether the navigation tabs based on routing should be shown.
-
+     * `color`: The color of the toolbar.
+     * `classes`: List of CSS classes to apply to the direct parent of the childred.
+     * `style`: CSS style to apply to the direct parent of the children. By default we apply some padding, and set the height to
+       100% to make sure the layout fills the screen. In combination with overflow: auto, this will make sure the scrollbars
+       will appear when needed.
     """
     route, routes = solara.use_route()
     paths = [solara.resolve_path(r, level=0) for r in routes]
@@ -252,8 +259,6 @@ def AppLayout(
     title = t.use_title_get() or title
     children_appbartitle = apptitle_portal.use_portal()
     show_app_bar = (title and (len(routes) > 1 and navigation)) or children_appbar or use_drawer or children_appbartitle
-    if not show_app_bar and not children_sidebar and len(children) == 1:
-        return children[0]
 
     def set_path(index):
         path = paths[index]
@@ -285,7 +290,7 @@ def AppLayout(
         # also ideal in jupyter notebooks
         with v.Html(tag="div") as main:
             if show_app_bar or use_drawer:
-                with v.AppBar(color="primary" if toolbar_dark else None, dark=toolbar_dark, v_slots=v_slots):
+                with v.AppBar(color=color, dark=toolbar_dark, v_slots=v_slots):
                     if use_drawer:
                         icon = AppIcon(sidebar_open, on_click=lambda: set_sidebar_open(not sidebar_open), v_on="x.on")
                         with v.Menu(
@@ -306,7 +311,12 @@ def AppLayout(
             with v.Row(no_gutters=False, class_="solara-content-main"):
                 v.Col(cols=12, children=children_content)
     else:
-        with v.Html(tag="div", style_="min-height: 100vh") as main:
+        # this limits the height of the app to the height of the screen
+        # and further down we use overflow: auto to add scrollbars to the main content
+        # the navigation drawer adds it own scrollbars
+        # NOTE: while developing this we added overflow: hidden, but this does not seem
+        # to be necessary anymore
+        with v.Html(tag="div", style_="height: 100vh") as main:
             with solara.HBox():
                 if use_drawer:
                     with v.NavigationDrawer(
@@ -324,24 +334,31 @@ def AppLayout(
                         if not show_app_bar:
                             AppIcon(sidebar_open, on_click=lambda: set_sidebar_open(not sidebar_open))
                         v.Html(tag="div", children=children_sidebar, style_="padding: 12px;").meta(ref="sidebar-content")
-                else:
-                    AppIcon(sidebar_open, on_click=lambda: set_sidebar_open(not sidebar_open), style_="position: absolute; z-index: 2")
             if show_app_bar:
                 # if hide_on_scroll is True, and we have a little bit of scrolling, vuetify seems to act strangely
                 # when scrolling (on @mariobuikhuizen/vuetify v2.2.26-rc.0
-                with v.AppBar(color="primary", dark=True, app=True, clipped_left=True, hide_on_scroll=False, v_slots=v_slots):
+                with v.AppBar(color=color, dark=True, app=True, clipped_left=True, hide_on_scroll=False, v_slots=v_slots).key("app-layout-appbar"):
                     if use_drawer:
                         AppIcon(sidebar_open, on_click=lambda: set_sidebar_open(not sidebar_open))
                     if title or children_appbartitle:
                         v.ToolbarTitle(children=children_appbartitle or [title])
                     v.Spacer()
-                    for child in children_appbar:
-                        solara.display(child)
+                    for i, child in enumerate(children_appbar):
+                        # if the user already provided a key, don't override it
+                        if child._key is None:
+                            solara.display(child.key(f"app-layout-appbar-user-child-{i}"))
+                        else:
+                            solara.display(child)
                     if fullscreen:
                         solara.Button(icon_name="mdi-fullscreen-exit", on_click=lambda: set_fullscreen(False), icon=True, dark=False)
 
-            with v.Content(class_="solara-content-main"):
-                v.Col(cols=12, children=children_content)
+            with v.Content(class_="solara-content-main", style_="height: 100%;").key("app-layout-content"):
+                # make sure the scrollbar does no go under the appbar by adding overflow: auto
+                # to a child of content, because content has padding-top: 64px (set by vuetify)
+                # the padding: 12px is needed for backward compatibility with the previously used
+                # v.Col which has this by default. If we do not use this, a solara.Column will
+                # use a margin: -12px which will make a horizontal scrollbar appear
+                solara.Div(style=style, classes=classes, children=children_content)
         if fullscreen:
             with v.Dialog(v_model=True, children=[], fullscreen=True, hide_overlay=True, persistent=True, no_click_animation=True) as dialog:
                 v.Sheet(class_="overflow-y-auto overflow-x-auto", children=[main])
@@ -354,6 +371,16 @@ def AppLayout(
 def _AppLayoutEmbed(children=[], sidebar_open=True, title=None):
     """Forces the embed more for a AppLayout. This is used by default in Jupyter."""
     should_use_embed.provide(True)
+
+    if solara.checks.should_perform_jupyter_check():
+        children = [solara.Column(children=children + [solara.checks.JupyterCheck()])]
+
+    def once():
+        import solara.server.telemetry
+
+        solara.server.telemetry.jupyter_start()
+
+    solara.use_effect(once, [])
     return AppLayout(children=children, sidebar_open=sidebar_open, title=title)
 
 

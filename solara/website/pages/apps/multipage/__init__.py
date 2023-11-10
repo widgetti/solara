@@ -7,7 +7,7 @@ app_state = solara.reactive(0)
 
 @solara.component
 def SharedComponent():
-    with solara.Card("Shown on each page", style={"max-width": "500px"}):
+    with solara.Card("Shown on each page", style={"max-width": "500px"}, margin=0, classes=["my-2"]):
         solara.Markdown(
             f"""
             This component will be used on each page.

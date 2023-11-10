@@ -13,10 +13,10 @@ import ipywidgets
 import ipywidgets.widgets.widget_output
 from IPython.core.interactiveshell import InteractiveShell
 
-from . import app, reload, settings
+from . import app, kernel_context, reload, settings
 from .utils import pdb_guard
 
-logger = logging.getLogger("solara.server.app")
+logger = logging.getLogger("solara.server.patch")
 try:
     from reacton.patch_display import patch as patch_display
 except:  # noqa
@@ -28,7 +28,7 @@ ipywidget_version_major = int(ipywidgets.__version__.split(".")[0])
 
 
 class FakeIPython:
-    def __init__(self, context: app.AppContext):
+    def __init__(self, context: kernel_context.VirtualKernelContext):
         self.context = context
         self.kernel = context.kernel
         self.display_pub = self.kernel.shell.display_pub
@@ -69,29 +69,43 @@ class FakeIPython:
         # proplot requires this
         pass
 
+    def set_custom_exc(self, exc_tuple, handler):
+        # make dask work
+        pass
+
+
+Kernel_instance_original = ipykernel.kernelbase.Kernel.instance.__func__  # type: ignore
+
 
 def kernel_instance_dispatch(cls, *args, **kwargs):
-    context = app.get_current_context()
-    return context.kernel
-
-
-InteractiveShell_instance_initial = InteractiveShell.instance
-
-
-def interactive_shell_instance_dispatch(cls, *args, **kwargs):
-    if app.has_current_context():
-        context = app.get_current_context()
-        return context.kernel.shell
+    if kernel_context.has_current_context():
+        context = kernel_context.get_current_context()
+        return context.kernel
     else:
-        return InteractiveShell_instance_initial(*args, **kwargs)
+        return Kernel_instance_original(cls, *args, **kwargs)
+
+
+Kernel_initialized_initial = ipykernel.kernelbase.Kernel.initialized.__func__  # type: ignore
 
 
 def kernel_initialized_dispatch(cls):
-    try:
-        app.get_current_context()
-    except RuntimeError:
+    if app is None:  # python is shutting down, and the comm dtor wants to send a close message
         return False
-    return True
+    if kernel_context.has_current_context():
+        return True
+    else:
+        return Kernel_initialized_initial(cls)
+
+
+InteractiveShell_instance_initial = InteractiveShell.instance.__func__  # type: ignore
+
+
+def interactive_shell_instance_dispatch(cls, *args, **kwargs):
+    if kernel_context.has_current_context():
+        context = kernel_context.get_current_context()
+        return context.kernel.shell
+    else:
+        return InteractiveShell_instance_initial(cls, *args, **kwargs)
 
 
 def display_solara(
@@ -155,8 +169,8 @@ def display_solara(
 
 
 def get_ipython():
-    if app.has_current_context():
-        context = app.get_current_context()
+    if kernel_context.has_current_context():
+        context = kernel_context.get_current_context()
         our_fake_ipython = FakeIPython(context)
         return our_fake_ipython
     else:
@@ -185,8 +199,8 @@ class context_dict(MutableMapping):
 
 class context_dict_widgets(context_dict):
     def _get_context_dict(self) -> dict:
-        if app.has_current_context():
-            context = app.get_current_context()
+        if kernel_context.has_current_context():
+            context = kernel_context.get_current_context()
             return context.widgets
         else:
             return global_widgets_dict
@@ -194,22 +208,26 @@ class context_dict_widgets(context_dict):
 
 class context_dict_templates(context_dict):
     def _get_context_dict(self) -> dict:
-        if app.has_current_context():
-            context = app.get_current_context()
+        if kernel_context.has_current_context():
+            context = kernel_context.get_current_context()
             return context.templates
         else:
             return global_templates_dict
 
 
 class context_dict_user(context_dict):
-    def __init__(self, name):
+    def __init__(self, name, default_dict):
         self.name = name
+        self.default_dict = default_dict
 
     def _get_context_dict(self) -> dict:
-        context = app.get_current_context()
-        if self.name not in context.user_dicts:
-            context.user_dicts[self.name] = {}
-        return context.user_dicts[self.name]
+        if kernel_context.has_current_context():
+            context = kernel_context.get_current_context()
+            if self.name not in context.user_dicts:
+                context.user_dicts[self.name] = {}
+            return context.user_dicts[self.name]
+        else:
+            return self.default_dict
 
 
 def auto_watch_get_template(get_template):
@@ -231,14 +249,14 @@ def WidgetContextAwareThread__init__(self, *args, **kwargs):
     Thread__init__(self, *args, **kwargs)
     self.current_context = None
     try:
-        self.current_context = app.get_current_context()
+        self.current_context = kernel_context.get_current_context()
     except RuntimeError:
         logger.debug(f"No context for thread {self}")
 
 
 def Thread_debug_run(self):
     if self.current_context:
-        app.set_context_for_thread(self.current_context, self)
+        kernel_context.set_context_for_thread(self.current_context, self)
     with pdb_guard():
         Thread__run(self)
 
@@ -255,13 +273,20 @@ def Output_enter(self):
         if msg["msg_type"] == "display_data":
             self.outputs += ({"output_type": "display_data", "data": msg["content"]["data"], "metadata": msg["content"]["metadata"]},)
             return None
+        if msg["msg_type"] == "clear_output":
+            self.outputs = ()
+            return None
         return msg
 
-    get_ipython().display_pub.register_hook(hook)
+    ip = get_ipython()
+    if ip:
+        ip.display_pub.register_hook(hook)
 
 
 def Output_exit(self, exc_type, exc_value, traceback):
-    get_ipython().display_pub._hooks.pop()
+    ip = get_ipython()
+    if ip:
+        ip.display_pub._hooks.pop()
 
 
 def patch():
@@ -284,8 +309,8 @@ def patch():
     template_mod_vue.get_template = template_mod.get_template  # type: ignore
 
     component_mod_vue = sys.modules["ipyvue.VueComponentRegistry"]
-    component_mod_vue.vue_component_registry = context_dict_user("vue_component_registry")  # type: ignore
-    component_mod_vue.vue_component_files = context_dict_user("vue_component_files")  # type: ignore
+    component_mod_vue.vue_component_registry = context_dict_user("vue_component_registry", component_mod_vue.vue_component_registry)  # type: ignore
+    component_mod_vue.vue_component_files = context_dict_user("vue_component_files", component_mod_vue.vue_component_files)  # type: ignore
 
     if ipywidget_version_major < 8:
         global_widgets_dict = ipywidgets.widget.Widget.widgets

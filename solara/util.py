@@ -5,10 +5,11 @@ import sys
 import threading
 from collections import abc
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import TYPE_CHECKING, Dict, List, Union
 
-import numpy as np
-import PIL.Image
+if TYPE_CHECKING:
+    import numpy as np
+
 import reacton
 
 import solara
@@ -56,6 +57,10 @@ def numpy_to_image(data: "np.ndarray", format="png"):
     import io
 
     if data.ndim == 3:
+        try:
+            import PIL.Image
+        except ModuleNotFoundError:
+            raise ModuleNotFoundError("Pillow is required to convert numpy array to image, use pip install pillow to install it.")
         if data.shape[2] == 3:
             im = PIL.Image.fromarray(data[::], "RGB")
         elif data.shape[2] == 4:
@@ -80,6 +85,8 @@ def cwd(path):
 
 
 def numpy_equals(a, b):
+    import numpy as np
+
     if a is b:
         return True
     if a is None or b is None:
@@ -211,3 +218,30 @@ def cancel_guard(cancelled: threading.Event):
     finally:
         if hasattr(sys, "settrace"):
             sys.settrace(prev)
+
+
+def parse_timedelta(size: str) -> float:
+    """Turn a human readable time delta into seconds.
+    Supports days(d), hours (h), minutes (m) and seconds (s).
+    If not unit is specified, seconds is assumed.
+    >>> parse_timedelta("1d")
+    86400
+    >>> parse_timedelta("1h")
+    3600
+    >>> parse_timedelta("30m")
+    1800
+    >>> parse_timedelta("10s")
+    10
+    >>> parse_timedelta("10")
+    10
+    """
+    if size.endswith("d"):
+        return float(size[:-1]) * 24 * 60 * 60
+    elif size.endswith("h"):
+        return float(size[:-1]) * 60 * 60
+    elif size.endswith("m"):
+        return float(size[:-1]) * 60
+    elif size.endswith("s"):
+        return float(size[:-1])
+    else:
+        return float(size)

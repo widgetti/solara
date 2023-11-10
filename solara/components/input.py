@@ -1,5 +1,4 @@
-import ast
-from typing import Any, Callable, Optional, TypeVar, Union, cast, overload
+from typing import Any, Callable, Optional, TypeVar, Union, cast, overload, List, Dict
 
 import ipyvue
 import ipyvuetify as vw
@@ -47,6 +46,8 @@ def InputText(
     continuous_update: bool = False,
     error: Union[bool, str] = False,
     message: Optional[str] = None,
+    classes: List[str] = [],
+    style: Optional[Union[str, Dict[str, str]]] = None,
 ):
     """Free form text input.
 
@@ -99,9 +100,13 @@ def InputText(
     * `continuous_update`: Whether to call the `on_value` callback on every change or only when the input loses focus or the enter key is pressed.
     * `error`: If truthy, show the input as having an error (in red). If a string is passed, it will be shown as the error message.
     * `message`: Message to show below the input. If `error` is a string, this will be ignored.
+    * `classes`: List of CSS classes to apply to the input.
+    * `style`: CSS style to apply to the input.
     """
     reactive_value = solara.use_reactive(value, on_value)
     del value, on_value
+    style_flat = solara.util._flatten_style(style)
+    classes_flat = solara.util._combine_classes(classes)
 
     def set_value_cast(value):
         reactive_value.value = str(value)
@@ -123,6 +128,8 @@ def InputText(
         type="password" if password else None,
         error=bool(error),
         messages=messages,
+        class_=classes_flat,
+        style_=style_flat,
     )
     use_change(text_field, set_value_cast, enabled=not continuous_update)
     return text_field
@@ -138,6 +145,8 @@ def InputFloat(
     optional: Literal[False] = ...,
     continuous_update: bool = ...,
     clearable: bool = ...,
+    classes: List[str] = ...,
+    style: Optional[Union[str, Dict[str, str]]] = ...,
 ) -> reacton.core.ValueElement[vw.TextField, Any]:
     ...
 
@@ -152,6 +161,8 @@ def InputFloat(
     optional: Literal[True] = ...,
     continuous_update: bool = ...,
     clearable: bool = ...,
+    classes: List[str] = ...,
+    style: Optional[Union[str, Dict[str, str]]] = ...,
 ) -> reacton.core.ValueElement[vw.TextField, Any]:
     ...
 
@@ -165,6 +176,8 @@ def InputFloat(
     optional: bool = False,
     continuous_update: bool = False,
     clearable: bool = False,
+    classes: List[str] = [],
+    style: Optional[Union[str, Dict[str, str]]] = None,
 ):
     """Numeric input (floats).
 
@@ -195,17 +208,34 @@ def InputFloat(
     * `optional`: Whether the value can be None.
     * `continuous_update`: Whether to call the `on_value` callback on every change or only when the input loses focus or the enter key is pressed.
     * `clearable`: Whether the input can be cleared.
+    * `classes`: List of CSS classes to apply to the input.
+    * `style`: CSS style to apply to the input.
 
     """
+
+    def str_to_float(value: Optional[str]):
+        if value:
+            try:
+                value = value.replace(",", ".")
+                return float(value)
+            except ValueError:
+                raise ValueError("Value must be a number")
+        else:
+            if optional:
+                return None
+            else:
+                raise ValueError("Value cannot be empty")
+
     return _InputNumeric(
-        float,
+        str_to_float,
         label=label,
         value=value,
         on_value=on_value,
         disabled=disabled,
         continuous_update=continuous_update,
         clearable=clearable,
-        optional=optional,
+        classes=classes,
+        style=style,
     )
 
 
@@ -219,6 +249,8 @@ def InputInt(
     optional: Literal[False] = ...,
     continuous_update: bool = ...,
     clearable: bool = ...,
+    classes: List[str] = ...,
+    style: Optional[Union[str, Dict[str, str]]] = ...,
 ) -> reacton.core.ValueElement[vw.TextField, Any]:
     ...
 
@@ -233,6 +265,8 @@ def InputInt(
     optional: Literal[True] = ...,
     continuous_update: bool = ...,
     clearable: bool = ...,
+    classes: List[str] = ...,
+    style: Optional[Union[str, Dict[str, str]]] = ...,
 ) -> reacton.core.ValueElement[vw.TextField, Any]:
     ...
 
@@ -246,6 +280,8 @@ def InputInt(
     optional: bool = False,
     continuous_update: bool = False,
     clearable: bool = False,
+    classes: List[str] = [],
+    style: Optional[Union[str, Dict[str, str]]] = None,
 ):
     """Numeric input (integers).
 
@@ -275,116 +311,85 @@ def InputInt(
     * `optional`: Whether the value can be None.
     * `continuous_update`: Whether to call the `on_value` callback on every change or only when the input loses focus or the enter key is pressed.
     * `clearable`: Whether the input can be cleared.
+    * `classes`: List of CSS classes to apply to the input.
+    * `style`: CSS style to apply to the input.
     """
+
+    def str_to_int(value: Optional[str]):
+        if value:
+            try:
+                return int(value)
+            except ValueError:
+                raise ValueError("Value must be an integer")
+        else:
+            if optional:
+                return None
+            else:
+                raise ValueError("Value cannot be empty")
+
     return _InputNumeric(
-        int,
+        str_to_int,
         label=label,
         value=value,
         on_value=on_value,
         disabled=disabled,
-        optional=optional,
         continuous_update=continuous_update,
         clearable=clearable,
+        classes=classes,
+        style=style,
     )
 
 
-def _use_input_numeric(
-    str_to_numeric: Callable[[str], T],
-    value: Union[None, T, solara.Reactive[Optional[T]], solara.Reactive[T]],
+def _use_input_type(
+    input_value: Union[None, T, solara.Reactive[Optional[T]], solara.Reactive[T]],
+    parse: Callable[[Optional[str]], T],
+    stringify: Callable[[Optional[T]], str],
     on_value: Union[None, Callable[[Optional[T]], None], Callable[[T], None]] = None,
-    optional: bool = False,
 ):
-    # TODO: make this more type safe
-    reactive_value = solara.use_reactive(value, on_value)  # type: ignore
-    del value, on_value
+    reactive_value = solara.use_reactive(input_value, on_value)  # type: ignore
+    del input_value, on_value
+    string_value, set_string_value = solara.use_state(stringify(reactive_value.value) if reactive_value.value is not None else None)
+    # Use a ref to make sure sync_back_input_value() does not get a stale string_value
+    string_value_ref = solara.use_ref(string_value)
+    string_value_ref.current = string_value
 
-    error, set_error = solara.use_state(False)
-    internal_value, set_internal_value = solara.use_state(cast(Union[str, T, None], str(reactive_value.value) if reactive_value.value is not None else None))
+    error_message = cast(Union[str, None], None)
 
-    def parse(value):
-        return ast.literal_eval(value.replace(",", "."))
+    try:
+        reactive_value.set(parse(string_value))
+    except ValueError as e:
+        error_message = str(e.args[0])
 
-    def on_external_value_change():
-        nonlocal internal_value
-        value = reactive_value.value
-        # only gets called when initial_or_updated changes
-        if isinstance(internal_value, str):
+    def sync_back_input_value():
+        def on_external_value_change(new_value: Optional[T]):
+            new_string_value = stringify(new_value)
             try:
-                numerical_value = ast.literal_eval(internal_value.replace(",", "."))
-            except Exception:
-                set_internal_value(value)
-                # this make sure the current value gets updated directly
-                internal_value = str(value)
+                parse(string_value_ref.current)
+            except ValueError:
+                # String value could be invalid when external value is changed by a different component
+                set_string_value(new_string_value)
             else:
-                if numerical_value != value:
-                    set_internal_value(str(value))
-                    # this make sure the current value gets updated directly
-                    internal_value = str(value)
-        elif internal_value is not None:
-            if internal_value != value:
-                set_internal_value(value)
-                # this make sure the current value gets updated directly
-                internal_value = value
-        elif internal_value is None:
-            set_internal_value(value)
-            # this make sure the current value gets updated directly
-            internal_value = value
+                if new_value != parse(string_value_ref.current):
+                    set_string_value(new_string_value)
 
-    # make sure that if the external value changes, our internal model gets updated
-    # but if the internal model is in a different representation
-    # (e.g. internal_value='1e2' and internal_value=100) we don't want to change
-    # our internal model
-    solara.use_memo(on_external_value_change, [reactive_value.value])
+        return reactive_value.subscribe(on_external_value_change)
 
-    def internal_value_check_type():
-        if isinstance(internal_value, str):
-            try:
-                numerical_proper_type = str_to_numeric(parse(internal_value))
-                numerical = parse(internal_value)
-            except Exception:
-                return internal_value
-            else:
-                if numerical_proper_type != numerical:
-                    return str(numerical_proper_type)
-                else:
-                    return internal_value
-        else:
-            return internal_value
+    solara.use_effect(sync_back_input_value, [reactive_value])
 
-    # make sure that when internal_value="1.1", but str_to_numeric=int
-    # internal value becomes "1"
-    internal_value = solara.use_memo(internal_value_check_type, [internal_value])
-
-    def set_value_cast(value):
-        set_internal_value(value)
-        if value is None or value == "":
-            if optional:
-                set_error(False)
-                reactive_value.set(None)  # type: ignore
-            else:
-                set_error(True)
-            return
-        try:
-            numeric_value = str_to_numeric(parse(value))
-        except Exception:
-            set_error(True)
-        else:
-            set_error(False)
-            reactive_value.set(numeric_value)
-
-    return internal_value, set_value_cast, error
+    return string_value, error_message, set_string_value
 
 
 @solara.component
 def _InputNumeric(
-    str_to_numeric: Callable[[str], T],
+    str_to_numeric: Callable[[Optional[str]], T],
     label: str,
     value: Union[None, T, solara.Reactive[Optional[T]], solara.Reactive[T]],
     on_value: Union[None, Callable[[Optional[T]], None], Callable[[T], None]] = None,
     disabled: bool = False,
-    optional: bool = False,
     continuous_update: bool = False,
     clearable: bool = False,
+    classes: List[str] = [],
+    style: Optional[Union[str, Dict[str, str]]] = None,
 ):
     """Numeric input.
 
@@ -395,16 +400,25 @@ def _InputNumeric(
     * `on_value`: Callback to call when the value changes.
     * `disabled`: Whether the input is disabled.
     * `continuous_update`: Whether to call the `on_value` callback on every change or only when the input loses focus or the enter key is pressed.
+    * `classes`: List of CSS classes to apply to the input.
+    * `style`: CSS style to apply to the input.
     """
+    style_flat = solara.util._flatten_style(style)
+    classes_flat = solara.util._combine_classes(classes)
 
-    internal_value, set_value_cast, error = _use_input_numeric(str_to_numeric, value, on_value, optional)
+    internal_value, error, set_value_cast = _use_input_type(
+        value,
+        str_to_numeric,
+        str,
+        on_value,
+    )
 
     def on_v_model(value):
         if continuous_update:
             set_value_cast(value)
 
     if error:
-        label += " (invalid)"
+        label += f" ({error})"
     text_field = v.TextField(
         v_model=internal_value,
         on_v_model=on_v_model,
@@ -415,7 +429,9 @@ def _InputNumeric(
         # type="number",
         hide_details=True,
         clearable=clearable,
-        error=error,
+        error=bool(error),
+        class_=classes_flat,
+        style_=style_flat,
     )
     use_change(text_field, set_value_cast, enabled=not continuous_update)
     return text_field

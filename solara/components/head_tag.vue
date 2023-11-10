@@ -36,7 +36,7 @@ module.exports = {
       const tags = window._solaraHeadTags[this.key];
       let deepestTag = tags[0];
       for (let i = 1; i < tags.length; i++) {
-        if (tags[i].level > deepestTitle.level) {
+        if (tags[i].level > deepestTag.level) {
           deepestTag = tags[i];
         }
       }
@@ -46,8 +46,8 @@ module.exports = {
         document.head.appendChild(el);
       } else {
         el.innerHTML = '';
-        for (let i = 0; i < el.attributes.length; i++) {
-          el.removeAttribute(el.attributes[i].name);
+        while (el.attributes.length > 0) {
+          el.removeAttribute(el.attributes[0].name);
         }
       }
       Object.keys(deepestTag.attributes).forEach((key) => {

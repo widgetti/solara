@@ -6,7 +6,7 @@ Asset files are special files with are loaded by Solara-server and thus have a s
  * `style.css` - Default `CSS` used by Solara.
  * `custom.css` - Custom `CSS` you can override for your project (empty `CSS` file by default).
  * `custom.js` - Custom Javascript you can use for your project (empty Javascript file by default).
- * `theme.js` - Javascript file containing the definitions for [vuetify themes](https://vuetifyjs.com/en/features/theme/) ([example theme.js file](https://github.com/widgetti/solara/blob/master/solara/website/assets/theme.js)).
+ * `theme.js` - Javascript file containing the definitions for [vuetify themes](https://v2.vuetifyjs.com/en/features/theme/) ([example theme.js file](https://github.com/widgetti/solara/blob/master/solara/website/assets/theme.js)).
 
 
 Assets files can be overridden by putting a file in the `../assets` directory.  A typical directory layout looks like this:

@@ -10,11 +10,10 @@ from typing_extensions import TypedDict
 import solara
 import solara as sol
 import solara.lab
-from solara.lab import State
-from solara.lab.toestand import Reactive, Ref, use_sync_external_store
-from solara.server import app, kernel
+from solara.server import kernel, kernel_context
+from solara.toestand import Reactive, Ref, State, use_sync_external_store
 
-from ..common import click
+from .common import click
 
 
 @dataclasses.dataclass(frozen=True)
@@ -113,17 +112,17 @@ def test_subscribe():
         u()
 
 
-def test_scopes(no_app_context):
+def test_scopes(no_kernel_context):
     bear_store = BearReactive(bears)
     mock_global = unittest.mock.Mock()
     unsub = []
     unsub += [bear_store.subscribe(mock_global)]
 
     kernel_shared = kernel.Kernel()
-    assert app.current_context[app.get_current_thread_key()] is None
+    assert kernel_context.current_context[kernel_context.get_current_thread_key()] is None
 
-    context1 = app.AppContext(id="toestand-1", kernel=kernel_shared, control_sockets=[], widgets={}, templates={})
-    context2 = app.AppContext(id="toestand-2", kernel=kernel_shared, control_sockets=[], widgets={}, templates={})
+    context1 = kernel_context.VirtualKernelContext(id="toestand-1", kernel=kernel_shared, session_id="session-1")
+    context2 = kernel_context.VirtualKernelContext(id="toestand-2", kernel=kernel_shared, session_id="session-2")
 
     with context1:
         mock1 = unittest.mock.Mock()
@@ -379,8 +378,8 @@ def test_bear_store_react():
 
     # the storage should live in the app context to support multiple users/connections
     kernel_shared = kernel.Kernel()
-    context1 = app.AppContext(id="bear-1", kernel=kernel_shared, control_sockets=[], widgets={}, templates={})
-    context2 = app.AppContext(id="bear-2", kernel=kernel_shared, control_sockets=[], widgets={}, templates={})
+    context1 = kernel_context.VirtualKernelContext(id="bear-1", kernel=kernel_shared, session_id="session-1")
+    context2 = kernel_context.VirtualKernelContext(id="bear-2", kernel=kernel_shared, session_id="session-2")
     rcs = []
     for context in [context1, context2]:
         with context:
@@ -782,7 +781,7 @@ def test_thread_local():
     t.join()
 
 
-def test_reactive_auto_subscribe(app_context):
+def test_reactive_auto_subscribe(kernel_context):
     x = Reactive(1)
     y = Reactive("hi")
     extra = Reactive("extra")
@@ -816,10 +815,10 @@ def test_reactive_auto_subscribe(app_context):
 
     count.value = 2
     assert len(rc.find(v.Slider)) == 2
-    assert len(x._storage.listeners2[app_context.id]) == 2
+    assert len(x._storage.listeners2[kernel_context.id]) == 2
     x.value = 3
     assert rc.find(v.Slider)[0].widget.v_model == 3
-    assert len(x._storage.listeners2[app_context.id]) == 2
+    assert len(x._storage.listeners2[kernel_context.id]) == 2
 
     count.value = 1
     assert len(rc.find(v.Slider)) == 1
@@ -827,8 +826,8 @@ def test_reactive_auto_subscribe(app_context):
     assert len(rc.find(v.Slider)) == 0
 
     rc.close()
-    assert not x._storage.listeners[app_context.id]
-    assert not x._storage.listeners2[app_context.id]
+    assert not x._storage.listeners[kernel_context.id]
+    assert not x._storage.listeners2[kernel_context.id]
 
 
 def test_reactive_auto_subscribe_sub():
@@ -852,7 +851,7 @@ def test_reactive_auto_subscribe_sub():
     assert renders == renders_before
 
 
-def test_reactive_auto_subscribe_cleanup(app_context):
+def test_reactive_auto_subscribe_cleanup(kernel_context):
     x = Reactive(1)
     y = Reactive("hi")
     renders = 0
@@ -875,22 +874,22 @@ def test_reactive_auto_subscribe_cleanup(app_context):
     assert len(y._storage.listeners2) == 0
     x.value = 42
     assert renders == 2
-    assert len(x._storage.listeners2[app_context.id]) == 1
-    assert len(y._storage.listeners2[app_context.id]) == 1
+    assert len(x._storage.listeners2[kernel_context.id]) == 1
+    assert len(y._storage.listeners2[kernel_context.id]) == 1
 
     # this triggers two renders, where during the first one we use y, but the seconds we don't
     x.value = 0
     assert rc.find(v.Slider).widget.v_model == 100
-    assert len(x._storage.listeners2[app_context.id]) == 1
+    assert len(x._storage.listeners2[kernel_context.id]) == 1
     # which means we shouldn't have a listener on y
-    assert len(y._storage.listeners2[app_context.id]) == 0
+    assert len(y._storage.listeners2[kernel_context.id]) == 0
 
     rc.close()
-    assert not x._storage.listeners[app_context.id]
-    assert not y._storage.listeners2[app_context.id]
+    assert not x._storage.listeners[kernel_context.id]
+    assert not y._storage.listeners2[kernel_context.id]
 
 
-def test_reactive_auto_subscribe_subfield_limit(app_context):
+def test_reactive_auto_subscribe_subfield_limit(kernel_context):
     bears = Reactive(Bears(type="brown", count=1))
     renders = 0
 
@@ -907,8 +906,8 @@ def test_reactive_auto_subscribe_subfield_limit(app_context):
     Ref(bears.fields.count).value = 2
     assert renders == 2
     rc.close()
-    assert not bears._storage.listeners[app_context.id]
-    assert not bears._storage.listeners2[app_context.id]
+    assert not bears._storage.listeners[kernel_context.id]
+    assert not bears._storage.listeners2[kernel_context.id]
 
 
 def test_reactive_batch_update():

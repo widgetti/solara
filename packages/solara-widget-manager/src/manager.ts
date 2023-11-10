@@ -78,11 +78,15 @@ export class WidgetManager extends JupyterLabManager {
     );
     this._registerWidgets();
     this._loader = requireLoader;
-    const commId = base.uuid();
     const kernel = context.sessionContext?.session?.kernel;
+    this.connectControlComm();
     if (!kernel) {
       throw new Error('No current kernel');
     }
+  }
+  async connectControlComm() {
+    const commId = base.uuid();
+    const kernel = this.context.sessionContext?.session?.kernel;
     this.controlComm = kernel.createComm('solara.control', commId);
     this.controlCommHandler = {
       onMsg: (msg) => {
@@ -105,34 +109,44 @@ export class WidgetManager extends JupyterLabManager {
     };
     this.controlComm.open({}, {}, [])
   }
-  async check() {
+  async appStatus() {
     // checks if app is still valid (e.g. server restarted and lost the widget state)
-    const okPromise = new Promise((resolve, reject) => {
-      this.controlCommHandler = {
-        onMsg: (msg) => {
+    // if we are connected to the same kernel, we'll get a reply instantly
+    // however, if we are connected to a new kernel, we rely on the timeout
+    // so every time we create a new comm.
+
+    const kernel = this.context.sessionContext?.session?.kernel;
+    const commId = base.uuid();
+    const controlComm = kernel.createComm('solara.control', commId);
+    controlComm.open({}, {}, [])
+    try {
+      return await new Promise((resolve, reject) => {
+        controlComm.onMsg = (msg) => {
           const data = msg['content']['data'];
-          if (data.method === 'finished') {
-            resolve(data.ok);
+          if (data.method === 'app-status') {
+            resolve({ started: data.started });
           }
           else {
-            reject(data.error);
+            reject({ ok: false, message: "unexpected message" });
           }
-        },
-        onClose: () => {
-          console.error("closed solara control comm")
-          reject()
         }
-      };
-      setTimeout(() => {
-        reject('timeout');
-      }, CONTROL_COMM_TIMEOUT);
-    });
-    this.controlComm.send({ method: 'check' });
-    try {
-      return await okPromise;
+        controlComm.onClose = () => {
+          console.error("closed solara control comm")
+          reject({ ok: false, message: "closed solara control comm" });
+        }
+        setTimeout(() => {
+          reject('timeout');
+        }, CONTROL_COMM_TIMEOUT);
+        controlComm.send({ method: 'app-status' });
+      });
     } catch (e) {
-      return false;
+      return { ok: false, message: e };
     }
+  }
+
+  async fetchAll() {
+    // fetch all widgets
+    await this._loadFromKernel();
   }
 
   async run(appName: string, path: string) {

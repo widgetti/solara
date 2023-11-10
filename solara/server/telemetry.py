@@ -40,6 +40,40 @@ solara_props = {
     "ipyvue_version": ipyvue.__version__,
 }
 _docker = False
+_compute_platform = "unknown"
+
+
+def is_running_in_colab():
+    try:
+        import google.colab  # noqa
+
+        return True
+    except ImportError:
+        return False
+
+
+def is_running_on_domino():
+    return "DOMINO_PROJECT_OWNER" in os.environ
+
+
+def is_running_on_sagemaker_notebook():
+    return "AWS_EXECUTION_ENV" in os.environ and "SageMaker" in os.environ["AWS_EXECUTION_ENV"]
+
+
+def is_running_on_azure():
+    return "AZURE_NOTEBOOKS_VM" in os.environ or "AZUREML_RUN_ID" in os.environ
+
+
+if is_running_in_colab():
+    _compute_platform = "colab"
+elif is_running_on_domino():
+    _compute_platform = "domino"
+elif is_running_on_sagemaker_notebook():
+    _compute_platform = "sagemaker"
+elif is_running_on_azure():
+    _compute_platform = "azure"
+
+_vscode = any(k for k in os.environ if k.upper().startswith("VSCODE_"))
 
 try:
     path = "/proc/self/cgroup"
@@ -86,6 +120,8 @@ def track(event: str, props: Optional[Dict] = None):
             "platform_release": _platform_release,
             "python_version": _python_version,
             "docker": _docker,
+            "compute_platform": _compute_platform,
+            "vscode": _vscode,
             **(solara_props or {}),
             **(props or {}),
         },
@@ -146,12 +182,32 @@ def server_stop():
     track("Solara server stop", {"duration_seconds": duration, **_usage_stats()})
 
 
-def connection_open(session_id, connection_id):
+_jupyter_start_event_send = False
+
+
+def jupyter_start():
+    # track the usage once
+    global _jupyter_start_event_send
+    if _jupyter_start_event_send:
+        return
+    _jupyter_start_event_send = True
+
+    def jupyter_track():
+        _get_ip()
+        track("Solara Jupyter use")
+
+    try:
+        threading.Thread(target=jupyter_track, daemon=True).start()
+    except:  # noqa
+        pass
+
+
+def connection_open(session_id):
     _connections_per_session_daily[session_id] += 1
     _connections_per_session_cumulative[session_id] += 1
 
 
-def connection_close(session_id, connection_id):
+def connection_close(session_id):
     pass
 
 

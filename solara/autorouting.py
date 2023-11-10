@@ -14,6 +14,7 @@ import reacton
 import reacton.core
 
 import solara
+import solara.checks
 from solara.alias import rv
 from solara.util import cwd, nested_get
 
@@ -105,6 +106,9 @@ def RoutingProvider(children: List[reacton.core.Element] = [], routes: List[sola
     if nav_widget.current:
         nav_widget.current.location = path
     solara.use_effect(get_nav_widget)
+
+    if solara.checks.should_perform_solara_check():
+        children = [solara.checks.SolaraCheck(), *children]
 
     main = solara.VBox(
         children=[
@@ -205,11 +209,12 @@ def RenderPage(main_name: str = "Page"):
                 content = solara.Markdown(path.read_text(), unsafe_solara_execute=True)
 
             main = solara.Div(
+                classes=["solara-autorouter-content"],
                 children=[
                     solara.Title(route_current.label or "No title"),
                     content,
                     navigation,
-                ]
+                ],
             )
             main = wrap_in_layouts(main, layouts)
         else:
@@ -261,10 +266,11 @@ def RenderPage(main_name: str = "Page"):
                     Page = getattr(modules[route_current.path], "app", None)
                     Page = getattr(modules[route_current.path], "page", Page)
             main = solara.Div(
+                classes=["solara-autorouter-content"],
                 children=[
                     title_element,
                     Page,
-                ]
+                ],
             )
             main = wrap_in_layouts(main, layouts)
         elif Page is not None:
@@ -276,10 +282,11 @@ def RenderPage(main_name: str = "Page"):
             else:
                 page = solara.Error(f"{Page} is not a component or element, but {type(Page)}")
             main = solara.Div(
+                classes=["solara-autorouter-content"],
                 children=[
                     title_element,
                     page,
-                ]
+                ],
             )
             main = wrap_in_layouts(main, layouts)
         else:
@@ -332,6 +339,9 @@ def get_title(module: ModuleType, required=True):
     elif hasattr(module, "title") and isinstance(module.title, str):
         title = module.title
     else:
+        match = re.match("([0-9\\-_ ]*)(.*)", name)
+        if match:
+            _prefix, name = match.groups()
         title_parts = re.split("[\\-_ ]+", name)
         title = " ".join(k.title() for k in title_parts)
     return title
@@ -421,9 +431,10 @@ def generate_routes(module: ModuleType) -> List[solara.Route]:
     else:
         children = getattr(module, "routes", [])
         children = fix_routes(children, file)
+        layout = getattr(module, "Layout", None)
         # children = []
         # single module, single route
-        return [solara.Route(path="/", component=RenderPage, data=None, module=module, label=get_title(module), children=children, file=file)]
+        return [solara.Route(path="/", component=RenderPage, data=None, module=module, label=get_title(module), layout=layout, children=children, file=file)]
 
     return routes
 
@@ -467,7 +478,7 @@ def generate_routes_directory(path: Path) -> List[solara.Route]:
     return routes
 
 
-def _generate_route_path(subpath: Path, layout=None, first=False, has_index=False) -> solara.Route:
+def _generate_route_path(subpath: Path, layout=None, first=False, has_index=False, initial_namespace={}) -> solara.Route:
     from .server import reload
 
     name = subpath.stem
@@ -493,7 +504,8 @@ def _generate_route_path(subpath: Path, layout=None, first=False, has_index=Fals
         children = generate_routes_directory(subpath)
     else:
         reload.reloader.watcher.add_file(subpath)
-        module = source_to_module(subpath)
+        module = source_to_module(subpath, initial_namespace=initial_namespace)
+        title = get_title(module)
         children = getattr(module, "routes", children)
         children = fix_routes(children, subpath)
         module_layout = getattr(module, "Layout", module_layout)

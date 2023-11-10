@@ -2,6 +2,7 @@ import asyncio
 import logging
 import mimetypes
 import os
+import threading
 from http.server import HTTPServer
 from pathlib import Path
 from typing import Any
@@ -41,7 +42,7 @@ import solara
 from solara.server.threaded import ServerBase
 
 from . import app as appmod
-from . import cdn_helper, server, settings, websocket
+from . import cdn_helper, kernel_context, server, settings, websocket
 
 os.environ["SERVER_SOFTWARE"] = "solara/" + str(solara.__version__)
 
@@ -55,20 +56,27 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
 
     def __init__(self, ws: simple_websocket.Server) -> None:
         self.ws = ws
+        self.lock = threading.Lock()
 
     def close(self):
-        self.ws.close()
+        with self.lock:
+            self.ws.close()
 
     def send_text(self, data: str) -> None:
-        self.ws.send(data)
+        with self.lock:
+            self.ws.send(data)
 
     def send_bytes(self, data: bytes) -> None:
-        self.ws.send(data)
+        with self.lock:
+            self.ws.send(data)
 
     async def receive(self):
         from anyio import to_thread
 
-        return await to_thread.run_sync(lambda: self.ws.receive())
+        try:
+            return await to_thread.run_sync(lambda: self.ws.receive())
+        except simple_websocket.ws.ConnectionClosed:
+            raise websocket.WebSocketDisconnect()
 
 
 class ServerFlask(ServerBase):
@@ -79,13 +87,15 @@ class ServerFlask(ServerBase):
         super().__init__(port, host, **kwargs)
         self.app = flask_app or app
         self.url_prefix = url_prefix
+        self.server = None
 
     def has_started(self):
         return server.is_ready(f"http://{self.host}:{self.port}{self.url_prefix}")
 
     def signal_stop(self):
-        assert isinstance(self.server, HTTPServer)
-        self.server.shutdown()  # type: ignore
+        if self.server:
+            assert isinstance(self.server, HTTPServer)
+            self.server.shutdown()  # type: ignore
 
     def serve(self):
         from werkzeug.serving import make_server
@@ -103,8 +113,8 @@ def kernels(id):
     return {"name": "lala", "id": "dsa"}
 
 
-@websocket_extension.route("/jupyter/api/kernels/<id>/<name>")
-def kernels_connection(ws: simple_websocket.Server, id: str, name: str):
+@websocket_extension.route("/jupyter/api/kernels/<kernel_id>/<name>")
+def kernels_connection(ws: simple_websocket.Server, kernel_id: str, name: str):
     if not settings.main.base_url:
         settings.main.base_url = url_for("blueprint-solara.read_root", _external=True)
     if settings.oauth.private and not has_solara_enterprise:
@@ -119,27 +129,26 @@ def kernels_connection(ws: simple_websocket.Server, id: str, name: str):
         user = None
 
     try:
-        connection_id = request.args["session_id"]
+        page_id = request.args["session_id"]
         session_id = request.cookies.get(server.COOKIE_KEY_SESSION_ID)
-        logger.info("Solara kernel requested for session_id=%s connection_id=%s", session_id, connection_id)
+        logger.info("Solara kernel requested for session_id=%s kernel_id=%s", session_id, kernel_id)
         if session_id is None:
             logger.error("no session cookie")
             ws.close()
             return
         ws_wrapper = WebsocketWrapper(ws)
-        asyncio.run(server.app_loop(ws_wrapper, session_id=session_id, connection_id=connection_id, user=user))
-    except simple_websocket.ws.ConnectionClosed:
-        pass  # ok
+        asyncio.run(server.app_loop(ws_wrapper, session_id=session_id, kernel_id=kernel_id, page_id=page_id, user=user))
     except:  # noqa
         logger.exception("Error in kernel handler")
         raise
 
 
-@blueprint.route("/_solara/api/close/<connection_id>", methods=["GET", "POST"])
-def close(connection_id: str):
-    if connection_id in appmod.contexts:
-        context = appmod.contexts[connection_id]
-        context.close()
+@blueprint.route("/_solara/api/close/<kernel_id>", methods=["GET", "POST"])
+def close(kernel_id: str):
+    page_id = request.args["session_id"]
+    if kernel_id in kernel_context.contexts:
+        context = kernel_context.contexts[kernel_id]
+        context.page_close(page_id)
     return ""
 
 
@@ -187,14 +196,16 @@ def serve_static(path):
     return send_from_directory(server.solara_static, path)
 
 
-@blueprint.route(f"/{cdn_helper.cdn_url_path}/<path:path>")
-def cdn(path):
-    if not allowed():
-        abort(401)
-    cache_directory = settings.assets.proxy_cache_dir
-    content = cdn_helper.get_data(Path(cache_directory), path)
-    mime = mimetypes.guess_type(path)
-    return flask.Response(content, mimetype=mime[0])
+if settings.assets:
+
+    @blueprint.route(f"/{cdn_helper.cdn_url_path}/<path:path>")
+    def cdn(path):
+        if not allowed():
+            abort(401)
+        cache_directory = settings.assets.proxy_cache_dir
+        content = cdn_helper.get_data(Path(cache_directory), path)
+        mime = mimetypes.guess_type(path)
+        return flask.Response(content, mimetype=mime[0])
 
 
 @blueprint.route("/", defaults={"path": ""})

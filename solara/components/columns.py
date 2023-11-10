@@ -74,7 +74,10 @@ def Columns(
     style_flat = solara.util._flatten_style(style)
     with rv.Row(class_=class_, no_gutters=not gutters, dense=gutters_dense, style_=style_flat) as main:
         for child, width in zip(children, cycle(widths)):
-            with rv.Col(children=[child], style_=f"flex-grow: {width}; overflow: auto" if width != 0 else "flex-grow: 0;"):
+            # we add height: 100% because this will trigger a chain of height set if it is set on the parent
+            # via the style. If we do not set the height, it will have no effect. Furthermore, we only have
+            # a single child, so this cannot interfere with other siblings.
+            with rv.Col(children=[child], style_=f"height: 100%; flex-grow: {width}; overflow: auto" if width != 0 else "flex-grow: 0"):
                 pass
     return main
 

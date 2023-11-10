@@ -21,6 +21,7 @@ from solara.server.shell import SolaraInteractiveShell
 from . import settings, websocket
 
 logger = logging.getLogger("solara.server.kernel")
+ipykernel_major = int(ipykernel.__version__.split(".")[0])
 
 jsonmodule = json
 
@@ -48,6 +49,13 @@ def json_default(obj):
         return obj.isoformat().replace("+00:00", "Z")
     elif isinstance(obj, bytes):
         return b2a_base64(obj).decode("ascii")
+    if type(obj).__module__ == "numpy":
+        import numpy as np
+
+        if isinstance(obj, np.number):
+            return repr(obj.item())
+        else:
+            raise TypeError("%r is not JSON serializable" % obj)
     else:
         raise TypeError("%r is not JSON serializable" % obj)
 
@@ -96,7 +104,7 @@ if ipykernel_version >= (6, 18, 0):
     comm.create_comm = Comm
 
     def get_comm_manager():
-        from .app import get_current_context, has_current_context
+        from .kernel_context import get_current_context, has_current_context
 
         if has_current_context():
             return get_current_context().kernel.comm_manager
@@ -217,6 +225,13 @@ class SessionWebsocket(session.Session):
         super(SessionWebsocket, self).__init__(*args, **kwargs)
         self.websockets: Set[websocket.WebsocketWrapper] = set()  # map from .. msg id to websocket?
 
+    def close(self):
+        for ws in list(self.websockets):
+            try:
+                ws.close()
+            except:  # noqa
+                pass
+
     def send(self, stream, msg_or_type, content=None, parent=None, ident=None, buffers=None, track=False, header=None, metadata=None):
         try:
             if isinstance(msg_or_type, dict):
@@ -291,6 +306,10 @@ class Kernel(ipykernel.kernelbase.Kernel):
         """Overridden from parent to tell the display hook and output streams
         about the parent message.
         """
-        super().set_parent(ident, parent, channel)
+        if ipykernel_major < 6:
+            # the channel argument was added in 6.0
+            super().set_parent(ident, parent)
+        else:
+            super().set_parent(ident, parent, channel)
         if channel == "shell":
             self.shell.set_parent(parent)

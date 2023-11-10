@@ -7,7 +7,7 @@ github_url = solara.util.github_url(__file__)
 
 @solara.component
 def Sub():
-    with solara.Card("Sub component"):
+    with solara.Card("Sub component", margin=0, classes=["my-2"]):
         solara.Markdown("This sub component is the best")
         with solara.Sidebar():
             with solara.Card("Sidebar of sub component", margin=0, elevation=0):

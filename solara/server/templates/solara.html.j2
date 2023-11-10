@@ -14,7 +14,7 @@
 
     {{ pre_rendered_css | safe }}
 
-    <link href="{{cdn}}/@widgetti/solara-vuetify-app@5.0.2/dist/main.css" rel="stylesheet"></link>
+    <link href="{{cdn}}/@widgetti/solara-vuetify-app@6.0.0/dist/main.css" rel="stylesheet"></link>
 
 
     {% if assets.fontawesome_enabled == True %}
@@ -39,7 +39,7 @@
 
     <script id="jupyter-config-data" type="application/json">
     {
-        "baseUrl": "{{root_path}}/jupyter",
+        "baseUrl": "{{root_path}}/",
         "kernelId": "1234"
     }
     </script>
@@ -196,6 +196,11 @@
 {% endraw -%}
 
 <body data-base-url="{{root_path}}/static/">
+    {% if perform_check %}
+    <iframe src="https://solara.dev/static/public/success.html?system=solara&check=html" style="display: none"></iframe>
+    {% endif %}
+    {% if theme.variant == "auto" %}
+    {% endif %}
     {% if theme.variant == "light" %}
     <div id="app" class="v-application v-application--is-ltr theme--light" data-app="true">
     {% elif theme.variant == "dark" %}
@@ -206,10 +211,10 @@
         <div id="pre-rendered-html-present" style="display: none"></div>
     </div>
     {% if production %}
-    <script src="{{cdn}}/@widgetti/solara-vuetify-app@5.0.2/dist/solara-vuetify-app{{ipywidget_major_version}}.min.js"></script>
+    <script src="{{cdn}}/@widgetti/solara-vuetify-app@6.0.0/dist/solara-vuetify-app{{ipywidget_major_version}}.min.js"></script>
     <script src="{{cdn}}/mermaid@9.1.7/dist/mermaid.min.js"></script>
     {% else %}
-    <script src="{{cdn}}/@widgetti/solara-vuetify-app@5.0.2/dist/solara-vuetify-app{{ipywidget_major_version}}.js"></script>
+    <script src="{{cdn}}/@widgetti/solara-vuetify-app@6.0.0/dist/solara-vuetify-app{{ipywidget_major_version}}.js"></script>
     <script src="{{cdn}}/mermaid@9.1.7/dist/mermaid.js"></script>
     {% endif %}
     <script>

@@ -47,7 +47,7 @@ def Page():
         grid_layout_formatted = pprint.pformat(grid_layout, indent=4)
         grid_layout_formatted = textwrap.indent(grid_layout_formatted, " " * len("grid_layout = "))
         grid_layout_formatted = grid_layout_formatted[len("grid_layout = ") :]
-        solara.MarkdownIt(
+        solara.Markdown(
             f"""
             # Resulting layout
 

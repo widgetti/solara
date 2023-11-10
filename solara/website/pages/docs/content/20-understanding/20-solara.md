@@ -6,7 +6,7 @@ Solara consists of two main parts
 
 ## Solara-ui
 
-A set of opninionated react components and hooks that allow you to build web apps and data apps faster.
+A set of opinionated react components and hooks that allow you to build web apps and data apps faster.
 
 ## Solara-server
 

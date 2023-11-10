@@ -1,7 +1,7 @@
 {% raw -%}
 <transition name="solara-transition" :duration="{ enter: 500, leave: 500 }">
     <div v-if="loading" id="loader-container">
-        <v-container id="loader" key="loader" class="solara-loader">
+        <v-container id="loader" key="loader" class="solara-loader" fluid>
             <v-row>
                 <v-col>
                     <div id="sun-spinner-container">
@@ -28,12 +28,12 @@
             <b>Made with <a href="https://solara.dev">Solara</a></b>
         </div>
     </div>
-    <div v-if="!loading">
+    <div v-else>
         <jupyter-widget-mount-point mount-id="solara-main">
             A widget with mount-id="solara-main" should go here
         </jupyter-widget-mount-point>
         <div style="position: absolute; right: 0px; bottom: 0px; padding: 10px;">
-            <b>This website runs on <a href=" https://solara.dev">Solara</a></b>
+            <b>This website runs on <a href="https://solara.dev">Solara</a></b>
         </div>
     </div>
 </transition>
