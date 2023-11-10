@@ -76,6 +76,8 @@ items = [
             "use_cross_filter",
             "use_thread",
             "use_exception",
+            "use_effect",
+            "use_memo",
             "use_previous",
             "use_reactive",
             "use_state",
