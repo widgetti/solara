@@ -54,7 +54,7 @@ module.exports = [
             path: path.resolve(__dirname, 'dist'),
             libraryTarget: 'umd',
             publicPath: 'auto',
-            devtoolModuleFilenameTemplate: `webpack://@widgetti/solara-vuetify-app3`
+            devtoolModuleFilenameTemplate: `webpack://@widgetti/solara-vuetify3-app`
         },
         module: {
             rules: rules
@@ -94,7 +94,7 @@ module.exports = [
             path: path.resolve(__dirname, 'dist'),
             libraryTarget: 'umd',
             publicPath: 'auto',
-            devtoolModuleFilenameTemplate: `webpack://@widgetti/solara-vuetify-app3`
+            devtoolModuleFilenameTemplate: `webpack://@widgetti/solara-vuetify3-app`
         },
         devtool: 'source-map',
         module: {

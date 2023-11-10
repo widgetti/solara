@@ -15,7 +15,7 @@
     {{ pre_rendered_css | safe }}
 
     {% if vue3 == True %}
-    <link href="{{cdn}}/@widgetti/solara-vuetify-app3@36.0.0/dist/main.css" rel="stylesheet"></link>
+    <link href="{{cdn}}/@widgetti/solara-vuetify3-app@1.0.0/dist/main.css" rel="stylesheet"></link>
     {% else %}
     <link href="{{cdn}}/@widgetti/solara-vuetify-app@6.0.0/dist/main.css" rel="stylesheet"></link>
     {% endif %}
@@ -216,9 +216,9 @@
     </div>
     {% if vue3 == True %}
         {% if production %}
-        <script src="{{cdn}}/@widgetti/solara-vuetify-app3@36.0.0/dist/solara-vuetify-app{{ipywidget_major_version}}.min.js"></script>
+        <script src="{{cdn}}/@widgetti/solara-vuetify3-app@1.0.0/dist/solara-vuetify-app{{ipywidget_major_version}}.min.js"></script>
         {% else %}
-        <script src="{{cdn}}/@widgetti/solara-vuetify-app3@36.0.0/dist/solara-vuetify-app{{ipywidget_major_version}}.js"></script>
+        <script src="{{cdn}}/@widgetti/solara-vuetify3-app@1.0.0/dist/solara-vuetify-app{{ipywidget_major_version}}.js"></script>
         {% endif %}
     {% else %}
         {% if production %}

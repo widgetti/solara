@@ -24,8 +24,8 @@ jobs:
         with:
           path: |
             packages/solara-vuetify-app/dist
-            packages/solara-vuetify-app3/dist
-          key: ${{ runner.os }}-js-bundle-${{ hashFiles('packages/solara-vuetify-app/src/**', 'packages/solara-vuetify-app3/src/**', 'packages/solara-vuetify-app/package.json', 'packages/solara-widget-manager/src/**', 'packages/solara-widget-manager/package.json', 'packages/solara-widget-manager8/src/**', 'packages/solara-widget-manager8/package.json') }}
+            packages/solara-vuetify3-app/dist
+          key: ${{ runner.os }}-js-bundle-${{ hashFiles('packages/solara-vuetify-app/src/**', 'packages/solara-vuetify3-app/src/**', 'packages/solara-vuetify-app/package.json', 'packages/solara-widget-manager/src/**', 'packages/solara-widget-manager/package.json', 'packages/solara-widget-manager8/src/**', 'packages/solara-widget-manager8/package.json') }}
 
       - name: Build solara widget manager
         if: steps.cache-js-bundle-v2.outputs.cache-hit != 'true'
@@ -46,7 +46,7 @@ jobs:
           npm install
           npm run build
           cd ../../
-          cd packages/solara-vuetify-app3
+          cd packages/solara-vuetify3-app
           npm install
           npm run build
 
@@ -68,4 +68,4 @@ jobs:
             dist
             packages/solara-enterprise/dist
             packages/solara-vuetify-app/dist
-            packages/solara-vuetify-app3/dist
+            packages/solara-vuetify3-app/dist

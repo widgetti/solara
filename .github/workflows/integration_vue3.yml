@@ -48,7 +48,7 @@ jobs:
       - name: Link solara app package
         run: |
           (cd packages/solara-vuetify-app; npm run devlink)
-          (cd packages/solara-vuetify-app3; npm run devlink)
+          (cd packages/solara-vuetify3-app; npm run devlink)
       - name: Prepare
         run: mkdir test-results
       - name: Install
