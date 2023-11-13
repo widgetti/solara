@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import dataclasses
 import enum
 import logging
@@ -86,6 +87,7 @@ class VirtualKernelContext:
                 f()
             self._on_close_callbacks.clear()
             self.__post_init__()
+    lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
 
     def display(self, *args):
         print(args)  # noqa
@@ -107,25 +109,29 @@ class VirtualKernelContext:
 
     def close(self):
         logger.info("Shut down virtual kernel: %s", self.id)
-        with self:
-            for f in reversed(self._on_close_callbacks):
-                f()
-        with self:
-            if self.app_object is not None:
-                if isinstance(self.app_object, reacton.core._RenderContext):
-                    try:
-                        self.app_object.close()
-                    except Exception as e:
-                        logger.exception("Could not close render context: %s", e)
-                        # we want to continue, so we at least close all widgets
-            widgets.Widget.close_all()
-            # what if we reference each other
-            # import gc
-            # gc.collect()
-            self.kernel.session.close()
-        if self.id in contexts:
-            del contexts[self.id]
-        self.closed_event.set()
+        with self.lock:
+            for key in self.page_status:
+                self.page_status[key] = PageStatus.CLOSED
+            with self:
+                for f in reversed(self._on_close_callbacks):
+                    f()
+                if self.app_object is not None:
+                    if isinstance(self.app_object, reacton.core._RenderContext):
+                        try:
+                            self.app_object.close()
+                        except Exception as e:
+                            logger.exception("Could not close render context: %s", e)
+                            # we want to continue, so we at least close all widgets
+                widgets.Widget.close_all()
+                # what if we reference each other
+                # import gc
+                # gc.collect()
+                self.kernel.close()
+                self.kernel = None  # type: ignore
+            if self.id in contexts:
+                del contexts[self.id]
+            del current_context[get_current_thread_key()]
+            self.closed_event.set()
 
     def _state_reset(self):
         state_directory = Path(".") / "states"
@@ -152,10 +158,12 @@ class VirtualKernelContext:
 
     def page_connect(self, page_id: str):
         logger.info("Connect page %s for kernel %s", page_id, self.id)
-        assert self.page_status.get(page_id) != PageStatus.CLOSED, "cannot connect with the same page_id after a close"
-        self.page_status[page_id] = PageStatus.CONNECTED
-        if self._last_kernel_cull_task:
-            self._last_kernel_cull_task.cancel()
+        with self.lock:
+            if page_id in self.page_status and self.page_status.get(page_id) == PageStatus.CLOSED:
+                raise RuntimeError("Cannot connect a page that is already closed")
+            self.page_status[page_id] = PageStatus.CONNECTED
+            if self._last_kernel_cull_task:
+                self._last_kernel_cull_task.cancel()
 
     def page_disconnect(self, page_id: str) -> "asyncio.Future[None]":
         """Signal that a page has disconnected, and schedule a kernel cull if needed.
@@ -168,7 +176,13 @@ class VirtualKernelContext:
         """
         logger.info("Disconnect page %s for kernel %s", page_id, self.id)
         future: "asyncio.Future[None]" = asyncio.Future()
-        self.page_status[page_id] = PageStatus.DISCONNECTED
+        with self.lock:
+            if self.page_status[page_id] == PageStatus.CLOSED:
+                logger.info("Page %s already closed for kernel %s", page_id, self.id)
+                future.set_result(None)
+                return future
+            assert self.page_status[page_id] == PageStatus.CONNECTED, "cannot disconnect a page that is in state: %r" % self.page_status[page_id]
+            self.page_status[page_id] = PageStatus.DISCONNECTED
         current_event_loop = asyncio.get_event_loop()
 
         async def kernel_cull():
@@ -176,15 +190,22 @@ class VirtualKernelContext:
                 cull_timeout_sleep_seconds = solara.util.parse_timedelta(solara.server.settings.kernel.cull_timeout)
                 logger.info("Scheduling kernel cull, will wait for max %s before shutting down the virtual kernel %s", cull_timeout_sleep_seconds, self.id)
                 await asyncio.sleep(cull_timeout_sleep_seconds)
-                has_connected_pages = PageStatus.CONNECTED in self.page_status.values()
-                if has_connected_pages:
-                    logger.info("We have (re)connected pages, keeping the virtual kernel %s alive", self.id)
-                else:
-                    logger.info("No connected pages, and timeout reached, shutting down virtual kernel %s", self.id)
-                    self.close()
-                current_event_loop.call_soon_threadsafe(future.set_result, None)
+                with self.lock:
+                    has_connected_pages = PageStatus.CONNECTED in self.page_status.values()
+                    if has_connected_pages:
+                        logger.info("We have (re)connected pages, keeping the virtual kernel %s alive", self.id)
+                    else:
+                        logger.info("No connected pages, and timeout reached, shutting down virtual kernel %s", self.id)
+                        self.close()
+                try:
+                    current_event_loop.call_soon_threadsafe(future.set_result, None)
+                except RuntimeError:
+                    pass  # event loop already closed, happens during testing
             except asyncio.CancelledError:
-                current_event_loop.call_soon_threadsafe(future.cancel, "cancelled because a new cull task was scheduled")
+                try:
+                    current_event_loop.call_soon_threadsafe(future.cancel, "cancelled because a new cull task was scheduled")
+                except RuntimeError:
+                    pass  # event loop already closed, happens during testing
                 raise
 
         has_connected_pages = PageStatus.CONNECTED in self.page_status.values()
@@ -197,7 +218,10 @@ class VirtualKernelContext:
                 task = asyncio.create_task(kernel_cull())
                 # create a reference to the task so we can cancel it later
                 self._last_kernel_cull_task = task
-                await task
+                try:
+                    await task
+                except RuntimeError:
+                    pass  # event loop already closed, happens during testing
 
             asyncio.run_coroutine_threadsafe(create_task(), keep_alive_event_loop)
         else:
@@ -211,15 +235,21 @@ class VirtualKernelContext:
         different from a websocket/page disconnect, which we might want to recover from.
 
         """
-        self.page_status[page_id] = PageStatus.CLOSED
-        logger.info("Close page %s for kernel %s", page_id, self.id)
-        has_connected_pages = PageStatus.CONNECTED in self.page_status.values()
-        has_disconnected_pages = PageStatus.DISCONNECTED in self.page_status.values()
-        if not (has_connected_pages or has_disconnected_pages):
-            logger.info("No connected or disconnected pages, shutting down virtual kernel %s", self.id)
-            if self._last_kernel_cull_task:
-                self._last_kernel_cull_task.cancel()
-            self.close()
+
+        logger.info("page status: %s", self.page_status)
+        with self.lock:
+            if self.page_status[page_id] == PageStatus.CLOSED:
+                logger.info("Page %s already closed for kernel %s", page_id, self.id)
+                return
+            self.page_status[page_id] = PageStatus.CLOSED
+            logger.info("Close page %s for kernel %s", page_id, self.id)
+            has_connected_pages = PageStatus.CONNECTED in self.page_status.values()
+            has_disconnected_pages = PageStatus.DISCONNECTED in self.page_status.values()
+            if not (has_connected_pages or has_disconnected_pages):
+                logger.info("No connected or disconnected pages, shutting down virtual kernel %s", self.id)
+                if self._last_kernel_cull_task:
+                    self._last_kernel_cull_task.cancel()
+                self.close()
 
 
 try:
@@ -294,6 +324,21 @@ def get_current_context() -> VirtualKernelContext:
 def set_current_context(context: Optional[VirtualKernelContext]):
     thread_key = get_current_thread_key()
     current_context[thread_key] = context
+
+
+@contextlib.contextmanager
+def without_context():
+    context = None
+    try:
+        context = get_current_context()
+    except RuntimeError:
+        pass
+    thread_key = get_current_thread_key()
+    current_context[thread_key] = None
+    try:
+        yield
+    finally:
+        current_context[thread_key] = context
 
 
 def initialize_virtual_kernel(session_id: str, kernel_id: str, websocket: websocket.WebsocketWrapper):

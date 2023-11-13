@@ -15,6 +15,8 @@ import ipywidgets
 import ipywidgets.widgets.widget_output
 from IPython.core.interactiveshell import InteractiveShell
 
+import solara.util
+
 from . import app, kernel_context, reload, settings
 from .utils import pdb_guard
 
@@ -248,7 +250,8 @@ def auto_watch_get_template(get_template):
 
     def wrapper(abs_path):
         template = get_template(abs_path)
-        reload.reloader.watcher.add_file(abs_path)
+        with kernel_context.without_context():
+            reload.reloader.watcher.add_file(abs_path)
         return template
 
     return wrapper
@@ -299,7 +302,8 @@ def _WidgetContextAwareThread__bootstrap(self):
         shell = self.current_context.kernel.shell
         shell.display_pub.register_hook(shell.display_in_reacton_hook)
     try:
-        with pdb_guard():
+        context = self.current_context or solara.util.nullcontext()
+        with pdb_guard(), context:
             Thread__bootstrap(self)
     finally:
         if self.current_context:

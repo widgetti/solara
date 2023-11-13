@@ -84,6 +84,7 @@ dev = [
     "black",
     "mypy",
     "mdit-py-plugins",
+    "objgraph",
     "plotly",
     "types-requests",
     "types-markdown",
