@@ -11,7 +11,7 @@ from solara.alias import rv as v
 T = TypeVar("T")
 
 
-def use_change(el: reacton.core.Element, on_value: Callable[[Any], Any], enabled=True):
+def use_change(el: reacton.core.Element, on_value: Callable[[Any], Any], enabled=True, enter_only=False):
     """Trigger a callback when a blur events occurs or the enter key is pressed."""
     on_value_ref = solara.use_ref(on_value)
     on_value_ref.current = on_value
@@ -23,17 +23,53 @@ def use_change(el: reacton.core.Element, on_value: Callable[[Any], Any], enabled
 
         widget = cast(ipyvue.VueWidget, solara.get_widget(el))
         if enabled:
-            widget.on_event("blur", on_change)
             widget.on_event("keyup.enter", on_change)
+            if not enter_only:
+                widget.on_event("blur", on_change)
 
         def cleanup():
             if enabled:
-                widget.on_event("blur", on_change, remove=True)
                 widget.on_event("keyup.enter", on_change, remove=True)
+                if not enter_only:
+                    widget.on_event("blur", on_change, remove=True)
 
         return cleanup
 
     solara.use_effect(add_events, [enabled])
+
+
+@overload
+def InputText(
+    label: str,
+    value: Union[str, solara.Reactive[str]] = ...,
+    on_value: Callable[[str], None] = ...,
+    disabled: bool = ...,
+    password: bool = ...,
+    continuous_update: Literal[True] = ...,
+    enter_only: Literal[False] = ...,
+    error: Union[bool, str] = ...,
+    message: Optional[str] = ...,
+    classes: List[str] = ...,
+    style: Optional[Union[str, Dict[str, str]]] = ...,
+):
+    ...
+
+
+@overload
+def InputText(
+    label: str,
+    value: Union[str, solara.Reactive[str]] = ...,
+    on_value: Callable[[str], None] = ...,
+    disabled: bool = ...,
+    password: bool = ...,
+    continuous_update: Literal[False] = ...,
+    enter_only: Literal[True] = ...,
+    error: Union[bool, str] = ...,
+    message: Optional[str] = ...,
+    classes: List[str] = ...,
+    style: Optional[Union[str, Dict[str, str]]] = ...,
+):
+    ...
 
 
 @solara.component
@@ -44,6 +80,7 @@ def InputText(
     disabled: bool = False,
     password: bool = False,
     continuous_update: bool = False,
+    enter_only: bool = False,
     error: Union[bool, str] = False,
     message: Optional[str] = None,
     classes: List[str] = [],
@@ -98,6 +135,8 @@ def InputText(
     * `disabled`: Whether the input is disabled.
     * `password`: Whether the input is a password input (typically shows input text obscured with an asterisk).
     * `continuous_update`: Whether to call the `on_value` callback on every change or only when the input loses focus or the enter key is pressed.
+        If `enter_only` is `True`, this will be ignored.
+    * `enter_only`: Whether to call the `on_value` callback only when the enter key is pressed, and not when the input loses focus.
     * `error`: If truthy, show the input as having an error (in red). If a string is passed, it will be shown as the error message.
     * `message`: Message to show below the input. If `error` is a string, this will be ignored.
     * `classes`: List of CSS classes to apply to the input.
@@ -112,7 +151,7 @@ def InputText(
         reactive_value.value = str(value)
 
     def on_v_model(value):
-        if continuous_update:
+        if continuous_update and not enter_only:
             set_value_cast(value)
 
     messages = []
@@ -131,7 +170,7 @@ def InputText(
         class_=classes_flat,
         style_=style_flat,
     )
-    use_change(text_field, set_value_cast, enabled=not continuous_update)
+    use_change(text_field, set_value_cast, enabled=not continuous_update, enter_only=enter_only)
     return text_field
 
 
