@@ -6,6 +6,7 @@ try:
 except ModuleNotFoundError:
     contextvars = None  # type: ignore
 
+import contextlib
 import dataclasses
 import enum
 import logging
@@ -89,6 +90,7 @@ class VirtualKernelContext:
                 f()
             self._on_close_callbacks.clear()
             self.__post_init__()
+    lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
 
     def display(self, *args):
         print(args)  # noqa
@@ -129,9 +131,11 @@ class VirtualKernelContext:
             # what if we reference each other
             # import gc
             # gc.collect()
-            self.kernel.session.close()
+            self.kernel.close()
+            self.kernel = None  # type: ignore
             if self.id in contexts:
                 del contexts[self.id]
+            del current_context[get_current_thread_key()]
             self.closed_event.set()
 
     def _state_reset(self):
@@ -184,13 +188,19 @@ class VirtualKernelContext:
                         logger.info("No connected pages, and timeout reached, shutting down virtual kernel %s", self.id)
                         self.close()
                 if current_event_loop is not None and future is not None:
-                    current_event_loop.call_soon_threadsafe(future.set_result, None)
+                    try:
+                        current_event_loop.call_soon_threadsafe(future.set_result, None)
+                    except RuntimeError:
+                        pass  # event loop already closed, happens during testing
             except asyncio.CancelledError:
                 if current_event_loop is not None and future is not None:
-                    if sys.version_info >= (3, 9):
-                        current_event_loop.call_soon_threadsafe(future.cancel, "cancelled because a new cull task was scheduled")
-                    else:
-                        current_event_loop.call_soon_threadsafe(future.cancel)
+                    try:
+                        if sys.version_info >= (3, 9):
+                            current_event_loop.call_soon_threadsafe(future.cancel, "cancelled because a new cull task was scheduled")
+                        else:
+                            current_event_loop.call_soon_threadsafe(future.cancel)
+                    except RuntimeError:
+                        pass  # event loop already closed, happens during testing
                 raise
 
         async def create_task():
@@ -212,6 +222,15 @@ class VirtualKernelContext:
                 self._last_kernel_cull_task.cancel()
 
             logger.info("Scheduling kernel cull for virtual kernel %s", self.id)
+            async def create_task():
+                task = asyncio.create_task(kernel_cull())
+                # create a reference to the task so we can cancel it later
+                self._last_kernel_cull_task = task
+                try:
+                    await task
+                except RuntimeError:
+                    pass  # event loop already closed, happens during testing
+
             asyncio.run_coroutine_threadsafe(create_task(), keep_alive_event_loop)
             return future
 
@@ -259,6 +278,8 @@ class VirtualKernelContext:
             pass
         else:
             future.set_result(None)
+
+        logger.info("page status: %s", self.page_status)
         with self.lock:
             if self.page_status[page_id] == PageStatus.CLOSED:
                 logger.info("Page %s already closed for kernel %s", page_id, self.id)
@@ -375,6 +396,21 @@ def get_current_context() -> VirtualKernelContext:
 def set_current_context(context: Optional[VirtualKernelContext]):
     thread_key = get_current_thread_key()
     current_context[thread_key] = context
+
+
+@contextlib.contextmanager
+def without_context():
+    context = None
+    try:
+        context = get_current_context()
+    except RuntimeError:
+        pass
+    thread_key = get_current_thread_key()
+    current_context[thread_key] = None
+    try:
+        yield
+    finally:
+        current_context[thread_key] = context
 
 
 def initialize_virtual_kernel(session_id: str, kernel_id: str, websocket: websocket.WebsocketWrapper):
