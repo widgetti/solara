@@ -7,6 +7,7 @@ import sys
 import threading
 import traceback
 import warnings
+import weakref
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional, cast
@@ -132,7 +133,7 @@ class AppScript:
         else:
             # the module itself will be added by reloader
             # automatically
-            with reload.reloader.watch():
+            with kernel_context.without_context(), reload.reloader.watch():
                 self.type = AppType.MODULE
                 try:
                     spec = importlib.util.find_spec(self.name)
@@ -420,6 +421,9 @@ def solara_comm_target(comm, msg_first):
 
     def on_msg(msg):
         nonlocal app
+        comm = comm_ref()
+        assert comm is not None
+        context = kernel_context.get_current_context()
         data = msg["content"]["data"]
         method = data["method"]
         if method == "run":
@@ -464,9 +468,10 @@ def solara_comm_target(comm, msg_first):
         else:
             logger.error("Unknown comm method called on solara.control comm: %s", method)
 
-    comm.on_msg(on_msg)
-
     def reload():
+        comm = comm_ref()
+        assert comm is not None
+        context = kernel_context.get_current_context()
         # we don't reload the app ourself, we send a message to the client
         # this ensures that we don't run code of any client that for some reason is connected
         # but not working anymore. And it indirectly passes a message from the current thread
@@ -474,8 +479,11 @@ def solara_comm_target(comm, msg_first):
         logger.debug(f"Send reload to client: {context.id}")
         comm.send({"method": "reload"})
 
-    context = kernel_context.get_current_context()
-    context.reload = reload
+    comm.on_msg(on_msg)
+    comm_ref = weakref.ref(comm)
+    del comm
+
+    kernel_context.get_current_context().reload = reload
 
 
 def register_solara_comm_target(kernel: Kernel):
