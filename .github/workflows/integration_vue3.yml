@@ -1,0 +1,77 @@
+name: Integration testing (vue3)
+
+on:
+  push:
+    branches:
+      - master
+      - fix_ci
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1,4" # at 06:00 UTC on Monday and Thursday
+
+env:
+  SOLARA_TELEMETRY_SERVER_USER_ID: "install-test"
+  SOLARA_TELEMETRY_MIXPANEL_TOKEN: adbf863d17cba80db608788e7fce9843
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+  integration-test:
+    needs: [build]
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # just ubuntu and windows give enough confidence
+        # osx should work fine (and we test that locally often)
+        os: [ubuntu]
+        # just 1 version, it's heavy
+        python-version: [3.8]
+        ipywidgets: ["8.0"]
+        include:
+#          - ipywidgets: "7.7"
+#            voila: "0.3.0"
+          - ipywidgets: "8.0"
+            voila: "0.4.0"
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/download-artifact@v2
+        with:
+          name: solara-builds-${{ github.run_number }}
+      - name: Link solara app package
+        run: |
+          (cd packages/solara-vuetify-app; npm run devlink)
+          (cd packages/solara-vuetify3-app; npm run devlink)
+      - name: Prepare
+        run: mkdir test-results
+      - name: Install
+        run: |
+          pip install ".[dev,server,flask,documentation,pytest]" "voila~=${{ matrix.voila }}" "jupyterlab<4" "pydantic<2"
+          (cd packages/solara-enterprise && pip install ".[ssg,auth]" "ipywidgets~=${{ matrix.ipywidgets }}")
+          pip install jupyter_core jupyter-packaging
+          pip install https://github.com/widgetti/ipyvue/archive/refs/heads/vue3.zip https://github.com/widgetti/ipyvuetify/archive/refs/heads/vuetify3.zip
+      - name: Install playwright
+        run: playwright install
+      - name: test
+        env:
+          AUTH0_USERNAME: maartenbreddels+solara-test@gmail.com
+          AUTH0_PASSWORD: ${{ secrets.AUTH0_PASSWORD }}
+          FIEF_USERNAME: maartenbreddels+solara-test@gmail.com
+          FIEF_PASSWORD: ${{ secrets.FIEF_PASSWORD }}
+        # TODO: we used to also run the (cheap) unittests, to get better coverage report, but that gives errors
+        # it seems on CI that the default playwright timeout is not (always?) respected, also, if the --timeout argument
+        # is shorter than the timeout of playwright, we get no good error message, summary: always keep above 30!
+        run: pytest tests/integration/widget_test.py --timeout=360 --video=retain-on-failure --output=test-results -vv -s --log-cli-level=warning
+      - name: Upload Test artifacts
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-results
+          path: test-results

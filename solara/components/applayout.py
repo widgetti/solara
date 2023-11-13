@@ -351,8 +351,9 @@ def AppLayout(
                             solara.display(child)
                     if fullscreen:
                         solara.Button(icon_name="mdi-fullscreen-exit", on_click=lambda: set_fullscreen(False), icon=True, dark=False)
-
-            with v.Content(class_="solara-content-main", style_="height: 100%;").key("app-layout-content"):
+            # in vue2 is was v-content, in vue3 it is v-main
+            MainComponent = v.Main if solara.util.ipyvuetify_major_version == 3 else v.Content  # type: ignore
+            with MainComponent(class_="solara-content-main", style_="height: 100%;").key("app-layout-content"):
                 # make sure the scrollbar does no go under the appbar by adding overflow: auto
                 # to a child of content, because content has padding-top: 64px (set by vuetify)
                 # the padding: 12px is needed for backward compatibility with the previously used

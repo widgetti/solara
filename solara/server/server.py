@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, TypeVar
 
 import ipykernel
+import ipyvue
 import ipywidgets
 import jinja2
 import requests
@@ -29,6 +30,7 @@ template_name = "index.html.j2"
 ipykernel_major = int(ipykernel.__version__.split(".")[0])
 ipywidgets_major = int(ipywidgets.__version__.split(".")[0])
 cache_memory = solara.cache.Memory(max_items=128)
+vue3 = ipyvue.__version__.startswith("3")
 
 # first look at the project directory, then the builtin solara directory
 
@@ -280,6 +282,7 @@ def read_root(path: str, root_path: str = "", render_kwargs={}, use_nbextensions
         "cdn": cdn,
         "ipywidget_major_version": ipywidgets_major,
         "platform": settings.main.platform,
+        "vue3": vue3,
         "perform_check": settings.main.mode != "production" and solara.checks.should_perform_solara_check(),
         **render_kwargs,
     }

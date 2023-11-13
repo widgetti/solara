@@ -14,7 +14,11 @@
 
     {{ pre_rendered_css | safe }}
 
+    {% if vue3 == True %}
+    <link href="{{cdn}}/@widgetti/solara-vuetify3-app@1.0.0/dist/main.css" rel="stylesheet"></link>
+    {% else %}
     <link href="{{cdn}}/@widgetti/solara-vuetify-app@6.0.0/dist/main.css" rel="stylesheet"></link>
+    {% endif %}
 
 
     {% if assets.fontawesome_enabled == True %}
@@ -210,11 +214,22 @@
         {# next div is used in ssg code to see if vue took over rendering #}
         <div id="pre-rendered-html-present" style="display: none"></div>
     </div>
+    {% if vue3 == True %}
+        {% if production %}
+        <script src="{{cdn}}/@widgetti/solara-vuetify3-app@1.0.0/dist/solara-vuetify-app{{ipywidget_major_version}}.min.js"></script>
+        {% else %}
+        <script src="{{cdn}}/@widgetti/solara-vuetify3-app@1.0.0/dist/solara-vuetify-app{{ipywidget_major_version}}.js"></script>
+        {% endif %}
+    {% else %}
+        {% if production %}
+        <script src="{{cdn}}/@widgetti/solara-vuetify-app@6.0.0/dist/solara-vuetify-app{{ipywidget_major_version}}.min.js"></script>
+        {% else %}
+        <script src="{{cdn}}/@widgetti/solara-vuetify-app@6.0.0/dist/solara-vuetify-app{{ipywidget_major_version}}.js"></script>
+        {% endif %}
+    {% endif %}
     {% if production %}
-    <script src="{{cdn}}/@widgetti/solara-vuetify-app@6.0.0/dist/solara-vuetify-app{{ipywidget_major_version}}.min.js"></script>
     <script src="{{cdn}}/mermaid@9.1.7/dist/mermaid.min.js"></script>
     {% else %}
-    <script src="{{cdn}}/@widgetti/solara-vuetify-app@6.0.0/dist/solara-vuetify-app{{ipywidget_major_version}}.js"></script>
     <script src="{{cdn}}/mermaid@9.1.7/dist/mermaid.js"></script>
     {% endif %}
     <script>
@@ -259,13 +274,8 @@
         window.solara.browser_platform = true;
         {% endif %}
         var debug = true;
-        var app = new Vue({
-            vuetify: new Vuetify({
-                theme: {
-                    dark: inDarkMode(),
-                    themes: vuetifyThemes,
-                },
-            }),
+
+        var appComponent = {
             // if we do prerendering, keep it unmounted, and mount
             // when loading becomes false
             el: solara.preRendered ? null : '#app' ,
@@ -379,8 +389,26 @@
                     // outputMessages: [{ name: 'stderr', text: 'lala' }],
                 }
             }
-        });
+        };
+        const vue3 = Vue.version.startsWith('3');
+        if(vue3) {
+            var app = Vue.createApp(appComponent).use(vuetifyPlugin)
+                .component("jupyter-widget-mount-point", jupyterWidgetMountPoint)
+                .mount('#app');
 
+        } else {
+            Vue.component('jupyter-widget-mount-point', jupyterWidgetMountPoint);
+            Vue.use(Vuetify);
+            var app = new Vue({
+                vuetify: new Vuetify({
+                    theme: {
+                        dark: inDarkMode(),
+                        themes: vuetifyThemes,
+                    },
+                }),
+                ...appComponent,
+            });
+        }
         // Loading classic notebook extensions.
         {% if 'jupyter-vuetify/extension' in resources.nbextensions -%}
         window.enable_nbextensions = true;

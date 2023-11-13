@@ -72,6 +72,14 @@ def Button(
     style_flat = solara.util._flatten_style(style)
     if "style_" in kwargs:
         style_flat += kwargs.pop("style_")
-    btn = v.Btn(children=children, **kwargs, disabled=disabled, text=text, class_=class_, style_=style_flat, outlined=outlined, color=color)
+    if solara.util.ipyvuetify_major_version == 3:
+        variant = "elevated"
+        if text:
+            variant = "text"
+        elif outlined:
+            variant = "outlined"
+        btn = solara.v.Btn(children=children, **kwargs, disabled=disabled, class_=class_, style_=style_flat, color=color, variant=variant)
+    else:
+        btn = solara.v.Btn(children=children, **kwargs, disabled=disabled, text=text, class_=class_, style_=style_flat, outlined=outlined, color=color)
     ipyvue.use_event(btn, click_event, lambda *_ignore: on_click and on_click())
     return btn

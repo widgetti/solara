@@ -40,7 +40,12 @@ from reacton import (
     use_state_widget,
 )  # noqa: F403, F401
 from reacton.core import Element  # noqa: F403, F401
-import reacton.ipyvuetify as v
+
+try:
+    import ipyvuetify.components as v  # type: ignore # noqa: F401
+except ModuleNotFoundError:
+    # backwards compatibility
+    import reacton.ipyvuetify as v  # type: ignore # noqa: F401
 from . import util
 
 from .reactive import *
