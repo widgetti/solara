@@ -79,6 +79,8 @@ def InputDate(
     * style: CSS style to apply to the text field. Either a string or a dictionary of CSS properties (i.e. `{"property": "value"}`).
     * classes: List of CSS classes to apply to the text field.
     """
+    value_reactive = solara.use_reactive(value, on_value)  # type: ignore
+    del value, on_value
 
     def set_date_typed_cast(value: Optional[str]):
         if value:
@@ -108,8 +110,6 @@ def InputDate(
         else:
             return date.strftime("%Y-%m-%d")
 
-    value_reactive = solara.use_reactive(value)
-    del value
     date_standard_str = standard_strfy(value_reactive.value)
 
     datepicker_is_open = solara.use_reactive(open_value, on_open_value)  # type: ignore
@@ -117,7 +117,7 @@ def InputDate(
 
     style_flat = solara.util._flatten_style(style)
 
-    internal_value, error_message, set_value_cast = _use_input_type(value_reactive, set_date_typed_cast, date_to_str, on_value)
+    internal_value, error_message, set_value_cast = _use_input_type(value_reactive, set_date_typed_cast, date_to_str)
 
     if error_message:
         label += f" ({error_message})"
@@ -263,8 +263,6 @@ def InputDateRange(
             Tuple[Optional[dt.date], Optional[dt.date]], tuple([dt.datetime.strptime(item, "%Y-%m-%d").date() if item is not None else None for item in values])
         )
         value_reactive.value = date_value
-        if on_value:
-            on_value(date_value)
 
     string_dates, error_message = dates_to_string(value_reactive.value)
 
