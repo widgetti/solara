@@ -136,7 +136,6 @@ def test_input_date_range():
     assert on_value.call_count == 2
     # We enter no date, so on_v_model does not get called
     assert on_v_model.call_count == 1
-    # input.widget.fire_event("blur")
     assert on_value.call_args[0][0] == tuple([dt.date(2023, 10, 17), None])
     assert text_field.widget.error
     assert text_field.widget.label == "label (Please select two dates)"
@@ -144,7 +143,6 @@ def test_input_date_range():
     input.widget.v_model = ["2023-10-17", tomorrow.strftime("%Y-%m-%d")]
     assert on_value.call_count == 3
     assert on_v_model.call_count == 2
-    # input.widget.fire_event("blur")
     assert on_value.call_args[0][0] == tuple([dt.date(2023, 10, 17), tomorrow])
     assert not text_field.widget.error
     assert text_field.widget.v_model == f"{dt.date(2023, 10, 17).strftime('%Y/%m/%d')} - {tomorrow.strftime('%Y/%m/%d')}"
