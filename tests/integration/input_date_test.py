@@ -1,7 +1,6 @@
 import datetime as dt
 from unittest.mock import MagicMock
 
-# import ipyvuetify as vw
 from playwright.sync_api import Page, expect
 
 today = dt.date.today()

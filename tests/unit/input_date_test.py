@@ -35,13 +35,11 @@ def test_input_date():
     assert on_value.call_count == 1
     assert on_v_model.call_count == 1
     on_v_model.reset_mock()
-    # input.widget.fire_event("blur")
     assert on_value.call_args[0][0] == tomorrow
 
     input.widget.v_model = ""
     assert on_value.call_count == 1
     assert on_v_model.call_count == 1
-    # input.widget.fire_event("blur")
     assert on_value.call_args[0][0] == tomorrow
     assert input.widget.error
     assert input.widget.label == "label (Date cannot be empty)"
@@ -49,7 +47,6 @@ def test_input_date():
     input.widget.v_model = "2023/10/17"
     assert on_value.call_count == 2
     assert on_v_model.call_count == 2
-    # input.widget.fire_event("blur")
     assert on_value.call_args[0][0] == dt.date(2023, 10, 17)
     assert not input.widget.error
     assert input.widget.v_model == dt.date(2023, 10, 17).strftime("%Y/%m/%d")
@@ -66,20 +63,17 @@ def test_input_date_optional():
     input.widget.v_model = tomorrow.strftime("%Y/%m/%d")
     assert on_value.call_count == 1
     assert on_v_model.call_count == 1
-    # input.widget.fire_event("blur")
     assert on_value.call_args[0][0] == tomorrow
 
     input.widget.v_model = ""
     assert on_value.call_count == 2
     assert on_v_model.call_count == 2
-    # input.widget.fire_event("blur")
     assert on_value.call_args[0][0] is None
     assert not input.widget.error
 
     input.widget.v_model = "2023/10/17"
     assert on_value.call_count == 3
     assert on_v_model.call_count == 3
-    # input.widget.fire_event("blur")
     assert on_value.call_args[0][0] == dt.date(2023, 10, 17)
     assert not input.widget.error
     assert input.widget.v_model == dt.date(2023, 10, 17).strftime("%Y/%m/%d")
@@ -107,7 +101,6 @@ def test_input_date_incomplete_entry():
     input.widget.v_model = "2023/10"
     assert on_value.call_count == 0
     assert on_v_model.call_count == 1
-    # input.widget.fire_event("blur")
     assert on_value.call_args is None
     assert input.widget.error
     assert input.widget.v_model == "2023/10"
@@ -116,7 +109,6 @@ def test_input_date_incomplete_entry():
     input.widget.v_model = "2023/10/17"
     assert on_value.call_count == 1
     assert on_v_model.call_count == 2
-    # input.widget.fire_event("blur")
     # Without below assert mypy fails
     assert on_value.call_args is not None
     assert on_value.call_args[0][0] == dt.date(2023, 10, 17)
@@ -138,7 +130,6 @@ def test_input_date_range():
     assert on_value.call_count == 1
     assert on_v_model.call_count == 1
     on_v_model.reset_mock()
-    # input.widget.fire_event("blur")
     assert on_value.call_args[0][0] == tuple([tomorrow, today])
 
     input.widget.v_model = ["2023-10-17", None]

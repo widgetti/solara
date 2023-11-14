@@ -45,7 +45,7 @@ def InputDate(
     classes: Optional[List[str]] = None,
 ):
     """
-    Show a textfield, which when clicked, opens a datepicker. The input date should be a reactive variable of type `datetime.date`.
+    Show a textfield, which when clicked, opens a datepicker. The input date should be of type `datetime.date`.
 
     ## Basic Example
 
@@ -72,9 +72,9 @@ def InputDate(
     * open_value: Controls and communicates the state of the datepicker. If True, the datepicker is open. If False, the datepicker is closed.
     Intended to be used in conjunction with a custom set of controls to close the datepicker.
     * on_open_value: a callback function for when open_value changes. Also receives the new value as an argument.
-    * optional: Determines whether go show an error when value is `None`. If `True`, no error is shown.
+    * optional: Determines whether to show an error when value is `None`. If `True`, no error is shown.
     * date_format: Sets the format of the date displayed in the text field. Defaults to `"%Y/%m/%d"`. For more information, see
-    <a href="https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes" target="_blank">here</a>.
+    <a href="https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes" target="_blank">the Python documentation</a>.
     * first_day_of_the_week: Sets the first day of the week, as an `int` starting count from Sunday (`=0`). Defaults to `1`, which is Monday.
     * style: CSS style to apply to the text field. Either a string or a dictionary of CSS properties (i.e. `{"property": "value"}`).
     * classes: List of CSS classes to apply to the text field.
@@ -189,7 +189,7 @@ def InputDateRange(
 
     ## Arguments
 
-    * value: Reactive tuple with elements of type `datetime.date`. For an empty pre-selection of dates, pass a reactive empty tuple.
+    * value: Tuple with elements of type `datetime.date`. For an empty pre-selection of dates, pass an empty tuple.
     * on_value: a callback function for when value changes. The callback function receives the new value as an argument.
     * label: Text used to label the text field that triggers the datepicker.
     * children: List of Elements to be rendered under the calendar. If empty, a close button is rendered.
@@ -198,7 +198,7 @@ def InputDateRange(
     * on_open_value: a callback function for when open_value changes. Also receives the new value as an argument.
     * date_format: Sets the format of the date displayed in the text field. Defaults to `"%Y/%m/%d"`. For more information,
     * optional: Determines whether go show an error when value is `None`. If `True`, no error is shown.
-    see <a href="https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes" target="_blank">here</a>.
+    see <a href="https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes" target="_blank">the Python documentation</a>.
     * first_day_of_the_week: Sets the first day of the week, as an `int` starting count from Sunday (`=0`). Defaults to `1`, which is Monday.
     * style: CSS style to apply to the text field. Either a string or a dictionary of CSS properties (i.e. `{"property": "value"}`).
     * classes: List of CSS classes to apply to the text field.
@@ -245,8 +245,8 @@ def InputDateRange(
 
     ```
     """
-    value_reactive = solara.use_reactive(value)
-    del value
+    value_reactive = solara.use_reactive(value, on_value)  # type: ignore
+    del value, on_value
     date_standard_strings = [date.strftime("%Y-%m-%d") for date in value_reactive.value if date is not None]
     datepicker_is_open = solara.use_reactive(open_value, on_open_value)  # type: ignore
     del open_value, on_open_value
