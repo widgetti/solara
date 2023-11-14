@@ -69,7 +69,7 @@ def use_reactive(
     def MyComponent(value: Union[T, solara.Reactive[T]],
                     on_value: Optional[Callable[[T], None]] = None,
         ):
-        reactive_value = solara.use_reactive(value, on_value_change)
+        reactive_value = solara.use_reactive(value, on_value)
         # Use the `reactive_value` in the component
     ```
     """
