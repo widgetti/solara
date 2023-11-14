@@ -163,9 +163,8 @@ async def kernel_connection(ws: starlette.websockets.WebSocket):
         user = None
 
     if not session_id:
-        logger.error("no session cookie")
-        await ws.close()
-        return
+        logger.warning("no session cookie")
+        session_id = "session-id-cookie-unavailable:" + str(uuid4())
     # we use the jupyter session_id query parameter as the key/id
     # for a page scope.
     page_id = ws.query_params["session_id"]
