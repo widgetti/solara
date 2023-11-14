@@ -133,9 +133,8 @@ def kernels_connection(ws: simple_websocket.Server, kernel_id: str, name: str):
         session_id = request.cookies.get(server.COOKIE_KEY_SESSION_ID)
         logger.info("Solara kernel requested for session_id=%s kernel_id=%s", session_id, kernel_id)
         if session_id is None:
-            logger.error("no session cookie")
-            ws.close()
-            return
+            logger.warning("no session cookie")
+            session_id = "session-id-cookie-unavailable:" + str(uuid4())
         ws_wrapper = WebsocketWrapper(ws)
         asyncio.run(server.app_loop(ws_wrapper, session_id=session_id, kernel_id=kernel_id, page_id=page_id, user=user))
     except:  # noqa
