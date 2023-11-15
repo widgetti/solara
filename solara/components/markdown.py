@@ -7,6 +7,7 @@ import warnings
 from typing import Any, Dict, List, Union
 
 import ipyvuetify as v
+import pymdownx.emoji
 import pymdownx.highlight
 import pymdownx.superfences
 
@@ -183,6 +184,13 @@ def MarkdownIt(md_text: str, highlight: List[int] = [], unsafe_solara_execute: b
     return v.VuetifyTemplate.element(template=_markdown_template(html)).key(hash)
 
 
+_index = pymdownx.emoji.emojione(None, None)
+
+
+def _no_deep_copy_emojione(options, md):
+    return _index
+
+
 @solara.component
 def Markdown(md_text: str, unsafe_solara_execute=False, style: Union[str, Dict, None] = None):
     """Renders markdown text
@@ -248,6 +256,9 @@ def Markdown(md_text: str, unsafe_solara_execute=False, style: Union[str, Dict, 
                 "tables",
             ],
             extension_configs={
+                "pymdownx.emoji": {
+                    "emoji_index": _no_deep_copy_emojione,
+                },
                 "pymdownx.superfences": {
                     "custom_fences": [
                         {
