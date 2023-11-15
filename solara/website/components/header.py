@@ -38,7 +38,7 @@ def Header(
         with solara.Div(classes=["news"]):
             solara.HTML(
                 "div",
-                unsafe_innerHTML='<a href="https://forms.gle/WfHa6TvQsK2d16sH7" target="_blank">☀️ Sign up for our mentorship program !</a>',
+                unsafe_innerHTML="<a href='https://github.com/widgetti/solara' target='_blank' >Star us on github 🤩</a>",
             )
         with rv.AppBar(tag="header", flat=True, class_="bg-primary-fade padding-40", height="auto"):
             with rv.ToolbarTitle(class_="d-flex", style_="align-items:center"):
