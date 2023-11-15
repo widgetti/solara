@@ -11,7 +11,7 @@ from solara.alias import rv as v
 T = TypeVar("T")
 
 
-def use_change(el: reacton.core.Element, on_value: Callable[[Any], Any], enabled=True):
+def use_change(el: reacton.core.Element, on_value: Callable[[Any], Any], enabled=True, update_events=["blur", "keyup.enter"]):
     """Trigger a callback when a blur events occurs or the enter key is pressed."""
     on_value_ref = solara.use_ref(on_value)
     on_value_ref.current = on_value
@@ -23,13 +23,13 @@ def use_change(el: reacton.core.Element, on_value: Callable[[Any], Any], enabled
 
         widget = cast(ipyvue.VueWidget, solara.get_widget(el))
         if enabled:
-            widget.on_event("blur", on_change)
-            widget.on_event("keyup.enter", on_change)
+            for event in update_events:
+                widget.on_event(event, on_change)
 
         def cleanup():
             if enabled:
-                widget.on_event("blur", on_change, remove=True)
-                widget.on_event("keyup.enter", on_change, remove=True)
+                for event in update_events:
+                    widget.on_event(event, on_change, remove=True)
 
         return cleanup
 
@@ -44,6 +44,7 @@ def InputText(
     disabled: bool = False,
     password: bool = False,
     continuous_update: bool = False,
+    update_events: List[str] = ["blur", "keyup.enter"],
     error: Union[bool, str] = False,
     message: Optional[str] = None,
     classes: List[str] = [],
@@ -98,6 +99,8 @@ def InputText(
     * `disabled`: Whether the input is disabled.
     * `password`: Whether the input is a password input (typically shows input text obscured with an asterisk).
     * `continuous_update`: Whether to call the `on_value` callback on every change or only when the input loses focus or the enter key is pressed.
+    * `update_events`: A list of events that should trigger `on_value`. If continuous update is enabled, this will effectively be ignored,
+        since updates will happen every change.
     * `error`: If truthy, show the input as having an error (in red). If a string is passed, it will be shown as the error message.
     * `message`: Message to show below the input. If `error` is a string, this will be ignored.
     * `classes`: List of CSS classes to apply to the input.
@@ -131,7 +134,7 @@ def InputText(
         class_=classes_flat,
         style_=style_flat,
     )
-    use_change(text_field, set_value_cast, enabled=not continuous_update)
+    use_change(text_field, set_value_cast, enabled=not continuous_update, update_events=update_events)
     return text_field
 
 
