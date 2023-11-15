@@ -6,15 +6,19 @@ title = "Showcase"
 @solara.component
 def Page():
     with solara.ColumnsResponsive(12, medium=6):
-        with solara.Card("solara.dev", style={"height": "100%"}):
+        with solara.Card("Wanderlust", style={"height": "100%"}):
             solara.Markdown(
                 """
-            The Solara.dev website is built using Solara itself, showcasing the library's features and capabilities.
-            All documentation and example are on this page.
+            [Wanderlust](https://huggingface.co/spaces/solara-dev/wanderlust) is a reproduction of the travel assistant demo shown at the
+            [OpenAI DevDay](https://devday.openai.com/) 2023, built using Solara and the OpenAI Assistants API.
             """
             )
-            with solara.Link("./solara_dev"):
-                solara.Image("/static/public/showcase/solara/thumbnail.png", width="100%")
+            with solara.v.Html(tag="a", attributes={"href": "https://huggingface.co/spaces/solara-dev/wanderlust", "target": "_blank"}):
+                solara.Image("/static/public/showcase/wanderlust/thumbnail.png", width="100%")
+            with solara.v.Html(tag="a", attributes={"href": "https://github.com/widgetti/wanderlust", "target": "_blank"}):
+                with solara.Row(style={"min-height": "24px"}):
+                    solara.v.Icon(children=["mdi-github-circle"], x_large=True, class_="mr-2")
+
         with solara.Card("Domino Code Assist", style={"height": "100%"}):
             solara.Markdown(
                 """
@@ -52,3 +56,13 @@ def Page():
                             class_="elevation-6",
                             src=img,
                         )
+
+        with solara.Card("solara.dev", style={"height": "100%"}):
+            solara.Markdown(
+                """
+            The Solara.dev website is built using Solara itself, showcasing the library's features and capabilities.
+            All documentation and example are on this page.
+            """
+            )
+            with solara.Link("./solara_dev"):
+                solara.Image("/static/public/showcase/solara/thumbnail.png", width="100%")
