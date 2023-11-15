@@ -35,7 +35,16 @@ Note that `.value` and `.error` of the result object will only be set when a new
 
 ## State diagram
 
-The possible values for `Result[T].state` are reflected in this state diagram.
+The possible values for `Result[T].state` are stored in the dataclass `solara.ResultState`, with the possible options being
+
+* `STARTING`
+* `WAITING`
+* `RUNNING`
+* `ERROR`
+* `FINISHED`
+* `CANCELLED`
+
+These states are reflected in the below state diagram
 
 ```mermaid
 graph TD;
