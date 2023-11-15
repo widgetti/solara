@@ -118,6 +118,7 @@ items = [
         "pages": [
             "confirmation_dialog",
             "menu",
+            "input_date",
             "tab",
             "tabs",
         ],
