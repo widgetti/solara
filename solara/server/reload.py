@@ -69,7 +69,7 @@ else:
         def add_file(self, file):
             file = os.path.abspath(os.path.realpath(file))
             if file not in self.files:
-                logger.info("Watching file %s", file)
+                logger.debug("Watching file %s", file)
                 if file in self.files:
                     raise RuntimeError(f"{file} was already added")
                 self.files.append(file)
@@ -148,7 +148,7 @@ class Reloader:
             # it can happen that an import is done at runtime, that we miss (could be in a thread)
             # so we always reload all modules except the ignore_modules
             self.ignore_modules = set(sys.modules)
-            logger.info("Ignoring reloading modules: %s", self.ignore_modules)
+            logger.debug("Ignoring reloading modules: %s", self.ignore_modules)
             self._first = False
 
     def _on_change(self, name):
@@ -234,7 +234,7 @@ class Reloader:
                         self.watched_modules.add(modname)
                         modules_watching.add(modname)
             if modules_watching:
-                logger.info("Watching modules: %s for reload", modules_watching)
+                logger.debug("Watching modules: %s for reload", modules_watching)
 
 
 # there is only a reloader, and there should be only 1 app
