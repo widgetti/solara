@@ -23,7 +23,7 @@ messages: solara.Reactive[List[Dict[str, Union[str, bool]]]] = solara.reactive([
 
 @solara.component
 def Page():
-    user_message_count = len(m for messages.value if m.user)
+    user_message_count = len(m for m in messages.value if m.user)
 
     def send(message):
         messages.set(
