@@ -200,7 +200,7 @@ def AppLayout(
     toolbar_dark=True,
     color: Optional[str] = "primary",
     classes: List[str] = [],
-    style: Optional[Union[str, Dict[str, str]]] = "height: 100%; overflow: auto; padding: 12px;",
+    style: Optional[Union[str, Dict[str, str]]] = None,
 ):
     """The default layout for Solara apps. It consists of an toolbar bar, a sidebar and a main content area.
 
@@ -229,9 +229,8 @@ def AppLayout(
      * `navigation`: Whether the navigation tabs based on routing should be shown.
      * `color`: The color of the toolbar.
      * `classes`: List of CSS classes to apply to the direct parent of the childred.
-     * `style`: CSS style to apply to the direct parent of the children. By default we apply some padding, and set the height to
-       100% to make sure the layout fills the screen. In combination with overflow: auto, this will make sure the scrollbars
-       will appear when needed.
+     * `style`: CSS style to apply to the direct parent of the children. If style is None we use a default style of "height: 100%; overflow: auto;"
+        and add 12px of padding when the sidebar of titlebar is visible. This will make sure your app gets scrollbars when need.
     """
     route, routes = solara.use_route()
     paths = [solara.resolve_path(r, level=0) for r in routes]
@@ -259,6 +258,12 @@ def AppLayout(
     title = t.use_title_get() or title
     children_appbartitle = apptitle_portal.use_portal()
     show_app_bar = (title and (len(routes) > 1 and navigation)) or children_appbar or use_drawer or children_appbartitle
+
+    if style is None:
+        style = {"height": "100%", "overflow": "auto"}
+        # if style is None, we choose a default style based on whether we are seeing the appbar, etc
+        if show_app_bar or children_sidebar or len(children) != 1:
+            style["padding"] = "12px"
 
     def set_path(index):
         path = paths[index]
