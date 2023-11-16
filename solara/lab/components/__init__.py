@@ -1,3 +1,4 @@
+from .chat import ChatBox, ChatInfo, ChatInput, ChatInterface, ChatMessage  # noqa: F401
 from .confirmation_dialog import ConfirmationDialog  # noqa: F401
 from .input_date import InputDate, InputDateRange  # noqa: F401
 from .menu import ClickMenu, ContextMenu, Menu  # noqa: F401 F403
