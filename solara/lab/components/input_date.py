@@ -81,6 +81,8 @@ def InputDate(
     """
     value_reactive = solara.use_reactive(value, on_value)  # type: ignore
     del value, on_value
+    datepicker_is_open = solara.use_reactive(open_value, on_open_value)  # type: ignore
+    del open_value, on_open_value
 
     def set_date_typed_cast(value: Optional[str]):
         if value:
@@ -102,6 +104,7 @@ def InputDate(
     def set_date_cast(new_value: Optional[str]):
         if new_value:
             date_value = dt.datetime.strptime(new_value, "%Y-%m-%d").date()
+            datepicker_is_open.set(False)
             value_reactive.value = date_value
 
     def standard_strfy(date: Optional[dt.date]):
@@ -111,9 +114,6 @@ def InputDate(
             return date.strftime("%Y-%m-%d")
 
     date_standard_str = standard_strfy(value_reactive.value)
-
-    datepicker_is_open = solara.use_reactive(open_value, on_open_value)  # type: ignore
-    del open_value, on_open_value
 
     style_flat = solara.util._flatten_style(style)
 
@@ -147,9 +147,6 @@ def InputDate(
         ):
             if len(children) > 0:
                 solara.display(*children)
-            else:
-                with solara.Row(justify="end", style="width: 100%"):
-                    solara.Button("close", color="primary", on_click=lambda: datepicker_is_open.set(False))
 
 
 @solara.component
@@ -262,6 +259,8 @@ def InputDateRange(
         date_value = cast(
             Tuple[Optional[dt.date], Optional[dt.date]], tuple([dt.datetime.strptime(item, "%Y-%m-%d").date() if item is not None else None for item in values])
         )
+        if len(date_value) > 1 and date_value[1] is not None:
+            datepicker_is_open.set(False)
         value_reactive.value = date_value
 
     string_dates, error_message = dates_to_string(value_reactive.value)
@@ -297,6 +296,3 @@ def InputDateRange(
             if len(children) > 0:
                 for el in children:
                     solara.display(el)
-            else:
-                with solara.Row(justify="end", style="width: 100%;"):
-                    solara.Button("close", color="primary", on_click=lambda: datepicker_is_open.set(False))

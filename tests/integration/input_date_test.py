@@ -7,7 +7,7 @@ today = dt.date.today()
 tomorrow = today + dt.timedelta(days=1)
 
 
-def test_input_date(solara_test, page_session: Page):
+def test_input_date_single(solara_test, page_session: Page):
     import solara
     from solara.lab import InputDate
 
@@ -31,11 +31,17 @@ def test_input_date(solara_test, page_session: Page):
     page_session.wait_for_timeout(350)
     expect(page_session.get_by_role("menu")).to_be_visible()
     today_button = page_session.get_by_role("button", name=today.strftime("%d"))
+    # We click it, but it does not trigger a change, so we don't auto close
+    # Do we want to change this behaviour, and still close it?
     today_button.click()
     page_session.wait_for_timeout(350)
     expect(page_session.get_by_role("menu")).to_be_visible()
     tomorrow_button = page_session.get_by_role("button", name=tomorrow.strftime("%d"))
     tomorrow_button.click()
+    page_session.wait_for_timeout(350)
+    expect(page_session.get_by_role("menu")).not_to_be_visible()
+
+    input.click()
     page_session.wait_for_timeout(350)
     expect(page_session.get_by_role("menu")).to_be_visible()
     page_session.mouse.click(400, 400)
@@ -82,7 +88,8 @@ def test_input_date_range(solara_test, page_session: Page):
     tomorrow_button.click()
     page_session.wait_for_timeout(350)
     expect(page_session.locator(".test-class label")).not_to_contain_text("(Please select two dates)")
-    expect(page_session.get_by_role("menu")).to_be_visible()
+    expect(page_session.get_by_role("menu")).not_to_be_visible()
+    input.click()
     page_session.mouse.click(400, 400)
     page_session.wait_for_timeout(350)
     expect(page_session.get_by_role("menu")).not_to_be_visible()
