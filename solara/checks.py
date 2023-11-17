@@ -104,7 +104,6 @@ document.body.appendChild(iframe);
 def SolaraCheck():
     def flag_solara_checked():
         try:
-            return
             solara_checked_path.write_text("")
         except OSError:
             pass
