@@ -37,14 +37,14 @@ def Page():
         response = openai.chat.completions.create(
             model="gpt-4-1106-preview",
             messages=[
-                {"role": "user", "content": messages.value[-1]["message"]},
+                {"role": "user", "content": messages.value[-1]["message"]},  # type: ignore
             ],
             stream=True,
         )
         messages.set([*messages.value, {"user": False, "message": ""}])
         while True:
             for chunk in response:
-                if chunk.choices[0].finish_reason == "stop":
+                if chunk.choices[0].finish_reason == "stop":  # type: ignore
                     break
                 messages.set(
                     [
