@@ -192,10 +192,12 @@ class AppScript:
             context.close()
 
     def run(self):
-        if reload.reloader.requires_reload:
+        if reload.reloader.requires_reload or self._first_execute_app is None:
             with thread_lock:
-                if reload.reloader.requires_reload:
+                if reload.reloader.requires_reload or self._first_execute_app is None:
+                    self._first_execute_app = None
                     self._first_execute_app = self._execute()
+                    print("Re-executed app", self.name)  # noqa
         return self._first_execute_app
 
     def on_file_change(self, name):
