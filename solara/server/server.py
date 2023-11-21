@@ -16,7 +16,7 @@ import requests
 import solara
 import solara.routing
 
-from . import app, jupytertools, settings, websocket
+from . import app, jupytertools, patch, settings, websocket
 from .kernel import Kernel, deserialize_binary_message
 from .kernel_context import initialize_virtual_kernel
 
@@ -135,6 +135,8 @@ async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, kernel_id: s
                 solara_user.set(user)
 
             while True:
+                if settings.main.timing:
+                    widgets_ids = set(patch.widgets)
                 try:
                     message = await ws.receive()
                 except websocket.WebSocketDisconnect:
@@ -156,7 +158,13 @@ async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, kernel_id: s
                     return
                 t2 = time.time()
                 if settings.main.timing:
-                    print(f"timing: total={t2-t0:.3f}s, deserialize={t1-t0:.3f}s, kernel={t2-t1:.3f}s")  # noqa: T201
+                    widgets_ids_after = set(patch.widgets)
+                    created_widgets_count = len(widgets_ids_after - widgets_ids)
+                    close_widgets_count = len(widgets_ids - widgets_ids_after)
+                    print(  # noqa: T201
+                        f"timing: total={t2-t0:.3f}s, deserialize={t1-t0:.3f}s, kernel={t2-t1:.3f}s"
+                        f" widget: created: {created_widgets_count} closed: {close_widgets_count}"
+                    )
     finally:
         context.page_disconnect(page_id)
 

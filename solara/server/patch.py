@@ -264,6 +264,7 @@ def Thread_debug_run(self):
 _patched = False
 global_widgets_dict = {}
 global_templates_dict: Dict[Any, Any] = {}
+widgets = context_dict_widgets()
 
 
 def Output_enter(self):
@@ -314,14 +315,14 @@ def patch():
 
     if ipywidget_version_major < 8:
         global_widgets_dict = ipywidgets.widget.Widget.widgets
-        ipywidgets.widget.Widget.widgets = context_dict_widgets()  # type: ignore
+        ipywidgets.widget.Widget.widgets = widgets  # type: ignore
     else:
         if hasattr(ipywidgets.widgets.widget, "_instances"):  # since 8.0.3
             global_widgets_dict = ipywidgets.widgets.widget._instances
-            ipywidgets.widgets.widget._instances = context_dict_widgets()  # type: ignore
+            ipywidgets.widgets.widget._instances = widgets  # type: ignore
         elif hasattr(ipywidgets.widget.Widget, "_instances"):
             global_widgets_dict = ipywidgets.widget.Widget._instances
-            ipywidgets.widget.Widget._instances = context_dict_widgets()  # type: ignore
+            ipywidgets.widget.Widget._instances = widgets  # type: ignore
         else:
             raise RuntimeError("Could not find _instances on ipywidgets version %r" % ipywidgets.__version__)
     threading.Thread.__init__ = WidgetContextAwareThread__init__  # type: ignore
