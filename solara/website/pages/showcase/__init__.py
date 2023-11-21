@@ -9,11 +9,11 @@ def Page():
         with solara.Card("Wanderlust", style={"height": "100%"}):
             solara.Markdown(
                 """
-            [Wanderlust](https://huggingface.co/spaces/solara-dev/wanderlust) is a reproduction of the travel assistant demo shown at the
+            [Wanderlust](./wanderlust) is a reproduction of the travel assistant demo shown at the
             [OpenAI DevDay](https://devday.openai.com/) 2023, built using Solara and the OpenAI Assistants API.
             """
             )
-            with solara.v.Html(tag="a", attributes={"href": "https://huggingface.co/spaces/solara-dev/wanderlust", "target": "_blank"}):
+            with solara.Link("./wanderlust"):
                 solara.Image("/static/public/showcase/wanderlust/thumbnail.png", width="100%")
             with solara.v.Html(tag="a", attributes={"href": "https://github.com/widgetti/wanderlust", "target": "_blank"}):
                 with solara.Row(style={"min-height": "24px"}):
