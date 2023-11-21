@@ -32,12 +32,12 @@ def _set_sidebar_default(updater: Callable[[PortalElements], PortalElements]):
 
 class ElementPortal:
     def __init__(self):
-        self.context = solara.create_context((cast(PortalElements, {}), _set_sidebar_default))
+        self.context = solara.create_context(_set_sidebar_default)
 
     # TODO: can we generalize the use of 'portals' ? (i.e. transporting elements from one place to another)
     def use_portal(self) -> List[Element]:
         portal_elements, set_portal_elements = solara.use_state(cast(PortalElements, {}))
-        self.context.provide((portal_elements, set_portal_elements))  # type: ignore
+        self.context.provide(set_portal_elements)  # type: ignore
 
         portal_elements_flat: List[Tuple[int, Element]] = []
         for uuid, value in portal_elements.items():
@@ -47,7 +47,7 @@ class ElementPortal:
 
     def use_portal_add(self, children: List[Element], offset: int):
         key = solara.use_unique_key(prefix="portal-")
-        portal_elements, set_portal_elements = solara.use_context(self.context)
+        set_portal_elements = solara.use_context(self.context)
         values: List[Tuple[int, Element]] = []
         for i, child in enumerate(children):
             values.append((offset + i, child))
