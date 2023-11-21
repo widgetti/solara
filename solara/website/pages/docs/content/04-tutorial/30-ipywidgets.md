@@ -70,7 +70,7 @@ Try making the following code change (remove the first, add the last), and watch
 
 ## Using Solara components
 
-There are a lot of [valueble components in Solara](/api), but they are written as [Reacton/Solara components](/docs/understanding/reacton-basics), not
+There are a lot of [valuable components in Solara](/api), but they are written as [Reacton/Solara components](/docs/understanding/reacton-basics), not
 classic ipywidgets.
 
 Use the [.widget(...)](/api/widget) method on a component to create a widget that can be used in your existing classic ipywidget application.
