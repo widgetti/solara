@@ -152,11 +152,14 @@ async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, kernel_id: s
                 else:
                     msg = deserialize_binary_message(message)
                 t1 = time.time()
-                if not process_kernel_messages(kernel, msg):
-                    # if we shut down the kernel, we do not keep the page session alive
-                    context.close()
-                    return
+                hold_messages = ws.hold_messages() if settings.main.experimental_performance else solara.util.nullcontext()
+                with hold_messages:
+                    if not process_kernel_messages(kernel, msg):
+                        # if we shut down the kernel, we do not keep the page session alive
+                        context.close()
+                        return
                 t2 = time.time()
+
                 if settings.main.timing:
                     widgets_ids_after = set(patch.widgets)
                     created_widgets_count = len(widgets_ids_after - widgets_ids)

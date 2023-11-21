@@ -72,17 +72,37 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
     ws: starlette.websockets.WebSocket
 
     def __init__(self, ws: starlette.websockets.WebSocket, portal: anyio.from_thread.BlockingPortal) -> None:
+        super().__init__()
         self.ws = ws
         self.portal = portal
+        self.to_send: List[Union[str, bytes]] = []
+
+    def flush(self):
+        async def _flush():
+            to_send, self.to_send = self.to_send, []
+            for data in to_send:
+                if isinstance(data, bytes):
+                    await self.ws.send_bytes(data)
+                else:
+                    await self.ws.send_text(data)
+
+        if settings.main.experimental_performance:
+            self.portal.call(_flush)
 
     def close(self):
         self.portal.call(self.ws.close)
 
     def send_text(self, data: str) -> None:
-        self.portal.call(self.ws.send_text, data)
+        if self._queuing_messages:
+            self.to_send.append(data)
+        else:
+            self.portal.call(self.ws.send_bytes, data)
 
     def send_bytes(self, data: bytes) -> None:
-        self.portal.call(self.ws.send_bytes, data)
+        if self._queuing_messages:
+            self.to_send.append(data)
+        else:
+            self.portal.call(self.ws.send_bytes, data)
 
     async def receive(self):
         if hasattr(self.portal, "start_task_soon"):

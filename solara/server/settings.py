@@ -151,6 +151,7 @@ class MainSettings(BaseSettings):
     base_url: str = ""  # e.g. https://myapp.solara.run/myapp/
     platform: str = sys.platform
     host: str = HOST_DEFAULT
+    experimental_performance: bool = True
 
     class Config:
         env_prefix = "solara_"

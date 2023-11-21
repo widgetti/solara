@@ -57,6 +57,7 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
     def __init__(self, ws: simple_websocket.Server) -> None:
         self.ws = ws
         self.lock = threading.Lock()
+        super().__init__()
 
     def close(self):
         with self.lock:
@@ -77,6 +78,9 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
             return await to_thread.run_sync(lambda: self.ws.receive())
         except simple_websocket.ws.ConnectionClosed:
             raise websocket.WebSocketDisconnect()
+
+    def flush(self):
+        pass  # we do not implement queueing messages in flask (yet)
 
 
 class ServerFlask(ServerBase):
