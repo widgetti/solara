@@ -12,8 +12,11 @@ from openai import OpenAI
 
 import solara
 
-openai = OpenAI()
-openai.api_key = os.getenv("OPENAI_API_KEY")  # type: ignore
+if os.getenv("OPENAI_API_KEY") is None and "OPENAI_API_KEY" not in os.environ:
+    openai = None
+else:
+    openai = OpenAI()
+    openai.api_key = os.getenv("OPENAI_API_KEY")  # type: ignore
 
 messages: solara.Reactive[List[Dict[str, Union[str, bool]]]] = solara.reactive([])
 
@@ -33,6 +36,17 @@ def Page():
 
     def call_openai():
         if user_message_count.value == 0:
+            return
+        if openai is None:
+            messages.set(
+                [
+                    *messages.value,
+                    {
+                        "user": False,
+                        "message": "No OpenAI API key found. Please set your OpenAI API key in the environment variable `OPENAI_API_KEY`.",
+                    },
+                ]
+            )
             return
         response = openai.chat.completions.create(
             model="gpt-4-1106-preview",
