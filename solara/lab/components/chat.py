@@ -124,63 +124,43 @@ def ChatMessage(
                     solara.display(child)
                 else:
                     solara.Markdown(child)
+        extra_styles = (
+            f""".chat-message-{msg_uuid}:before{{
+                content: '';
+                position: absolute;
+                width: 0;
+                height: 0;
+                border: 6px solid;
+                top: 0;
+            }}
+            .chat-message-{msg_uuid}.left:before{{
+                left: -12px;
+                border-color: var(--color) var(--color) transparent transparent;
+            }}
+            .chat-message-{msg_uuid}.right:before{{
+                    right: -12px;
+                    border-color: var(--color) transparent transparent var(--color);
+            }}"""
+            if notch
+            else ""
+        )
         solara.Style(
-            ".chat-message-"
-            + msg_uuid
-            + "{"
-            + "--color:"
-            + color
-            + ";"
-            + """
-                    max-width: 75%;
-                    position: relative;
-                }"""
-            + ".chat-message-"
-            + msg_uuid
-            + """.left{
+            f"""
+            .chat-message-{msg_uuid}{{
+                --color: {color};
+                max-width: 75%;
+                position: relative;
+            }}
+            .chat-message-{msg_uuid}.left{{
                     border-top-left-radius: 0;
                     background-color:var(--color);
-                }"""
-            + ".chat-message-"
-            + msg_uuid
-            + """.right{
+                    { "margin-left: 10px !important;" if notch else ""}
+            }}
+            .chat-message-{msg_uuid}.right{{
                     border-top-right-radius: 0;
                     background-color:var(--color);
-                }"""
+                    { "margin-right: 10px !important;" if notch else ""}
+            }}
+            {extra_styles}
+            """
         )
-        if notch:
-            solara.Style(
-                ".chat-message-"
-                + msg_uuid
-                + """.right{
-                    margin-right: 10px !important;
-                }
-                .chat-message-"""
-                + msg_uuid
-                + """.left{
-                    margin-left: 10px !important;
-                }
-                .chat-message-"""
-                + msg_uuid
-                + """:before{
-                        content: '';
-                        position: absolute;
-                        width: 0;
-                        height: 0;
-                        border: 6px solid;
-                        top: 0;
-                    }"""
-                + ".chat-message-"
-                + msg_uuid
-                + """.left:before{
-                        left: -12px;
-                        border-color: var(--color) var(--color) transparent transparent;
-                    }"""
-                + ".chat-message-"
-                + msg_uuid
-                + """.right:before{
-                        right: -12px;
-                        border-color: var(--color) transparent transparent var(--color);
-                    }
-                """
-            )
