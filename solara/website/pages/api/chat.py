@@ -18,12 +18,8 @@ title = "Chat Components"
 
 
 __doc__ += apidoc(solara.lab.components.chat.ChatBox.f)  # type: ignore
-__doc__ += "# ChatInfo"
-__doc__ += apidoc(solara.lab.components.chat.ChatInfo.f)  # type: ignore
 __doc__ += "# ChatInput"
 __doc__ += apidoc(solara.lab.components.chat.ChatInput.f)  # type: ignore
-__doc__ += "# ChatInterface"
-__doc__ += apidoc(solara.lab.components.chat.ChatInterface.f)  # type: ignore
 __doc__ += "# ChatMessage"
 __doc__ += apidoc(solara.lab.components.chat.ChatMessage.f)  # type: ignore
 __doc__ += """## Different Message Styles
@@ -63,7 +59,7 @@ def send(new_message):
 @solara.component
 def Page():
     solara.InputText("username", value=name)
-    with solara.lab.ChatInterface(style={"min-height": "50vh"}):
+    with solara.Column(style={"min-height": "50vh"}):
         with solara.lab.ChatBox():
             for item in messages.value:
                 with solara.lab.ChatMessage(
@@ -71,8 +67,6 @@ def Page():
                     name=item["name"],
                 ):
                     solara.Markdown(item["message"])
-        with solara.lab.ChatInfo():
-            solara.Text("Welcome to the chat!")
         solara.lab.ChatInput(send_callback=send)
 ```
 
@@ -101,7 +95,7 @@ def CustomMessage(
 
 @solara.component
 def Page():
-    with solara.lab.ChatInterface(style={"min-height": "50vh"}):
+    with solara.Column(style={"min-height": "50vh"}):
         with solara.lab.ChatBox():
             for item in messages.value:
                 CustomMessage(

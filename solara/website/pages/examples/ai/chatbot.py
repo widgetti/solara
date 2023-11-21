@@ -45,7 +45,7 @@ def Page():
         while True:
             for chunk in response:
                 if chunk.choices[0].finish_reason == "stop":  # type: ignore
-                    break
+                    return
                 messages.set(
                     [
                         *messages.value[:-1],
@@ -61,18 +61,17 @@ def Page():
     with solara.Column(
         style={"width": "45vw", "height": "50vh"},
     ):
-        with solara.lab.ChatInterface():
-            with solara.lab.ChatBox():
-                for item in messages.value:
-                    with solara.lab.ChatMessage(
-                        user=item["user"],
-                        avatar=False,
-                        name="Bot" if not item["user"] else "User",
-                        color="rgba(0,0,0, 0.06)" if not item["user"] else "#ff991f",
-                        avatar_background_color="primary" if not item["user"] else None,
-                        border_radius="20px",
-                    ):
-                        solara.Markdown(item["message"])
-            if result.state == solara.ResultState.RUNNING:
-                solara.lab.ChatInfo(["I'm thinking..."])
-            solara.lab.ChatInput(send_callback=send, disabled=(result.state == solara.ResultState.RUNNING))
+        with solara.lab.ChatBox():
+            for item in messages.value:
+                with solara.lab.ChatMessage(
+                    user=item["user"],
+                    avatar=False,
+                    name="Bot" if not item["user"] else "User",
+                    color="rgba(0,0,0, 0.06)" if not item["user"] else "#ff991f",
+                    avatar_background_color="primary" if not item["user"] else None,
+                    border_radius="20px",
+                ):
+                    solara.Markdown(item["message"])
+        if result.state == solara.ResultState.RUNNING:
+            solara.Text("I'm thinking...", style={"font-size": "1rem", "padding-left": "20px"})
+        solara.lab.ChatInput(send_callback=send, disabled=(result.state == solara.ResultState.RUNNING))

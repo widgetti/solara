@@ -24,21 +24,6 @@ def ChatBox(children: List[solara.Element] = []):
 
 
 @solara.component
-def ChatInfo(children: List[solara.Element] = []):
-    """
-    Used to display a small amount of information in the ChatInterface, just above ChatInput.
-    Ideal for displaying a "typing..." indicator, or some other small piece of information.
-
-    # Arguments
-
-    * `children`: A list of child components.
-    """
-    with solara.Row(style={"min-height": "1em"}):
-        if children != []:
-            solara.display(*children)
-
-
-@solara.component
 def ChatInput(
     send_callback: Optional[Callable] = None,
     disabled: bool = False,
@@ -77,46 +62,6 @@ def ChatInput(
         button = solara.v.Btn(color="primary", icon=True, children=[solara.v.Icon(children=["mdi-send"])], disabled=message == "")
 
         use_change(button, send, update_events=["click"])
-
-
-@solara.component
-def ChatInterface(
-    children: List[solara.Element] = [],
-    style: Union[str, dict, None] = None,
-):
-    """
-    The ChatInterface component is a container for the rest of the chat components. Ensures proper ordering.
-
-    # Arguments
-
-    * `children`: A list of child components.
-    * `style`: CSS style to apply to the `solara.Column` that wraps the chat components.
-    """
-    if isinstance(style, dict) and "height" not in style.keys():
-        style["height"] = "100%"
-    elif isinstance(style, str) and "height" not in style:
-        style = style + "height: 100%;"
-
-    children_info = []
-    children_input = []
-    children_chatbox = []
-    children_others = []
-
-    for child in children:
-        if isinstance(child, solara.Element) and child.component == ChatInfo:
-            children_info.append(child)
-        elif isinstance(child, solara.Element) and child.component == ChatInput:
-            children_input.append(child)
-        elif isinstance(child, solara.Element) and child.component == ChatBox:
-            children_chatbox.append(child)
-        else:
-            children_others.append(child)
-
-    with solara.Column(style=style):
-        solara.display(*children_chatbox)
-        solara.display(*children_info)
-        solara.display(*children_input)
-        solara.display(*children_others)
 
 
 @solara.component
