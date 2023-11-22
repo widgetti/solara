@@ -111,11 +111,11 @@ def ChatMessage(
         with solara.Column(
             classes=["chat-message-" + msg_uuid, "right" if user else "left"],
             gap=0,
-            style="border-radius: "
-            + (border_radius if border_radius is not None else "")
-            + "; border-top-"
-            + ("right" if user else "left")
-            + "-radius: 0; padding: .5em 1.5em;",
+            style={
+                "border-radius": (border_radius if border_radius is not None else ""),
+                f"border-top-{'right' if user else 'left'}-radius": "0",
+                "padding": ".5em 1.5em;",
+            },
         ):
             if name is not None:
                 solara.Text(name, style="font-weight: bold;", classes=["message-name", "right" if user else "left"])
