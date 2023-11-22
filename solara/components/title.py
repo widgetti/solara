@@ -21,12 +21,12 @@ def _set_titles_default(updater: Callable[[Titles], Titles]):
     pass
 
 
-titles_context = solara.create_context((cast(Titles, {}), _set_titles_default))
+titles_context = solara.create_context(_set_titles_default)
 
 
 def use_title_get() -> Optional[str]:
     titles, set_titles = solara.use_state(cast(Titles, {}))
-    titles_context.provide((titles, set_titles))  # type: ignore
+    titles_context.provide(set_titles)  # type: ignore
     if titles:
         title = max([(order, title) for (key, (order, title)) in titles.items()], key=lambda x: x[0])[1]
     else:
@@ -36,7 +36,7 @@ def use_title_get() -> Optional[str]:
 
 def use_title_set(title: str, offset: int):
     key = solara.use_unique_key(prefix="title-")
-    _titles, set_titles = solara.use_context(titles_context)
+    set_titles = solara.use_context(titles_context)
 
     def update():
         set_titles(lambda titles: {**titles, key: (offset, title)})
