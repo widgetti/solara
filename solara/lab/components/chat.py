@@ -29,7 +29,7 @@ def ChatInput(
     disabled: bool = False,
 ):
     """
-    The ChatInput component renders a text input and together with a send button.
+    The ChatInput component renders a text input together with a send button.
 
     # Arguments
 
@@ -124,6 +124,7 @@ def ChatMessage(
                     solara.display(child)
                 else:
                     solara.Markdown(child)
+        # we use the uuid to generate 'scoped' CSS, i.e. css that only applies to the component instance.
         extra_styles = (
             f""".chat-message-{msg_uuid}:before{{
                 content: '';

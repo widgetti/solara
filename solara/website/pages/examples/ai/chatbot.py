@@ -23,7 +23,7 @@ messages: solara.Reactive[List[Dict[str, Union[str, bool]]]] = solara.reactive([
 
 @solara.component
 def Page():
-    user_message_count = solara.use_reactive(0)
+    user_message_count = len(m for messages.value if m.user)
 
     def send(message):
         messages.set(
@@ -32,7 +32,6 @@ def Page():
                 {"user": True, "message": message},
             ]
         )
-        user_message_count.value += 1
 
     def call_openai():
         if user_message_count.value == 0:
