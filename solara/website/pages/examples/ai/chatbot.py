@@ -78,7 +78,7 @@ def Page():
     result = solara.use_thread(call_openai, dependencies=[user_message_count])  # type: ignore
 
     with solara.Column(
-        style={"width": "45vw", "height": "50vh"},
+        style={"width": "700px", "height": "50vh"},
     ):
         with solara.lab.ChatBox():
             for item in messages.value:
