@@ -166,14 +166,16 @@
     {% endif %}
     {% if theme.variant == "auto" %}
     {% endif %}
-    {% if theme.variant == "light" %}
+    {%- if theme.variant == "light" -%}
     <div id="app" class="v-application v-application--is-ltr theme--light" data-app="true">
-    {% elif theme.variant == "dark" %}
+    {%- elif theme.variant == "dark" -%}
     <div id="app" class="v-application v-application--is-ltr theme--dark" data-app="true">
-    {% endif %}
+    {%- endif -%}
         {{ pre_rendered_html|safe }}
+        {%- if pre_rendered_html|length == 0 -%}
         {# next div is used in ssg code to see if vue took over rendering #}
         <div id="pre-rendered-html-present" style="display: none"></div>
+        {%- endif -%}
     </div>
     {% block after_pre_rendered_html %}{% endblock %}
     {% if vue3 == True %}
@@ -298,7 +300,7 @@
                     // so we mount it when loading becomes false
                     if (solara.preRendered && !this.mounted) {
                         this.isMounted = true;
-                        this.$mount("#app")
+                        this.$mount("#app", true);
                     } else {
                         this.isMounted = true;
                     }
