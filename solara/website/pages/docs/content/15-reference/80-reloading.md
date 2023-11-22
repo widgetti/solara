@@ -11,6 +11,11 @@ Solara will auto detect if your script or the sourcecode of an imported module h
 The solara server automatically watches all `.vue` files that are used by vue templates (there are some used in solara.components for example).
 When a `.vue` file is saved, the widgets get updated automatically, without needing a page reload, aiding rapid development.
 
+## Reloading of .vue files
+
+The [Style component](/api/style) accepts a Path as argument, when that is used and the server is in development mode (the default), also
+CSS files will be hot reloaded.
+
 
 ## Restarting the server after changes to the solara packages
 
