@@ -214,6 +214,7 @@
         {# next div is used in ssg code to see if vue took over rendering #}
         <div id="pre-rendered-html-present" style="display: none"></div>
     </div>
+    {% block after_pre_rendered_html %}{% endblock %}
     {% if vue3 == True %}
         {% if production %}
         <script src="{{cdn}}/@widgetti/solara-vuetify3-app@1.0.0/dist/solara-vuetify-app{{ipywidget_major_version}}.min.js"></script>
