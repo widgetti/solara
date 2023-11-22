@@ -8,6 +8,5 @@ HERE = Path(__file__).parent
 
 
 @solara.component_vue("mailchimp.vue")
-def MailChimp():
-    # solara.HTML(unsafe_innerHTML=html)
+def MailChimp(location: str):
     pass
