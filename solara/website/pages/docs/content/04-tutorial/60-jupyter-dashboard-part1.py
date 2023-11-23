@@ -38,4 +38,5 @@ def Page():
         Don’t miss the next tutorial and stay updated with the latest techniques and insights by subscribing to our newsletter.
     """
     )
-    MailChimp()
+    location = solara.use_router().path
+    MailChimp(location=location)

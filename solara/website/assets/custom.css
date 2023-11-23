@@ -234,3 +234,20 @@ blockquote p:last-child {
 .jp-RenderedHTMLCommon {
     padding-right: 0;
 }
+
+/* MAILCHIMP */
+
+#mc_embed_signup {
+    background: transparent;
+    clear: left;
+    width: 100%;
+}
+#mc_embed_signup .indicates-required{
+    margin-right: 0;
+}
+#mc_embed_signup .mc-field-group{
+    width: 100%;
+}
+#mc_embed_signup_scroll > div.mc-field-group:nth-child(3){
+    display: none;
+}

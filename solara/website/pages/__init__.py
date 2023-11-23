@@ -5,6 +5,7 @@ from solara.alias import rv
 from solara.components.title import Title
 
 from ..components import Header, Hero
+from ..components.mailchimp import MailChimp
 
 title = "Home"
 
@@ -255,6 +256,10 @@ def Layout(children=[]):
                             """,
                             style="text-align:center",
                         )
+                with rv.Row(class_="ma-8"):
+                    with rv.Col(md=8, sm=10, offset_sm=1, offset_md=2):
+                        solara.Markdown("# Join our Mailing list to get the latest news")
+                        MailChimp(location=router.path)
                 with rv.Row(class_="ma-8"):
                     with rv.Col(md=5, offset_md=2, sm=5, offset_sm=1):
                         solara.Markdown(
