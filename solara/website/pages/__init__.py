@@ -214,60 +214,56 @@ def Layout(children=[]):
                                 with rv.ExpansionPanelContent():
                                     solara.Markdown("Using [solara-server](/docs/understanding/solara-server), we can run our app in production using FastAPI.")
 
-                # with rv.Row(class_="ma-8", style_="background-color:#ffeec5; margin-left:0px; margin-right:0px;"):
-                #     with rv.Col(md=8, sm=10, offset_sm=1, offset_md=2):
-                #         solara.Markdown("# Demo", style="text-align:center; color: white")
-                with rv.Row(class_="ma-8"):
-                    with rv.Col(md=10, offset_md=2, sm=12):
-                        with rv.Container(tag="section", fluid=False, ma_0=True, pa_0=True, class_="fill-height mb-8"):
-                            with rv.Row(class_="ma-2"):
-                                with rv.Col(md=8, offset_md=2, sm=12):
-                                    solara.Markdown("# Testimonials", style="text-align:center")
-                            with rv.Row(class_="ma-8", align_content="stretch", justify="stretch"):
-                                with rv.Col(sm=6, md=4):
-                                    Testimonial(
-                                        "Solara is like streamlit, but for Jupyter. I am really excited to see where this goes!",
-                                        "Jack Parmer",
-                                        "Former CEO and Co-Founder of Plotly",
-                                        "/static/public/avatar/jack-parmer.jpg",
-                                    )
+                with solara.Column(style={"width": "100%"}):
+                    solara.v.Divider()
 
-                                with rv.Col(sm=6, md=4):
-                                    Testimonial(
-                                        "Solara has been transformative, allowing us to rapidly create a Jupyter app and iterate with impressive speed.",
-                                        "Nick Elprin",
-                                        "CEO and Co-Founder of Domino Data Lab",
-                                        "/static/public/avatar/nick-elprin.jpg",
-                                    )
-                                with rv.Col(sm=6, md=4):
-                                    Testimonial(
-                                        "Solara allows us to go from prototype to production with the same stack.",
-                                        "Jonathan Chambers",
-                                        "Co-founder of Planeto",
-                                        "/static/public/avatar/jonathan-chambers.jpg",
-                                    )
-                with rv.Row(class_="ma-8"):
-                    with rv.Col(md=8, sm=10, offset_sm=1, offset_md=2):
-                        solara.Markdown("# Sponsors", style="text-align:center")
-                with rv.Row(class_="ma-8"):
-                    with rv.Col(md=8, sm=10, offset_sm=1, offset_md=2):
-                        solara.Markdown(
-                            """[![sponsors](/static/public/sponsors/domino.png)](https://dominodatalab.com)
-                            """,
-                            style="text-align:center",
+                with solara.Column(align="center", gap="2.5em", style={"width": "100%", "padding-bottom": "50px"}):
+                    solara.Markdown("# Testimonials", style="text-align:center")
+                    with solara.Row(justify="center", gap="2.5em", style={"align-items": "stretch"}):
+                        Testimonial(
+                            "Solara is like streamlit, but for Jupyter. I am really excited to see where this goes!",
+                            "Jack Parmer",
+                            "Former CEO and Co-Founder of Plotly",
+                            "/static/public/avatar/jack-parmer.jpg",
                         )
-                with rv.Row(class_="ma-8"):
-                    with rv.Col(md=8, sm=10, offset_sm=1, offset_md=2):
-                        solara.Markdown("# Join our Mailing list to get the latest news")
-                        MailChimp(location=router.path)
-                with rv.Row(class_="ma-8"):
-                    with rv.Col(md=5, offset_md=2, sm=5, offset_sm=1):
+                        Testimonial(
+                            "Solara has been transformative, allowing us to rapidly create a Jupyter app and iterate with impressive speed.",
+                            "Nick Elprin",
+                            "CEO and Co-Founder of Domino Data Lab",
+                            "/static/public/avatar/nick-elprin.jpg",
+                        )
+                        Testimonial(
+                            "Solara allows us to go from prototype to production with the same stack.",
+                            "Jonathan Chambers",
+                            "Co-founder of Planeto",
+                            "/static/public/avatar/jonathan-chambers.jpg",
+                        )
+
+                with solara.Column(style={"width": "100%"}):
+                    solara.v.Divider()
+
+                with solara.Column(align="center", gap="2.5em", style={"width": "100%", "padding-bottom": "50px"}):
+                    solara.Markdown("# Sponsors", style="text-align:center")
+                    with solara.Row(justify="center", gap="2.5em", style={"align-items": "stretch"}):
+                        with solara.v.Html(tag="a", attributes={"href": "https://www.dominodatalab.com/", "target": "_blank"}):
+                            solara.Image("/static/public/sponsors/domino.png", width="300px")
+
+                with solara.Column(style={"width": "100%"}):
+                    solara.v.Divider()
+
+                with solara.Row(justify="center", gap="2.5em", style={"width": "100%", "padding": "50px 0"}):
+                    with solara.Column(align="center", style={"max-width": "40%", "min-width": "400px"}):
                         solara.Markdown(
                             """
-                        ## For any consulting, training or support needs
-                        [contact@solara.dev](mailto:contact@solara.dev)
-                        """
+                            #### For any consulting, training or support needs
+                            [contact@solara.dev](mailto:contact@solara.dev)
+                            """
                         )
+                    solara.v.Divider(vertical=True)
+                    with solara.Column(align="center", style={"max-width": "40%", "min-width": "400px"}):
+                        solara.Markdown("#### Join our Mailing list to get the latest news")
+                        with solara.Div(style={"width": "80%"}):
+                            MailChimp(location=router.path)
 
             else:
                 with rv.Row(
@@ -346,7 +342,6 @@ def Testimonial(text, name, position, img):
         dark=False,
         color="#ffeec5",
         max_width=max_width,
-        height="100%",
         style_="display: flex; flex-direction: column; justify-content: space-between;",
     ):
         # rv.CardTitle(children=["Former Plotly CEO"])
