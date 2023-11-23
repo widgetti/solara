@@ -105,6 +105,14 @@ blockquote p:last-child {
     row-gap: 2.5em;
 }
 
+.row-container{
+    width: 60%;
+    flex-wrap: wrap;
+}
+.row-container > div{
+    max-width: 500px;
+}
+
 /* vuetify component overrides */
 
 .v-btn.solara-docs-button {
@@ -277,4 +285,11 @@ blockquote p:last-child {
         padding: 25px;
         row-gap: 1em;
     }
+    .row-container{
+        width: calc(100% - 16px);
+        padding: 12px;
+    }
+        .row-container > div{
+            max-width: 300px;
+        }
 }

@@ -130,10 +130,9 @@ def Layout(children=[]):
                     # with rv.Col(md=4, sm=5):
                     #     rv.Img(src="/static/public/landing/what.png", style_="width:900px")
 
-                with rv.Row(class_="ma-2"):
-                    with rv.Col(md=4, offset_md=2, sm=5, offset_sm=1, style_="padding-top: 50px"):
-                        rv.Img(src="/static/public/landing/complexity.png", style_="width:500px;")
-                    with rv.Col(md=4, sm=5):
+                with solara.Column(style={"width": "100%"}, gap="2.5em", classes=["pt-10", "mt-8"], align="center"):
+                    with solara.Row(justify="center", gap="2.5em", classes=["ma-2", "row-container"]):
+                        rv.Img(src="/static/public/landing/complexity.png")
                         solara.Markdown(
                             """
                         # Build **large** apps with **low** code complexity
@@ -146,8 +145,7 @@ def Layout(children=[]):
                         Solara offers the **flexibility** to build complex apps, but keeps the **simplicity** of a small code base.
                         """
                         )
-                with rv.Row(class_="ma-8"):
-                    with rv.Col(md=4, sm=5, offset_sm=1, offset_md=2):
+                    with solara.Row(justify="center", gap="2.5em", classes=["ma-2", "row-container"]):
                         solara.Markdown(
                             """
                         # The trustworthiness of React
@@ -159,10 +157,9 @@ def Layout(children=[]):
                         a reliable and robust framework to build large scale apps.
                         """
                         )
-                    with rv.Col(md=5, sm=5, style_="padding-top: 50px"):
-                        rv.Img(src="/static/public/landing/python-love-react.png", style_="width:300px")
-                with rv.Row(class_="ma-8"):
-                    with rv.Col(md=4, offset_md=2, cols=10, offset=1):
+                        with solara.Row(justify="center", style={"width": "500px"}):
+                            rv.Img(src="/static/public/landing/python-love-react.png", style_="max-width:300px")
+                    with solara.Row(justify="center", gap="2.5em", classes=["ma-2", "row-container"]):
                         with solara.Column():
                             if target == 0:
                                 solara.Markdown("#### Running in: Jupyter notebook")
@@ -177,7 +174,6 @@ def Layout(children=[]):
                             import solara.website.pages.apps.scatter as scatter
 
                             github_url = solara.util.github_url(scatter.__file__)
-                            # solara.Text("dsadsa")
                             solara.Button(
                                 label="View source",
                                 icon_name="mdi-github-circle",
@@ -193,26 +189,28 @@ def Layout(children=[]):
                                         text=True,
                                         outlined=False,
                                     )
-                    with rv.Col(md=4, sm=10, offset_sm=1):
-                        solara.Markdown(
-                            """
-                                ## Create apps
+                        with solara.Column():
+                            solara.Markdown(
+                                """
+                                    ## Create apps
 
-                                In Jupyter or standalone, and run them in production
-                                using FastAPI or starlette.
+                                    In Jupyter or standalone, and run them in production
+                                    using FastAPI or starlette.
 
-                                Get more inspiration from our [examples](/examples).
-                            """
-                        )
-                        with rv.ExpansionPanels(v_model=target, on_v_model=set_target, mandatory=True, flat=True):
-                            with rv.ExpansionPanel():
-                                rv.ExpansionPanelHeader(children=["Jupyter notebook"])
-                                with rv.ExpansionPanelContent():
-                                    solara.Markdown("Build on top of ipywidgets, solara components work in all Jupyter notebook environments.")
-                            with rv.ExpansionPanel():
-                                rv.ExpansionPanelHeader(children=["FastAPI"])
-                                with rv.ExpansionPanelContent():
-                                    solara.Markdown("Using [solara-server](/docs/understanding/solara-server), we can run our app in production using FastAPI.")
+                                    Get more inspiration from our [examples](/examples).
+                                """
+                            )
+                            with rv.ExpansionPanels(v_model=target, on_v_model=set_target, mandatory=True, flat=True):
+                                with rv.ExpansionPanel():
+                                    rv.ExpansionPanelHeader(children=["Jupyter notebook"])
+                                    with rv.ExpansionPanelContent():
+                                        solara.Markdown("Build on top of ipywidgets, solara components work in all Jupyter notebook environments.")
+                                with rv.ExpansionPanel():
+                                    rv.ExpansionPanelHeader(children=["FastAPI"])
+                                    with rv.ExpansionPanelContent():
+                                        solara.Markdown(
+                                            "Using [solara-server](/docs/understanding/solara-server), we can run our app in production using FastAPI."
+                                        )
 
                 with solara.Column(style={"width": "100%"}):
                     solara.v.Divider()
