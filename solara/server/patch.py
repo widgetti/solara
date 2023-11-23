@@ -257,8 +257,14 @@ def WidgetContextAwareThread__init__(self, *args, **kwargs):
 def Thread_debug_run(self):
     if self.current_context:
         kernel_context.set_context_for_thread(self.current_context, self)
-    with pdb_guard():
-        Thread__run(self)
+        shell = self.current_context.kernel.shell
+        shell.display_pub.register_hook(shell.display_in_reacton_hook)
+    try:
+        with pdb_guard():
+            Thread__run(self)
+    finally:
+        if self.current_context:
+            shell.display_pub.unregister_hook(shell.display_in_reacton_hook)
 
 
 _patched = False
