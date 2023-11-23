@@ -130,9 +130,9 @@ def Layout(children=[]):
                     # with rv.Col(md=4, sm=5):
                     #     rv.Img(src="/static/public/landing/what.png", style_="width:900px")
 
-                with rv.Row(class_="ma-8"):
+                with rv.Row(class_="ma-2"):
                     with rv.Col(md=4, offset_md=2, sm=5, offset_sm=1, style_="padding-top: 50px"):
-                        rv.Img(src="/static/public/landing/complexity.png", style_="width:500px")
+                        rv.Img(src="/static/public/landing/complexity.png", style_="width:500px;")
                     with rv.Col(md=4, sm=5):
                         solara.Markdown(
                             """
@@ -219,7 +219,7 @@ def Layout(children=[]):
 
                 with solara.Column(align="center", gap="2.5em", style={"width": "100%", "padding-bottom": "50px"}):
                     solara.Markdown("# Testimonials", style="text-align:center")
-                    with solara.Row(justify="center", gap="2.5em", style={"align-items": "stretch"}):
+                    with solara.Row(justify="center", gap="2.5em", style={"align-items": "stretch", "flex-wrap": "wrap", "row-gap": "2.5em"}):
                         Testimonial(
                             "Solara is like streamlit, but for Jupyter. I am really excited to see where this goes!",
                             "Jack Parmer",
@@ -251,8 +251,8 @@ def Layout(children=[]):
                 with solara.Column(style={"width": "100%"}):
                     solara.v.Divider()
 
-                with solara.Row(justify="center", gap="2.5em", style={"width": "100%", "padding": "50px 0"}):
-                    with solara.Column(align="center", style={"max-width": "40%", "min-width": "400px"}):
+                with solara.Row(justify="center", gap="2.5em", classes=["footer-wrapper"]):
+                    with solara.Column(align="center", style={"min-width": "300px"}):
                         solara.Markdown(
                             """
                             #### For any consulting, training or support needs
@@ -260,7 +260,7 @@ def Layout(children=[]):
                             """
                         )
                     solara.v.Divider(vertical=True)
-                    with solara.Column(align="center", style={"max-width": "40%", "min-width": "400px"}):
+                    with solara.Column(align="center", style={"min-width": "300px"}):
                         solara.Markdown("#### Join our Mailing list to get the latest news")
                         with solara.Div(style={"width": "80%"}):
                             MailChimp(location=router.path)
