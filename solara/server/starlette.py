@@ -339,7 +339,11 @@ class StaticAssets(StaticFilesOptionalAuth):
 
 class StaticCdn(StaticFilesOptionalAuth):
     def lookup_path(self, path: str) -> typing.Tuple[str, typing.Optional[os.stat_result]]:
-        full_path = str(get_path(settings.assets.proxy_cache_dir, path))
+        try:
+            full_path = str(get_path(settings.assets.proxy_cache_dir, path))
+        except Exception:
+            return "", None
+
         return full_path, os.stat(full_path)
 
 
