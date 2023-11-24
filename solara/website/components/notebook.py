@@ -113,7 +113,7 @@ def Notebook(notebook_path: Path, show_last_expressions=False, auto_show_page=Fa
                 with ExceptionGuard():
                     with solara.AppLayout(navigation=False, toolbar_dark=True):
                         # we don't want to listen to reactive variables
-                        copy = set(solara.toestand.thread_local.reactive_used)
+                        copy = set(solara.toestand.thread_local.reactive_used or [])
                         try:
                             last_expression = executor()
                         finally:
