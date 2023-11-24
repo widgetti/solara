@@ -98,6 +98,21 @@ blockquote p:last-child {
     margin-bottom: 0;
 }
 
+.footer-wrapper{
+    width: 100%;
+    padding: 50px 0;
+    flex-wrap: wrap;
+    row-gap: 2.5em;
+}
+
+.row-container{
+    width: 60%;
+    flex-wrap: wrap;
+}
+.row-container > div{
+    max-width: 500px;
+}
+
 /* vuetify component overrides */
 
 .v-btn.solara-docs-button {
@@ -250,4 +265,31 @@ blockquote p:last-child {
 }
 #mc_embed_signup_scroll > div.mc-field-group:nth-child(3){
     display: none;
+}
+
+
+/* MOBILE */
+
+@media screen and (aspect-ratio < 1) {
+    .hero{
+        background-position-x: 29%;
+    }
+        .hero h2{
+            padding-left: 0;
+            padding-right: 0;
+        }
+    .container.fill-height > .ma-8.row{
+        max-width: 80%;
+    }
+    .footer-wrapper{
+        padding: 25px;
+        row-gap: 1em;
+    }
+    .row-container{
+        width: calc(100% - 16px);
+        padding: 12px;
+    }
+        .row-container > div{
+            max-width: 300px;
+        }
 }

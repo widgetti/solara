@@ -130,10 +130,9 @@ def Layout(children=[]):
                     # with rv.Col(md=4, sm=5):
                     #     rv.Img(src="/static/public/landing/what.png", style_="width:900px")
 
-                with rv.Row(class_="ma-8"):
-                    with rv.Col(md=4, offset_md=2, sm=5, offset_sm=1, style_="padding-top: 50px"):
-                        rv.Img(src="/static/public/landing/complexity.png", style_="width:500px")
-                    with rv.Col(md=4, sm=5):
+                with solara.Column(style={"width": "100%"}, gap="2.5em", classes=["pt-10", "mt-8"], align="center"):
+                    with solara.Row(justify="center", gap="2.5em", classes=["ma-2", "row-container"]):
+                        rv.Img(src="/static/public/landing/complexity.png")
                         solara.Markdown(
                             """
                         # Build **large** apps with **low** code complexity
@@ -146,8 +145,7 @@ def Layout(children=[]):
                         Solara offers the **flexibility** to build complex apps, but keeps the **simplicity** of a small code base.
                         """
                         )
-                with rv.Row(class_="ma-8"):
-                    with rv.Col(md=4, sm=5, offset_sm=1, offset_md=2):
+                    with solara.Row(justify="center", gap="2.5em", classes=["ma-2", "row-container"]):
                         solara.Markdown(
                             """
                         # The trustworthiness of React
@@ -159,10 +157,9 @@ def Layout(children=[]):
                         a reliable and robust framework to build large scale apps.
                         """
                         )
-                    with rv.Col(md=5, sm=5, style_="padding-top: 50px"):
-                        rv.Img(src="/static/public/landing/python-love-react.png", style_="width:300px")
-                with rv.Row(class_="ma-8"):
-                    with rv.Col(md=4, offset_md=2, cols=10, offset=1):
+                        with solara.Row(justify="center", style={"width": "500px"}):
+                            rv.Img(src="/static/public/landing/python-love-react.png", style_="max-width:300px")
+                    with solara.Row(justify="center", gap="2.5em", classes=["ma-2", "row-container"]):
                         with solara.Column():
                             if target == 0:
                                 solara.Markdown("#### Running in: Jupyter notebook")
@@ -177,7 +174,6 @@ def Layout(children=[]):
                             import solara.website.pages.apps.scatter as scatter
 
                             github_url = solara.util.github_url(scatter.__file__)
-                            # solara.Text("dsadsa")
                             solara.Button(
                                 label="View source",
                                 icon_name="mdi-github-circle",
@@ -193,81 +189,79 @@ def Layout(children=[]):
                                         text=True,
                                         outlined=False,
                                     )
-                    with rv.Col(md=4, sm=10, offset_sm=1):
+                        with solara.Column():
+                            solara.Markdown(
+                                """
+                                    ## Create apps
+
+                                    In Jupyter or standalone, and run them in production
+                                    using FastAPI or starlette.
+
+                                    Get more inspiration from our [examples](/examples).
+                                """
+                            )
+                            with rv.ExpansionPanels(v_model=target, on_v_model=set_target, mandatory=True, flat=True):
+                                with rv.ExpansionPanel():
+                                    rv.ExpansionPanelHeader(children=["Jupyter notebook"])
+                                    with rv.ExpansionPanelContent():
+                                        solara.Markdown("Build on top of ipywidgets, solara components work in all Jupyter notebook environments.")
+                                with rv.ExpansionPanel():
+                                    rv.ExpansionPanelHeader(children=["FastAPI"])
+                                    with rv.ExpansionPanelContent():
+                                        solara.Markdown(
+                                            "Using [solara-server](/docs/understanding/solara-server), we can run our app in production using FastAPI."
+                                        )
+
+                with solara.Column(style={"width": "100%"}):
+                    solara.v.Divider()
+
+                with solara.Column(align="center", gap="2.5em", style={"width": "100%", "padding-bottom": "50px"}):
+                    solara.Markdown("# Testimonials", style="text-align:center")
+                    with solara.Row(justify="center", gap="2.5em", style={"align-items": "stretch", "flex-wrap": "wrap", "row-gap": "2.5em"}):
+                        Testimonial(
+                            "Solara is like streamlit, but for Jupyter. I am really excited to see where this goes!",
+                            "Jack Parmer",
+                            "Former CEO and Co-Founder of Plotly",
+                            "/static/public/avatar/jack-parmer.jpg",
+                        )
+                        Testimonial(
+                            "Solara has been transformative, allowing us to rapidly create a Jupyter app and iterate with impressive speed.",
+                            "Nick Elprin",
+                            "CEO and Co-Founder of Domino Data Lab",
+                            "/static/public/avatar/nick-elprin.jpg",
+                        )
+                        Testimonial(
+                            "Solara allows us to go from prototype to production with the same stack.",
+                            "Jonathan Chambers",
+                            "Co-founder of Planeto",
+                            "/static/public/avatar/jonathan-chambers.jpg",
+                        )
+
+                with solara.Column(style={"width": "100%"}):
+                    solara.v.Divider()
+
+                with solara.Column(align="center", gap="2.5em", style={"width": "100%", "padding-bottom": "50px"}):
+                    solara.Markdown("# Sponsors", style="text-align:center")
+                    with solara.Row(justify="center", gap="2.5em", style={"align-items": "stretch"}):
+                        with solara.v.Html(tag="a", attributes={"href": "https://www.dominodatalab.com/", "target": "_blank"}):
+                            solara.Image("/static/public/sponsors/domino.png", width="300px")
+
+                with solara.Column(style={"width": "100%"}):
+                    solara.v.Divider()
+
+                with solara.Row(justify="center", gap="2.5em", classes=["footer-wrapper"]):
+                    with solara.Column(align="center", style={"min-width": "300px"}):
                         solara.Markdown(
                             """
-                                ## Create apps
-
-                                In Jupyter or standalone, and run them in production
-                                using FastAPI or starlette.
-
-                                Get more inspiration from our [examples](/examples).
+                            #### For any consulting, training or support needs
+                            [contact@solara.dev](mailto:contact@solara.dev)
                             """
                         )
-                        with rv.ExpansionPanels(v_model=target, on_v_model=set_target, mandatory=True, flat=True):
-                            with rv.ExpansionPanel():
-                                rv.ExpansionPanelHeader(children=["Jupyter notebook"])
-                                with rv.ExpansionPanelContent():
-                                    solara.Markdown("Build on top of ipywidgets, solara components work in all Jupyter notebook environments.")
-                            with rv.ExpansionPanel():
-                                rv.ExpansionPanelHeader(children=["FastAPI"])
-                                with rv.ExpansionPanelContent():
-                                    solara.Markdown("Using [solara-server](/docs/understanding/solara-server), we can run our app in production using FastAPI.")
-
-                # with rv.Row(class_="ma-8", style_="background-color:#ffeec5; margin-left:0px; margin-right:0px;"):
-                #     with rv.Col(md=8, sm=10, offset_sm=1, offset_md=2):
-                #         solara.Markdown("# Demo", style="text-align:center; color: white")
-                with rv.Row(class_="ma-8"):
-                    with rv.Col(md=10, offset_md=2, sm=12):
-                        with rv.Container(tag="section", fluid=False, ma_0=True, pa_0=True, class_="fill-height mb-8"):
-                            with rv.Row(class_="ma-2"):
-                                with rv.Col(md=8, offset_md=2, sm=12):
-                                    solara.Markdown("# Testimonials", style="text-align:center")
-                            with rv.Row(class_="ma-8", align_content="stretch", justify="stretch"):
-                                with rv.Col(sm=6, md=4):
-                                    Testimonial(
-                                        "Solara is like streamlit, but for Jupyter. I am really excited to see where this goes!",
-                                        "Jack Parmer",
-                                        "Former CEO and Co-Founder of Plotly",
-                                        "/static/public/avatar/jack-parmer.jpg",
-                                    )
-
-                                with rv.Col(sm=6, md=4):
-                                    Testimonial(
-                                        "Solara has been transformative, allowing us to rapidly create a Jupyter app and iterate with impressive speed.",
-                                        "Nick Elprin",
-                                        "CEO and Co-Founder of Domino Data Lab",
-                                        "/static/public/avatar/nick-elprin.jpg",
-                                    )
-                                with rv.Col(sm=6, md=4):
-                                    Testimonial(
-                                        "Solara allows us to go from prototype to production with the same stack.",
-                                        "Jonathan Chambers",
-                                        "Co-founder of Planeto",
-                                        "/static/public/avatar/jonathan-chambers.jpg",
-                                    )
-                with rv.Row(class_="ma-8"):
-                    with rv.Col(md=8, sm=10, offset_sm=1, offset_md=2):
-                        solara.Markdown("# Sponsors", style="text-align:center")
-                with rv.Row(class_="ma-8"):
-                    with rv.Col(md=8, sm=10, offset_sm=1, offset_md=2):
-                        solara.Markdown(
-                            """[![sponsors](/static/public/sponsors/domino.png)](https://dominodatalab.com)
-                            """,
-                            style="text-align:center",
-                        )
-                with rv.Row(class_="ma-8"):
-                    with rv.Col(md=8, sm=10, offset_sm=1, offset_md=2):
-                        solara.Markdown("# Join our Mailing list to get the latest news")
-                        MailChimp(location=router.path)
-                with rv.Row(class_="ma-8"):
-                    with rv.Col(md=5, offset_md=2, sm=5, offset_sm=1):
-                        solara.Markdown(
-                            """
-                        ## For any consulting, training or support needs
-                        [contact@solara.dev](mailto:contact@solara.dev)
-                        """
-                        )
+                    solara.v.Divider(vertical=True)
+                    with solara.Column(align="center", style={"min-width": "300px"}):
+                        solara.Markdown("#### Join our Mailing list to get the latest news")
+                        with solara.Div(style={"width": "80%"}):
+                            MailChimp(location=router.path)
 
             else:
                 with rv.Row(
@@ -346,7 +340,6 @@ def Testimonial(text, name, position, img):
         dark=False,
         color="#ffeec5",
         max_width=max_width,
-        height="100%",
         style_="display: flex; flex-direction: column; justify-content: space-between;",
     ):
         # rv.CardTitle(children=["Former Plotly CEO"])
