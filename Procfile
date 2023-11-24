@@ -5,4 +5,4 @@
 # we also need to bind to 0.0.0.0 otherwise heroku cannot route to our server
 # for playwright: run $ heroku buildpacks:add https://github.com/mxschmitt/heroku-playwright-buildpack --app solara-dem
 # also add PLAYWRIGHT_BUILDPACK_BROWSERS chromium to your env vars in the Settings in heroku
-web: (playwright install && solara run solara.website.pages --port=$PORT --no-open --host=0.0.0.0 --workers 1 --ssg)
+web: (playwright install && solara run solara.website.pages --port=$PORT --no-open --host=0.0.0.0 --workers 1 --ssg --production)
