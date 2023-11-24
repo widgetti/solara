@@ -74,15 +74,33 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
     def __init__(self, ws: starlette.websockets.WebSocket, portal: anyio.from_thread.BlockingPortal) -> None:
         self.ws = ws
         self.portal = portal
+        self.to_send: List[Union[str, bytes]] = []
+        self.task = asyncio.ensure_future(self.process_messages_task())
+
+    async def process_messages_task(self):
+        while True:
+            await asyncio.sleep(0.05)
+            while len(self.to_send) > 0:
+                first = self.to_send.pop(0)
+                if isinstance(first, bytes):
+                    await self.ws.send_bytes(first)
+                else:
+                    await self.ws.send_text(first)
 
     def close(self):
         self.portal.call(self.ws.close)
 
     def send_text(self, data: str) -> None:
-        self.portal.call(self.ws.send_text, data)
+        if settings.main.experimental_performance:
+            self.to_send.append(data)
+        else:
+            self.portal.call(self.ws.send_bytes, data)
 
     def send_bytes(self, data: bytes) -> None:
-        self.portal.call(self.ws.send_bytes, data)
+        if settings.main.experimental_performance:
+            self.to_send.append(data)
+        else:
+            self.portal.call(self.ws.send_bytes, data)
 
     async def receive(self):
         if hasattr(self.portal, "start_task_soon"):
@@ -179,8 +197,6 @@ async def kernel_connection(ws: starlette.websockets.WebSocket):
     await ws.accept()
 
     def websocket_thread_runner(ws: starlette.websockets.WebSocket, portal: anyio.from_thread.BlockingPortal):
-        ws_wrapper = WebsocketWrapper(ws, portal)
-
         async def run():
             try:
                 assert session_id is not None
@@ -200,6 +216,7 @@ async def kernel_connection(ws: starlette.websockets.WebSocket):
     # each websocket however, is handled from a separate thread
     try:
         async with anyio.from_thread.BlockingPortal() as portal:
+            ws_wrapper = WebsocketWrapper(ws, portal)
             thread_return = anyio.to_thread.run_sync(websocket_thread_runner, ws, portal)
             await thread_return
     finally:
