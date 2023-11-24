@@ -124,18 +124,23 @@ def import_item(name: str):
 
 
 def get_solara_home() -> Path:
-    """Get solara home directory, defaults to $HOME/.solara.
+    """Get solara home directory, defaults to ~/.solara.
 
     The $SOLARA_HOME environment variable can be set to override this default.
 
-    If both $SOLARA_HOME and $HOME are not defined, the current working directory is used.
+    If $SOLARA_HOME is not defined and ~ cannot be expanded, the current working directory + ".solara" is used.
     """
+    os_home = None
+    try:
+        os_home = Path.home()
+    except Exception:
+        pass
     if "SOLARA_HOME" in os.environ:
         return Path(os.environ["SOLARA_HOME"])
-    elif "HOME" in os.environ:
-        return Path(os.path.join(os.environ["HOME"], ".solara"))
+    elif os_home:
+        return os_home / ".solara"
     else:
-        return Path(os.getcwd())
+        return Path(os.getcwd()) / ".solara"
 
 
 def parse_size(size: str) -> int:
