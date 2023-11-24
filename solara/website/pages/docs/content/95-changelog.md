@@ -1,5 +1,26 @@
 # Solara Changelog
 
+## Version 1.24.0
+
+### Demo of CSS hot reloading
+
+<video width="80%" controls>
+   <source src="https://github.com/widgetti/solara/assets/1765949/3a15b8fa-f38e-4376-ad05-330593d98de8" type="video/mp4" >
+</video>
+
+
+### Highlight
+
+ * Feature: Hot reloading of css file used with Style components [#396](https://github.com/widgetti/solara/pull/396)
+ * Bug fix: display() did not work in threads [#398](https://github.com/widgetti/solara/pull/398)
+ * Bug fix: Support home directory on Windows.
+
+
+### Details
+
+ * Bug fix: Do not trigger re-render due to unneeded state in context [#386](https://github.com/widgetti/solara/pull/386)
+ * Feature: Show number of widgets created and close when using --timing [#387](https://github.com/widgetti/solara/pull/387)
+
 
 ## Version 1.23.0
 
