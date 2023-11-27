@@ -18,6 +18,8 @@ from uvicorn.main import LEVEL_CHOICES, LOOP_CHOICES
 import solara
 from solara.server import settings
 
+from .server import telemetry
+
 try:
     from solara_enterprise.ssg import ssg_crawl
 except ImportError:
@@ -287,6 +289,7 @@ def run(
 
     failed = False
     if reload:
+        telemetry._auto_restart_enabled = True
         solara_root = Path(solara.__file__).parent
 
         reload_dirs = list(reload_dirs if reload_dirs else [])

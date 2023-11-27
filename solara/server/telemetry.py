@@ -20,6 +20,7 @@ from . import settings
 
 logger = logging.getLogger("solara.server.telemetry")
 
+_auto_restart_enabled = False
 _server_user_id_override = None
 _server_start_time = time.time()
 # Privacy note: mixpanel does not store the IP, only the region
@@ -100,7 +101,7 @@ def get_server_user_id():
 
 
 def track(event: str, props: Optional[Dict] = None):
-    if settings.main.mode == "development":
+    if _auto_restart_enabled:
         return
     if not settings.telemetry.mixpanel_enable:
         return
@@ -122,6 +123,7 @@ def track(event: str, props: Optional[Dict] = None):
             "docker": _docker,
             "compute_platform": _compute_platform,
             "vscode": _vscode,
+            "solara_mode": settings.main.mode,
             **(solara_props or {}),
             **(props or {}),
         },
