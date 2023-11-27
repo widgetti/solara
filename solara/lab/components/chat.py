@@ -1,5 +1,5 @@
 import uuid
-from typing import Callable, List, Optional, Union
+from typing import Callable, Dict, List, Optional, Union
 
 from typing_extensions import Literal
 
@@ -8,7 +8,11 @@ from solara.components.input import use_change
 
 
 @solara.component
-def ChatBox(children: List[solara.Element] = []):
+def ChatBox(
+    children: List[solara.Element] = [],
+    style: Optional[Union[str, Dict[str, str]]] = None,
+    classes: List[str] = [],
+):
     """
     The ChatBox component is a container for ChatMessage components.
     Its primary use is to ensure the proper ordering of messages,
@@ -17,8 +21,17 @@ def ChatBox(children: List[solara.Element] = []):
     # Arguments
 
     * `children`: A list of child components.
+    * `style`: CSS styles to apply to the component. Either a string or a dictionary.
+    * `classes`: A list of CSS classes to apply to the component.
     """
-    with solara.Column(style={"flex-grow": "1", "flex-direction": "column-reverse", "overflow-y": "auto"}, classes=["chat-box"]):
+    style_flat = solara.util._flatten_style(style)
+
+    classes += ["chat-box"]
+    with solara.Column(
+        style={"flex-grow": "1", "flex-direction": "column-reverse", "overflow-y": "auto"},
+        classes=classes,
+        style_=style_flat,
+    ):
         for child in list(reversed(children)):
             solara.display(child)
 
@@ -27,6 +40,8 @@ def ChatBox(children: List[solara.Element] = []):
 def ChatInput(
     send_callback: Optional[Callable] = None,
     disabled: bool = False,
+    style: Optional[Union[str, Dict[str, str]]] = None,
+    classes: List[str] = [],
 ):
     """
     The ChatInput component renders a text input together with a send button.
@@ -36,10 +51,16 @@ def ChatInput(
     * `send_callback`: A callback function for when the user presses enter or clicks the send button.
     * `disabled`: Whether the input should be disabled. Useful for disabling sending further messages while a chatbot is replying,
         among other things.
+    * `style`: CSS styles to apply to the component. Either a string or a dictionary. These styles are applied to the container component.
+    * `classes`: A list of CSS classes to apply to the component. Also applied to the container.
     """
     message, set_message = solara.use_state("")  # type: ignore
+    style_flat = solara.util._flatten_style(style)
 
-    with solara.Row(style={"align-items": "center"}):
+    if "align-items" not in style_flat:
+        style_flat += "align-items: center;"
+
+    with solara.Row(style=style_flat, classes=classes):
 
         def send(*ignore_args):
             if message != "" and send_callback is not None:
@@ -74,6 +95,8 @@ def ChatMessage(
     avatar_background_color: Optional[str] = None,
     border_radius: Optional[str] = None,
     notch: bool = False,
+    style: Optional[Union[str, Dict[str, str]]] = None,
+    classes: List[str] = [],
 ):
     """
     The ChatMessage component renders a message. Messages with `user=True` are rendered on the right side of the screen,
@@ -91,7 +114,18 @@ def ChatMessage(
     * `border_radius`: Sets the roundness of the corners of the message. Defaults to `None`,
         which applies the default border radius of a `solara.Column`, i.e. `4px`.
     * `notch`: Whether to display a speech bubble style notch on the side of the message.
+    * `style`: CSS styles to apply to the component. Either a string or a dictionary. Applied to the container of the message.
+    * `classes`: A list of CSS classes to apply to the component. Applied to the same container.
     """
+    style_flat = solara.util._flatten_style(style)
+
+    if "border-radius" not in style_flat:
+        style_flat += f"border-radius: {border_radius if border_radius is not None else ''};"
+    if f"border-top-{'right' if user else 'left'}-radius" not in style_flat:
+        style_flat += f"border-top-{'right' if user else 'left'}-radius: 0;"
+    if "padding" not in style_flat:
+        style_flat += "padding: .5em 1.5em;"
+
     msg_uuid = solara.use_memo(lambda: str(uuid.uuid4()), dependencies=[])
     with solara.Row(
         justify="end" if user else "start",
@@ -108,14 +142,11 @@ def ChatMessage(
                     solara.v.Icon(children=[avatar])
                 else:
                     solara.HTML(tag="img", attributes={"src": avatar, "width": "100%"})
+        classes += ["chat-message-" + msg_uuid, "right" if user else "left"]
         with solara.Column(
-            classes=["chat-message-" + msg_uuid, "right" if user else "left"],
+            classes=classes,
             gap=0,
-            style={
-                "border-radius": (border_radius if border_radius is not None else ""),
-                f"border-top-{'right' if user else 'left'}-radius": "0",
-                "padding": ".5em 1.5em;",
-            },
+            style=style_flat,
         ):
             if name is not None:
                 solara.Text(name, style="font-weight: bold;", classes=["message-name", "right" if user else "left"])
