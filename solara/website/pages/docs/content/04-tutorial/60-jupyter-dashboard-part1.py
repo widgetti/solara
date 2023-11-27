@@ -50,6 +50,8 @@ def Page():
     )
     solara.Markdown(
         """
+        Explore this app live at [solara.dev](/apps/jupyter-dashboard-1).
+
         Don’t miss the next tutorial and stay updated with the latest techniques and insights by subscribing to our newsletter.
     """
     )
