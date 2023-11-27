@@ -47,6 +47,8 @@ def ChatInput(
     disabled: bool = False,
     style: Optional[Union[str, Dict[str, str]]] = None,
     classes: List[str] = [],
+    style: Optional[Union[str, Dict[str, str]]] = None,
+    classes: List[str] = [],
 ):
     """
     The ChatInput component renders a text input together with a send button.
