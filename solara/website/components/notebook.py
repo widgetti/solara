@@ -72,7 +72,7 @@ def execute_notebook(path: Path):
 
 
 @solara.component
-def Notebook(notebook_path: Path, show_last_expressions=False, auto_show_page=False):
+def NotebookExecute(notebook_path: Path, show_last_expressions=False, auto_show_page=False):
     import IPython.core.pylabtools as pylabtools
 
     shell = IPython.get_ipython().kernel.shell
@@ -132,3 +132,46 @@ def Notebook(notebook_path: Path, show_last_expressions=False, auto_show_page=Fa
             else:
                 raise ValueError(f"Unknown cell type: {cell.cell_type}, supported types are: code, markdown")
     return main
+
+
+@solara.component
+def Notebook(notebook_path: Path, show_last_expressions=False, auto_show_page=False, execute=True, outputs={}):
+    if execute:
+        return NotebookExecute(notebook_path, show_last_expressions, auto_show_page)
+    else:
+        with solara.Column(style={"max-width": "100%"}) as main:
+            nb: nbformat.NotebookNode = nbformat.read(notebook_path, 4)
+            for cell_index, cell in enumerate(nb.cells):
+                cell_index += 1
+                if cell.cell_type == "code":
+                    if cell.source.startswith("## solara: skip"):
+                        continue
+                    solara.Markdown(
+                        f"""
+```python
+{cell.source}
+```"""
+                    )
+                    if cell.outputs:
+                        for output in cell.outputs:
+                            if output.output_type == "display_data":
+                                solara.display(output.data, raw=True)
+                            elif output.output_type == "execute_result":
+                                if "text/html" in output.data:
+                                    solara.display(output.data, raw=True)
+                    else:
+                        cell_id = str(cell.id)
+                        output = outputs.get(cell_id) or outputs.get(cell_index)
+                        if output is None:
+                            if cell_id in outputs or cell_index in outputs:
+                                pass  # explicit None
+                            else:
+                                solara.display(f"Output missing for cell: {cell_index} id {cell_id}")
+                        else:
+                            solara.display(output)
+
+                elif cell.cell_type == "markdown":
+                    solara.Markdown(cell.source)
+                else:
+                    raise ValueError(f"Unknown cell type: {cell.cell_type}, supported types are: code, markdown")
+        return main
