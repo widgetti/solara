@@ -35,6 +35,7 @@ vue3 = ipyvue.__version__.startswith("3")
 # first look at the project directory, then the builtin solara directory
 
 
+@solara.memoize(storage=cache_memory)
 def get_jinja_env(app_name: str) -> jinja2.Environment:
     jinja_loader = jinja2.FileSystemLoader(
         [
