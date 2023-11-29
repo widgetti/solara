@@ -25,12 +25,17 @@ def ChatBox(
     * `classes`: A list of CSS classes to apply to the component.
     """
     style_flat = solara.util._flatten_style(style)
+    if "flex-grow" not in style_flat:
+        style_flat += " flex-grow: 1;"
+    if "flex-direction" not in style_flat:
+        style_flat += " flex-direction: column-reverse;"
+    if "overflow-y" not in style_flat:
+        style_flat += " overflow-y: auto;"
 
     classes += ["chat-box"]
     with solara.Column(
-        style={"flex-grow": "1", "flex-direction": "column-reverse", "overflow-y": "auto"},
+        style=style_flat,
         classes=classes,
-        style_=style_flat,
     ):
         for child in list(reversed(children)):
             solara.display(child)
@@ -58,7 +63,7 @@ def ChatInput(
     style_flat = solara.util._flatten_style(style)
 
     if "align-items" not in style_flat:
-        style_flat += "align-items: center;"
+        style_flat += " align-items: center;"
 
     with solara.Row(style=style_flat, classes=classes):
 
@@ -120,11 +125,11 @@ def ChatMessage(
     style_flat = solara.util._flatten_style(style)
 
     if "border-radius" not in style_flat:
-        style_flat += f"border-radius: {border_radius if border_radius is not None else ''};"
+        style_flat += f" border-radius: {border_radius if border_radius is not None else ''};"
     if f"border-top-{'right' if user else 'left'}-radius" not in style_flat:
-        style_flat += f"border-top-{'right' if user else 'left'}-radius: 0;"
+        style_flat += f" border-top-{'right' if user else 'left'}-radius: 0;"
     if "padding" not in style_flat:
-        style_flat += "padding: .5em 1.5em;"
+        style_flat += " padding: .5em 1.5em;"
 
     msg_uuid = solara.use_memo(lambda: str(uuid.uuid4()), dependencies=[])
     with solara.Row(
