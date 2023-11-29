@@ -284,11 +284,13 @@ def Layout(children=[]):
                         with rv.Row(children=children, class_="solara-page-content-search"):
                             pass
 
+            # absolute = True prevents the drawer from being below the overlay it generates
             # Drawer navigation for top menu
             with rv.NavigationDrawer(
                 v_model=show_right_menu,
                 on_v_model=set_show_right_menu,
                 fixed=True,
+                absolute=True,
                 right=True,
                 hide_overlay=False,
                 overlay_color="#000000",
@@ -308,6 +310,7 @@ def Layout(children=[]):
                 v_model=show_left_menu,
                 on_v_model=set_show_left_menu,
                 fixed=True,
+                absolute=True,
                 hide_overlay=False,
                 overlay_color="#000000",
                 overlay_opacity=0.5,
