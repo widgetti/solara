@@ -47,8 +47,6 @@ def ChatInput(
     disabled: bool = False,
     style: Optional[Union[str, Dict[str, str]]] = None,
     classes: List[str] = [],
-    style: Optional[Union[str, Dict[str, str]]] = None,
-    classes: List[str] = [],
 ):
     """
     The ChatInput component renders a text input together with a send button.
@@ -149,9 +147,9 @@ def ChatMessage(
                     solara.v.Icon(children=[avatar])
                 else:
                     solara.HTML(tag="img", attributes={"src": avatar, "width": "100%"})
-        classes += ["chat-message-" + msg_uuid, "right" if user else "left"]
+        classes_new = classes + ["chat-message-" + msg_uuid, "right" if user else "left"]
         with solara.Column(
-            classes=classes,
+            classes=classes_new,
             gap=0,
             style=style_flat,
         ):
@@ -177,8 +175,8 @@ def ChatMessage(
                 border-color: var(--color) var(--color) transparent transparent;
             }}
             .chat-message-{msg_uuid}.right:before{{
-                    right: -12px;
-                    border-color: var(--color) transparent transparent var(--color);
+                right: -12px;
+                border-color: var(--color) transparent transparent var(--color);
             }}"""
             if notch
             else ""
