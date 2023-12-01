@@ -75,7 +75,8 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
         self.ws = ws
         self.portal = portal
         self.to_send: List[Union[str, bytes]] = []
-        self.task = asyncio.ensure_future(self.process_messages_task())
+        if settings.main.experimental_performance:
+            self.task = asyncio.ensure_future(self.process_messages_task())
 
     async def process_messages_task(self):
         while True:
@@ -220,6 +221,8 @@ async def kernel_connection(ws: starlette.websockets.WebSocket):
             thread_return = anyio.to_thread.run_sync(websocket_thread_runner, ws, portal)
             await thread_return
     finally:
+        if settings.main.experimental_performance:
+            ws_wrapper.task.cancel()
         try:
             await ws.close()
         except:  # noqa
