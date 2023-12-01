@@ -108,7 +108,7 @@ def _flatten_style(style: Union[str, Dict, None] = None) -> str:
     elif isinstance(style, str):
         return style
     elif isinstance(style, dict):
-        return ";".join(f"{k}:{v}" for k, v in style.items())
+        return ";".join(f"{k}:{v}" for k, v in style.items()) + ";"
     else:
         raise ValueError(f"Expected style to be a string or dict, got {type(style)}")
 
