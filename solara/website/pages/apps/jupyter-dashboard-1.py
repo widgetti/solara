@@ -98,8 +98,8 @@ def View():
 
 @solara.component
 def Controls():
-    solara.SelectMultiple("District", all_values=[str(k) for k in df_crime["PdDistrict"].unique().tolist()], values=districts)
-    solara.SelectMultiple("Category", all_values=[str(k) for k in df_crime["Category"].unique().tolist()], values=categories)
+    solara.SelectMultiple("District", all_values=[str(k) for k in df_crime["PdDistrict"].unique().tolist()], values=districts)  # type: ignore
+    solara.SelectMultiple("Category", all_values=[str(k) for k in df_crime["Category"].unique().tolist()], values=categories)  # type: ignore
     solara.Text("Maximum number of rows to show on map")
     solara.SliderInt("", value=limit, min=1, max=1000)
 
