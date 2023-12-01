@@ -1,5 +1,28 @@
 # Solara Changelog
 
+
+## Version 1.25.0
+
+
+### Demo of a Chat GPT interface with medical 3d visualization
+
+<video width="80%" controls>
+   <source src="https://github.com/widgetti/solara/assets/1765949/ca149ab5-0bd3-4eea-9736-08e1e0b06771" type="video/mp4" >
+</video>
+
+
+
+
+### Highlight
+
+ * Feature: Chat interface components for chatbots, chatrooms or conversational elements in your dashboards or apps [#384](https://github.com/widgetti/solara/pull/384)
+
+### Details
+
+ * Performance: Under starlette, we throttle sending websocket messages to get better performance, this is experimental and can be enabled by setting the
+   environment variable `SOLARA_EXPERIMENTAL_PERFORMANCE=1` [#400](https://github.com/widgetti/solara/pull/400)
+ * Performance: Re-use the jinja environment when rendering templates (this also saves memory).
+
 ## Version 1.24.0
 
 ### Demo of CSS hot reloading
