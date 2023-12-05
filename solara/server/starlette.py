@@ -249,7 +249,8 @@ async def root(request: Request, fullpath: str = ""):
     if settings.main.root_path is None:
         # use the default root path from the app, which seems to also include the path
         # if we are mounted under a path
-        root_path = request.scope.get("root_path", "")
+        scope = request.scope
+        root_path = scope.get("route_root_path", scope.get("root_path", ""))
         logger.debug("root_path: %s", root_path)
         # or use the script-name header, for instance when running under a reverse proxy
         script_name = request.headers.get("script-name")
