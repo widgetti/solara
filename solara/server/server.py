@@ -290,6 +290,7 @@ def read_root(path: str, root_path: str = "", render_kwargs={}, use_nbextensions
         "assets": settings.assets.dict(),
         "cdn": cdn,
         "ipywidget_major_version": ipywidgets_major,
+        "solara_version": solara.__version__,
         "platform": settings.main.platform,
         "vue3": vue3,
         "perform_check": settings.main.mode != "production" and solara.checks.should_perform_solara_check(),

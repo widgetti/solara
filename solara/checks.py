@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 jupyter_checked_path = get_solara_home() / ".jupyter_checked"
 solara_checked_path = get_solara_home() / ".solara_checked"
+solara_version = solara.__version__
 
 
 def _should_perform_check(path: Path):
@@ -67,12 +68,12 @@ def JupyterCheck():
         # if the widgets do not work
         IPython.display.display(
             IPython.display.Javascript(
-                data="""
+                data=f"""
 const prevIframe = document.getElementById("solara-jupyter-check");
 if(prevIframe)
     prevIframe.remove();
 const iframe = document.createElement('iframe')
-iframe.setAttribute("src", "https://solara.dev/static/public/success.html?check=purejs");
+iframe.setAttribute("src", "https://solara.dev/static/public/success.html?check=purejs&version={solara_version}");
 iframe.style.width = "0px";
 iframe.style.height = "0px";
 iframe.style.display = "none";
@@ -95,7 +96,7 @@ document.body.appendChild(iframe);
     # this iframe should only get through if the widget installation succeeded
     return solara.v.Html(
         tag="iframe",
-        attributes={"src": "https://solara.dev/static/public/success.html?check=widget", "width": "0px", "height": "0px"},
+        attributes={"src": f"https://solara.dev/static/public/success.html?check=widget&version={solara_version}", "width": "0px", "height": "0px"},
         style_="display: none;",
     )
 
@@ -111,7 +112,11 @@ def SolaraCheck():
     solara.use_effect(flag_solara_checked, [])
     return solara.v.Html(
         tag="iframe",
-        attributes={"src": "https://solara.dev/static/public/success.html?system=solara&check=widget", "width": "0px", "height": "0px"},
+        attributes={
+            "src": f"https://solara.dev/static/public/success.html?system=solara&check=widget&version={solara_version}",
+            "width": "0px",
+            "height": "0px",
+        },
         style_="display: none;",
     )
 

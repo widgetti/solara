@@ -201,7 +201,7 @@
 
 <body data-base-url="{{root_path}}/static/">
     {% if perform_check %}
-    <iframe src="https://solara.dev/static/public/success.html?system=solara&check=html" style="display: none"></iframe>
+    <iframe src="https://solara.dev/static/public/success.html?system=solara&check=html&version={{solara_version}}" style="display: none"></iframe>
     {% endif %}
     {% if theme.variant == "auto" %}
     {% endif %}
