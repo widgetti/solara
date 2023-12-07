@@ -5,11 +5,10 @@ import logging
 import textwrap
 import traceback
 import warnings
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any, Callable, Dict, List, Optional, Union, cast
 import typing
 
 import ipyvuetify as v
-
 try:
     import pymdownx.emoji
     import pymdownx.highlight
@@ -18,6 +17,7 @@ try:
     has_pymdownx = True
 except ModuleNotFoundError:
     has_pymdownx = False
+import reacton.core
 
 import solara
 import solara.components.applayout
@@ -55,7 +55,7 @@ def ExceptionGuard(children=[]):
             solara.Column(children=children)
 
 
-def _run_solara(code):
+def _run_solara(code, cleanups):
     ast = compile(code, "markdown", "exec")
     local_scope: Dict[Any, Any] = {}
     exec(ast, local_scope)
@@ -68,6 +68,13 @@ def _run_solara(code):
     else:
         raise NameError("No Page or app defined")
     box = v.Html(tag="div")
+
+    rc: reacton.core.RenderContext
+
+    def cleanup():
+        rc.close()
+
+    cleanups.append(cleanup)
     box, rc = solara.render(cast(solara.Element, app), container=box)  # type: ignore
     widget_id = box._model_id
     return (
@@ -236,9 +243,8 @@ module.exports = {
     return template
 
 
-def _highlight(src, language, unsafe_solara_execute, *args, **kwargs):
+def _highlight(src, language, class_name=None, options=None, md=None, unsafe_solara_execute=False, cleanups=None, **kwargs):
     """Highlight a block of code"""
-
     if not has_pygments:
         warnings.warn("Pygments is not installed, code highlighting will not work, use pip install pygments to install it.")
         src_safe = html.escape(src)
@@ -255,7 +261,7 @@ def _highlight(src, language, unsafe_solara_execute, *args, **kwargs):
 
     if run_src_with_solara:
         if unsafe_solara_execute:
-            html_widget = _run_solara(src)
+            html_widget = _run_solara(src, cleanups)
             return src_html + html_widget
         else:
             return src_html + html_no_execute_enabled
@@ -263,8 +269,14 @@ def _highlight(src, language, unsafe_solara_execute, *args, **kwargs):
         return src_html
 
 
-def formatter(unsafe_solara_execute: bool):
-    return functools.partial(_highlight, unsafe_solara_execute=unsafe_solara_execute)
+def formatter(unsafe_solara_execute: bool, cleanups: List[Callable[[], None]]):
+    def wrapper(*args, **kwargs):
+        try:
+            return _highlight(*args, unsafe_solara_execute=unsafe_solara_execute, cleanups=cleanups, **kwargs)
+        except Exception as e:
+            logger.exception("Error while highlighting code")
+            raise e
+    return wrapper
 
 
 @solara.component
@@ -276,8 +288,10 @@ def MarkdownIt(md_text: str, highlight: List[int] = [], unsafe_solara_execute: b
     from mdit_py_plugins.footnote import footnote_plugin  # noqa: F401
     from mdit_py_plugins.front_matter import front_matter_plugin  # noqa: F401
 
+    cleanups = solara.use_ref(cast(List[Callable[[], None]], []))
+
     def highlight_code(code, name, attrs):
-        return _highlight(code, name, unsafe_solara_execute, attrs)
+        return _highlight(cleanups.current, code, name, unsafe_solara_execute, attrs)
 
     md = MarkdownItMod(
         "js-default",
@@ -290,6 +304,15 @@ def MarkdownIt(md_text: str, highlight: List[int] = [], unsafe_solara_execute: b
     md = md.use(container.container_plugin, name="note")
     html = md.render(md_text)
     hash = hashlib.sha256((html + str(unsafe_solara_execute) + repr(highlight)).encode("utf-8")).hexdigest()
+
+    def cleanup_wrapper():
+        def cleanup():
+            for cleanup in cleanups.current:
+                cleanup()
+
+        return cleanup
+
+    solara.use_effect(cleanup_wrapper)
     return v.VuetifyTemplate.element(template=_markdown_template(html)).key(hash)
 
 
@@ -349,6 +372,7 @@ def Markdown(md_text: str, unsafe_solara_execute=False, style: Union[str, Dict, 
 
     md_text = textwrap.dedent(md_text)
     style = solara.util._flatten_style(style)
+    cleanups = solara.use_ref(cast(List[Callable[[], None]], []))
 
     def make_markdown_object():
         if md_parser is not None:
@@ -377,7 +401,7 @@ def Markdown(md_text: str, unsafe_solara_execute=False, style: Union[str, Dict, 
                             {
                                 "name": "solara",
                                 "class": "",
-                                "format": formatter(unsafe_solara_execute),
+                                "format": formatter(unsafe_solara_execute, cleanups=cleanups.current),
                             },
                         ],
                     },
@@ -399,6 +423,15 @@ def Markdown(md_text: str, unsafe_solara_execute=False, style: Union[str, Dict, 
         assert md_self is not None
         md_parser = md_self
     html = md_parser.convert(md_text)
+
+    def cleanup_wrapper():
+        def cleanup():
+            for cleanup in cleanups.current:
+                cleanup()
+
+        return cleanup
+
+    solara.use_effect(cleanup_wrapper, [])
     # if we update the template value, the whole vue tree will rerender (ipvue/ipyvuetify issue)
     # however, using the hash we simply generate a new widget each time
     hash = hashlib.sha256((html + str(unsafe_solara_execute)).encode("utf-8")).hexdigest()
