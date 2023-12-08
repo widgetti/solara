@@ -155,7 +155,7 @@ class ServerStarlette(ServerBase):
             asyncio.set_event_loop(loop)
 
         # uvloop will trigger a: RuntimeError: There is no current event loop in thread 'fastapi-thread'
-        config = Config(self.app, host=self.host, port=self.port, **self.kwargs, loop="asyncio")
+        config = Config(self.app, host=self.host, port=self.port, **self.kwargs, access_log=False, loop="asyncio")
         self.server = Server(config=config)
         self.started.set()
         self.server.run()
