@@ -12,7 +12,6 @@ import ipyvue
 import ipywidgets
 import jinja2
 import requests
-
 import solara
 import solara.routing
 import solara.settings
@@ -247,7 +246,15 @@ def process_kernel_messages(kernel: Kernel, msg: Dict) -> bool:
         return False
 
 
-def read_root(path: str, root_path: str = "", render_kwargs={}, use_nbextensions=True) -> Optional[str]:
+def read_root(path: str, root_path: str = "", render_kwargs={}, use_nbextensions=True, ssg_data=None) -> Optional[str]:
+    if settings.ssg.enabled and ssg_data is None:
+        # simply return the pre-rendered html
+        from solara_enterprise import ssg
+
+        content = ssg.ssg_content(path)
+        if content is not None:
+            return content
+
     default_app = app.apps["__default__"]
     routes = default_app.routes
     router = solara.routing.Router(path, routes)
@@ -323,15 +330,11 @@ def read_root(path: str, root_path: str = "", render_kwargs={}, use_nbextensions
     pre_rendered_css = ""
     pre_rendered_metas = ""
     title = "Solara ☀️"
-    if settings.ssg.enabled:
-        from solara_enterprise import ssg
-
-        ssg_data = ssg.ssg_data(path)
-        if ssg_data is not None:
-            pre_rendered_html = ssg_data["html"]
-            pre_rendered_css = "\n".join(ssg_data["styles"])
-            pre_rendered_metas = "\n    ".join(ssg_data["metas"])
-            title = ssg_data["title"]
+    if ssg_data is not None:
+        pre_rendered_html = ssg_data["html"]
+        pre_rendered_css = "\n".join(ssg_data["styles"])
+        pre_rendered_metas = "\n    ".join(ssg_data["metas"])
+        title = ssg_data["title"]
 
     if solara.settings.assets.proxy:
         # solara acts as a proxy
