@@ -6,6 +6,7 @@ try:
 except ModuleNotFoundError:
     contextvars = None  # type: ignore
 
+import concurrent.futures
 import contextlib
 import dataclasses
 import enum
@@ -72,6 +73,7 @@ class VirtualKernelContext:
     page_status: Dict[str, PageStatus] = dataclasses.field(default_factory=dict)
     # only used for testing
     _last_kernel_cull_task: "Optional[asyncio.Future[None]]" = None
+    _last_kernel_cull_future: "Optional[concurrent.futures.Future[None]]" = None
     closed_event: threading.Event = dataclasses.field(default_factory=threading.Event)
     _on_close_callbacks: List[Callable[[], None]] = dataclasses.field(default_factory=list)
     lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
@@ -114,6 +116,10 @@ class VirtualKernelContext:
         with self, self.lock:
             for key in self.page_status:
                 self.page_status[key] = PageStatus.CLOSED
+            if self._last_kernel_cull_task:
+                self._last_kernel_cull_task.cancel()
+            if self._last_kernel_cull_future:
+                self._last_kernel_cull_future.cancel()
             if self.closed_event.is_set():
                 logger.error("Tried to close a kernel context that is already closed: %s", self.id)
                 return
@@ -162,6 +168,8 @@ class VirtualKernelContext:
                 pickle.dump(state, f)
 
     def page_connect(self, page_id: str):
+        if self.closed_event.is_set():
+            raise RuntimeError("Cannot connect a page to a closed kernel")
         logger.info("Connect page %s for kernel %s", page_id, self.id)
         with self.lock:
             if self.closed_event.is_set():
@@ -231,7 +239,7 @@ class VirtualKernelContext:
                 except RuntimeError:
                     pass  # event loop already closed, happens during testing
 
-            asyncio.run_coroutine_threadsafe(create_task(), keep_alive_event_loop)
+            self._last_kernel_cull_future = asyncio.run_coroutine_threadsafe(create_task(), keep_alive_event_loop)
             return future
 
     def page_disconnect(self, page_id: str) -> "Optional[asyncio.Future[None]]":
@@ -281,6 +289,8 @@ class VirtualKernelContext:
 
         logger.info("page status: %s", self.page_status)
         with self.lock:
+            if self.closed_event.is_set():
+                raise RuntimeError("Cannot connect a page to a closed kernel")
             if self.page_status[page_id] == PageStatus.CLOSED:
                 logger.info("Page %s already closed for kernel %s", page_id, self.id)
                 return
