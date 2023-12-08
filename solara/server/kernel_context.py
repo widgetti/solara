@@ -382,6 +382,11 @@ def set_context_for_thread(context: VirtualKernelContext, thread: threading.Thre
     current_context[key] = context
 
 
+def clear_context_for_thread(thread: threading.Thread):
+    key = get_thread_key(thread)
+    current_context.pop(key, None)
+
+
 def has_current_context() -> bool:
     thread_key = get_current_thread_key()
     return (thread_key in current_context) and (current_context[thread_key] is not None)
