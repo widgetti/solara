@@ -439,7 +439,12 @@ def solara_comm_target(comm, msg_first):
             themes = args.get("themes")
             dark = args.get("dark")
             load_themes(themes, dark)
-            load_app_widget(None, app, path)
+            try:
+                load_app_widget(None, app, path)
+            except Exception as e:
+                msg = f"Error loading app: from path {path} and app {app_name}"
+                logger.exception(msg)
+                raise RuntimeError(msg) from e
             comm.send({"method": "finished", "widget_id": context.container._model_id})
         elif method == "app-status":
             context = kernel_context.get_current_context()
