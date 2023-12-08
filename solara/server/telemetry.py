@@ -172,7 +172,7 @@ _thread = threading.Thread(target=_track, daemon=True)
 
 
 def server_start():
-    if settings.main.mode == "development":
+    if _auto_restart_enabled:
         return
     if not settings.telemetry.mixpanel_enable:
         return
