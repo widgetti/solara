@@ -37,7 +37,7 @@ jobs:
             voila: "0.4.0"
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
         with:
