@@ -178,6 +178,20 @@ blockquote p:last-child {
     background-color: var(--dark-color-primary-lightest);
 }
 
+/* API PAGE REFACTOR STYLE */
+
+.v-sheet.api-search-container{
+    height: 50vh;
+}
+    .v-sheet.api-search-container .v-input{
+        flex-grow: 0;
+    }
+.component-card{
+    display: flex;
+    flex-direction: column;
+    width: 19rem;
+}
+
 /* vuetify component overrides */
 
 .v-btn.solara-docs-button {

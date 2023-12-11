@@ -10,6 +10,7 @@ This can be significantly faster than comparing he figure data directly.
 """
 
 import plotly.express as px
+
 import solara
 
 df = px.data.iris()

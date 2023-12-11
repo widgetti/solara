@@ -14,7 +14,7 @@ categories = solara.reactive(["Vandalism", "Assault", "Robbery"])
 limit = solara.reactive(100)
 
 
-ROOT = Path(solara.__file__).parent / "website" / "pages" / "docs" / "content" / "04-tutorial"
+ROOT = Path(solara.__file__).parent / "website" / "pages" / "documentation" / "getting_started" / "content" / "04-tutorial"
 path = ROOT / Path("SF_crime_sample.csv.gz")
 url = "https://raw.githubusercontent.com/widgetti/solara/master/solara/website/pages/docs/content/04-tutorial/SF_crime_sample.csv"
 

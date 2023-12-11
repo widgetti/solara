@@ -2,10 +2,11 @@
 # computed
 
 """
+
 import solara
 from solara.website.utils import apidoc
 
-from . import NoPage
+from ..components import NoPage
 
 title = "computed"
 

@@ -3,7 +3,7 @@
 import solara
 from solara.website.utils import apidoc
 
-from . import NoPage
+from ..api import NoPage
 
 Page = NoPage
 

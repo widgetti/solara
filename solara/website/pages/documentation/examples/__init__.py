@@ -7,15 +7,18 @@ title = "Examples"
 
 
 @solara.component
-def Page():
-    # show a gallery of all the examples
-    router = solara.use_router()
-    route_current = router.path_routes[-2]
+def Page(route_external=None):
+    if route_external is not None:
+        route_current = route_external
+    else:
+        # show a gallery of all the examples
+        router = solara.use_router()
+        route_current = router.path_routes[-2]
 
     for route in route_current.children:
         if route.children:
             solara.Markdown(f"## {route.label}\n" + (route.module.__doc__ or ""))
-            with solara.ColumnsResponsive(12, 6, 6, 6, 4):
+            with solara.Row(justify="center", gap="20px", style={"flex-wrap": "wrap", "row-gap": "20px"}):
                 for child in route.children:
                     path = route.path + "/" + child.path
                     if child.path in [
@@ -43,7 +46,7 @@ def Page():
 
                     path = getattr(child.module, "redirect", path)
                     if path:
-                        with solara.Card(child.label, style="height: 100%;"):
+                        with solara.Card(child.label, classes=["component-card"], margin=0):
                             with solara.Link(path):
                                 with solara.Column(align="center"):
                                     solara.Image(image_url, width="120px" if image_url.endswith(".svg") else "100%")

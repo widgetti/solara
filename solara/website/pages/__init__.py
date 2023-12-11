@@ -9,7 +9,7 @@ from ..components.mailchimp import MailChimp
 
 title = "Home"
 
-route_order = ["/", "showcase", "docs", "api", "examples", "apps"]
+route_order = ["/", "showcase", "documentation", "apps", "contact", "changelog"]
 
 
 @solara.component
@@ -96,7 +96,7 @@ def Layout(children=[]):
                 button_text="Quickstart",
             )
 
-        with rv.Container(tag="section", fluid=True, ma_0=True, pa_0=True, class_="fill-height mb-8 solara-content-main"):
+        with rv.Container(tag="section", fluid=True, ma_0=True, pa_0=True, class_="fill-height solara-content-main"):
             if route_current is not None and route_current.path == "/":
                 description = "Use ipywidgets with Solara to build powerful and scalable web apps for Jupyter and production in Python."
                 # both tags in one
@@ -209,7 +209,8 @@ def Layout(children=[]):
                                     rv.ExpansionPanelHeader(children=["FastAPI"])
                                     with rv.ExpansionPanelContent():
                                         solara.Markdown(
-                                            "Using [solara-server](/docs/understanding/solara-server), we can run our app in production using FastAPI."
+                                            """Using [solara-server](documentation/docs/understanding/solara-server),
+                                            we can run our app in production using FastAPI."""
                                         )
 
                 with solara.Column(style={"width": "100%"}):
@@ -265,23 +266,24 @@ def Layout(children=[]):
 
             else:
                 with rv.Row(
-                    style_="gap:6rem; flex-wrap: nowrap;", justify="center" if route_current is not None and route_current.path == "showcase" else "start"
+                    style_="gap:40px; flex-wrap: nowrap; margin: 0; min-height: calc(100vh - 215.5px);",
+                    justify="center" if route_current is not None and route_current.path in ["documentation", "showcase"] else "start",
                 ):
                     if route_current is not None and hasattr(route_current.module, "Sidebar"):
                         route_current.module.Sidebar()  # type: ignore
                     else:
-                        if route_current is not None and route_current.path != "showcase":
+                        if route_current is not None and route_current.path not in ["documentation", "showcase", "contact", "changelog"]:
                             Sidebar()
-                    with rv.Col(tag="main", md=True, class_="pt-12 pl-12 pr-10", style_="max-width: 1024px; overflow: auto;"):
+                    with rv.Col(
+                        tag="main",
+                        md=True,
+                        class_="pt-12 pl-12 pr-10",
+                        style_=f"max-width: {'1024px' if route_current.path not in ['documentation', 'contact', 'changelog'] else 'unset'}; overflow: auto;",
+                    ):
                         if route_current is not None and route_current.path == "/":
                             with rv.Row(align="center"):
                                 pass
-                                # with rv.Col(md=6, class_="pa-0"):
-                                #     rv.Html(tag="h1", children=["Live Demo"])
-                                # with rv.Col(md=6, class_="d-flex", style_="justify-content: end"):
-                                #     rv.Btn(elevation=0, large=True, children=["Running App"], color="primary", class_="btn-size--xlarge")
-                            # solara.Padding(6)
-                        with rv.Row(children=children, class_="solara-page-content-search"):
+                        with rv.Row(children=children, justify="center", class_="solara-page-content-search"):
                             pass
 
             # absolute = True prevents the drawer from being below the overlay it generates
@@ -344,7 +346,6 @@ def Testimonial(text, name, position, img):
         max_width=max_width,
         class_="testimonial-card",
     ):
-        # rv.CardTitle(children=["Former Plotly CEO"])
         with rv.CardActions():
             with rv.ListItem(class_="grow"):
                 with rv.ListItemAvatar(color="grey darken-3"):

@@ -8,7 +8,7 @@ def use_effect(
     ...
 ```
 
-Execute non-declarative code within a callback, for instance to add event handlers. `effect` is executed *after* page render, letting us fetch the actual underlying widget object using `solara.get_widget` on an element. `dependencies` should be a list of variables, which when changed trigger re-execution of `effect`. If left empty, `effect` will never re-execute. 
+Execute non-declarative code within a callback, for instance to add event handlers. `effect` is executed *after* page render, letting us fetch the actual underlying widget object using `solara.get_widget` on an element. `dependencies` should be a list of variables, which when changed trigger re-execution of `effect`. If left empty, `effect` will never re-execute.
 
 `effect` can return a cleanup function, which will be called before re-execution of `effect`, or when the component containing `use_effect` is removed.
 
@@ -34,7 +34,7 @@ def use_event(el: solara.Element, callback: Callable):
 def Page():
     def function():
         #Do something...
-    
+
     input = solara.InputText():
     use_event(input, function)
     ...
