@@ -24,6 +24,7 @@ class Playwright(threading.local):
     browser: Optional["playwright.sync_api.Browser"] = None
     sync_playwright: Optional["playwright.sync_api.Playwright"] = None
     context_manager: Optional["playwright.sync_api._context_manager.PlaywrightContextManager"] = None
+    page: Optional["playwright.sync_api.Page"] = None
 
 
 pw = Playwright()
@@ -46,6 +47,7 @@ def _get_playwright():
     pw.sync_playwright = pw.context_manager.start()
 
     pw.browser = pw.sync_playwright.chromium.launch(headless=not settings.ssg.headed)
+    pw.page = pw.browser.new_page()
     return pw
 
 
@@ -97,7 +99,7 @@ def ssg_crawl_route(base_url: str, route: solara.Route, build_path: Path, thread
         path = build_path / ("index.html" if route.path == "/" else route.path + ".html")
         stale = False
         pw = _get_playwright()
-        browser = pw.browser
+        page = pw.page
         if path.exists():
             if route.file is None:
                 rprint(f"File corresponding to {url} is not found (route: {route})")
@@ -108,7 +110,6 @@ def ssg_crawl_route(base_url: str, route: solara.Route, build_path: Path, thread
                     rprint(f"Path {path} is stale: mtime {path} is older than {route.file} mtime {route.file.stat().st_mtime}")
         if not path.exists() or stale:
             rprint(f"Will generate {path}")
-            page = browser.new_page()
             response = page.goto(url, wait_until="networkidle")
             if response.status != 200:
                 raise Exception(f"Failed to load {url} with status {response.status}")
@@ -129,7 +130,7 @@ def ssg_crawl_route(base_url: str, route: solara.Route, build_path: Path, thread
                 raise
             path.write_text(html, encoding="utf-8")
             rprint(f"Wrote to {path}")
-            page.close()
+            page.goto("about:blank")
         else:
             rprint(f"Skipping existing render: {path}")
     results = []
