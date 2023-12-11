@@ -196,7 +196,7 @@ def deserialize_binary_message(bmsg):
 SESSION_KEY = b"solara"
 
 
-class WebsocketStream(object):
+class WebsocketStream:
     def __init__(self, session, channel: str):
         self.session = session
         self.channel = channel
@@ -222,7 +222,7 @@ def send_websockets(websockets: Set[websocket.WebsocketWrapper], binary_msg):
 
 class SessionWebsocket(session.Session):
     def __init__(self, *args, **kwargs):
-        super(SessionWebsocket, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.websockets: Set[websocket.WebsocketWrapper] = set()  # map from .. msg id to websocket?
 
     def close(self):
@@ -263,7 +263,7 @@ class Kernel(ipykernel.kernelbase.Kernel):
     banner = "solara"
 
     def __init__(self):
-        super(Kernel, self).__init__()
+        super().__init__()
         self.session = SessionWebsocket(parent=self, key=SESSION_KEY)
         self.msg_queue = queue.Queue()  # type: ignore
         self.stream = self.iopub_socket = WebsocketStream(self.session, "iopub")

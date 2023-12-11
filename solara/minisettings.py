@@ -94,7 +94,7 @@ class BaseSettings:
     def __init__(self, **kwargs) -> None:
         cls = type(self)
         self._values = {**kwargs}
-        keys = set([k.upper() for k in os.environ.keys()])
+        keys = {k.upper() for k in os.environ.keys()}
         for key, field in cls.__dict__.items():
             if key in kwargs:
                 continue

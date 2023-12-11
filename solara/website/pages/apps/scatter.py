@@ -28,10 +28,10 @@ class State:
 
     @staticmethod
     def load_sample():
-        State.x.value = str("gdpPercap")
-        State.y.value = str("lifeExp")
-        State.size.value = str("pop")
-        State.color.value = str("continent")
+        State.x.value = "gdpPercap"
+        State.y.value = "lifeExp"
+        State.size.value = "pop"
+        State.color.value = "continent"
         State.logx.value = True
         State.df.value = df_sample
 

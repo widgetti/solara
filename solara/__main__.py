@@ -86,7 +86,7 @@ def _check_version():
 def find_all_packages_paths():
     paths = []
     # sitepackages = set([os.path.dirname(k) for k in site.getsitepackages()])
-    sitepackages = set([k for k in site.getsitepackages()])
+    sitepackages = {k for k in site.getsitepackages()}
     paths.extend(list(sitepackages))
     for name, module in sys.modules.items():
         if hasattr(module, "__path__"):
