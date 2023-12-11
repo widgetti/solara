@@ -82,18 +82,16 @@ def crime_map(df):
 
 @solara.component
 def View():
-    with solara.Column():
-        dff = crime_filter(df_crime, districts.value, categories.value)
-        row_count = len(dff)
-        if row_count > limit.value:
-            solara.Warning(f"Only showing the first {limit.value} of {row_count:,} crimes on map")
-        with solara.Column():
-            with solara.Column(style={"max-height": "400px"}):
-                crime_map(dff.iloc[: limit.value])
-            if row_count > 0:
-                crime_charts(dff)
-            else:
-                solara.Warning("You filtered out all the data, no charts shown")
+    dff = crime_filter(df_crime, districts.value, categories.value)
+    row_count = len(dff)
+    if row_count > limit.value:
+        solara.Warning(f"Only showing the first {limit.value} of {row_count:,} crimes on map")
+    with solara.Column(style={"max-height": "400px"}):
+        crime_map(dff.iloc[: limit.value])
+    if row_count > 0:
+        crime_charts(dff)
+    else:
+        solara.Warning("You filtered out all the data, no charts shown")
 
 
 @solara.component
