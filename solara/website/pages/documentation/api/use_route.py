@@ -29,9 +29,9 @@ def Fruit():
                 with solara.Link(solara.resolve_path(route_fruit)):
                     solara.Button(route_fruit.path)
 
-            with solara.Link("/api/use_route/fruit/nofruit", nofollow=True):
+            with solara.Link("/documentation/api/use_route/fruit/nofruit", nofollow=True):
                 solara.Button("Wrong fruit")
-            with solara.Link("/api/use_route/not-routed", nofollow=True):
+            with solara.Link("/documentation/api/use_route/not-routed", nofollow=True):
                 solara.Button("Wrong url")
         solara.Success(f"You chose {route.path}")
     return main

@@ -46,7 +46,9 @@ def Page(route_external=None):
 
                     path = getattr(child.module, "redirect", path)
                     if path:
-                        with solara.Card(child.label, classes=["component-card"], margin=0):
+                        path = path if route_external is None else "examples/" + path
+                        title = solara.Link(path, children=[child.label])
+                        with solara.Card(title, classes=["component-card"], margin=0):
                             with solara.Link(path):
                                 with solara.Column(align="center"):
                                     solara.Image(image_url, width="120px" if image_url.endswith(".svg") else "100%")

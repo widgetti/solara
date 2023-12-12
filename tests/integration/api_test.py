@@ -20,27 +20,27 @@ from playwright.sync_api import expect
 
 def test_api_markdown_editor(page_session: playwright.sync_api.Page, solara_server, solara_app):
     with solara_app("solara.website.pages"):
-        page_session.goto(solara_server.base_url + "/api/")
+        page_session.goto(solara_server.base_url + "/documentation/components/")
         page_session.locator("text=Markdown Editor").first.click()
         page_session.locator('h1:has-text("Large heading")').wait_for()
 
 
 def test_api_file_browser(page_session: playwright.sync_api.Page, solara_server, solara_app):
     with solara_app("solara.website.pages"):
-        page_session.goto(solara_server.base_url + "/api/")
+        page_session.goto(solara_server.base_url + "/documentation/components/")
         page_session.locator("text=File Browser").first.click()
         page_session.locator("text=You are in directory").wait_for()
 
 
 def test_api_matplotlib(page_session: playwright.sync_api.Page, solara_server, solara_app):
     with solara_app("solara.website.pages"):
-        page_session.goto(solara_server.base_url + "/api/matplotlib")
+        page_session.goto(solara_server.base_url + "/documentation/components/matplotlib")
         page_session.locator("text=Arguments").first.wait_for()
 
 
 def test_api_style(page_session: playwright.sync_api.Page, solara_server, solara_app):
     with solara_app("solara.website.pages"):
-        page_session.goto(solara_server.base_url + "/api/style")
+        page_session.goto(solara_server.base_url + "/documentation/components/style")
         page_session.locator("text=Add a custom piece of CSS").first.wait_for()
         expect(page_session.locator(".mybutton")).to_have_css("color", "rgb(76, 175, 80)")
 
@@ -55,7 +55,7 @@ def test_api_style(page_session: playwright.sync_api.Page, solara_server, solara
 
 def test_api_cross_filter_select(page_session: playwright.sync_api.Page, solara_server, solara_app):
     with solara_app("solara.website.pages"):
-        page_session.goto(solara_server.base_url + "/api/cross_filter_select")
+        page_session.goto(solara_server.base_url + "/documentation/api/cross_filter_select")
         page_session.locator("text=244").wait_for()
         select_sex = page_session.locator('_vue=v-autocomplete[label="Select values in sex having values:"]')
         select_sex.click()
@@ -65,7 +65,7 @@ def test_api_cross_filter_select(page_session: playwright.sync_api.Page, solara_
 
 def test_dataframe(page_session: playwright.sync_api.Page, solara_server, solara_app):
     with solara_app("solara.website.pages"):
-        page_session.goto(solara_server.base_url + "/api/dataframe")
+        page_session.goto(solara_server.base_url + "/documentation/components/dataframe")
         datatable_value_counts = page_session.locator(".solara-data-table").nth(1)
         datatable_value_counts.wait_for()
 

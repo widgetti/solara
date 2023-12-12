@@ -97,7 +97,9 @@ def Layout(children=[]):
             )
 
         with rv.Container(tag="section", fluid=True, ma_0=True, pa_0=True, class_="fill-height solara-content-main"):
-            if route_current is not None and route_current.path == "/":
+            if route_current is None:
+                return solara.Error("Page not found")
+            elif route_current.path == "/":
                 description = "Use ipywidgets with Solara to build powerful and scalable web apps for Jupyter and production in Python."
                 # both tags in one
                 solara.Meta(name="description", property="og:description", content=description)
@@ -263,7 +265,6 @@ def Layout(children=[]):
                         solara.Markdown("#### Join our Mailing list to get the latest news")
                         with solara.Div(style={"width": "80%"}):
                             MailChimp(location=router.path)
-
             else:
                 with rv.Row(
                     style_="gap:40px; flex-wrap: nowrap; margin: 0; min-height: calc(100vh - 215.5px);",

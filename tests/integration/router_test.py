@@ -7,8 +7,8 @@ def test_landing(page_session: playwright.sync_api.Page, solara_server, solara_a
     with solara_app("solara.website.pages"):
         page_session.goto(solara_server.base_url)
         page_session.locator("text=React-style web framework").wait_for()
-        page_session.locator("text=API").first.click()
-        page_session.locator("text=Matplotlib").first.wait_for()
+        page_session.get_by_role("link", name="Documentation").click()
+        page_session.locator("text=Search the Solara Documentation").first.wait_for()
         page_session.go_back()
         page_session.locator("text=React-style web framework").wait_for()
 
@@ -16,7 +16,7 @@ def test_landing(page_session: playwright.sync_api.Page, solara_server, solara_a
 def test_docs_basics(page_session: playwright.sync_api.Page, solara_server, solara_app):
     # with screenshot_on_error(page, 'tmp/test_docs_basics.png'):
     with solara_app("solara.website.pages"):
-        page_session.goto(solara_server.base_url + "/api/use_route/fruit/banana")
+        page_session.goto(solara_server.base_url + "/documentation/api/use_route/fruit/banana")
         page_session.locator("text=You chose banana").wait_for()
         page_session.locator('button:has-text("kiwi")').click()
         page_session.locator("text=You chose kiwi").wait_for()

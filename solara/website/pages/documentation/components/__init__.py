@@ -3,6 +3,8 @@ from pathlib import Path
 import solara
 from solara.alias import rv
 
+from ..api import NoPage, WithCode  # noqa
+
 items = [
     {
         "name": "Input",
@@ -94,7 +96,6 @@ def Page(route_external=None):
         route_current = router.path_routes[-2]
 
     routes = {r.path: r for r in route_current.children}
-
     for item in items:
         solara.Markdown(f"## {item['name']}")
         with solara.Row(justify="center", gap="20px", style={"flex-wrap": "wrap", "row-gap": "20px"}):
@@ -105,9 +106,9 @@ def Page(route_external=None):
                 path = route.path
                 image_path = None
                 image_url = None
-                for suffix in [".png"]:
+                for suffix in [".png", ".gif"]:
                     image = path + suffix
-                    image_path = Path(__file__).parent.parent.parent / "public" / "api" / image
+                    image_path = Path(__file__).parent.parent.parent.parent / "public" / "api" / image
                     image_url = "/static/public/api/" + image
                     if image_path.exists():
                         break
@@ -119,9 +120,9 @@ def Page(route_external=None):
                 path = getattr(route.module, "redirect", path)
                 if path:
                     with solara.Card(classes=["component-card"], margin=0):
-                        rv.CardTitle(children=[route.label])
+                        rv.CardTitle(children=[solara.Link(path if route_external is None else "components/" + path, children=[route.label])])
                         with rv.CardText():
-                            with solara.Link(path):
+                            with solara.Link(path if route_external is None else "components/" + path):
                                 if not image_path.exists():
                                     pass
                                     with solara.Column(align="center"):
@@ -140,5 +141,17 @@ def Page(route_external=None):
 
 
 @solara.component
-def NoPage():
-    raise RuntimeError("This page should not be rendered")
+def Layout(children=[]):
+    route_current, all_routes = solara.use_route()
+    if route_current is None:
+        return solara.Error("Page not found")
+
+    if route_current.path == "/":
+        return Page()
+    else:
+        with solara.Column(align="center") as main:
+            with solara.Column(align="center", style={"max-width": "1024px"}):
+                if route_current.module:
+                    # we ignore children, and make the element again
+                    WithCode(route_current.module)
+        return main

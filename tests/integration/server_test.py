@@ -23,16 +23,21 @@ def test_large_cookie(browser: playwright.sync_api.Browser, page_session: playwr
 def test_docs_basics(page_session: playwright.sync_api.Page, solara_server, solara_app):
     with solara_app("solara.website.pages"):
         page_session.goto(solara_server.base_url)
-        page_session.locator("text=Examples").first.click()
+        page_session.get_by_role("link", name="Documentation").click()
 
+        page_session.locator("text=Search the Solara Documentation").wait_for()
+        page_session.locator(".v-btn__content", has_text="Examples").first.click()
         page_session.locator("text=Calculator").first.click()
         page_session.locator("text=+/-").wait_for()
         page_session.screenshot(path="tmp/screenshot_calculator.png")
 
+        page_session.locator("text=Examples").first.click()
+        page_session.locator("text=Libraries").first.click()
         page_session.locator("text=Bqplot").first.click()
         page_session.locator("text=Exponent").wait_for()
         page_session.screenshot(path="tmp/screenshot_bqplot.png")
 
+        page_session.locator("text=Visualization").first.click()
         page_session.locator("text=Scatter plot using Plotly").first.click()
         page_session.locator("text=plotly express").first.wait_for()
         page_session.screenshot(path="tmp/screenshot_plotly.png")

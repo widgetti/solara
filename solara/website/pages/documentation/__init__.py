@@ -57,7 +57,7 @@ def Page(children=[]):
 def QuickBrowse(route_current):
     selected = solara.use_reactive("")
 
-    with solara.Column(gap="75px"):
+    with solara.Column(gap="75px", align="center"):
         with solara.Row(justify="center", gap="30px", style={"flex-wrap": "wrap", "align-items": "start", "row-gap": "30px"}):
             for child in reversed(route_current.children):
                 if child.path == "/":
@@ -69,7 +69,7 @@ def QuickBrowse(route_current):
                     classes=["v-btn--rounded", "v-size--x-large", "darken-3" if selected.value == child.path else ""],
                 )
         if selected.value:
-            with solara.v.TabsItems(v_model=selected.value, style={"width": "100%"}):
+            with solara.v.TabsItems(v_model=selected.value, style_=f"width: {'1024px' if selected.value in ['getting_started', 'faq'] else '90%'};"):
                 for child in reversed(route_current.children):
                     if child.path == "/":
                         continue
@@ -161,6 +161,33 @@ def Sidebar():
                         solara.v.ListItemIcon(children=[solara.v.Icon(children=["mdi-history"])])
                         solara.v.ListItemTitle(style_="padding: 0 20px;", children=["Changelog"])
 
+    return main
+
+
+@solara.component
+def WithCode(module):
+    # e = solara.use_exception_handler()
+    # if e is not None:
+    #     return solara.Error("oops")
+    component = getattr(module, "Page", None)
+    with solara.Column() as main:
+        # It renders code better
+        solara.Markdown(
+            module.__doc__ or "# no docs yet",
+            unsafe_solara_execute=True,
+        )
+        if component and component != NoPage:
+            with solara.Card("Example", margin=0, classes=["mt-8"]):
+                component()
+                github_url = solara.util.github_url(module.__file__)
+                solara.Button(
+                    label="View source",
+                    icon_name="mdi-github-circle",
+                    attributes={"href": github_url, "target": "_blank"},
+                    text=True,
+                    outlined=True,
+                    class_="mt-8",
+                )
     return main
 
 
