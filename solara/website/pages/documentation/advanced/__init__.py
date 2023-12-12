@@ -18,13 +18,19 @@ def Page(route_external=None):
         for child in route_external.children:
             if child.path == "/":
                 continue
-            card_title = solara.Link("/documentation/" + child.path, children=[child.label])
+
+            card_title = solara.Link("/documentation/advanced/" + child.path, children=[child.label])
 
             with solara.Card(title=card_title, style={"min-width": "300px"}):
                 with solara.v.List():
-                    for grandchild in child.children:
-                        if grandchild.path == "/":
-                            continue
-                        with solara.Link("/documentation/" + child.path + "/" + grandchild.path):
-                            with solara.v.ListItem():
-                                solara.v.ListItemTitle(children=[grandchild.label])
+                    with solara.v.ListItemGroup():
+                        for grandchild in child.children:
+                            if grandchild.path == "/":
+                                continue
+                            with solara.Link(
+                                "/documentation/advanced/" + child.path + "/" + grandchild.path
+                                if child.path != "/"
+                                else "/documentation/advanced/" + grandchild.path
+                            ):
+                                with solara.v.ListItem():
+                                    solara.v.ListItemTitle(children=[grandchild.label])
