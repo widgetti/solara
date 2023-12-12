@@ -18,8 +18,8 @@ def Link(
 
     See also:
 
-     * [Multipage](/docs/howto/multipage).
-     * [Understanding Routing](/docs/understanding/routing).
+     * [Multipage](/documentation/advanced/howto/multipage).
+     * [Understanding Routing](/documentation/advanced/understanding/routing).
 
     Most common usage is in combination with a button, e.g.:
 

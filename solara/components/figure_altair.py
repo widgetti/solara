@@ -12,7 +12,7 @@ def FigureAltair(
 ):
     """Renders an Altair chart using VegaLite.
 
-    See also [our altair example](/examples/libraries/altair).
+    See also [our altair example](/documentation/examples/libraries/altair).
 
     ## Arguments
 

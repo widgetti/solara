@@ -1,7 +1,7 @@
 """
 # ipyleaflet advanced
 
-Extends the [basic ipyleaflet example](/examples/libraries/ipyleaflet) with a marker that can be dragged around, and a
+Extends the [basic ipyleaflet example](/documentation/examples/libraries/ipyleaflet) with a marker that can be dragged around, and a
 dropdown to select the map style. Two buttons allow to reset the map to the default zoom and center and to zoom
 to the marker.
 """

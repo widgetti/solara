@@ -208,7 +208,7 @@ def AppLayout(
      * The sidebar content is set using the [Sidebar](/api/sidebar) component.
      * The content is set by the `Page` component provided by the user.
 
-    This component is usually not used directly, but rather through via the [Layout system](/docs/howto/layout).
+    This component is usually not used directly, but rather through via the [Layout system](/documentation/advanced/howto/layout).
 
     The sidebar is only added when the AppLayout has more than one child.
 

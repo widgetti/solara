@@ -5,7 +5,7 @@ These are the components available in Solara to build chat interfaces.
 Although they can be used together to create a pre-built chat interface, inserting custom components is also possible.
 For an example of how to use a custom message component, see the bottom of the page.
 
-Also check out the [Chatbot](/examples/ai/chatbot) example.
+Also check out the [Chatbot](/documentation/examples/ai/chatbot) example.
 
 # ChatBox
 """

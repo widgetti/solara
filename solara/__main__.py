@@ -489,7 +489,7 @@ def deploy():
 
     time.sleep(1)
     rprint("Want your app to run instantly on awesomeapp-mystartup-gh.solara.run?")
-    rprint("\tCheck out https://solara.dev/docs/deploying/cloud-hosted")
+    rprint("\tCheck out https://solara.dev/documentation/getting_started/deploying/cloud-hosted")
 
 
 @cli.command()

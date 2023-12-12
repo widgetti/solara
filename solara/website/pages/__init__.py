@@ -125,9 +125,9 @@ def Layout(children=[]):
                         """
                         )
                         with solara.HBox():
-                            with solara.Link("/docs"):
+                            with solara.Link("/documentation"):
                                 solara.Button(label="Read more", class_="ma-1 homepage-button", href="/docs", color="primary", dark=True)
-                            with solara.Link("/docs/quickstart"):
+                            with solara.Link("/documentation/getting_started/quickstart"):
                                 solara.Button(label="Quickstart", class_="ma-1 homepage-button", color="primary", dark=True)
                     # with rv.Col(md=4, sm=5):
                     #     rv.Img(src="https://dxhl76zpt6fap.cloudfront.net/public/landing/what.webp", style_="width:900px")
@@ -183,7 +183,7 @@ def Layout(children=[]):
                                 text=True,
                                 outlined=False,
                             )
-                            with solara.Link("/examples"):
+                            with solara.Link("/documentation/examples"):
                                 with solara.Column(style="width: 100%;"):
                                     solara.Button(
                                         label="More examples",
@@ -211,7 +211,7 @@ def Layout(children=[]):
                                     rv.ExpansionPanelHeader(children=["FastAPI"])
                                     with rv.ExpansionPanelContent():
                                         solara.Markdown(
-                                            """Using [solara-server](documentation/docs/understanding/solara-server),
+                                            """Using [solara-server](documentation/advanced/understanding/solara-server),
                                             we can run our app in production using FastAPI."""
                                         )
 

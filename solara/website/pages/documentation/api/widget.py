@@ -21,7 +21,7 @@ widget = solara.FileDownload.widget(data="some text data", filename="solara-demo
 ```
 
 This is very useful if you are migrating your application from a classic
-ipywidget to solara. See [also the ipywidgets tutorial](/docs/tutorial/ipywidgets).
+ipywidget to solara. See [also the ipywidgets tutorial](/documentation/getting_started/tutorial/ipywidgets).
 
 The `ipywidgets.ValueWidget` is used to enable the use of the widget in
 interact, or interactive. The `ipywidgets.VBox` is used to enable

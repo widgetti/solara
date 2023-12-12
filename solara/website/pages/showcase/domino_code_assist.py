@@ -50,7 +50,7 @@ def Page():
 
             # App deploying
 
-            To deploy apps we use [solara server](/docs/understanding/solara-server) which can
+            To deploy apps we use [solara server](/documentation/advanced/understanding/solara-server) which can
             render the same UI as in the notebook, but now sharable with non-technical users.
 
             Many users have deployed apps at Domino using Solara with

@@ -101,7 +101,7 @@ def use_route_level():
 def use_router() -> Router:
     """Returns the current router object.
 
-    See also [Understanding Routing](/docs/understanding/routing).
+    See also [Understanding Routing](/documentation/advanced/understanding/routing).
 
     `use_router` returns the current router object. This is useful to build custom routing.
 
@@ -138,7 +138,7 @@ def use_route(
 ) -> Tuple[Optional[solara.Route], List[solara.Route]]:
     """Returns (if found) the current route that matches the pathname, or None
 
-    See also [Understanding Routing](/docs/understanding/routing).
+    See also [Understanding Routing](/documentation/advanced/understanding/routing).
 
     `use_route` returns (if found) the current route that matches the pathname, or None. It also returns all resolved routes of that level
     (i.e. all siblings and itself). This return tuple is useful to build custom navigation (e.g. using tabs or buttons).
@@ -233,8 +233,8 @@ def resolve_path(path_or_route: Union[str, solara.Route], level=0) -> str:
 
     ## See also
 
-     * [Multipage](/docs/howto/multipage).
-     * [Understanding Routing](/docs/understanding/routing).
+     * [Multipage](/documentation/advanced/howto/multipage).
+     * [Understanding Routing](/documentation/advanced/understanding/routing).
 
 
     """
