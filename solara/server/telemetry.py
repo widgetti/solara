@@ -176,7 +176,10 @@ def server_start():
         return
     if not settings.telemetry.mixpanel_enable:
         return
-    _thread.start()
+    try:
+        _thread.start()
+    except RuntimeError:
+        pass
 
 
 def server_stop():
