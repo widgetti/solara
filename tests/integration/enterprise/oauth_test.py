@@ -70,7 +70,7 @@ def test_oauth_private(page_session: playwright.sync_api.Page, solara_server, so
             assert response is not None
             assert response.status == 401
             assert page_session.goto(solara_server.base_url + "/invalid_url").status == 401
-            page_session.goto(solara_server.base_url + "/documentation/components/style")
+            page_session.goto(solara_server.base_url + "/documentation/components/advanced/style")
             page_session.locator('css=input[name="username"]').fill(os.environ["AUTH0_USERNAME"])
             page_session.locator('css=input[name="password"]').fill(os.environ["AUTH0_PASSWORD"])
             page_session.locator('css=button[name="action"]').nth(-1).click()
@@ -78,7 +78,7 @@ def test_oauth_private(page_session: playwright.sync_api.Page, solara_server, so
             response = page_session.goto(solara_server.base_url + "/static/public/beach.jpeg")
             assert response is not None
             assert str(response.status)[0] == "2"  # check 2xx
-            page_session.goto(get_logout_url("/documentation/components/style"))
+            page_session.goto(get_logout_url("/documentation/components/advanced/style"))
             page_session.locator('css=input[name="username"]').fill(os.environ["AUTH0_USERNAME"])
             response = page_session.goto(solara_server.base_url + "/static/public/beach.jpeg?cache=off")
             assert response is not None

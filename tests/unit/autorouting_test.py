@@ -7,7 +7,7 @@ import solara
 import solara.autorouting
 import solara.template.portal.solara_portal.pages
 import solara.website.pages.documentation
-import solara.website.pages.documentation.components.button
+import solara.website.pages.documentation.components.input.button
 import solara.website.pages.documentation.getting_started
 import solara.widgets
 from solara.components.title import TitleWidget
@@ -89,7 +89,7 @@ def test_routes_portal():
 
 
 def test_routes_examples_api_button():
-    routes = solara.autorouting.generate_routes(solara.website.pages.documentation.components.button)
+    routes = solara.autorouting.generate_routes(solara.website.pages.documentation.components.input.button)
 
     assert len(routes) == 1
     assert routes[0].path == "/"

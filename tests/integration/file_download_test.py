@@ -7,7 +7,7 @@ import playwright.sync_api
 
 def test_download(browser: playwright.sync_api.Browser, page_session: playwright.sync_api.Page, solara_server, solara_app, tmpdir: Path):
     with solara_app("solara.website.pages"):
-        page_session.goto(solara_server.base_url + "/documentation/components/file_download")
+        page_session.goto(solara_server.base_url + "/documentation/components/output/file_download")
         with page_session.expect_download() as download_info:
             page_session.locator('button:has-text("Download file")').click()
         target = tmpdir / "downloaded.txt"

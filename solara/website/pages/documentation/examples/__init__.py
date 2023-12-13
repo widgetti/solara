@@ -1,57 +1,12 @@
-# import inspect
-# import urllib.parse
-
 import solara
+from solara.website.components import Gallery
 
 title = "Examples"
 
 
 @solara.component
 def Page(route_external=None):
-    if route_external is not None:
-        route_current = route_external
-    else:
-        # show a gallery of all the examples
-        router = solara.use_router()
-        route_current = router.path_routes[-2]
-
-    for route in route_current.children:
-        if route.children:
-            solara.Markdown(f"## {route.label}\n" + (route.module.__doc__ or ""))
-            with solara.Row(justify="center", gap="20px", style={"flex-wrap": "wrap", "row-gap": "20px"}):
-                for child in route.children:
-                    path = route.path + "/" + child.path
-                    if child.path in [
-                        "tokenizer",
-                        "sine",
-                        "authorization",
-                        "layout_demo",
-                        "multipage",
-                        "scatter",
-                        "scrolling",
-                        "tutorial_streamlit",
-                        "login_oauth",
-                        "pokemon_search",
-                        "altair",
-                        "bqplot",
-                        "ipyleaflet",
-                        "calculator",
-                        "countdown_timer",
-                        "todo",
-                    ]:
-                        image = route.path + "/" + child.path + ".png"
-                        image_url = "https://dxhl76zpt6fap.cloudfront.net/public/examples/" + image
-                    else:
-                        image_url = "https://dxhl76zpt6fap.cloudfront.net/public/logo.svg"
-
-                    path = getattr(child.module, "redirect", path)
-                    if path:
-                        path = path if route_external is None else "examples/" + path
-                        title = solara.Link(path, children=[child.label])
-                        with solara.Card(title, classes=["component-card"], margin=0):
-                            with solara.Link(path):
-                                with solara.Column(align="center"):
-                                    solara.Image(image_url, width="120px" if image_url.endswith(".svg") else "100%")
+    Gallery(route_external)
 
 
 @solara.component
