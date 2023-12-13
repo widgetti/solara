@@ -1,3 +1,4 @@
+import sys
 from typing import Any, Dict
 
 import ipyvuetify as v
@@ -166,7 +167,7 @@ def test_cache_disk(tmpdir):
     assert len(c) == 2
 
 
-@pytest.mark.skipif(condition=redis is None, reason="redis not installed")
+@pytest.mark.skipif(condition=redis is None or sys.platform.startswith("win"), reason="redis not installed")
 def test_cache_redis(tmpdir):
     c = solara.cache.create("redis", clear=True, prefix=b"solara-test:cache:")
     c["a"] = 1
