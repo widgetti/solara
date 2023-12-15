@@ -9,11 +9,14 @@
 
 import {
   WidgetManager as JupyterLabManager,
+} from '@jupyter-widgets/jupyterlab-manager/lib/manager';
+
+import {
   WidgetRenderer
-} from '@jupyter-widgets/jupyterlab-manager';
+} from '@jupyter-widgets/jupyterlab-manager/lib/renderer';
 
 
-import { output } from '@jupyter-widgets/jupyterlab-manager';
+import * as output from '@jupyter-widgets/jupyterlab-manager/lib/output';
 
 import * as base from '@jupyter-widgets/base';
 import * as controls from '@jupyter-widgets/controls';
@@ -24,10 +27,7 @@ import '@jupyter-widgets/controls/css/widgets-base.css';
 // Voila imports the following css file, not sure why
 // import '@jupyter-widgets/controls/css/widgets.built.css';
 
-import * as Application from '@jupyterlab/application';
-import * as AppUtils from '@jupyterlab/apputils';
 import * as CoreUtils from '@jupyterlab/coreutils';
-import * as DocRegistry from '@jupyterlab/docregistry';
 import * as OutputArea from '@jupyterlab/outputarea';
 
 import { DocumentRegistry } from '@jupyterlab/docregistry';
@@ -251,10 +251,7 @@ export class WidgetManager extends JupyterLabManager {
       window.define('@jupyter-widgets/controls', controls);
       window.define('@jupyter-widgets/output', output);
 
-      window.define('@jupyterlab/application', Application);
-      window.define('@jupyterlab/apputils', AppUtils);
       window.define('@jupyterlab/coreutils', CoreUtils);
-      window.define('@jupyterlab/docregistry', DocRegistry);
       window.define('@jupyterlab/outputarea', OutputArea);
 
       window.define('@phosphor/widgets', LuminoWidget);
