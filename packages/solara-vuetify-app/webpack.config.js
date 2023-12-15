@@ -1,5 +1,9 @@
 var path = require('path');
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+
+const analyzerPlugins = process.env.ANALYZE === "true" ? [
+    new BundleAnalyzerPlugin({analyzerPort: 9999})] : [];
 
 var rules = [
     { test: /\.css$/, use: [MiniCssExtractPlugin.loader, 'css-loader'] },
@@ -57,7 +61,7 @@ module.exports = [
         mode: 'development',
     },
     {
-        plugins: [new MiniCssExtractPlugin()],
+        plugins: [new MiniCssExtractPlugin(), ...analyzerPlugins],
         entry: './src/solara-vuetify-app.js',
         output: {
             filename: 'solara-vuetify-app8.min.js',
@@ -69,9 +73,20 @@ module.exports = [
         module: {
             rules: rules
         },
+        optimization: {
+            concatenateModules: false,
+        },
         resolve: {
             alias: {
                 "@widgetti/solara-widget-manager": "@widgetti/solara-widget-manager8",
+                // why would we need codemirror?
+                '@jupyterlab/codemirror': path.resolve(__dirname, "src", "empty.js"),
+                // used in @jupyterlab/rendermine/lib/registry
+                '@jupyterlab/apputils/lib/sanitizer': path.resolve(__dirname, "src", "empty.js"),
+                // do not think we use these
+                'htmlparser2': path.resolve(__dirname, "src", "empty.js"),
+                'postcss': path.resolve(__dirname, "src", "empty.js"),
+                'moment': path.resolve(__dirname, "src", "empty.js"),
             }
         },
         mode: 'production',
