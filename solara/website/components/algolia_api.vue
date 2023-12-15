@@ -3,16 +3,19 @@
         v-model="show_results"
         offset-y>
         <template v-slot:activator="{ on }">
-            <v-text-field
-                v-model="query"
-                append-icon="mdi-magnify"
-                hide-details
-                placeholder="Search"
-                outlined
-                rounded
-                style="min-width: 19rem; width: 33%; background-color: #ffeec5;"
-                @click="show($event, on); item = 'Hi';"
-            ></v-text-field>
+                <v-text-field
+                    v-model="query"
+                    prepend-inner-icon="mdi-magnify"
+                    hide-details
+                    :placeholder="mac ? '⌘K to search' : 'Ctrl+K to search'"
+                    outlined
+                    rounded
+                    clearable
+                    ref="search"
+                    style="max-width: 50%; background-color: #fff; flex-grow: 1;"
+                    @click="show($event, on);"
+                    @keyup.enter="item = 0"
+                ></v-text-field>
         </template>
         <v-list v-if="results != null && results.length == 0">
             <v-list-item>
@@ -38,6 +41,7 @@
     </v-menu>
 </template>
 <script>
+const search = ref(null);
 module.exports = {
     async mounted() {
         window.search = this;
@@ -71,6 +75,19 @@ module.exports = {
         initSearch() {
             this.client = this.algoliasearch( '9KW9L7O5EQ', '647ca12ba642437cc40c2adee4a78d08' );
             this.index = this.client.initIndex( 'solara' );
+            this.mac = window.navigator.userAgent.indexOf("Mac") != -1;
+            document.addEventListener( 'keydown', ( e ) => {
+
+                if (this.mac) {
+                    if ( this.$refs.search && e.metaKey && e.key === 'k' ) {
+                        this.$refs.search.focus();
+                    }
+                }else{
+                    if ( this.$refs.search && e.ctrlKey && e.key === 'k' ) {
+                        this.$refs.search.focus();
+                    }
+                }
+            });
         },
         async search() {
             results = await this.index.search( this.query, { hitsPerPage: 10 } );
@@ -133,6 +150,7 @@ module.exports = {
             results: [],
             item: null,
             show_results: false,
+            mac: false,
         }
     },
 }

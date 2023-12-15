@@ -27,6 +27,11 @@
     --dark-color-text: hsla(0,0%,100%,.7);
     --dark-color-grey: #ababab;
     --dark-color-grey-light: #202020;
+
+    --docs-color-grey: #40362E;
+    --docs-social-discord: #5865F2;
+    --docs-social-github: #333;
+    --docs-social-twitter: #000000;
 }
 
 html,
@@ -181,15 +186,51 @@ blockquote p:last-child {
 /* API PAGE REFACTOR STYLE */
 
 .v-sheet.api-search-container{
-    height: 50vh;
+    flex-grow: 1;
 }
     .v-sheet.api-search-container .v-input{
         flex-grow: 0;
+    }
+.v-sheet.docs-card-container{
+    width: 100%;
+    padding: 0 10%;
+    justify-content: start;
+    align-content: center;
+    flex-wrap: wrap !important;
+    flex-grow: 1;
+    row-gap: 20px;
+}
+.v-sheet.docs-card-container > a{
+    height: fit-content;
+}
+.v-sheet.docs-card-container > a > .docs-card{
+    display: flex;
+    width: 20rem;
+    height: 12rem;
+    border-radius: 16px !important;
+    color: var(--color-grey-light);
+}
+    .v-sheet.docs-card-container > a .docs-card-icon{
+        padding-right: 1.5rem;
+        transition: ease padding 0.25s;
+    }
+    .v-sheet.docs-card-container > a:hover .docs-card-icon{
+        color: var(--color-primary);
+        padding-right: 0.5rem;
+        transition: ease padding 0.25s;
     }
 .component-card{
     display: flex;
     flex-direction: column;
     width: 19rem;
+}
+.social-logo-container{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 4rem;
+    height: 4rem;
+    border-radius: 8px;
 }
 
 /* vuetify component overrides */

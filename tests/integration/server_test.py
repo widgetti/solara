@@ -26,7 +26,7 @@ def test_docs_basics(page_session: playwright.sync_api.Page, solara_server, sola
         page_session.get_by_role("link", name="Documentation").click()
 
         page_session.locator("text=Search the Solara Documentation").wait_for()
-        page_session.locator(".v-btn__content", has_text="Examples").first.click()
+        page_session.locator(".docs-card", has_text="Examples").first.click()
         page_session.locator("text=Calculator").first.click()
         page_session.locator("text=+/-").wait_for()
         page_session.screenshot(path="tmp/screenshot_calculator.png")

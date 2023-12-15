@@ -6,8 +6,8 @@ from solara.alias import rv
 from solara.server import settings
 
 
-@solara.component_vue("algolia.vue")
-def Algolia(app_id: str, api_key: str, index_name: str, debug=False):
+@solara.component_vue("algolia_api.vue")
+def Algolia():
     pass
 
 
@@ -18,6 +18,7 @@ def Header(
 ):
     # use routes of parent (assuming we are a child of a layout)
     route_current, all_routes = solara.use_route(level=-1)
+    route_current_with_children, all_routes_with_children = solara.use_route()
     router = solara.use_router()
     dark_effective = solara.lab.use_dark_effective()
 
@@ -37,13 +38,21 @@ def Header(
                     solara.Image(router.root_path + f"/static/assets/images/logo{'_white' if dark_effective else ''}.svg")
             rv.Spacer()
 
-            if settings.search.enabled:
-                from solara_enterprise.search.search import Search
-
-                Search()
+            if (
+                route_current_with_children is not None
+                and route_current is not None
+                and route_current.path == "documentation"
+                and route_current_with_children.path == "/"
+            ):
+                solara.v.Spacer()
             else:
-                Algolia(app_id="9KW9L7O5EQ", api_key="ef7495102afff1e16d1b7cf6ec2ab2d0", index_name="solara")
-            # menu
+                if settings.search.enabled:
+                    from solara_enterprise.search.search import Search
+
+                    Search()
+                else:
+                    with solara.Row(justify="end", style={"align-items": "center", "flex-grow": "1", "background-color": "transparent"}):
+                        Algolia()
             with rv.Html(tag="ul", class_="main-menu menu d-none d-md-flex"):
                 for route in all_routes:
                     if route.path in ["apps", "contact", "changelog"]:

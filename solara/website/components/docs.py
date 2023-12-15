@@ -13,33 +13,47 @@ def Gallery(route_external=None):
         router = solara.use_router()
         route_current = router.path_routes[-2]
 
-    for route in route_current.children:
-        if route.children:
-            solara.Markdown(f"## {route.label}")
-            with solara.Row(justify="center", gap="20px", style={"flex-wrap": "wrap", "row-gap": "20px"}):
-                for child in route.children:
-                    if child.path == "/":
-                        continue
-                    path = route.path + "/" + child.path
-                    for extension in [".png", ".gif"]:
-                        image = path + extension
-                        image_path = Path(__file__).parent.parent / "public" / route_current.path / image
-                        image_url = "/static/public/" + route_current.path + "/" + image
-                        if image_path.exists():
-                            break
-                        else:
-                            image_url = "/static/public/logo.svg"
+    with solara.Column(gap="75px", align="center"):
+        with solara.Row(justify="center", gap="30px", style={"margin": "30px 0 !important", "flex-wrap": "wrap", "align-items": "start", "row-gap": "30px"}):
+            for child in route_current.children:
+                if child.path == "/":
+                    continue
+                with solara.v.Html(tag="a", attributes={"href": "#" + child.path}):
+                    solara.Button(
+                        child.label,
+                        color="primary",
+                        classes=["v-btn--rounded", "v-size--x-large"],
+                    )
 
-                    if path:
-                        path = path if route_external is None else route_current.path + "/" + path
-                        title = solara.Link(path, children=[child.label])
-                        with solara.Card(title, classes=["component-card"], margin=0):
-                            with solara.Link(path):
-                                if not image_path.exists():
-                                    with solara.Column(align="center"):
-                                        solara.Image(image_url, width="120px")
-                                else:
-                                    solara.Image(image_url, width="100%")
+        with solara.Column(gap="75px", style={"padding-bottom": "75px"}):
+            for route in route_current.children:
+                if route.children:
+                    with solara.Column(classes=["subcategory-row", "ps-md-10"]):
+                        solara.HTML(tag="h2", unsafe_innerHTML=route.label, attributes={"id": route.path}, style="padding-left: 10%;")
+                        with solara.Row(justify="center", gap="20px", style={"flex-wrap": "wrap", "row-gap": "20px"}):
+                            for child in route.children:
+                                if child.path == "/":
+                                    continue
+                                path = route.path + "/" + child.path
+                                for extension in [".png", ".gif"]:
+                                    image = path + extension
+                                    image_path = Path(__file__).parent.parent / "public" / route_current.path / image
+                                    image_url = "/static/public/" + route_current.path + "/" + image
+                                    if image_path.exists():
+                                        break
+                                    else:
+                                        image_url = "/static/public/logo.svg"
+
+                                if path:
+                                    path = path if route_external is None else route_current.path + "/" + path
+                                    title = solara.Link(path, children=[child.label])
+                                    with solara.Card(title, classes=["component-card"], margin=0):
+                                        with solara.Link(path):
+                                            if not image_path.exists():
+                                                with solara.Column(align="center"):
+                                                    solara.Image(image_url, width="120px")
+                                            else:
+                                                solara.Image(image_url, width="100%")
 
 
 @solara.component
@@ -81,7 +95,7 @@ def SubCategoryLayout(children=[]):
     elif route_current.module:
         WithCode(route_current.module)
     else:
-        with solara.Column(align="center", children=children, style={"flex-grow": 1}) as main:
+        with solara.Column(align="center", children=children, style={"flex-grow": 1, "padding": "0"}) as main:
             pass
         return main
 

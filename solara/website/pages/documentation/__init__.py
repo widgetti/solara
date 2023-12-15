@@ -1,14 +1,15 @@
 from pathlib import Path
 
 import solara
-from solara.server import settings
 
 _title = "Documentation"
 
 HERE = Path(__file__).parent
 
+route_order = ["/", "getting_started", "examples", "components", "api", "advanced", "faq"]
 
-@solara.component_vue(str(HERE.parent.parent) + "/components/algolia_api.vue")
+
+@solara.component_vue(str(HERE.parent.parent / "components" / "algolia_api.vue"))
 def Algolia():
     pass
 
@@ -19,67 +20,63 @@ def Page(children=[]):
     router = solara.use_router()
     route_current = router.path_routes[-2]
 
-    with solara.Column(style={"width": "100%"}, classes=["pr-md-10"]):
-        with solara.Column(
-            classes=["api-search-container"] if route_current.path == "documentation" else [], gap="75px", style={"justify-content": "center"}, align="center"
-        ):
-            solara.Markdown("# Search the Solara Documentation", style={"text-align": "center"})
-
-            if settings.search.enabled:
-                from solara_enterprise.search.search import Search
-
-                query = solara.use_reactive("")
-                input = solara.v.TextField(
-                    v_model=query.value,
-                    on_v_model=query.set,
-                    background_color="#ffeec5",
-                    outlined=True,
-                    label="Search",
-                    class_="api-search",
-                    rounded=True,
-                    prepend_inner_icon="mdi-magnify",
-                    style_="min-width: 19rem; width: 33%;",
-                    hide_details=True,
-                )
-
-                Search(input_widget=input, query=query.value)
-            else:
-                Algolia()
-
+    with solara.Column(style={"width": "100%"}, gap="75px"):
         if route_current.path == "documentation":
-            QuickBrowse(route_current)
-        else:
-            with solara.Column(align="center", children=children):
-                pass
-
-
-@solara.component
-def QuickBrowse(route_current):
-    selected = solara.use_reactive("")
-
-    with solara.Column(gap="75px", align="center"):
-        with solara.Row(justify="center", gap="30px", style={"flex-wrap": "wrap", "align-items": "start", "row-gap": "30px"}):
-            for child in reversed(route_current.children):
-                if child.path == "/":
-                    continue
-                solara.Button(
-                    child.label,
-                    on_click=lambda path=child.path: selected.set(path),
-                    color="primary",
-                    classes=["v-btn--rounded", "v-size--x-large", "darken-3" if selected.value == child.path else ""],
-                )
-        if selected.value:
-            with solara.v.TabsItems(
-                v_model=selected.value, style_=f"width: {'1024px' if selected.value in ['getting_started', 'faq'] else '90%'}; padding-bottom: 75px;"
-            ):
-                for child in reversed(route_current.children):
-                    if child.path == "/":
+            with solara.Column(classes=["api-search-container"], gap="50px", style={"justify-content": "center"}, align="center"):
+                solara.Markdown("# Search the Solara Documentation", style={"text-align": "center"})
+                with solara.Row(style={"width": "100%", "min-width": "20rem", "justify-content": "center", "background-color": "transparent"}):
+                    Algolia()
+            with solara.Row(gap="20px", classes=["docs-card-container"]):
+                for route in route_current.children:
+                    if route.path in ["/", "advanced", "faq"]:
                         continue
-                    with solara.v.TabItem(v_model=child.path, style={"width": "100%"}):
-                        with solara.Column(style={"flex-grow": "1"}):
-                            with solara.Link("/" + route_current.path + "/" + child.path if child.path != "/" else "/" + route_current.path):
-                                solara.HTML(tag="h2", unsafe_innerHTML=child.label, style={"text-align": "center"})
-                            child.module.Page(route_external=child)
+                    with solara.Link("/documentation/" + route.path):
+                        with solara.Row(
+                            classes=["docs-card"],
+                            style={
+                                "background-color": f"var({'--docs-color-grey' if route.path != 'getting_started' else '--color-primary'})",
+                            },
+                        ):
+                            with solara.Column(style={"height": "100%", "flex-grow": "1", "background-color": "transparent"}):
+                                solara.HTML(tag="h2", unsafe_innerHTML=route.label, style={"color": "white", "padding": "1.5rem"})
+                            with solara.Column(style={"justify-content": "center", "height": "100%", "background-color": "transparent"}):
+                                solara.v.Icon(children=["mdi-arrow-right"], color="var(--color-grey-light)", x_large=True, class_="docs-card-icon")
+            with solara.Row(gap="75px", style={"flex-wrap": "wrap", "row-gap": "75px", "padding-bottom": "75px"}):
+                with solara.Column(style={"padding-left": "10%"}):
+                    solara.HTML(tag="h2", unsafe_innerHTML="How to use our documentation:", style={"padding": "1.5rem"})
+                    solara.Markdown(
+                        """
+* [Getting Started](/documentation/getting_started) - Learn how to install Solara and get started with building your app.
+    Also includes tutorials for you to get a hang of Solara workflow.
+* [Examples](/documentation/examples) - More complex and real world applicable examples of Solara apps.
+    For even more complexity you can see the [Showcase](/showcase) page.
+* [Components](/documentation/components) - All the components that are available in Solara.
+* [API](/documentation/api) - All the API functions that are available in Solara. Importantly, this includes routing and hooks.
+* [Advanced](/documentation/advanced) - Advanced topics like associated and underlying libraries.
+    If a component you would like to use is not available in Solara, you can use the underlying library directly.
+                    """
+                    )
+                with solara.Column(style={"justify-content": "center", "height": "100%"}):
+                    solara.HTML(tag="h2", unsafe_innerHTML="Also Check Out", style={"padding": "1.5rem"})
+                    with solara.Row(gap="20px", style={"flex-wrap": "wrap", "row-gap": "20px", "align-items": "center"}):
+                        with solara.v.Html(tag="a", attributes={"href": "https://discord.solara.dev", "target": "_blank"}):
+                            with solara.Div(classes=["social-logo-container"], style={"background-color": "var(--docs-social-discord)"}):
+                                solara.v.Html(tag="img", attributes={"src": "/static/public/social/discord.svg"}, style_="height: 1.5rem; width: auto;")
+                        solara.Text("We use discord to provide support and answer questions there actively.")
+                    with solara.Row(gap="20px", style={"flex-wrap": "wrap", "row-gap": "20px", "align-items": "center"}):
+                        with solara.v.Html(tag="a", attributes={"href": "https://github.com/widgetti/solara", "target": "_blank"}):
+                            with solara.Div(classes=["social-logo-container"], style={"background-color": "var(--docs-social-github)"}):
+                                solara.v.Html(tag="img", attributes={"src": "/static/public/social/github.svg"}, style_="height: 1.5rem; width: auto;")
+                        solara.Text("Search for solutions on Github issues, or report bugs.")
+                    with solara.Row(gap="20px", style={"flex-wrap": "wrap", "row-gap": "20px", "align-items": "center"}):
+                        with solara.v.Html(tag="a", attributes={"href": "https://twitter.com/solara_dev", "target": "_blank"}):
+                            with solara.Div(classes=["social-logo-container"], style={"background-color": "var(--docs-social-twitter)"}):
+                                solara.v.Html(tag="img", attributes={"src": "/static/public/social/twitter.svg"}, style_="height: 1.5rem; width: auto;")
+                        solara.Text("Get announcements about Solara features, showcases, and events!.")
+
+        else:
+            with solara.Column(align="center", children=children, style={"padding": "0"}):
+                pass
 
 
 @solara.component
@@ -88,70 +85,67 @@ def Sidebar():
     if route_current is None:
         return solara.Error("Page not found")
 
-    with solara.v.NavigationDrawer(clipped=True, height="unset", style_="min-height: calc(100vh - 215.5px);", class_="d-none d-md-block") as main:
+    with solara.v.NavigationDrawer(
+        clipped=True, width="20rem", height="unset", style_="min-height: calc(100vh - 215.5px);", class_="d-none d-md-block"
+    ) as main:
         with solara.v.List(expand=True, nav=True, style_="height: calc(100vh - 215.5px); display: flex; flex-direction: column;"):
             with solara.v.ListItemGroup():
-                with solara.Link("/documentation/"):
-                    with solara.v.ListItem():
-                        solara.v.ListItemIcon(children=[solara.v.Icon(children=["mdi-home"])])
-                        solara.v.ListItemTitle(style_="padding: 0 20px;", children=["Home"])
-            for route in reversed(all_routes):
-                if route.path == "/":
-                    continue
-                if len(route.children) == 1:
-                    with solara.v.ListItemGroup():
-                        with solara.Link("/documentation/" + route.path):
+                for route in all_routes:
+                    if len(route.children) == 1 or route.path == "/":
+                        with solara.Link("/documentation/" + route.path if route.path != "/" else "/documentation"):
                             with solara.v.ListItem():
+                                if route.path == "/":
+                                    solara.v.ListItemIcon(children=[solara.v.Icon(children=["mdi-home"])])
                                 solara.v.ListItemTitle(style_="padding: 0 20px;", children=[route.label])
-                else:
-                    with solara.v.ListGroup(
-                        v_slots=[
-                            {
-                                "name": "activator",
-                                "children": solara.v.ListItemTitle(
-                                    children=[route.label],
-                                    style_="padding: 0 20px;",
-                                ),
-                            }
-                        ]
-                    ):
-                        for item in route.children:
-                            if item.path == "/":
-                                continue
-                            if item.children != [] and any([c.label is not None and c.path != "/" for c in item.children]):
-                                with solara.v.ListGroup(
-                                    v_slots=[
-                                        {
-                                            "name": "activator",
-                                            "children": solara.v.ListItemTitle(
-                                                children=[item.label],
-                                            ),
-                                        }
-                                    ],
-                                    sub_group=True,
-                                    no_action=True,
-                                ):
-                                    for subitem in item.children:
-                                        # skip pages that are only used to demonstrate Link or Router usage
-                                        if subitem.path == "/" or subitem.label is None:
-                                            continue
-                                        with solara.v.ListItemGroup():
-                                            with solara.Link(
-                                                "/documentation/" + route.path + "/" + item.path + "/" + subitem.path,
-                                            ):
-                                                with solara.v.ListItem(dense=True, style_="padding: 0 20px;"):
-                                                    solara.v.ListItemContent(
-                                                        children=[subitem.label],
-                                                    )
-                            else:
-                                with solara.v.ListItemGroup():
-                                    with solara.Link(
-                                        "/documentation/" + route.path + "/" + item.path,
+                    else:
+                        with solara.v.ListGroup(
+                            v_slots=[
+                                {
+                                    "name": "activator",
+                                    "children": solara.v.ListItemTitle(
+                                        children=[route.label],
+                                        style_="padding: 0 20px;",
+                                    ),
+                                }
+                            ]
+                        ):
+                            for item in route.children:
+                                if item.path == "/":
+                                    continue
+                                if item.children != [] and any([c.label is not None and c.path != "/" for c in item.children]):
+                                    with solara.v.ListGroup(
+                                        v_slots=[
+                                            {
+                                                "name": "activator",
+                                                "children": solara.v.ListItemTitle(
+                                                    children=[item.label],
+                                                ),
+                                            }
+                                        ],
+                                        sub_group=True,
+                                        no_action=True,
                                     ):
-                                        with solara.v.ListItem(dense=True, style_="padding: 0 20px;"):
-                                            solara.v.ListItemContent(
-                                                children=[item.label],
-                                            )
+                                        for subitem in item.children:
+                                            # skip pages that are only used to demonstrate Link or Router usage
+                                            if subitem.path == "/" or subitem.label is None:
+                                                continue
+                                            with solara.v.ListItemGroup():
+                                                with solara.Link(
+                                                    "/documentation/" + route.path + "/" + item.path + "/" + subitem.path,
+                                                ):
+                                                    with solara.v.ListItem(dense=True, style_="padding: 0 20px;"):
+                                                        solara.v.ListItemContent(
+                                                            children=[subitem.label],
+                                                        )
+                                else:
+                                    with solara.v.ListItemGroup():
+                                        with solara.Link(
+                                            "/documentation/" + route.path + "/" + item.path,
+                                        ):
+                                            with solara.v.ListItem(dense=True, style_="padding: 0 20px;"):
+                                                solara.v.ListItemContent(
+                                                    children=[item.label],
+                                                )
             solara.v.Spacer(style_="flex-grow: 1;")
             with solara.v.ListItemGroup():
                 with solara.Link("/contact"):
@@ -179,5 +173,5 @@ def Layout(children=[]):
 
 
 @solara.component
-def NoPage():
-    raise RuntimeError("This page should not be rendered")
+def Overview():
+    pass

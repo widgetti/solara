@@ -267,7 +267,7 @@ def Layout(children=[]):
                             MailChimp(location=router.path)
             else:
                 with rv.Row(
-                    style_="gap:40px; flex-wrap: nowrap; margin: 0; min-height: calc(100vh - 215.5px);",
+                    style_="flex-wrap: nowrap; margin: 0; min-height: calc(100vh - 215.5px);",
                     justify="center" if route_current is not None and route_current.path in ["documentation", "showcase"] else "start",
                 ):
                     if route_current is not None and hasattr(route_current.module, "Sidebar"):
@@ -278,13 +278,19 @@ def Layout(children=[]):
                     with rv.Col(
                         tag="main",
                         md=True,
-                        class_="pt-12 pl-12 pr-10",
-                        style_=f"max-width: {'1024px' if route_current.path not in ['documentation', 'contact', 'changelog'] else 'unset'}; overflow: auto;",
+                        class_="pa-0",
+                        style_=f"""max-width: {'1024px' if route_current.path not in ['documentation', 'contact', 'changelog']
+                                               else 'unset'}; overflow: hidden auto;""",
                     ):
                         if route_current is not None and route_current.path == "/":
                             with rv.Row(align="center"):
                                 pass
-                        with rv.Row(children=children, justify="center", class_="solara-page-content-search"):
+                        with solara.Row(
+                            children=children,
+                            justify="center",
+                            classes=["solara-page-content-search"],
+                            style=f"height: {'100%' if route_current.path == 'documentation' else 'unset'};",
+                        ):
                             pass
 
             # absolute = True prevents the drawer from being below the overlay it generates

@@ -107,7 +107,7 @@ def test_routes_examples_getting_started():
 
     assert len(routes) == 9
     assert routes[0].path == "/"
-    assert routes[0].label == "Introduction"
+    assert routes[0].label == "Quickstart"
 
     main_object = solara.autorouting.RenderPage()
     solara_context = solara.RoutingProvider(children=[main_object], routes=routes, pathname="/")
