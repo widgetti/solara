@@ -28,6 +28,20 @@ var rules = [
 
 module.exports = [
     {
+        plugins: [new MiniCssExtractPlugin({filename: 'fonts.css'})],
+        entry: './src/fonts.js',
+        output: {
+            filename: 'fonts.js',
+            path: path.resolve(__dirname, 'dist'),
+            libraryTarget: 'umd',
+            publicPath: 'auto',
+        },
+        module: {
+            rules: rules
+        },
+        mode: 'production',
+    },
+    {
         plugins: [new MiniCssExtractPlugin()],
         entry: './src/solara-vuetify-app.js',
         output: {

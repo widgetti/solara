@@ -214,12 +214,14 @@
     </div>
     {% block after_pre_rendered_html %}{% endblock %}
     {% if vue3 == True %}
+        <link href="{{cdn}}/@widgetti/solara-vuetify3-app@1.0.0/dist/fonts.css" rel="stylesheet"></link>
         {% if production %}
         <script src="{{cdn}}/@widgetti/solara-vuetify3-app@1.0.0/dist/solara-vuetify-app{{ipywidget_major_version}}.min.js"></script>
         {% else %}
         <script src="{{cdn}}/@widgetti/solara-vuetify3-app@1.0.0/dist/solara-vuetify-app{{ipywidget_major_version}}.js"></script>
         {% endif %}
     {% else %}
+        <link href="{{cdn}}/@widgetti/solara-vuetify-app@6.0.0/dist/fonts.css" rel="stylesheet" fetchpriority="low"></link>
         {% if production %}
         <script src="{{cdn}}/@widgetti/solara-vuetify-app@6.0.0/dist/solara-vuetify-app{{ipywidget_major_version}}.min.js"></script>
         {% else %}
