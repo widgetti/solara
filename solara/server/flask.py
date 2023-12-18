@@ -74,7 +74,7 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
         from anyio import to_thread
 
         try:
-            return await to_thread.run_sync(lambda: self.ws.receive())
+            return await to_thread.run_sync(lambda: self.ws.receive())  # type: ignore
         except simple_websocket.ws.ConnectionClosed:
             raise websocket.WebSocketDisconnect()
 

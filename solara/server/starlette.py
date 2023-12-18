@@ -106,7 +106,7 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
     async def receive(self):
         if hasattr(self.portal, "start_task_soon"):
             # version 3+
-            fut = self.portal.start_task_soon(self.ws.receive)
+            fut = self.portal.start_task_soon(self.ws.receive)  # type: ignore
         else:
             fut = self.portal.spawn_task(self.ws.receive)  # type: ignore
 
@@ -211,14 +211,14 @@ async def kernel_connection(ws: starlette.websockets.WebSocket):
                 telemetry.connection_close(session_id)
 
         # sometimes throws: RuntimeError: Already running asyncio in this thread
-        anyio.run(run)
+        anyio.run(run)  # type: ignore
 
     # this portal allows us to sync call the websocket calls from this current event loop we are in
     # each websocket however, is handled from a separate thread
     try:
         async with anyio.from_thread.BlockingPortal() as portal:
             ws_wrapper = WebsocketWrapper(ws, portal)
-            thread_return = anyio.to_thread.run_sync(websocket_thread_runner, ws, portal)
+            thread_return = anyio.to_thread.run_sync(websocket_thread_runner, ws, portal)  # type: ignore
             await thread_return
     finally:
         if settings.main.experimental_performance:
