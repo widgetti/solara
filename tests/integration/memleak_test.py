@@ -1,4 +1,5 @@
 import gc
+import threading
 import time
 import weakref
 from pathlib import Path
@@ -45,6 +46,11 @@ def _scoped_test_memleak(
         shell = weakref.ref(kernel().shell)
         session = weakref.ref(kernel().session)
         page_session.goto("about:blank")
+        if context()._last_kernel_cull_task:
+            if not context()._last_kernel_cull_task.done():
+                event = threading.Event()
+                context()._last_kernel_cull_task.add_done_callback(lambda _: event.set())
+                assert event.wait()
         assert context().closed_event.wait(10)
         if shell():
             del shell().__dict__
