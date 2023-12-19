@@ -255,6 +255,8 @@ def WidgetContextAwareThread__init__(self, *args, **kwargs):
 
 
 def Thread_debug_run(self):
+    if not hasattr(self, "current_context"):
+        return Thread__run(self)
     if self.current_context:
         kernel_context.set_context_for_thread(self.current_context, self)
         shell = self.current_context.kernel.shell
