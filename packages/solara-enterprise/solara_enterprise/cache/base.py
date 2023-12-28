@@ -1,5 +1,6 @@
 import hashlib
 import pickle
+import sys
 from typing import Any, Callable, MutableMapping
 
 
@@ -14,7 +15,10 @@ def make_key(object):
         return str(object).encode("utf-8")
     else:
         bytes = pickle.dumps(object)
-        return hashlib.md5(bytes).digest()
+        if sys.version_info[:2] < (3, 9):
+            return hashlib.md5(bytes).digest()
+        else:
+            return hashlib.md5(bytes, usedforsecurity=False).digest()  # type: ignore
 
 
 class Base(MutableMapping):
