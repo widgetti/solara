@@ -1,7 +1,7 @@
-"""Unit test for basic_auth_decorator module"""
+"""Unit test for auth_decorator module"""
 import pytest
 from unittest.mock import patch
-from solara.server.basic_auth_decorator import import_module_from_env_var, BadAuthModulePath, MethodNotFound, basic_auth, NOT_AUTHRIZED_MESSAGE
+from solara.server.auth_decorator import import_module_from_env_var, BadAuthModulePath, MethodNotFound, auth_required, NOT_AUTHRIZED_MESSAGE
 from starlette.requests import Request
 from starlette.responses import Response
 from starlette import status
@@ -38,9 +38,9 @@ def test_import_module_success(tmp_path, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_auth_decorator_no_basic_auth(monkeypatch):
+async def test_auth_decorator_no_auth(monkeypatch):
 
-    @basic_auth
+    @auth_required
     async def test_func(request):
         return Response()
 
@@ -53,8 +53,8 @@ async def test_auth_decorator_no_basic_auth(monkeypatch):
 async def test_auth_decorator_no_auth_header(tmp_path, monkeypatch):
     module_file = tmp_path / "temp_module.py"
     module_file.write_text("def authenticate(request): ...")
-    monkeypatch.setenv('BASIC_AUTH_MODULE_PATH', str(module_file))
-    @basic_auth
+    monkeypatch.setenv('AUTH_MODULE_PATH', str(module_file))
+    @auth_required
     async def test_func(request):
         return Response()
     request = Mock()

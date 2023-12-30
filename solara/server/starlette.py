@@ -44,7 +44,7 @@ from starlette.types import Receive, Scope, Send
 
 import solara
 from solara.server.threaded import ServerBase
-from solara.server.basic_auth_decorator import basic_auth
+from solara.server.auth_decorator import auth_required
 from . import app as appmod
 from . import kernel_context, server, settings, telemetry, websocket
 from .cdn_helper import cdn_url_path, get_path
@@ -239,7 +239,7 @@ def close(request: Request):
     return response
 
 
-@basic_auth
+@auth_required
 async def root(request: Request, fullpath: str = ""):
     if settings.oauth.private and not has_auth_support:
         raise RuntimeError("SOLARA_OAUTH_PRIVATE requires solara-enterprise")

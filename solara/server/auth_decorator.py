@@ -48,11 +48,11 @@ def import_module_from_env_var(env_var_name):
         raise e(f"Failed to import module: {e}")
 
 
-def basic_auth(func):
+def auth_required(func):
     """Allow user to customized the authentication when accessing a path."""
     @wraps(func)
     async def wrapper(request: Request, *args, **kwargs):
-        if module := import_module_from_env_var('BASIC_AUTH_MODULE_PATH'):
+        if module := import_module_from_env_var('AUTH_MODULE_PATH'):
             if not module.authenticate(request, *args, **kwargs):
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED, 
