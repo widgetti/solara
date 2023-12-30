@@ -1,6 +1,6 @@
-# Customize Oauth with fastAPI
+# Customize Oauth with fastAPI and Starlette
 
-If you're using FastAPI integration with solara, the Oauth can be customized if the two supported methods([Auth0](https://auth0.com/) and [Fief](https://fief.dev/)) doesn't fit for you.
+If you're using FastAPI or startlette integration with solara, the Oauth can be customized if the two supported methods([Auth0](https://auth0.com/) and [Fief](https://fief.dev/)) doesn't fit for you.
 
 ## How to configure customized authorization method:
 

@@ -24,7 +24,6 @@ def import_module_from_env_var(env_var_name):
     :return: Imported module or None if the file cannot be imported.
     """
 
-    # Read the file path from the environment variable
     file_path = os.getenv(env_var_name)
     if not file_path:
         logger.info(f"Environment variable {env_var_name} is not set, no auth will be applied.")
