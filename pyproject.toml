@@ -73,6 +73,7 @@ dev = [
     "types-markdown",
     "types-PyYAML",
     "pytest",
+    "pytest-asyncio",
     "pytest-mock",
     "pytest-cov",
     "pytest-timeout",
