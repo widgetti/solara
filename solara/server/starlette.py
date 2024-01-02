@@ -31,6 +31,8 @@ if has_solara_enterprise and sys.version_info[:2] > (3, 6):
 else:
     has_auth_support = False
 
+import solara
+from solara.server.threaded import ServerBase
 from starlette.applications import Starlette
 from starlette.exceptions import HTTPException
 from starlette.middleware import Middleware
@@ -41,9 +43,6 @@ from starlette.responses import HTMLResponse, JSONResponse
 from starlette.routing import Mount, Route, WebSocketRoute
 from starlette.staticfiles import StaticFiles
 from starlette.types import Receive, Scope, Send
-
-import solara
-from solara.server.threaded import ServerBase
 
 from . import app as appmod
 from . import kernel_context, server, settings, telemetry, websocket
@@ -169,7 +168,6 @@ async def kernel_connection(ws: starlette.websockets.WebSocket):
     session_id = ws.cookies.get(server.COOKIE_KEY_SESSION_ID)
 
     if settings.oauth.private and not has_auth_support:
-        breakpoint()
         raise RuntimeError("SOLARA_OAUTH_PRIVATE requires solara-enterprise")
     if has_auth_support and "session" in ws.scope:
         user = get_user(ws)
