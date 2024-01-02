@@ -252,9 +252,65 @@ def read_root(path: str, root_path: str = "", render_kwargs={}, use_nbextensions
     else:
         nbextensions = []
 
+    from markupsafe import Markup
+
+    def resolve_static_path(path: str) -> Path:
+        # this solve a similar problem as the starlette and flask endpoints
+        # maybe this can be common code for all of them.
+        if path.startswith("/static/public/"):
+            directories = [default_app.directory.parent / "public"]
+            filename = path[len("/static/public/") :]
+        elif path.startswith("/static/assets/"):
+            directories = [default_app.directory.parent / "assets", solara_static.parent / "assets"]
+            filename = path[len("/static/assets/") :]
+        elif path.startswith("/static/"):
+            directories = [solara_static.parent / "static"]
+            filename = path[len("/static/") :]
+        else:
+            raise ValueError(f"invalid static path: {path}")
+        for directory in directories:
+            full_path = directory / filename
+            if full_path.exists():
+                return full_path
+        raise ValueError(f"static path not found: {filename} (path={path}), looked in {directories}")
+
+    def include_css(path: str) -> Markup:
+        filepath = resolve_static_path(path)
+        content, hash = solara.util.get_file_hash(filepath)
+        url = f"{root_path}{path}?v={hash}"
+        # when < 10k we embed, also when we use a url, it can be relative, which can break the url
+        embed = len(content) < 1024 * 10 and b"url" not in content
+        if embed:
+            content_utf8 = content.decode("utf-8")
+            code = f"<style>/*\npath={path}\n*/\n{content_utf8}</style>"
+        else:
+            code = f'<link rel="stylesheet" type="text/css" href="{url}">'
+        return Markup(code)
+
+    def include_js(path: str, module=False) -> Markup:
+        filepath = resolve_static_path(path)
+        content, hash = solara.util.get_file_hash(filepath)
+        content_utf8 = content.decode("utf-8")
+        url = f"{root_path}{path}?v={hash}"
+        # when < 10k we embed, but if we use currentScript, it can break things
+        embed = len(content) < 1024 * 10 and b"currentScript" not in content
+        if embed:
+            if module:
+                code = f'<script type="module">/*\npath={path}\n*/{content_utf8}</script>'
+            else:
+                code = f"<script>/*\npath={path}\n*/{content_utf8}</script>"
+        else:
+            if module:
+                code = f'<script type="module" src="{url}"></script>'
+            else:
+                code = f'<script src="{url}"></script>'
+        return Markup(code)
+
     resources = {
         "theme": "light",
         "nbextensions": nbextensions,
+        "include_css": include_css,
+        "include_js": include_js,
     }
     template: jinja2.Template = get_jinja_env(app_name="__default__").get_template(template_name)
     pre_rendered_html = ""

@@ -24,20 +24,15 @@
     {% if assets.fontawesome_enabled == True %}
     <link rel="stylesheet" href="{{cdn}}{{assets.fontawesome_path}}" type="text/css">
     {% endif %}
-    <link href="{{root_path}}/static/highlight.css" rel="stylesheet">
-    <link href="{{root_path}}/static/highlight-dark.css" rel="stylesheet">
-    </link>
-    <link href="{{root_path}}/static/assets/style.css" rel="stylesheet">
-    </link>
+    {{ resources.include_css("/static/highlight.css") }}
+    {{ resources.include_css("/static/highlight-dark.css") }}
+    {{ resources.include_css("/static/assets/style.css") }}
     {% if theme.variant == "light" %}
-    <link href="{{root_path}}/static/assets/theme-light.css" rel="stylesheet">
-    </link>
+        {{ resources.include_css("/static/assets/theme-light.css") }}
     {% elif theme.variant == "dark" %}
-    <link href="{{root_path}}/static/assets/theme-dark.css" rel="stylesheet">
-    </link>
+        {{ resources.include_css("/static/assets/theme-dark.css") }}
     {% endif %}
-    <link href="{{root_path}}/static/assets/custom.css" rel="stylesheet">
-    </link>
+    {{ resources.include_css("/static/assets/custom.css") }}
 
     <script id="jupyter-config-data" type="application/json">
     {
@@ -238,13 +233,13 @@
         console.log("rootPath", solara.rootPath);
     </script>
 
-    <script src="{{root_path}}/static/assets/custom.js"></script>
-    <script src="{{root_path}}/static/assets/theme.js"></script>
+    {{ resources.include_js("/static/assets/custom.js") }}
+    {{ resources.include_js("/static/assets/theme.js") }}
 
     <script src="{{cdn}}/requirejs@2.3.6/require.js" crossorigin="anonymous">
     </script>
-    <script src="{{root_path}}/static/main-vuetify.js"></script>
-    <script src="{{root_path}}/static/ansi.js"></script>
+    {{ resources.include_js("/static/main-vuetify.js") }}
+    {{ resources.include_js("/static/ansi.js") }}
 
     <script>
         solara.production = {{ production | tojson | safe }};
