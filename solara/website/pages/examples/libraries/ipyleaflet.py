@@ -13,7 +13,8 @@ bounds = solara.reactive(None)
 
 @solara.component
 def Page():
-    with solara.Column(style={"min-width": "500px", "height": "500px"}):
+    # Isolation is required to prevent the map from overlapping navigation (when screen width < 960px)
+    with solara.Column(style={"min-width": "500px", "height": "500px", "isolation": "isolate"}):
         # solara components support reactive variables
         solara.SliderInt(label="Zoom level", value=zoom, min=1, max=20)
         # using 3rd party widget library require wiring up the events manually

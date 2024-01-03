@@ -50,6 +50,8 @@ def Page():
 Note that this is about the worst example of something that looks easy in ipyleaflet using the classical API becoming a bit more involved in Solara.
 In practice, this does not happen often, and your code in general will be shorter and more readable.
 
+Another thing of note is that ipyleaflet uses CSS `z-index` to layer content, potentially causing issues with your map overlaying other content. This can be avoided by styling the parent element of the map with `isolation: isolate;`. For examples of how to do this, you can see the below examples.
+
 See also [the basic ipyleaflet example](/examples/libraries/ipyleaflet) and [the advanced ipyleaflet example](/examples/libraries/ipyleaflet_advanced).
 
 ## Example with ipywidgets

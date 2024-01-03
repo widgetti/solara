@@ -36,8 +36,6 @@ def Page():
         map = maps[map_name.value]
         url = map.build_url()
 
-        # leaflet takes a high z-index, so we need to set it higher than that otherwise the dropdown will be hidden
-        # where it overlaps with the map
         def goto_marker():
             center.value = marker_location.value
             zoom.value = 13
@@ -46,20 +44,22 @@ def Page():
             center.value = center_default
             zoom.value = zoom_default
 
-        solara.Select(label="Map", value=map_name, values=list(maps), style={"z-index": "10000"})
+        solara.Select(label="Map", value=map_name, values=list(maps))
         solara.SliderInt(label="Zoom level", value=zoom, min=1, max=20)
         with solara.Row():
             solara.Button(label="Zoom to marker", on_click=goto_marker)
             solara.Button(label="Reset view", on_click=reset_view)
 
-        ipyleaflet.Map.element(  # type: ignore
-            zoom=zoom.value,
-            on_zoom=zoom.set,
-            center=center.value,
-            on_center=center.set,
-            scroll_wheel_zoom=True,
-            layers=[
-                ipyleaflet.TileLayer.element(url=url),
-                ipyleaflet.Marker.element(location=marker_location.value, draggable=True, on_location=location_changed),
-            ],
-        )
+        # Isolation is required to prevent the map from overlapping navigation (when screen width < 960px)
+        with solara.Column(style={"isolation": "isolate"}):
+            ipyleaflet.Map.element(  # type: ignore
+                zoom=zoom.value,
+                on_zoom=zoom.set,
+                center=center.value,
+                on_center=center.set,
+                scroll_wheel_zoom=True,
+                layers=[
+                    ipyleaflet.TileLayer.element(url=url),
+                    ipyleaflet.Marker.element(location=marker_location.value, draggable=True, on_location=location_changed),
+                ],
+            )
