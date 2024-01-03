@@ -47,7 +47,7 @@ def Page():
     )
 ```
 
-Note that this is about the worst example of something that looks easy in ipyleaflet using the classical API becomes a but more involved in Solara.
+Note that this is about the worst example of something that looks easy in ipyleaflet using the classical API becoming a bit more involved in Solara.
 In practice, this does not happen often, and your code in general will be shorter and more readable.
 
 See also [the basic ipyleaflet example](/examples/libraries/ipyleaflet) and [the advanced ipyleaflet example](/examples/libraries/ipyleaflet_advanced).
