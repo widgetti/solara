@@ -57,7 +57,7 @@
         {% endraw -%}
         {# {% include "transition-domino.html" %} #}
         {% include "loader-" ~ theme.loader ~ ".html" %}
-        <v-overlay :value="(connectionStatus != 'connected') & wasConnected">
+        <v-overlay style="z-index: 100002;" :value="(connectionStatus != 'connected') & wasConnected">
             <v-progress-circular indeterminate size="128" style="text-align: center;">Server
                 disconnected.</v-progress-circular>
         </v-overlay>
