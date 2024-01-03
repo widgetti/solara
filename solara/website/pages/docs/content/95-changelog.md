@@ -1,5 +1,13 @@
 # Solara Changelog
 
+## Version 1.25.1
+
+### Details
+
+* Performance: Removed unnecessary CSS and JS.
+* Performance: Quality of Life - JS and CSS resources automatically reloaded on version change.
+* Bug fix: overlay disabling navigation for display width < 960px.
+
 
 ## Version 1.25.0
 
