@@ -125,5 +125,5 @@ def use_thread(
 
         return cleanup
 
-    solara.use_side_effect(run, dependencies + [counter])
+    solara.use_effect(run, dependencies + [counter])
     return Result[T](value=result.current, error=error.current, state=result_state, cancel=cancel.set, _retry=retry)
