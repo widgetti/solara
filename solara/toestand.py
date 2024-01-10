@@ -15,10 +15,10 @@ from typing import (
     Optional,
     Set,
     Tuple,
-    Type,
     TypeVar,
     Union,
     cast,
+    overload,
 )
 
 import react_ipywidgets as react
@@ -188,8 +188,8 @@ class ValueBase(Generic[T]):
 class KernelStore(ValueBase[S], ABC):
     _global_dict: Dict[str, S] = {}  # outside of solara context, this is used
     # we keep a counter per type, so the storage keys we generate are deterministic
-    _type_counter: Dict[Type, int] = defaultdict(int)
-    scope_lock = threading.Lock()
+    _type_counter: Dict[Any, int] = defaultdict(int)
+    scope_lock = threading.RLock()
 
     def __init__(self, key=None):
         super().__init__()
@@ -231,6 +231,11 @@ class KernelStore(ValueBase[S], ABC):
                     scope_dict[self.storage_key] = self.initial_value()
         return scope_dict[self.storage_key]
 
+    def clear(self):
+        scope_dict, scope_id = self._get_dict()
+        if self.storage_key in scope_dict:
+            del scope_dict[self.storage_key]
+
     def set(self, value: S):
         scope_dict, scope_id = self._get_dict()
         old = self.get()
@@ -268,6 +273,27 @@ class KernelStoreValue(KernelStore[S]):
 
     def initial_value(self) -> S:
         return self.default_value
+
+
+class KernelStoreFactory(KernelStore[S]):
+    def __init__(self, factory: Callable[[], S], key=None):
+        self.factory = factory
+        try:
+            prefix = factory.__qualname__
+        except Exception:
+            prefix = repr(factory)
+        if key is None:
+            with KernelStore.scope_lock:
+                index = self._type_counter[prefix]
+                self._type_counter[prefix] += 1
+            try:
+                key = factory.__module__ + ":" + prefix + ":" + str(index)
+            except Exception:
+                key = prefix + ":" + str(index)
+        super().__init__(key=key)
+
+    def initial_value(self) -> S:
+        return self.factory()
 
 
 class Reactive(ValueBase[S]):
@@ -327,27 +353,119 @@ class Reactive(ValueBase[S]):
         return self._storage.subscribe_change(listener, scope=scope)
 
     def computed(self, f: Callable[[S], T]) -> "Computed[T]":
-        return Computed(f, self)
+        def func():
+            return f(self.get())
+
+        return Computed(func, key=f.__qualname__)
 
 
-class Computed(Generic[T]):
-    def __init__(self, compute: Callable[[S], T], state: Reactive[S]):
-        self.compute = compute
-        self.state = state
+class Singleton(Reactive[S]):
+    _storage: KernelStore[S]
 
-    def get(self) -> T:
-        return self.compute(self.state.get())
+    def __init__(self, factory: Callable[[], S], key=None):
+        import solara.server.kernel_context
 
-    def subscribe(self, listener: Callable[[T], None], scope: Optional[ContextManager] = None):
-        return self.state.subscribe(lambda _: listener(self.get()), scope=scope)
+        super().__init__(KernelStoreFactory(factory, key=key))
 
-    def use(self, selector: Callable[[T], T]) -> T:
-        slice = use_sync_external_store_with_selector(
-            self.subscribe,
-            self.get,
-            selector,
-        )
-        return slice
+        # reset on kernel restart (e.g. hot reload)
+        def reset():
+            def cleanup():
+                self._storage.clear()
+
+            return cleanup
+
+        solara.server.kernel_context.on_kernel_start(reset)
+
+    def __set__(self, obj, value):
+        raise AttributeError("Can't set a singleton")
+
+
+class Computed(Reactive[S]):
+    def __init__(self, f: Callable[[], S], key=None):
+        self.f = f
+
+        def on_change(*ignore):
+            with self._auto_subscriber.value:
+                self.set(f())
+
+        self._auto_subscriber = Singleton(lambda: AutoSubscribeContextManager(on_change))
+
+        def factory():
+            v = self._auto_subscriber.value
+            with v:
+                return f()
+
+        super().__init__(KernelStoreFactory(factory, key=key))
+
+    def __repr__(self):
+        value = super().__repr__()
+        return "<Computed" + value[len("<Reactive") : -1]
+
+
+@overload
+def computed(
+    f: None,
+    *,
+    key: Optional[str] = ...,
+) -> Callable[[Callable[[], T]], Reactive[T]]:
+    ...
+
+
+@overload
+def computed(
+    f: Callable[[], T],
+    *,
+    key: Optional[str] = ...,
+) -> Reactive[T]:
+    ...
+
+
+def computed(
+    f: Union[None, Callable[[], T]],
+    *,
+    key: Optional[str] = None,
+) -> Union[Callable[[Callable[[], T]], Reactive[T]], Reactive[T]]:
+    """Creates a reactive variable that is set to the return value of the function.
+
+    The value will be updated when any of the reactive variables used in the function
+    change.
+
+    ## Example
+
+    ```solara
+    import solara
+    import solara.lab
+
+
+    a = solara.reactive(1)
+    b = solara.reactive(2)
+
+    @solara.lab.computed
+    def total():
+        return a.value + b.value
+
+    def reset():
+        a.value = 1
+        b.value = 2
+
+    @solara.component
+    def Page():
+        print(a, b, total)
+        solara.IntSlider("a", value=a)
+        solara.IntSlider("b", value=b)
+        solara.Text(f"a + b = {total.value}")
+        solara.Button("reset", on_click=reset)
+    ```
+
+    """
+
+    def wrapper(f: Callable[[], T]):
+        return Computed(f, key=key)
+
+    if f is None:
+        return wrapper
+    else:
+        return wrapper(f)
 
 
 class ValueSubField(ValueBase[T]):
@@ -573,6 +691,22 @@ class AutoSubscribeContextManagerReacton(AutoSubscribeContextManagerBase):
             return cleanup
 
         solara.use_effect(on_close, [])
+
+
+class AutoSubscribeContextManager(AutoSubscribeContextManagerBase):
+    on_change: Callable[[], None]
+
+    def __init__(self, on_change: Callable[[], None]):
+        super().__init__()
+        self.on_change = on_change
+
+    def __enter__(self):
+        super().__enter__()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        value = super().__exit__(exc_type, exc_val, exc_tb)
+        self.update_subscribers(self.on_change)
+        return value
 
 
 # alias for compatibility

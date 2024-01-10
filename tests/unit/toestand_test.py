@@ -535,8 +535,13 @@ def test_store_computed():
     count = list_store.computed(len)
     last = list_store.computed(lambda x: x[-1] if x else None)
 
+    assert count._auto_subscriber.value.reactive_used is None
     assert count.get() == 3
+    assert count._auto_subscriber.value.reactive_used == {list_store}
+
+    assert last._auto_subscriber.value.reactive_used is None
     assert last.get() == 3
+    assert last._auto_subscriber.value.reactive_used == {list_store}
     mock = unittest.mock.Mock()
     mock_last = unittest.mock.Mock()
     unsub = count.subscribe(mock)
@@ -1054,3 +1059,71 @@ def test_reactive_var_in_use_effect():
 
     box, rc = solara.render(Test(), handle_error=False)
     assert rc.find(v.Slider).widget.v_model == 2
+
+
+def test_singleton():
+    from solara.toestand import Singleton
+
+    calls = 0
+
+    def factory():
+        nonlocal calls
+        calls += 1
+        return Bears(type="brown", count=1)
+
+    s = Singleton(factory)
+    assert calls == 0
+    assert s.get() == Bears(type="brown", count=1)
+    assert calls == 1
+    assert s.get() == Bears(type="brown", count=1)
+    assert calls == 1
+
+
+def test_computed():
+    context_id = "1"
+    from solara.toestand import Computed
+
+    x = Reactive(1)
+    y = Reactive(2)
+    calls = 0
+
+    def conditional_add():
+        nonlocal calls
+        calls += 1
+        if x.value == 0:
+            return 42
+        else:
+            return x.value + y.value
+
+    z = Computed(conditional_add)
+    assert z._auto_subscriber.value.reactive_used is None
+    assert z.value == 3
+    assert z._auto_subscriber.value.reactive_used == {x, y}
+    # assert z._auto_subscriber.subscribed == 1
+    assert len(x._storage.listeners[context_id]) == 0
+    assert len(x._storage.listeners2[context_id]) == 1
+    assert len(y._storage.listeners[context_id]) == 0
+    assert len(y._storage.listeners2[context_id]) == 1
+    assert calls == 1
+    x.value = 2
+    assert z.value == 4
+    assert z._auto_subscriber.value.reactive_used == {x, y}
+    assert calls == 2
+    y.value = 3
+    assert z.value == 5
+    assert z._auto_subscriber.value.reactive_used == {x, y}
+    assert calls == 3
+    assert len(x._storage.listeners2[context_id]) == 1
+    assert len(y._storage.listeners2[context_id]) == 1
+
+    # now we do not depend on y anymore
+    x.value = 0
+    assert z.value == 42
+    assert z._auto_subscriber.value.reactive_used == {x}
+    assert len(x._storage.listeners2[context_id]) == 1
+    assert len(y._storage.listeners2[context_id]) == 0
+    assert calls == 4
+    y.value = 4
+    assert z.value == 42
+    assert z._auto_subscriber.value.reactive_used == {x}
+    assert calls == 4
