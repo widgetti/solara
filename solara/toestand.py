@@ -3,6 +3,7 @@ import dataclasses
 import logging
 import sys
 import threading
+from abc import ABC, abstractmethod
 from collections import defaultdict
 from operator import getitem
 from typing import (
@@ -184,21 +185,14 @@ class ValueBase(Generic[T]):
 # context, in the solara user context
 
 
-class ConnectionStore(ValueBase[S]):
+class KernelStore(ValueBase[S], ABC):
     _global_dict: Dict[str, S] = {}  # outside of solara context, this is used
     # we keep a counter per type, so the storage keys we generate are deterministic
     _type_counter: Dict[Type, int] = defaultdict(int)
     scope_lock = threading.Lock()
 
-    def __init__(self, default_value: S = None, key=None):
+    def __init__(self, key=None):
         super().__init__()
-        self.default_value = default_value
-        cls = type(default_value)
-        if key is None:
-            with ConnectionStore.scope_lock:
-                index = self._type_counter[cls]
-                self._type_counter[cls] += 1
-            key = cls.__module__ + ":" + cls.__name__ + ":" + str(index)
         self.storage_key = key
         self._global_dict = {}
         # since a set can trigger events, which can trigger new updates, we need a recursive lock
@@ -234,7 +228,7 @@ class ConnectionStore(ValueBase[S]):
             with self.scope_lock:
                 if self.storage_key not in scope_dict:
                     # we assume immutable, so don't make a copy
-                    scope_dict[self.storage_key] = self.default_value
+                    scope_dict[self.storage_key] = self.initial_value()
         return scope_dict[self.storage_key]
 
     def set(self, value: S):
@@ -254,6 +248,27 @@ class ConnectionStore(ValueBase[S]):
 
         self.fire(value, old)
 
+    @abstractmethod
+    def initial_value(self) -> S:
+        pass
+
+
+class KernelStoreValue(KernelStore[S]):
+    default_value: S
+
+    def __init__(self, default_value: S, key=None):
+        self.default_value = default_value
+        cls = type(default_value)
+        if key is None:
+            with KernelStoreValue.scope_lock:
+                index = self._type_counter[cls]
+                self._type_counter[cls] += 1
+            key = cls.__module__ + ":" + cls.__name__ + ":" + str(index)
+        super().__init__(key=key)
+
+    def initial_value(self) -> S:
+        return self.default_value
+
 
 class Reactive(ValueBase[S]):
     _storage: ValueBase[S]
@@ -261,7 +276,7 @@ class Reactive(ValueBase[S]):
     def __init__(self, default_value: Union[S, ValueBase[S]], key=None):
         super().__init__()
         if not isinstance(default_value, ValueBase):
-            self._storage = ConnectionStore(default_value, key=key)
+            self._storage = KernelStoreValue(default_value, key=key)
         else:
             self._storage = default_value
         self.__post__init__()
