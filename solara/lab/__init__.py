@@ -1,6 +1,7 @@
 # isort: skip_file
 from .components import *  # noqa: F401, F403
 from ..server.kernel_context import on_kernel_start  # noqa: F401
+from ..toestand import computed  # noqa: F401
 
 
 def __getattr__(name):

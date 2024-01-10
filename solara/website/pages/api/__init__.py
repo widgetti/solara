@@ -124,6 +124,7 @@ items = [
         "name": "Lab (experimental)",
         "icon": "mdi-flask-outline",
         "pages": [
+            "computed",
             "chat",
             "confirmation_dialog",
             "menu",
