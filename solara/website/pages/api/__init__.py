@@ -124,6 +124,8 @@ items = [
             "on_kernel_start",
             "tab",
             "tabs",
+            "task",
+            "use_task",
         ],
     },
 ]
