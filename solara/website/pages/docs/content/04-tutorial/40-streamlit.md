@@ -45,7 +45,7 @@ If you put this script in a file called `sol.py` and run
 $ solara run sol.py
 ```
 You will see:
-![app screenshot](/static/public/docs/app-squared.png)
+![app screenshot](https://dxhl76zpt6fap.cloudfront.net/public/docs/app-squared.webp)
 
 Because we do some styling and because the sidebar is already used up, our preview on this page looks slightly different.
 
@@ -55,7 +55,7 @@ Because we do some styling and because the sidebar is already used up, our previ
 ### Running this example in the notebook
 
 If you add the above code snippet to your notebook, and include `Page()` at the end of your notebook cell, you should see:
-![app screenshot](/static/public/docs/app-squared-notebook.png)
+![app screenshot](https://dxhl76zpt6fap.cloudfront.net/public/docs/app-squared-notebook.webp)
 
 Again, slightly different for a different environment.
 

@@ -15,7 +15,7 @@ def Page():
         """
     An example cannot be shown embedded in this page, Visit the [AppLayout page](/apps/scatter) to see an example.
 
-    [![AppLayout screenshot](/static/public/docs/app-layout.png)](/apps/scatter)
+    [![AppLayout screenshot](https://dxhl76zpt6fap.cloudfront.net/public/docs/app-layout.webp)](/apps/scatter)
     """
     )
 

@@ -93,7 +93,7 @@ If you use Jupyter, then you probably use the Jupyter notebook, Lab, or [Voila](
 
 If you don't use Jupyter, don't know what it is, or are an ML Ops, Dev Ops, or Sys Admin, you are probably more interested in the Solara server.
 
-![Solara stack](/static/public/docs/solara-stack.png)
+![Solara stack](https://dxhl76zpt6fap.cloudfront.net/public/docs/solara-stack.webp)
 
 ## How do I learn Solara?
 

@@ -15,7 +15,7 @@ def Page():
     solara.Meta(name="twitter:title", content=title)
     solara.Title(title)
 
-    img = "https://solara.dev/static/public/docs/tutorial/jupyter-dashboard1.jpg"
+    img = "https://dxhl76zpt6fap.cloudfront.net/public/docs/tutorial/jupyter-dashboard1.webp"
     solara.Meta(name="twitter:image", content=img)
     solara.Meta(property="og:image", content=img)
 

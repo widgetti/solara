@@ -40,7 +40,7 @@ This pattern is very common, where a parent component (ClickButton) managed the 
 
 Is the above text a bit dry? Maybe the annotated code will make it easier to understand for you.
 
-![basics](/static/public/docs/reacton-basics.png)
+![basics](https://dxhl76zpt6fap.cloudfront.net/public/docs/reacton-basics.webp)
 
 
 ## Going deeper

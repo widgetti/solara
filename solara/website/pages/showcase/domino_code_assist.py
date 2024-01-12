@@ -17,10 +17,10 @@ def Page():
         Domino code assist is deeply integrated in the Jupyter notebook.
         """
         )
-        solara.Image("/static/public/showcase/lca/load-data-lab.png", width="100%", classes=["pt-12"])
+        solara.Image("https://dxhl76zpt6fap.cloudfront.net/public/showcase/lca/load-data-lab.png", width="100%", classes=["pt-12"])
 
     with solara.ColumnsResponsive(12, medium=6):
-        solara.Image("/static/public/showcase/lca/viz.png", width="100%", classes=["pt-12"])
+        solara.Image("https://dxhl76zpt6fap.cloudfront.net/public/showcase/lca/viz.png", width="100%", classes=["pt-12"])
         solara.Markdown(
             """
         # Sophisticated UIs
@@ -41,10 +41,10 @@ def Page():
 
         """
         )
-        solara.Image("/static/public/showcase/lca/app-design.png", width="100%", classes=["pt-12"])
+        solara.Image("https://dxhl76zpt6fap.cloudfront.net/public/showcase/lca/app-design.png", width="100%", classes=["pt-12"])
 
     with solara.ColumnsResponsive(12, medium=6):
-        solara.Image("/static/public/showcase/lca/app-deployed.png", width="100%", classes=["pt-12"])
+        solara.Image("https://dxhl76zpt6fap.cloudfront.net/public/showcase/lca/app-deployed.png", width="100%", classes=["pt-12"])
         solara.Markdown(
             """
 
