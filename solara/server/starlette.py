@@ -31,8 +31,6 @@ if has_solara_enterprise and sys.version_info[:2] > (3, 6):
 else:
     has_auth_support = False
 
-import solara
-from solara.server.threaded import ServerBase
 from starlette.applications import Starlette
 from starlette.exceptions import HTTPException
 from starlette.middleware import Middleware
@@ -43,6 +41,9 @@ from starlette.responses import HTMLResponse, JSONResponse
 from starlette.routing import Mount, Route, WebSocketRoute
 from starlette.staticfiles import StaticFiles
 from starlette.types import Receive, Scope, Send
+
+import solara
+from solara.server.threaded import ServerBase
 
 from . import app as appmod
 from . import kernel_context, server, settings, telemetry, websocket
@@ -390,10 +391,10 @@ if has_auth_support:
         *middleware,
         Middleware(
             MutateDetectSessionMiddleware,
-            secret_key=settings.session.secret_key,
-            session_cookie="solara-session",
-            https_only=settings.session.https_only,
-            same_site=settings.session.same_site,
+            secret_key=settings.session.secret_key,  # type: ignore
+            session_cookie="solara-session",  # type: ignore
+            https_only=settings.session.https_only,  # type: ignore
+            same_site=settings.session.same_site,  # type: ignore
         ),
         Middleware(AuthenticationMiddleware, backend=AuthBackend()),
     ]
