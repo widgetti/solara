@@ -129,9 +129,14 @@ def Sidebar():
                                             # skip pages that are only used to demonstrate Link or Router usage
                                             if subitem.path == "/" or subitem.label is None:
                                                 continue
+                                            path = (
+                                                "/documentation/" + route.path + "/" + item.path + "/" + subitem.path
+                                                if item.path != "fullscreen"
+                                                else "/apps/" + subitem.path
+                                            )
                                             with solara.v.ListItemGroup():
                                                 with solara.Link(
-                                                    "/documentation/" + route.path + "/" + item.path + "/" + subitem.path,
+                                                    path,
                                                 ):
                                                     with solara.v.ListItem(dense=True, style_="padding: 0 20px;"):
                                                         solara.v.ListItemContent(
