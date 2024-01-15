@@ -28,7 +28,7 @@ def AvatarMenu(image_url: Optional[str] = None, size: Union[int, str] = 40, colo
             solara.Button("Logout", icon_name="mdi-logout", href=auth.get_logout_url())
     ```
 
-    Note that a common use case is to put the avatar in the [AppBar](/api/app_bar).
+    Note that a common use case is to put the avatar in the [AppBar](/documentation/components/layout/app_bar).
     ```solara
     import solara
     from solara_enterprise import auth

@@ -51,7 +51,7 @@ Page = FancyClickButton
 ```
 
 
-Here we use an [HBox](/api/hbox) to lay out two child components horizontally.
+Here we use an [HBox](/documentation/components/layout/hbox) to lay out two child components horizontally.
 
 
 ## Cleaner way to add children to containers
@@ -96,7 +96,7 @@ with some_named_context_manager() as this_is_my_name:
     print("some other code")
 ```
 
-Where the last example assigns the context manager to a variable. In Solara we only need to do that to the top context manager, since we need to return that in our [render function](/docs/understanding/anatomy).
+Where the last example assigns the context manager to a variable. In Solara we only need to do that to the top context manager, since we need to return that in our [render function](/documentation/advanced/understanding/anatomy).
 
 All Reacton or Solara components return elements that can be used as context managers. Context managers allow for code to be executed before and after your code block inside of the context manager. This allows us to capture all elements created inside of the context manager. If you want to know more about context managers, consult the Python documentation since this is not Solara specific.
 
@@ -138,7 +138,7 @@ Page = FancyClickButton
 Instead of returning the main container, Solara also allows you to not have a return value (or return `None`).
 If that is the case, Solara will look at what elements you created. If you created one, that element will be taken
 as a return value instead. If you make more than one element, those elements will be automatically wrapped by
-a [Column](/api/column). The only benefit of returning an element, is that we can infer the correct return type,
+a [Column](/documentation/components/layout/column). The only benefit of returning an element, is that we can infer the correct return type,
 which can be useful for testing purposes. Users should probably never return an element, but use the automatic
 container feature.
 

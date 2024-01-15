@@ -152,8 +152,8 @@ ZgrzSLUyft-JvnNMNJ2LgbCFVqcxPOatANAQhMD5EYU
 
 Solara provides two convenient components for creating a user interface for login and logout:
 
- 1. [Avatar](/api/avatar): This component shows the user's avatar.
- 2. [AvatarMenu](/api/avatar_menu): This component shows a menu with the user's avatar and a logout button.
+ 1. [Avatar](/documentation/components/enterprise/avatar): This component shows the user's avatar.
+ 2. [AvatarMenu](/documentation/components/enterprise/avatar_menu): This component shows a menu with the user's avatar and a logout button.
 
  ## Python version support
 

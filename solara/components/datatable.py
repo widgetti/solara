@@ -6,11 +6,10 @@ from typing import Callable, List, Optional
 
 import ipyvuetify as v
 import ipywidgets
-import traitlets
-
 import solara
 import solara.hooks.dataframe
 import solara.lab
+import traitlets
 from solara.lab.hooks.dataframe import use_df_column_names
 from solara.lab.utils.dataframe import df_type
 
@@ -208,7 +207,7 @@ def DataFrame(
      * `cell_actions` -  Triggered via clicking on the triple dot icon in the cell (visible when hovering).
      * `on_column_header_hover` - Optional callback when the user hovers over the triple dot icon on a header.
      * `column_header_info` - Element to display in the column menu popup (visible when hovering), provide an
-            empty container element (like [Column](/api/column)) to force showing the trigle dot icon (see example).
+            empty container element (like [Column](/documentation/components/layout/column)) to force showing the trigle dot icon (see example).
 
     """
     return DataTable(

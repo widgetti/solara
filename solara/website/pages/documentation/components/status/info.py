@@ -2,10 +2,10 @@
 
 Solara has 4 types of alerts:
 
- * [Success](/api/success)
+ * [Success](/documentation/components/status/success)
  * Info (this page)
- * [Warning](/api/warning)
- * [Error](/api/error)
+ * [Warning](/documentation/components/status/warning)
+ * [Error](/documentation/components/status/error)
 
 
 

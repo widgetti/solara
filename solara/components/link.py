@@ -2,7 +2,6 @@ from typing import Dict, List, Union
 
 import ipyvue as vue
 import reacton.ipyvue as vuer
-
 import solara
 
 
@@ -32,7 +31,7 @@ def Link(
     ## Arguments
 
      * path_or_route: the path or route to navigate to. Paths should be absolute, e.g. '/fruit/banana'.
-       If a route is given, [`resolve_path`](/api/resolve_path)] will be used to resolve to the absolute path.
+       If a route is given, [`resolve_path`](/documentation/api/routing/resolve_path)] will be used to resolve to the absolute path.
      * children: the children of the link. If a child is clicked, the link will be followed.
      * nofollow: If True, the link will not be followed by web crawlers (such as google).
      * style: CSS styles to apply to the HTML link element. Either a string or a dictionary.

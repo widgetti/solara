@@ -8,12 +8,11 @@ Inspired by the dash documentation.
 ## Note
 
 Solara supports plotly and plotly express. Create your figure (not a figure widget)
-and pass it to the [FigurePlotly](/api/plotly) component.
+and pass it to the [FigurePlotly](/documentation/components/viz/plotly) component.
 
 """
 import pandas as pd
 import plotly.express as px
-
 import solara
 
 title = "Scatter plot using Plotly"

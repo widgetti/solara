@@ -9,7 +9,7 @@ As a reference, we provide this "anatomy" image of our favorite `ClickButton` co
 
  * Import `solara` and you also get the `reacton` namespace with it (saves typing, and finding/remembering which hooks is in which packages)
  * Add a `@solara.component` decorator to turn your function into a component.
- * Start with `use_state` hooks and other hooks. This avoids issues with [conditional hooks](/docs/understanding/rules-of-hooks) or hooks in loops.
+ * Start with `use_state` hooks and other hooks. This avoids issues with [conditional hooks](/documentation/advanced/understanding/rules-of-hooks) or hooks in loops.
  * Data/state flows down (to children)
  * Information (events, data) flows up from children via events and callbacks (`on_<some_event_name>=my_callback`).
  * If you need multiple components, use a [parent container component](/api#layout) as context manager. A good default name to give this context manager is `main`. Don't forget to return it in your render function!

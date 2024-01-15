@@ -3,9 +3,9 @@
 Solara has 4 types of alerts:
 
  * Success (this page)
- * [Info](/api/info)
- * [Warning](/api/warning)
- * [Error](/api/error)
+ * [Info](/documentation/components/status/info)
+ * [Warning](/documentation/components/status/warning)
+ * [Error](/documentation/components/status/error)
 
 
 

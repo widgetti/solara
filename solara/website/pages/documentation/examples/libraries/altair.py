@@ -2,16 +2,15 @@
 
 [Altair](https://altair-viz.github.io/index.html) is a declarative statistical visualization library for Python.
 
-This example show how to use the [on_click handler](/api/altair) to display data for a specific day in the chart.
+This example show how to use the [on_click handler](/documentation/components/viz/altair) to display data for a specific day in the chart.
 
 Based on [an Altair example](https://altair-viz.github.io/gallery/annual_weather_heatmap.html)
 
 """
 import altair as alt
 import pandas as pd
-from vega_datasets import data
-
 import solara
+from vega_datasets import data
 
 # title = "Altair visualization"
 source = data.seattle_weather()

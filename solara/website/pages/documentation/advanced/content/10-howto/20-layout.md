@@ -33,29 +33,29 @@ def Page():
                     solara.Info("two per column on small screens, three per column on large screens")
 ```
 
-[Navigate here to watch this layout in a full browser window](/apps/layout-demo)
+[Navigate here to watch this layout in a full browser window](/documentation/examples/fullscreen/layout_demo)
 
 The key takeaways are:
 
-  * By default, Solara will wrap your component in an [AppLayout](/api/app_layout), which will give you:
-    * Room for a sidebar, that you can populate using the [Sidebar](/api/sidebar) component.
-    * A toolbar showing the [Title](/api/title).
-    * Not visible here: In the case of [multiple pages](/docs/howto/multipage) will include page navigation tabs. See [The multipage demo app](/app/multipage) for an example.
-  * Use [Card](/api/card) to put related components together with a title.
-  * Use [Column](/api/column) to simply layout components under each other.
-  * Use [Columns](/api/columns) if you want to have a few columns with relative sizes next to each other.
-  * Use [ColumnsResponsive](/api/columns_responsive) to have the column widths respond to screen size.
+  * By default, Solara will wrap your component in an [AppLayout](/documentation/components/layout/app_layout), which will give you:
+    * Room for a sidebar, that you can populate using the [Sidebar](/documentation/components/layout/sidebar) component.
+    * A toolbar showing the [Title](/documentation/components/page/title).
+    * Not visible here: In the case of [multiple pages](/documentation/advanced/howto/multipage) will include page navigation tabs. See [The multipage demo app](/documentation/examples/fullscreen/multipage) for an example.
+  * Use [Card](/documentation/components/layout/card) to put related components together with a title.
+  * Use [Column](/documentation/components/layout/column) to simply layout components under each other.
+  * Use [Columns](/documentation/components/layout/columns) if you want to have a few columns with relative sizes next to each other.
+  * Use [ColumnsResponsive](/documentation/components/layout/columns_responsive) to have the column widths respond to screen size.
 
 
 
 ## Changing the default layout
 
-While [AppLayout](/api/app_layout) may be sufficient in 80% of the cases. Solara provides a way to change this default layout in [Solara server](/docs/understanding/solara-server).
+While [AppLayout](/documentation/components/layout/app_layout) may be sufficient in 80% of the cases. Solara provides a way to change this default layout in [Solara server](/documentation/advanced/understanding/solara-server).
 
 You can define your own `Layout` component in the `__init__.py` file in the same directory of your app script.
 
 
-For instance, putting the following `Layout` component in `__init__.py` will give you effectively the same [AppLayout](/api/app_layout):
+For instance, putting the following `Layout` component in `__init__.py` will give you effectively the same [AppLayout](/documentation/components/layout/app_layout):
 ```python
 @solara.component
 def Layout(children=[]):
@@ -80,7 +80,7 @@ This layout leaves every page responsible for creating its own header, footer, a
 ### Layout with navigation
 
 In case you want to set up your own layout system, which sets up navigation as well, this example may get you started. It may help
-to [understand routing](/docs/understanding/routing).
+to [understand routing](/documentation/advanced/understanding/routing).
 ```python
 @solara.component
 def Layout(children=[]):
@@ -108,13 +108,13 @@ This is useful for larger apps where each subdirectory may add a bit of layout/c
 
 ## Components
 
-The following [Container components](/docs/understanding/containers) can be used to define the layout of you app.
+The following [Container components](/documentation/advanced/understanding/containers) can be used to define the layout of you app.
 
- * [Row](/api/row)
- * [Column](/api/column)
- * [ColumnsResponsive](/api/columns_responsive)
- * [GridFixed](/api/gridfixed)
- * [GridDraggable](/api/griddraggable)
- * [VBox](/api/vbox) (kept for ipywidgets compatibility, please use Column)
- * [HBox](/api/hbox) (kept for ipywidgets compatibility, please use Row)
- * [AppLayout](/api/app_layout) Not often used directly, since Solara will already wrap your page in it. Sometimes re-used in a new `Layout` component.
+ * [Row](/documentation/components/layout/row)
+ * [Column](/documentation/components/layout/column)
+ * [ColumnsResponsive](/documentation/components/layout/columns_responsive)
+ * [GridFixed](/documentation/components/layout/gridfixed)
+ * [GridDraggable](/documentation/components/layout/griddraggable)
+ * [VBox](/documentation/components/layout/vbox) (kept for ipywidgets compatibility, please use Column)
+ * [HBox](/documentation/components/layout/hbox) (kept for ipywidgets compatibility, please use Row)
+ * [AppLayout](/documentation/components/layout/app_layout) Not often used directly, since Solara will already wrap your page in it. Sometimes re-used in a new `Layout` component.

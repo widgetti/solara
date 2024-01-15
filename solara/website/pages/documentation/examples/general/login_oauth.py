@@ -54,7 +54,7 @@ def Page():
 
                     This is the raw user data from the auth provider.
 
-                    We use the `picture` field to display an avatar in the [AppBar](/api/appbar).
+                    We use the `picture` field to display an avatar in the [AppBar](/documentation/components/layout/app_bar).
                 """
                 )
                 sl.Preformatted(pprint.pformat(auth.user.value))

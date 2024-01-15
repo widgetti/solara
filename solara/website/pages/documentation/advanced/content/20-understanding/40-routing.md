@@ -13,15 +13,15 @@ Setting up routing can be repetitive, and therefore Solara comes also with a mor
 
 ### Based on a directory
 
-Using [`generate_routes_directory(path: Path) -> List[solara.Route]:`](/api/generate_routes_directory) we can request Solara to give us a list of
+Using [`generate_routes_directory(path: Path) -> List[solara.Route]:`](/documentation/api/routing/generate_routes_directory) we can request Solara to give us a list of
 routes by scanning a directory for Python scripts, Notebooks and Markdown files.
 
-This function is being used by Solara if you run solara server with a directory as argument name, as used in [our Multi Page guide](/docs/howto/multipage). More details can be found there.
+This function is being used by Solara if you run solara server with a directory as argument name, as used in [our Multi Page guide](/documentation/advanced/howto/multipage). More details can be found there.
 
 
 ### Based on a Python package
 
-Similar to the previous section [`generate_routes(module: ModuleType) -> List[solara.Route]:`](/api/generate_routes) will return a list of routes by scanning a Python package or module for `Page` components, or `app` elements. Again, more information can be found at [our Multi Page guide](/docs/howto/multipage).
+Similar to the previous section [`generate_routes(module: ModuleType) -> List[solara.Route]:`](/documentation/api/routing/generate_routes) will return a list of routes by scanning a Python package or module for `Page` components, or `app` elements. Again, more information can be found at [our Multi Page guide](/documentation/advanced/howto/multipage).
 
 ## Manually defining routes
 
@@ -59,7 +59,7 @@ routes = [
 
 ### Defining route components
 
-If you do define a `Page` component, you are fully responsible for how routing is done, but we recommend using [use_route](/api/use_route).
+If you do define a `Page` component, you are fully responsible for how routing is done, but we recommend using [use_route](/documentation/api/routing/use_route).
 
 An example route definition could be something like this:
 
@@ -180,9 +180,9 @@ routes = [
 ]
 ```
 
-In the case where you did not specify a `Page` component, label is used for the [Title](/api/title) component.
+In the case where you did not specify a `Page` component, label is used for the [Title](/documentation/components/page/title) component.
 
-If you need to store more data in the route, you are free to put whatever you want in the `data` attribute, see also [Route](/api/route).
+If you need to store more data in the route, you are free to put whatever you want in the `data` attribute, see also [Route](/documentation/api/routing/route).
 
 
 
@@ -194,14 +194,14 @@ Note that all routes are relative, since a component does not know if it is embe
 Therefore you should never use the `route.path` for navigation since the route object has no knowledge of the full url
 (e.g. `/docs/basics/ipywigets`) but only knows its small piece of the pathname (e.g. `ipywidgets`)
 
-Using [`resolve_path`](/api/resolve_path) we can request the full url for navigation.
+Using [`resolve_path`](/documentation/api/routing/resolve_path) we can request the full url for navigation.
 
 ```python
 def resolve_path(path_or_route: Union[str, solara.Route], level=0) -> str:
     ...
 ```
 
-We can pass this full URL to the [`solara.Link`](/api/link) component, e.g. like:
+We can pass this full URL to the [`solara.Link`](/documentation/components/advanced/link) component, e.g. like:
 
 ```python
 @solara.component
@@ -217,7 +217,7 @@ def LinkToIpywidgets():
 
 ## Fully manual routing
 
-If you want to do routing fully manually, you can use the [`solara.use_router`](/api/use_router) hook, and use the `.path` attribute.
+If you want to do routing fully manually, you can use the [`solara.use_router`](/documentation/api/routing/use_router) hook, and use the `.path` attribute.
 
 ```python
 import solara

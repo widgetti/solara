@@ -1,7 +1,8 @@
 """# Deploy model demo
 
-This show off a combination of [solara.lab.Menu](/api/menu) and [solara.lab.ConfirmationDialog](/api/confirmation_dialog)
-and [solara.use_thread](/api/use_thread) to demonstrate how to tune, fit and deploy a model.
+This show off a combination of [solara.lab.Menu](/documentation/components/lab/menu) and
+    [solara.lab.ConfirmationDialog](/documentation/components/lab/confirmation_dialog)
+and [solara.use_thread](/documentation/api/hooks/use_thread) to demonstrate how to tune, fit and deploy a model.
 The actually deployment is not real, but simulated by a thread that returns a boolean value on success and sleep for a while to
 similate the deployment taking time.
 
@@ -15,7 +16,6 @@ import time
 import numpy as np
 import pandas as pd
 import plotly.express as px
-
 import solara
 import solara.lab
 

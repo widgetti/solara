@@ -27,7 +27,7 @@ Run:
 pip install solara
 ```
 
-Or follow the [Installation instructions](https://solara.dev/docs/installing) for more detailed instructions.
+Or follow the [Installation instructions](https://solara.dev/documentation/getting_started/installing) for more detailed instructions.
 
 ## First script
 
@@ -73,7 +73,7 @@ Solara server is starting at http://localhost:8765
 Or copy-paste this to a Jupyter notebook cell and execute it (the `Page()` expression at the end
 will cause it to automatically render the component in the notebook).
 
-See this snippet run live at https://solara.dev/docs/quickstart
+See this snippet run live at https://solara.dev/documentation/getting_started
 
 ## Demo
 
@@ -100,7 +100,7 @@ By building on top of ipywidgets, we automatically leverage an existing ecosyste
 
 Visit our main website or jump directly to the introduction
 
-[![Introduction](https://dabuttonfactory.com/button.png?t=Introduction&f=Open+Sans-Bold&ts=20&tc=fff&hp=45&vp=12&c=8&bgt=unicolored&bgc=f19f41)](https://solara.dev/docs)
-[![Quickstart](https://dabuttonfactory.com/button.png?t=Quickstart&f=Open+Sans-Bold&ts=20&tc=fff&hp=45&vp=12&c=8&bgt=unicolored&bgc=f19f41)](https://solara.dev/docs/quickstart)
+[![Introduction](https://dabuttonfactory.com/button.png?t=Introduction&f=Open+Sans-Bold&ts=20&tc=fff&hp=45&vp=12&c=8&bgt=unicolored&bgc=f19f41)](https://solara.dev/documentation)
+[![Quickstart](https://dabuttonfactory.com/button.png?t=Quickstart&f=Open+Sans-Bold&ts=20&tc=fff&hp=45&vp=12&c=8&bgt=unicolored&bgc=f19f41)](https://solara.dev/documentation/getting_started)
 
 *Note that the solara.dev website is created using Solara*

@@ -19,9 +19,9 @@ In Solara, there are two main types of components: Widget Components and Functio
 
 Widget Components correspond to ipywidgets and are responsible for rendering visual elements in the browser, such as buttons, sliders, or performing layout tasks. These components are the foundation of your user interface and provide the essential building blocks for creating interactive applications.
 
-Solara mainly uses the [ipyvuetify library](/docs/understanding/ipyvuetify) for its widget components. It provides a set of high-level components that can be used to create rich, interactive user interfaces.
+Solara mainly uses the [ipyvuetify library](/documentation/advanced/understanding/ipyvuetify) for its widget components. It provides a set of high-level components that can be used to create rich, interactive user interfaces.
 
-See the [API docs](/docs/api) for a complete list of basic UI components.
+See the [components page](/documentation/components) for a complete list of basic UI components.
 
 ## Function Components
 

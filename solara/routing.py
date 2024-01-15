@@ -123,7 +123,7 @@ def use_router() -> Router:
         router = solara.use_router()
 
         def redirect():
-            router.push(f"/api/use_route")
+            router.push(f"/documentation/api/routing/use_route")
 
         solara.Button("Navigate using an event", on_click=redirect)
     ```
@@ -166,9 +166,10 @@ def use_route(
 
     Note that all routes are relative, since a component does not know if it is embedded into a larger application, which may also do routing.
     Therefore you should never use the `route.path` for navigation since the route object has no knowledge of the full url
-    (e.g. `/api/use_route/fruit/banana`) but only knows its small piece of the pathname (e.g. `banana`)
+    (e.g. `/documentation/api/routing/use_route/fruit/banana`) but only knows its small piece of the pathname (e.g. `banana`)
 
-    Use [`resolve_path`](/api/resolve_path) to request the full url for navigation, or simply use the `Link` component that can do this for us.
+    Use [`resolve_path`](/documentation/api/routing/resolve_path) to request the full url for navigation,
+        or simply use the `Link` component that can do this for us.
 
     If the current route has children, any child component that calls `use_route` will return the matched route and its siblings of our children.
 
@@ -229,7 +230,7 @@ def resolve_path(path_or_route: Union[str, solara.Route], level=0) -> str:
 
     ## Arguments
 
-     * path_or_route: a path string or a [`solara.Route`](/api/route) object to resolve.
+     * path_or_route: a path string or a [`solara.Route`](/documentation/api/routing/route) object to resolve.
 
     ## See also
 

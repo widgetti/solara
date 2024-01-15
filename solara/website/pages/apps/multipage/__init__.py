@@ -12,7 +12,7 @@ def SharedComponent():
             f"""
             This component will be used on each page.
 
-            It uses the `app_state` [reactive variable](https://solara.dev/api/reactive)
+            It uses the `app_state` [reactive variable](https://solara.dev/documentation/api/utilities/reactive)
             so that the state outlives each page
 
 

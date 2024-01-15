@@ -29,4 +29,4 @@ All assets files are served under `/static/assets/<filename>`, but how the asset
 Putting the `assets` directory 1 level higher than the `pages` directory avoids name collision with pages.
 
 
-Although the `assets` directory can be used for serving arbitrary files, we recommend using the [static files](/docs/reference/static-files) directory instead, to avoid name collisions.
+Although the `assets` directory can be used for serving arbitrary files, we recommend using the [static files](/documentation/getting_started/reference/static-files) directory instead, to avoid name collisions.

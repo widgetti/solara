@@ -1,5 +1,5 @@
 
-This is the old changelog, check the [Solara website](https://solara.dev/docs/changelog) for the up to date changelog.
+This is the old changelog, check the [Solara website](https://solara.dev/changelog) for the up to date changelog.
 
 ## Changelog for solara v1.22
 

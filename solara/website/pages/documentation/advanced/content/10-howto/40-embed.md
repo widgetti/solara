@@ -40,4 +40,4 @@ Solara uses a cookie to implement sessions. To support cookies settings in an if
 
 ## Embed into an existing page
 
-If embedding into an iframe does not suit your needs (for example, dialogs not being fullscreen), [please contact us](/docs/contact) and we can discuss other options.
+If embedding into an iframe does not suit your needs (for example, dialogs not being fullscreen), [please contact us](/contact) and we can discuss other options.

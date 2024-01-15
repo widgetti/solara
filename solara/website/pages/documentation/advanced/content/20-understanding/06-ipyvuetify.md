@@ -11,7 +11,7 @@ material design based widgets.
 
 ## Reacton and ipyvuetify
 
-We consider ipyvuetify one of the most essential ipywidget libraries, and that is the reason why [Reacton](/docs/understanding/reacton) ships with
+We consider ipyvuetify one of the most essential ipywidget libraries, and that is the reason why [Reacton](/documentation/advanced/understanding/reacton) ships with
 generated ipyvuetify components to make your app type safe.
 
 ```solara

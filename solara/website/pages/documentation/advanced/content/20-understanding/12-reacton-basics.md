@@ -90,7 +90,7 @@ In words
    1. Solara create `el = ButtonClick()` from your component.
    1. The `display(el)` triggers the call to Reacton.
    1. The render call enters the render phase, which will call the function body (which we call render function) of the `ButtonClick` component.
-   1. Our ButtonClick render function calls [`use_state`](/api/use_state). Because this is our first render phase, this returns the initial value (0).
+   1. Our ButtonClick render function calls [`use_state`](/documentation/api/hooks/use_state). Because this is our first render phase, this returns the initial value (0).
    1. The ButtonClick render function returns a Button element (not a widget!) with `description="Clicked: 0 times"`.
    1. The Reacton render call is done with the render phase, and enters the reconciliation phase, where it looks at the difference between the real widgets and the virtual widgets tree (represented by the Reacton elements). We find there is no previous widget associated with the virtual widget (or element) and decide to create a widget.
    1. Asynchronously via the Jupyter protocol, a widget model and view are created and displayed to the user in the browser.

@@ -36,7 +36,7 @@ This small app creates a dropdown (what we call Select in Solara), and some mark
 
 ## Translated to Solara
 
-In Solara, we need to explicitly create application state using [`solara.reactive`](/api/reactive). We wire this up with the [Select][/api/select] via `value=color` and pass the color value down to the [Markdown](/api/markdown) component.
+In Solara, we need to explicitly create application state using [`solara.reactive`](/documentation/api/utilities/reactive). We wire this up with the [Select][/documentation/components/input/select] via `value=color` and pass the color value down to the [Markdown](/documentation/components/output/markdown) component.
 
 ```solara
 import solara
@@ -50,7 +50,7 @@ def Page():
     solara.Markdown("## Hello World", style={"color": color.value})
 ```
 
-Since this component combines two components, we have to put them together in a [container](/docs/understanding/containers) component, here implicitly a [Column](/api/column).
+Since this component combines two components, we have to put them together in a [container](/documentation/advanced/understanding/containers) component, here implicitly a [Column](/documentation/components/layout/column).
 
 ## Making a re-usable component
 
@@ -115,7 +115,7 @@ if __name__ == "__main__":
 
 ### In Solara
 
-A big advantage of Solara is that components are reusable by default. However, we need to modify our component to have its own state, rather than using global application state. Creating local component state with [`use_reactive`](/api/use_reactive), or [`use_state`](/api/use_state) hook. Read more about state management in the [state management](/docs/fundamentals/state-management) section.
+A big advantage of Solara is that components are reusable by default. However, we need to modify our component to have its own state, rather than using global application state. Creating local component state with [`use_reactive`](/documentation/api/hooks/use_reactive), or [`use_state`](/documentation/api/hooks/use_state) hook. Read more about state management in the [state management](/documentation/getting_started/fundamentals/state-management) section.
 
 We will rename (from `Page` to `MarkdownWithColor`) the component, add local state, and put in the markdown text as an argument.
 

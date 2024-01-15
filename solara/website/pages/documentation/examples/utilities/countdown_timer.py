@@ -1,6 +1,6 @@
 """# Countdown timer.
 
-This example shows how to use [use_thread](/api/use_thread) to create a countdown timer.
+This example shows how to use [use_thread](/documentation/api/hooks/use_thread) to create a countdown timer.
 
 The UI code demonstrates a lot of conditional rendering.
 

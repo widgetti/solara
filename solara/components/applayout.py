@@ -90,7 +90,7 @@ def AppBar(children=[]):
 
     This component does not need to be a direct child of the AppLayout, it can be at any level in your component tree.
 
-    If a [Tabs](/api/tabs) component is used as direct child of the app bar, it will be shown under the app bar.
+    If a [Tabs](/documentation/components/lab/tabs) component is used as direct child of the app bar, it will be shown under the app bar.
 
     ## Example showing an app bar
     ```solara
@@ -204,8 +204,8 @@ def AppLayout(
 ):
     """The default layout for Solara apps. It consists of an toolbar bar, a sidebar and a main content area.
 
-     * The title of the app is set using the [Title](/api/title) component.
-     * The sidebar content is set using the [Sidebar](/api/sidebar) component.
+     * The title of the app is set using the [Title](/documentation/components/page/title) component.
+     * The sidebar content is set using the [Sidebar](/documentation/components/layout/sidebar) component.
      * The content is set by the `Page` component provided by the user.
 
     This component is usually not used directly, but rather through via the [Layout system](/documentation/advanced/howto/layout).
@@ -224,7 +224,7 @@ def AppLayout(
 
      * `children`: The children of the AppLayout. The first child is used as the sidebar content, the rest as the main content.
      * `sidebar_open`: Whether the sidebar is open or not.
-     * `title`: The title of the app shown in the app bar, can also be set using the [Title](/api/title) component.
+     * `title`: The title of the app shown in the app bar, can also be set using the [Title](/documentation/components/page/title) component.
      * `toolbar_dark`: Whether the toolbar should be dark or not.
      * `navigation`: Whether the navigation tabs based on routing should be shown.
      * `color`: The color of the toolbar.

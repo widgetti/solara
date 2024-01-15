@@ -77,10 +77,10 @@ def display(*objs, **kwargs):
 
     However, if you require callback functions, use the specific Solara components, e.g.:
 
-      * [Plotly](/api/plotly)
-      * [Altair](/api/altair)
-      * [Matplotlib](/api/matplotlib)
-      * [Dataframe](/api/dataframe)
+      * [Plotly](/documentation/components/viz/plotly)
+      * [Altair](/documentation/components/viz/altair)
+      * [Matplotlib](/documentation/components/viz/matplotlib)
+      * [Dataframe](/documentation/components/viz/dataframe)
 
     ```solara
     import solara

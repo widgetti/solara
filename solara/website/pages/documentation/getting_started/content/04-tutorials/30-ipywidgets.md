@@ -1,15 +1,15 @@
 # Tutorial: IPywidgets
 
-If you are already using [ipywidgets](/docs/understanding/ipywidgets) in the notebook, possibly using [Voila](/docs/understanding/voila), you might be pleased to know that you
-can also use the [Solara server](/docs/understanding/solara-server) to render your regular ipywidget application.
+If you are already using [ipywidgets](/documentation/advanced/understanding/ipywidgets) in the notebook, possibly using [Voila](/documentation/advanced/understanding/voila), you might be pleased to know that you
+can also use the [Solara server](/documentation/advanced/understanding/solara-server) to render your regular ipywidget application.
 
-We recommend you learn how to write applications using [Reacton](/docs/understanding/reacton). However, if you have already written an application in
-pure [ipywidgets](/docs/understanding/ipywidgets), this approach will let you gradually move from pure ipywidgets to Reacton.
+We recommend you learn how to write applications using [Reacton](/documentation/advanced/understanding/reacton). However, if you have already written an application in
+pure [ipywidgets](/documentation/advanced/understanding/ipywidgets), this approach will let you gradually move from pure ipywidgets to Reacton.
 
 ## You should know
 This tutorial will assume you have successfully installed Solara.
 
-If not, please follow the [Installation guide](/docs/installing).
+If not, please follow the [Installation guide](/documentation/getting_started/installing).
 
 ## Your first ipywidget based Solara app
 
@@ -70,10 +70,10 @@ Try making the following code change (remove the first, add the last), and watch
 
 ## Using Solara components
 
-There are a lot of [valuable components in Solara](/api), but they are written as [Reacton/Solara components](/docs/understanding/reacton-basics), not
+There are a lot of [valuable components in Solara](/documentation/components), but they are written as [Reacton/Solara components](/documentation/advanced/understanding/reacton-basics), not
 classic ipywidgets.
 
-Use the [.widget(...)](/api/widget) method on a component to create a widget that can be used in your existing classic ipywidget application.
+Use the [.widget(...)](/documentation/api/utilities/widget) method on a component to create a widget that can be used in your existing classic ipywidget application.
 
 ```python
 
@@ -111,10 +111,10 @@ Note that we did not include the `:page` here, since solara will automatically l
 
 ## What you have learned
 
-  * [Solara server](/docs/understanding/solara-server) can render [ipywidgets](/docs/understanding/ipywidgets).
+  * [Solara server](/documentation/advanced/understanding/solara-server) can render [ipywidgets](/documentation/advanced/understanding/ipywidgets).
   * Running `$ solara run filename.py:variablename` tells Solara which script to execute and which variable name from the script to render.
   * The script is executed:
     * Once, when the solara server starts.
     * On each page request.
     * For each open browser page/tab, when the script is saved (hot reloading).
-  * Using the [.widget(...)](/api/widget) method we can start using Solara components in classic ipywidget app.
+  * Using the [.widget(...)](/documentation/api/utilities/widget) method we can start using Solara components in classic ipywidget app.

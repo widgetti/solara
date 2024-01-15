@@ -13,18 +13,18 @@ When a `.vue` file is saved, the widgets get updated automatically, without need
 
 ## Reloading of .vue files
 
-The [Style component](/api/style) accepts a Path as argument, when that is used and the server is in development mode (the default), also
+The [Style component](/documentation/components/advanced/style) accepts a Path as argument, when that is used and the server is in development mode (the default), also
 CSS files will be hot reloaded.
 
 
 ## Restarting the server after changes to the solara packages
 
 
-You don't need to care about this feature if you only use solara, this is only relevant for development on solara itself, [see also development instructions](/docs/development).
+You don't need to care about this feature if you only use solara, this is only relevant for development on solara itself, [see also development instructions](/documentation/advanced/development/setup).
 
 If the `--auto-restart/-a` flag is passed to solara-server and any changes occur in the `solara` package (excluding `solara.webpage`), solara-server will restart. This speeds up development on `solara-server` for developers since you do not
 need to manually restart the server in the terminal.
 
 ## Disabling reloading
 
-In production mode (pass the `--production` argument to `solara run`) watching of files is disabled, and no reloading of files or vue templates will occur. If you run solara integrated in flask or uvicorn as laid out in [deployment documentation](https://solara.dev/docs/deploying/self-hosted)
+In production mode (pass the `--production` argument to `solara run`) watching of files is disabled, and no reloading of files or vue templates will occur. If you run solara integrated in flask or uvicorn as laid out in [deployment documentation](https://solara.dev/documentation/getting_started/deploying/self-hosted)

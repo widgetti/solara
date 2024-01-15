@@ -1,6 +1,6 @@
 # Multi-page support
 
-In the [Web App tutorial](/docs/tutorial/web-app), we created an application consisting of a single page. Web applications generally have multiple pages, and Solara supports this as well.
+In the [Web App tutorial](/documentation/getting_started/tutorials/web-app), we created an application consisting of a single page. Web applications generally have multiple pages, and Solara supports this as well.
 
 
 ## Multiple scripts
@@ -148,7 +148,7 @@ routes = [
 ]
 ```
 
-See more details in the [Route section](/docs/understanding/routing).
+See more details in the [Route section](/documentation/advanced/understanding/routing).
 
 ## Dynamic pages
 
@@ -189,4 +189,4 @@ By giving the name argument a default value of `"foo"`, Solara will also accept 
 
 # What next?
 
-  * Also check out the [Multipage example](/apps/multipage) for more inspiration.
+  * Also check out the [Multipage example](/documentation/examples/fullscreen/multipage) for more inspiration.

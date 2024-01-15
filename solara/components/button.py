@@ -1,10 +1,9 @@
 from typing import Callable, Dict, List, Optional, Union
 
-from reacton import ipyvue
-from reacton import ipyvuetify as v
-
 import solara
 import solara.util
+from reacton import ipyvue
+from reacton import ipyvuetify as v
 
 
 @solara.component
@@ -51,7 +50,8 @@ def Button(
     - `disabled`: Whether the button is disabled.
     - `text`: Whether the button should be displayed as text, it has no shadow and no background.
     - `outlined`: Whether the button should be displayed as outlined, it has no background.
-    - `value`: (Optional) When used as a child of a ToggleButtons component, the value of the selected button, see [ToggleButtons](/api/togglebuttons).
+    - `value`: (Optional) When used as a child of a ToggleButtons component, the value of the selected button, see
+        [ToggleButtons](/documentation/components/input/togglebuttons).
     - `classes`: Additional CSS classes to apply.
     - `style`: CSS style to apply.
 

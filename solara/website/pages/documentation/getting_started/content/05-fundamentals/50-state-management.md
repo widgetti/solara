@@ -1,12 +1,12 @@
 # Introduction
 
-State management is a crucial aspect of building data-focused web applications with Solara. By effectively managing state, you can create interactive and responsive applications that react to changes in data and user input. In Solara, there are two primary ways to define state: global application state using [`solara.reactive`](/api/reactive) and local component state using [`solara.use_state`](/api/use_state) or [`solara.use_reactive`](/api/use_reactive). This article will discuss these two approaches and provide examples of how to use them in your Solara applications.
+State management is a crucial aspect of building data-focused web applications with Solara. By effectively managing state, you can create interactive and responsive applications that react to changes in data and user input. In Solara, there are two primary ways to define state: global application state using [`solara.reactive`](/documentation/api/utilities/reactive) and local component state using [`solara.use_state`](/documentation/api/hooks/use_state) or [`solara.use_reactive`](/documentation/api/hooks/use_reactive). This article will discuss these two approaches and provide examples of how to use them in your Solara applications.
 
 ## Two main ways of defining state in Solara
 
 ### Global application state using solara.reactive
 
-Using [`solara.reactive`](/api/reactive) allows you to create global state variables that can be accessed and modified from any component within your application. This approach is useful when you need to manage state that is shared across multiple components or when you want to maintain consistency throughout your application.
+Using [`solara.reactive`](/documentation/api/utilities/reactive) allows you to create global state variables that can be accessed and modified from any component within your application. This approach is useful when you need to manage state that is shared across multiple components or when you want to maintain consistency throughout your application.
 
 Example:
 
@@ -30,7 +30,7 @@ In this case, the `SomeAppSpecificComponent` is not reusable in the sense that a
 
 ## Local component state using solara.use_state
 
-[`solara.use_state`](/api/use_state) is a hook that allows you to manage local state within a specific component. This approach is beneficial when you want to encapsulate state within a component, making it self-contained and modular. Local state management is suitable for situations where state changes only affect the component and do not need to be shared across the application.
+[`solara.use_state`](/documentation/api/hooks/use_state) is a hook that allows you to manage local state within a specific component. This approach is beneficial when you want to encapsulate state within a component, making it self-contained and modular. Local state management is suitable for situations where state changes only affect the component and do not need to be shared across the application.
 
 Example:
 ```solara

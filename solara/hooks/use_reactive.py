@@ -92,7 +92,7 @@ def use_reactive(
     except RuntimeError as e:
         raise RuntimeError(
             "use_reactive must be called from a component function, inside the render function.\n"
-            "Do not call it top level, use [solara.reactive()](https://solara.dev/api/reactive) instead."
+            "Do not call it top level, use [solara.reactive()](https://solara.dev/documentation/api/utilities/reactive) instead."
         ) from e
     on_change_ref.current = on_change
 

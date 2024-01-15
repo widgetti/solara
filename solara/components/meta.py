@@ -9,7 +9,7 @@ from .head_tag import HeadTag
 def Meta(name: Optional[str] = None, property: Optional[str] = None, content: Optional[str] = None):
     """Add a meta tag to the head element, or replace a meta tag with the same name and or property.
 
-    This component should be used inside a [Head](/api/head) component, e.g.:
+    This component should be used inside a [Head](/documentation/components/page/head) component, e.g.:
 
     ```python
     import solara

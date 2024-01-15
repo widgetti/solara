@@ -149,7 +149,7 @@
 ### Highlights
 
  * Feature: Solara now has a production mode (enabled by passing in `--production`) which will load optimized CSS and JS and disable hot reloading.
-    Our [Solara server](https://solara.dev/docs/understanding/solara-server) page contains more information about it. If you used `--reload` or
+    Our [Solara server](https://solara.dev/documentation/advanced/understanding/solara-server) page contains more information about it. If you used `--reload` or
     `--dev` before you can now use the `-a/--auto-restart` flat. The `--dev` and `--reload` flags are kept for backwards compatibility.
  * Feature: All `Input` components expose the `style` and `classes` arguments for custom styling.
  * Feature: New component: [`InputDate` and `InputDateRange`](https://solara.dev/api/input_date) which use a datepicker in a menu. (#326)

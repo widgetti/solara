@@ -44,7 +44,7 @@ solara @ https://github.com/widgetti/solara/package/archive/master.tar.gz
 
 ```
 
-If you want to do development on Solara, read the [development documentation](/docs/development).
+If you want to do development on Solara, read the [development documentation](/documentation/advanced/development/setup).
 
 ## Air-gapped installation / Firewalled network
 

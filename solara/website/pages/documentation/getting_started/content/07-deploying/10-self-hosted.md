@@ -48,7 +48,7 @@ Instead, start your chosen web framework as directed by their documentation and 
     $ export SOLARA_APP=sol.py
     # run flask or starlette
 
-or look at the examples below for more detailed instructions per web framework. Note that when solara is used this way it [by default runs in production mode](https://solara.dev/docs/understanding/solara-server).
+or look at the examples below for more detailed instructions per web framework. Note that when solara is used this way it [by default runs in production mode](https://solara.dev/documentation/advanced/understanding/solara-server).
 
 ## Flask
 
@@ -180,7 +180,7 @@ display(element)
 
 Or consider using [Voila-vuetify](https://github.com/voila-dashboards/voila-vuetify).
 
-Solara apps in Voila do not have support for [routing](/docs/understanding/routing)/[multipage](/docs/howto/multipage).
+Solara apps in Voila do not have support for [routing](/documentation/advanced/understanding/routing)/[multipage](/documentation/advanced/howto/multipage).
 
 
 ## Panel
@@ -211,7 +211,7 @@ For development/testing purposes, run this script as:
 
     $ panel serve solara_in_panel.py
 
-Solara apps in Panel do not have support for [routing](/docs/understanding/routing)/[multipage](/docs/howto/multipage).
+Solara apps in Panel do not have support for [routing](/documentation/advanced/understanding/routing)/[multipage](/documentation/advanced/howto/multipage).
 
 ## Nginx
 

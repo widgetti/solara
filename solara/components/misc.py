@@ -3,7 +3,6 @@ from typing import Any, Callable, Dict, List, Union
 
 import reacton
 import reacton.ipyvuetify as v
-
 import solara
 import solara.widgets
 from solara.util import _combine_classes
@@ -159,7 +158,7 @@ def HBox(children=[], grow=True, align_items="stretch", classes: List[str] = [])
 def Row(children=[], gap="12px", justify="start", margin: int = 0, classes: List[str] = [], style: Union[str, Dict[str, str], None] = None):
     """Lays out children in a row, side by side, with the given gap between them.
 
-    See also [Column](/api/column).
+    See also [Column](/documentation/components/layout/column).
 
     Example with three children side by side:
 
@@ -200,7 +199,7 @@ def Row(children=[], gap="12px", justify="start", margin: int = 0, classes: List
 def Column(children=[], gap="12px", align="stretch", margin: int = 0, classes: List[str] = [], style: Union[str, Dict[str, str], None] = None):
     """Lays out children in a column on top of each other, with the given gap between them.
 
-    See also [Row](/api/row).
+    See also [Row](/documentation/components/layout/row).
 
     Example with three children on top of each other:
 
@@ -287,17 +286,14 @@ def FigurePlotly(
             "plotly_hover": on_hover,
             "plotly_unhover": on_unhover,
             "plotly_selected": on_selection,
-            "plotly_deselect": on_deselect
+            "plotly_deselect": on_deselect,
         }
-        
+
         callback = event_mapping.get(event_type)
         if callback:
             callback(data)
 
-    fig_element = FigureWidget.element(
-        on__js2py_pointsCallback=on_points_callback,
-        on__js2py_relayout=on_relayout
-    )
+    fig_element = FigureWidget.element(on__js2py_pointsCallback=on_points_callback, on__js2py_relayout=on_relayout)
 
     def update_data():
         fig_widget: FigureWidget = solara.get_widget(fig_element)

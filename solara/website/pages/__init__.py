@@ -126,7 +126,7 @@ def Layout(children=[]):
                         )
                         with solara.HBox():
                             with solara.Link("/documentation"):
-                                solara.Button(label="Read more", class_="ma-1 homepage-button", href="/docs", color="primary", dark=True)
+                                solara.Button(label="Read more", class_="ma-1 homepage-button", href="/documentation", color="primary", dark=True)
                             with solara.Link("/documentation/getting_started/quickstart"):
                                 solara.Button(label="Quickstart", class_="ma-1 homepage-button", color="primary", dark=True)
                     # with rv.Col(md=4, sm=5):

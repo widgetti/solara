@@ -29,7 +29,7 @@ Using the command
 $ solara ssg your.awesome.app
 ```
 
-Will run the solara server and use playwright to fetch all known pages and save them to the `../build` directory. Solara knows about your pages because of its [routing support](/docs/understanding/routing).
+Will run the solara server and use playwright to fetch all known pages and save them to the `../build` directory. Solara knows about your pages because of its [routing support](/documentation/advanced/understanding/routing).
 
 All HTML files in the `../build` will be used to pre-populate the HTML served to the user.
 

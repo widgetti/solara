@@ -7,12 +7,12 @@ This 1-minute quickstart will get you to:
    * Run your script using Solara server.
    * (Optional) Reuse your code in the Jupyter notebook.
 
-If you are an existing ipywidget user and do not want to learn the component based method, you might want to skip the quickstart and directly go to the [IPywidgets user tutorial](/docs/tutorial/ipywidgets).
+If you are an existing ipywidget user and do not want to learn the component based method, you might want to skip the quickstart and directly go to the [IPywidgets user tutorial](/documentation/getting_started/tutorials/ipywidgets).
 
 ## Installation
 
 
-Run `pip install solara`, or follow the [Installation instructions](/docs/installing) for more detailed instructions.
+Run `pip install solara`, or follow the [Installation instructions](/documentation/getting_started/installing) for more detailed instructions.
 
 
 ## First script

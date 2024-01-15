@@ -11,7 +11,7 @@ assert "my-key" in solara.cache.storage
 
 Note that at any time later on, the key may be removed from this object, as a cache always has a limited capacity.
 
-The `solara.cache.storage` cache object is used by [memoize](/api/memoize), if no storage argument is passed to this decorator.
+The `solara.cache.storage` cache object is used by [memoize](/documentation/api/utilities/memoize), if no storage argument is passed to this decorator.
 
 ## Types of cache
 

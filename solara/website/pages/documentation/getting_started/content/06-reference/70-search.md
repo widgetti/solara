@@ -1,6 +1,6 @@
 # Search
 
-Solara can provide search, if [SSG](/docs/reference/static-site-generation) is enabled. This allows you to add a search box to you website, which performs a full-text search to provide quick access to pages. The solara website itself uses the
+Solara can provide search, if [SSG](/documentation/getting_started/reference/static-site-generation) is enabled. This allows you to add a search box to you website, which performs a full-text search to provide quick access to pages. The solara website itself uses the
 search feature as well in the toolbar.
 
 ## Using Solara's Search feature.
