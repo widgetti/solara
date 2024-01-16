@@ -15,9 +15,9 @@
     {{ pre_rendered_css | safe }}
 
     {% if vue3 == True %}
-    <link href="{{cdn}}/@widgetti/solara-vuetify3-app@1.1.0/dist/main.css" rel="stylesheet"></link>
+    <link href="{{cdn}}/@widgetti/solara-vuetify3-app@1.1.0/dist/main{{ipywidget_major_version}}.css" rel="stylesheet"></link>
     {% else %}
-    <link href="{{cdn}}/@widgetti/solara-vuetify-app@6.1.0/dist/main.css" rel="stylesheet"></link>
+    <link href="{{cdn}}/@widgetti/solara-vuetify-app@6.1.0/dist/main{{ipywidget_major_version}}.css" rel="stylesheet"></link>
     {% endif %}
 
 

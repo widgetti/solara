@@ -46,7 +46,7 @@ module.exports = [
         mode: 'production',
     },
     {
-        plugins: [new MiniCssExtractPlugin()],
+        plugins: [new MiniCssExtractPlugin({filename: 'main7.css'})],
         entry: './src/solara-vuetify-app.js',
         output: {
             filename: 'solara-vuetify-app7.min.js',
@@ -60,7 +60,7 @@ module.exports = [
         mode: 'production',
     },
     {
-        plugins: [new MiniCssExtractPlugin()],
+        plugins: [new MiniCssExtractPlugin({filename: 'main7.css'})],
         entry: './src/solara-vuetify-app.js',
         output: {
             filename: 'solara-vuetify-app7.js',
@@ -75,7 +75,7 @@ module.exports = [
         mode: 'development',
     },
     {
-        plugins: [new MiniCssExtractPlugin(), ...analyzerPlugins],
+        plugins: [new MiniCssExtractPlugin({filename: 'main8.css'}), ...analyzerPlugins],
         entry: './src/solara-vuetify-app.js',
         output: {
             filename: 'solara-vuetify-app8.min.js',
@@ -105,7 +105,7 @@ module.exports = [
         },
         mode: 'production',
     }, {
-        plugins: [new MiniCssExtractPlugin()],
+        plugins: [new MiniCssExtractPlugin({filename: 'main8.css'})],
         entry: './src/solara-vuetify-app.js',
         output: {
             filename: 'solara-vuetify-app8.js',
