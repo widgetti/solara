@@ -1,6 +1,6 @@
 # Development
 
-See also [the contributing guide](/documentation/advanced/howto/contribute) for more information on how to contribute to Solara.
+See also [the contributing guide](/documentation/advanced/development/contribute) for more information on how to contribute to Solara.
 ## Development setup
 
 Assuming you have created a virtual environment as described in [the installation guide](/documentation/getting_started/installing), you can install a development install of Solara using:

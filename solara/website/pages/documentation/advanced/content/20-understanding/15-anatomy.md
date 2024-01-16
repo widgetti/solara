@@ -12,7 +12,7 @@ As a reference, we provide this "anatomy" image of our favorite `ClickButton` co
  * Start with `use_state` hooks and other hooks. This avoids issues with [conditional hooks](/documentation/advanced/understanding/rules-of-hooks) or hooks in loops.
  * Data/state flows down (to children)
  * Information (events, data) flows up from children via events and callbacks (`on_<some_event_name>=my_callback`).
- * If you need multiple components, use a [parent container component](/api#layout) as context manager. A good default name to give this context manager is `main`. Don't forget to return it in your render function!
+ * If you need multiple components, use a [parent container component](/documentation/components/layout/app_layout) as context manager. A good default name to give this context manager is `main`. Don't forget to return it in your render function!
  * The body of your component (the function you wrote) is called the render function.
  * In between the hooks as defining all your elements, you put your custom code, like checking variables, defining callbacks, and other logic.
  * The only way for a component to cause itself to rerender is to have state (using `use_state`) and change it (calling the second return value with a different value).

@@ -127,7 +127,7 @@ def Layout(children=[]):
                         with solara.HBox():
                             with solara.Link("/documentation"):
                                 solara.Button(label="Read more", class_="ma-1 homepage-button", href="/documentation", color="primary", dark=True)
-                            with solara.Link("/documentation/getting_started/quickstart"):
+                            with solara.Link("/documentation/getting_started"):
                                 solara.Button(label="Quickstart", class_="ma-1 homepage-button", color="primary", dark=True)
                     # with rv.Col(md=4, sm=5):
                     #     rv.Img(src="https://dxhl76zpt6fap.cloudfront.net/public/landing/what.webp", style_="width:900px")
@@ -199,7 +199,7 @@ def Layout(children=[]):
                                     In Jupyter or standalone, and run them in production
                                     using FastAPI or starlette.
 
-                                    Get more inspiration from our [examples](/examples).
+                                    Get more inspiration from our [examples](/documentation/examples).
                                 """
                             )
                             with rv.ExpansionPanels(v_model=target, on_v_model=set_target, mandatory=True, flat=True):

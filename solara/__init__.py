@@ -80,7 +80,7 @@ def display(*objs, **kwargs):
       * [Plotly](/documentation/components/viz/plotly)
       * [Altair](/documentation/components/viz/altair)
       * [Matplotlib](/documentation/components/viz/matplotlib)
-      * [Dataframe](/documentation/components/viz/dataframe)
+      * [Dataframe](/documentation/components/data/dataframe)
 
     ```solara
     import solara

@@ -111,7 +111,7 @@ If you want to know what components or hooks are available, or want to know more
 If you feel like you miss some basic understanding and want to give a bit deeper into the what and why feel free to explore the [Understanding section](/documentation/advanced/understanding).
 
 
-[Our examples](/examples) may help you see how particular problems can be solved using Solara, or as inspiration. If you want to contribute an example, contact us on GitHub or directly open a [Pull Request](https://github.com/widgetti/solara/).
+[Our examples](/documentation/examples) may help you see how particular problems can be solved using Solara, or as inspiration. If you want to contribute an example, contact us on GitHub or directly open a [Pull Request](https://github.com/widgetti/solara/).
 
 
 ## Where can I hire an expert?

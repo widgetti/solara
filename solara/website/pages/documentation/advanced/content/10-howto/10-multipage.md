@@ -42,8 +42,7 @@ Solara now:
    * Generate a nice URL by stripping of prefix, splitting the filename taking out `-`, `_` and spaces, and join them together using a `-`  (e.g. "/markdown-editor").
    * Generate a nice default title similar to the link, but now capitalize the first letter and join with a space instead  (e.g. "Mardown Editor").
    * The first page will be the default (and its URL will be empty instead, i.e., the empty string `""`)
-   * Since the first script does not define a `Layout` component, nor did we add a `__init__.py` with a `Layout` component, Solara will add a [default
-     Layout component](/api/default_layout) which includes a navigation sidebar.
+   * Since the first script does not define a `Layout` component, nor did we add a `__init__.py` with a `Layout` component, Solara will add a [Layout component](/documentation/components/layout/app_layout) which includes a navigation sidebar.
    * If a path is a directory, Solara will recursively scan the subdirectory and include it in the navigation. Read more on this in the [Layout section](layout)
 
 Solara will render two pages:

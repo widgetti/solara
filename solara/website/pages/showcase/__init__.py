@@ -9,7 +9,7 @@ def Page():
         with solara.Card("Wanderlust", style={"height": "100%"}):
             solara.Markdown(
                 """
-            [Wanderlust](./wanderlust) is a reproduction of the travel assistant demo shown at the
+            [Wanderlust](/showcase/wanderlust) is a reproduction of the travel assistant demo shown at the
             [OpenAI DevDay](https://devday.openai.com/) 2023, built using Solara and the OpenAI Assistants API.
             """
             )

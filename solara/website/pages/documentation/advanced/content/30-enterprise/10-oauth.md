@@ -8,7 +8,7 @@ You have probably used OAuth without realizing it when signing into various onli
 
 ## Installing
 
-To install Solara with OAuth support, make sure you have [Solara Enterprise](/docs/enterprise) install by run the following command:
+To install Solara with OAuth support, make sure you have [Solara Enterprise](/documentation/advanced/enterprise) install by run the following command:
 
 ```bash
 $ pip install solara solara-enterprise[auth]
