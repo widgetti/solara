@@ -375,6 +375,7 @@ def solara_comm_target(comm, msg_first):
             context = kernel_context.get_current_context()
             path = data.get("path", "")
             with context:
+                context.restart()
                 load_app_widget(context.state, app, path)
                 comm.send({"method": "finished"})
         else:
