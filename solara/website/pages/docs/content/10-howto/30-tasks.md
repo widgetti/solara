@@ -73,7 +73,7 @@ def Page():
     def get_country_data():
         return requests.get(f"https://restcountries.com/v3.1/name/{country.value}").json()[0]
 
-    result = use_task(get_country_data, call=True, dependencies=[country.value])
+    result = use_task(get_country_data, dependencies=[country.value])
 
     solara.Select("Choose country", value=country, values=countries)
     solara.ProgressLinear(result.state == solara.ResultState.RUNNING)
