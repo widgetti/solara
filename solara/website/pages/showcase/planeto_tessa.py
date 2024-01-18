@@ -16,4 +16,4 @@ def Page():
         same technology stack.
         """
         )
-        solara.Image("/static/public/showcase/tessa/thumbnail.png", width="100%", classes=["pt-12"])
+        solara.Image("https://dxhl76zpt6fap.cloudfront.net/public/showcase/tessa/thumbnail.png", width="100%", classes=["pt-12"])

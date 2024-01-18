@@ -14,7 +14,7 @@ def Page():
             """
             )
             with solara.Link("./wanderlust"):
-                solara.Image("/static/public/showcase/wanderlust/thumbnail.png", width="100%")
+                solara.Image("https://dxhl76zpt6fap.cloudfront.net/public/showcase/wanderlust/thumbnail.png", width="100%")
             with solara.v.Html(tag="a", attributes={"href": "https://github.com/widgetti/wanderlust", "target": "_blank"}):
                 with solara.Row(style={"min-height": "24px"}):
                     solara.v.Icon(children=["mdi-github-circle"], x_large=True, class_="mr-2")
@@ -27,7 +27,7 @@ def Page():
             """
             )
             with solara.Link("./domino_code_assist"):
-                solara.Image("/static/public/showcase/lca/thumbnail.png", width="100%")
+                solara.Image("https://dxhl76zpt6fap.cloudfront.net/public/showcase/lca/thumbnail.png", width="100%")
 
         with solara.Card("TESSA", style={"height": "100%"}):
             solara.Markdown(
@@ -36,7 +36,7 @@ def Page():
             """
             )
             with solara.Link("./planeto_tessa"):
-                solara.Image("/static/public/showcase/tessa/thumbnail.png", width="100%")
+                solara.Image("https://dxhl76zpt6fap.cloudfront.net/public/showcase/tessa/thumbnail.png", width="100%")
 
         with solara.Card("Bulk labeling", style={"height": "100%"}):
             solara.Markdown(
@@ -65,4 +65,4 @@ def Page():
             """
             )
             with solara.Link("./solara_dev"):
-                solara.Image("/static/public/showcase/solara/thumbnail.png", width="100%")
+                solara.Image("https://dxhl76zpt6fap.cloudfront.net/public/showcase/solara/thumbnail.png", width="100%")

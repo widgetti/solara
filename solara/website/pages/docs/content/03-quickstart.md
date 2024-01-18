@@ -73,7 +73,7 @@ display(Page())
 
 You should see the following output:
 
-<img src="/static/public/quickstart-notebook.png" alt="Markdown Monster icon" style="border: 1px solid #ccc;" />
+<img src="https://dxhl76zpt6fap.cloudfront.net/public/quickstart-notebook.webp" alt="Markdown Monster icon" style="border: 1px solid #ccc;" />
 
 In case you forgot how to start a notebook server:
 

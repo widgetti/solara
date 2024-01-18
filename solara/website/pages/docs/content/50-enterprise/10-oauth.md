@@ -82,15 +82,15 @@ To create your own Auth0 application, follow these steps:
 
 1. Go to the [Auth0 dashboard](https://manage.auth0.com/dashboard/) and click on "Applications" on the left side navigation menu.
 
-    ![Auth0 dashboard](/static/public/docs/enterprise/oauth/goto-applications.png)
+    ![Auth0 dashboard](https://dxhl76zpt6fap.cloudfront.net/public/docs/enterprise/oauth/goto-applications.webp)
 
 2. Click on "Create Application".
 
-    ![Create Application](/static/public/docs/enterprise/oauth/click-create-application.png)
+    ![Create Application](https://dxhl76zpt6fap.cloudfront.net/public/docs/enterprise/oauth/click-create-application.webp)
 
 3. Enter a name for your application and select "Regular Web Applications" as the application type. Click on "Create".
 
-    ![Create Application](/static/public/docs/enterprise/oauth/name-type-create.png)
+    ![Create Application](https://dxhl76zpt6fap.cloudfront.net/public/docs/enterprise/oauth/name-type-create.webp)
 
 4. Click "Skip Integration" to skip the integration step.
 
@@ -102,7 +102,7 @@ To create your own Auth0 application, follow these steps:
     Note that the localhost URLs are only meant for testing. You can remove them once you are ready to deploy your application.
     We recommend setting up a new application for each environment (e.g. development, staging, production).
 
-    ![Callback URLs](/static/public/docs/enterprise/oauth/callbacks.png)
+    ![Callback URLs](https://dxhl76zpt6fap.cloudfront.net/public/docs/enterprise/oauth/callbacks.webp)
 
 6. Configure Solara.
 
@@ -114,7 +114,7 @@ To create your own Auth0 application, follow these steps:
     SOLARA_OAUTH_CLIENT_SECRET="..."  # not shown here, replace with your client secret
     ```
 
-    ![Settings](/static/public/docs/enterprise/oauth/configuration-values.png)
+    ![Settings](https://dxhl76zpt6fap.cloudfront.net/public/docs/enterprise/oauth/configuration-values.webp)
 
     Set your `SOLARA_SESSION_SECRET_KEY` to a random string. See the [Generating a secret key](#generating-a-secret-key) for a convenient way to generate a secret key.
 

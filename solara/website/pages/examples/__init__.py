@@ -1,8 +1,6 @@
 # import inspect
 # import urllib.parse
 
-from pathlib import Path
-
 import solara
 
 title = "Examples"
@@ -20,21 +18,35 @@ def Page():
             with solara.ColumnsResponsive(12, 6, 6, 6, 4):
                 for child in route.children:
                     path = route.path + "/" + child.path
-                    image = path + ".png"
-                    image_path = Path(__file__).parent.parent.parent / "public" / "examples" / image
-                    image_url = "/static/public/examples/" + image
-                    if not image_path.exists():
-                        image_url = "/static/public/logo.svg"
+                    if child.path in [
+                        "tokenizer",
+                        "sine",
+                        "authorization",
+                        "layout_demo",
+                        "multipage",
+                        "scatter",
+                        "scrolling",
+                        "tutorial_streamlit",
+                        "login_oauth",
+                        "pokemon_search",
+                        "altair",
+                        "bqplot",
+                        "ipyleaflet",
+                        "calculator",
+                        "countdown_timer",
+                        "todo",
+                    ]:
+                        image = route.path + "/" + child.path + ".png"
+                        image_url = "https://dxhl76zpt6fap.cloudfront.net/public/examples/" + image
+                    else:
+                        image_url = "https://dxhl76zpt6fap.cloudfront.net/public/logo.svg"
 
                     path = getattr(child.module, "redirect", path)
                     if path:
                         with solara.Card(child.label, style="height: 100%;"):
                             with solara.Link(path):
-                                if not image_path.exists():
-                                    with solara.Column(align="center"):
-                                        solara.Image(image_url, width="120px")
-                                else:
-                                    solara.Image(image_url, width="100%")
+                                with solara.Column(align="center"):
+                                    solara.Image(image_url, width="120px" if image_url.endswith(".svg") else "100%")
 
 
 @solara.component

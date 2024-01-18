@@ -3,7 +3,7 @@
 For communication, it is useful to speak the same language and use the same idiom.
 As a reference, we provide this "anatomy" image of our favorite `ClickButton` component with a layout that we consider best practice.
 
-![anatomy](/static/public/docs/anatomy.png)
+![anatomy](https://dxhl76zpt6fap.cloudfront.net/public/docs/anatomy.webp)
 
 ## Explanations
 

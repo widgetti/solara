@@ -128,11 +128,11 @@ def Layout(children=[]):
                             with solara.Link("/docs/quickstart"):
                                 solara.Button(label="Quickstart", class_="ma-1", color="#f19f41", dark=True)
                     # with rv.Col(md=4, sm=5):
-                    #     rv.Img(src="/static/public/landing/what.png", style_="width:900px")
+                    #     rv.Img(src="https://dxhl76zpt6fap.cloudfront.net/public/landing/what.webp", style_="width:900px")
 
                 with solara.Column(style={"width": "100%"}, gap="2.5em", classes=["pt-10", "mt-8"], align="center"):
                     with solara.Row(justify="center", gap="2.5em", classes=["ma-2", "row-container"]):
-                        rv.Img(src="/static/public/landing/complexity.png")
+                        rv.Img(src="https://dxhl76zpt6fap.cloudfront.net/public/landing/complexity.webp")
                         solara.Markdown(
                             """
                         # Build **large** apps with **low** code complexity
@@ -158,7 +158,7 @@ def Layout(children=[]):
                         """
                         )
                         with solara.Row(justify="center", style={"width": "500px"}):
-                            rv.Img(src="/static/public/landing/python-love-react.png", style_="max-width:300px")
+                            rv.Img(src="https://dxhl76zpt6fap.cloudfront.net/public/landing/python-love-react.webp", style_="max-width:300px")
                     with solara.Row(justify="center", gap="2.5em", classes=["ma-2", "row-container"]):
                         with solara.Column():
                             if target == 0:
@@ -222,19 +222,19 @@ def Layout(children=[]):
                             "Solara is like streamlit, but for Jupyter. I am really excited to see where this goes!",
                             "Jack Parmer",
                             "Former CEO and Co-Founder of Plotly",
-                            "/static/public/avatar/jack-parmer.jpg",
+                            "https://dxhl76zpt6fap.cloudfront.net/public/avatar/jack-parmer.jpg",
                         )
                         Testimonial(
                             "Solara has been transformative, allowing us to rapidly create a Jupyter app and iterate with impressive speed.",
                             "Nick Elprin",
                             "CEO and Co-Founder of Domino Data Lab",
-                            "/static/public/avatar/nick-elprin.jpg",
+                            "https://dxhl76zpt6fap.cloudfront.net/public/avatar/nick-elprin.jpg",
                         )
                         Testimonial(
                             "Solara allows us to go from prototype to production with the same stack.",
                             "Jonathan Chambers",
                             "Co-founder of Planeto",
-                            "/static/public/avatar/jonathan-chambers.jpg",
+                            "https://dxhl76zpt6fap.cloudfront.net/public/avatar/jonathan-chambers.jpg",
                         )
 
                 with solara.Column(style={"width": "100%"}):
@@ -244,7 +244,7 @@ def Layout(children=[]):
                     solara.Markdown("# Sponsors", style="text-align:center")
                     with solara.Row(justify="center", gap="2.5em", style={"align-items": "stretch"}):
                         with solara.v.Html(tag="a", attributes={"href": "https://www.dominodatalab.com/", "target": "_blank"}):
-                            solara.Image("/static/public/sponsors/domino.png", width="300px")
+                            solara.Image("https://dxhl76zpt6fap.cloudfront.net/public/sponsors/domino.png", width="300px")
 
                 with solara.Column(style={"width": "100%"}):
                     solara.v.Divider()
