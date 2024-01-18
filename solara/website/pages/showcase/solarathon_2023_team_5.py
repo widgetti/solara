@@ -17,4 +17,7 @@ def Page():
                 """
             )
         with solara.v.Html(tag="video", attributes={"controls": "controls", "autoplay": "autoplay"}, style_="width:100%;"):
-            solara.v.Html(tag="source", attributes={"src": "/static/public/showcase/solarathon_2023_team_5/preview.webm", "type": "video/webm"})
+            solara.v.Html(
+                tag="source",
+                attributes={"src": "https://dxhl76zpt6fap.cloudfront.net/public/showcase/solarathon_2023_team_5/preview.webm", "type": "video/webm"},
+            )
