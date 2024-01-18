@@ -1,17 +1,8 @@
-"""# task
+"""# use_task
 
-Decorator to turn a function or coroutine function into a task.
-A task is a callable that will run the function in a separate thread for normal functions
-or a asyncio task for a coroutine function.
+A hook that allows you to run code in the background, with the UI available to the user. This is useful for long running tasks, like downloading data.
 
-The task callable does will only execute the function once when called multiple times,
-and will cancel previous executions if the function is called again before the previous finished.
-
-
-The wrapped function return value is available as the `.value` attribute of the task object.
-
-
-
+Note that unlike with the `@task` decorator, the result is not globally shared, but only available to the component that called `use_task`.
 
 """
 import solara
