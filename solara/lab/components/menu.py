@@ -90,7 +90,7 @@ def ContextMenu(
 
     @solara.component
     def Page():
-        image_url = "https://solara.dev/static/public/beach.jpeg"
+        image_url = "/static/public/beach.jpeg"
         image = solara.Image(image=image_url)
 
         with solara.lab.ContextMenu(activator=image):
