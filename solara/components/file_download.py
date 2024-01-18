@@ -58,7 +58,7 @@ def FileDownload(
     def Page():
         with solara.FileDownload(data, "solara-download-2.txt"):
             solara.Markdown("Any text, or even an image")
-            solara.Image("solara.dev/static/public/beach.jpeg", width="200px")
+            solara.Image("https://solara.dev/static/public/beach.jpeg", width="200px")
     ```
 
     ## Custom button
