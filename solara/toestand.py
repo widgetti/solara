@@ -498,72 +498,85 @@ class FieldItem(FieldBase):
                 self._parent.set(parent_value)
 
 
-class AutoSubscribeContextManager:
+class AutoSubscribeContextManagerBase:
     # a render loop might trigger a new render loop of a differtent render context
     # so we want to save, and restore the current reactive_used
     reactive_used: Optional[Set[ValueBase]] = None
     reactive_added_previous_run: Optional[Set[ValueBase]] = None
     subscribed: Dict[ValueBase, Callable]
 
-    def __init__(self, element: solara.Element):
-        self.element = element
+    def __init__(self):
         self.subscribed = {}
+
+    def update_subscribers(self, change_handler, scope=None):
+        assert self.reactive_used is not None
+        reactive_used = self.reactive_used
+        # remove subfields for which we already listen to it's root reactive value
+        reactive_used_subfields = {k for k in reactive_used if isinstance(k, ValueSubField)}
+        reactive_used = reactive_used - reactive_used_subfields
+        # only add subfield for which we don't listen to it's parent
+        for reactive_used_subfield in reactive_used_subfields:
+            if reactive_used_subfield._root not in reactive_used:
+                reactive_used.add(reactive_used_subfield)
+        added = reactive_used - (self.reactive_added_previous_run or set())
+
+        removed = (self.reactive_added_previous_run or set()) - reactive_used
+
+        for reactive in added:
+            if reactive not in self.subscribed:
+                unsubscribe = reactive.subscribe_change(change_handler, scope=scope)
+                self.subscribed[reactive] = unsubscribe
+        for reactive in removed:
+            unsubscribe = self.subscribed[reactive]
+            unsubscribe()
+            del self.subscribed[reactive]
+        self.reactive_added_previous_run = added
+
+    def unsubscribe_all(self):
+        for reactive in self.subscribed:
+            unsubscribe = self.subscribed[reactive]
+            unsubscribe()
 
     def __enter__(self):
         self.reactive_used_before = thread_local.reactive_used
         self.reactive_used = thread_local.reactive_used = set()
-
         assert thread_local.reactive_used is self.reactive_used, f"{hex(id(thread_local.reactive_used))} vs {hex(id(self.reactive_used))}"
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        thread_local.reactive_used = self.reactive_used_before
+
+
+class AutoSubscribeContextManagerReacton(AutoSubscribeContextManagerBase):
+    def __init__(self, element: solara.Element):
+        self.element = element
+        super().__init__()
+
+    def __enter__(self):
         _, set_counter = solara.use_state(0, key="auto_subscribe_force_update_counter")
 
-        def update_listeners():
-            assert self.reactive_used is not None
-            reactive_used = self.reactive_used
-            # remove subfields for which we already listen to it's root reactive value
-            reactive_used_subfields = {k for k in reactive_used if isinstance(k, ValueSubField)}
-            reactive_used = reactive_used - reactive_used_subfields
-            # only add subfield for which we don't listen to it's parent
-            for reactive_used_subfield in reactive_used_subfields:
-                if reactive_used_subfield._root not in reactive_used:
-                    reactive_used.add(reactive_used_subfield)
-            added = reactive_used - (self.reactive_added_previous_run or set())
+        def force_update(new_value, old_value):
+            # can we do just x+1 to collapse multiple updates into one?
+            set_counter(lambda x: x + 1)
 
-            removed = (self.reactive_added_previous_run or set()) - reactive_used
+        super().__enter__()
 
-            for reactive in added:
-                if reactive not in self.subscribed:
+        def update_subscribers():
+            self.update_subscribers(force_update, scope=reacton.core.get_render_context(required=True))
 
-                    def force_update(new_value, old_value, _reactive=reactive):
-                        # can we do just x+1 to collapse multiple updates into one?
-                        set_counter(lambda x: x + 1)
-
-                    unsubscribe = reactive.subscribe_change(force_update, scope=reacton.core.get_render_context(required=True))
-                    self.subscribed[reactive] = unsubscribe
-            for reactive in removed:
-                unsubscribe = self.subscribed[reactive]
-                unsubscribe()
-                del self.subscribed[reactive]
-            self.reactive_added_previous_run = added
-
-        solara.use_effect(update_listeners, None)
+        solara.use_effect(update_subscribers, None)
 
         def on_close():
             def cleanup():
                 assert self.reactive_added_previous_run is not None
-                for reactive in self.subscribed:
-                    unsubscribe = self.subscribed[reactive]
-                    unsubscribe()
+                self.unsubscribe_all()
 
             return cleanup
 
         solara.use_effect(on_close, [])
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        pass
-
 
 # alias for compatibility
 State = Reactive
 
-auto_subscribe_context_manager = AutoSubscribeContextManager
+auto_subscribe_context_manager = AutoSubscribeContextManagerReacton
 reacton.core._component_context_manager_classes.append(auto_subscribe_context_manager)
