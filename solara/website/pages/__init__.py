@@ -132,7 +132,7 @@ def Layout(children=[]):
 
                 with solara.Column(style={"width": "100%"}, gap="2.5em", classes=["pt-10", "mt-8"], align="center"):
                     with solara.Row(justify="center", gap="2.5em", classes=["ma-2", "row-container"]):
-                        rv.Img(src="https://dxhl76zpt6fap.cloudfront.net/public/landing/complexity.webp")
+                        rv.Img(src="https://dxhl76zpt6fap.cloudfront.net/public/landing/complexity.webp", contain=True)
                         solara.Markdown(
                             """
                         # Build **large** apps with **low** code complexity
@@ -158,7 +158,7 @@ def Layout(children=[]):
                         """
                         )
                         with solara.Row(justify="center", style={"width": "500px"}):
-                            rv.Img(src="https://dxhl76zpt6fap.cloudfront.net/public/landing/python-love-react.webp", style_="max-width:300px")
+                            rv.Img(src="https://dxhl76zpt6fap.cloudfront.net/public/landing/python-love-react.webp", style_="max-width:300px", contain=True)
                     with solara.Row(justify="center", gap="2.5em", classes=["ma-2", "row-container"]):
                         with solara.Column():
                             if target == 0:
