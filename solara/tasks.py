@@ -30,19 +30,16 @@ logger = logging.getLogger("solara.task")
 class Task(Generic[P, R], abc.ABC):
     def __init__(self):
         self.result = solara.reactive(
-            # cast(Optional[solara.Result[R]], None)
             solara.Result[R](
                 value=None,
                 state=solara.ResultState.INITIAL,
             )
         )
-        # self.thread_pool = ThreadPoolExecutor(max_workers=1)
         self.last_value: Optional[R] = None
 
     def reset(self):
         self.running_thread = None
         self.cancel()
-        # self.result.value = None
 
     @property
     def value(self) -> Optional[R]:
@@ -88,13 +85,9 @@ class TaskAsyncio(Task[P, R]):
 
         def retry():
             self.__call__(*args, **kwargs)
-            # nonlocal task_for_this_call
-            # task_for_this_call.cancel()
-            # self.current_task = task_for_this_call = asyncio.create_task(runner())
 
         def cancel():
             assert task_for_this_call is not None
-            # assert asyncio.current_task() != task_for_this_call
             if asyncio.current_task() == task_for_this_call:
                 raise asyncio.CancelledError()
             else:
@@ -153,7 +146,7 @@ class TaskThreaded(Task[P, R]):
 
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> None:
         self._last_finished_event = _last_finished_event = threading.Event()
-        self.current_thread = threading.Thread(target=lambda: self._run(_last_finished_event, *args, **kwargs), daemon=True)
+        self.current_thread = current_thread = threading.Thread(target=lambda: self._run(_last_finished_event, *args, **kwargs), daemon=True)
 
         def retry():
             self._run(_last_finished_event, *args, **kwargs)
@@ -163,7 +156,7 @@ class TaskThreaded(Task[P, R]):
             "_retry": retry,
         }
         self.result.value = solara.Result[R](value=self.last_value, state=solara.ResultState.STARTING, **common)
-        self.current_thread.start()
+        current_thread.start()
 
     def _run(self, _last_finished_event, *args: P.args, **kwargs: P.kwargs) -> None:
         def retry():
@@ -258,21 +251,21 @@ class _CommonArgs(typing_extensions.TypedDict):
 
 
 # TODO: Not sure if we want to use this, or have all local variables in Task subclasses be reactive vars
-class TaskProxy:
+class Proxy:
     def __init__(self, factory):
-        self.task = Singleton(factory)
+        self._instance = Singleton(factory)
 
     def __getattr__(self, name):
-        return getattr(self.task.value, name)
+        return getattr(self._instance.value, name)
 
     def __setattr__(self, name, value):
-        if name == "task":
+        if name == "_instance":
             super().__setattr__(name, value)
         else:
-            setattr(self.task.value, name, value)
+            setattr(self._instance.value, name, value)
 
     def __call__(self, *args, **kwargs):
-        return self.task.value(*args, **kwargs)
+        return self._instance.value(*args, **kwargs)
 
 
 # TODO: coroutine typing
@@ -333,7 +326,7 @@ def task(
             else:
                 return TaskThreaded[P, R](cast(Callable[P, R], function))
 
-        return cast(Task[P, R], TaskProxy(create_task))
+        return cast(Task[P, R], Proxy(create_task))
 
     if function is None:
         return wrapper
