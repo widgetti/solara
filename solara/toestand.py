@@ -402,6 +402,72 @@ class Computed(Reactive[S]):
         return "<Computed" + value[len("<Reactive") : -1]
 
 
+@overload
+def computed(
+    f: None,
+    *,
+    key: Optional[str] = ...,
+) -> Callable[[Callable[[], T]], Reactive[T]]:
+    ...
+
+
+@overload
+def computed(
+    f: Callable[[], T],
+    *,
+    key: Optional[str] = ...,
+) -> Reactive[T]:
+    ...
+
+
+def computed(
+    f: Union[None, Callable[[], T]],
+    *,
+    key: Optional[str] = None,
+) -> Union[Callable[[Callable[[], T]], Reactive[T]], Reactive[T]]:
+    """Creates a reactive variable that is set to the return value of the function.
+
+    The value will be updated when any of the reactive variables used in the function
+    change.
+
+    ## Example
+
+    ```solara
+    import solara
+    import solara.lab
+
+
+    a = solara.reactive(1)
+    b = solara.reactive(2)
+
+    @solara.lab.computed
+    def total():
+        return a.value + b.value
+
+    def reset():
+        a.value = 1
+        b.value = 2
+
+    @solara.component
+    def Page():
+        print(a, b, total)
+        solara.IntSlider("a", value=a)
+        solara.IntSlider("b", value=b)
+        solara.Text(f"a + b = {total.value}")
+        solara.Button("reset", on_click=reset)
+    ```
+
+    """
+
+    def wrapper(f: Callable[[], T]):
+        return Computed(f, key=key)
+
+    if f is None:
+        return wrapper
+    else:
+        return wrapper(f)
+
+
 class ValueSubField(ValueBase[T]):
     def __init__(self, field: "FieldBase"):
         super().__init__()  # type: ignore

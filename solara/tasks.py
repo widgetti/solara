@@ -334,7 +334,23 @@ def task(
         return wrapper(function)
 
 
-def use_task(f: Callable[P, R], dependencies=[], *, raise_error=True) -> Union[Task[P, R], solara.Result[R]]:
+@overload
+def use_task(
+    f: None = None,
+) -> Callable[[Callable[[], R]], solara.Result[R]]:
+    ...
+
+
+@overload
+def use_task(
+    f: Callable[P, R],
+) -> solara.Result[R]:
+    ...
+
+
+def use_task(
+    f: Union[None, Callable[[], R]] = None, dependencies=[], *, raise_error=True
+) -> Union[Callable[[Callable[[], R]], solara.Result[R]], solara.Result[R]]:
     """Run a function or coroutine as a task and return the result.
 
     ## Example
@@ -398,14 +414,21 @@ def use_task(f: Callable[P, R], dependencies=[], *, raise_error=True) -> Union[T
 
 
     """
-    task_instance = solara.use_memo(lambda: task(f), dependencies=dependencies)
 
-    def run():
-        task_instance()
-        return task_instance.cancel
+    def wrapper(f):
+        task_instance = solara.use_memo(lambda: task(f), dependencies=dependencies)
 
-    solara.use_effect(run, dependencies=dependencies)
-    if raise_error:
-        if task_instance.state == solara.ResultState.ERROR and task_instance.error is not None:
-            raise task_instance.error
-    return task_instance.result.value
+        def run():
+            task_instance()
+            return task_instance.cancel
+
+        solara.use_effect(run, dependencies=dependencies)
+        if raise_error:
+            if task_instance.state == solara.ResultState.ERROR and task_instance.error is not None:
+                raise task_instance.error
+        return task_instance.result.value
+
+    if f is None:
+        return wrapper
+    else:
+        return wrapper(f)

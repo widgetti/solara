@@ -2,6 +2,7 @@
 from .components import *  # noqa: F401, F403
 from ..server.kernel_context import on_kernel_start  # noqa: F401
 from ..tasks import task, use_task, Task  # noqa: F401, F403
+from ..toestand import computed  # noqa: F401
 
 
 def __getattr__(name):
