@@ -7,6 +7,7 @@ import threading
 from enum import Enum
 from typing import (
     Any,
+    Awaitable,
     Callable,
     Coroutine,
     Generic,
@@ -850,3 +851,94 @@ def use_task(
         return wrapper
     else:
         return wrapper(f)
+
+
+@overload
+def reactive_task(
+    function: None = None,
+) -> Callable[[Callable[[], R]], solara.Reactive[solara.Result[R]]]:
+    ...
+
+
+@overload
+def reactive_task(
+    function: Callable[[], R],
+) -> solara.Reactive[solara.Result[R]]:
+    ...
+
+
+def reactive_task(
+    function: Union[None, Callable[[], Union[Coroutine[Any, Any, R], R]]] = None,
+) -> Union[Callable[[Callable[[], R]], solara.Reactive[solara.Result[R]]], solara.Reactive[solara.Result[R]]]:
+    """Decorator to turn a function into a task that auto-executes when one of its dependencies changes.
+
+
+    The decorator returns a [reactive variable](/api/reactive) with the Result object as its value.
+
+    ## Example
+
+    ```solara
+    import asyncio
+    import time
+    import solara
+    from solara.lab import reactive_task
+
+
+    x = solara.reactive(2)
+
+    # now x_square is a Reactive[Result[int]]
+    @reactive_task
+    async def x_square():
+        await asyncio.sleep(2)
+        a = b
+        return x.value**2
+
+
+    @solara.component
+    def Page():
+        solara.SliderInt("x", value=x, min=0, max=10)
+        if x_square.value.state == solara.ResultState.FINISHED:
+            solara.Text(repr(x_square.value.value))
+        solara.ProgressLinear(x_square.value.state == solara.ResultState.RUNNING)
+
+    ```
+
+    """
+
+    def wrapper(func: Callable[[], Union[Coroutine[Any, Any, R], R]]) -> solara.Reactive[solara.Result[R]]:
+        from solara.toestand import AutoSubscribeContextManager
+
+        def create_task():
+            auto_subscriber: AutoSubscribeContextManager
+            if inspect.iscoroutinefunction(function):
+                task: Task[[], R]
+
+                async def run_function_with_auto_subscribe_async():
+                    with auto_subscriber:
+                        return await cast(Awaitable[R], func())
+
+                task = TaskAsyncio(run_function_with_auto_subscribe_async)
+            else:
+
+                def run_function_with_auto_subscribe():
+                    with auto_subscriber:
+                        return func()
+
+                task = TaskThreaded(cast(Callable[[], R], run_function_with_auto_subscribe))
+
+            def on_reactive_variable_change(old_value, new_value):
+                task()
+
+            auto_subscriber = AutoSubscribeContextManager(on_reactive_variable_change)
+            # used in tests
+            task.result._task = task  # type: ignore
+            task.result._auto_subscriber = auto_subscriber  # type: ignore
+            task()
+            return task.result
+
+        return cast(solara.Reactive[solara.Result[R]], Proxy(create_task))
+
+    if function is None:
+        return wrapper
+    else:
+        return wrapper(function)

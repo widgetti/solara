@@ -559,3 +559,49 @@ async def test_use_task_async(prefer_threaded):
             raise TimeoutError("took too long, state = " + str(task._state))
     assert task._state == TaskState.FINISHED
     assert last_value == 99
+
+
+def test_reactive_task(no_kernel_context):
+    context_id = "1"
+    x = solara.reactive(1)
+    y = solara.reactive(2)
+    calls = 0
+
+    from solara.tasks import reactive_task
+
+    def conditional_add():
+        nonlocal calls
+        calls += 1
+        if x.value == 0:
+            return 42
+        else:
+            return x.value + y.value
+
+    z = reactive_task(conditional_add)
+
+    kernel1 = kernel.Kernel()
+    context1 = kernel_context.VirtualKernelContext(id="1", kernel=kernel1, session_id="session-1")
+    with context1:
+        # assert z._auto_subscriber.value.reactive_used is None
+        assert z.value.value is None
+        z._task._last_finished_event.wait()  # type: ignore
+        assert z._auto_subscriber.reactive_used == {x, y}  # type: ignore
+        assert z.value.value == 3
+        # assert z._auto_subscriber.subscribed == 1
+        assert len(x._storage.listeners[context_id]) == 0
+        assert len(x._storage.listeners2[context_id]) == 1
+        assert len(y._storage.listeners[context_id]) == 0
+        assert len(y._storage.listeners2[context_id]) == 1
+        assert calls == 1
+        x.value = 2
+        z._task._last_finished_event.wait()  # type: ignore
+        assert z.value.value == 4
+        assert z._auto_subscriber.reactive_used == {x, y}  # type: ignore
+        assert calls == 2
+        y.value = 3
+        z._task._last_finished_event.wait()  # type: ignore
+        assert z.value.value == 5
+        assert z._auto_subscriber.reactive_used == {x, y}  # type: ignore
+        assert calls == 3
+        assert len(x._storage.listeners2[context_id]) == 1
+        assert len(y._storage.listeners2[context_id]) == 1

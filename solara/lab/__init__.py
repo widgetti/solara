@@ -2,7 +2,7 @@
 from .components import *  # noqa: F401, F403
 from .utils import cookies, headers  # noqa: F401, F403
 from ..server.kernel_context import on_kernel_start  # noqa: F401
-from ..tasks import task, use_task, Task, TaskResult  # noqa: F401, F403
+from ..tasks import reactive_task, task, use_task, Task, TaskResult  # noqa: F401, F403
 from ..toestand import computed  # noqa: F401
 
 
