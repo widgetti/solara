@@ -2,7 +2,9 @@
 
 A hook that allows you to run code in the background, with the UI available to the user. This is useful for long running tasks, like downloading data.
 
-Note that unlike with the `@task` decorator, the result is not globally shared, but only available to the component that called `use_task`.
+Unlike with the [`@task`](/api/task) decorator, the result is not globally shared, but only available to the component that called `use_task`.
+
+Note that unlike the [`@task`](/api/task) decorator, the task is invoked immediately, and the hook will return the Result object, instead of the task object.
 
 """
 import solara
