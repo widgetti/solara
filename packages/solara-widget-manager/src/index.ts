@@ -16,4 +16,5 @@ export {
 export { connectKernel, shutdownKernel } from './kernel';
 export { WidgetManager } from './manager';
 export { renderMathJax } from './mathjax';
+export { renderMermaid } from './mermaid';
 export { extendedRendererFactories } from './rendermime';

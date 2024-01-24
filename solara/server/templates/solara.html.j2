@@ -223,11 +223,6 @@
         <script src="{{cdn}}/@widgetti/solara-vuetify-app@6.1.0/dist/solara-vuetify-app{{ipywidget_major_version}}.js"></script>
         {% endif %}
     {% endif %}
-    {% if production %}
-    <script src="{{cdn}}/mermaid@9.1.7/dist/mermaid.min.js"></script>
-    {% else %}
-    <script src="{{cdn}}/mermaid@9.1.7/dist/mermaid.js"></script>
-    {% endif %}
     <script>
         solara.rootPath = {{ root_path | tojson | safe}};
         console.log("rootPath", solara.rootPath);
