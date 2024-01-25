@@ -74,7 +74,7 @@ def _markdown_template(html, style="", vscode=False):
         + style
         + """\">"""
         + html
-        + """</div>
+        + r"""</div>
 </template>
 
 <script>
@@ -94,8 +94,8 @@ module.exports = {
                 delimiters: [
                     {left: "$$", right: "$$", display: true},
                     {left: "$", right: "$", display: false},
-                    {left: "\\[", right: "\\]", display: false},
-                    {left: "\\(", right: "\\)", display: true}
+                    {left: "\\[", right: "\\]", display: true},
+                    {left: "\\(", right: "\\)", display: false}
                 ]
             });
         } else if (window.MathJax && MathJax.Hub) {
@@ -107,8 +107,8 @@ module.exports = {
                 delimiters: [
                     {left: "$$", right: "$$", display: true},
                     {left: "$", right: "$", display: false},
-                    {left: "\\[", right: "\\]", display: false},
-                    {left: "\\(", right: "\\)", display: true}
+                    {left: "\\[", right: "\\]", display: true},
+                    {left: "\\(", right: "\\)", display: false}
                 ]
             });
         }
