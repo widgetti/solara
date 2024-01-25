@@ -1,1 +1,1 @@
-export { RenderMimeRegistry, WidgetManager, connectKernel, extendedRendererFactories, renderMathJax, renderMermaid, shutdownKernel } from '@widgetti/solara-widget-manager';
+export { RenderMimeRegistry, WidgetManager, connectKernel, extendedRendererFactories, KatexTypesetter, renderKatex, renderMermaid, shutdownKernel } from '@widgetti/solara-widget-manager';
