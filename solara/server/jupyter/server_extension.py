@@ -24,3 +24,6 @@ def _load_jupyter_server_extension(server_app):
 
 # For backward compatibility
 load_jupyter_server_extension = _load_jupyter_server_extension
+
+# For future compatibility
+_jupyter_server_extension_points = _jupyter_server_extension_paths
