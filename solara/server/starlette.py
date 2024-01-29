@@ -43,6 +43,7 @@ from starlette.staticfiles import StaticFiles
 from starlette.types import Receive, Scope, Send
 
 import solara
+import solara.settings
 from solara.server.threaded import ServerBase
 
 from . import app as appmod
@@ -415,7 +416,7 @@ routes = [
     Route("/{fullpath}", endpoint=root),
     Route("/_solara/api/close/{kernel_id}", endpoint=close, methods=["POST"]),
     # only enable when the proxy is turned on, otherwise if the directory does not exists we will get an exception
-    *([Mount(f"/{cdn_url_path}", app=StaticCdn(directory=settings.assets.proxy_cache_dir))] if settings.assets.proxy else []),
+    *([Mount(f"/{cdn_url_path}", app=StaticCdn(directory=settings.assets.proxy_cache_dir))] if solara.settings.assets.proxy else []),
     Mount(f"{prefix}/static/public", app=StaticPublic()),
     Mount(f"{prefix}/static/assets", app=StaticAssets()),
     Mount(f"{prefix}/static/nbextensions", app=StaticNbFiles()),

@@ -15,6 +15,7 @@ import requests
 
 import solara
 import solara.routing
+import solara.settings
 
 from . import app, jupytertools, patch, settings, websocket
 from .kernel import Kernel, deserialize_binary_message
@@ -327,11 +328,11 @@ def read_root(path: str, root_path: str = "", render_kwargs={}, use_nbextensions
             pre_rendered_metas = "\n    ".join(ssg_data["metas"])
             title = ssg_data["title"]
 
-    if settings.assets.proxy:
+    if solara.settings.assets.proxy:
         # solara acts as a proxy
         cdn = f"{root_path}/_solara/cdn"
     else:
-        cdn = settings.assets.cdn
+        cdn = solara.settings.assets.cdn
 
     render_settings = {
         "title": title,
