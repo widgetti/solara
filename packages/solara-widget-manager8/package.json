@@ -26,7 +26,6 @@
     "@lumino/virtualdom": "^1.8.0",
     "@lumino/widgets": "^1.18.0",
     "mathjax-full": "^3.0.0",
-    "mermaid": "^8.6.4",
     "patch-package": "^8.0.0"
   },
   "devDependencies": {

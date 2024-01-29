@@ -29,7 +29,6 @@
     "@lumino/virtualdom": "^1.8.0",
     "@lumino/widgets": "^1.18.0",
     "mathjax-full": "^3.0.0",
-    "mermaid": "^8.6.4"
   },
   "devDependencies": {
     "@types/node": "^18.11.9",

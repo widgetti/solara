@@ -66,7 +66,7 @@ def _run_solara(code):
     )
 
 
-def _markdown_template(html, style="", vscode=False):
+def _markdown_template(html, style="",):
     template = (
         """
 <template>
@@ -216,7 +216,7 @@ module.exports = {
         }
     },
         """
-            if vscode
+            if solara.server.settings.assets.proxy
             else """
             return (typeof solara_cdn !== "undefined" && solara_cdn) || `${this.getBaseUrl()}_solara/cdn`;
         }
@@ -399,4 +399,4 @@ def Markdown(md_text: str, unsafe_solara_execute=False, style: Union[str, Dict, 
     # if we update the template value, the whole vue tree will rerender (ipvue/ipyvuetify issue)
     # however, using the hash we simply generate a new widget each time
     hash = hashlib.sha256((html + str(unsafe_solara_execute)).encode("utf-8")).hexdigest()
-    return v.VuetifyTemplate.element(template=_markdown_template(html, style, vscode=VSCODE_PID is not None)).key(hash)
+    return v.VuetifyTemplate.element(template=_markdown_template(html, style).key(hash)
