@@ -267,3 +267,16 @@ def get_file_hash(path: Path, algorithm="md5") -> Tuple[bytes, str]:
         h = hashlib.new(algorithm, usedforsecurity=False)  # type: ignore
     h.update(data)
     return data, h.hexdigest()
+
+
+def is_running_in_colab():
+    try:
+        import google.colab  # noqa
+
+        return True
+    except ImportError:
+        return False
+
+
+def is_running_in_vscode():
+    return "VSCODE_PID" in os.environ or "VSCODE_CWD" in os.environ

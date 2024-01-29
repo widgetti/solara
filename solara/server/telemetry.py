@@ -15,6 +15,7 @@ import ipywidgets
 import requests
 
 import solara
+import solara.util
 
 from . import settings
 
@@ -44,15 +45,6 @@ _docker = False
 _compute_platform = "unknown"
 
 
-def is_running_in_colab():
-    try:
-        import google.colab  # noqa
-
-        return True
-    except ImportError:
-        return False
-
-
 def is_running_on_domino():
     return "DOMINO_PROJECT_OWNER" in os.environ
 
@@ -65,7 +57,7 @@ def is_running_on_azure():
     return "AZURE_NOTEBOOKS_VM" in os.environ or "AZUREML_RUN_ID" in os.environ
 
 
-if is_running_in_colab():
+if solara.util.is_running_in_colab():
     _compute_platform = "colab"
 elif is_running_on_domino():
     _compute_platform = "domino"
@@ -74,7 +66,7 @@ elif is_running_on_sagemaker_notebook():
 elif is_running_on_azure():
     _compute_platform = "azure"
 
-_vscode = any(k for k in os.environ if k.upper().startswith("VSCODE_"))
+_vscode = solara.util.is_running_in_vscode()
 
 try:
     path = "/proc/self/cgroup"
