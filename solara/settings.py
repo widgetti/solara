@@ -44,7 +44,7 @@ _should_use_proxy = not (solara.util.is_running_in_colab() or solara.util.is_run
 
 class Assets(BaseSettings):
     cdn: str = "https://cdn.jsdelivr.net/npm/"
-    proxy: bool = not _should_not_use_proxy
+    proxy: bool = _should_use_proxy
 
     class Config:
         env_prefix = "solara_assets_"
