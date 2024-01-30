@@ -10,9 +10,6 @@ from .conftest import SERVERS
 def test_cdn_via_altair(ipywidgets_runner, page_session: playwright.sync_api.Page, request, assert_solara_snapshot):
     if request.node.callspec.params["ipywidgets_runner"] != "solara" and request.node.callspec.params["solara_server"] != SERVERS[0]:
         pytest.skip("No need to run this test for all servers.")
-    if request.node.callspec.params["ipywidgets_runner"] == "voila":
-        # see https://github.com/widgetti/solara/issues/486
-        pytest.skip("Does not work with Voila.")
 
     # this function (or rather its lines) will be executed in the kernel
     # voila, lab, classic notebook and solara will all execute it

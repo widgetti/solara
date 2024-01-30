@@ -20,6 +20,7 @@ class VegaLite(v.VuetifyTemplate):
     listen_to_hover = traitlets.Bool(False).tag(sync=True)
     on_click = traitlets.traitlets.Callable(None, allow_none=True)
     on_hover = traitlets.traitlets.Callable(None, allow_none=True)
+    cdn = traitlets.Unicode(None, allow_none=True).tag(sync=True)
 
     def vue_altair_click(self, *args):
         if self.on_click:
@@ -28,6 +29,13 @@ class VegaLite(v.VuetifyTemplate):
     def vue_altair_hover(self, *args):
         if self.on_hover:
             self.on_hover(*args)
+
+    @traitlets.default("cdn")
+    def _cdn(self):
+        import solara.settings
+
+        if not solara.settings.assets.proxy:
+            return solara.settings.assets.cdn
 
 
 class Navigator(v.VuetifyTemplate):
