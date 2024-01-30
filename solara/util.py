@@ -280,3 +280,7 @@ def is_running_in_colab():
 
 def is_running_in_vscode():
     return "VSCODE_PID" in os.environ or "VSCODE_CWD" in os.environ
+
+
+def is_running_in_voila():
+    return os.environ.get("SERVER_SOFTWARE", "").startswith("voila")

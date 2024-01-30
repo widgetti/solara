@@ -39,7 +39,7 @@ class Cache(BaseSettings):
 
 
 # in colab or vscode there is not solara cdn proxy available
-_should_use_proxy = not (solara.util.is_running_in_colab() or solara.util.is_running_in_vscode())
+_should_use_proxy = not (solara.util.is_running_in_colab() or solara.util.is_running_in_vscode() or solara.util.is_running_in_voila())
 
 
 class Assets(BaseSettings):
