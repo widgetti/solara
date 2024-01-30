@@ -39,6 +39,7 @@ else:
 
 
 import solara
+import solara.settings
 from solara.server.threaded import ServerBase
 
 from . import app as appmod
@@ -195,7 +196,7 @@ def serve_static(path):
     return send_from_directory(server.solara_static, path)
 
 
-if settings.assets:
+if solara.settings.assets.proxy:
 
     @blueprint.route(f"/{cdn_helper.cdn_url_path}/<path:path>")
     def cdn(path):

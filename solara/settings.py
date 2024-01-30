@@ -36,4 +36,15 @@ class Cache(BaseSettings):
         env_file = ".env"
 
 
+class Assets(BaseSettings):
+    cdn: str = "https://cdn.jsdelivr.net/npm/"
+    proxy: bool = True
+
+    class Config:
+        env_prefix = "solara_assets_"
+        case_sensitive = False
+        env_file = ".env"
+
+
+assets: Assets = Assets()
 cache: Cache = Cache()
