@@ -25,11 +25,11 @@
     "@lumino/signaling": "^1.4.3",
     "@lumino/virtualdom": "^1.8.0",
     "@lumino/widgets": "^1.18.0",
+    "@types/node": "^18.11.9",
     "mathjax-full": "^3.0.0",
     "patch-package": "^8.0.0"
   },
   "devDependencies": {
-    "@types/node": "^18.11.9",
     "npm-run-all": "^4.1.5",
     "p-limit": "^2.2.2",
     "typescript": "~4.1.3"

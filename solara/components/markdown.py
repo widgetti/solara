@@ -66,7 +66,10 @@ def _run_solara(code):
     )
 
 
-def _markdown_template(html, style="",):
+def _markdown_template(
+    html,
+    style="",
+):
     template = (
         """
 <template>
@@ -81,36 +84,24 @@ def _markdown_template(html, style="",):
 module.exports = {
     async mounted() {
         await this.loadRequire();
-        if(window.solara !== undefined){
-            solara.renderMermaid();
-        } else if (window.mermaid) {
-            window.mermaid.init();
-        } else {
-            window.mermaid = await this.loadMermaid();
-            window.mermaid.init();
-        }
-        if (window.renderMathInElement) {
-            window.renderMathInElement(this.$el, {
+        this.mermaid = await this.loadMermaid();
+        this.mermaid.init();
+        this.latexSettings = {
                 delimiters: [
                     {left: "$$", right: "$$", display: true},
                     {left: "$", right: "$", display: false},
                     {left: "\\[", right: "\\]", display: true},
                     {left: "\\(", right: "\\)", display: false}
                 ]
-            });
+            };
+        if (window.renderMathInElement) {
+            window.renderMathInElement(this.$el, this.latexSettings);
         } else if (window.MathJax && MathJax.Hub) {
             MathJax.Hub.Queue(['Typeset', MathJax.Hub, this.$el]);
         } else {
             console.log("MathJax not loaded, loading Katex instead")
             window.renderMathInElement = await this.loadKatexExt();
-            window.renderMathInElement(this.$el, {
-                delimiters: [
-                    {left: "$$", right: "$$", display: true},
-                    {left: "$", right: "$", display: false},
-                    {left: "\\[", right: "\\]", display: true},
-                    {left: "\\(", right: "\\)", display: false}
-                ]
-            });
+            window.renderMathInElement(this.$el, this.latexSettings);
         }
         this.$el.querySelectorAll("a").forEach(a => this.setupRouter(a))
         window.md = this.$el
@@ -209,32 +200,17 @@ module.exports = {
             return base
         },
         getCdn() {
-    """
-        + (
-            """
-            return "https://cdn.jsdelivr.net/npm";
+            return this.cdn || (typeof solara_cdn !== "undefined" && solara_cdn) || `${this.getBaseUrl()}_solara/cdn`;
         }
     },
-        """
-            if solara.server.settings.assets.proxy
-            else """
-            return (typeof solara_cdn !== "undefined" && solara_cdn) || `${this.getBaseUrl()}_solara/cdn`;
-        }
-    },
-    """
-        )
-        + """
     updated() {
         // if the html gets update, re-run mermaid
-        if(window.solara !== undefined){
-            solara.renderMermaid();
-        } else if (window.mermaid) {
-            window.mermaid.init();
-        }
+        this.mermaid.init();
+
         if(window.MathJax && MathJax.Hub) {
             MathJax.Hub.Queue(['Typeset', MathJax.Hub, this.$el]);
         } else {
-            window.renderMathInElement(this.$el);
+            window.renderMathInElement(this.$el, this.latexSettings);
         }
     }
 }
@@ -389,14 +365,9 @@ def Markdown(md_text: str, unsafe_solara_execute=False, style: Union[str, Dict, 
             },
         )
 
-    # Check if we are in VSCode
-    import os
-
-    VSCODE_PID = os.getenv("VSCODE_PID")
-
     md = solara.use_memo(make_markdown_object, dependencies=[unsafe_solara_execute])
     html = md.convert(md_text)
     # if we update the template value, the whole vue tree will rerender (ipvue/ipyvuetify issue)
     # however, using the hash we simply generate a new widget each time
     hash = hashlib.sha256((html + str(unsafe_solara_execute)).encode("utf-8")).hexdigest()
-    return v.VuetifyTemplate.element(template=_markdown_template(html, style).key(hash)
+    return v.VuetifyTemplate.element(template=_markdown_template(html, style)).key(hash)
