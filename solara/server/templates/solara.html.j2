@@ -219,6 +219,8 @@
         if (theme.variant_user_selectable) {
             if (localStorage.getItem('theme.variant')) {
                 theme.variant = JSON.parse(localStorage.getItem('theme.variant'))
+            } else {
+                theme.variant = prefersDarkScheme() ? 'dark' : 'light'
             }
         }
         function prefersDarkScheme() {
