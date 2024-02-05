@@ -134,6 +134,7 @@ items = [
             "tab",
             "tabs",
             "task",
+            "theming",
             "use_task",
         ],
     },
