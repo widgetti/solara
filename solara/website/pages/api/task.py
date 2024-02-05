@@ -32,6 +32,6 @@ from solara.website.utils import apidoc
 
 from . import NoPage
 
-title = "task"
+title = "Task"
 Page = NoPage
 __doc__ += apidoc(solara.lab.task)  # type: ignore

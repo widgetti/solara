@@ -14,6 +14,6 @@ from solara.website.utils import apidoc
 
 from . import NoPage
 
-title = "task"
+title = "use_task"
 Page = NoPage
-__doc__ += apidoc(solara.lab.task)  # type: ignore
+__doc__ += apidoc(solara.lab.use_task)  # type: ignore
