@@ -126,36 +126,6 @@
             </v-sheet>
         </v-menu>
 
-        <v-menu offset-y top :close-on-content-click="false" style="z-index: 100001">
-            <!-- <template v-slot:activator="{ on }">
-                <v-btn text v-on="on" style="position: fixed; top: 8px; right: 8px; z-index: 100000">
-                    <v-icon right large style="opacity: 0.5" :color="connectionStatus != 'connected' ? 'red' : ''">mdi-account</v-icon>
-                </v-btn>
-            </template> -->
-            <v-list>
-                <v-list-item @click="stateReset()" link>
-                    <v-list-item-icon>
-                        <v-icon>mdi-close-box</v-icon>
-                    </v-list-item-icon>
-                    <v-list-item-title>Reset application
-                    </v-list-item-title>
-                </v-list-item>
-                <v-list-item v-if="theme.variant_user_selectable">
-                    <v-btn-toggle v-model="themeVariantIndex" tile group mandatory>
-                        <v-btn value="light" icon>
-                            <v-icon>mdi-white-balance-sunny</v-icon>
-                        </v-btn>
-                        <v-btn>
-                            <v-icon>mdi-weather-night</v-icon>
-                        </v-btn>
-                        <v-btn>
-                            <v-icon>mdi-theme-light-dark</v-icon>
-                        </v-btn>
-                    </v-btn-toggle>
-                </v-list-item>
-
-            </v-list>
-        </v-menu>
         <!-- <v-menu v-if="debug && outputMessages && outputMessages.length" offset-y top
             :close-on-content-click="false">
             <template v-slot:activator="{ on }">
@@ -299,18 +269,6 @@
                     location.reload();
                 },
             },
-            computed: {
-                themeVariantIndex: {
-                    get() {
-                        return themeVariants.indexOf(theme.variant)
-                    },
-                    set(value) {
-                        theme.variant = themeVariants[value]
-                        this.$vuetify.theme.dark = inDarkMode()
-                        localStorage.setItem('theme.variant', JSON.stringify(theme.variant))
-                    }
-                }
-            },
             watch: {
                 kernelBusy: function (value) {
                     if(this._lastBusyTimer) {
@@ -353,6 +311,16 @@
                             console.log('this.autoRefreshCount!', this.autoRefreshCount)
                             this.autoRefreshCount = this.autoRefreshCount - 1;
                         }, 1000);
+                    }
+                },
+                '$vuetify.theme.dark': function (value) {
+                    let app = document.getElementById('app');
+                    if ( value ) {
+                        app.classList.remove('theme--light');
+                        app.classList.add('theme--dark');
+                    } else {
+                        app.classList.remove('theme--dark');
+                        app.classList.add('theme--light');
                     }
                 }
             },
