@@ -363,11 +363,12 @@ def solara_comm_target(comm, msg_first):
         data = msg["content"]["data"]
         method = data["method"]
         if method == "run":
-            path = data.get("path", "")
-            app_name = data.get("appName") or "__default__"
+            args = data["args"]
+            path = args.get("path", "")
+            app_name = args.get("appName") or "__default__"
             app = apps[app_name]
             context = kernel_context.get_current_context()
-            dark = data.get("darkMode", False)
+            dark = args.get("dark", False)
             import ipyvuetify
 
             from solara.lab import theme

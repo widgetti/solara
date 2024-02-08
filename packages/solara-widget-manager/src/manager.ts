@@ -149,7 +149,8 @@ export class WidgetManager extends JupyterLabManager {
     await this._loadFromKernel();
   }
 
-  async run(appName: string, path: string) {
+  async run(appName: string, args: any) {
+    let { path } = args;
     // used for routing
     // should be similar to what we do in navigator.vue
     if (typeof path === 'undefined') {
@@ -173,7 +174,7 @@ export class WidgetManager extends JupyterLabManager {
         }
       };
     });
-    this.controlComm.send({ method: 'run', path, appName: appName || null });
+    this.controlComm.send({ method: 'run', args: { ...args, appName: appName || null } });
     const widget_id = await widget_id_promise;
     return widget_id;
   }
