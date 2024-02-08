@@ -120,6 +120,7 @@ items = [
             "confirmation_dialog",
             "menu",
             "input_date",
+            "on_kernel_start",
             "tab",
             "tabs",
         ],

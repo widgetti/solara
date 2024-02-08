@@ -36,6 +36,13 @@ class PageStatus(enum.Enum):
     CLOSED = "closed"
 
 
+_on_kernel_start_callbacks: List[Callable[[], Optional[Callable[[], None]]]] = []
+
+
+def on_kernel_start(f: Callable[[], Optional[Callable[[], None]]]):
+    _on_kernel_start_callbacks.append(f)
+
+
 @dataclasses.dataclass
 class VirtualKernelContext:
     id: str
@@ -63,9 +70,28 @@ class VirtualKernelContext:
     # only used for testing
     _last_kernel_cull_task: "Optional[asyncio.Future[None]]" = None
     closed_event: threading.Event = dataclasses.field(default_factory=threading.Event)
+    _on_close_callbacks: List[Callable[[], None]] = dataclasses.field(default_factory=list)
+
+    def __post_init__(self):
+        with self:
+            for f in _on_kernel_start_callbacks:
+                cleanup = f()
+                if cleanup:
+                    self.on_close(cleanup)
+
+    def restart(self):
+        # should we do this, or maybe close the context and create a new one?
+        with self:
+            for f in reversed(self._on_close_callbacks):
+                f()
+            self._on_close_callbacks.clear()
+            self.__post_init__()
 
     def display(self, *args):
         print(args)  # noqa
+
+    def on_close(self, f: Callable[[], None]):
+        self._on_close_callbacks.append(f)
 
     def __enter__(self):
         if local.kernel_context_stack is None:
@@ -81,6 +107,9 @@ class VirtualKernelContext:
 
     def close(self):
         logger.info("Shut down virtual kernel: %s", self.id)
+        with self:
+            for f in reversed(self._on_close_callbacks):
+                f()
         with self:
             if self.app_object is not None:
                 if isinstance(self.app_object, reacton.core._RenderContext):
@@ -284,6 +313,7 @@ def initialize_virtual_kernel(session_id: str, kernel_id: str, websocket: websoc
         kernel = Kernel()
         logger.info("new virtual kernel: %s", kernel_id)
         context = contexts[kernel_id] = VirtualKernelContext(id=kernel_id, session_id=session_id, kernel=kernel, control_sockets=[], widgets={}, templates={})
+
         with context:
             widgets.register_comm_target(kernel)
             appmodule.register_solara_comm_target(kernel)
