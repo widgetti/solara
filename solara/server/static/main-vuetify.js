@@ -227,7 +227,7 @@ async function solaraInit(mountId, appName) {
     if (kernelId && widgetModelId) {
         await widgetManager.fetchAll();
     } else {
-        widgetModelId = await widgetManager.run(appName, {path, darkMode: inDarkMode()});
+        widgetModelId = await widgetManager.run(appName, path, inDarkMode());
     }
     await solaraMount(widgetManager, mountId || 'content', widgetModelId);
     skipReconnectedCheck = false;
