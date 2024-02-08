@@ -354,8 +354,12 @@ def solara_comm_target(comm, msg_first):
             app_name = data.get("appName") or "__default__"
             app = apps[app_name]
             context = kernel_context.get_current_context()
+            dark = data.get("darkMode", False)
             import ipyvuetify
 
+            from solara.lab import theme
+
+            theme.dark_effective = dark
             container = ipyvuetify.Html(tag="div")
             context.container = container
             load_app_widget(None, app, path)

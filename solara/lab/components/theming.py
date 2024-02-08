@@ -1,42 +1,34 @@
+from typing import Callable
+
 import ipyvuetify.Themes
-from ipywidgets import Widget
-from traitlets import Bool, Unicode
+from ipyvuetify.Themes import Theme
 
 import solara
 import solara.server.settings as settings
-from solara.server.settings import ThemeVariant
+from solara.components.component_vue import component_vue
 from solara.tasks import Proxy
 
-try:
-    # the default ctor gets in the way, we should fix
-    # this in ipyvuetify
-    del ipyvuetify.Themes.Theme.__init__
-except AttributeError:
+theme = Proxy(Theme)
+ipyvuetify.Themes.theme = theme
+
+
+@component_vue("theming.vue")
+def _ThemeToggle(
+    theme_effective: str,
+    event_sync_themes: Callable[[str], None],
+    enable_auto: bool,
+    on_icon: str,
+    off_icon: str,
+    auto_icon: str,
+):
     pass
-
-
-# We override ipyvuetify theming
-class Theme(Widget):
-    """
-    A class to override the ipyvuetify theming.
-    """
-
-    _model_name = Unicode("ThemeModel").tag(sync=True)
-
-    _model_module = Unicode("jupyter-vuetify").tag(sync=True)
-
-    dark = Bool(settings.theme.variant == ThemeVariant.dark, allow_none=True).tag(sync=True)
-
-    def __init__(self):
-        super().__init__()
-
-        self.themes = Proxy(ipyvuetify.Themes.Themes)
 
 
 @solara.component
 def ThemeToggle(
     on_icon: str = "mdi-weather-night",
     off_icon: str = "mdi-weather-sunny",
+    auto_icon: str = "mdi-brightness-auto",
 ):
     """
     Insert a toggle switch for user to switch between light and dark themes.
@@ -50,18 +42,21 @@ def ThemeToggle(
     ```
 
     ## Arguments
-    - `dark`: A boolean value indicating whether the dark theme is enabled. Defaults to a predefined reactive variable set in `solara.server.settings`,
-        `dark = solara.reactive(settings.theme.variant == ThemeVariant.dark)`.
     - `on_icon`: The icon to display when the dark theme is enabled.
     - `off_icon`: The icon to display when the dark theme is disabled.
+    - `auto_icon`: The icon to display when the theme is set to auto
+        (**note**: auto mode is only available if the server settings `theme.variant_user_selectable` is enabled).
     """
 
-    def set_theme(*args):
-        theme.dark = not theme.dark
+    def sync_themes(selected_theme: str):
+        selected_theme
+        theme.dark = selected_theme
 
-    solara.v.Checkbox(on_icon=on_icon, off_icon=off_icon, v_model=theme.dark, on_v_model=set_theme)
-
-
-theme = Proxy(Theme)
-
-ipyvuetify.Themes.theme = theme
+    return _ThemeToggle(
+        theme_effective=theme.dark,
+        event_sync_themes=sync_themes,
+        enable_auto=settings.theme.variant_user_selectable,
+        on_icon="mdi-weather-night",
+        off_icon="mdi-weather-sunny",
+        auto_icon="mdi-brightness-auto",
+    )
