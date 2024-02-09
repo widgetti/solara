@@ -66,24 +66,42 @@ def _run_solara(code):
     )
 
 
-def _markdown_template(html, style=""):
-    return (
+def _markdown_template(
+    html,
+    style="",
+):
+    template = (
         """
 <template>
     <div class="solara-markdown rendered_html jp-RenderedHTMLCommon" style=\""""
         + style
         + """\">"""
         + html
-        + """</div>
+        + r"""</div>
 </template>
 
 <script>
 module.exports = {
-    mounted() {
-        if(window.mermaid)
-            mermaid.init()
-        if(window.MathJax && MathJax.Hub) {
+    async mounted() {
+        await this.loadRequire();
+        this.mermaid = await this.loadMermaid();
+        this.mermaid.init();
+        this.latexSettings = {
+                delimiters: [
+                    {left: "$$", right: "$$", display: true},
+                    {left: "$", right: "$", display: false},
+                    {left: "\\[", right: "\\]", display: true},
+                    {left: "\\(", right: "\\)", display: false}
+                ]
+            };
+        if (window.renderMathInElement) {
+            window.renderMathInElement(this.$el, this.latexSettings);
+        } else if (window.MathJax && MathJax.Hub) {
             MathJax.Hub.Queue(['Typeset', MathJax.Hub, this.$el]);
+        } else {
+            console.log("MathJax not loaded, loading Katex instead")
+            window.renderMathInElement = await this.loadKatexExt();
+            window.renderMathInElement(this.$el, this.latexSettings);
         }
         this.$el.querySelectorAll("a").forEach(a => this.setupRouter(a))
         window.md = this.$el
@@ -95,10 +113,8 @@ module.exports = {
                 // TODO: should we really do this?
                 href = location.pathname + href.substr(1);
                 a.attributes['href'].href = href;
-                // console.log("change href to", href);
             }
             if(href.startsWith("./") || href.startsWith("/")) {
-                // console.log("connect link with href=", href, "to router")
                 a.onclick = e => {
                     console.log("clicked", href)
                     if(href.startsWith("./")) {
@@ -109,26 +125,99 @@ module.exports = {
                     e.preventDefault()
                 }
             } else if(href.startsWith("#")) {
-                // console.log("connect anchor with href=", href, "to custom javascript due to using <base>")
                 href = location.pathname + href;
                 a.attributes['href'].value = href;
             } else {
                 console.log("href", href, "is not a local link")
             }
+        },
+        async loadKatex() {
+            require.config({
+                map: {
+                    '*': {
+                        'katex': `${this.getCdn()}/katex@0.16.9/dist/katex.min.js`,
+                    }
+                }
+            });
+            const link = document.createElement('link');
+            link.type = "text/css";
+            link.rel = "stylesheet";
+            link.href = `${this.getCdn()}/katex@0.16.9/dist/katex.min.css`;
+            document.head.appendChild(link);
+        },
+        async loadKatexExt() {
+            this.loadKatex();
+            return (await this.import([`${this.getCdn()}/katex@0.16.9/dist/contrib/auto-render.min.js`]))[0]
+        },
+        async loadMermaid() {
+            return (await this.import([`${this.getCdn()}/mermaid@8.6.4/dist/mermaid.min.js`]))[0]
+        },
+        import(dependencies) {
+            return this.loadRequire().then(
+                () => {
+                    if (window.jupyterVue) {
+                        // in jupyterlab, we take Vue from ipyvue/jupyterVue
+                        define("vue", [], () => window.jupyterVue.Vue);
+                    } else {
+                        define("vue", ['jupyter-vue'], jupyterVue => jupyterVue.Vue);
+                    }
+                    return new Promise((resolve, reject) => {
+                        requirejs(dependencies, (...modules) => resolve(modules));
+                    })
+                }
+            );
+        },
+        loadRequire() {
+            if (window.requirejs) {
+                console.log('require found');
+                return Promise.resolve();
+            }
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = `${this.getCdn()}/requirejs@2.3.6/require.min.js`;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        },
+        getBaseUrl() {
+            if (window.solara && window.solara.rootPath !== undefined) {
+                return solara.rootPath + "/";
+            }
+            // if base url is set, we use ./ for relative paths compared to the base url
+            if (document.getElementsByTagName("base").length) {
+                return "./";
+            }
+            const labConfigData = document.getElementById('jupyter-config-data');
+            if (labConfigData) {
+                /* lab and Voila */
+                return JSON.parse(labConfigData.textContent).baseUrl;
+            }
+            let base = document.body.dataset.baseUrl || document.baseURI;
+            if (!base.endsWith('/')) {
+                base += '/';
+            }
+            return base
+        },
+        getCdn() {
+            return this.cdn || (typeof solara_cdn !== "undefined" && solara_cdn) || `${this.getBaseUrl()}_solara/cdn`;
         }
     },
     updated() {
         // if the html gets update, re-run mermaid
-        if(window.mermaid)
-            mermaid.init()
+        this.mermaid.init();
+
         if(window.MathJax && MathJax.Hub) {
             MathJax.Hub.Queue(['Typeset', MathJax.Hub, this.$el]);
+        } else {
+            window.renderMathInElement(this.$el, this.latexSettings);
         }
     }
 }
 </script>
     """
     )
+    return template
 
 
 def _highlight(src, language, unsafe_solara_execute, extra, *args, **kwargs):
