@@ -1,5 +1,24 @@
 # Solara Changelog
 
+## Version 1.26.0
+
+### Demo of @solara.lab.computed with
+
+<video width="80%" controls>
+   <source src="https://github.com/widgetti/solara/assets/5592797/daf21bb0-ce94-4d5e-9ebb-339ea768b3ac" type="video/mp4" >
+</video>
+
+### Highlight
+
+   * Feature: computed reactive variables which use the return value of the function. The value will be updated when any of the reactive variables used in the function [#455](https://github.com/widgetti/solara/pull/455).
+
+### Details
+
+   * Feature: on_kernel_start triggers callback on virtual kernel start [#471](https://github.com/widgetti/solara/pull/471).
+   * Bug fix: Altair works in VSCode and Google Colab [#488](https://github.com/widgetti/solara/pull/488).
+   * Feature: get_kernel_id and get_session_id for custom storage [#452](https://github.com/widgetti/solara/pull/452).
+   * Bug fix: Mermaid and Math rendering in Jupyter Lab and VSCode [#480](https://github.com/widgetti/solara/pull/480).
+
 ## Version 1.25.1
 
 ### Details
