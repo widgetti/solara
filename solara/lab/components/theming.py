@@ -49,7 +49,6 @@ def ThemeToggle(
     """
 
     def sync_themes(selected_theme: str):
-        selected_theme
         theme.dark = selected_theme
 
     return _ThemeToggle(

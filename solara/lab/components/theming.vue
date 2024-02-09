@@ -12,6 +12,12 @@
 <script>
 module.exports = {
     mounted() {
+        if (theme.variant_user_selectable) {
+            if (localStorage.getItem('theme.variant')) {
+                this.theme_effective = this.initTheme();
+            }
+        }
+
         if ( this.theme_effective === false ) {
             this.clicks = 2;
         } else if ( this.theme_effective === null ) {
@@ -41,6 +47,10 @@ module.exports = {
         },
         stringifyTheme() {
             return this.theme_effective === true ? 'dark' : this.theme_effective === false ? 'light' : 'auto';
+        },
+        initTheme() {
+            storedTheme = JSON.parse(localStorage.getItem('theme.variant'));
+            return storedTheme === 'dark' ? true : storedTheme === 'light' ? false : null;
         },
         setTheme() {
             if ( window.solara && this.theme_effective === null ) {
