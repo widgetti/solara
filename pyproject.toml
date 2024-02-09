@@ -5,6 +5,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "solara"
+readme = "README.md"
 authors = [{name = "Maarten A. Breddels", email = "maartenbreddels@gmail.com"}]
 license = {file = "LICENSE"}
 classifiers = ["License :: OSI Approved :: MIT License"]
@@ -49,6 +50,18 @@ path = "solara/__init__.py"
 [tool.hatch.build]
 ignore-vcs = true
 
+[tool.hatch.build.targets.sdist]
+# unclear from hatch docs, but README.md and LICENSE are included by default
+# even when we explicitly have an include list
+include = [
+    "solara",
+    "tests",
+    "prefix",
+]
+# and even when we have an include list, we still need to exclude
+# packages (which I think makes no sense)
+exclude = ["packages"]
+
 [project.optional-dependencies]
 extra = [
     "pygments",
@@ -84,7 +97,7 @@ dev = [
     "pytest-playwright; python_version > '3.6'",
 ]
 assets = [
-    "solara-assets==1.26.0"
+    "solara-assets==1.26.1"
 ]
 flask = [
     "flask",
