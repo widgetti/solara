@@ -2,6 +2,36 @@
 
 The solara server enables running ipywidgets based applications without a real Jupyter kernel, allowing multiple "Virtual kernels" to share the same process for better performance and scalability.
 
+## WebSocket in Solara
+Solara uses a WebSocket to transmit state and updates directly from the server to the browser. This ensures that the state remains centralized on the server, facilitating state transitions server-side and enabling live updates to be pushed directly to the browser.
+
+
+## Virtual Kernels
+Normally when a browser page connects to a Solara server, a virtual kernel is created and is assigned a unique identifier termed a "Kernel ID." Should a WebSocket disconnection occur, Solara attempts to re-establish the connection, sending the Kernel ID during this process. If the server recognizes this ID (and the requested kernel hasn't expired) the Solara app resumes operations seamlessly.
+
+### Virtual kernel lifecycle
+Closing a browser page will directly shut the virtual kernel down (if this page was the last known page to the Solara server). This ensures that active closing of pages will directly clean up any memory usage on the server side for this kernel.
+
+However, when the websocket between the web page and the server disconnects, the server keeps the kernel alive for 24 hours after the closure of the last WebSocket connection. The duration is customizable through the `SOLARA_KERNEL_CULL_TIMEOUT` environment variable. This feature is particularly handy in scenarios where devices like computers hibernate, leading to WebSocket disconnections. Upon awakening and subsequent WebSocket reconnection, the Solara app picks up right where it left off.
+
+To optimize memory usage or address specific needs, one might opt for a shorter expiration duration. For instance, setting `SOLARA_KERNEL_CULL_TIMEOUT=1m` will cause sessions to expire after just 1 minute. Other possible options are `2d` (2 days), `3h` (3 hours), `30s` (30 seconds), etc. If no units are given, seconds are assumed.
+
+
+## Handling Multiple Workers
+In setups with multiple workers, it's possible for a page to reconnect to a different worker than its original. This would result in a loss of the virtual kernel (since it lives on a different worker), prompting the Solara app to initiate a fresh start. To prevent this scenario, a sticky session configuration is recommended, ensuring consistent client-worker connections. Utilizing a load balancer, such as [nginx](https://www.nginx.com/), can achieve this.
+
+If you have questions about setting this up, or require assistance, please [contact us](https://solara.dev/docs/contact).
+
+## Sessions
+
+Solara uses a browser cookie (named `solara-session-id`) to store a unique session id. This session id is available via [get_session_id()](https://solara.dev/api/get_session_id) and is the same for all
+browser pages. This can be used to store state that outlives a page refresh.
+
+We recommend storing the state in an external database, especially in the case of multiple workers/nodes. If you want to store state associated to a session in-memory, make sure to set up sticky sessions.
+
+
+
+
 ## Readiness check
 
 To check if the server is ready to accept request, the `/readyz` endpoint is added, and should return a 200 HTTP status code, e.g.:
