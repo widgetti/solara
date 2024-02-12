@@ -90,19 +90,19 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
                     await self.ws.send_text(first)
 
     def close(self):
-        self.portal.call(self.ws.close)
+        self.portal.call(self.ws.close)  # type: ignore
 
     def send_text(self, data: str) -> None:
         if settings.main.experimental_performance:
             self.to_send.append(data)
         else:
-            self.portal.call(self.ws.send_bytes, data)
+            self.portal.call(self.ws.send_bytes, data)  # type: ignore
 
     def send_bytes(self, data: bytes) -> None:
         if settings.main.experimental_performance:
             self.to_send.append(data)
         else:
-            self.portal.call(self.ws.send_bytes, data)
+            self.portal.call(self.ws.send_bytes, data)  # type: ignore
 
     async def receive(self):
         if hasattr(self.portal, "start_task_soon"):
