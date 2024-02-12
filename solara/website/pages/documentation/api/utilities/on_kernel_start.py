@@ -15,7 +15,7 @@ Note that the cleanup functions are called in reverse order with respect to the 
 (e.g. the cleanup function of the last call to `on_kernel_start` will be called first on kernel shutdown)
 """
 
-from . import NoPage
+from solara.website.components import NoPage
 
 title = "on_kernel_start"
 Page = NoPage

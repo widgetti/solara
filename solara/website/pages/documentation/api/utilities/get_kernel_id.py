@@ -2,10 +2,10 @@
 # get_kernel_id
 
 """
-import solara
-from solara.website.utils import apidoc
 
-from . import NoPage
+import solara
+from solara.website.components import NoPage
+from solara.website.utils import apidoc
 
 title = "get_kernel_id"
 

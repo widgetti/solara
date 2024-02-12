@@ -4,9 +4,8 @@
 """
 
 import solara
+from solara.website.components import NoPage
 from solara.website.utils import apidoc
-
-from ..components import NoPage
 
 title = "computed"
 
