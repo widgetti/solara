@@ -5,7 +5,7 @@ import os
 import threading
 from http.server import HTTPServer
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, List
 from urllib.parse import urlparse
 from uuid import uuid4
 
@@ -137,7 +137,23 @@ def kernels_connection(ws: simple_websocket.Server, kernel_id: str, name: str):
             logger.warning("no session cookie")
             session_id = "session-id-cookie-unavailable:" + str(uuid4())
         ws_wrapper = WebsocketWrapper(ws)
-        asyncio.run(server.app_loop(ws_wrapper, session_id=session_id, kernel_id=kernel_id, page_id=page_id, user=user))
+        headers_dict: Dict[str, List[str]] = {}
+        for k, v in request.headers.__iter__():
+            if k not in headers_dict.keys():
+                headers_dict[k] = [v]
+            else:
+                headers_dict[k].append(v)
+        asyncio.run(
+            server.app_loop(
+                ws_wrapper,
+                cookies=request.cookies.to_dict(),
+                headers=headers_dict,
+                session_id=session_id,
+                kernel_id=kernel_id,
+                page_id=page_id,
+                user=user,
+            )
+        )
     except:  # noqa
         logger.exception("Error in kernel handler")
         raise
