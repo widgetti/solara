@@ -24,17 +24,17 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu, macos, windows]
-        python: [3.6, 3.9]
-        ipywidgets: ["7.7", "8.0"]
+        python: ["3.6", "3.10"]
+        ipywidgets: ["7.8", "8.1"]
         exclude:
           - os: windows
             python: 3.6
           - os: ubuntu
             python: 3.6
-            ipywidgets: "8.0"
+            ipywidgets: "8.1"
           - os: macos
             python: 3.6
-            ipywidgets: "8.0"
+            ipywidgets: "8.1"
 
     steps:
       - uses: actions/checkout@v2
