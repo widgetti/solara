@@ -3,6 +3,7 @@ import dataclasses
 import logging
 import sys
 import threading
+import warnings
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from operator import getitem
@@ -99,6 +100,9 @@ class ValueBase(Generic[T]):
         self.set(value)
 
     def set(self, value: T):
+        raise NotImplementedError
+
+    def peek(self) -> T:
         raise NotImplementedError
 
     def get(self) -> T:
@@ -222,6 +226,9 @@ class KernelStore(ValueBase[S], ABC):
                 scope_id = context.id
         return cast(Dict[str, S], scope_dict), scope_id
 
+    def peek(self):
+        return self.get()
+
     def get(self):
         scope_dict, scope_id = self._get_dict()
         if self.storage_key not in scope_dict:
@@ -314,7 +321,7 @@ class Reactive(ValueBase[S]):
         self._owner = owner
 
     def __repr__(self):
-        value = self.get(add_watch=False)
+        value = self.peek()
         if self._name:
             return f"<Reactive {self._owner.__name__}.{self._name} value={value!r} id={hex(id(self))}>"
         else:
@@ -341,9 +348,15 @@ class Reactive(ValueBase[S]):
             raise ValueError("Can't set a reactive to itself")
         self._storage.set(value)
 
-    def get(self, add_watch=True) -> S:
-        if add_watch and thread_local.reactive_used is not None:
+    def get(self, add_watch=None) -> S:
+        if add_watch is not None:
+            warnings.warn("add_watch is deprecated, use .peek()", DeprecationWarning)
+        if thread_local.reactive_used is not None:
             thread_local.reactive_used.add(self)
+        return self._storage.get()
+
+    def peek(self) -> S:
+        """Return the value without automatically subscribing to listeners."""
         return self._storage.get()
 
     def subscribe(self, listener: Callable[[S], None], scope: Optional[ContextManager] = None):
@@ -530,10 +543,15 @@ class ValueSubField(ValueBase[T]):
 
         return self._root.subscribe_change(on_change, scope=scope)
 
-    def get(self, obj=None, add_watch=True) -> T:
-        if add_watch and thread_local.reactive_used is not None:
+    def get(self, add_watch=None) -> T:
+        if add_watch is not None:
+            warnings.warn("add_watch is deprecated, use .peek()", DeprecationWarning)
+        if thread_local.reactive_used is not None:
             thread_local.reactive_used.add(self)
-        return self._field.get(obj)
+        return self._field.peek()
+
+    def peek(self) -> T:
+        return self._field.peek()
 
     def set(self, value: T):
         self._field.set(value)
@@ -572,7 +590,14 @@ class Fields(FieldBase):
         # so we can get the 'old' value
         if obj is not None:
             return obj
-        return self._parent.get(add_watch=False)
+        return self._parent.get()
+
+    def peek(self, obj=None):
+        # we are at the root, so override the object
+        # so we can get the 'old' value
+        if obj is not None:
+            return obj
+        return self._parent.peek()
 
     def set(self, value):
         self._parent.set(value)
@@ -591,9 +616,13 @@ class FieldAttr(FieldBase):
         obj = self._parent.get(obj)
         return getattr(obj, self.key)
 
+    def peek(self, obj=None):
+        obj = self._parent.peek(obj)
+        return getattr(obj, self.key)
+
     def set(self, value):
         with self._lock:
-            parent_value = self._parent.get()
+            parent_value = self._parent.peek()
             if isinstance(self.key, str):
                 parent_value = merge_state(parent_value, **{self.key: value})
                 self._parent.set(parent_value)
@@ -617,9 +646,13 @@ class FieldItem(FieldBase):
         obj = self._parent.get(obj)
         return getitem(obj, self.key)
 
+    def peek(self, obj=None):
+        obj = self._parent.peek(obj)
+        return getitem(obj, self.key)
+
     def set(self, value):
         with self._lock:
-            parent_value = self._parent.get()
+            parent_value = self._parent.peek()
             if isinstance(self.key, int) and isinstance(parent_value, (list, tuple)):
                 parent_type = type(parent_value)
                 parent_value = parent_value.copy()  # type: ignore
