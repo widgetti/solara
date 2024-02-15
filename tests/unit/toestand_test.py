@@ -11,6 +11,7 @@ from typing_extensions import TypedDict
 import solara
 import solara as sol
 import solara.lab
+import solara.toestand as toestand
 from solara.server import kernel, kernel_context
 from solara.toestand import Reactive, Ref, State, use_sync_external_store
 
@@ -842,17 +843,24 @@ def test_reactive_auto_subscribe_sub():
     bears = Reactive(Bears(type="brown", count=1))
     renders = 0
 
+    ref = Ref(bears.fields.count)
+    reactive_used = None
+
     @solara.component
     def Test():
+        nonlocal reactive_used
         nonlocal renders
+        reactive_used = toestand.thread_local.reactive_used
         renders += 1
-        count = Ref(bears.fields.count).value
+        count = ref.value
         return solara.Info(f"{count} bears around here")
 
     box, rc = solara.render(Test(), handle_error=False)
     assert rc.find(v.Alert).widget.children[0] == "1 bears around here"
-    Ref(bears.fields.count).value += 1
+    assert reactive_used == {ref}
+    ref.value += 1
     assert rc.find(v.Alert).widget.children[0] == "2 bears around here"
+    assert reactive_used == {ref}
     # now check that we didn't listen to the while object, just count changes
     renders_before = renders
     Ref(bears.fields.type).value = "pink"
@@ -900,10 +908,13 @@ def test_reactive_auto_subscribe_cleanup(kernel_context):
 def test_reactive_auto_subscribe_subfield_limit(kernel_context):
     bears = Reactive(Bears(type="brown", count=1))
     renders = 0
+    reactive_used = None
 
     @solara.component
     def Test():
         nonlocal renders
+        nonlocal reactive_used
+        reactive_used = toestand.thread_local.reactive_used
         renders += 1
         _ = bears.value  # access it to trigger the subscription
         return solara.IntSlider("test", value=Ref(bears.fields.count).value)
@@ -911,8 +922,11 @@ def test_reactive_auto_subscribe_subfield_limit(kernel_context):
     box, rc = solara.render(Test(), handle_error=False)
     assert rc.find(v.Slider).widget.v_model == 1
     assert renders == 1
+    assert reactive_used is not None
+    assert len(reactive_used) == 2  # bears and bears.fields.count
     Ref(bears.fields.count).value = 2
     assert renders == 2
+    assert len(reactive_used) == 2  # bears and bears.fields.count
     rc.close()
     assert not bears._storage.listeners[kernel_context.id]
     assert not bears._storage.listeners2[kernel_context.id]
