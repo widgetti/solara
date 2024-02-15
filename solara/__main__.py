@@ -118,6 +118,17 @@ def cli():
     pass
 
 
+production_default = False
+if "SOLARA_MODE" in os.environ:
+    # settings.main.mode by default is set to production,
+    # which is a good default for when you embed in a flask
+    # app for instance, but not for the CLI, which app developers
+    # usually run.
+    production_default = settings.main.mode == "production"
+    # Note that in the CLI we do set this value to "development"
+    # or "production" based on the --production flag
+
+
 @cli.command()
 @click.option("--port", default=int(os.environ.get("PORT", 8765)))
 @click.option(
@@ -126,7 +137,7 @@ def cli():
     help="Host to listen on. Defaults to the $HOST environment or $SOLARA_HOST when available or localhost when not given.",
 )
 @click.option("--dev/--no-dev", default=None, help="Deprecated: use --auto-restart/-a", hidden=True)
-@click.option("--production", is_flag=True, default=False, help="Run in production mode: https://solara.dev/docs/understanding/solara-server")
+@click.option("--production", is_flag=True, default=production_default, help="Run in production mode: https://solara.dev/docs/understanding/solara-server")
 @click.option("--reload", is_flag=True, default=None, help="Deprecated: use --auto-restart/-a", hidden=True)
 @click.option("-a", "--auto-restart", is_flag=True, default=False, help="Enable auto-restarting of server when the solara server code changes.")
 @click.option("--tracer/--no-tracer", default=False)
