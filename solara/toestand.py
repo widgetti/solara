@@ -353,11 +353,12 @@ class Reactive(ValueBase[S]):
             warnings.warn("add_watch is deprecated, use .peek()", DeprecationWarning)
         if thread_local.reactive_used is not None:
             thread_local.reactive_used.add(self)
-        return self._storage.get()
+        # peek to avoid parents also adding themselves to the reactive_used set
+        return self._storage.peek()
 
     def peek(self) -> S:
         """Return the value without automatically subscribing to listeners."""
-        return self._storage.get()
+        return self._storage.peek()
 
     def subscribe(self, listener: Callable[[S], None], scope: Optional[ContextManager] = None):
         return self._storage.subscribe(listener, scope=scope)
@@ -495,7 +496,7 @@ def computed(
         return wrapper(f)
 
 
-class ValueSubField(ValueBase[T]):
+class ReactiveField(ValueBase[T]):
     def __init__(self, field: "FieldBase"):
         super().__init__()  # type: ignore
         self._field = field
@@ -509,7 +510,7 @@ class ValueSubField(ValueBase[T]):
         return str(self._field)
 
     def __repr__(self):
-        return f"<Reactive subfield {self._field}>"
+        return f"<Reactive field {self._field}>"
 
     @property
     def lock(self):
@@ -548,6 +549,7 @@ class ValueSubField(ValueBase[T]):
             warnings.warn("add_watch is deprecated, use .peek()", DeprecationWarning)
         if thread_local.reactive_used is not None:
             thread_local.reactive_used.add(self)
+        # peek to avoid parents also adding themselves to the reactive_used set
         return self._field.peek()
 
     def peek(self) -> T:
@@ -559,7 +561,7 @@ class ValueSubField(ValueBase[T]):
 
 def Ref(field: T) -> Reactive[T]:
     _field = cast(FieldBase, field)
-    return Reactive[T](ValueSubField[T](_field))
+    return cast(Reactive[T], ReactiveField[T](_field))
 
 
 class FieldBase:
@@ -758,6 +760,7 @@ class AutoSubscribeContextManager(AutoSubscribeContextManagerBase):
 
 # alias for compatibility
 State = Reactive
+ValueSubField = ReactiveField
 
 auto_subscribe_context_manager = AutoSubscribeContextManagerReacton
 reacton.core._component_context_manager_classes.append(auto_subscribe_context_manager)
