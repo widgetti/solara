@@ -285,7 +285,7 @@ def Markdown(md_text: str, unsafe_solara_execute=False, style: Union[str, Dict, 
 
     Renders markdown using https://python-markdown.github.io/
 
-    Math rendering is done using Latex syntax, using https://www.mathjax.org/.
+    Math rendering is done using Latex syntax, using https://katex.org/.
 
     ## Examples
 

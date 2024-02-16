@@ -18,13 +18,13 @@ def test_widget_latex_solara(solara_test, page_session: playwright.sync_api.Page
     container = widgets.VBox([label], layout={"width": "200px", "height": "100px"})
     display(container)
 
-    page_session.locator(".test-class-latex >> .mjx-c1D438").wait_for()
+    page_session.locator(".test-class-latex >> .mrel").wait_for()
     page_session.evaluate("document.fonts.ready")
     page_session.wait_for_timeout(1000)
     assert_solara_snapshot(page_session.locator(".test-class-latex").screenshot(), postfix=widgets_postfix)
     label.value = r"$\alpha$"
     label.add_class("test-changed-class-latex")
-    page_session.locator(".test-changed-class-latex >> .mjx-c1D6FC").wait_for()
+    page_session.locator(".test-changed-class-latex >> .mathnormal").wait_for()
     page_session.evaluate("document.fonts.ready")
     page_session.wait_for_timeout(1000)
     assert_solara_snapshot(page_session.locator(".test-changed-class-latex").screenshot(), postfix=widgets_postfix + "-changed")
