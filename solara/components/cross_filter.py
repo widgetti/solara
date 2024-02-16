@@ -303,7 +303,7 @@ def CrossFilterSlider(
                                     v.Select(v_model=column, items=columns_numeric, on_v_model=set_column, label="Choose column")
                                     v.Switch(v_model=invert, on_v_model=set_invert, label="Invert filter")
                                     v.Switch(v_model=enable, on_v_model=set_enable, label="Enable filter")
-                                    with solara.ToggleButtonsSingle(value=mode, on_value=set_mode):
+                                    with solara.ToggleButtonsSingle(value=mode, on_value=set_mode):  # type: ignore
                                         solara.Button(icon_name="mdi-code-equal", icon=True, value="==")
                                         solara.Button(icon_name="mdi-code-not-equal", icon=True, value="!=")
                                         solara.Button(icon_name="mdi-code-less-than", icon=True, value="<")
