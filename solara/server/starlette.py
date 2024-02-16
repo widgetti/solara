@@ -3,7 +3,7 @@ import logging
 import os
 import sys
 import typing
-from typing import List, Union, cast
+from typing import Dict, List, Union, cast
 from uuid import uuid4
 
 import anyio
@@ -203,7 +203,13 @@ async def kernel_connection(ws: starlette.websockets.WebSocket):
                 assert session_id is not None
                 assert kernel_id is not None
                 telemetry.connection_open(session_id)
-                await server.app_loop(ws_wrapper, session_id, kernel_id, page_id, user)
+                headers_dict: Dict[str, List[str]] = {}
+                for k, v in ws.headers.items():
+                    if k not in headers_dict.keys():
+                        headers_dict[k] = [v]
+                    else:
+                        headers_dict[k].append(v)
+                await server.app_loop(ws_wrapper, ws.cookies, headers_dict, session_id, kernel_id, page_id, user)
             except:  # noqa
                 await portal.stop(cancel_remaining=True)
                 raise

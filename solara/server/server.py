@@ -16,6 +16,8 @@ import requests
 import solara
 import solara.routing
 import solara.settings
+from solara.lab import cookies as solara_cookies
+from solara.lab import headers as solara_headers
 
 from . import app, jupytertools, patch, settings, websocket
 from .kernel import Kernel, deserialize_binary_message
@@ -110,7 +112,7 @@ def is_ready(url) -> bool:
     return False
 
 
-async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, kernel_id: str, page_id: str, user: dict = None):
+async def app_loop(ws: websocket.WebsocketWrapper, cookies: Dict[str, str], headers, session_id: str, kernel_id: str, page_id: str, user: dict = None):
     context = initialize_virtual_kernel(session_id, kernel_id, ws)
     if context is None:
         logging.warning("invalid kernel id: %r", kernel_id)
@@ -135,6 +137,9 @@ async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, kernel_id: s
                 from solara_enterprise.auth import user as solara_user
 
                 solara_user.set(user)
+
+            solara_cookies.set(cookies)  # type: ignore
+            solara_headers.set(headers)  # type: ignore
 
             while True:
                 if settings.main.timing:

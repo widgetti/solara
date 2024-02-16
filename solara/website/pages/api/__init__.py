@@ -127,6 +127,7 @@ items = [
             "computed",
             "chat",
             "confirmation_dialog",
+            "cookies_headers",
             "menu",
             "input_date",
             "on_kernel_start",
