@@ -1,5 +1,14 @@
 # Solara Changelog
 
+## Version 1.27.0
+
+
+### Highlight
+
+   * Feature: [Task support](https://solara.dev/api/task). Lets you run code in the background, with the UI available to the user. This is useful for long running tasks, like downloading data or processing data [#461](https://github.com/widgetti/solara/pull/461).
+   * Feature: Provide access to [cookies and request headers](https://solara.dev/api/cookies_headers) [#501](https://github.com/widgetti/solara/pull/501)
+   * Refactor: Replace MathJax with KaTeX for faster math rendering and a lighter package [#483](https://github.com/widgetti/solara/pull/483)
+
 ## Version 1.26.0
 
 ### Demo of @solara.lab.computed with
@@ -10,7 +19,7 @@
 
 ### Highlight
 
-   * Feature: computed reactive variables which use the return value of the function. The value will be updated when any of the reactive variables used in the function [#455](https://github.com/widgetti/solara/pull/455).
+   * Feature: [computed reactive variables](https://solara.dev/api/computed) which use the return value of the function. The value will be updated when any of the reactive variables used in the function [#455](https://github.com/widgetti/solara/pull/455).
 
 ### Details
 
