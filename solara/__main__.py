@@ -11,12 +11,11 @@ from pathlib import Path
 
 import rich
 import rich_click as click
+import solara
 import uvicorn
 from rich import print as rprint
-from uvicorn.main import LEVEL_CHOICES, LOOP_CHOICES
-
-import solara
 from solara.server import settings
+from uvicorn.main import LEVEL_CHOICES, LOOP_CHOICES
 
 from .server import telemetry
 
@@ -461,6 +460,7 @@ def ssg(app: str, port: int, host: str, headed: bool):
     """Static site generation"""
     settings.ssg.headed = headed
     settings.ssg.enabled = True
+    settings.main.mode = "production"  # always override this
     os.environ["SOLARA_APP"] = app
     from solara.server.starlette import ServerStarlette
 
