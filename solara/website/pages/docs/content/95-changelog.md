@@ -3,6 +3,10 @@
 ## Version 1.27.0
 
 
+<video width="80%" controls>
+   <source src=https://dxhl76zpt6fap.cloudfront.net/videos/solara-tasks.mp4  type="video/mp4" >
+</video>
+
 ### Highlight
 
    * Feature: [Task support](https://solara.dev/api/task). Lets you run code in the background, with the UI available to the user. This is useful for long running tasks, like downloading data or processing data [#461](https://github.com/widgetti/solara/pull/461).
