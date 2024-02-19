@@ -42,7 +42,7 @@ def Page():
 
 """
 
-from . import NoPage
+from solara.website.components import NoPage
 
 title = "Cookies and Headers"
 Page = NoPage

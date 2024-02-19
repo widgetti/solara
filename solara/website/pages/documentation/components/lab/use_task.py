@@ -4,9 +4,8 @@
 import solara
 import solara.autorouting
 import solara.lab
+from solara.website.components import NoPage
 from solara.website.utils import apidoc
-
-from . import NoPage
 
 title = "use_task"
 Page = NoPage
