@@ -514,7 +514,7 @@ def task(
     ```mermaid
     stateDiagram-v2
         not_called --> pending:  task()
-        pending --> finished:
+        pending --> finished
         pending --> error: exception
         pending --> pending:  task()
         pending --> cancelled: task.cancel()
