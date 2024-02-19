@@ -57,6 +57,7 @@ include = [
     "solara",
     "tests",
     "prefix",
+    "packages/solara-widget-manager/LICENSE.voila.txt",
 ]
 # and even when we have an include list, we still need to exclude
 # packages (which I think makes no sense)
