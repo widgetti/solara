@@ -10,7 +10,6 @@ import ipyvuetify as v
 import pymdownx.emoji
 import pymdownx.highlight
 import pymdownx.superfences
-
 import solara
 import solara.components.applayout
 
@@ -150,7 +149,7 @@ module.exports = {
             return (await this.import([`${this.getCdn()}/katex@0.16.9/dist/contrib/auto-render.min.js`]))[0]
         },
         async loadMermaid() {
-            return (await this.import([`${this.getCdn()}/mermaid@8.6.4/dist/mermaid.min.js`]))[0]
+            return (await this.import([`${this.getCdn()}/mermaid@10.8.0/dist/mermaid.min.js`]))[0]
         },
         import(dependencies) {
             return this.loadRequire().then(

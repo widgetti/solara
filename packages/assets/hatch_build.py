@@ -9,7 +9,7 @@ packages = [
     ["@widgetti/solara-vuetify-app", "8.0.0"],
     ["@widgetti/solara-vuetify3-app", "3.0.0"],
     ["requirejs", "2.3.6"],
-    ["mermaid", "8.6.4"],
+    ["mermaid", "10.8.0"],
     ["codemirror", "5.65.3"],
     ["vega", "5.21.0"],
     ["vega-lite", "5.2.0"],
