@@ -3,12 +3,13 @@
 
 Theming is provided to Solara through the [`ipyvuetify`](https://solara.dev/docs/understanding/ipyvuetify) package.
 Two themes are provided by default: light and dark.
-Control over the theme variant can be provided to the user through the `ThemeToggle` component.
+Control over the theme variant can be provided to the user through the `ThemeToggle` component, or at a lower level through the
+`solara.lab.theme` object.
 
 ## Themes
 
-The default themes can be customized through altering `solara.lab.theme`. The [theme options of vuetify]
-(https://v2.vuetifyjs.com/en/features/theme/#customizing)
+The default themes can be customized through altering `solara.lab.theme`. The
+[theme options of vuetify](https://v2.vuetifyjs.com/en/features/theme/#customizing)
 are available as `solara.lab.theme.themes.light` and `solara.lab.theme.themes.dark`. The different properties of the theme can be set through, for example
 
 ```python

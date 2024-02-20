@@ -373,7 +373,11 @@ def solara_comm_target(comm, msg_first):
 
             from solara.lab import theme
 
+            # While this usually gets set from the frontend, in solara (server) we want to know this directly at the first
+            # render. Also, using the same trait allows us to write code which works on all widgets platforms, instead
+            # or using something different when running under solara server
             theme.dark_effective = dark
+
             container = ipyvuetify.Html(tag="div")
             context.container = container
             load_app_widget(None, app, path)

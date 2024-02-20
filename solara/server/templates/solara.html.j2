@@ -27,11 +27,9 @@
     {{ resources.include_css("/static/highlight.css") }}
     {{ resources.include_css("/static/highlight-dark.css") }}
     {{ resources.include_css("/static/assets/style.css") }}
-    {% if theme.variant == "light" %}
-        {{ resources.include_css("/static/assets/theme-light.css") }}
-    {% elif theme.variant == "dark" %}
-        {{ resources.include_css("/static/assets/theme-dark.css") }}
-    {% endif %}
+    <style id="jupyter-theme-css">
+        {{ resources.include_css("/static/assets/theme-"~theme.variant~".css") }}
+    </style>
     {{ resources.include_css("/static/assets/custom.css") }}
 
     <script id="jupyter-config-data" type="application/json">
@@ -212,8 +210,8 @@
         solara.preRendered = {{ pre_rendered_html | safe | length | tojson }} > 0
         var theme = {{ theme | tojson | safe }}
         if (theme.variant_user_selectable) {
-            if (localStorage.getItem('theme.variant')) {
-                theme.variant = JSON.parse(localStorage.getItem('theme.variant'))
+            if (localStorage.getItem(':solara:theme.variant')) {
+                theme.variant = JSON.parse(localStorage.getItem(':solara:theme.variant'))
             }
         }
         function prefersDarkScheme() {
@@ -268,6 +266,10 @@
                 reload() {
                     location.reload();
                 },
+                async changeThemeCSS(theme) {
+                    let css = await fetch(`/static/assets/theme-${theme}.css`).then(r => r.text());
+                    document.getElementById('jupyter-theme-css').innerHTML = css;
+                }
             },
             watch: {
                 kernelBusy: function (value) {
@@ -316,9 +318,11 @@
                 '$vuetify.theme.dark': function (value) {
                     let app = document.getElementById('app');
                     if ( value ) {
+                        this.changeThemeCSS('dark');
                         app.classList.remove('theme--light');
                         app.classList.add('theme--dark');
                     } else {
+                        this.changeThemeCSS('light');
                         app.classList.remove('theme--dark');
                         app.classList.add('theme--light');
                     }

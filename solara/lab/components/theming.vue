@@ -4,7 +4,7 @@
         @click="countClicks"
         >
         <v-icon
-            :color="theme_effective ? 'primary' : null">
+            :color="theme_dark ? 'primary' : null">
             {{ this.clicks === 1 ? this.on_icon : this.clicks === 2 ? this.off_icon : this.auto_icon }}
         </v-icon>
     </v-btn>
@@ -12,59 +12,62 @@
 <script>
 module.exports = {
     mounted() {
-        if (theme.variant_user_selectable) {
-            if (localStorage.getItem('theme.variant')) {
-                this.theme_effective = this.initTheme();
+        if (window.solara && theme.variant_user_selectable) {
+            if (localStorage.getItem(':solara:theme.variant')) {
+                this.theme_dark = this.initTheme();
             }
         }
 
-        if ( this.theme_effective === false ) {
+        if ( this.theme_dark === false ) {
             this.clicks = 2;
-        } else if ( this.theme_effective === null ) {
+        } else if ( this.theme_dark === null ) {
             this.clicks = 3;
         }
+        this.lim = this.enable_auto ? 3 : 2;
     },
     methods: {
         countClicks() {
-            const lim = this.enable_auto ? 3 : 2;
-            if ( this.clicks < lim ) {
+            if ( this.clicks < this.lim ) {
                 this.clicks++;
             } else {
                 this.clicks = 1;
             }
-
-            if ( this.clicks === 3 ) {
-                this.theme_effective = null;
-            } else if ( this.clicks === 2 ) {
-                this.theme_effective = false;
+            this.theme_dark = this.get_theme_bool( this.clicks );
+        },
+        get_theme_bool( clicks ) {
+            if ( clicks === 3 ) {
+                return null;
+            } else if ( clicks === 2 ) {
+                return false;
             } else {
-                this.theme_effective = true;
+                return true;
             }
-            if ( window.solara ) {theme.variant = this.stringifyTheme();}
-            this.setTheme();
-            if ( window.solara ) {localStorage.setItem('theme.variant', JSON.stringify(theme.variant));}
-            this.sync_themes(this.theme_effective);
         },
         stringifyTheme() {
-            return this.theme_effective === true ? 'dark' : this.theme_effective === false ? 'light' : 'auto';
+            return this.theme_dark === true ? 'dark' : this.theme_dark === false ? 'light' : 'auto';
         },
         initTheme() {
-            storedTheme = JSON.parse(localStorage.getItem('theme.variant'));
+            storedTheme = JSON.parse(localStorage.getItem(':solara:theme.variant'));
             return storedTheme === 'dark' ? true : storedTheme === 'light' ? false : null;
         },
         setTheme() {
-            if ( window.solara && this.theme_effective === null ) {
+            if ( window.solara && this.theme_dark === null ) {
                 this.$vuetify.theme.dark = this.prefersDarkScheme();
                 return;
             }
-            this.$vuetify.theme.dark = this.theme_effective;
+            this.$vuetify.theme.dark = this.theme_dark;
         },
         prefersDarkScheme() {
             return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
         },
     },
-    data: () => ({
-        clicks: 1,
-    })
+    watch: {
+        clicks (val) {
+            if ( window.solara ) {theme.variant = this.stringifyTheme();}
+            this.setTheme();
+            if ( window.solara ) {localStorage.setItem(':solara:theme.variant', JSON.stringify(theme.variant));}
+            this.sync_themes(this.theme_dark);
+        },
+    }
 }
 </script>

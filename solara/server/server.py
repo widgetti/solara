@@ -293,7 +293,11 @@ def read_root(path: str, root_path: str = "", render_kwargs={}, use_nbextensions
         url = f"{root_path}{path}?v={hash}"
         # when < 10k we embed, also when we use a url, it can be relative, which can break the url
         embed = len(content) < 1024 * 10 and b"url" not in content
-        if embed:
+        # Include the jupyterlab theme css directly, so we can change it on demand
+        if path.endswith("theme-dark.css") or path.endswith("theme-light.css"):
+            content_utf8 = content.decode("utf-8")
+            code = content_utf8
+        elif embed:
             content_utf8 = content.decode("utf-8")
             code = f"<style>/*\npath={path}\n*/\n{content_utf8}</style>"
         else:
