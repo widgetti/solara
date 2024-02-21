@@ -24,11 +24,14 @@ def Header(
         solara.Style(
             """
                     .news {
-                        background-color: #ff991f;
+                        background-color: var(--color-primary);
                         padding: 10px;
                         font-size: 20px;
                         display: flex;
                         justify-content: center;
+                    }
+                    .theme--dark .news {
+                        background-color: var(--dark-color-primary-darker);
                     }
                     .news a {
                         color: white !important;
