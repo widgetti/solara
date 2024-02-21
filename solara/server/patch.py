@@ -298,6 +298,21 @@ def Output_exit(self, exc_type, exc_value, traceback):
         ip.display_pub._hooks.pop()
 
 
+def patch_ipyreact():
+    import ipyreact
+    import ipyreact.module
+
+    from . import esm
+
+    ipyreact.module.define_module = esm.define_module
+    ipyreact.module.get_module_names = esm.get_module_names
+    # define_module is also exported top level
+    ipyreact.define_module = esm.define_module
+
+    # make this a no-op, we'll create the widget when needed
+    ipyreact.importmap._update_import_map = lambda: None
+
+
 def patch():
     global _patched
     global global_widgets_dict
@@ -306,6 +321,15 @@ def patch():
         return
     _patched = True
     __builtins__["display"] = IPython.display.display
+
+    try:
+        import ipyreact
+
+        del ipyreact
+    except ModuleNotFoundError:
+        pass
+    else:
+        patch_ipyreact()
 
     # the ipyvue.Template module cannot be accessed like ipyvue.Template
     # because the import in ipvue overrides it

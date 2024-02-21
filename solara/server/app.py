@@ -313,6 +313,19 @@ def load_app_widget(app_state, app_script: AppScript, pathname: str):
     container = context.container
     assert container is not None
     try:
+        import ipyreact
+
+        del ipyreact
+    except ModuleNotFoundError:
+        pass
+    else:
+        import solara.server.esm
+
+        # will create widgets, but will clean itself up when the kernel closes
+        solara.server.esm.create_modules()
+        solara.server.esm.create_import_map()
+
+    try:
         render_context = context.app_object
         app_state = app_state_initial
         with pdb_guard():
