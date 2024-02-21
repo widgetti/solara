@@ -252,6 +252,11 @@
                 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
                     this.$vuetify.theme.dark = inDarkMode();
                 });
+                if (this.$vuetify.theme.dark) {
+                    this.changeThemeCSS('dark');
+                } else {
+                    this.changeThemeCSS('light');
+                }
             },
             methods: {
                 stateReset() {
