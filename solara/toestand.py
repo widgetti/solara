@@ -28,11 +28,13 @@ from reacton.utils import equals
 
 import solara
 from solara import _using_solara_server
+from solara.server import settings
 
 T = TypeVar("T")
 TS = TypeVar("TS")
 S = TypeVar("S")  # used for state
 logger = logging.getLogger("solara.toestand")
+solara_logger = logging.getLogger("solara")
 
 _DEBUG = False
 
@@ -86,6 +88,38 @@ class ValueBase(Generic[T]):
         self.merge = merge
         self.listeners: Dict[str, Set[Tuple[Callable[[T], None], Optional[ContextManager]]]] = defaultdict(set)
         self.listeners2: Dict[str, Set[Tuple[Callable[[T, T], None], Optional[ContextManager]]]] = defaultdict(set)
+        if settings.main.log_level in ["DEBUG", "INFO"]:
+            import inspect
+
+            for frame in inspect.stack():
+                file = frame.filename
+                if (
+                    not (
+                        file.endswith("solara/toestand.py")
+                        or file.endswith("solara/reactive.py")
+                        or file.endswith("solara/hooks/use_reactive.py")
+                        or file.endswith("reacton/core.py")
+                        or file.endswith("components/markdown.py")
+                    )
+                    and frame.code_context is not None
+                ):
+                    if "=" not in frame.code_context[0]:
+                        continue
+                    elif any(op in frame.code_context[0].split("=")[1].lower() for op in ["reactive", "use_memo", "computed", "singleton"]):
+                        declaration = frame.code_context[0].split("=")[0].strip()
+                        if ":" in declaration:
+                            declaration = declaration.split(":")[0].strip()
+                        self._varname: Optional[str] = declaration
+                        logger.info("found varname: " + declaration)
+                        break
+                # Markdown case is special, because the stacktrace ends at
+                # https://github.com/widgetti/solara/blob/604d2e54146308d64a209334d0314d2baba75108/solara/components/markdown.py#L368
+                elif file.endswith("components/markdown.py"):
+                    self._varname = "markdown_content"
+                    break
+            if not hasattr(self, "_varname"):
+                logger.info("No varname found")
+                self._varname = None
 
     @property
     def lock(self):
@@ -130,7 +164,10 @@ class ValueBase(Generic[T]):
         return cleanup
 
     def fire(self, new: T, old: T):
-        logger.info("value change from %s to %s, will fire events", old, new)
+        if settings.main.log_level in ["DEBUG", "INFO"] and self._varname is not None:
+            logger.info(f"value of {self._varname if self._varname is not None else ''} changed from %s to %s, will fire events", old, new)
+        else:
+            logger.info("value changed from %s to %s, will fire events", old, new)
         scope_id = self._get_scope_key()
         scopes = set()
         for listener, scope in self.listeners[scope_id].copy():
