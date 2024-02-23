@@ -7,7 +7,7 @@ from hatchling.builders.hooks.plugin.interface import BuildHookInterface
 
 packages = [
     ["@widgetti/solara-vuetify-app", "9.0.0"],
-    ["@widgetti/solara-vuetify3-app", "3.0.0"],
+    ["@widgetti/solara-vuetify3-app", "4.0.0"],
     ["requirejs", "2.3.6"],
     ["mermaid", "10.8.0"],
     ["codemirror", "5.65.3"],
