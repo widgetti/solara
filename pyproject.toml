@@ -100,7 +100,7 @@ dev = [
     "polars",
 ]
 assets = [
-    "solara-assets==1.27.0"
+    "solara-assets==1.28.0"
 ]
 flask = [
     "flask",
