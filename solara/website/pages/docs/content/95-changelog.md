@@ -1,5 +1,25 @@
 # Solara Changelog
 
+## Version 1.28.0
+
+<video width="80%" controls>
+   <source src=https://dxhl76zpt6fap.cloudfront.net/videos/solara-theme.mp4  type="video/mp4" >
+</video>
+
+### Highlight
+
+   * Feature: [Theming support](https://solara.dev/api/theming), including dark theme and auto-detection of device preference [#494](https://github.com/widgetti/solara/pull/494).
+
+### Details
+
+   * Feature: Support for [ES modules](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules) using [ipyReact](https://github.com/widgetti/ipyreact)
+      [#516](https://github.com/widgetti/solara/pull/516).
+   * Feature: Support for [Polars](https://pola.rs/) dataframes in `solara.DataFrame` [#195](https://github.com/widgetti/solara/pull/195)
+   * Bug Fix: User reactive variables sometimes taking on the value of a solara builtin one (issue [#510](https://github.com/widgetti/solara/issues/510))
+      [#514](https://github.com/widgetti/solara/pull/514)
+   * Bug Fix: An extra scrollbar sometimes appearing when no `AppBar` or `SideBar` was present on the page [#477](https://github.com/widgetti/solara/pull/477)
+   * Bug Fix: The browser main scrollbar being present on pages with no scrolling enabled [#518](https://github.com/widgetti/solara/pull/518)
+
 ## Version 1.27.0
 
 
