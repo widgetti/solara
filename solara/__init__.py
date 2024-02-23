@@ -55,7 +55,9 @@ from .datatypes import *
 from .hooks import *
 from .cache import memoize
 from . import cache
-from .components import *
+
+# TODO: components re-exports v, we should use __all__ in components/misc.py
+from .components import *  # type: ignore
 from .components import _component_vue
 
 from .routing import use_route, use_router, use_route_level, find_route, use_pathname, resolve_path

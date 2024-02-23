@@ -4,12 +4,13 @@ import logging
 import textwrap
 import traceback
 import warnings
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Union, cast
 
 import ipyvuetify as v
 import pymdownx.emoji
 import pymdownx.highlight
 import pymdownx.superfences
+
 import solara
 import solara.components.applayout
 
@@ -56,7 +57,7 @@ def _run_solara(code):
     else:
         raise NameError("No Page of app defined")
     box = v.Html(tag="div")
-    box, rc = solara.render(app, container=box)
+    box, rc = solara.render(cast(solara.Element, app), container=box)  # type: ignore
     widget_id = box._model_id
     return (
         '<div class="solara-markdown-output v-card v-sheet elevation-7">'
