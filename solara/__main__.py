@@ -11,11 +11,12 @@ from pathlib import Path
 
 import rich
 import rich_click as click
-import solara
 import uvicorn
 from rich import print as rprint
-from solara.server import settings
 from uvicorn.main import LEVEL_CHOICES, LOOP_CHOICES
+
+import solara
+from solara.server import settings
 
 from .server import telemetry
 
@@ -217,10 +218,16 @@ if "SOLARA_MODE" in os.environ:
     help=f"Use light or dark variant, or auto detect (auto). [default: {settings.theme.variant.name}",
 )
 @click.option(
+    "--dark",
+    type=bool,
+    default=settings.theme.variant == settings.ThemeVariant.dark,
+    help="Use dark theme. Shorthand for --theme-variant=dark",
+)
+@click.option(
     "--theme-variant-user-selectable/--no-theme-variant-user-selectable",
     type=bool,
-    default=settings.theme.variant_user_selectable,
-    help=f"Can the user select the theme variant from the UI. [default: {settings.theme.variant_user_selectable}",
+    hidden=True,
+    help="Deprecated.",
 )
 @click.option("--pdb/--no-pdb", "use_pdb", default=False, help="Enter debugger on error")
 @click.argument("app")
@@ -273,6 +280,7 @@ def run(
     use_pdb: bool,
     theme_loader: str,
     theme_variant: settings.ThemeVariant,
+    dark: bool,
     theme_variant_user_selectable: bool,
     ssg: bool,
     search: bool,
@@ -375,12 +383,13 @@ def run(
     kwargs["loop"] = loop
     settings.main.use_pdb = use_pdb
     settings.theme.loader = theme_loader
+    if dark:
+        theme_variant = settings.ThemeVariant.dark
     settings.theme.variant = theme_variant
-    settings.theme.variant_user_selectable = theme_variant_user_selectable
     settings.main.tracer = tracer
     settings.main.timing = timing
     items = (
-        "theme_variant_user_selectable theme_variant theme_loader use_pdb server open_browser open url failed dev tracer"
+        "theme_variant_user_selectable dark theme_variant theme_loader use_pdb server open_browser open url failed dev tracer"
         " timing ssg search check_version production".split()
     )
     for item in items:

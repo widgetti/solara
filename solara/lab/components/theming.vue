@@ -12,7 +12,7 @@
 <script>
 module.exports = {
     mounted() {
-        if (window.solara && theme.variant_user_selectable) {
+        if (window.solara) {
             if (localStorage.getItem(':solara:theme.variant')) {
                 this.theme_dark = this.initTheme();
             }

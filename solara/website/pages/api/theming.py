@@ -3,8 +3,8 @@
 
 Theming is provided to Solara through the [`ipyvuetify`](https://solara.dev/docs/understanding/ipyvuetify) package.
 Two themes are provided by default: light and dark.
-Control over the theme variant can be provided to the user through the `ThemeToggle` component, or at a lower level through the
-`solara.lab.theme` object.
+Control over the theme variant (light, dark, or auto) can be provided to the user through the `ThemeToggle` component. Developers can
+control theming through the `solara.lab.theme` object.
 
 ## Themes
 
@@ -19,7 +19,10 @@ solara.lab.theme.themes.light.primary = "#3f51b5"
 Dark theme can be enabled/disabled through `solara.lab.theme.dark = True` / `False` / `None`. When set to `None`, the theme is set to auto,
 which will follow the system theme if the user's browser supports detecting it.
 
-When the theme is set to auto, the active theme can be detected through `solara.lab.theme.dark_effective`, which is set to `True` or `False` depending on
+When using solara server, the default theme variant can be set in the server settings through the command line interface. See
+[here](https://solara.dev/docs/understanding/solara-server) for more information.
+
+The active theme can be detected through `solara.lab.theme.dark_effective`, which is set to `True` or `False` depending on
 whether dark theme is enabled or not.
 
 ## Example
@@ -30,7 +33,7 @@ import solara.lab
 from solara.lab import theme as theme
 
 
-def color(colors):
+def change_color(colors):
     if "purple" in colors:
         theme.themes.light.info = "#8617c2"
     else:
@@ -47,7 +50,7 @@ def Page():
     solara.Info("Info message")
     solara.Error("Error message")
 
-    with solara.ToggleButtonsMultiple(on_value=color):
+    with solara.ToggleButtonsMultiple(on_value=change_color):
         solara.Button("Change Info", value="purple")
         solara.Button("Change Error", value="green")
 ```

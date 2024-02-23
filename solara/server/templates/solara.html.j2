@@ -209,10 +209,8 @@
         const themeVariants = ['light', 'dark', 'auto']
         solara.preRendered = {{ pre_rendered_html | safe | length | tojson }} > 0
         var theme = {{ theme | tojson | safe }}
-        if (theme.variant_user_selectable) {
-            if (localStorage.getItem(':solara:theme.variant')) {
-                theme.variant = JSON.parse(localStorage.getItem(':solara:theme.variant'))
-            }
+        if (localStorage.getItem(':solara:theme.variant')) {
+            theme.variant = JSON.parse(localStorage.getItem(':solara:theme.variant'))
         }
         function prefersDarkScheme() {
             return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches

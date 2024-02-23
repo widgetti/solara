@@ -4,7 +4,6 @@ import ipyvuetify.Themes
 from ipyvuetify.Themes import Theme
 
 import solara
-import solara.server.settings as settings
 from solara.components.component_vue import component_vue
 from solara.tasks import Proxy
 
@@ -30,6 +29,7 @@ def ThemeToggle(
     on_icon: str = "mdi-weather-night",
     off_icon: str = "mdi-weather-sunny",
     auto_icon: str = "mdi-brightness-auto",
+    enable_auto: bool = True,
 ):
     """
     Insert a toggle switch for user to switch between light and dark themes.
@@ -45,8 +45,8 @@ def ThemeToggle(
     ## Arguments
     - `on_icon`: The icon to display when the dark theme is enabled.
     - `off_icon`: The icon to display when the dark theme is disabled.
-    - `auto_icon`: The icon to display when the theme is set to auto
-        (**note**: auto mode is only available if the server settings `theme.variant_user_selectable` is enabled).
+    - `auto_icon`: The icon to display when the theme is set to auto. Only visible if `enable_auto` is `True`.
+    - `enable_auto`: Whether to enable the auto detection of dark mode.
     """
 
     def sync_themes(selected_theme: str):
@@ -55,7 +55,7 @@ def ThemeToggle(
     return _ThemeToggle(
         theme_dark=theme.dark,
         event_sync_themes=sync_themes,
-        enable_auto=settings.theme.variant_user_selectable,
+        enable_auto=enable_auto,
         on_icon="mdi-weather-night",
         off_icon="mdi-weather-sunny",
         auto_icon="mdi-brightness-auto",

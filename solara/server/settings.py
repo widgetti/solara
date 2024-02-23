@@ -32,7 +32,6 @@ class ThemeVariant(str, Enum):
 
 class ThemeSettings(BaseSettings):
     variant: ThemeVariant = ThemeVariant.light
-    variant_user_selectable: bool = True
     loader: str = "solara"
 
     class Config:
