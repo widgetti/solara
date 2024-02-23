@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, cast
 
 import ipyvuetify.Themes
 from ipyvuetify.Themes import Theme
@@ -8,7 +8,7 @@ from solara.components.component_vue import component_vue
 from solara.tasks import Proxy
 
 theme = Proxy(Theme)
-ipyvuetify.Themes.theme = theme
+ipyvuetify.Themes.theme = cast(ipyvuetify.Themes.Theme, theme)
 
 
 @component_vue("theming.vue")
