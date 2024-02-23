@@ -363,11 +363,20 @@ def solara_comm_target(comm, msg_first):
         data = msg["content"]["data"]
         method = data["method"]
         if method == "run":
-            path = data.get("path", "")
-            app_name = data.get("appName") or "__default__"
+            args = data["args"]
+            path = args.get("path", "")
+            app_name = args.get("appName") or "__default__"
             app = apps[app_name]
             context = kernel_context.get_current_context()
+            dark = args.get("dark", False)
             import ipyvuetify
+
+            from solara.lab import theme
+
+            # While this usually gets set from the frontend, in solara (server) we want to know this directly at the first
+            # render. Also, using the same trait allows us to write code which works on all widgets platforms, instead
+            # or using something different when running under solara server
+            theme.dark_effective = dark
 
             container = ipyvuetify.Html(tag="div")
             context.container = container

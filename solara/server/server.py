@@ -12,6 +12,7 @@ import ipyvue
 import ipywidgets
 import jinja2
 import requests
+
 import solara
 import solara.routing
 import solara.settings
@@ -293,7 +294,12 @@ def read_root(path: str, root_path: str = "", render_kwargs={}, use_nbextensions
         url = f"{root_path}{path}?v={hash}"
         # when < 10k we embed, also when we use a url, it can be relative, which can break the url
         embed = len(content) < 1024 * 10 and b"url" not in content
-        if embed:
+        # Always embed the jupyterlab theme CSS to make theme switching possible (see solara.html.j2 template)
+        # TODO: Prevent browser from caching the theme CSS files
+        if path.endswith("theme-dark.css") or path.endswith("theme-light.css"):
+            content_utf8 = content.decode("utf-8")
+            code = content_utf8
+        elif embed:
             content_utf8 = content.decode("utf-8")
             code = f"<style>/*\npath={path}\n*/\n{content_utf8}</style>"
         else:

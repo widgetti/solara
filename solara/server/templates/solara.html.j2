@@ -27,11 +27,9 @@
     {{ resources.include_css("/static/highlight.css") }}
     {{ resources.include_css("/static/highlight-dark.css") }}
     {{ resources.include_css("/static/assets/style.css") }}
-    {% if theme.variant == "light" %}
-        {{ resources.include_css("/static/assets/theme-light.css") }}
-    {% elif theme.variant == "dark" %}
-        {{ resources.include_css("/static/assets/theme-dark.css") }}
-    {% endif %}
+    <style id="jupyter-theme-css">
+        {{ resources.include_css("/static/assets/theme-"~theme.variant~".css") }}
+    </style>
     {{ resources.include_css("/static/assets/custom.css") }}
 
     <script id="jupyter-config-data" type="application/json">
@@ -126,36 +124,6 @@
             </v-sheet>
         </v-menu>
 
-        <v-menu offset-y top :close-on-content-click="false" style="z-index: 100001">
-            <!-- <template v-slot:activator="{ on }">
-                <v-btn text v-on="on" style="position: fixed; top: 8px; right: 8px; z-index: 100000">
-                    <v-icon right large style="opacity: 0.5" :color="connectionStatus != 'connected' ? 'red' : ''">mdi-account</v-icon>
-                </v-btn>
-            </template> -->
-            <v-list>
-                <v-list-item @click="stateReset()" link>
-                    <v-list-item-icon>
-                        <v-icon>mdi-close-box</v-icon>
-                    </v-list-item-icon>
-                    <v-list-item-title>Reset application
-                    </v-list-item-title>
-                </v-list-item>
-                <v-list-item v-if="theme.variant_user_selectable">
-                    <v-btn-toggle v-model="themeVariantIndex" tile group mandatory>
-                        <v-btn value="light" icon>
-                            <v-icon>mdi-white-balance-sunny</v-icon>
-                        </v-btn>
-                        <v-btn>
-                            <v-icon>mdi-weather-night</v-icon>
-                        </v-btn>
-                        <v-btn>
-                            <v-icon>mdi-theme-light-dark</v-icon>
-                        </v-btn>
-                    </v-btn-toggle>
-                </v-list-item>
-
-            </v-list>
-        </v-menu>
         <!-- <v-menu v-if="debug && outputMessages && outputMessages.length" offset-y top
             :close-on-content-click="false">
             <template v-slot:activator="{ on }">
@@ -241,10 +209,8 @@
         const themeVariants = ['light', 'dark', 'auto']
         solara.preRendered = {{ pre_rendered_html | safe | length | tojson }} > 0
         var theme = {{ theme | tojson | safe }}
-        if (theme.variant_user_selectable) {
-            if (localStorage.getItem('theme.variant')) {
-                theme.variant = JSON.parse(localStorage.getItem('theme.variant'))
-            }
+        if (localStorage.getItem(':solara:theme.variant')) {
+            theme.variant = JSON.parse(localStorage.getItem(':solara:theme.variant'))
         }
         function prefersDarkScheme() {
             return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -284,6 +250,11 @@
                 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
                     this.$vuetify.theme.dark = inDarkMode();
                 });
+                if (this.$vuetify.theme.dark) {
+                    this.changeThemeCSS('dark');
+                } else {
+                    this.changeThemeCSS('light');
+                }
             },
             methods: {
                 stateReset() {
@@ -298,17 +269,9 @@
                 reload() {
                     location.reload();
                 },
-            },
-            computed: {
-                themeVariantIndex: {
-                    get() {
-                        return themeVariants.indexOf(theme.variant)
-                    },
-                    set(value) {
-                        theme.variant = themeVariants[value]
-                        this.$vuetify.theme.dark = inDarkMode()
-                        localStorage.setItem('theme.variant', JSON.stringify(theme.variant))
-                    }
+                async changeThemeCSS(theme) {
+                    let css = await fetch(`/static/assets/theme-${theme}.css`).then(r => r.text());
+                    document.getElementById('jupyter-theme-css').innerHTML = css;
                 }
             },
             watch: {
@@ -353,6 +316,18 @@
                             console.log('this.autoRefreshCount!', this.autoRefreshCount)
                             this.autoRefreshCount = this.autoRefreshCount - 1;
                         }, 1000);
+                    }
+                },
+                '$vuetify.theme.dark': function (value) {
+                    let app = document.getElementById('app');
+                    if ( value ) {
+                        this.changeThemeCSS('dark');
+                        app.classList.remove('theme--light');
+                        app.classList.add('theme--dark');
+                    } else {
+                        this.changeThemeCSS('light');
+                        app.classList.remove('theme--dark');
+                        app.classList.add('theme--light');
                     }
                 }
             },
