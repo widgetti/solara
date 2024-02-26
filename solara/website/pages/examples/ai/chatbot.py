@@ -70,11 +70,10 @@ def Page():
             stream=True,
         )
         messages.value = [*messages.value, {"role": "assistant", "content": ""}]
-        while True:
-            for chunk in response:
-                if chunk.choices[0].finish_reason == "stop":  # type: ignore
-                    return
-                add_chunk_to_ai_message(chunk.choices[0].delta.content)  # type: ignore
+        for chunk in response:
+            if chunk.choices[0].finish_reason == "stop":  # type: ignore
+                return
+            add_chunk_to_ai_message(chunk.choices[0].delta.content)  # type: ignore
 
     task = solara.lab.use_task(call_openai, dependencies=[user_message_count])  # type: ignore
 
