@@ -822,6 +822,8 @@ def use_task(
 
     def wrapper(f):
         task_instance = solara.use_memo(lambda: task(f, prefer_threaded=prefer_threaded), dependencies=[])
+        # we always update the function so we do not have stale data in the function
+        task_instance.function = f  # type: ignore
 
         def _prestart():
             if dependencies is not None:
