@@ -209,6 +209,12 @@
         const themeVariants = ['light', 'dark', 'auto']
         solara.preRendered = {{ pre_rendered_html | safe | length | tojson }} > 0
         var theme = {{ theme | tojson | safe }}
+        function getThemeVariant() {
+            if (localStorage.getItem(':solara:theme.variant')) {
+                return JSON.parse(localStorage.getItem(':solara:theme.variant'))
+            }
+            return theme.variant;
+        }
         if (localStorage.getItem(':solara:theme.variant')) {
             theme.variant = JSON.parse(localStorage.getItem(':solara:theme.variant'))
         }
@@ -216,11 +222,11 @@
             return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
         }
         function inDarkMode() {
-            if (theme.variant == 'auto') {
+            if (getThemeVariant() == 'auto') {
                 return prefersDarkScheme();
             }
             else {
-                return theme.variant == 'dark';
+                return getThemeVariant() == 'dark';
             }
         }
     </script>
