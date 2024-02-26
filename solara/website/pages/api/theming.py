@@ -55,6 +55,10 @@ def Page():
         solara.Button("Change Error", value="green")
 ```
 
+A more advanced example can be found at [the scatter app demo](https://solara.dev/apps/scatter) where
+we set a plotly theme based on dark/light theme, and also set the app bar color to its default so it
+responds to the theme variant change.
+
 ## ThemeToggle
 
 """
