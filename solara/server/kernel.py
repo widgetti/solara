@@ -217,7 +217,11 @@ def send_websockets(websockets: Set[websocket.WebsocketWrapper], binary_msg):
             ws.send(binary_msg)
         except:  # noqa
             # in case of any issue, we simply remove it from the list
-            websockets.remove(ws)
+            try:
+                # websocket can be modified by another thread
+                websockets.remove(ws)
+            except KeyError:
+                pass  # already removed
 
 
 class SessionWebsocket(session.Session):
