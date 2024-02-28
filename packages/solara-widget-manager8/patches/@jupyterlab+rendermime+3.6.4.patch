@@ -1,0 +1,13 @@
+diff --git a/node_modules/@jupyterlab/rendermime/lib/registry.js b/node_modules/@jupyterlab/rendermime/lib/registry.js
+index 2ee4d74..acf0615 100644
+--- a/node_modules/@jupyterlab/rendermime/lib/registry.js
++++ b/node_modules/@jupyterlab/rendermime/lib/registry.js
+@@ -2,7 +2,7 @@
+ | Copyright (c) Jupyter Development Team.
+ | Distributed under the terms of the Modified BSD License.
+ |----------------------------------------------------------------------------*/
+-import { defaultSanitizer } from '@jupyterlab/apputils';
++import { defaultSanitizer } from '@jupyterlab/apputils/lib/sanitizer';
+ import { PathExt, URLExt } from '@jupyterlab/coreutils';
+ import { nullTranslator } from '@jupyterlab/translation';
+ import { MimeModel } from './mimemodel';

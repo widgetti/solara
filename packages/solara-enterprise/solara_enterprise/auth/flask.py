@@ -6,6 +6,8 @@ from authlib.integrations.flask_client import OAuth
 from flask import redirect, request, session
 from solara.server import settings
 
+from .. import license
+
 logger = logging.getLogger("solara.enterprise.auth.starlette")
 
 
@@ -76,6 +78,7 @@ def logout():
 
 
 def login(redirect_uri: Optional[str] = None):
+    license.check("auth")
     check_oauth()
     assert oauth is not None
     assert oauth.oauth1 is not None

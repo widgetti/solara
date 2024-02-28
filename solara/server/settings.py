@@ -32,7 +32,6 @@ class ThemeVariant(str, Enum):
 
 class ThemeSettings(BaseSettings):
     variant: ThemeVariant = ThemeVariant.light
-    variant_user_selectable: bool = True
     loader: str = "solara"
 
     class Config:
@@ -74,8 +73,6 @@ class Telemetry(BaseSettings):
 
 
 class Assets(BaseSettings):
-    cdn: str = "https://cdn.jsdelivr.net/npm/"
-    proxy: bool = True
     proxy_cache_dir: Path = Path(prefix + "/share/solara/cdn/")
     fontawesome_enabled: bool = True
     fontawesome_path: str = "/font-awesome@4.5.0/css/font-awesome.min.css"
@@ -171,14 +168,15 @@ kernel = Kernel()
 # fail early
 solara.util.parse_timedelta(kernel.cull_timeout)
 
-if assets.proxy:
+if settings.assets.proxy:
     try:
         assets.proxy_cache_dir.mkdir(exist_ok=True, parents=True)
     except OSError as e:
-        assets.proxy = False
+        settings.assets.proxy = False
         warnings.warn(
             f"Could not create {assets.proxy_cache_dir} due to {e}. We will automatically disable the assets proxy for you. "
-            "If you want to disable this warning, set SOLARA_ASSETS_PROXY to False (e.g. export SOLARA_ASSETS_PROXY=false)."
+            "If you want to disable this warning, set SOLARA_ASSETS_PROXY to False (e.g. export SOLARA_ASSETS_PROXY=false). "
+            "Or change the SOLARA_PROXY_CACHE_DIR environment variable to a directory where you have write access."
         )
         # that's ok, the user probably doesn't have permission to create the directory
         # in this case, we would need to install solara-assets?

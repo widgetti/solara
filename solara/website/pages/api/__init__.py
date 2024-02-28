@@ -3,8 +3,6 @@
 Click on one of the items on the left.
 """
 
-from pathlib import Path
-
 import solara
 from solara.alias import rv
 
@@ -97,7 +95,15 @@ items = [
     {
         "name": "Utils",
         "icon": "mdi-hammer-wrench",
-        "pages": ["display", "memoize", "reactive", "widget", "component_vue"],
+        "pages": [
+            "display",
+            "get_kernel_id",
+            "get_session_id",
+            "memoize",
+            "reactive",
+            "widget",
+            "component_vue",
+        ],
     },
     {
         "name": "Advanced",
@@ -118,12 +124,18 @@ items = [
         "name": "Lab (experimental)",
         "icon": "mdi-flask-outline",
         "pages": [
+            "computed",
             "chat",
             "confirmation_dialog",
+            "cookies_headers",
             "menu",
             "input_date",
+            "on_kernel_start",
             "tab",
             "tabs",
+            "task",
+            "theming",
+            "use_task",
         ],
     },
 ]
@@ -145,18 +157,24 @@ def Page():
                     continue
                 route = routes[page]
                 path = route.path
-                image_path = None
                 image_url = None
-                for suffix in [".png", ".gif"]:
-                    image = path + suffix
-                    image_path = Path(__file__).parent.parent.parent / "public" / "api" / image
-                    image_url = "/static/public/api/" + image
-                    if image_path.exists():
-                        break
-                assert image_path is not None
-                assert image_url is not None
-                if not image_path.exists():
-                    image_url = "/static/public/logo.svg"
+                if page in [
+                    "button",
+                    "checkbox",
+                    "confirmation_dialog",
+                    "echarts",
+                    "file_browser",
+                    "file_download",
+                    "matplotlib",
+                    "select",
+                    "switch",
+                    "tooltip",
+                ]:
+                    image_url = "https://dxhl76zpt6fap.cloudfront.net/public/api/" + page + ".gif"
+                elif page in ["card", "dataframe", "pivot_table", "slider"]:
+                    image_url = "https://dxhl76zpt6fap.cloudfront.net/public/api/" + page + ".png"
+                else:
+                    image_url = "https://dxhl76zpt6fap.cloudfront.net/public/logo.svg"
 
                 path = getattr(route.module, "redirect", path)
                 if path:
@@ -169,12 +187,8 @@ def Page():
                         rv.CardTitle(children=[route.label])
                         with rv.CardText():
                             with solara.Link(path):
-                                if not image_path.exists():
-                                    pass
-                                    with solara.Column(align="center"):
-                                        solara.Image(image_url, width="120px")
-                                else:
-                                    solara.Image(image_url, width="100%")
+                                with solara.Column(align="center"):
+                                    solara.Image(image_url, width="120px")
                         doc = route.module.__doc__ or ""
                         if doc:
                             lines = doc.split("\n")

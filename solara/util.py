@@ -1,22 +1,25 @@
 import base64
 import contextlib
+import hashlib
 import os
 import sys
 import threading
 from collections import abc
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Union
+from typing import TYPE_CHECKING, Dict, List, Tuple, Union
 
 if TYPE_CHECKING:
     import numpy as np
 
 import ipyvuetify
+import ipywidgets
 import reacton
 
 import solara
 
 SOLARA_ALLOW_OTHER_TRACER = os.environ.get("SOLARA_ALLOW_OTHER_TRACER", False) in (True, "True", "true", "1")
 ipyvuetify_major_version = int(ipyvuetify.__version__.split(".")[0])
+ipywidgets_major = int(ipywidgets.__version__.split(".")[0])
 
 
 def github_url(file):
@@ -252,3 +255,32 @@ def parse_timedelta(size: str) -> float:
         return float(size[:-1])
     else:
         return float(size)
+
+
+def get_file_hash(path: Path, algorithm="md5") -> Tuple[bytes, str]:
+    """Compute the hash of a file. Note that we also return the file content as bytes."""
+    data = path.read_bytes()
+    if sys.version_info[:2] < (3, 9):
+        # usedforsecurity is only available in Python 3.9+
+        h = hashlib.new(algorithm)
+    else:
+        h = hashlib.new(algorithm, usedforsecurity=False)  # type: ignore
+    h.update(data)
+    return data, h.hexdigest()
+
+
+def is_running_in_colab():
+    try:
+        import google.colab  # noqa
+
+        return True
+    except ImportError:
+        return False
+
+
+def is_running_in_vscode():
+    return "VSCODE_PID" in os.environ or "VSCODE_CWD" in os.environ
+
+
+def is_running_in_voila():
+    return os.environ.get("SERVER_SOFTWARE", "").startswith("voila")

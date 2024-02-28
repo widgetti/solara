@@ -9,11 +9,14 @@
 
 import {
   WidgetManager as JupyterLabManager,
+} from '@jupyter-widgets/jupyterlab-manager/lib/manager';
+
+import {
   WidgetRenderer
-} from '@jupyter-widgets/jupyterlab-manager';
+} from '@jupyter-widgets/jupyterlab-manager/lib/renderer';
 
 
-import { output } from '@jupyter-widgets/jupyterlab-manager';
+import * as output from '@jupyter-widgets/jupyterlab-manager/lib/output';
 
 import * as base from '@jupyter-widgets/base';
 import * as controls from '@jupyter-widgets/controls';
@@ -24,10 +27,7 @@ import '@jupyter-widgets/controls/css/widgets-base.css';
 // Voila imports the following css file, not sure why
 // import '@jupyter-widgets/controls/css/widgets.built.css';
 
-import * as Application from '@jupyterlab/application';
-import * as AppUtils from '@jupyterlab/apputils';
 import * as CoreUtils from '@jupyterlab/coreutils';
-import * as DocRegistry from '@jupyterlab/docregistry';
 import * as OutputArea from '@jupyterlab/outputarea';
 
 import { DocumentRegistry } from '@jupyterlab/docregistry';
@@ -149,7 +149,8 @@ export class WidgetManager extends JupyterLabManager {
     await this._loadFromKernel();
   }
 
-  async run(appName: string, path: string) {
+  async run(appName: string, args: any) {
+    let { path } = args;
     // used for routing
     // should be similar to what we do in navigator.vue
     if (typeof path === 'undefined') {
@@ -173,7 +174,7 @@ export class WidgetManager extends JupyterLabManager {
         }
       };
     });
-    this.controlComm.send({ method: 'run', path, appName: appName || null });
+    this.controlComm.send({ method: 'run', args: { ...args, appName: appName || null } });
     const widget_id = await widget_id_promise;
     return widget_id;
   }
@@ -251,10 +252,7 @@ export class WidgetManager extends JupyterLabManager {
       window.define('@jupyter-widgets/controls', controls);
       window.define('@jupyter-widgets/output', output);
 
-      window.define('@jupyterlab/application', Application);
-      window.define('@jupyterlab/apputils', AppUtils);
       window.define('@jupyterlab/coreutils', CoreUtils);
-      window.define('@jupyterlab/docregistry', DocRegistry);
       window.define('@jupyterlab/outputarea', OutputArea);
 
       window.define('@phosphor/widgets', LuminoWidget);

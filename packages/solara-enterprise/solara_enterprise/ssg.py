@@ -3,6 +3,7 @@ import multiprocessing.pool
 import threading
 import time
 import typing
+import urllib
 from pathlib import Path
 from typing import List, Optional
 
@@ -124,10 +125,18 @@ def ssg_crawl_route(base_url: str, route: solara.Route, build_path: Path, thread
                 page.locator("#kernel-busy-indicator").wait_for(state="hidden")
                 # page.wait_
                 time.sleep(0.5)
-                html = page.content()
+                raw_html = page.content()
             except Exception:
                 logger.exception("Failure retrieving content for url: %s", url)
                 raise
+            request_path = urllib.parse.urlparse(url).path
+
+            import solara.server.server
+
+            # the html from playwright is not what we want, pass it through the jinja template again
+            html = solara.server.server.read_root(request_path, ssg_data=_ssg_data(raw_html))
+            if html is None:
+                raise Exception(f"Failed to render {url}")
             path.write_text(html, encoding="utf-8")
             rprint(f"Wrote to {path}")
             page.goto("about:blank")
@@ -140,12 +149,8 @@ def ssg_crawl_route(base_url: str, route: solara.Route, build_path: Path, thread
     return results
 
 
-def ssg_data(path: str) -> Optional[SSGData]:
+def ssg_content(path: str) -> Optional[str]:
     license.check("SSG")
-    html = ""
-    # pre_rendered_css = ""
-    styles = []
-    title = "Solara ☀️"
     # still not sure why we sometimes end with a double slash
     if path.endswith("//"):
         path = path[:-2]
@@ -164,38 +169,46 @@ def ssg_data(path: str) -> Optional[SSGData]:
             html_path = html_path.with_suffix(".html")
         if html_path.exists() and html_path.is_file():
             logger.info("Using pre-rendered html at %r", html_path)
-
-            from bs4 import BeautifulSoup, Tag
-
-            soup = BeautifulSoup(html_path.read_text("utf8"), "html.parser")
-            node = soup.find(id="app")
-            # TODO: add classes...
-            if node and isinstance(node, Tag):
-                # only render children
-                html = "".join(str(x) for x in node.contents)
-            title_tag = soup.find("title")
-            if title_tag:
-                title = title_tag.text
-
-            # include all meta tags
-            rendered_metas = soup.find_all("meta")
-            metas = []
-            for meta in rendered_metas:
-                # but only the ones added by solara
-                if meta.attrs.get("data-solara-head-key"):
-                    metas.append(str(meta))
-
-            # include all styles
-            rendered_styles = soup.find_all("style")
-            for style in rendered_styles:
-                style_html = str(style)
-                # in case we want to skip the mathjax css
-                # if "MJXZERO" in style_html:
-                #     continue
-                # pre_rendered_css += style_html
-                styles.append(style_html)
-                logger.debug("Include style (size is %r mb):\n\t%r", len(style_html) / 1024**2, style_html[:200])
-            return SSGData(title=title, html=html, styles=styles, metas=metas)
+            return html_path.read_text("utf8")
         else:
             logger.error("Count not find html at %r", html_path)
     return None
+
+
+def _ssg_data(html: str) -> Optional[SSGData]:
+    license.check("SSG")
+    from bs4 import BeautifulSoup, Tag
+
+    # pre_rendered_css = ""
+    styles = []
+    title = "Solara ☀️"
+
+    soup = BeautifulSoup(html, "html.parser")
+    node = soup.find(id="app")
+    # TODO: add classes...
+    if node and isinstance(node, Tag):
+        # only render children
+        html = "".join(str(x) for x in node.contents)
+    title_tag = soup.find("title")
+    if title_tag:
+        title = title_tag.text
+
+    # include all meta tags
+    rendered_metas = soup.find_all("meta")
+    metas = []
+    for meta in rendered_metas:
+        # but only the ones added by solara
+        if meta.attrs.get("data-solara-head-key"):
+            metas.append(str(meta))
+
+    # include all styles
+    rendered_styles = soup.find_all("style")
+    for style in rendered_styles:
+        style_html = str(style)
+        # in case we want to skip the mathjax css
+        # if "MJXZERO" in style_html:
+        #     continue
+        # pre_rendered_css += style_html
+        styles.append(style_html)
+        logger.debug("Include style (size is %r mb):\n\t%r", len(style_html) / 1024**2, style_html[:200])
+    return SSGData(title=title, html=html, styles=styles, metas=metas)

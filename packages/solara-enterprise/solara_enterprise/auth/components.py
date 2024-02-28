@@ -3,7 +3,7 @@ from typing import Optional, Union
 import reacton.ipyvuetify as v
 import solara
 
-from .. import auth
+from .. import auth, license
 
 
 @solara.component
@@ -56,6 +56,7 @@ def AvatarMenu(image_url: Optional[str] = None, size: Union[int, str] = 40, colo
      * children: list of elements to show in the menu
 
     """
+    license.check("auth")
 
     with v.Html(tag="div", v_on="x.on") as activator:
         Avatar(image_url=image_url, size=size, color=color)
@@ -98,6 +99,7 @@ def Avatar(image_url: Optional[str] = None, size: Union[int, str] = 40, color: s
      * size: size of the avatar (in pixels)
      * color: color of the avatar (if no picture is available)
     """
+    license.check("auth")
     user = auth.user.value
     if user:
         user_info = user.get("userinfo", {})

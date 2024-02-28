@@ -12,6 +12,7 @@ from openai import OpenAI
 from typing_extensions import TypedDict
 
 import solara
+import solara.lab
 
 
 class MessageDict(TypedDict):
@@ -69,13 +70,12 @@ def Page():
             stream=True,
         )
         messages.value = [*messages.value, {"role": "assistant", "content": ""}]
-        while True:
-            for chunk in response:
-                if chunk.choices[0].finish_reason == "stop":  # type: ignore
-                    return
-                add_chunk_to_ai_message(chunk.choices[0].delta.content)  # type: ignore
+        for chunk in response:
+            if chunk.choices[0].finish_reason == "stop":  # type: ignore
+                return
+            add_chunk_to_ai_message(chunk.choices[0].delta.content)  # type: ignore
 
-    result = solara.use_thread(call_openai, dependencies=[user_message_count])  # type: ignore
+    task = solara.lab.use_task(call_openai, dependencies=[user_message_count])  # type: ignore
 
     with solara.Column(
         style={"width": "700px", "height": "50vh"},
@@ -91,6 +91,6 @@ def Page():
                     border_radius="20px",
                 ):
                     solara.Markdown(item["content"])
-        if result.state == solara.ResultState.RUNNING:
+        if task.pending:
             solara.Text("I'm thinking...", style={"font-size": "1rem", "padding-left": "20px"})
-        solara.lab.ChatInput(send_callback=send, disabled=(result.state == solara.ResultState.RUNNING))
+        solara.lab.ChatInput(send_callback=send, disabled=task.pending)

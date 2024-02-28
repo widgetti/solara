@@ -109,7 +109,7 @@ def use_router() -> Router:
 
      * `path` - the current pathname (e.g. `/fruit/banana`)
      * `parts` - the current pathname split into parts (e.g. `['fruit', 'banana']`)
-     * `search` - the current search string (e.g. `color=yellow`)
+     * `search` - the query parameters string (e.g. `color=yellow`).
      * `push(path: str)` - navigate to path (e.g. `router.push('/fruit/banana')`)
 
     ## Typical usage:

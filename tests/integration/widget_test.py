@@ -55,3 +55,25 @@ def test_solara_button_all(ipywidgets_runner, page_session: playwright.sync_api.
     button_sel.click()
     page_session.locator("button >> text=Tested event").wait_for()
     page_session.wait_for_timeout(1000)
+
+
+def test_slider_all(ipywidgets_runner, page_session: playwright.sync_api.Page, request, assert_solara_snapshot):
+    if request.node.callspec.params["ipywidgets_runner"] != "solara" and request.node.callspec.params["solara_server"] != SERVERS[0]:
+        pytest.skip("No need to run this test for all servers.")
+
+    # this function (or rather its lines) will be executed in the kernel
+    # voila, lab, classic notebook and solara will all execute it
+    def kernel_code():
+        import ipywidgets as widgets
+
+        slider = widgets.FloatSlider(value=7.5, min=5.0, max=10.0, step=0.1, description="FloatSlider")
+        box = widgets.HBox([slider])
+        box.add_class("my-slider")
+        # we do not want it full with, which depends on environment/browser window size
+        box.layout.width = "400px"
+        display(box)
+
+    ipywidgets_runner(kernel_code)
+    slider_sel = page_session.locator(".my-slider")
+    assert_solara_snapshot(slider_sel.screenshot(), postfix="-ipywidgets-" + str(solara.util.ipywidgets_major))
+    page_session.wait_for_timeout(1000)

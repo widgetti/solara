@@ -4,7 +4,7 @@ import shutil
 
 import requests
 
-from . import settings
+import solara.settings
 
 logger = logging.getLogger("Solara.cdn")
 
@@ -32,7 +32,7 @@ def get_from_cache(base_cache_dir: pathlib.Path, path):
 
 def get_cdn_url(path):
     path = str(path)  # on windows, the path can contain a \
-    return str(settings.assets.cdn) + str(path).replace("\\", "/")
+    return str(solara.settings.assets.cdn) + str(path).replace("\\", "/")
 
 
 def get_data(base_cache_dir: pathlib.Path, path):

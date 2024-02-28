@@ -260,7 +260,7 @@ def AppLayout(
     show_app_bar = (title and (len(routes) > 1 and navigation)) or children_appbar or use_drawer or children_appbartitle
 
     if style is None:
-        style = {"height": "100%", "overflow": "auto"}
+        style = {"height": "100%", "max-height": "100%", "overflow": "auto"}
         # if style is None, we choose a default style based on whether we are seeing the appbar, etc
         if show_app_bar or children_sidebar or len(children) != 1:
             style["padding"] = "12px"
@@ -342,7 +342,7 @@ def AppLayout(
             if show_app_bar:
                 # if hide_on_scroll is True, and we have a little bit of scrolling, vuetify seems to act strangely
                 # when scrolling (on @mariobuikhuizen/vuetify v2.2.26-rc.0
-                with v.AppBar(color=color, dark=True, app=True, clipped_left=True, hide_on_scroll=False, v_slots=v_slots).key("app-layout-appbar"):
+                with v.AppBar(color=color, dark=toolbar_dark, app=True, clipped_left=True, hide_on_scroll=False, v_slots=v_slots).key("app-layout-appbar"):
                     if use_drawer:
                         AppIcon(sidebar_open, on_click=lambda: set_sidebar_open(not sidebar_open))
                     if title or children_appbartitle:

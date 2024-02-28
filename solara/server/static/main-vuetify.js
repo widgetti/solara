@@ -211,8 +211,11 @@ async function solaraInit(mountId, appName) {
         saveState: false
     };
 
+    // override the latexTypesetter to use katex, in case there are any libraries that
+    // make use of that.
     const rendermime = new solara.RenderMimeRegistry({
-        initialFactories: solara.extendedRendererFactories
+        initialFactories: solara.extendedRendererFactories,
+        latexTypesetter: new solara.KatexTypesetter(),
     });
 
     let widgetManager = new solara.WidgetManager(context, rendermime, settings);
@@ -227,11 +230,11 @@ async function solaraInit(mountId, appName) {
     if (kernelId && widgetModelId) {
         await widgetManager.fetchAll();
     } else {
-        widgetModelId = await widgetManager.run(appName, path);
+        widgetModelId = await widgetManager.run(appName, {path, dark: inDarkMode()});
     }
     await solaraMount(widgetManager, mountId || 'content', widgetModelId);
     skipReconnectedCheck = false;
-    solara.renderMathJax();
+    solara.renderKatex();
 }
 
 async function solaraMount(widgetManager, mountId, modelId) {

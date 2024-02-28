@@ -15,31 +15,22 @@
     {{ pre_rendered_css | safe }}
 
     {% if vue3 == True %}
-    <link href="{{cdn}}/@widgetti/solara-vuetify3-app@1.0.0/dist/main.css" rel="stylesheet"></link>
+    <link href="{{cdn}}/@widgetti/solara-vuetify3-app@5.0.0/dist/main{{ipywidget_major_version}}.css" rel="stylesheet"></link>
     {% else %}
-    <link href="{{cdn}}/@widgetti/solara-vuetify-app@6.0.0/dist/main.css" rel="stylesheet"></link>
+    <link href="{{cdn}}/@widgetti/solara-vuetify-app@10.0.0/dist/main{{ipywidget_major_version}}.css" rel="stylesheet"></link>
     {% endif %}
 
 
     {% if assets.fontawesome_enabled == True %}
     <link rel="stylesheet" href="{{cdn}}{{assets.fontawesome_path}}" type="text/css">
     {% endif %}
-    <link href="{{root_path}}/static/highlight.css" rel="stylesheet">
-    <link href="{{root_path}}/static/highlight-dark.css" rel="stylesheet">
-    </link>
-    <link href="{{root_path}}/static/assets/style.css" rel="stylesheet">
-    </link>
-    <link href="{{root_path}}/static/assets/index.css" rel="stylesheet">
-    </link>
-    {% if theme.variant == "light" %}
-    <link href="{{root_path}}/static/assets/theme-light.css" rel="stylesheet">
-    </link>
-    {% elif theme.variant == "dark" %}
-    <link href="{{root_path}}/static/assets/theme-dark.css" rel="stylesheet">
-    </link>
-    {% endif %}
-    <link href="{{root_path}}/static/assets/custom.css" rel="stylesheet">
-    </link>
+    {{ resources.include_css("/static/highlight.css") }}
+    {{ resources.include_css("/static/highlight-dark.css") }}
+    {{ resources.include_css("/static/assets/style.css") }}
+    <style id="jupyter-theme-css">
+        {{ resources.include_css("/static/assets/theme-"~theme.variant~".css") }}
+    </style>
+    {{ resources.include_css("/static/assets/custom.css") }}
 
     <script id="jupyter-config-data" type="application/json">
     {
@@ -64,7 +55,7 @@
         {% endraw -%}
         {# {% include "transition-domino.html" %} #}
         {% include "loader-" ~ theme.loader ~ ".html" %}
-        <v-overlay :value="(connectionStatus != 'connected') & wasConnected">
+        <v-overlay style="z-index: 100002;" :value="(connectionStatus != 'connected') & wasConnected">
             <v-progress-circular indeterminate size="128" style="text-align: center;">Server
                 disconnected.</v-progress-circular>
         </v-overlay>
@@ -133,36 +124,6 @@
             </v-sheet>
         </v-menu>
 
-        <v-menu offset-y top :close-on-content-click="false" style="z-index: 100001">
-            <!-- <template v-slot:activator="{ on }">
-                <v-btn text v-on="on" style="position: fixed; top: 8px; right: 8px; z-index: 100000">
-                    <v-icon right large style="opacity: 0.5" :color="connectionStatus != 'connected' ? 'red' : ''">mdi-account</v-icon>
-                </v-btn>
-            </template> -->
-            <v-list>
-                <v-list-item @click="stateReset()" link>
-                    <v-list-item-icon>
-                        <v-icon>mdi-close-box</v-icon>
-                    </v-list-item-icon>
-                    <v-list-item-title>Reset application
-                    </v-list-item-title>
-                </v-list-item>
-                <v-list-item v-if="theme.variant_user_selectable">
-                    <v-btn-toggle v-model="themeVariantIndex" tile group mandatory>
-                        <v-btn value="light" icon>
-                            <v-icon>mdi-white-balance-sunny</v-icon>
-                        </v-btn>
-                        <v-btn>
-                            <v-icon>mdi-weather-night</v-icon>
-                        </v-btn>
-                        <v-btn>
-                            <v-icon>mdi-theme-light-dark</v-icon>
-                        </v-btn>
-                    </v-btn-toggle>
-                </v-list-item>
-
-            </v-list>
-        </v-menu>
         <!-- <v-menu v-if="debug && outputMessages && outputMessages.length" offset-y top
             :close-on-content-click="false">
             <template v-slot:activator="{ on }">
@@ -216,55 +177,56 @@
     </div>
     {% block after_pre_rendered_html %}{% endblock %}
     {% if vue3 == True %}
+        <link href="{{cdn}}/@widgetti/solara-vuetify3-app@5.0.0/dist/fonts.css" rel="stylesheet"></link>
         {% if production %}
-        <script src="{{cdn}}/@widgetti/solara-vuetify3-app@1.0.0/dist/solara-vuetify-app{{ipywidget_major_version}}.min.js"></script>
+        <script src="{{cdn}}/@widgetti/solara-vuetify3-app@5.0.0/dist/solara-vuetify-app{{ipywidget_major_version}}.min.js"></script>
         {% else %}
-        <script src="{{cdn}}/@widgetti/solara-vuetify3-app@1.0.0/dist/solara-vuetify-app{{ipywidget_major_version}}.js"></script>
+        <script src="{{cdn}}/@widgetti/solara-vuetify3-app@5.0.0/dist/solara-vuetify-app{{ipywidget_major_version}}.js"></script>
         {% endif %}
     {% else %}
+        <link href="{{cdn}}/@widgetti/solara-vuetify-app@10.0.0/dist/fonts.css" rel="stylesheet" fetchpriority="low"></link>
         {% if production %}
-        <script src="{{cdn}}/@widgetti/solara-vuetify-app@6.0.0/dist/solara-vuetify-app{{ipywidget_major_version}}.min.js"></script>
+        <script src="{{cdn}}/@widgetti/solara-vuetify-app@10.0.0/dist/solara-vuetify-app{{ipywidget_major_version}}.min.js"></script>
         {% else %}
-        <script src="{{cdn}}/@widgetti/solara-vuetify-app@6.0.0/dist/solara-vuetify-app{{ipywidget_major_version}}.js"></script>
+        <script src="{{cdn}}/@widgetti/solara-vuetify-app@10.0.0/dist/solara-vuetify-app{{ipywidget_major_version}}.js"></script>
         {% endif %}
-    {% endif %}
-    {% if production %}
-    <script src="{{cdn}}/mermaid@9.1.7/dist/mermaid.min.js"></script>
-    {% else %}
-    <script src="{{cdn}}/mermaid@9.1.7/dist/mermaid.js"></script>
     {% endif %}
     <script>
         solara.rootPath = {{ root_path | tojson | safe}};
         console.log("rootPath", solara.rootPath);
     </script>
 
-    <script src="{{root_path}}/static/assets/custom.js"></script>
-    <script src="{{root_path}}/static/assets/theme.js"></script>
+    {{ resources.include_js("/static/assets/custom.js") }}
+    {{ resources.include_js("/static/assets/theme.js") }}
 
     <script src="{{cdn}}/requirejs@2.3.6/require.js" crossorigin="anonymous">
     </script>
-    <script src="{{root_path}}/static/main-vuetify.js"></script>
-    <script src="{{root_path}}/static/ansi.js"></script>
+    {{ resources.include_js("/static/main-vuetify.js") }}
+    {{ resources.include_js("/static/ansi.js") }}
 
     <script>
         solara.production = {{ production | tojson | safe }};
         const themeVariants = ['light', 'dark', 'auto']
         solara.preRendered = {{ pre_rendered_html | safe | length | tojson }} > 0
         var theme = {{ theme | tojson | safe }}
-        if (theme.variant_user_selectable) {
-            if (localStorage.getItem('theme.variant')) {
-                theme.variant = JSON.parse(localStorage.getItem('theme.variant'))
+        function getThemeVariant() {
+            if (localStorage.getItem(':solara:theme.variant')) {
+                return JSON.parse(localStorage.getItem(':solara:theme.variant'))
             }
+            return theme.variant;
+        }
+        if (localStorage.getItem(':solara:theme.variant')) {
+            theme.variant = JSON.parse(localStorage.getItem(':solara:theme.variant'))
         }
         function prefersDarkScheme() {
             return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
         }
         function inDarkMode() {
-            if (theme.variant == 'auto') {
+            if (getThemeVariant() == 'auto') {
                 return prefersDarkScheme();
             }
             else {
-                return theme.variant == 'dark';
+                return getThemeVariant() == 'dark';
             }
         }
     </script>
@@ -294,6 +256,11 @@
                 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
                     this.$vuetify.theme.dark = inDarkMode();
                 });
+                if (this.$vuetify.theme.dark) {
+                    this.changeThemeCSS('dark');
+                } else {
+                    this.changeThemeCSS('light');
+                }
             },
             methods: {
                 stateReset() {
@@ -308,17 +275,9 @@
                 reload() {
                     location.reload();
                 },
-            },
-            computed: {
-                themeVariantIndex: {
-                    get() {
-                        return themeVariants.indexOf(theme.variant)
-                    },
-                    set(value) {
-                        theme.variant = themeVariants[value]
-                        this.$vuetify.theme.dark = inDarkMode()
-                        localStorage.setItem('theme.variant', JSON.stringify(theme.variant))
-                    }
+                async changeThemeCSS(theme) {
+                    let css = await fetch(`/static/assets/theme-${theme}.css`).then(r => r.text());
+                    document.getElementById('jupyter-theme-css').innerHTML = css;
                 }
             },
             watch: {
@@ -363,6 +322,18 @@
                             console.log('this.autoRefreshCount!', this.autoRefreshCount)
                             this.autoRefreshCount = this.autoRefreshCount - 1;
                         }, 1000);
+                    }
+                },
+                '$vuetify.theme.dark': function (value) {
+                    let app = document.getElementById('app');
+                    if ( value ) {
+                        this.changeThemeCSS('dark');
+                        app.classList.remove('theme--light');
+                        app.classList.add('theme--dark');
+                    } else {
+                        this.changeThemeCSS('light');
+                        app.classList.remove('theme--dark');
+                        app.classList.add('theme--light');
                     }
                 }
             },

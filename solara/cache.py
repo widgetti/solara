@@ -1,6 +1,7 @@
 import hashlib
 import inspect
 import logging
+import sys
 from typing import (
     Any,
     Callable,
@@ -15,12 +16,11 @@ from typing import (
 )
 
 import cachetools
-import typing_extensions
-from reacton.utils import equals
-
 import solara
 import solara.settings
 import solara.util
+import typing_extensions
+from reacton.utils import equals
 
 logger = logging.getLogger("solara.cache")
 
@@ -59,7 +59,12 @@ class MemoizedFunction(Generic[P, R]):
             nonlocals = inspect.getclosurevars(f).nonlocals
             if nonlocals:
                 raise ValueError(f"Memoized functions cannot depend on nonlocal variables, it now depends on {nonlocals}")
-        codehash = hashlib.md5(f.__code__.co_code).hexdigest()
+        if sys.version_info[:2] < (3, 9):
+            # usedforsecurity is only available in Python 3.9+
+            codehash = hashlib.md5(f.__code__.co_code).hexdigest()
+        else:
+            codehash = hashlib.md5(f.__code__.co_code, usedforsecurity=False).hexdigest()  # type: ignore
+
         self.function_key = (f.__qualname__, codehash)
         current_globals = dict(inspect.getclosurevars(f).globals)
         _global_values_used.setdefault(self.function_key, current_globals)

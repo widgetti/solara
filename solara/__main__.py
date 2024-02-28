@@ -118,6 +118,17 @@ def cli():
     pass
 
 
+production_default = False
+if "SOLARA_MODE" in os.environ:
+    # settings.main.mode by default is set to production,
+    # which is a good default for when you embed in a flask
+    # app for instance, but not for the CLI, which app developers
+    # usually run.
+    production_default = settings.main.mode == "production"
+    # Note that in the CLI we do set this value to "development"
+    # or "production" based on the --production flag
+
+
 @cli.command()
 @click.option("--port", default=int(os.environ.get("PORT", 8765)))
 @click.option(
@@ -126,7 +137,7 @@ def cli():
     help="Host to listen on. Defaults to the $HOST environment or $SOLARA_HOST when available or localhost when not given.",
 )
 @click.option("--dev/--no-dev", default=None, help="Deprecated: use --auto-restart/-a", hidden=True)
-@click.option("--production", is_flag=True, default=False, help="Run in production mode: https://solara.dev/docs/understanding/solara-server")
+@click.option("--production", is_flag=True, default=production_default, help="Run in production mode: https://solara.dev/docs/understanding/solara-server")
 @click.option("--reload", is_flag=True, default=None, help="Deprecated: use --auto-restart/-a", hidden=True)
 @click.option("-a", "--auto-restart", is_flag=True, default=False, help="Enable auto-restarting of server when the solara server code changes.")
 @click.option("--tracer/--no-tracer", default=False)
@@ -207,10 +218,16 @@ def cli():
     help=f"Use light or dark variant, or auto detect (auto). [default: {settings.theme.variant.name}",
 )
 @click.option(
+    "--dark",
+    type=bool,
+    default=settings.theme.variant == settings.ThemeVariant.dark,
+    help="Use dark theme. Shorthand for --theme-variant=dark",
+)
+@click.option(
     "--theme-variant-user-selectable/--no-theme-variant-user-selectable",
     type=bool,
-    default=settings.theme.variant_user_selectable,
-    help=f"Can the user select the theme variant from the UI. [default: {settings.theme.variant_user_selectable}",
+    hidden=True,
+    help="Deprecated.",
 )
 @click.option("--pdb/--no-pdb", "use_pdb", default=False, help="Enter debugger on error")
 @click.argument("app")
@@ -263,6 +280,7 @@ def run(
     use_pdb: bool,
     theme_loader: str,
     theme_variant: settings.ThemeVariant,
+    dark: bool,
     theme_variant_user_selectable: bool,
     ssg: bool,
     search: bool,
@@ -365,12 +383,13 @@ def run(
     kwargs["loop"] = loop
     settings.main.use_pdb = use_pdb
     settings.theme.loader = theme_loader
+    if dark:
+        theme_variant = settings.ThemeVariant.dark
     settings.theme.variant = theme_variant
-    settings.theme.variant_user_selectable = theme_variant_user_selectable
     settings.main.tracer = tracer
     settings.main.timing = timing
     items = (
-        "theme_variant_user_selectable theme_variant theme_loader use_pdb server open_browser open url failed dev tracer"
+        "theme_variant_user_selectable dark theme_variant theme_loader use_pdb server open_browser open url failed dev tracer"
         " timing ssg search check_version production".split()
     )
     for item in items:
@@ -450,6 +469,7 @@ def ssg(app: str, port: int, host: str, headed: bool):
     """Static site generation"""
     settings.ssg.headed = headed
     settings.ssg.enabled = True
+    settings.main.mode = "production"  # always override this
     os.environ["SOLARA_APP"] = app
     from solara.server.starlette import ServerStarlette
 

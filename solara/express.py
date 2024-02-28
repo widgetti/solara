@@ -85,6 +85,10 @@ px.histogram = histogram
 
 def _make_self_describing(f: Callable[P, T]):
     # put the arguments on the function and the function into the return value
+    if hasattr(f, "__wrapped__"):
+        # on hot reload, we need to unwrap the function to not wrap it twice
+        f = f.__wrapped__
+
     @functools.wraps(f)
     def wrapper(*args: P.args, **kwargs: P.kwargs):
         fig = f(*args, **kwargs)

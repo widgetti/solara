@@ -26,10 +26,10 @@ def Page():
 
         """
         )
-        solara.Image("/static/public/showcase/solara/home-mobile.png", width="100%", classes=["pt-12"])
+        solara.Image("https://dxhl76zpt6fap.cloudfront.net/public/showcase/solara/home-mobile.png", width="100%", classes=["pt-12"])
 
     with solara.ColumnsResponsive(12, medium=6):
-        solara.Image("/static/public/showcase/solara/docs.png", width="100%")
+        solara.Image("https://dxhl76zpt6fap.cloudfront.net/public/showcase/solara/docs.png", width="100%")
         solara.Markdown(
             """
 ## Multi-page
@@ -51,4 +51,4 @@ The website is composed of multiple pages, illustrating how users can navigate b
 
         """
         )
-        solara.Image("/static/public/showcase/solara/vscode-markdown.png", width="100%")
+        solara.Image("https://dxhl76zpt6fap.cloudfront.net/public/showcase/solara/vscode-markdown.png", width="100%")

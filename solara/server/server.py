@@ -15,6 +15,9 @@ import requests
 
 import solara
 import solara.routing
+import solara.settings
+from solara.lab import cookies as solara_cookies
+from solara.lab import headers as solara_headers
 
 from . import app, jupytertools, patch, settings, websocket
 from .kernel import Kernel, deserialize_binary_message
@@ -109,7 +112,7 @@ def is_ready(url) -> bool:
     return False
 
 
-async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, kernel_id: str, page_id: str, user: dict = None):
+async def app_loop(ws: websocket.WebsocketWrapper, cookies: Dict[str, str], headers, session_id: str, kernel_id: str, page_id: str, user: dict = None):
     context = initialize_virtual_kernel(session_id, kernel_id, ws)
     if context is None:
         logging.warning("invalid kernel id: %r", kernel_id)
@@ -134,6 +137,9 @@ async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, kernel_id: s
                 from solara_enterprise.auth import user as solara_user
 
                 solara_user.set(user)
+
+            solara_cookies.set(cookies)  # type: ignore
+            solara_headers.set(headers)  # type: ignore
 
             while True:
                 if settings.main.timing:
@@ -241,7 +247,15 @@ def process_kernel_messages(kernel: Kernel, msg: Dict) -> bool:
         return False
 
 
-def read_root(path: str, root_path: str = "", render_kwargs={}, use_nbextensions=True) -> Optional[str]:
+def read_root(path: str, root_path: str = "", render_kwargs={}, use_nbextensions=True, ssg_data=None) -> Optional[str]:
+    if settings.ssg.enabled and ssg_data is None:
+        # simply return the pre-rendered html
+        from solara_enterprise import ssg
+
+        content = ssg.ssg_content(path)
+        if content is not None:
+            return content
+
     default_app = app.apps["__default__"]
     routes = default_app.routes
     router = solara.routing.Router(path, routes)
@@ -252,30 +266,87 @@ def read_root(path: str, root_path: str = "", render_kwargs={}, use_nbextensions
     else:
         nbextensions = []
 
+    from markupsafe import Markup
+
+    def resolve_static_path(path: str) -> Path:
+        # this solve a similar problem as the starlette and flask endpoints
+        # maybe this can be common code for all of them.
+        if path.startswith("/static/public/"):
+            directories = [default_app.directory.parent / "public"]
+            filename = path[len("/static/public/") :]
+        elif path.startswith("/static/assets/"):
+            directories = [default_app.directory.parent / "assets", solara_static.parent / "assets"]
+            filename = path[len("/static/assets/") :]
+        elif path.startswith("/static/"):
+            directories = [solara_static.parent / "static"]
+            filename = path[len("/static/") :]
+        else:
+            raise ValueError(f"invalid static path: {path}")
+        for directory in directories:
+            full_path = directory / filename
+            if full_path.exists():
+                return full_path
+        raise ValueError(f"static path not found: {filename} (path={path}), looked in {directories}")
+
+    def include_css(path: str) -> Markup:
+        filepath = resolve_static_path(path)
+        content, hash = solara.util.get_file_hash(filepath)
+        url = f"{root_path}{path}?v={hash}"
+        # when < 10k we embed, also when we use a url, it can be relative, which can break the url
+        embed = len(content) < 1024 * 10 and b"url" not in content
+        # Always embed the jupyterlab theme CSS to make theme switching possible (see solara.html.j2 template)
+        # TODO: Prevent browser from caching the theme CSS files
+        if path.endswith("theme-dark.css") or path.endswith("theme-light.css"):
+            content_utf8 = content.decode("utf-8")
+            code = content_utf8
+        elif embed:
+            content_utf8 = content.decode("utf-8")
+            code = f"<style>/*\npath={path}\n*/\n{content_utf8}</style>"
+        else:
+            code = f'<link rel="stylesheet" type="text/css" href="{url}">'
+        return Markup(code)
+
+    def include_js(path: str, module=False) -> Markup:
+        filepath = resolve_static_path(path)
+        content, hash = solara.util.get_file_hash(filepath)
+        content_utf8 = content.decode("utf-8")
+        url = f"{root_path}{path}?v={hash}"
+        # when < 10k we embed, but if we use currentScript, it can break things
+        embed = len(content) < 1024 * 10 and b"currentScript" not in content
+        if embed:
+            if module:
+                code = f'<script type="module">/*\npath={path}\n*/{content_utf8}</script>'
+            else:
+                code = f"<script>/*\npath={path}\n*/{content_utf8}</script>"
+        else:
+            if module:
+                code = f'<script type="module" src="{url}"></script>'
+            else:
+                code = f'<script src="{url}"></script>'
+        return Markup(code)
+
     resources = {
         "theme": "light",
         "nbextensions": nbextensions,
+        "include_css": include_css,
+        "include_js": include_js,
     }
     template: jinja2.Template = get_jinja_env(app_name="__default__").get_template(template_name)
     pre_rendered_html = ""
     pre_rendered_css = ""
     pre_rendered_metas = ""
     title = "Solara ☀️"
-    if settings.ssg.enabled:
-        from solara_enterprise import ssg
+    if ssg_data is not None:
+        pre_rendered_html = ssg_data["html"]
+        pre_rendered_css = "\n".join(ssg_data["styles"])
+        pre_rendered_metas = "\n    ".join(ssg_data["metas"])
+        title = ssg_data["title"]
 
-        ssg_data = ssg.ssg_data(path)
-        if ssg_data is not None:
-            pre_rendered_html = ssg_data["html"]
-            pre_rendered_css = "\n".join(ssg_data["styles"])
-            pre_rendered_metas = "\n    ".join(ssg_data["metas"])
-            title = ssg_data["title"]
-
-    if settings.assets.proxy:
+    if solara.settings.assets.proxy:
         # solara acts as a proxy
         cdn = f"{root_path}/_solara/cdn"
     else:
-        cdn = settings.assets.cdn
+        cdn = solara.settings.assets.cdn
 
     render_settings = {
         "title": title,

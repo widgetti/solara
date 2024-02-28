@@ -1,6 +1,8 @@
 import os
 from typing import Optional
 
+import solara.util
+
 from .minisettings import BaseSettings, Field
 from .util import get_solara_home
 
@@ -36,4 +38,19 @@ class Cache(BaseSettings):
         env_file = ".env"
 
 
+# in colab or vscode there is not solara cdn proxy available
+_should_use_proxy = not (solara.util.is_running_in_colab() or solara.util.is_running_in_vscode() or solara.util.is_running_in_voila())
+
+
+class Assets(BaseSettings):
+    cdn: str = "https://cdn.jsdelivr.net/npm/"
+    proxy: bool = _should_use_proxy
+
+    class Config:
+        env_prefix = "solara_assets_"
+        case_sensitive = False
+        env_file = ".env"
+
+
+assets: Assets = Assets()
 cache: Cache = Cache()

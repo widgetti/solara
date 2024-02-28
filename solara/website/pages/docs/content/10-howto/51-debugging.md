@@ -33,7 +33,7 @@ def Page():
 You can also use the debugger of PyCharm or IntelliJ to debug your Solara app.
 The following settings works for PyCharm or IntelliJ:
 
-![](/static/public/docs/howto/debugger-intellij.png)
+![](https://dxhl76zpt6fap.cloudfront.net/public/docs/howto/debugger-intellij.webp)
 
 ## VSCode
 

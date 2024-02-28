@@ -255,6 +255,8 @@ def WidgetContextAwareThread__init__(self, *args, **kwargs):
 
 
 def Thread_debug_run(self):
+    if not hasattr(self, "current_context"):
+        return Thread__run(self)
     if self.current_context:
         kernel_context.set_context_for_thread(self.current_context, self)
         shell = self.current_context.kernel.shell
@@ -296,6 +298,21 @@ def Output_exit(self, exc_type, exc_value, traceback):
         ip.display_pub._hooks.pop()
 
 
+def patch_ipyreact():
+    import ipyreact
+    import ipyreact.module
+
+    from . import esm
+
+    ipyreact.module.define_module = esm.define_module
+    ipyreact.module.get_module_names = esm.get_module_names
+    # define_module is also exported top level
+    ipyreact.define_module = esm.define_module
+
+    # make this a no-op, we'll create the widget when needed
+    ipyreact.importmap._update_import_map = lambda: None
+
+
 def patch():
     global _patched
     global global_widgets_dict
@@ -304,6 +321,15 @@ def patch():
         return
     _patched = True
     __builtins__["display"] = IPython.display.display
+
+    try:
+        import ipyreact
+
+        del ipyreact
+    except ModuleNotFoundError:
+        pass
+    else:
+        patch_ipyreact()
 
     # the ipyvue.Template module cannot be accessed like ipyvue.Template
     # because the import in ipvue overrides it
@@ -362,7 +388,7 @@ def patch():
         import solara.comm
 
         if self.comm is None and id(self) in closed_ids and id(self) in closed_stack:
-            raise RuntimeError(f"Widget has been closed, the stacktrace when the widget was closed is:\n{closed_stack[id(self)]}")
+            raise RuntimeError(f"Widget {type(self)} has been closed, the stacktrace when the widget was closed is:\n{closed_stack[id(self)]}")
 
         if self.comm is None or isinstance(self.comm, solara.comm.DummyComm) and force_load_instance.comm is not self.comm:
             stack = solara.comm.orphan_comm_stacks.get(self.comm)

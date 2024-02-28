@@ -5,7 +5,7 @@ import os
 import threading
 from http.server import HTTPServer
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, List
 from urllib.parse import urlparse
 from uuid import uuid4
 
@@ -39,6 +39,7 @@ else:
 
 
 import solara
+import solara.settings
 from solara.server.threaded import ServerBase
 
 from . import app as appmod
@@ -74,7 +75,7 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
         from anyio import to_thread
 
         try:
-            return await to_thread.run_sync(lambda: self.ws.receive())
+            return await to_thread.run_sync(lambda: self.ws.receive())  # type: ignore
         except simple_websocket.ws.ConnectionClosed:
             raise websocket.WebSocketDisconnect()
 
@@ -136,7 +137,23 @@ def kernels_connection(ws: simple_websocket.Server, kernel_id: str, name: str):
             logger.warning("no session cookie")
             session_id = "session-id-cookie-unavailable:" + str(uuid4())
         ws_wrapper = WebsocketWrapper(ws)
-        asyncio.run(server.app_loop(ws_wrapper, session_id=session_id, kernel_id=kernel_id, page_id=page_id, user=user))
+        headers_dict: Dict[str, List[str]] = {}
+        for k, v in request.headers.__iter__():
+            if k not in headers_dict.keys():
+                headers_dict[k] = [v]
+            else:
+                headers_dict[k].append(v)
+        asyncio.run(
+            server.app_loop(
+                ws_wrapper,
+                cookies=request.cookies.to_dict(),
+                headers=headers_dict,
+                session_id=session_id,
+                kernel_id=kernel_id,
+                page_id=page_id,
+                user=user,
+            )
+        )
     except:  # noqa
         logger.exception("Error in kernel handler")
         raise
@@ -195,7 +212,7 @@ def serve_static(path):
     return send_from_directory(server.solara_static, path)
 
 
-if settings.assets:
+if solara.settings.assets.proxy:
 
     @blueprint.route(f"/{cdn_helper.cdn_url_path}/<path:path>")
     def cdn(path):

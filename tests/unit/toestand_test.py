@@ -1,6 +1,7 @@
 import dataclasses
 import threading
 import unittest.mock
+from pathlib import Path
 from typing import Callable, Dict, List, Optional, Set, TypeVar
 
 import ipyvuetify as v
@@ -10,10 +11,13 @@ from typing_extensions import TypedDict
 import solara
 import solara as sol
 import solara.lab
+import solara.toestand as toestand
 from solara.server import kernel, kernel_context
 from solara.toestand import Reactive, Ref, State, use_sync_external_store
 
 from .common import click
+
+HERE = Path(__file__).parent
 
 
 @dataclasses.dataclass(frozen=True)
@@ -535,8 +539,13 @@ def test_store_computed():
     count = list_store.computed(len)
     last = list_store.computed(lambda x: x[-1] if x else None)
 
+    assert count._auto_subscriber.value.reactive_used is None
     assert count.get() == 3
+    assert count._auto_subscriber.value.reactive_used == {list_store}
+
+    assert last._auto_subscriber.value.reactive_used is None
     assert last.get() == 3
+    assert last._auto_subscriber.value.reactive_used == {list_store}
     mock = unittest.mock.Mock()
     mock_last = unittest.mock.Mock()
     unsub = count.subscribe(mock)
@@ -834,17 +843,24 @@ def test_reactive_auto_subscribe_sub():
     bears = Reactive(Bears(type="brown", count=1))
     renders = 0
 
+    ref = Ref(bears.fields.count)
+    reactive_used = None
+
     @solara.component
     def Test():
+        nonlocal reactive_used
         nonlocal renders
+        reactive_used = toestand.thread_local.reactive_used
         renders += 1
-        count = Ref(bears.fields.count).value
+        count = ref.value
         return solara.Info(f"{count} bears around here")
 
     box, rc = solara.render(Test(), handle_error=False)
     assert rc.find(v.Alert).widget.children[0] == "1 bears around here"
-    Ref(bears.fields.count).value += 1
+    assert reactive_used == {ref}
+    ref.value += 1
     assert rc.find(v.Alert).widget.children[0] == "2 bears around here"
+    assert reactive_used == {ref}
     # now check that we didn't listen to the while object, just count changes
     renders_before = renders
     Ref(bears.fields.type).value = "pink"
@@ -892,10 +908,13 @@ def test_reactive_auto_subscribe_cleanup(kernel_context):
 def test_reactive_auto_subscribe_subfield_limit(kernel_context):
     bears = Reactive(Bears(type="brown", count=1))
     renders = 0
+    reactive_used = None
 
     @solara.component
     def Test():
         nonlocal renders
+        nonlocal reactive_used
+        reactive_used = toestand.thread_local.reactive_used
         renders += 1
         _ = bears.value  # access it to trigger the subscription
         return solara.IntSlider("test", value=Ref(bears.fields.count).value)
@@ -903,8 +922,11 @@ def test_reactive_auto_subscribe_subfield_limit(kernel_context):
     box, rc = solara.render(Test(), handle_error=False)
     assert rc.find(v.Slider).widget.v_model == 1
     assert renders == 1
+    assert reactive_used is not None
+    assert len(reactive_used) == 2  # bears and bears.fields.count
     Ref(bears.fields.count).value = 2
     assert renders == 2
+    assert len(reactive_used) == 2  # bears and bears.fields.count
     rc.close()
     assert not bears._storage.listeners[kernel_context.id]
     assert not bears._storage.listeners2[kernel_context.id]
@@ -1054,3 +1076,114 @@ def test_reactive_var_in_use_effect():
 
     box, rc = solara.render(Test(), handle_error=False)
     assert rc.find(v.Slider).widget.v_model == 2
+
+
+def test_singleton():
+    from solara.toestand import Singleton
+
+    calls = 0
+
+    def factory():
+        nonlocal calls
+        calls += 1
+        return Bears(type="brown", count=1)
+
+    s = Singleton(factory)
+    assert calls == 0
+    assert s.get() == Bears(type="brown", count=1)
+    assert calls == 1
+    assert s.get() == Bears(type="brown", count=1)
+    assert calls == 1
+
+
+def test_computed():
+    context_id = "1"
+    from solara.toestand import Computed
+
+    x = Reactive(1)
+    y = Reactive(2)
+    calls = 0
+
+    def conditional_add():
+        nonlocal calls
+        calls += 1
+        if x.value == 0:
+            return 42
+        else:
+            return x.value + y.value
+
+    z = Computed(conditional_add)
+    assert z._auto_subscriber.value.reactive_used is None
+    assert z.value == 3
+    assert z._auto_subscriber.value.reactive_used == {x, y}
+    # assert z._auto_subscriber.subscribed == 1
+    assert len(x._storage.listeners[context_id]) == 0
+    assert len(x._storage.listeners2[context_id]) == 1
+    assert len(y._storage.listeners[context_id]) == 0
+    assert len(y._storage.listeners2[context_id]) == 1
+    assert calls == 1
+    x.value = 2
+    assert z.value == 4
+    assert z._auto_subscriber.value.reactive_used == {x, y}
+    assert calls == 2
+    y.value = 3
+    assert z.value == 5
+    assert z._auto_subscriber.value.reactive_used == {x, y}
+    assert calls == 3
+    assert len(x._storage.listeners2[context_id]) == 1
+    assert len(y._storage.listeners2[context_id]) == 1
+
+    # now we do not depend on y anymore
+    x.value = 0
+    assert z.value == 42
+    assert z._auto_subscriber.value.reactive_used == {x}
+    assert len(x._storage.listeners2[context_id]) == 1
+    assert len(y._storage.listeners2[context_id]) == 0
+    assert calls == 4
+    y.value = 4
+    assert z.value == 42
+    assert z._auto_subscriber.value.reactive_used == {x}
+    assert calls == 4
+
+
+def test_computed_reload(no_kernel_context):
+    import solara.server.reload
+    from solara.server.app import AppScript
+
+    name = str(HERE / "toestand_computed_reload.py")
+    # if we reload, the _type counter will reset, but we will not
+    # execute all reactive variables again, which causes a mismatch between
+    # the reactive variable id's
+    solara.toestand.KernelStore._type_counter.clear()
+    app = AppScript(name)
+    try:
+        assert len(app.routes) == 1
+        route = app.routes[0]
+        c = app.run()
+        kernel_shared = kernel.Kernel()
+        kernel_context = solara.server.kernel_context.VirtualKernelContext(id="1", kernel=kernel_shared, session_id="session-1")
+        with kernel_context:
+            root = solara.RoutingProvider(children=[c], routes=app.routes, pathname="/")
+            box, rc = solara.render(root, handle_error=False)
+            kernel_context.app_object = rc
+            text = rc.find(v.TextField)
+            assert text.widget.v_model == "2.0"
+            route.module.value_reactive.value = 2  # type: ignore
+            module = route.module
+            assert text.widget.v_model == "3.0"
+            solara.server.reload.reloader.requires_reload = True
+            kernel_context.restart()
+        solara.toestand.KernelStore._type_counter.clear()
+        c = app.run()
+        with kernel_context:
+            route = app.routes[0]
+            root = solara.RoutingProvider(children=[c], routes=app.routes, pathname="/")
+            box, rc = solara.render(root, handle_error=False)
+            kernel_context.app_object = rc
+            text = rc.find(v.TextField)
+            assert text.widget.v_model == "3.0"
+            assert route.module is not module
+            route.module.value_reactive.value = 3  # type: ignore
+            assert text.widget.v_model == "4.0"
+    finally:
+        app.close()

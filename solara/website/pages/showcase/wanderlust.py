@@ -16,10 +16,10 @@ def Page():
                 """
             )
         with solara.v.Html(tag="a", style_="width: 100%;", attributes={"href": "https://huggingface.co/spaces/solara-dev/wanderlust", "target": "_blank"}):
-            solara.Image("/static/public/showcase/wanderlust/thumbnail.png", width="100%")
+            solara.Image("https://dxhl76zpt6fap.cloudfront.net/public/showcase/wanderlust/thumbnail.png", width="100%")
     with solara.ColumnsResponsive(12, medium=6):
         with solara.v.Html(tag="a", style_="width: 100%;", attributes={"href": "https://huggingface.co/spaces/solara-dev/wanderlust", "target": "_blank"}):
-            solara.Image("/static/public/showcase/wanderlust/assistant.png", width="100%")
+            solara.Image("https://dxhl76zpt6fap.cloudfront.net/public/showcase/wanderlust/assistant.png", width="100%")
         with solara.Column(align="end", style={"height": "100%", "justify-content": "center"}):
             solara.Markdown(
                 """Using the new [function calling feature](https://platform.openai.com/docs/guides/function-calling) of OpenAI Assistants, the

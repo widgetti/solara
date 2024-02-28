@@ -3,7 +3,7 @@ import logging
 import os
 import sys
 import typing
-from typing import List, Union, cast
+from typing import Dict, List, Union, cast
 from uuid import uuid4
 
 import anyio
@@ -43,6 +43,7 @@ from starlette.staticfiles import StaticFiles
 from starlette.types import Receive, Scope, Send
 
 import solara
+import solara.settings
 from solara.server.threaded import ServerBase
 
 from . import app as appmod
@@ -89,24 +90,24 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
                     await self.ws.send_text(first)
 
     def close(self):
-        self.portal.call(self.ws.close)
+        self.portal.call(self.ws.close)  # type: ignore
 
     def send_text(self, data: str) -> None:
         if settings.main.experimental_performance:
             self.to_send.append(data)
         else:
-            self.portal.call(self.ws.send_bytes, data)
+            self.portal.call(self.ws.send_bytes, data)  # type: ignore
 
     def send_bytes(self, data: bytes) -> None:
         if settings.main.experimental_performance:
             self.to_send.append(data)
         else:
-            self.portal.call(self.ws.send_bytes, data)
+            self.portal.call(self.ws.send_bytes, data)  # type: ignore
 
     async def receive(self):
         if hasattr(self.portal, "start_task_soon"):
             # version 3+
-            fut = self.portal.start_task_soon(self.ws.receive)
+            fut = self.portal.start_task_soon(self.ws.receive)  # type: ignore
         else:
             fut = self.portal.spawn_task(self.ws.receive)  # type: ignore
 
@@ -169,7 +170,6 @@ async def kernel_connection(ws: starlette.websockets.WebSocket):
     session_id = ws.cookies.get(server.COOKIE_KEY_SESSION_ID)
 
     if settings.oauth.private and not has_auth_support:
-        breakpoint()
         raise RuntimeError("SOLARA_OAUTH_PRIVATE requires solara-enterprise")
     if has_auth_support and "session" in ws.scope:
         user = get_user(ws)
@@ -203,7 +203,13 @@ async def kernel_connection(ws: starlette.websockets.WebSocket):
                 assert session_id is not None
                 assert kernel_id is not None
                 telemetry.connection_open(session_id)
-                await server.app_loop(ws_wrapper, session_id, kernel_id, page_id, user)
+                headers_dict: Dict[str, List[str]] = {}
+                for k, v in ws.headers.items():
+                    if k not in headers_dict.keys():
+                        headers_dict[k] = [v]
+                    else:
+                        headers_dict[k].append(v)
+                await server.app_loop(ws_wrapper, ws.cookies, headers_dict, session_id, kernel_id, page_id, user)
             except:  # noqa
                 await portal.stop(cancel_remaining=True)
                 raise
@@ -211,14 +217,14 @@ async def kernel_connection(ws: starlette.websockets.WebSocket):
                 telemetry.connection_close(session_id)
 
         # sometimes throws: RuntimeError: Already running asyncio in this thread
-        anyio.run(run)
+        anyio.run(run)  # type: ignore
 
     # this portal allows us to sync call the websocket calls from this current event loop we are in
     # each websocket however, is handled from a separate thread
     try:
         async with anyio.from_thread.BlockingPortal() as portal:
             ws_wrapper = WebsocketWrapper(ws, portal)
-            thread_return = anyio.to_thread.run_sync(websocket_thread_runner, ws, portal)
+            thread_return = anyio.to_thread.run_sync(websocket_thread_runner, ws, portal)  # type: ignore
             await thread_return
     finally:
         if settings.main.experimental_performance:
@@ -392,10 +398,10 @@ if has_auth_support:
         *middleware,
         Middleware(
             MutateDetectSessionMiddleware,
-            secret_key=settings.session.secret_key,
-            session_cookie="solara-session",
-            https_only=settings.session.https_only,
-            same_site=settings.session.same_site,
+            secret_key=settings.session.secret_key,  # type: ignore
+            session_cookie="solara-session",  # type: ignore
+            https_only=settings.session.https_only,  # type: ignore
+            same_site=settings.session.same_site,  # type: ignore
         ),
         Middleware(AuthenticationMiddleware, backend=AuthBackend()),
     ]
@@ -416,7 +422,7 @@ routes = [
     Route("/{fullpath}", endpoint=root),
     Route("/_solara/api/close/{kernel_id}", endpoint=close, methods=["POST"]),
     # only enable when the proxy is turned on, otherwise if the directory does not exists we will get an exception
-    *([Mount(f"/{cdn_url_path}", app=StaticCdn(directory=settings.assets.proxy_cache_dir))] if settings.assets.proxy else []),
+    *([Mount(f"/{cdn_url_path}", app=StaticCdn(directory=settings.assets.proxy_cache_dir))] if solara.settings.assets.proxy else []),
     Mount(f"{prefix}/static/public", app=StaticPublic()),
     Mount(f"{prefix}/static/assets", app=StaticAssets()),
     Mount(f"{prefix}/static/nbextensions", app=StaticNbFiles()),

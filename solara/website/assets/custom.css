@@ -133,7 +133,7 @@ blockquote p:last-child {
 
 /* hero */
 .hero {
-    background: var(--color-primary-lightest) url(../public/hero.png);
+    background: var(--color-primary-lightest) url(https://dxhl76zpt6fap.cloudfront.net/public/hero.webp);
     background-size: cover;
     min-height: 660px;
     padding: 7rem 0;

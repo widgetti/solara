@@ -49,9 +49,34 @@ class State:
         State.df.value = None
 
 
+def use_trait_observe(has_trait_object, name):
+    # TODO: this hook should go into solara
+    counter = solara.use_reactive(0)
+    counter.get()  # make the main component depend on this counter
+
+    def connect():
+        def update(change):
+            counter.value += 1
+
+        has_trait_object.observe(update, name)
+
+        def cleanup():
+            has_trait_object.unobserve(update, name)
+
+        return cleanup
+
+    solara.use_effect(connect, [])
+    return getattr(has_trait_object, name)
+
+
+def use_dark_effective():
+    return use_trait_observe(solara.lab.theme, "dark_effective")
+
+
 @solara.component
 def Page():
     df = State.df.value
+    dark_effective = use_dark_effective()
 
     # the .scatter will set this cross filter
     filter, _set_filter = solara.use_cross_filter(id(df))
@@ -63,6 +88,8 @@ def Page():
 
     dff = solara.use_memo(filter_df, dependencies=[df, filter])
 
+    with solara.AppBar():
+        solara.lab.ThemeToggle()
     with solara.Sidebar():
         with solara.Card("Controls", margin=0, elevation=0):
             with solara.Column():
@@ -101,6 +128,7 @@ def Page():
                     size_max=State.size_max.value,
                     log_x=State.logx.value,
                     log_y=State.logy.value,
+                    template="plotly_dark" if dark_effective else "plotly_white",
                 )
             else:
                 solara.Warning("Select x and y columns")
@@ -114,4 +142,5 @@ def Page():
 @solara.component
 def Layout(children):
     route, routes = solara.use_route()
-    return solara.AppLayout(children=children)
+    dark_effective = use_dark_effective()
+    return solara.AppLayout(children=children, toolbar_dark=dark_effective, color=None)  # if dark_effective else "primary")

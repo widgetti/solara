@@ -28,7 +28,21 @@ var rules = [
 
 module.exports = [
     {
-        plugins: [new MiniCssExtractPlugin()],
+        plugins: [new MiniCssExtractPlugin({filename: 'fonts.css'})],
+        entry: './src/fonts.js',
+        output: {
+            filename: 'fonts.js',
+            path: path.resolve(__dirname, 'dist'),
+            libraryTarget: 'umd',
+            publicPath: 'auto',
+        },
+        module: {
+            rules: rules
+        },
+        mode: 'production',
+    },
+    {
+        plugins: [new MiniCssExtractPlugin({filename: 'main7.css'})],
         entry: './src/solara-vuetify-app.js',
         output: {
             filename: 'solara-vuetify-app7.min.js',
@@ -47,7 +61,7 @@ module.exports = [
         mode: 'production',
     },
     {
-        plugins: [new MiniCssExtractPlugin()],
+        plugins: [new MiniCssExtractPlugin({filename: 'main7.css'})],
         entry: './src/solara-vuetify-app.js',
         output: {
             filename: 'solara-vuetify-app7.js',
@@ -67,7 +81,7 @@ module.exports = [
         mode: 'development',
     },
     {
-        plugins: [new MiniCssExtractPlugin()],
+        plugins: [new MiniCssExtractPlugin({filename: 'main8.css'})],
         entry: './src/solara-vuetify-app.js',
         output: {
             filename: 'solara-vuetify-app8.min.js',
@@ -87,7 +101,7 @@ module.exports = [
         },
         mode: 'production',
     }, {
-        plugins: [new MiniCssExtractPlugin()],
+        plugins: [new MiniCssExtractPlugin({filename: 'main8.css'})],
         entry: './src/solara-vuetify-app.js',
         output: {
             filename: 'solara-vuetify-app8.js',

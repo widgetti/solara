@@ -15,5 +15,5 @@ export {
 } from '@jupyterlab/rendermime';
 export { connectKernel, shutdownKernel } from './kernel';
 export { WidgetManager } from './manager';
-export { renderMathJax } from './mathjax';
+export { KatexTypesetter, renderKatex } from './katex';
 export { extendedRendererFactories } from './rendermime';

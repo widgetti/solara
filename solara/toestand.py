@@ -3,6 +3,8 @@ import dataclasses
 import logging
 import sys
 import threading
+import warnings
+from abc import ABC, abstractmethod
 from collections import defaultdict
 from operator import getitem
 from typing import (
@@ -14,10 +16,10 @@ from typing import (
     Optional,
     Set,
     Tuple,
-    Type,
     TypeVar,
     Union,
     cast,
+    overload,
 )
 
 import react_ipywidgets as react
@@ -73,7 +75,7 @@ def use_sync_external_store_with_selector(subscribe, get_snapshot: Callable[[], 
 
 def merge_state(d1: S, **kwargs) -> S:
     if dataclasses.is_dataclass(d1):
-        return dataclasses.replace(d1, **kwargs)
+        return dataclasses.replace(d1, **kwargs)  # type: ignore
     if "pydantic" in sys.modules and isinstance(d1, sys.modules["pydantic"].BaseModel):
         return type(d1)(**{**d1.dict(), **kwargs})  # type: ignore
     return cast(S, {**cast(dict, d1), **kwargs})
@@ -98,6 +100,9 @@ class ValueBase(Generic[T]):
         self.set(value)
 
     def set(self, value: T):
+        raise NotImplementedError
+
+    def peek(self) -> T:
         raise NotImplementedError
 
     def get(self) -> T:
@@ -184,21 +189,14 @@ class ValueBase(Generic[T]):
 # context, in the solara user context
 
 
-class ConnectionStore(ValueBase[S]):
+class KernelStore(ValueBase[S], ABC):
     _global_dict: Dict[str, S] = {}  # outside of solara context, this is used
     # we keep a counter per type, so the storage keys we generate are deterministic
-    _type_counter: Dict[Type, int] = defaultdict(int)
-    scope_lock = threading.Lock()
+    _type_counter: Dict[Any, int] = defaultdict(int)
+    scope_lock = threading.RLock()
 
-    def __init__(self, default_value: S = None, key=None):
+    def __init__(self, key=None):
         super().__init__()
-        self.default_value = default_value
-        cls = type(default_value)
-        if key is None:
-            with ConnectionStore.scope_lock:
-                index = self._type_counter[cls]
-                self._type_counter[cls] += 1
-            key = cls.__module__ + ":" + cls.__name__ + ":" + str(index)
         self.storage_key = key
         self._global_dict = {}
         # since a set can trigger events, which can trigger new updates, we need a recursive lock
@@ -228,14 +226,22 @@ class ConnectionStore(ValueBase[S]):
                 scope_id = context.id
         return cast(Dict[str, S], scope_dict), scope_id
 
+    def peek(self):
+        return self.get()
+
     def get(self):
         scope_dict, scope_id = self._get_dict()
         if self.storage_key not in scope_dict:
             with self.scope_lock:
                 if self.storage_key not in scope_dict:
                     # we assume immutable, so don't make a copy
-                    scope_dict[self.storage_key] = self.default_value
+                    scope_dict[self.storage_key] = self.initial_value()
         return scope_dict[self.storage_key]
+
+    def clear(self):
+        scope_dict, scope_id = self._get_dict()
+        if self.storage_key in scope_dict:
+            del scope_dict[self.storage_key]
 
     def set(self, value: S):
         scope_dict, scope_id = self._get_dict()
@@ -254,6 +260,48 @@ class ConnectionStore(ValueBase[S]):
 
         self.fire(value, old)
 
+    @abstractmethod
+    def initial_value(self) -> S:
+        pass
+
+
+class KernelStoreValue(KernelStore[S]):
+    default_value: S
+
+    def __init__(self, default_value: S, key=None):
+        self.default_value = default_value
+        cls = type(default_value)
+        if key is None:
+            with KernelStoreValue.scope_lock:
+                index = self._type_counter[cls]
+                self._type_counter[cls] += 1
+            key = cls.__module__ + ":" + cls.__name__ + ":" + str(index)
+        super().__init__(key=key)
+
+    def initial_value(self) -> S:
+        return self.default_value
+
+
+class KernelStoreFactory(KernelStore[S]):
+    def __init__(self, factory: Callable[[], S], key=None):
+        self.factory = factory
+        try:
+            prefix = factory.__qualname__
+        except Exception:
+            prefix = repr(factory)
+        if key is None:
+            with KernelStore.scope_lock:
+                index = self._type_counter[prefix]
+                self._type_counter[prefix] += 1
+            try:
+                key = factory.__module__ + ":" + prefix + ":" + str(index)
+            except Exception:
+                key = prefix + ":" + str(index)
+        super().__init__(key=key)
+
+    def initial_value(self) -> S:
+        return self.factory()
+
 
 class Reactive(ValueBase[S]):
     _storage: ValueBase[S]
@@ -261,7 +309,7 @@ class Reactive(ValueBase[S]):
     def __init__(self, default_value: Union[S, ValueBase[S]], key=None):
         super().__init__()
         if not isinstance(default_value, ValueBase):
-            self._storage = ConnectionStore(default_value, key=key)
+            self._storage = KernelStoreValue(default_value, key=key)
         else:
             self._storage = default_value
         self.__post__init__()
@@ -273,7 +321,7 @@ class Reactive(ValueBase[S]):
         self._owner = owner
 
     def __repr__(self):
-        value = self.get(add_watch=False)
+        value = self.peek()
         if self._name:
             return f"<Reactive {self._owner.__name__}.{self._name} value={value!r} id={hex(id(self))}>"
         else:
@@ -300,10 +348,17 @@ class Reactive(ValueBase[S]):
             raise ValueError("Can't set a reactive to itself")
         self._storage.set(value)
 
-    def get(self, add_watch=True) -> S:
-        if add_watch and thread_local.reactive_used is not None:
+    def get(self, add_watch=None) -> S:
+        if add_watch is not None:
+            warnings.warn("add_watch is deprecated, use .peek()", DeprecationWarning)
+        if thread_local.reactive_used is not None:
             thread_local.reactive_used.add(self)
-        return self._storage.get()
+        # peek to avoid parents also adding themselves to the reactive_used set
+        return self._storage.peek()
+
+    def peek(self) -> S:
+        """Return the value without automatically subscribing to listeners."""
+        return self._storage.peek()
 
     def subscribe(self, listener: Callable[[S], None], scope: Optional[ContextManager] = None):
         return self._storage.subscribe(listener, scope=scope)
@@ -312,30 +367,136 @@ class Reactive(ValueBase[S]):
         return self._storage.subscribe_change(listener, scope=scope)
 
     def computed(self, f: Callable[[S], T]) -> "Computed[T]":
-        return Computed(f, self)
+        def func():
+            return f(self.get())
+
+        return Computed(func, key=f.__qualname__)
 
 
-class Computed(Generic[T]):
-    def __init__(self, compute: Callable[[S], T], state: Reactive[S]):
-        self.compute = compute
-        self.state = state
+class Singleton(Reactive[S]):
+    _storage: KernelStore[S]
 
-    def get(self) -> T:
-        return self.compute(self.state.get())
+    def __init__(self, factory: Callable[[], S], key=None):
+        import solara.server.kernel_context
 
-    def subscribe(self, listener: Callable[[T], None], scope: Optional[ContextManager] = None):
-        return self.state.subscribe(lambda _: listener(self.get()), scope=scope)
+        super().__init__(KernelStoreFactory(factory, key=key))
 
-    def use(self, selector: Callable[[T], T]) -> T:
-        slice = use_sync_external_store_with_selector(
-            self.subscribe,
-            self.get,
-            selector,
-        )
-        return slice
+        # reset on kernel restart (e.g. hot reload)
+        def reset():
+            def cleanup():
+                self._storage.clear()
+
+            return cleanup
+
+        solara.server.kernel_context.on_kernel_start(reset)
+
+    def __set__(self, obj, value):
+        raise AttributeError("Can't set a singleton")
 
 
-class ValueSubField(ValueBase[T]):
+class Computed(Reactive[S]):
+    _storage: KernelStore[S]
+
+    def __init__(self, f: Callable[[], S], key=None):
+        self.f = f
+
+        def on_change(*ignore):
+            with self._auto_subscriber.value:
+                self.set(f())
+
+        import functools
+
+        self._auto_subscriber = Singleton(functools.wraps(AutoSubscribeContextManager)(lambda: AutoSubscribeContextManager(on_change)))
+
+        @functools.wraps(f)
+        def factory():
+            v = self._auto_subscriber.value
+            with v:
+                return f()
+
+        super().__init__(KernelStoreFactory(factory, key=key))
+
+        # reset on kernel restart (e.g. hot reload)
+        def reset():
+            def cleanup():
+                self._storage.clear()
+
+            return cleanup
+
+        solara.server.kernel_context.on_kernel_start(reset)
+
+    def __repr__(self):
+        value = super().__repr__()
+        return "<Computed" + value[len("<Reactive") : -1]
+
+
+@overload
+def computed(
+    f: None,
+    *,
+    key: Optional[str] = ...,
+) -> Callable[[Callable[[], T]], Reactive[T]]:
+    ...
+
+
+@overload
+def computed(
+    f: Callable[[], T],
+    *,
+    key: Optional[str] = ...,
+) -> Reactive[T]:
+    ...
+
+
+def computed(
+    f: Union[None, Callable[[], T]],
+    *,
+    key: Optional[str] = None,
+) -> Union[Callable[[Callable[[], T]], Reactive[T]], Reactive[T]]:
+    """Creates a reactive variable that is set to the return value of the function.
+
+    The value will be updated when any of the reactive variables used in the function
+    change.
+
+    ## Example
+
+    ```solara
+    import solara
+    import solara.lab
+
+
+    a = solara.reactive(1)
+    b = solara.reactive(2)
+
+    @solara.lab.computed
+    def total():
+        return a.value + b.value
+
+    def reset():
+        a.value = 1
+        b.value = 2
+
+    @solara.component
+    def Page():
+        print(a, b, total)
+        solara.IntSlider("a", value=a)
+        solara.IntSlider("b", value=b)
+        solara.Text(f"a + b = {total.value}")
+        solara.Button("reset", on_click=reset)
+    ```
+
+    """
+
+    def wrapper(f: Callable[[], T]):
+        return Computed(f, key=key)
+
+    if f is None:
+        return wrapper
+    else:
+        return wrapper(f)
+
+
+class ReactiveField(ValueBase[T]):
     def __init__(self, field: "FieldBase"):
         super().__init__()  # type: ignore
         self._field = field
@@ -349,7 +510,7 @@ class ValueSubField(ValueBase[T]):
         return str(self._field)
 
     def __repr__(self):
-        return f"<Reactive subfield {self._field}>"
+        return f"<Reactive field {self._field}>"
 
     @property
     def lock(self):
@@ -383,10 +544,16 @@ class ValueSubField(ValueBase[T]):
 
         return self._root.subscribe_change(on_change, scope=scope)
 
-    def get(self, obj=None, add_watch=True) -> T:
-        if add_watch and thread_local.reactive_used is not None:
+    def get(self, add_watch=None) -> T:
+        if add_watch is not None:
+            warnings.warn("add_watch is deprecated, use .peek()", DeprecationWarning)
+        if thread_local.reactive_used is not None:
             thread_local.reactive_used.add(self)
-        return self._field.get(obj)
+        # peek to avoid parents also adding themselves to the reactive_used set
+        return self._field.peek()
+
+    def peek(self) -> T:
+        return self._field.peek()
 
     def set(self, value: T):
         self._field.set(value)
@@ -394,7 +561,7 @@ class ValueSubField(ValueBase[T]):
 
 def Ref(field: T) -> Reactive[T]:
     _field = cast(FieldBase, field)
-    return Reactive[T](ValueSubField[T](_field))
+    return cast(Reactive[T], ReactiveField[T](_field))
 
 
 class FieldBase:
@@ -425,7 +592,14 @@ class Fields(FieldBase):
         # so we can get the 'old' value
         if obj is not None:
             return obj
-        return self._parent.get(add_watch=False)
+        return self._parent.get()
+
+    def peek(self, obj=None):
+        # we are at the root, so override the object
+        # so we can get the 'old' value
+        if obj is not None:
+            return obj
+        return self._parent.peek()
 
     def set(self, value):
         self._parent.set(value)
@@ -444,9 +618,13 @@ class FieldAttr(FieldBase):
         obj = self._parent.get(obj)
         return getattr(obj, self.key)
 
+    def peek(self, obj=None):
+        obj = self._parent.peek(obj)
+        return getattr(obj, self.key)
+
     def set(self, value):
         with self._lock:
-            parent_value = self._parent.get()
+            parent_value = self._parent.peek()
             if isinstance(self.key, str):
                 parent_value = merge_state(parent_value, **{self.key: value})
                 self._parent.set(parent_value)
@@ -470,9 +648,13 @@ class FieldItem(FieldBase):
         obj = self._parent.get(obj)
         return getitem(obj, self.key)
 
+    def peek(self, obj=None):
+        obj = self._parent.peek(obj)
+        return getitem(obj, self.key)
+
     def set(self, value):
         with self._lock:
-            parent_value = self._parent.get()
+            parent_value = self._parent.peek()
             if isinstance(self.key, int) and isinstance(parent_value, (list, tuple)):
                 parent_type = type(parent_value)
                 parent_value = parent_value.copy()  # type: ignore
@@ -483,72 +665,102 @@ class FieldItem(FieldBase):
                 self._parent.set(parent_value)
 
 
-class AutoSubscribeContextManager:
+class AutoSubscribeContextManagerBase:
     # a render loop might trigger a new render loop of a differtent render context
     # so we want to save, and restore the current reactive_used
     reactive_used: Optional[Set[ValueBase]] = None
     reactive_added_previous_run: Optional[Set[ValueBase]] = None
     subscribed: Dict[ValueBase, Callable]
 
-    def __init__(self, element: solara.Element):
-        self.element = element
+    def __init__(self):
         self.subscribed = {}
+
+    def update_subscribers(self, change_handler, scope=None):
+        assert self.reactive_used is not None
+        reactive_used = self.reactive_used
+        # remove subfields for which we already listen to it's root reactive value
+        reactive_used_subfields = {k for k in reactive_used if isinstance(k, ValueSubField)}
+        reactive_used = reactive_used - reactive_used_subfields
+        # only add subfield for which we don't listen to it's parent
+        for reactive_used_subfield in reactive_used_subfields:
+            if reactive_used_subfield._root not in reactive_used:
+                reactive_used.add(reactive_used_subfield)
+        added = reactive_used - (self.reactive_added_previous_run or set())
+
+        removed = (self.reactive_added_previous_run or set()) - reactive_used
+
+        for reactive in added:
+            if reactive not in self.subscribed:
+                unsubscribe = reactive.subscribe_change(change_handler, scope=scope)
+                self.subscribed[reactive] = unsubscribe
+        for reactive in removed:
+            unsubscribe = self.subscribed[reactive]
+            unsubscribe()
+            del self.subscribed[reactive]
+        self.reactive_added_previous_run = added
+
+    def unsubscribe_all(self):
+        for reactive in self.subscribed:
+            unsubscribe = self.subscribed[reactive]
+            unsubscribe()
 
     def __enter__(self):
         self.reactive_used_before = thread_local.reactive_used
         self.reactive_used = thread_local.reactive_used = set()
-
         assert thread_local.reactive_used is self.reactive_used, f"{hex(id(thread_local.reactive_used))} vs {hex(id(self.reactive_used))}"
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        thread_local.reactive_used = self.reactive_used_before
+
+
+class AutoSubscribeContextManagerReacton(AutoSubscribeContextManagerBase):
+    def __init__(self, element: solara.Element):
+        self.element = element
+        super().__init__()
+
+    def __enter__(self):
         _, set_counter = solara.use_state(0, key="auto_subscribe_force_update_counter")
 
-        def update_listeners():
-            assert self.reactive_used is not None
-            reactive_used = self.reactive_used
-            # remove subfields for which we already listen to it's root reactive value
-            reactive_used_subfields = {k for k in reactive_used if isinstance(k, ValueSubField)}
-            reactive_used = reactive_used - reactive_used_subfields
-            # only add subfield for which we don't listen to it's parent
-            for reactive_used_subfield in reactive_used_subfields:
-                if reactive_used_subfield._root not in reactive_used:
-                    reactive_used.add(reactive_used_subfield)
-            added = reactive_used - (self.reactive_added_previous_run or set())
+        def force_update(new_value, old_value):
+            # can we do just x+1 to collapse multiple updates into one?
+            set_counter(lambda x: x + 1)
 
-            removed = (self.reactive_added_previous_run or set()) - reactive_used
+        super().__enter__()
 
-            for reactive in added:
-                if reactive not in self.subscribed:
+        def update_subscribers():
+            self.update_subscribers(force_update, scope=reacton.core.get_render_context(required=True))
 
-                    def force_update(new_value, old_value, _reactive=reactive):
-                        # can we do just x+1 to collapse multiple updates into one?
-                        set_counter(lambda x: x + 1)
-
-                    unsubscribe = reactive.subscribe_change(force_update, scope=reacton.core.get_render_context(required=True))
-                    self.subscribed[reactive] = unsubscribe
-            for reactive in removed:
-                unsubscribe = self.subscribed[reactive]
-                unsubscribe()
-                del self.subscribed[reactive]
-            self.reactive_added_previous_run = added
-
-        solara.use_effect(update_listeners, None)
+        solara.use_effect(update_subscribers, None)
 
         def on_close():
             def cleanup():
                 assert self.reactive_added_previous_run is not None
-                for reactive in self.subscribed:
-                    unsubscribe = self.subscribed[reactive]
-                    unsubscribe()
+                self.unsubscribe_all()
 
             return cleanup
 
         solara.use_effect(on_close, [])
 
+
+class AutoSubscribeContextManager(AutoSubscribeContextManagerBase):
+    on_change: Callable[[], None]
+
+    def __init__(self, on_change: Callable[[], None]):
+        super().__init__()
+        self.on_change = on_change
+
+    def __enter__(self):
+        super().__enter__()
+
     def __exit__(self, exc_type, exc_val, exc_tb):
-        pass
+        value = super().__exit__(exc_type, exc_val, exc_tb)
+        self.update_subscribers(self.on_change)
+        return value
 
 
 # alias for compatibility
 State = Reactive
+ValueSubField = ReactiveField
 
-auto_subscribe_context_manager = AutoSubscribeContextManager
+auto_subscribe_context_manager = AutoSubscribeContextManagerReacton
 reacton.core._component_context_manager_classes.append(auto_subscribe_context_manager)

@@ -1,5 +1,5 @@
 """Build webapps using IPywidgets"""
-__version__ = "1.25.0"
+__version__ = "1.28.0"
 github_url = "https://github.com/widgetti/solara"
 git_branch = "master"
 
@@ -55,12 +55,15 @@ from .datatypes import *
 from .hooks import *
 from .cache import memoize
 from . import cache
-from .components import *
+
+# TODO: components re-exports v, we should use __all__ in components/misc.py
+from .components import *  # type: ignore
 from .components import _component_vue
 
 from .routing import use_route, use_router, use_route_level, find_route, use_pathname, resolve_path
 from .autorouting import generate_routes, generate_routes_directory, RenderPage, RoutingProvider, DefaultLayout
 from .checks import check_jupyter
+from .scope import get_kernel_id, get_session_id
 
 
 def display(*objs, **kwargs):

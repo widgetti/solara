@@ -108,7 +108,7 @@ module.exports = {
             return base
         },
         getCdn() {
-            return (typeof solara_cdn !== "undefined" && solara_cdn) || `${this.getBaseUrl()}_solara/cdn`;
+            return this.cdn || (typeof solara_cdn !== "undefined" && solara_cdn) || `${this.getBaseUrl()}_solara/cdn`;
         }
     },
 }

@@ -1,5 +1,65 @@
 # Solara Changelog
 
+## Version 1.28.0
+
+<video width="80%" controls>
+   <source src=https://dxhl76zpt6fap.cloudfront.net/videos/solara-theme.mp4  type="video/mp4" >
+</video>
+
+### Highlight
+
+   * Feature: [Theming support](https://solara.dev/api/theming), including dark theme and auto-detection of device preference [#494](https://github.com/widgetti/solara/pull/494).
+
+### Details
+
+   * Feature: Support for [ES modules](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules) using [ipyReact](https://github.com/widgetti/ipyreact)
+      [#516](https://github.com/widgetti/solara/pull/516).
+   * Feature: Support for [Polars](https://pola.rs/) dataframes in `solara.DataFrame` [#195](https://github.com/widgetti/solara/pull/195)
+   * Bug Fix: User reactive variables sometimes taking on the value of a solara builtin one (issue [#510](https://github.com/widgetti/solara/issues/510))
+      [#514](https://github.com/widgetti/solara/pull/514)
+   * Bug Fix: An extra scrollbar sometimes appearing when no `AppBar` or `SideBar` was present on the page [#477](https://github.com/widgetti/solara/pull/477)
+   * Bug Fix: The browser main scrollbar being present on pages with no scrolling enabled [#518](https://github.com/widgetti/solara/pull/518)
+
+## Version 1.27.0
+
+
+<video width="80%" controls>
+   <source src=https://dxhl76zpt6fap.cloudfront.net/videos/solara-tasks.mp4  type="video/mp4" >
+</video>
+
+### Highlight
+
+   * Feature: [Task support](https://solara.dev/api/task). Lets you run code in the background, with the UI available to the user. This is useful for long running tasks, like downloading data or processing data [#461](https://github.com/widgetti/solara/pull/461).
+   * Feature: Provide access to [cookies and request headers](https://solara.dev/api/cookies_headers) [#501](https://github.com/widgetti/solara/pull/501)
+   * Refactor: Replace MathJax with KaTeX for faster math rendering and a lighter package [#483](https://github.com/widgetti/solara/pull/483)
+
+## Version 1.26.0
+
+### Demo of @solara.lab.computed with
+
+<video width="80%" controls>
+   <source src="https://github.com/widgetti/solara/assets/5592797/daf21bb0-ce94-4d5e-9ebb-339ea768b3ac" type="video/mp4" >
+</video>
+
+### Highlight
+
+   * Feature: [computed reactive variables](https://solara.dev/api/computed) which use the return value of the function. The value will be updated when any of the reactive variables used in the function [#455](https://github.com/widgetti/solara/pull/455).
+
+### Details
+
+   * Feature: on_kernel_start triggers callback on virtual kernel start [#471](https://github.com/widgetti/solara/pull/471).
+   * Bug fix: Altair works in VSCode and Google Colab [#488](https://github.com/widgetti/solara/pull/488).
+   * Feature: get_kernel_id and get_session_id for custom storage [#452](https://github.com/widgetti/solara/pull/452).
+   * Bug fix: Mermaid and Math rendering in Jupyter Lab and VSCode [#480](https://github.com/widgetti/solara/pull/480).
+
+## Version 1.25.1
+
+### Details
+
+* Performance: Removed unnecessary CSS and JS.
+* Performance: Quality of Life - JS and CSS resources automatically reloaded on version change.
+* Bug fix: overlay disabling navigation for display width < 960px.
+
 
 ## Version 1.25.0
 

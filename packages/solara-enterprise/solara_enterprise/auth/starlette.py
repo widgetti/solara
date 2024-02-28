@@ -13,6 +13,8 @@ from starlette.authentication import (
 from starlette.requests import HTTPConnection, Request
 from starlette.responses import RedirectResponse
 
+from .. import license
+
 logger = logging.getLogger("solara.enterprise.auth.starlette")
 
 
@@ -77,6 +79,7 @@ async def logout(request: Request):
 
 
 async def login(request: Request, redirect_uri: Optional[str] = None):
+    license.check("auth")
     check_oauth()
     assert oauth is not None
     assert oauth.oauth1 is not None

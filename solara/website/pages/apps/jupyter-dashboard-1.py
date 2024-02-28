@@ -60,7 +60,7 @@ def crime_map(df):
     latitude = 37.77
     longitude = -122.42
 
-    sanfran_map = folium.Map(location=[latitude, longitude], zoom_start=12)
+    sanfran_map = folium.Map(height=400, location=[latitude, longitude], zoom_start=12)
 
     incidents = folium.plugins.MarkerCluster().add_to(sanfran_map)
 
