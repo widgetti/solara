@@ -67,8 +67,14 @@ modules.export = {
   watch: {
     location(value) {
       console.log("changed", this.location, value);
-      pathnameNew = (new URL(value, window.location)).pathname
-      pathnameOld = window.location.pathname
+      const newUrl = new URL(value, window.location);
+      if(newUrl.origin != window.location.origin) {
+        // external navigation
+        window.location = newUrl;
+        return
+      }
+      const pathnameNew = newUrl.pathname
+      const pathnameOld = window.location.pathname
       // if we use the back navigation, this watch will trigger,
       // but we don't want to push the history
       // otherwise we cannot go forward
