@@ -158,3 +158,10 @@ Solara provides two convenient components for creating a user interface for logi
  ## Python version support
 
 Please note that Python 3.6 is not supported for Solara OAuth.
+
+
+## Possible issues
+
+### Wrong redirection
+
+If the redirection back to solara return to the wrong address, it might be due to solara not choosing the right default for `SOLARA_BASE_URL`. For instance this variable could be set to `SOLARA_BASE_URL=https://solara.dev` for the solara.dev server. If you application runs behind a subpath, e.g. `/myapp`, you might have to set `SOLARA_ROOT_PATH=/myapp`.
