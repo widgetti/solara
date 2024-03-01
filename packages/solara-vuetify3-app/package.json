@@ -18,7 +18,7 @@
     "material-design-icons-iconfont": "^5.0.1",
     "typeface-roboto": "0.0.54",
     "vue": "^3.3.4",
-    "vuetify": "~3.3.23"
+    "vuetify": "~3.3.17"
   },
   "devDependencies": {
     "css-loader": "^6.9.1",
