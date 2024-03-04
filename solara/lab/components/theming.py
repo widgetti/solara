@@ -56,7 +56,7 @@ def ThemeToggle(
         theme_dark=theme.dark,
         event_sync_themes=sync_themes,
         enable_auto=enable_auto,
-        on_icon="mdi-weather-night",
-        off_icon="mdi-weather-sunny",
-        auto_icon="mdi-brightness-auto",
+        on_icon=on_icon,
+        off_icon=off_icon,
+        auto_icon=auto_icon,
     )
