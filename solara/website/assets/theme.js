@@ -3,6 +3,6 @@ vuetifyThemes = {
         primary: '#ff991f',
     },
     dark: {
-        primary: '#ff991f',
+        primary: '#7A8AFF',
     }
 }

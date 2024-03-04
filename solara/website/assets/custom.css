@@ -21,7 +21,7 @@
     --jp-content-font-size5: 2.25rem;
 
     --dark-color-primary-lightest: #26273D;
-    --dark-color-primary: #ff991f;
+    --dark-color-primary: #7A8AFF;
     --dark-color-primary-darker: #262D69;
     --dark-color-text: hsla(0,0%,100%,.7);
     --dark-color-grey: #ababab;
@@ -49,6 +49,10 @@ a:link {
 }
 
 .theme--dark a:link {
+    color: var(--dark-color-primary);
+}
+
+.theme--dark .jp-RenderedHTMLCommon a:visited {
     color: var(--dark-color-primary);
 }
 
