@@ -230,7 +230,7 @@ async function solaraInit(mountId, appName) {
     if (kernelId && widgetModelId) {
         await widgetManager.fetchAll();
     } else {
-        widgetModelId = await widgetManager.run(appName, {path, dark: inDarkMode()});
+        widgetModelId = await widgetManager.run(appName, {path, dark: inDarkMode(), themes: vuetifyThemes});
     }
     await solaraMount(widgetManager, mountId || 'content', widgetModelId);
     skipReconnectedCheck = false;

@@ -369,10 +369,12 @@ def solara_comm_target(comm, msg_first):
             app = apps[app_name]
             context = kernel_context.get_current_context()
             dark = args.get("dark", False)
+            themes = args.get("themes", None)
             import ipyvuetify
 
-            from solara.lab import theme
+            from solara.lab.components.theming import _set_theme, theme
 
+            _set_theme(themes)
             # While this usually gets set from the frontend, in solara (server) we want to know this directly at the first
             # render. Also, using the same trait allows us to write code which works on all widgets platforms, instead
             # or using something different when running under solara server

@@ -1,4 +1,4 @@
-from typing import Callable, cast
+from typing import Callable, Dict, Union, cast
 
 import ipyvuetify.Themes
 from ipyvuetify.Themes import Theme
@@ -9,6 +9,17 @@ from solara.tasks import Proxy
 
 theme = Proxy(Theme)
 ipyvuetify.Themes.theme = cast(ipyvuetify.Themes.Theme, theme)
+
+
+def _set_theme(themes: Union[Dict[str, Dict[str, str]], None]):
+    if themes is None:
+        return
+
+    for theme_type in themes.keys():
+        widget = getattr(theme.themes, theme_type)
+        with widget.hold_trait_notifications():
+            for k, v in themes[theme_type].items():
+                setattr(widget, k, v)
 
 
 @component_vue("theming.vue")
