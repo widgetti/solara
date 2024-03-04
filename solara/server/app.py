@@ -355,6 +355,16 @@ def load_app_widget(app_state, app_script: AppScript, pathname: str):
             container.children = [widget]
 
 
+def load_themes(themes: Dict[str, Dict[str, str]], dark: bool):
+    # While these usually gets set from the frontend, in solara (server) we want to know theme information directly at the first
+    # render. Also, using the same trait allows us to write code which works on all widgets platforms, instead
+    # or using something different when running under solara server
+    from solara.lab.components.theming import _set_theme, theme
+
+    _set_theme(themes)
+    theme.dark_effective = dark
+
+
 def solara_comm_target(comm, msg_first):
     app: Optional[AppScript] = None
 
@@ -368,20 +378,13 @@ def solara_comm_target(comm, msg_first):
             app_name = args.get("appName") or "__default__"
             app = apps[app_name]
             context = kernel_context.get_current_context()
-            dark = args.get("dark", False)
-            themes = args.get("themes", None)
             import ipyvuetify
-
-            from solara.lab.components.theming import _set_theme, theme
-
-            _set_theme(themes)
-            # While this usually gets set from the frontend, in solara (server) we want to know this directly at the first
-            # render. Also, using the same trait allows us to write code which works on all widgets platforms, instead
-            # or using something different when running under solara server
-            theme.dark_effective = dark
 
             container = ipyvuetify.Html(tag="div")
             context.container = container
+            themes = args.get("themes")
+            dark = args.get("dark")
+            load_themes(themes, dark)
             load_app_widget(None, app, path)
             comm.send({"method": "finished", "widget_id": context.container._model_id})
         elif method == "app-status":
@@ -395,11 +398,17 @@ def solara_comm_target(comm, msg_first):
                 comm.send({"method": "app-status", "started": False})
 
         elif method == "reload":
+            from solara.lab.components.theming import _get_theme, theme
+
             assert app is not None
             context = kernel_context.get_current_context()
             path = data.get("path", "")
+            current_theme = theme._instance.value
+            theme_dict = _get_theme(current_theme)
+
             with context:
                 context.restart()
+                load_themes(theme_dict, current_theme.dark_effective)
                 load_app_widget(context.state, app, path)
                 comm.send({"method": "finished"})
         else:
