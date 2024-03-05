@@ -15,7 +15,7 @@ from reacton.core import Element, render
 
 import solara
 
-from . import kernel_context, reload, settings
+from . import kernel_context, patch, reload, settings
 from .kernel import Kernel
 from .utils import pdb_guard
 
@@ -67,6 +67,9 @@ class AppScript:
         dummy_kernel_context = kernel_context.create_dummy_context()
         with dummy_kernel_context:
             app = self._execute()
+
+        # We now ran the app, now we can check for patches that require heavy imports
+        patch.patch_heavy_imports()
 
         self._first_execute_app = app
         reload.reloader.root_path = self.directory
@@ -198,6 +201,9 @@ class AppScript:
                     self._first_execute_app = None
                     self._first_execute_app = self._execute()
                     print("Re-executed app", self.name)  # noqa
+                    # We now ran the app again, might contain new imports
+                    patch.patch_heavy_imports()
+
         return self._first_execute_app
 
     def on_file_change(self, name):

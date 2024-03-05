@@ -1,3 +1,4 @@
+import functools
 import logging
 import os
 import pdb
@@ -198,6 +199,16 @@ class context_dict(MutableMapping):
     def __setitem__(self, key, value):
         self._get_context_dict().__setitem__(key, value)
 
+    # support OrderedDict API for matplotlib
+    def move_to_end(self, key, last=True):
+        assert last, "only last=True is supported"
+        item = self.pop(key)
+        self[key] = item
+
+    # matplotlib assumes .values() returns a list
+    def values(self):
+        return list(self._get_context_dict().values())
+
 
 class context_dict_widgets(context_dict):
     def _get_context_dict(self) -> dict:
@@ -313,6 +324,42 @@ def patch_ipyreact():
 
     # make this a no-op, we'll create the widget when needed
     ipyreact.importmap._update_import_map = lambda: None
+
+
+def once(f):
+    called = False
+    return_value = None
+
+    @functools.wraps(f)
+    def wrapper():
+        nonlocal called
+        nonlocal return_value
+        if called:
+            return return_value
+        called = True
+        return_value = f()
+        return return_value
+
+    return wrapper
+
+
+@once
+def patch_matplotlib():
+    import matplotlib._pylab_helpers
+
+    prev = matplotlib._pylab_helpers.Gcf.figs
+    matplotlib._pylab_helpers.Gcf.figs = context_dict_user("matplotlib.pylab.figure_managers", prev)  # type: ignore
+
+    def cleanup():
+        matplotlib._pylab_helpers.Gcf.figs = prev
+
+    return cleanup
+
+
+def patch_heavy_imports():
+    # patches that we only want to do if a package is imported, because they may slow down startup
+    if "matplotlib" in sys.modules:
+        patch_matplotlib()
 
 
 def patch():
