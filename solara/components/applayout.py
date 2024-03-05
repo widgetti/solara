@@ -306,7 +306,7 @@ def AppLayout(
                             close_on_content_click=False,
                         ):
                             pass
-                            v.Html(tag="div", children=children_sidebar, style_="background-color: white; padding: 12px; min-width: 400px")
+                            v.Sheet(children=children_sidebar, style_="padding: 12px; min-width: 400px")
                     if title or children_appbartitle:
                         v.ToolbarTitle(children=children_appbartitle or [title])
                     v.Spacer()

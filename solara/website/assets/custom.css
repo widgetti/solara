@@ -21,8 +21,9 @@
     --jp-content-font-size5: 2.25rem;
 
     --dark-color-primary-lightest: #26273D;
-    --dark-color-primary: #7A8AFF;
-    --dark-color-primary-darker: #262D69;
+    /* --dark-color-primary: #7A8AFF; */
+    --dark-color-primary: #f77e14;
+    --dark-color-primary-darker: #303886;
     --dark-color-text: hsla(0,0%,100%,.7);
     --dark-color-grey: #ababab;
     --dark-color-grey-light: #202020;
@@ -162,7 +163,8 @@ blockquote p:last-child {
 }
 
 .theme--dark .v-btn.homepage-button {
-    background-color: var(--dark-color-primary-darker) !important;
+    background-color: var(--dark-color-primary) !important;
+    color: var(--dark-color-grey-light);
 }
 
 .v-card.testimonial-card{
@@ -196,6 +198,21 @@ blockquote p:last-child {
 
 .theme--dark.v-application .text--primary {
     color: var(--dark-color-primary-darker) !important;
+}
+
+/* header */
+.news {
+    background-color: var(--color-primary);
+    padding: 10px;
+    font-size: 20px;
+    display: flex;
+    justify-content: center;
+}
+.theme--dark .news {
+    background-color: var(--dark-color-primary);
+}
+.news a {
+    color: white !important;
 }
 
 /* hero */

@@ -5,6 +5,9 @@ import solara.lab
 from solara.alias import rv
 from solara.server import settings
 
+# TODO: remove import once function is included in solara
+from solara.website.pages.apps.scatter import use_dark_effective
+
 
 @solara._component_vue("algolia.vue")
 def Algolia(app_id: str, index_name: str, api_key: str, debug=False):
@@ -22,23 +25,6 @@ def Header(
 
     # set states for menu
     with solara.Column(gap="0px"):
-        solara.Style(
-            """
-                    .news {
-                        background-color: var(--color-primary);
-                        padding: 10px;
-                        font-size: 20px;
-                        display: flex;
-                        justify-content: center;
-                    }
-                    .theme--dark .news {
-                        background-color: var(--dark-color-primary-darker);
-                    }
-                    .news a {
-                        color: white !important;
-                    }
-                     """
-        )
         with solara.Div(classes=["news"]):
             solara.HTML(
                 "div",
@@ -50,7 +36,7 @@ def Header(
                     with solara.Button(icon=True, class_="hidden-md-and-up", on_click=lambda: on_toggle_left_menu and on_toggle_left_menu()):
                         rv.Icon(children=["mdi-menu"])
                 with solara.Link(path_or_route="/"):
-                    solara.Image(router.root_path + "/static/assets/images/logo.svg")
+                    solara.Image(router.root_path + f"/static/assets/images/logo{'_white' if use_dark_effective() else ''}.svg")
             rv.Spacer()
 
             if settings.search.enabled:
