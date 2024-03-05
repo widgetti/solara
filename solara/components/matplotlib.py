@@ -34,8 +34,7 @@ def FigureMatplotlib(
     You should also avoid drawing using the pyplot interface, as it is not thread-safe. If you do use it,
     your drawing might be corrupted due to another thread/user drawing at the same time.
 
-    If you still must use pyplot to create the figure, make sure you call `plt.switch_backend("agg")`
-    before creating the figure, to avoid starting an interactive backend.
+    When running under solara-server, we by default configure the same 'inline' backend as in the Jupyter notebook.
 
     For performance reasons, you might want to pass in a list of dependencies that indicate when
     the figure changed, to avoid re-rendering it on every render.

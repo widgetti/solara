@@ -1,4 +1,5 @@
 import logging
+import os
 import pdb
 import sys
 import threading
@@ -25,6 +26,7 @@ except:  # noqa
 if patch_display is not None and sys.platform != "emscripten":
     patch_display()
 ipywidget_version_major = int(ipywidgets.__version__.split(".")[0])
+ipykernel_version_major = int(ipykernel.__version__.split(".")[0])
 
 
 class FakeIPython:
@@ -330,6 +332,13 @@ def patch():
         pass
     else:
         patch_ipyreact()
+
+    if "MPLBACKEND" not in os.environ:
+        if ipykernel_version_major < 6:
+            # changed in https://github.com/ipython/ipykernel/pull/591
+            os.environ["MPLBACKEND"] = "ipykernel.pylab.backend_inline"
+        else:
+            os.environ["MPLBACKEND"] = "module://matplotlib_inline.backend_inline"
 
     # the ipyvue.Template module cannot be accessed like ipyvue.Template
     # because the import in ipvue overrides it
