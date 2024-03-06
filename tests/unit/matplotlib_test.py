@@ -31,20 +31,45 @@ def test_pylab(no_kernel_context):
 
         assert len(Gcf.get_all_fig_managers()) == 0
         plt.figure()
+
         assert len(Gcf.get_all_fig_managers()) == 1
+
+        default_color = (1, 1, 1, 0)
+        white = "white"
+        black = "black"
+        assert plt.rcParams["figure.facecolor"] in [default_color, white]
+        plt.style.use("default")
+        assert plt.rcParams["figure.facecolor"] == white
+
+        plt.style.use("dark_background")
+        assert plt.rcParams["figure.facecolor"] == black
+
         with context_1:
             assert len(Gcf.get_all_fig_managers()) == 0
             plt.figure()
+            assert plt.rcParams["figure.facecolor"] == black
             assert len(Gcf.get_all_fig_managers()) == 1
+            plt.style.use("default")
+            assert plt.rcParams["figure.facecolor"] == white
+
+        assert plt.rcParams["figure.facecolor"] == black
         assert len(Gcf.get_all_fig_managers()) == 1
+        plt.style.use("default")
+        assert plt.rcParams["figure.facecolor"] == white
+
         with context_2:
+            assert plt.rcParams["figure.facecolor"] == white
             assert len(Gcf.get_all_fig_managers()) == 0
             plt.figure()
             assert len(Gcf.get_all_fig_managers()) == 1
             plt.figure()
             assert len(Gcf.get_all_fig_managers()) == 2
+            plt.style.use("dark_background")
+            assert plt.rcParams["figure.facecolor"] == black
         with context_1:
             assert len(Gcf.get_all_fig_managers()) == 1
+            assert plt.rcParams["figure.facecolor"] == white
+        assert plt.rcParams["figure.facecolor"] == white
 
     finally:
         cleanup()
