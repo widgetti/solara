@@ -91,22 +91,23 @@ class ValueBase(Generic[T]):
         if settings.main.log_level in ["DEBUG", "INFO"]:
             import inspect
 
-            for frame in inspect.stack():
-                file = frame.filename
-                if (
-                    not (
-                        file.endswith("solara/toestand.py")
-                        or file.endswith("solara/reactive.py")
-                        or file.endswith("solara/hooks/use_reactive.py")
-                        or file.endswith("reacton/core.py")
-                        or file.endswith("components/markdown.py")
-                    )
-                    and frame.code_context is not None
+            # All subclasses of ValueBase have at least two calls within this file
+            frame = sys._getframe(2)
+            while frame:
+                file = frame.f_code.co_filename
+                if not (
+                    file.endswith("solara/toestand.py")
+                    or file.endswith("solara/reactive.py")
+                    or file.endswith("solara/hooks/use_reactive.py")
+                    or file.endswith("reacton/core.py")
+                    or file.endswith("components/markdown.py")
                 ):
-                    if "=" not in frame.code_context[0]:
-                        continue
-                    elif any(op in frame.code_context[0].split("=")[1].lower() for op in ["reactive", "use_memo", "computed", "singleton"]):
-                        declaration = frame.code_context[0].split("=")[0].strip()
+                    frame_info = inspect.getframeinfo(frame)
+                    if frame_info.code_context is None or "=" not in frame_info.code_context[0]:
+                        # For some reason MyPy complains about types even though both are FrameType | None
+                        frame = frame.f_back  # type: ignore
+                    elif any(op in frame_info.code_context[0].split("=")[1].lower() for op in ["reactive", "use_memo", "computed", "singleton"]):
+                        declaration = frame_info.code_context[0].split("=")[0].strip()
                         if ":" in declaration:
                             declaration = declaration.split(":")[0].strip()
                         self._varname: Optional[str] = declaration
@@ -117,6 +118,8 @@ class ValueBase(Generic[T]):
                 elif file.endswith("components/markdown.py"):
                     self._varname = "markdown_content"
                     break
+                else:
+                    frame = frame.f_back  # type: ignore
             if not hasattr(self, "_varname"):
                 logger.info("No varname found")
                 self._varname = None
