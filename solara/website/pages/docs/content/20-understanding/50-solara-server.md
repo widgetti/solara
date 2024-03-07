@@ -48,6 +48,20 @@ HTTP/1.1 200 OK
 ...
 ```
 
+## Live resource information
+
+
+To check resource usage of the server (CPU, memory, etc.), the `/resourcez` endpoint is added, and should return a 200 HTTP status code and include
+various resource information, like threads created and running, number of virtual kernels, etc. in JSON format. To get also memory and cpu usage, you can include
+the `?verbose` query parameter, e.g.:
+
+```
+$ curl http://localhost:8765/resourcez\?verbose
+```
+
+The JSON format may be subject to change.
+
+
 
 ## Production mode
 
