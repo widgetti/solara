@@ -462,7 +462,7 @@ def test_simplest():
     @react.component
     def ThemeSelector():
         theme, set_theme = Ref(settings.fields["theme"]).use_state()  # type: ignore
-        with sol.ToggleButtonsSingle(theme, on_value=set_theme) as main:
+        with sol.ToggleButtonsSingle(theme, on_value=set_theme) as main:  # type: ignore
             sol.Button("dark")
             sol.Button("light")
         return main
@@ -1013,6 +1013,24 @@ def test_use_reactive_update():
     rc.find(v.Slider).widget.v_model = 1
     assert var2.value == 1
     assert rc.find(v.Slider).widget.label == "test: 1"
+    rc.close()
+
+
+def test_use_reactive_ref():
+    reactive_var = Reactive({"a": 1})
+    reactive_ref = Ref(reactive_var.fields["a"])
+
+    reactive_ref_test: Reactive[int] = None
+
+    @solara.component
+    def Test():
+        nonlocal reactive_ref_test
+        reactive_ref_test = solara.use_reactive(reactive_ref)
+        return solara.IntSlider("test: " + str(reactive_ref.value), value=reactive_ref_test)
+
+    box, rc = solara.render(Test(), handle_error=False)
+    assert reactive_ref_test is not None
+    assert reactive_ref_test.value == 1
     rc.close()
 
 
