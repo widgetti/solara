@@ -228,7 +228,10 @@ async def kernel_connection(ws: starlette.websockets.WebSocket):
             await thread_return
     finally:
         if settings.main.experimental_performance:
-            ws_wrapper.task.cancel()
+            try:
+                ws_wrapper.task.cancel()
+            except:  # noqa
+                logger.exception("error cancelling websocket task")
         try:
             await ws.close()
         except:  # noqa
