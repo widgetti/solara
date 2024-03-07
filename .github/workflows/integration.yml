@@ -53,7 +53,7 @@ jobs:
         run: mkdir test-results
       - name: Install
         run: |
-          pip install ".[dev,server,flask,documentation,pytest]" "voila~=${{ matrix.voila }}" "jupyterlab<4" "pydantic<2"
+          pip install ".[dev,server,flask,documentation,pytest]" "voila~=${{ matrix.voila }}" "jupyterlab<4" "pydantic<2" "playwright==1.41.2"
           (cd packages/solara-enterprise && pip install ".[ssg,auth]" "ipywidgets~=${{ matrix.ipywidgets }}")
       - name: Install playwright
         run: playwright install
