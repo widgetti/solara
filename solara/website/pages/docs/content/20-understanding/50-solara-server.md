@@ -16,6 +16,10 @@ However, when the websocket between the web page and the server disconnects, the
 
 To optimize memory usage or address specific needs, one might opt for a shorter expiration duration. For instance, setting `SOLARA_KERNEL_CULL_TIMEOUT=1m` will cause sessions to expire after just 1 minute. Other possible options are `2d` (2 days), `3h` (3 hours), `30s` (30 seconds), etc. If no units are given, seconds are assumed.
 
+### Maximum number of kernels connected
+
+Each virtual kernel runs in its own thread, this ensures that one particular user (actually browser page) cannot block the execution of another virtual kernel. However, each thread consumes a bit of resources. If you want to limit the number of kernels, this can be done by setting the `SOLARA_KERNELS_MAX_COUNT` environment variable. The default is unlimited (empty string), but you can set it to any number you like. If the limit is reached, the server will refuse new connections until a kernel is closed.
+
 
 ## Handling Multiple Workers
 In setups with multiple workers, it's possible for a page to reconnect to a different worker than its original. This would result in a loss of the virtual kernel (since it lives on a different worker), prompting the Solara app to initiate a fresh start. To prevent this scenario, a sticky session configuration is recommended, ensuring consistent client-worker connections. Utilizing a load balancer, such as [nginx](https://www.nginx.com/), can achieve this.
