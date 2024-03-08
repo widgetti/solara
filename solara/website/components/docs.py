@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import solara
 from solara.alias import rv
 
@@ -30,30 +28,36 @@ def Gallery(route_external=None):
                 if route.children:
                     with solara.Column(classes=["subcategory-row", "ps-md-10"]):
                         solara.HTML(tag="h2", unsafe_innerHTML=route.label, attributes={"id": route.path}, style="padding-left: 10%;")
-                        with solara.Row(justify="center", gap="20px", style={"flex-wrap": "wrap", "row-gap": "20px"}):
+                        with solara.Row(justify="center", gap="20px", style={"flex-wrap": "wrap", "row-gap": "20px", "max-width": "90rem"}):
                             for child in route.children:
                                 if child.path == "/":
                                     continue
                                 path = route.path + "/" + child.path
-                                for extension in [".png", ".gif"]:
-                                    image = path + extension
-                                    image_path = Path(__file__).parent.parent / "public" / route_current.path / image
-                                    image_url = "/static/public/" + route_current.path + "/" + image
-                                    if image_path.exists():
-                                        break
-                                    else:
-                                        image_url = "/static/public/logo.svg"
+                                if child.path in [
+                                    "button",
+                                    "checkbox",
+                                    "confirmation_dialog",
+                                    "echarts",
+                                    "file_browser",
+                                    "file_download",
+                                    "matplotlib",
+                                    "select",
+                                    "switch",
+                                    "tooltip",
+                                ]:
+                                    image_url = "https://dxhl76zpt6fap.cloudfront.net/public/api/" + child.path + ".gif"
+                                elif child.path in ["card", "dataframe", "pivot_table", "slider"]:
+                                    image_url = "https://dxhl76zpt6fap.cloudfront.net/public/api/" + child.path + ".png"
+                                else:
+                                    image_url = "https://dxhl76zpt6fap.cloudfront.net/public/logo.svg"
 
                                 if path:
                                     path = path if route_external is None else route_current.path + "/" + path
                                     title = solara.Link(path, children=[child.label])
                                     with solara.Card(title, classes=["component-card"], margin=0):
-                                        with solara.Link(path):
-                                            if not image_path.exists():
-                                                with solara.Column(align="center"):
-                                                    solara.Image(image_url, width="120px")
-                                            else:
-                                                solara.Image(image_url, width="100%")
+                                        with solara.Column(align="center"):
+                                            with solara.Link(path):
+                                                solara.Image(image_url, width="12rem")
 
 
 @solara.component

@@ -409,6 +409,7 @@ blockquote p:last-child {
 }
 
 .solara-autorouter-content {
+    padding-top: 2rem;
     max-width: 100%;
 }
 

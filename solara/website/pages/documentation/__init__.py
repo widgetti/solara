@@ -134,23 +134,22 @@ def Sidebar():
                                                 if item.path != "fullscreen"
                                                 else "/apps/" + subitem.path
                                             )
-                                            with solara.v.ListItemGroup():
-                                                with solara.Link(
-                                                    path,
-                                                ):
-                                                    with solara.v.ListItem(dense=True, style_="padding: 0 20px;"):
-                                                        solara.v.ListItemContent(
-                                                            children=[subitem.label],
-                                                        )
-                                else:
-                                    with solara.v.ListItemGroup():
-                                        with solara.Link(
-                                            "/documentation/" + route.path + "/" + item.path,
-                                        ):
-                                            with solara.v.ListItem(dense=True, style_="padding: 0 20px;"):
-                                                solara.v.ListItemContent(
-                                                    children=[item.label],
-                                                )
+                                            with solara.Link(
+                                                path,
+                                            ):
+                                                with solara.v.ListItem(dense=True, style_="padding: 0 20px;"):
+                                                    solara.v.ListItemContent(
+                                                        children=[subitem.label],
+                                                    )
+                            else:
+                                with solara.v.ListItemGroup():
+                                    with solara.Link(
+                                        "/documentation/" + route.path + "/" + item.path,
+                                    ):
+                                        with solara.v.ListItem(dense=True, style_="padding: 0 20px;"):
+                                            solara.v.ListItemContent(
+                                                children=[item.label],
+                                            )
             solara.v.Spacer(style_="flex-grow: 1;")
             with solara.v.ListItemGroup():
                 with solara.Link("/contact"):

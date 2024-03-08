@@ -64,9 +64,8 @@ responds to the theme variant change.
 """
 
 import solara
+from solara.website.components import NoPage
 from solara.website.utils import apidoc
-
-from . import NoPage
 
 title = "Themes"
 Page = NoPage

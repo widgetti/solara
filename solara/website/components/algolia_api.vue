@@ -12,7 +12,7 @@
                     rounded
                     clearable
                     ref="search"
-                    style="max-width: 50%; background-color: #fff; flex-grow: 1;"
+                    style="max-width: 50%; flex-grow: 1;"
                     @click="show($event, on);"
                     @keyup.enter="item = 0"
                 ></v-text-field>
