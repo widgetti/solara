@@ -9,6 +9,10 @@ defaults:
   run:
     shell: bash -l {0}
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   update-ssg:
     name: Update server side generated pages

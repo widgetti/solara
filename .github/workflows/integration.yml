@@ -10,6 +10,10 @@ on:
   schedule:
     - cron: '0 6 * * 1,4'  # at 06:00 UTC on Monday and Thursday
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   SOLARA_TELEMETRY_SERVER_USER_ID: "install-test"
   SOLARA_TELEMETRY_MIXPANEL_TOKEN: adbf863d17cba80db608788e7fce9843
