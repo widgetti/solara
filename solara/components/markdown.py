@@ -99,7 +99,6 @@ module.exports = {
         } else if (window.MathJax && MathJax.Hub) {
             MathJax.Hub.Queue(['Typeset', MathJax.Hub, this.$el]);
         } else {
-            console.log("MathJax not loaded, loading Katex instead")
             window.renderMathInElement = await this.loadKatexExt();
             window.renderMathInElement(this.$el, this.latexSettings);
         }
@@ -169,7 +168,6 @@ module.exports = {
         },
         loadRequire() {
             if (window.requirejs) {
-                console.log('require found');
                 return Promise.resolve();
             }
             return new Promise((resolve, reject) => {
