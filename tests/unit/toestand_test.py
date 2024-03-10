@@ -1205,3 +1205,67 @@ def test_computed_reload(no_kernel_context):
             assert text.widget.v_model == "4.0"
     finally:
         app.close()
+
+def test_reactive_effect(no_kernel_context):
+    from solara.lab import reactive_effect
+
+    x = Reactive(1)
+    y = Reactive(2)
+    calls = 0
+    cleanups = 0
+
+    z = -1
+
+    @reactive_effect
+    def update_z():
+        # breakpoint()
+        nonlocal z, calls, cleanups
+        calls += 1
+        if x.value == 0:
+            z = 42
+        else:
+            z = x.value + y.value
+
+        def cleanup():
+            nonlocal cleanups
+            cleanups += 1
+
+        return cleanup
+
+    kernel1 = kernel.Kernel()
+    kernel2 = kernel.Kernel()
+    assert kernel_context.current_context[kernel_context.get_current_thread_key()] is None
+
+    context1 = kernel_context.VirtualKernelContext(id="t1", kernel=kernel1, session_id="session-1")
+
+    with context1:
+        assert update_z._auto_subscriber.value.reactive_used == {x, y}
+        assert calls == 1
+        assert cleanups == 0
+        assert z == 3
+        x.value = 2
+        assert z == 4
+        assert calls == 2
+        assert cleanups == 1
+        x.value = 0
+        assert update_z._auto_subscriber.value.reactive_used == {x}
+        assert calls == 3
+        assert cleanups == 2
+        # y.value = 1000
+        # assert calls == 3
+        # assert cleanups == 2
+
+    context2 = kernel_context.VirtualKernelContext(id="t2", kernel=kernel2, session_id="session-2")
+    with context2:
+        assert z == 3
+        assert calls == 4
+        assert cleanups == 2
+        x.value = 5
+        assert z == 7
+        assert calls == 5
+        assert cleanups == 3
+
+    context1.close()
+    assert cleanups == 4
+    context2.close()
+    assert cleanups == 5

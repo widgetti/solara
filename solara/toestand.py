@@ -495,6 +495,43 @@ def computed(
     else:
         return wrapper(f)
 
+class ReactiveEffect:
+    def __init__(self, f: Callable[[], Optional[Callable[[], None]]]):
+        import solara.server.kernel_context
+
+        self.f = f
+
+        def run(*ignore):
+            if self._last_cleanup.value:
+                self._last_cleanup.value()
+            with self._auto_subscriber.value:
+                self._last_cleanup.value = self.f()
+
+        def init():
+            run()
+
+            def cleanup():
+                if self._last_cleanup.value:
+                    self._last_cleanup.value()
+                self._last_cleanup.value = None
+
+            return cleanup
+
+        solara.server.kernel_context.on_kernel_start(init)
+        self._auto_subscriber = Singleton(lambda: AutoSubscribeContextManager(run))
+        self._last_cleanup = Reactive(cast(Optional[Callable[[], None]], None))
+
+
+def reactive_effect(f: Callable[[], Optional[Callable[[], None]]]):
+    """Decorator to run an effect function when a dependency changes.
+
+    The dependencies can be reactive variables, and the return value is a
+    cleanup function that will be called before the effect function is called
+    again, or when the virtual kernel is stopped.
+
+    """
+    return ReactiveEffect(f)
+
 
 class ReactiveField(Reactive[T]):
     def __init__(self, field: "FieldBase"):
