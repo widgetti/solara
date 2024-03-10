@@ -40,6 +40,10 @@
     </script>
     <style>
         {% include "loader-"~theme.loader~".css" %}
+        .solara-disable-animations, .solara-disable-animations * {
+            animation: none !important;
+            transition: none !important;
+        }
     </style>
     {% endblock header %}
 </head>
@@ -298,7 +302,11 @@
                     // so we mount it when loading becomes false
                     if (solara.preRendered && !this.mounted) {
                         this.isMounted = true;
-                        this.$mount("#app")
+                        document.body.classList.add('solara-disable-animations');
+                        this.$mount("#app");
+                        setTimeout(() => {
+                            document.body.classList.remove('solara-disable-animations');
+                        }, 1000);
                     } else {
                         this.isMounted = true;
                     }
