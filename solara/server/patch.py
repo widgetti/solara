@@ -242,7 +242,7 @@ def auto_watch_get_template(get_template):
 
 
 Thread__init__ = threading.Thread.__init__
-Thread__run = threading.Thread.run
+Thread__bootstrap = threading.Thread._bootstrap  # type: ignore
 
 
 def WidgetContextAwareThread__init__(self, *args, **kwargs):
@@ -254,16 +254,19 @@ def WidgetContextAwareThread__init__(self, *args, **kwargs):
         logger.debug(f"No context for thread {self}")
 
 
-def Thread_debug_run(self):
+def WidgetContextAwareThread__bootstrap(self):
     if not hasattr(self, "current_context"):
-        return Thread__run(self)
+        return Thread__bootstrap(self)
     if self.current_context:
+        # we need to call this manually, because set_context_for_thread
+        # uses this, and the original _bootstrap calls it too late for us
+        self._set_ident()
         kernel_context.set_context_for_thread(self.current_context, self)
         shell = self.current_context.kernel.shell
         shell.display_pub.register_hook(shell.display_in_reacton_hook)
     try:
         with pdb_guard():
-            Thread__run(self)
+            Thread__bootstrap(self)
     finally:
         if self.current_context:
             shell.display_pub.unregister_hook(shell.display_in_reacton_hook)
@@ -358,7 +361,7 @@ def patch():
         else:
             raise RuntimeError("Could not find _instances on ipywidgets version %r" % ipywidgets.__version__)
     threading.Thread.__init__ = WidgetContextAwareThread__init__  # type: ignore
-    threading.Thread.run = Thread_debug_run  # type: ignore
+    threading.Thread._bootstrap = WidgetContextAwareThread__bootstrap  # type: ignore
     # on CI we get a mypy error:
     # solara/server/patch.py:210: error: Cannot assign to a method
     #  solara/server/patch.py:210: error: Incompatible types in assignment (expression has type "classmethod[Any]",\
