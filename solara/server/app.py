@@ -15,7 +15,7 @@ from reacton.core import Element, render
 
 import solara
 
-from . import kernel_context, reload, settings
+from . import kernel_context, patch, reload, settings
 from .kernel import Kernel
 from .utils import pdb_guard
 
@@ -67,6 +67,9 @@ class AppScript:
         dummy_kernel_context = kernel_context.create_dummy_context()
         with dummy_kernel_context:
             app = self._execute()
+
+        # We now ran the app, now we can check for patches that require heavy imports
+        patch.patch_heavy_imports()
 
         self._first_execute_app = app
         reload.reloader.root_path = self.directory
@@ -198,6 +201,9 @@ class AppScript:
                     self._first_execute_app = None
                     self._first_execute_app = self._execute()
                     print("Re-executed app", self.name)  # noqa
+                    # We now ran the app again, might contain new imports
+                    patch.patch_heavy_imports()
+
         return self._first_execute_app
 
     def on_file_change(self, name):
@@ -355,6 +361,16 @@ def load_app_widget(app_state, app_script: AppScript, pathname: str):
             container.children = [widget]
 
 
+def load_themes(themes: Dict[str, Dict[str, str]], dark: bool):
+    # While these usually gets set from the frontend, in solara (server) we want to know theme information directly at the first
+    # render. Also, using the same trait allows us to write code which works on all widgets platforms, instead
+    # or using something different when running under solara server
+    from solara.lab.components.theming import _set_theme, theme
+
+    _set_theme(themes)
+    theme.dark_effective = dark
+
+
 def solara_comm_target(comm, msg_first):
     app: Optional[AppScript] = None
 
@@ -368,18 +384,13 @@ def solara_comm_target(comm, msg_first):
             app_name = args.get("appName") or "__default__"
             app = apps[app_name]
             context = kernel_context.get_current_context()
-            dark = args.get("dark", False)
             import ipyvuetify
-
-            from solara.lab import theme
-
-            # While this usually gets set from the frontend, in solara (server) we want to know this directly at the first
-            # render. Also, using the same trait allows us to write code which works on all widgets platforms, instead
-            # or using something different when running under solara server
-            theme.dark_effective = dark
 
             container = ipyvuetify.Html(tag="div")
             context.container = container
+            themes = args.get("themes")
+            dark = args.get("dark")
+            load_themes(themes, dark)
             load_app_widget(None, app, path)
             comm.send({"method": "finished", "widget_id": context.container._model_id})
         elif method == "app-status":
@@ -393,11 +404,17 @@ def solara_comm_target(comm, msg_first):
                 comm.send({"method": "app-status", "started": False})
 
         elif method == "reload":
+            from solara.lab.components.theming import _get_theme, theme
+
             assert app is not None
             context = kernel_context.get_current_context()
             path = data.get("path", "")
+            current_theme = theme._instance.value
+            theme_dict = _get_theme(current_theme)
+
             with context:
                 context.restart()
+                load_themes(theme_dict, current_theme.dark_effective)
                 load_app_widget(context.state, app, path)
                 comm.send({"method": "finished"})
         else:

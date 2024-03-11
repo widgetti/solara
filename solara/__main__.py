@@ -595,7 +595,7 @@ def staticbuild():
     include_nbextensions = True
     if include_nbextensions:
         directories = solara.server.server.get_nbextensions_directories()
-        nbextensions = solara.server.server.get_nbextensions()
+        nbextensions, ignore = solara.server.server.get_nbextensions()
         for name in nbextensions:
             for directory in directories:
                 if (directory / (name + ".js")).exists():

@@ -124,9 +124,9 @@ def Layout(children=[]):
                         )
                         with solara.HBox():
                             with solara.Link("/docs"):
-                                solara.Button(label="Read more", class_="ma-1", href="/docs", color="#f19f41", dark=True)
+                                solara.Button(label="Read more", class_="ma-1 homepage-button", href="/docs", color="primary", dark=True)
                             with solara.Link("/docs/quickstart"):
-                                solara.Button(label="Quickstart", class_="ma-1", color="#f19f41", dark=True)
+                                solara.Button(label="Quickstart", class_="ma-1 homepage-button", color="primary", dark=True)
                     # with rv.Col(md=4, sm=5):
                     #     rv.Img(src="https://dxhl76zpt6fap.cloudfront.net/public/landing/what.webp", style_="width:900px")
 
@@ -341,9 +341,8 @@ def Testimonial(text, name, position, img):
     with rv.Card(
         elevation=2,
         dark=False,
-        color="#ffeec5",
         max_width=max_width,
-        style_="display: flex; flex-direction: column; justify-content: space-between;",
+        class_="testimonial-card",
     ):
         # rv.CardTitle(children=["Former Plotly CEO"])
         with rv.CardActions():

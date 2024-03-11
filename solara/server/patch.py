@@ -1,4 +1,6 @@
+import functools
 import logging
+import os
 import pdb
 import sys
 import threading
@@ -25,6 +27,7 @@ except:  # noqa
 if patch_display is not None and sys.platform != "emscripten":
     patch_display()
 ipywidget_version_major = int(ipywidgets.__version__.split(".")[0])
+ipykernel_version_major = int(ipykernel.__version__.split(".")[0])
 
 
 class FakeIPython:
@@ -196,6 +199,16 @@ class context_dict(MutableMapping):
     def __setitem__(self, key, value):
         self._get_context_dict().__setitem__(key, value)
 
+    # support OrderedDict API for matplotlib
+    def move_to_end(self, key, last=True):
+        assert last, "only last=True is supported"
+        item = self.pop(key)
+        self[key] = item
+
+    # matplotlib assumes .values() returns a list
+    def values(self):
+        return list(self._get_context_dict().values())
+
 
 class context_dict_widgets(context_dict):
     def _get_context_dict(self) -> dict:
@@ -241,12 +254,22 @@ def auto_watch_get_template(get_template):
     return wrapper
 
 
+class ThreadDebugInfo:
+    lock = threading.Lock()
+    created = 0
+    running = 0
+    stopped = 0
+
+
 Thread__init__ = threading.Thread.__init__
-Thread__run = threading.Thread.run
+Thread__bootstrap = threading.Thread._bootstrap  # type: ignore
 
 
 def WidgetContextAwareThread__init__(self, *args, **kwargs):
     Thread__init__(self, *args, **kwargs)
+    with ThreadDebugInfo.lock:
+        ThreadDebugInfo.created += 1
+
     self.current_context = None
     try:
         self.current_context = kernel_context.get_current_context()
@@ -254,16 +277,30 @@ def WidgetContextAwareThread__init__(self, *args, **kwargs):
         logger.debug(f"No context for thread {self}")
 
 
-def Thread_debug_run(self):
+def WidgetContextAwareThread__bootstrap(self):
+    with ThreadDebugInfo.lock:
+        ThreadDebugInfo.running += 1
+    try:
+        _WidgetContextAwareThread__bootstrap(self)
+    finally:
+        with ThreadDebugInfo.lock:
+            ThreadDebugInfo.running -= 1
+            ThreadDebugInfo.stopped += 1
+
+
+def _WidgetContextAwareThread__bootstrap(self):
     if not hasattr(self, "current_context"):
-        return Thread__run(self)
+        return Thread__bootstrap(self)
     if self.current_context:
+        # we need to call this manually, because set_context_for_thread
+        # uses this, and the original _bootstrap calls it too late for us
+        self._set_ident()
         kernel_context.set_context_for_thread(self.current_context, self)
         shell = self.current_context.kernel.shell
         shell.display_pub.register_hook(shell.display_in_reacton_hook)
     try:
         with pdb_guard():
-            Thread__run(self)
+            Thread__bootstrap(self)
     finally:
         if self.current_context:
             shell.display_pub.unregister_hook(shell.display_in_reacton_hook)
@@ -313,6 +350,95 @@ def patch_ipyreact():
     ipyreact.importmap._update_import_map = lambda: None
 
 
+def once(f):
+    called = False
+    return_value = None
+
+    @functools.wraps(f)
+    def wrapper():
+        nonlocal called
+        nonlocal return_value
+        if called:
+            return return_value
+        called = True
+        return_value = f()
+        return return_value
+
+    return wrapper
+
+
+@once
+def patch_matplotlib():
+    import matplotlib
+    import matplotlib._pylab_helpers
+
+    prev = matplotlib._pylab_helpers.Gcf.figs
+    matplotlib._pylab_helpers.Gcf.figs = context_dict_user("matplotlib.pylab.figure_managers", prev)  # type: ignore
+
+    RcParamsOriginal = matplotlib.RcParams
+    counter = 0
+    lock = threading.Lock()
+
+    class RcParamsScoped(context_dict, matplotlib.RcParams):
+        _was_initialized = False
+        _without_kernel_dict: Dict[Any, Any]
+
+        def __init__(self, *args, **kwargs) -> None:
+            self._init()
+            RcParamsOriginal.__init__(self, *args, **kwargs)
+
+        def _init(self):
+            nonlocal counter
+            with lock:
+                counter += 1
+            self._user_dict_name = f"matplotlib.rcParams:{counter}"
+            # this creates a copy of the CPython side of the dict
+            self._without_kernel_dict = dict(zip(dict.keys(self), dict.values(self)))
+            self._was_initialized = True
+
+        def _set(self, key, val):
+            # in matplotlib this directly calls dict.__setitem__
+            # which would not call context_dict.__setitem__
+            self[key] = val
+
+        def _get(self, key):
+            # same as _get
+            return self[key]
+
+        def _get_context_dict(self) -> dict:
+            if not self._was_initialized:
+                # since we monkey patch the class after __init__ was called
+                # we may have to do that later on
+                self._init()
+            if kernel_context.has_current_context():
+                context = kernel_context.get_current_context()
+                if self._user_dict_name not in context.user_dicts:
+                    # copy over the global settings when needed
+                    context.user_dicts[self._user_dict_name] = self._without_kernel_dict.copy()
+                return context.user_dicts[self._user_dict_name]
+            else:
+                return self._without_kernel_dict
+
+    matplotlib.RcParams = RcParamsScoped
+    matplotlib.rcParams.__class__ = RcParamsScoped
+    # we chose to monkeypatch the class, instead of re-assiging to reParams for 2 reasons:
+    # 1. the RcParams object could be imported in different namespaces
+    # 2. the rcParams has extra methods, which means we have to otherwise monkeypatch the context_dict
+
+    def cleanup():
+        matplotlib._pylab_helpers.Gcf.figs = prev
+        matplotlib.RcParams = RcParamsOriginal
+        matplotlib.rcParams.__class__ = RcParamsOriginal
+
+    return cleanup
+
+
+def patch_heavy_imports():
+    # patches that we only want to do if a package is imported, because they may slow down startup
+    if "matplotlib" in sys.modules:
+        patch_matplotlib()
+
+
 def patch():
     global _patched
     global global_widgets_dict
@@ -330,6 +456,13 @@ def patch():
         pass
     else:
         patch_ipyreact()
+
+    if "MPLBACKEND" not in os.environ:
+        if ipykernel_version_major < 6:
+            # changed in https://github.com/ipython/ipykernel/pull/591
+            os.environ["MPLBACKEND"] = "module://ipykernel.pylab.backend_inline"
+        else:
+            os.environ["MPLBACKEND"] = "module://matplotlib_inline.backend_inline"
 
     # the ipyvue.Template module cannot be accessed like ipyvue.Template
     # because the import in ipvue overrides it
@@ -358,7 +491,7 @@ def patch():
         else:
             raise RuntimeError("Could not find _instances on ipywidgets version %r" % ipywidgets.__version__)
     threading.Thread.__init__ = WidgetContextAwareThread__init__  # type: ignore
-    threading.Thread.run = Thread_debug_run  # type: ignore
+    threading.Thread._bootstrap = WidgetContextAwareThread__bootstrap  # type: ignore
     # on CI we get a mypy error:
     # solara/server/patch.py:210: error: Cannot assign to a method
     #  solara/server/patch.py:210: error: Incompatible types in assignment (expression has type "classmethod[Any]",\

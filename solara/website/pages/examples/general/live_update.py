@@ -5,9 +5,6 @@ from matplotlib import pyplot as plt
 
 import solara
 
-# ensure that an interactive backend doesn't start when plotting with matplotlib
-plt.switch_backend("agg")
-
 
 @solara.component
 def Page():
