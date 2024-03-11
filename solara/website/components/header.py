@@ -5,9 +5,6 @@ import solara.lab
 from solara.alias import rv
 from solara.server import settings
 
-# TODO: remove import once function is included in solara
-from solara.website.pages.apps.scatter import use_dark_effective
-
 
 @solara._component_vue("algolia.vue")
 def Algolia(app_id: str, index_name: str, api_key: str, debug=False):
@@ -22,6 +19,7 @@ def Header(
     # use routes of parent (assuming we are a child of a layout)
     route_current, all_routes = solara.use_route(level=-1)
     router = solara.use_router()
+    dark_effective = solara.lab.use_dark_effective()
 
     # set states for menu
     with solara.Column(gap="0px"):
@@ -36,7 +34,7 @@ def Header(
                     with solara.Button(icon=True, class_="hidden-md-and-up", on_click=lambda: on_toggle_left_menu and on_toggle_left_menu()):
                         rv.Icon(children=["mdi-menu"])
                 with solara.Link(path_or_route="/"):
-                    solara.Image(router.root_path + f"/static/assets/images/logo{'_white' if use_dark_effective() else ''}.svg")
+                    solara.Image(router.root_path + f"/static/assets/images/logo{'_white' if dark_effective else ''}.svg")
             rv.Spacer()
 
             if settings.search.enabled:

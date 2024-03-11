@@ -80,6 +80,7 @@ items = [
             "use_reactive",
             "use_state",
             "use_state_or_update",
+            "use_trait_observe",
         ],
     },
     {
@@ -136,6 +137,7 @@ items = [
             "task",
             "theming",
             "use_task",
+            "use_dark_effective",
         ],
     },
 ]
