@@ -1,9 +1,11 @@
 import asyncio
 import logging
+import math
 import os
 import sys
+import threading
 import typing
-from typing import Dict, List, Union, cast
+from typing import Dict, List, Optional, Union, cast
 from uuid import uuid4
 
 import anyio
@@ -51,6 +53,19 @@ from . import kernel_context, server, settings, telemetry, websocket
 from .cdn_helper import cdn_url_path, get_path
 
 os.environ["SERVER_SOFTWARE"] = "solara/" + str(solara.__version__)
+limiter: Optional[anyio.CapacityLimiter] = None
+lock = threading.Lock()
+
+
+def _ensure_limiter():
+    # in older anyios (<4) the limiter can only be created in an async context
+    # so we call this in a starlette handler
+    global limiter
+    if limiter is None:
+        with lock:
+            if limiter is None:
+                limiter = anyio.CapacityLimiter(settings.kernel.max_count if settings.kernel.max_count is not None else math.inf)
+
 
 logger = logging.getLogger("solara.server.fastapi")
 # if we add these to the router, the server_test does not run (404's)
@@ -167,6 +182,7 @@ async def kernels(id):
 
 
 async def kernel_connection(ws: starlette.websockets.WebSocket):
+    _ensure_limiter()
     session_id = ws.cookies.get(server.COOKIE_KEY_SESSION_ID)
 
     if settings.oauth.private and not has_auth_support:
@@ -224,7 +240,7 @@ async def kernel_connection(ws: starlette.websockets.WebSocket):
     try:
         async with anyio.from_thread.BlockingPortal() as portal:
             ws_wrapper = WebsocketWrapper(ws, portal)
-            thread_return = anyio.to_thread.run_sync(websocket_thread_runner, ws, portal)  # type: ignore
+            thread_return = anyio.to_thread.run_sync(websocket_thread_runner, ws, portal, limiter=limiter)  # type: ignore
             await thread_return
     finally:
         if settings.main.experimental_performance:

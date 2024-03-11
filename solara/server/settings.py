@@ -85,6 +85,7 @@ class Assets(BaseSettings):
 
 class Kernel(BaseSettings):
     cull_timeout: str = "24h"
+    max_count: Optional[int] = None
 
     class Config:
         env_prefix = "solara_kernel_"
