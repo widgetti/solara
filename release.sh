@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e -o pipefail
 # usage: ./release minor -n
-(git diff --quiet master @widgetti/solara-vuetify-app@10.0.0 -- packages/solara-vuetify-app) || \
+(git diff --quiet master @widgetti/solara-vuetify-app@10.0.1 -- packages/solara-vuetify-app) || \
     echo -e "\033[31m There are unreleased changes to the solara-vuetify-app package.\n Please release the javascript package before Solara by running \n\n \
     \033[0m (cd packages/solara-vuetify-app && ./release.sh <patch | minor | major> -n)\n"; \
     exit 1
