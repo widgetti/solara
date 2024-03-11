@@ -27,6 +27,7 @@ __all__ = [
     "use_unique_key",
     "use_state_or_update",
     "use_previous",
+    "use_trait_observe",
 ]
 T = TypeVar("T")
 U = TypeVar("U")
@@ -232,3 +233,31 @@ def use_previous(value: T, condition=True) -> T:
 
     solara.use_effect(assign, [value])
     return ref.current
+
+
+def use_trait_observe(has_trait_object, name):
+    """Observe a trait on an object, and return its value.
+
+    This is useful when you want your component to be in sync with a trait
+    of a widget or [HasTraits object](https://traitlets.readthedocs.io/en/stable/).
+
+    When the trait changes, your component will be re-rendered.
+
+    See [use_dark_effective](/api/use_dark_effective) for an example.
+    """
+    counter = solara.use_reactive(0)
+    counter.get()  # make the main component depend on this counter
+
+    def connect():
+        def update(change):
+            counter.value += 1
+
+        has_trait_object.observe(update, name)
+
+        def cleanup():
+            has_trait_object.unobserve(update, name)
+
+        return cleanup
+
+    solara.use_effect(connect, [has_trait_object, name])
+    return getattr(has_trait_object, name)
