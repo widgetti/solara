@@ -282,7 +282,7 @@ def WidgetContextAwareThread__init__(self, *args, **kwargs):
         try:
             self.current_context = kernel_context.get_current_context()
         except RuntimeError:
-            logger.debug(f"No context for thread {self}")
+            logger.debug(f"No context for thread {self._name}")
 
 
 def WidgetContextAwareThread__bootstrap(self):
