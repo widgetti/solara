@@ -11,7 +11,7 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ !(github.ref == 'refs/heads/master') }}
 
 env:
   SOLARA_TELEMETRY_SERVER_USER_ID: "install-test"
