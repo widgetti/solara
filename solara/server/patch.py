@@ -254,12 +254,22 @@ def auto_watch_get_template(get_template):
     return wrapper
 
 
+class ThreadDebugInfo:
+    lock = threading.Lock()
+    created = 0
+    running = 0
+    stopped = 0
+
+
 Thread__init__ = threading.Thread.__init__
 Thread__bootstrap = threading.Thread._bootstrap  # type: ignore
 
 
 def WidgetContextAwareThread__init__(self, *args, **kwargs):
     Thread__init__(self, *args, **kwargs)
+    with ThreadDebugInfo.lock:
+        ThreadDebugInfo.created += 1
+
     self.current_context = None
     try:
         self.current_context = kernel_context.get_current_context()
@@ -268,6 +278,17 @@ def WidgetContextAwareThread__init__(self, *args, **kwargs):
 
 
 def WidgetContextAwareThread__bootstrap(self):
+    with ThreadDebugInfo.lock:
+        ThreadDebugInfo.running += 1
+    try:
+        _WidgetContextAwareThread__bootstrap(self)
+    finally:
+        with ThreadDebugInfo.lock:
+            ThreadDebugInfo.running -= 1
+            ThreadDebugInfo.stopped += 1
+
+
+def _WidgetContextAwareThread__bootstrap(self):
     if not hasattr(self, "current_context"):
         return Thread__bootstrap(self)
     if self.current_context:
