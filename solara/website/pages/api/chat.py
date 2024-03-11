@@ -47,8 +47,8 @@ __doc__ += """
 ```solara
 import solara
 
-messages = solara.use_reactive([])
-name = solara.use_reactive("User")
+messages = solara.reactive([])
+name = solara.reactive("User")
 
 def send(new_message):
     messages.set([
@@ -75,7 +75,7 @@ def Page():
 ```solara
 import solara
 
-messages = solara.use_reactive([])
+messages = solara.reactive([])
 
 def send(new_message):
     messages.set([

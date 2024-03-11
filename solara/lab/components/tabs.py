@@ -120,7 +120,13 @@ def Tabs(
 
     @solara.component
     def Page():
+
+        def next_tab():
+            tab_index.value = (tab_index.value + 1) % 2
+
         solara.Title(f"Tab {tab_index.value + 1}")
+        solara.Button('Next Tab', on_click=next_tab)
+
         with solara.lab.Tabs(value=tab_index):
             with solara.lab.Tab("Tab 1"):
                 solara.Markdown("Hello")

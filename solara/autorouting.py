@@ -7,7 +7,7 @@ import re
 import warnings
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Callable, List, Optional, cast
+from typing import Any, Callable, Dict, List, Optional, cast
 
 import ipywidgets
 import reacton
@@ -126,7 +126,7 @@ def RenderPage(main_name: str = "Page"):
     level_start = solara.use_route_level()
     router = solara.use_context(solara.routing.router_context)
     # we use these to cache script runs that use regular ipywidgets
-    modules = solara.use_memo(dict, dependencies=[])
+    modules = cast(Dict[str, ModuleType], solara.use_memo(dict, dependencies=[]))
     modules_modified_times = solara.use_memo(dict, dependencies=[])
 
     if len(router.path_routes) <= level_start:

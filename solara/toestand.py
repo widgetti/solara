@@ -496,9 +496,12 @@ def computed(
         return wrapper(f)
 
 
-class ReactiveField(ValueBase[T]):
+class ReactiveField(Reactive[T]):
     def __init__(self, field: "FieldBase"):
-        super().__init__()  # type: ignore
+        # super().__init__()  # type: ignore
+        # We skip the Reactive constructor, because we do not need it, but we do
+        # want to be an instanceof for use in use_reactive
+        ValueBase.__init__(self)
         self._field = field
         field = field
         while not isinstance(field, ValueBase):
@@ -557,6 +560,9 @@ class ReactiveField(ValueBase[T]):
 
     def set(self, value: T):
         self._field.set(value)
+
+    def update(self, *args, **kwargs):
+        ValueBase.update(cast(ValueBase, self), *args, **kwargs)
 
 
 def Ref(field: T) -> Reactive[T]:

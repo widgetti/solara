@@ -12,9 +12,9 @@ jobs:
     needs: [build]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Set up Python 3.7
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: 3.7
       - uses: actions/download-artifact@v2
@@ -30,9 +30,9 @@ jobs:
         run: pip install packages/solara-enterprise/dist/*.whl
       - name: Test import solara-enterprise
         run: python -c "import solara_enterprise"
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
-          node-version: 14
+          node-version: 20
       - name: Build assets
         run: (cd packages/assets; hatch build)
       - name: Publish solara-enterprise to PyPI

@@ -1,9 +1,12 @@
 import asyncio
+import json
 import logging
+import math
 import os
 import sys
+import threading
 import typing
-from typing import Dict, List, Union, cast
+from typing import Any, Dict, List, Optional, Union, cast
 from uuid import uuid4
 
 import anyio
@@ -37,7 +40,7 @@ from starlette.middleware import Middleware
 from starlette.middleware.authentication import AuthenticationMiddleware
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.requests import HTTPConnection, Request
-from starlette.responses import HTMLResponse, JSONResponse
+from starlette.responses import HTMLResponse, JSONResponse, Response
 from starlette.routing import Mount, Route, WebSocketRoute
 from starlette.staticfiles import StaticFiles
 from starlette.types import Receive, Scope, Send
@@ -51,6 +54,19 @@ from . import kernel_context, server, settings, telemetry, websocket
 from .cdn_helper import cdn_url_path, get_path
 
 os.environ["SERVER_SOFTWARE"] = "solara/" + str(solara.__version__)
+limiter: Optional[anyio.CapacityLimiter] = None
+lock = threading.Lock()
+
+
+def _ensure_limiter():
+    # in older anyios (<4) the limiter can only be created in an async context
+    # so we call this in a starlette handler
+    global limiter
+    if limiter is None:
+        with lock:
+            if limiter is None:
+                limiter = anyio.CapacityLimiter(settings.kernel.max_count if settings.kernel.max_count is not None else math.inf)
+
 
 logger = logging.getLogger("solara.server.fastapi")
 # if we add these to the router, the server_test does not run (404's)
@@ -67,6 +83,14 @@ prefix = ""
 # An arbitrarily large value we settled on for now is 32kb
 # If we don't do this, users with many cookies will fail to get a websocket connection.
 websockets.legacy.http.MAX_LINE = 1024 * 32
+
+
+class WebsocketDebugInfo:
+    lock = threading.Lock()
+    attempts = 0
+    connecting = 0
+    open = 0
+    closed = 0
 
 
 class WebsocketWrapper(websocket.WebsocketWrapper):
@@ -167,6 +191,19 @@ async def kernels(id):
 
 
 async def kernel_connection(ws: starlette.websockets.WebSocket):
+    _ensure_limiter()
+    try:
+        with WebsocketDebugInfo.lock:
+            WebsocketDebugInfo.attempts += 1
+            WebsocketDebugInfo.connecting += 1
+        await _kernel_connection(ws)
+    finally:
+        with WebsocketDebugInfo.lock:
+            WebsocketDebugInfo.closed += 1
+            WebsocketDebugInfo.open -= 1
+
+
+async def _kernel_connection(ws: starlette.websockets.WebSocket):
     session_id = ws.cookies.get(server.COOKIE_KEY_SESSION_ID)
 
     if settings.oauth.private and not has_auth_support:
@@ -196,6 +233,9 @@ async def kernel_connection(ws: starlette.websockets.WebSocket):
         return
     logger.info("Solara kernel requested for session_id=%s kernel_id=%s", session_id, kernel_id)
     await ws.accept()
+    with WebsocketDebugInfo.lock:
+        WebsocketDebugInfo.connecting -= 1
+        WebsocketDebugInfo.open += 1
 
     def websocket_thread_runner(ws: starlette.websockets.WebSocket, portal: anyio.from_thread.BlockingPortal):
         async def run():
@@ -224,11 +264,14 @@ async def kernel_connection(ws: starlette.websockets.WebSocket):
     try:
         async with anyio.from_thread.BlockingPortal() as portal:
             ws_wrapper = WebsocketWrapper(ws, portal)
-            thread_return = anyio.to_thread.run_sync(websocket_thread_runner, ws, portal)  # type: ignore
+            thread_return = anyio.to_thread.run_sync(websocket_thread_runner, ws, portal, limiter=limiter)  # type: ignore
             await thread_return
     finally:
         if settings.main.experimental_performance:
-            ws_wrapper.task.cancel()
+            try:
+                ws_wrapper.task.cancel()
+            except:  # noqa
+                logger.exception("error cancelling websocket task")
         try:
             await ws.close()
         except:  # noqa
@@ -389,6 +432,86 @@ def readyz(request: Request):
     return JSONResponse(json, status_code=status)
 
 
+async def resourcez(request: Request):
+    _ensure_limiter()
+    assert limiter is not None
+    data: Dict[str, Any] = {}
+    verbose = request.query_params.get("verbose", None) is not None
+    data["websockets"] = {
+        "attempts": WebsocketDebugInfo.attempts,
+        "connecting": WebsocketDebugInfo.connecting,
+        "open": WebsocketDebugInfo.open,
+        "closed": WebsocketDebugInfo.closed,
+    }
+    from . import patch
+
+    data["threads"] = {
+        "created": patch.ThreadDebugInfo.created,
+        "running": patch.ThreadDebugInfo.running,
+        "stopped": patch.ThreadDebugInfo.stopped,
+        "active": threading.active_count(),
+    }
+    contexts = list(kernel_context.contexts.values())
+    data["kernels"] = {
+        "total": len(contexts),
+        "has_connected": len([k for k in contexts if kernel_context.PageStatus.CONNECTED in k.page_status.values()]),
+        "has_disconnected": len([k for k in contexts if kernel_context.PageStatus.DISCONNECTED in k.page_status.values()]),
+        "has_closed": len([k for k in contexts if kernel_context.PageStatus.CLOSED in k.page_status.values()]),
+        "limiter": {
+            "total_tokens": limiter.total_tokens,
+            "borrowed_tokens": limiter.borrowed_tokens,
+            "available_tokens": limiter.available_tokens,
+        },
+    }
+    default_limiter = anyio.to_thread.current_default_thread_limiter()
+    data["anyio.to_thread.limiter"] = {
+        "total_tokens": default_limiter.total_tokens,
+        "borrowed_tokens": default_limiter.borrowed_tokens,
+        "available_tokens": default_limiter.available_tokens,
+    }
+    if verbose:
+        try:
+            import psutil
+
+            def expand(named_tuple):
+                return {key: getattr(named_tuple, key) for key in named_tuple._fields}
+
+            data["cpu"] = {}
+            try:
+                data["cpu"]["percent"] = psutil.cpu_percent()
+            except Exception as e:
+                data["cpu"]["percent"] = str(e)
+            try:
+                data["cpu"]["count"] = psutil.cpu_count()
+            except Exception as e:
+                data["cpu"]["count"] = str(e)
+            try:
+                data["cpu"]["times"] = expand(psutil.cpu_times())
+                data["cpu"]["times"]["per_cpu"] = [expand(x) for x in psutil.cpu_times(percpu=True)]
+            except Exception as e:
+                data["cpu"]["times"] = str(e)
+            try:
+                data["cpu"]["times_percent"] = expand(psutil.cpu_times_percent())
+                data["cpu"]["times_percent"]["per_cpu"] = [expand(x) for x in psutil.cpu_times_percent(percpu=True)]
+            except Exception as e:
+                data["cpu"]["times_percent"] = str(e)
+            try:
+                memory = psutil.virtual_memory()
+            except Exception as e:
+                data["memory"] = str(e)
+            else:
+                data["memory"] = {
+                    "bytes": expand(memory),
+                    "GB": {key: getattr(memory, key) / 1024**3 for key in memory._fields},
+                }
+
+        except ModuleNotFoundError:
+            pass
+
+    json_string = json.dumps(data, indent=2)
+    return Response(content=json_string, media_type="application/json")
+
+
 middleware = [
     Middleware(GZipMiddleware, minimum_size=1000),
 ]
@@ -415,6 +538,7 @@ if has_auth_support:
     ]
 routes = [
     Route("/readyz", endpoint=readyz),
+    Route("/resourcez", endpoint=resourcez),
     *routes_auth,
     Route("/jupyter/api/kernels/{id}", endpoint=kernels),
     WebSocketRoute("/jupyter/api/kernels/{kernel_id}/{name}", endpoint=kernel_connection),

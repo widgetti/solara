@@ -20,6 +20,19 @@ def use_reactive(
     that accept either a reactive variable or a normal value along with an optional `on_change`
     callback.
 
+    Note that that on each call, if the value changes, the reactive variable will be updated.
+    For objects that do no implement equality comparison, the will lead to an infinite loop.
+
+    In that case, combine the `use_reactive` with `use_memo` to never trigger an update from
+    the render function.
+
+    ```python
+    @solara.component
+    def Page():
+        data = solara.use_reactive(solara.use_memo(lambda: MyDataObject()))
+        ...
+    ```
+
     ## Arguments:
 
      * value (Union[T, solara.Reactive[T]]): The value of the
