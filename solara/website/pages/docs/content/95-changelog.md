@@ -1,9 +1,30 @@
 # Solara Changelog
 
+
+## Version 1.29.0
+
+<video width="80%" controls>
+   <source src="https://solara-assets.s3.us-east-2.amazonaws.com/videos/solara-1.29-drawdata-na.mp4" type="video/mp4" >
+</video>
+
+
+### Highlights
+
+  * Feature: Improved matplotlib support (pylab interface, display support) making it work more similar as in Jupyter. [#540](https://github.com/widgetti/solara/pull/540)
+  * Feature: [use_dark_effective](https://solara.dev/api/use_dark_effective) to get the effective dark mode of the app, making it easier to support dark mode on the Python side [#551](https://github.com/widgetti/solara/pull/551).
+
+
+### Details
+
+   * Feature: [`/resourcez` endpoint](https://solara.dev/docs/understanding/solara-server) to get server resource statistics [#547](https://github.com/widgetti/solara/pull/547).
+   * Bug fix: router.push to external links should not use history, allowing navigation to external links [11c6094](https://github.com/widgetti/solara/commit/11c6094f3c47528d40f8be951c1d322e454f98ea).
+   * Bug fix: After upgrading widgets, solara server would still use the previous version due to browser cache [#523](https://github.com/widgetti/solara/pull/523).
+   * Bug fix: [The example todo app](https://solara.dev/examples/utilities/todo) would not work because Ref(..) did not work in combination with use_reactive [#544](https://github.com/widgetti/solara/pull/544).
+
 ## Version 1.28.0
 
 <video width="80%" controls>
-   <source src=https://dxhl76zpt6fap.cloudfront.net/videos/solara-theme.mp4  type="video/mp4" >
+   <source src="https://dxhl76zpt6fap.cloudfront.net/videos/solara-theme.mp4"  type="video/mp4" >
 </video>
 
 ### Highlight
