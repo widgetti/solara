@@ -11,11 +11,6 @@ import solara.components.applayout
 import solara.toestand
 from solara.components.markdown import ExceptionGuard
 
-if solara._using_solara_server():
-    from matplotlib import pyplot as plt
-
-    plt.switch_backend("agg")
-
 HERE = Path(__file__).parent
 
 
