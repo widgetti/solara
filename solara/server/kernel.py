@@ -237,6 +237,8 @@ class SessionWebsocket(session.Session):
                 pass
 
     def send(self, stream, msg_or_type, content=None, parent=None, ident=None, buffers=None, track=False, header=None, metadata=None):
+        if stream is None:
+            return  # can happen when the kernel is closed but someone was still trying to send a message
         try:
             if isinstance(msg_or_type, dict):
                 msg = msg_or_type
@@ -293,6 +295,39 @@ class Kernel(ipykernel.kernelbase.Kernel):
         self.shell = SolaraInteractiveShell()
         self.shell.display_pub.session = self.session
         self.shell.display_pub.pub_socket = self.iopub_socket
+
+    def close(self):
+        if self.comm_manager is None:
+            raise RuntimeError("Kernel already closed")
+        self.session.close()
+        self._cleanup_references()
+
+    def _cleanup_references(self):
+        try:
+            # all of these reduce the circular references
+            # making it easier for the garbage collector to clean up
+            self.shell_handlers.clear()
+            self.control_handlers.clear()
+            for comm_object in list(self.comm_manager.comms.values()):  # type: ignore
+                comm_object.close()
+            self.comm_manager.targets.clear()  # type: ignore
+            # self.comm_manager.kernel points to us, but we cannot set it to None
+            # so we remove the circular reference by setting the comm_manager to None
+            self.comm_manager = None  # type: ignore
+            self.session.parent = None  # type: ignore
+
+            self.shell.display_pub.session = None  # type: ignore
+            self.shell.display_pub.pub_socket = None  # type: ignore
+            del self.shell.__dict__
+            self.shell = None  # type: ignore
+            self.session.websockets.clear()
+            self.session.stream = None  # type: ignore
+            self.session = None  # type: ignore
+            self.stream.session = None  # type: ignore
+            self.stream = None  # type: ignore
+            self.iopub_socket = None  # type: ignore
+        except Exception:
+            logger.exception("Error cleaning up references from kernel, not fatal")
 
     async def _flush_control_queue(self):
         pass
