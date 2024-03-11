@@ -21,9 +21,8 @@ def use_dark_effective():
     ```
 
     See [use_trait_observe](/api/use_trait_observe).
-
     """
-    return solara.use_trait_observe(solara.lab.theme, "dark_effective")
+    return solara.use_trait_observe(theme, "dark_effective")
 
 
 def _set_theme(themes: Union[Dict[str, Dict[str, str]], None]):
