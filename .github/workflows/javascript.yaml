@@ -13,6 +13,10 @@ on:
   schedule:
     - cron: '0 6 * * 1,4'  # at 06:00 UTC on Monday and Thursday
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -25,7 +29,7 @@ jobs:
           python-version: 3.7
       - uses: actions/setup-node@v4
         with:
-          node-version: 14
+          node-version: 20
       - name: Install hatch
         run: pip install hatch
       - name: Build

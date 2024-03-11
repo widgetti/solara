@@ -1,4 +1,6 @@
+import io
 import sys
+from binascii import b2a_base64
 from threading import local
 from unittest.mock import Mock
 
@@ -184,7 +186,22 @@ class SolaraInteractiveShell(InteractiveShell):
 
     def init_display_formatter(self):
         super().init_display_formatter()
+        assert self.display_formatter is not None
         self.display_formatter.ipython_display_formatter = reacton.patch_display.ReactonDisplayFormatter()
+
+        # matplotlib support for display(figure)
+        # IPython.core.pylabtools has support for this, but it requires importing matplotlib
+        # which would slow down startup, so we do it here using for_type using a string as argument.
+        def encode_png(figure, **kwargs):
+            f = io.BytesIO()
+            format = "png"
+            figure.savefig(f, format=format, **kwargs)
+            bytes_data = f.getvalue()
+            base64_data = b2a_base64(bytes_data, newline=False).decode("ascii")
+            return base64_data
+
+        formatter = self.display_formatter.formatters["image/png"]
+        formatter.for_type("matplotlib.figure.Figure", encode_png)
 
     def init_display_pub(self):
         super().init_display_pub()

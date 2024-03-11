@@ -32,7 +32,7 @@ jobs:
         run: python -c "import solara_enterprise"
       - uses: actions/setup-node@v4
         with:
-          node-version: 14
+          node-version: 20
       - name: Build assets
         run: (cd packages/assets; hatch build)
       - name: Publish solara-enterprise to PyPI

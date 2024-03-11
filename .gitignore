@@ -62,6 +62,7 @@ meeting
 /**/.ipynb_checkpoints
 #app
 dist
+lib
 python/.idea
 test/.idea
 venv

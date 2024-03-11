@@ -10,6 +10,10 @@ on:
   schedule:
     - cron: '0 6 * * 1,4'  # at 06:00 UTC on Monday and Thursday
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   SOLARA_TELEMETRY_SERVER_USER_ID: "install-test"
   SOLARA_TELEMETRY_MIXPANEL_TOKEN: adbf863d17cba80db608788e7fce9843
@@ -53,7 +57,7 @@ jobs:
         run: mkdir test-results
       - name: Install
         run: |
-          pip install ".[dev,server,flask,documentation,pytest]" "voila~=${{ matrix.voila }}" "jupyterlab<4" "pydantic<2"
+          pip install ".[dev,server,flask,documentation,pytest]" "voila~=${{ matrix.voila }}" "jupyterlab<4" "pydantic<2" "playwright==1.41.2"
           (cd packages/solara-enterprise && pip install ".[ssg,auth]" "ipywidgets~=${{ matrix.ipywidgets }}")
       - name: Install playwright
         run: playwright install

@@ -3,8 +3,7 @@
         icon
         @click="countClicks"
         >
-        <v-icon
-            :color="theme_dark ? 'primary' : null">
+        <v-icon>
             {{ this.clicks === 1 ? this.on_icon : this.clicks === 2 ? this.off_icon : this.auto_icon }}
         </v-icon>
     </v-btn>
