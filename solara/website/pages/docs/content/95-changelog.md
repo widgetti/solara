@@ -1,5 +1,10 @@
 # Solara Changelog
 
+## Version 1.29.1
+
+### Details
+
+   * Bug Fix: Solara installation failing when using [pixi](https://pixi.sh/latest/). [#553](https://github.com/widgetti/solara/pull/553)
 
 ## Version 1.29.0
 
