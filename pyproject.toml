@@ -39,7 +39,6 @@ dependencies = [
 ]
 
 [tool.hatch.build.targets.wheel.shared-data]
-"prefix" = "prefix"
 "prefix/etc/jupyter" = "etc/jupyter"
 
 [tool.hatch.version]
