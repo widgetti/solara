@@ -1,3 +1,4 @@
+import dataclasses
 import importlib.util
 import logging
 import os
@@ -15,6 +16,7 @@ import reacton
 from reacton.core import Element, render
 
 import solara
+from solara.util import nested_get
 
 from . import kernel_context, patch, reload, settings
 from .kernel import Kernel
@@ -149,6 +151,8 @@ class AppScript:
                 mod = importlib.import_module(self.name)
                 routes = solara.generate_routes(mod)
 
+        app = solara.autorouting.RenderPage(self.app_name)
+
         # when the root moduled defined routes, skip the enclosing route object
         if len(routes) == 1 and routes[0].module and hasattr(routes[0].module, "routes"):
             if routes[0].component:
@@ -158,7 +162,13 @@ class AppScript:
                 )
             routes = routes[0].children
 
-        app = solara.autorouting.RenderPage(self.app_name)
+        if self.app_name != "Page":
+            # if we specified the app name, we replace the component
+            if len(routes) > 1:
+                raise ValueError(f"App {self.name} has multiple routes, but a default app name was given: {self.app_name}")
+            assert len(routes) == 1
+            component = nested_get(routes[0].module.__dict__, self.app_name, None)
+            routes = [dataclasses.replace(routes[0], component=component)]
 
         if settings.ssg.build_path is None:
             settings.ssg.build_path = self.directory.parent.resolve() / "build"
