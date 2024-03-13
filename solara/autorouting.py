@@ -347,17 +347,22 @@ def get_title(module: ModuleType, required=True):
     return title
 
 
-def fix_route(route: solara.Route, new_file: Path) -> solara.Route:
+def fix_route(route: solara.Route, new_file: Path, new_layout=None) -> solara.Route:
     file = route.file or new_file
+    layout = route.layout or new_layout
     children = fix_routes(route.children, new_file) if route.children else []
 
-    return dataclasses.replace(route, file=file, children=children)
+    return dataclasses.replace(route, file=file, children=children, layout=layout)
 
 
-def fix_routes(routes: List[solara.Route], new_file: Path):
+def fix_routes(routes: List[solara.Route], new_file: Path, new_layout=None):
     new_routes = []
     for route in routes:
-        new_routes.append(fix_route(route, new_file))
+        if route.path == "/":
+            route = fix_route(route, new_file, new_layout)
+        else:
+            route = fix_route(route, new_file)
+        new_routes.append(route)
     return new_routes
 
 
@@ -378,6 +383,7 @@ def generate_routes(module: ModuleType) -> List[solara.Route]:
 
     assert module.__file__ is not None
     routes = []
+    children: List[solara.Route]
     file = Path(module.__file__)
 
     if module.__file__.endswith("__init__.py"):
@@ -429,11 +435,15 @@ def generate_routes(module: ModuleType) -> List[solara.Route]:
                 warnings.warn(f"Some routes are not in route_order: {set(lookup) - set(route_order)}")
 
     else:
-        children = getattr(module, "routes", [])
-        children = fix_routes(children, file)
         layout = getattr(module, "Layout", None)
-        # children = []
-        # single module, single route
+        children = []
+        if hasattr(module, "routes"):
+            children = getattr(module, "routes", [])
+            root = get_root(children)
+            if layout is not None and root is not None and root.layout is None:
+                warnings.warn(f'You defined routes in {file}, in this case, layout should be set on the root route (with path="/"), not on the module level')
+                children = fix_routes(children, file, layout)
+                layout = None
         return [solara.Route(path="/", component=RenderPage, data=None, module=module, label=get_title(module), layout=layout, children=children, file=file)]
 
     return routes
@@ -493,7 +503,7 @@ def _generate_route_path(subpath: Path, layout=None, first=False, has_index=Fals
         route_path = "-".join([k.lower() for k in title_parts])
     # used as a 'sentinel' to find the deepest level of the route tree we need to render in 'RenderPage'
     component = RenderPage
-    children = []
+    children: List[solara.Route] = []
     module: Optional[ModuleType] = None
     data: Any = None
     module_layout = layout if first else None
@@ -506,8 +516,21 @@ def _generate_route_path(subpath: Path, layout=None, first=False, has_index=Fals
         reload.reloader.watcher.add_file(subpath)
         module = source_to_module(subpath, initial_namespace=initial_namespace)
         title = get_title(module)
-        children = getattr(module, "routes", children)
+        layout = getattr(module, "Layout", module_layout)
+        if hasattr(module, "routes"):
+            children = getattr(module, "routes", [])
+            root = get_root(children)
+            if layout is not None and root is not None and root.layout is None:
+                warnings.warn(f'You defined routes in {subpath}, in this case, layout should be set on the root route (with path="/"), not on the module level')
+                children = fix_routes(children, subpath, layout)
+                layout = None
         children = fix_routes(children, subpath)
-        module_layout = getattr(module, "Layout", module_layout)
-    route = solara.Route(route_path, component=component, module=module, label=title, children=children, data=data, layout=module_layout, file=subpath)
+    route = solara.Route(route_path, component=component, module=module, label=title, children=children, data=data, layout=layout, file=subpath)
     return route
+
+
+def get_root(routes: List[solara.Route]) -> Optional[solara.Route]:
+    for route in routes:
+        if route.path == "/":
+            return route
+    return None
