@@ -11,13 +11,11 @@
 
     {% block header %}
 
-
     {{ pre_rendered_css | safe }}
-
     {% if vue3 == True %}
-    <link href="{{cdn}}/@widgetti/solara-vuetify3-app@5.0.1/dist/main{{ipywidget_major_version}}.css" rel="stylesheet"></link>
+    <link href="{{cdn}}/@widgetti/solara-vuetify3-app@5.0.1/dist/main{{ipywidget_major_version}}.css" rel="stylesheet" class="solara-template-css"></link>
     {% else %}
-    <link href="{{cdn}}/@widgetti/solara-vuetify-app@10.0.1/dist/main{{ipywidget_major_version}}.css" rel="stylesheet"></link>
+    <link href="{{cdn}}/@widgetti/solara-vuetify-app@10.0.1/dist/main{{ipywidget_major_version}}.css" rel="stylesheet" class="solara-template-css"></link>
     {% endif %}
 
 
@@ -27,7 +25,7 @@
     {{ resources.include_css("/static/highlight.css") }}
     {{ resources.include_css("/static/highlight-dark.css") }}
     {{ resources.include_css("/static/assets/style.css") }}
-    <style id="jupyter-theme-css">
+    <style id="jupyter-theme-css" class="solara-template-css">
         {{ resources.include_css("/static/assets/theme-"~theme.variant~".css") }}
     </style>
     {{ resources.include_css("/static/assets/custom.css") }}
@@ -38,9 +36,22 @@
         "kernelId": "1234"
     }
     </script>
-    <style>
+    <style class="solara-template-css">
         {% include "loader-"~theme.loader~".css" %}
     </style>
+    <style id="pre-render-theme">
+    .theme--light .v-sheet {
+        background-color: #fff;
+        border-color: #fff;
+        color: rgba(0,0,0,.87)
+    }
+
+    .theme--dark .v-sheet {
+        background-color: #1e1e1e;
+        border-color: #1e1e1e;
+        color: #fff
+    }
+</style>
     {% endblock header %}
 </head>
 {% raw -%}
@@ -175,39 +186,10 @@
         {# next div is used in ssg code to see if vue took over rendering #}
         <div id="pre-rendered-html-present" style="display: none"></div>
     </div>
-    {% block after_pre_rendered_html %}{% endblock %}
-    {% if vue3 == True %}
-        <link href="{{cdn}}/@widgetti/solara-vuetify3-app@5.0.1/dist/fonts.css" rel="stylesheet"></link>
-        {% if production %}
-        <script src="{{cdn}}/@widgetti/solara-vuetify3-app@5.0.1/dist/solara-vuetify-app{{ipywidget_major_version}}.min.js"></script>
-        {% else %}
-        <script src="{{cdn}}/@widgetti/solara-vuetify3-app@5.0.1/dist/solara-vuetify-app{{ipywidget_major_version}}.js"></script>
-        {% endif %}
-    {% else %}
-        <link href="{{cdn}}/@widgetti/solara-vuetify-app@10.0.1/dist/fonts.css" rel="stylesheet" fetchpriority="low"></link>
-        {% if production %}
-        <script src="{{cdn}}/@widgetti/solara-vuetify-app@10.0.1/dist/solara-vuetify-app{{ipywidget_major_version}}.min.js"></script>
-        {% else %}
-        <script src="{{cdn}}/@widgetti/solara-vuetify-app@10.0.1/dist/solara-vuetify-app{{ipywidget_major_version}}.js"></script>
-        {% endif %}
-    {% endif %}
     <script>
         solara.rootPath = {{ root_path | tojson | safe}};
         console.log("rootPath", solara.rootPath);
-    </script>
 
-    {{ resources.include_js("/static/assets/custom.js") }}
-    {{ resources.include_js("/static/assets/theme.js") }}
-
-    <script src="{{cdn}}/requirejs@2.3.6/require.js" crossorigin="anonymous">
-    </script>
-    {{ resources.include_js("/static/main-vuetify.js") }}
-    {{ resources.include_js("/static/ansi.js") }}
-
-    <script>
-        solara.production = {{ production | tojson | safe }};
-        const themeVariants = ['light', 'dark', 'auto']
-        solara.preRendered = {{ pre_rendered_html | safe | length | tojson }} > 0
         var theme = {{ theme | tojson | safe }}
         function getThemeVariant() {
             if (localStorage.getItem(':solara:theme.variant')) {
@@ -229,6 +211,50 @@
                 return getThemeVariant() == 'dark';
             }
         }
+        // Init theme
+        let app_container = document.getElementById('app');
+        if (inDarkMode()) {
+            app_container.classList.remove('theme--light');
+            app_container.classList.add('theme--dark');
+        } else {
+            app_container.classList.remove('theme--dark');
+            app_container.classList.add('theme--light');
+        }
+        async function changeThemeCSS(theme) {
+            let css = await fetch(`${solara.rootPath}/static/assets/theme-${theme}.css`).then(r => r.text());
+            document.getElementById('jupyter-theme-css').innerHTML = css;
+        }
+        changeThemeCSS(inDarkMode() ? 'dark' : 'light');
+    </script>
+    {% block after_pre_rendered_html %}{% endblock %}
+    {% if vue3 == True %}
+        <link href="{{cdn}}/@widgetti/solara-vuetify3-app@5.0.1/dist/fonts.css" rel="stylesheet"></link>
+        {% if production %}
+        <script src="{{cdn}}/@widgetti/solara-vuetify3-app@5.0.1/dist/solara-vuetify-app{{ipywidget_major_version}}.min.js"></script>
+        {% else %}
+        <script src="{{cdn}}/@widgetti/solara-vuetify3-app@5.0.1/dist/solara-vuetify-app{{ipywidget_major_version}}.js"></script>
+        {% endif %}
+    {% else %}
+        <link href="{{cdn}}/@widgetti/solara-vuetify-app@10.0.1/dist/fonts.css" rel="stylesheet" fetchpriority="low"></link>
+        {% if production %}
+        <script src="{{cdn}}/@widgetti/solara-vuetify-app@10.0.1/dist/solara-vuetify-app{{ipywidget_major_version}}.min.js"></script>
+        {% else %}
+        <script src="{{cdn}}/@widgetti/solara-vuetify-app@10.0.1/dist/solara-vuetify-app{{ipywidget_major_version}}.js"></script>
+        {% endif %}
+    {% endif %}
+
+    {{ resources.include_js("/static/assets/custom.js") }}
+    {{ resources.include_js("/static/assets/theme.js") }}
+
+    <script src="{{cdn}}/requirejs@2.3.6/require.js" crossorigin="anonymous">
+    </script>
+    {{ resources.include_js("/static/main-vuetify.js") }}
+    {{ resources.include_js("/static/ansi.js") }}
+
+    <script>
+        solara.production = {{ production | tojson | safe }};
+        const themeVariants = ['light', 'dark', 'auto']
+        solara.preRendered = {{ pre_rendered_html | safe | length | tojson }} > 0
     </script>
 
     <script>
@@ -256,11 +282,7 @@
                 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
                     this.$vuetify.theme.dark = inDarkMode();
                 });
-                if (this.$vuetify.theme.dark) {
-                    this.changeThemeCSS('dark');
-                } else {
-                    this.changeThemeCSS('light');
-                }
+                document.getElementById('pre-render-theme').remove();
             },
             methods: {
                 stateReset() {
@@ -275,10 +297,6 @@
                 reload() {
                     location.reload();
                 },
-                async changeThemeCSS(theme) {
-                    let css = await fetch(`${solara.rootPath}/static/assets/theme-${theme}.css`).then(r => r.text());
-                    document.getElementById('jupyter-theme-css').innerHTML = css;
-                }
             },
             watch: {
                 kernelBusy: function (value) {
@@ -325,15 +343,14 @@
                     }
                 },
                 '$vuetify.theme.dark': function (value) {
-                    let app = document.getElementById('app');
                     if ( value ) {
                         this.changeThemeCSS('dark');
-                        app.classList.remove('theme--light');
-                        app.classList.add('theme--dark');
+                        app_container.classList.remove('theme--light');
+                        app_container.classList.add('theme--dark');
                     } else {
                         this.changeThemeCSS('light');
-                        app.classList.remove('theme--dark');
-                        app.classList.add('theme--light');
+                        app_container.classList.remove('theme--dark');
+                        app_container.classList.add('theme--light');
                     }
                 }
             },
