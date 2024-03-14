@@ -26,7 +26,6 @@
     {{ resources.include_css("/static/highlight-dark.css") }}
     {{ resources.include_css("/static/assets/style.css") }}
     <style id="jupyter-theme-css" class="solara-template-css">
-        {{ resources.include_css("/static/assets/theme-"~theme.variant~".css") }}
     </style>
     {{ resources.include_css("/static/assets/custom.css") }}
 
@@ -39,6 +38,8 @@
     <style class="solara-template-css">
         {% include "loader-"~theme.loader~".css" %}
     </style>
+    <!-- Include Vuetify background colours so static html from SSG renders the right general colour theme
+        before first render. We remove these after Vue takes over rendering to avoid collisions -->
     <style id="pre-render-theme">
     .theme--light .v-sheet {
         background-color: #fff;
@@ -187,9 +188,6 @@
         <div id="pre-rendered-html-present" style="display: none"></div>
     </div>
     <script>
-        solara.rootPath = {{ root_path | tojson | safe}};
-        console.log("rootPath", solara.rootPath);
-
         var theme = {{ theme | tojson | safe }}
         function getThemeVariant() {
             if (localStorage.getItem(':solara:theme.variant')) {
@@ -212,19 +210,14 @@
             }
         }
         // Init theme
-        let app_container = document.getElementById('app');
+        let appContainer = document.getElementById('app');
         if (inDarkMode()) {
-            app_container.classList.remove('theme--light');
-            app_container.classList.add('theme--dark');
+            appContainer.classList.remove('theme--light');
+            appContainer.classList.add('theme--dark');
         } else {
-            app_container.classList.remove('theme--dark');
-            app_container.classList.add('theme--light');
+            appContainer.classList.remove('theme--dark');
+            appContainer.classList.add('theme--light');
         }
-        async function changeThemeCSS(theme) {
-            let css = await fetch(`${solara.rootPath}/static/assets/theme-${theme}.css`).then(r => r.text());
-            document.getElementById('jupyter-theme-css').innerHTML = css;
-        }
-        changeThemeCSS(inDarkMode() ? 'dark' : 'light');
     </script>
     {% block after_pre_rendered_html %}{% endblock %}
     {% if vue3 == True %}
@@ -242,6 +235,16 @@
         <script src="{{cdn}}/@widgetti/solara-vuetify-app@10.0.1/dist/solara-vuetify-app{{ipywidget_major_version}}.js"></script>
         {% endif %}
     {% endif %}
+    <script>
+        solara.rootPath = {{ root_path | tojson | safe}};
+        console.log("rootPath", solara.rootPath);
+
+        async function changeThemeCSS(theme) {
+            let css = await fetch(`${solara.rootPath}/static/assets/theme-${theme}.css`).then(r => r.text());
+            document.getElementById('jupyter-theme-css').innerHTML = css;
+        }
+        changeThemeCSS(inDarkMode() ? 'dark' : 'light');
+    </script>
 
     {{ resources.include_js("/static/assets/custom.js") }}
     {{ resources.include_js("/static/assets/theme.js") }}
@@ -345,12 +348,12 @@
                 '$vuetify.theme.dark': function (value) {
                     if ( value ) {
                         this.changeThemeCSS('dark');
-                        app_container.classList.remove('theme--light');
-                        app_container.classList.add('theme--dark');
+                        appContainer.classList.remove('theme--light');
+                        appContainer.classList.add('theme--dark');
                     } else {
                         this.changeThemeCSS('light');
-                        app_container.classList.remove('theme--dark');
-                        app_container.classList.add('theme--light');
+                        appContainer.classList.remove('theme--dark');
+                        appContainer.classList.add('theme--light');
                     }
                 }
             },
