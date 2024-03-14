@@ -276,7 +276,7 @@
                     location.reload();
                 },
                 async changeThemeCSS(theme) {
-                    let css = await fetch(`/static/assets/theme-${theme}.css`).then(r => r.text());
+                    let css = await fetch(`${solara.rootPath}/static/assets/theme-${theme}.css`).then(r => r.text());
                     document.getElementById('jupyter-theme-css').innerHTML = css;
                 }
             },
