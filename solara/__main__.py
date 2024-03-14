@@ -723,7 +723,11 @@ cli.add_command(ssg)
 
 
 def main():
-    cli()
+    args = sys.argv
+    # skip everything after -- if it exists
+    if "--" in args:
+        args = args[: args.index("--")]
+    cli(args[1:])
 
 
 if __name__ == "__main__":
