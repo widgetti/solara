@@ -249,6 +249,31 @@ class AppScript:
 
             solara.lab.toestand.ConnectionStore._type_counter.clear()
 
+            # we need to remove callbacks that are added in the app code
+            # which will be re-executed after the reload and we do not
+            # want to keep executing the old ones.
+            for kc in kernel_context._on_kernel_start_callbacks.copy():
+                callback, path, module, cleanup = kc
+                will_reload = False
+                if module is not None:
+                    module_name = module.__name__
+                    if module_name in reload.reloader.get_reload_module_names():
+                        will_reload = True
+                elif path is not None:
+                    if str(path.resolve()).startswith(str(self.directory)):
+                        will_reload = True
+                    else:
+                        logger.warning(
+                            "script %s is not in the same directory as the app %s but is using on_kernel_start, "
+                            "this might lead to multiple entries, and might indicate a bug.",
+                            path,
+                            self.directory,
+                        )
+
+                if will_reload:
+                    logger.info("reload: Removing on_kernel_start callback: %s (since it will be added when reloaded)", callback)
+                    cleanup()
+
             context_values = list(kernel_context.contexts.values())
             # save states into the context so the hot reload will
             # keep the same state
