@@ -5,3 +5,44 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+      day-of-week: "friday"
+      time: "5:00"
+      timezone: "Europe/Amsterdam"
+
+  # Maintain dependencies for frontend packages
+  # These should already scan solara-widget-manager, since
+  # Those are dependencies
+  - package-ecosystem: "npm"
+    directory: "/packages/solara-vuetify-app"
+    schedule:
+      interval: "weekly"
+      day-of-week: "friday"
+      time: "5:00"
+      timezone: "Europe/Amsterdam"
+    ignore:
+      # Ignore Vuetify, since we're locked to a specific version
+      - dependency-name: "vuetify"
+        versions: ["2.x"]
+    labels:
+      - "javascript dependencies"
+
+  - package-ecosystem: "npm"
+    directory: "/packages/solara-vuetify3-app"
+    schedule:
+      interval: "weekly"
+      day-of-week: "friday"
+      time: "5:00"
+      timezone: "Europe/Amsterdam"
+    labels:
+      - "javascript dependencies"
+
+  # Maintain dependencies for main python package
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day-of-week: "friday"
+      time: "5:00"
+      timezone: "Europe/Amsterdam"
+    labels:
+      - "python dependencies"

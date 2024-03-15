@@ -1,17 +1,7 @@
 name: Code quality
 
 on:
-  push:
-    branches:
-      - master
-  pull_request:
-  workflow_dispatch:
-  schedule:
-    - cron: '0 6 * * 1,4'  # at 06:00 UTC on Monday and Thursday
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ !(github.ref == 'refs/heads/master') }}
+  workflow_call:
 
 jobs:
   code-quality:
@@ -37,5 +27,7 @@ jobs:
         run: black solara
       - name: Run flake8
         uses: suo/flake8-github-action@releases/v1
+        with:
+          checkName: 'code-quality'
       - name: mypy
         run: mypy solara
