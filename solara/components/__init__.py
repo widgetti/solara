@@ -46,7 +46,7 @@ from .echarts import FigureEcharts  # noqa: #F401 F403
 from .figure_altair import FigureAltair, AltairChart  # noqa: #F401 F403
 from .meta import Meta  # noqa: #F401 F403
 from .columns import Columns, ColumnsResponsive  # noqa: #F401 F403
-from .file_drop import FileDrop  # noqa: #F401 F403
+from .file_drop import FileDrop, FileDropMultiple  # noqa: #F401 F403
 from .file_download import FileDownload  # noqa: #F401 F403
 from .tooltip import Tooltip  # noqa: #F401 F403
 from .card import Card, CardActions  # noqa: #F401 F403
