@@ -4,10 +4,12 @@ on:
   push:
     branches:
       - master
+    tags:
+      - v*
   pull_request:
   workflow_dispatch:
   schedule:
-    - cron: '0 6 * * 1-5'  # at 06:00 UTC on Monday and Thursday
+    - cron: '0 6 * * *'  # at 06:00 UTC every day
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -23,10 +25,156 @@ defaults:
 
 jobs:
   build:
-    uses: ./.github/workflows/build.yml
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Cache JS bundle
+        id: cache-js-bundle-v2
+        uses: actions/cache@v4
+        with:
+          path: |
+            packages/solara-vuetify-app/dist
+            packages/solara-vuetify3-app/dist
+          key: ${{ runner.os }}-js-bundle-${{ hashFiles('packages/solara-vuetify-app/**', 'packages/solara-vuetify3-app/**', 'packages/solara-widget-manager/**', 'packages/solara-widget-manager8/src/**') }}
+
+      - name: Build solara widget manager
+        if: steps.cache-js-bundle-v2.outputs.cache-hit != 'true'
+        run: |
+          cd packages/solara-widget-manager
+          npm install
+          npm run build
+          cd ../../
+          cd packages/solara-widget-manager8
+          npm install
+          npm run build
+          cd ../../
+
+      - name: Build solara app package
+        if: steps.cache-js-bundle-v2.outputs.cache-hit != 'true'
+        run: |
+          cd packages/solara-vuetify-app
+          npm install
+          npm run build
+          cd ../../
+          cd packages/solara-vuetify3-app
+          npm install
+          npm run build
+
+      - name: Install build tools
+        run: pip install hatch
+
+      - name: Build solara
+        run: hatch build
+
+      - name: Build solara-enterprise
+        run: (cd packages/solara-enterprise; hatch build)
+
+      - name: Upload Test artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: solara-builds-${{ github.run_number }}
+          path: |
+            dist
+            packages/solara-enterprise/dist
+            packages/solara-vuetify-app/dist
+            packages/solara-vuetify3-app/dist
 
   code-quality:
-    uses: ./.github/workflows/codequality.yaml
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.8, "3.9"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          pip install ".[dev]" mypy==1.6.0 black==22.12.0 codespell==2.2.4 "click<8.1.4" "traitlets<5.10.0" "matplotlib<3.8.0"
+          mypy --install-types --non-interactive solara
+
+      - name: Run codespell
+        run: codespell
+
+      - name: Run black
+        run: black solara
+
+      - name: Run flake8
+        uses: suo/flake8-github-action@releases/v1
+        with:
+          checkName: 'code-quality'
+
+      - name: mypy
+        run: mypy solara
+
+  test-install:
+    needs: [build]
+    runs-on: ${{ matrix.os }}-${{matrix.os == 'ubuntu' && '20.04' || 'latest' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu, macos, windows]
+        python: ["3.6", "3.10"]
+        exclude:
+          - os: windows
+            python: 3.6
+
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v2
+        with:
+          name: solara-builds-${{ github.run_number }}
+
+      - name: Debug
+        run: ls -R dist
+
+      - name: Install
+        run: pip install dist/*.whl
+
+      - name: Test import
+        run: python -c "import solara"
+
+      - name: Run solara create
+        run: solara create button test.py
+
+      - name: Run solara server
+        run: solara run test.py&
+
+      - name: Wait for Solara server to get online
+        uses: ifaxity/wait-on-action@v1
+        with:
+          resource: http-get://localhost:8765/
+          timeout: 20000
+
+      - name: Install
+        run: pip install packages/solara-enterprise/dist/*.whl
+
+      - name: Test import
+        run: python -c "import solara_enterprise"
 
   integration-test:
     needs: [build, code-quality]
@@ -51,17 +199,21 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+
       - uses: actions/download-artifact@v2
         with:
           name: solara-builds-${{ github.run_number }}
+
       - name: Link solara app package
         run: |
           cd packages/solara-vuetify-app
           npm run devlink
+
       - name: Prepare
         id: prepare
         run: |
@@ -71,24 +223,26 @@ jobs:
           else
             echo "::set-output name=locks_exist::false"
           fi
+
       - name: Install without locking versions
         if: github.event_name == 'schedule' || steps.prepare.outputs.locks_exist == 'false'
         id: install_no_lock
         run: |
-          if [ ! -d .ci-package-locks ]; then mkdir .ci-package-locks; fi
-          (cd .ci-package-locks && if [ ! -d integration ]; then mkdir integration; fi)
+          mkdir -p .ci-package-locks/integration
           pip install ".[dev, documentation, extra, flask, pytest]" "voila~=${{ matrix.voila }}" "jupyterlab<4"  "pydantic<2" "playwright==1.41.2"
           (cd packages/solara-enterprise && pip install ".[ssg,auth]" "ipywidgets~=${{ matrix.ipywidgets }}")
           pip freeze > ${{ env.LOCK_FILE_LOCATION }}
           git diff --quiet && echo "::set-output name=exit_code::'NO_DIFF'"
+
       - name: Install
         if: github.event_name != 'schedule' && steps.prepare.outputs.locks_exist == 'true'
-        run: |
-          pip install -r ${{ env.LOCK_FILE_LOCATION }}
+        run: pip install -r ${{ env.LOCK_FILE_LOCATION }}
+
       - name: Install playwright
         run: playwright install
+
       - name: test
-        if: steps.install_no_lock.outputs.exit_code != 'NO_DIFF'
+        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.exit_code != 'NO_DIFF'
         env:
           AUTH0_USERNAME: maartenbreddels+solara-test@gmail.com
           AUTH0_PASSWORD: ${{ secrets.AUTH0_PASSWORD }}
@@ -98,18 +252,20 @@ jobs:
         # it seems on CI that the default playwright timeout is not (always?) respected, also, if the --timeout argument
         # is shorter than the timeout of playwright, we get no good error message, summary: always keep above 30!
         run: pytest tests/integration --timeout=360 --video=retain-on-failure --output=test-results -vv -s --log-cli-level=warning
+
       - name: Upload Test artifacts
-        if: steps.install_no_lock.outputs.exit_code != 'NO_DIFF'
+        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.exit_code != 'NO_DIFF'
         uses: actions/upload-artifact@v3
         with:
           name: test-results
           path: test-results
+
       - name: Upload CI package locks
-        if: steps.install_no_lock.outputs.exit_code != 'NO_DIFF' && github.event_name == 'schedule' || steps.prepare.outputs.locks_exist == 'false'
+        if: (steps.install_no_lock.outputs.exit_code != 'NO_DIFF' && github.event_name == 'schedule') || steps.prepare.outputs.locks_exist == 'false'
         uses: actions/upload-artifact@v3
         with:
-          name: ci-package-locks-integration-os${{ matrix.os }}-python${{ matrix.python-version }}-voila${{ matrix.voila }}-ipywidgets${{ matrix.ipywidgets }}
-          path: ${{ env.LOCK_FILE_LOCATION }}
+          name: ci-package-locks
+          path: ./**/${{ env.LOCK_FILE_LOCATION }}
 
   integration-test-vue3:
     needs: [build, code-quality]
@@ -132,17 +288,21 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+
       - uses: actions/download-artifact@v2
         with:
           name: solara-builds-${{ github.run_number }}
+
       - name: Link solara app package
         run: |
           (cd packages/solara-vuetify-app; npm run devlink)
           (cd packages/solara-vuetify3-app; npm run devlink)
+
       - name: Prepare
         id: prepare
         run: |
@@ -152,26 +312,28 @@ jobs:
           else
             echo "::set-output name=locks_exist::false"
           fi
+
       - name: Install without locking versions
         id: install_no_lock
         if: github.event_name == 'schedule' || steps.prepare.outputs.locks_exist == 'false'
         run: |
-          if [ ! -d .ci-package-locks ]; then mkdir .ci-package-locks; fi
-          (cd .ci-package-locks && if [ ! -d integration-vue3 ]; then mkdir integration-vue3; fi)
+          mkdir -p .ci-package-locks/integration-vue3
           pip install ".[dev, documentation, flask, pytest, server]" "jupyterlab<4" "voila~=${{ matrix.voila }}" "playwright==1.41.2" "pydantic<2"
           (cd packages/solara-enterprise && pip install ".[ssg,auth]" "ipywidgets~=${{ matrix.ipywidgets }}")
           pip install jupyter_core jupyter-packaging
           pip install https://github.com/widgetti/ipyvue/archive/refs/heads/vue3.zip https://github.com/widgetti/ipyvuetify/archive/refs/heads/vuetify3.zip
           pip freeze > ${{ env.LOCK_FILE_LOCATION }}
           git diff --quiet && echo "::set-output name=exit_code::'NO_DIFF'"
+
       - name: Install
         if: github.event_name != 'schedule' && steps.prepare.outputs.locks_exist == 'true'
-        run: |
-          pip install -r ${{ env.LOCK_FILE_LOCATION }}
+        run: pip install -r ${{ env.LOCK_FILE_LOCATION }}
+
       - name: Install playwright
         run: playwright install
+
       - name: test
-        if: steps.install_no_lock.outputs.exit_code != 'NO_DIFF'
+        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.exit_code != 'NO_DIFF'
         env:
           AUTH0_USERNAME: maartenbreddels+solara-test@gmail.com
           AUTH0_PASSWORD: ${{ secrets.AUTH0_PASSWORD }}
@@ -181,19 +343,20 @@ jobs:
         # it seems on CI that the default playwright timeout is not (always?) respected, also, if the --timeout argument
         # is shorter than the timeout of playwright, we get no good error message, summary: always keep above 30!
         run: pytest tests/integration/widget_test.py --timeout=360 --video=retain-on-failure --output=test-results -vv -s --log-cli-level=warning
+
       - name: Upload Test artifacts
-        if: steps.install_no_lock.outputs.exit_code != 'NO_DIFF'
+        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.exit_code != 'NO_DIFF'
         uses: actions/upload-artifact@v3
         with:
           name: test-results
-          path: |
-            test-results
+          path: test-results
+
       - name: Upload CI package locks
-        if: steps.install_no_lock.outputs.exit_code != 'NO_DIFF' && github.event_name == 'schedule' || steps.prepare.outputs.locks_exist == 'false'
+        if: (steps.install_no_lock.outputs.exit_code != 'NO_DIFF' && github.event_name == 'schedule') || steps.prepare.outputs.locks_exist == 'false'
         uses: actions/upload-artifact@v3
         with:
-          name: ci-package-locks-integration-vue3-os${{ matrix.os }}-voila${{ matrix.voila }}-ipywidgets${{ matrix.ipywidgets }}
-          path: ${{ env.LOCK_FILE_LOCATION }}
+          name: ci-package-locks
+          path: ./**/${{ env.LOCK_FILE_LOCATION }}
 
   unit-test:
     needs: [code-quality]
@@ -218,11 +381,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
           cache: "pip"
+
       - name: Prepare
         id: prepare
         run: |
@@ -231,41 +396,59 @@ jobs:
           else
             echo "::set-output name=locks_exist::false"
           fi
+
       - name: Install without locking versions
+        id: install_no_lock
         if: github.event_name == 'schedule' || steps.prepare.outputs.locks_exist == 'false'
         run: |
-          if [ ! -d .ci-package-locks ]; then mkdir .ci-package-locks; fi
-          (cd .ci-package-locks && if [ ! -d unit ]; then mkdir unit; fi)
+          mkdir -p .ci-package-locks/unit
           pip install ".[dev, extra]" "jupyterlab<4" diskcache redis "ipywidgets~=${{ matrix.ipywidgets }}"
           (cd packages/solara-enterprise && pip install ".[ssg,auth]")
+          pip freeze > ${{ env.LOCK_FILE_LOCATION }}
+          git diff --quiet && echo "::set-output name=exit_code::'NO_DIFF'"
+
       - name: Install
         if: github.event_name != 'schedule' && steps.prepare.outputs.locks_exist == 'true'
-        run: |
-          pip install -r ${{ env.LOCK_FILE_LOCATION }}
+        run: pip install -r ${{ env.LOCK_FILE_LOCATION }}
+
       - name: Start Redis
-        if: matrix.os != 'windows'
+        if: matrix.os != 'windows' && steps.install_no_lock.outputs.exit_code != 'NO_DIFF'
         uses: shogo82148/actions-setup-redis@v1
+
       - name: test
         run: pytest tests/unit --doctest-modules --timeout=60
+
       - name: Upload CI package locks
-        if: github.event_name == 'schedule' || steps.prepare.outputs.locks_exist == 'false'
+        if: (steps.install_no_lock.outputs.exit_code != 'NO_DIFF' && github.event_name == 'schedule') || steps.prepare.outputs.locks_exist == 'false'
         uses: actions/upload-artifact@v3
         with:
-          name: ci-package-locks-unit-os${{ matrix.os }}-python${{ matrix.python }}-ipywidgets${{ matrix.ipywidgets }}
-          path: ${{ env.LOCK_FILE_LOCATION }}
+          name: ci-package-locks
+          path: ./**/${{ env.LOCK_FILE_LOCATION }}
 
   update-ci-package-locks:
     needs: [integration-test, integration-test-vue3, unit-test]
     runs-on: ubuntu-latest
-    if: github.event_name == 'schedule' && success()
+
     steps:
       - uses: actions/checkout@v4
-      - name: Remove previous CI package locks
-        run: rm -rf .ci-package-locks
+        with:
+          ref: ${{ github.head_ref || github.ref }}
+
+      - name: Prepare
+        id: prepare
+        run: |
+          if [ -d .ci-package-locks ]; then
+            echo "::set-output name=locks_exist::true"
+          else
+            echo "::set-output name=locks_exist::false"
+          fi
+
       - uses: actions/download-artifact@v2
         with:
-          name: ci-package-locks-*
+          name: ci-package-locks
+
       - name: Update CI package locks
+        if: github.event_name == 'schedule' || steps.prepare.outputs.locks_exist == 'false'
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
@@ -273,3 +456,70 @@ jobs:
           git add .ci-package-locks
           git commit -m "Update CI package locks"
           git push
+
+  release:
+    needs: [build, code-quality, test-install, integration-test, integration-test-vue3, unit-test]
+    if: startsWith(github.event.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.7
+
+      - uses: actions/download-artifact@v2
+        with:
+          name: solara-builds-${{ github.run_number }}
+
+      - name: Install build tools
+        run: pip install hatch
+
+      - name: Install solara
+        run: pip install dist/*.whl
+
+      - name: Test import
+        run: python -c "import solara; import solara.server.starlette"
+
+      - name: Install solara-enterprise
+        run: pip install packages/solara-enterprise/dist/*.whl
+
+      - name: Test import solara-enterprise
+        run: python -c "import solara_enterprise"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build assets
+        run: (cd packages/assets; hatch build)
+
+      - name: Publish solara-enterprise to PyPI
+        env:
+          HATCH_INDEX_USER: __token__
+          HATCH_INDEX_AUTH: ${{ secrets.pypi_enterprise }}
+        run: |
+          cd packages/solara-enterprise
+          openssl sha256 dist/*
+          hatch publish
+          openssl sha256 dist/*
+
+      - name: Publish solara to PyPI
+        env:
+          HATCH_INDEX_USER: __token__
+          HATCH_INDEX_AUTH: ${{ secrets.pypi_password }}
+        run: |
+          openssl sha256 dist/*
+          hatch publish
+          openssl sha256 dist/*
+
+      - name: Publish solara-assets to PyPI
+        env:
+          HATCH_INDEX_USER: __token__
+          HATCH_INDEX_AUTH: ${{ secrets.pypi_assets }}
+        run: (cd packages/assets; openssl sha256 dist/*; hatch publish; openssl sha256 dist/*)
+
+      - name: remove assets
+        run: rm -rf packages/assets/dist
