@@ -82,7 +82,7 @@ jobs:
 
       - name: Upload Test artifacts
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: solara-builds-${{ github.run_number }}
           path: |
@@ -145,7 +145,7 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4
         with:
           name: solara-builds-${{ github.run_number }}
 
@@ -206,7 +206,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: "pip"
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4
         with:
           name: solara-builds-${{ github.run_number }}
 
@@ -260,16 +260,16 @@ jobs:
 
       - name: Upload Test artifacts
         if: github.event_name != 'schedule' || steps.install_no_lock.outputs.has_diff == true
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: test-results
+          name: test-results-integration-os${{ matrix.os }}-python${{ matrix.python-version }}-voila${{ matrix.voila }}-ipywidgets${{ matrix.ipywidgets }}
           path: test-results
 
       - name: Upload CI package locks
         if: steps.install_no_lock.outputs.has_diff == true || steps.prepare.outputs.locks_exist == 'false'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: ci-package-locks
+          name: ci-package-locks-integration-os${{ matrix.os }}-python${{ matrix.python-version }}-voila${{ matrix.voila }}-ipywidgets${{ matrix.ipywidgets }}
           path: ./**/${{ env.LOCK_FILE_LOCATION }}
 
   integration-test-vue3:
@@ -300,7 +300,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: "pip"
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4
         with:
           name: solara-builds-${{ github.run_number }}
 
@@ -356,16 +356,16 @@ jobs:
 
       - name: Upload Test artifacts
         if: github.event_name != 'schedule' || steps.install_no_lock.outputs.has_diff == true
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: test-results
+          name: test-results-integration-vue3-os${{ matrix.os }}-voila${{ matrix.voila }}-ipywidgets${{ matrix.ipywidgets }}
           path: test-results
 
       - name: Upload CI package locks
         if: steps.install_no_lock.outputs.has_diff == true || steps.prepare.outputs.locks_exist == 'false'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: ci-package-locks
+          name: ci-package-locks-integration-vue3-os${{ matrix.os }}-voila${{ matrix.voila }}-ipywidgets${{ matrix.ipywidgets }}
           path: ./**/${{ env.LOCK_FILE_LOCATION }}
 
   unit-test:
@@ -398,7 +398,7 @@ jobs:
           python-version: ${{ matrix.python }}
           cache: "pip"
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4
         with:
           name: solara-builds-${{ github.run_number }}
 
@@ -438,9 +438,9 @@ jobs:
 
       - name: Upload CI package locks
         if: steps.install_no_lock.outputs.has_diff == true || steps.prepare.outputs.locks_exist == 'false'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: ci-package-locks
+          name: ci-package-locks-unit-os${{ matrix.os }}-python${{ matrix.python }}-ipywidgets${{ matrix.ipywidgets }}
           path: ./**/${{ env.LOCK_FILE_LOCATION }}
 
   update-ci-package-locks:
@@ -461,10 +461,11 @@ jobs:
             echo "::set-output name=locks_exist::false"
           fi
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4
         if: github.event_name == 'schedule' || steps.prepare.outputs.locks_exist == 'false'
         with:
-          name: ci-package-locks
+          pattern: ci-package-locks-*
+          merge-multiple: true
 
       - name: Update CI package locks
         if: github.event_name == 'schedule' || steps.prepare.outputs.locks_exist == 'false'
@@ -489,7 +490,7 @@ jobs:
         with:
           python-version: 3.7
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4
         with:
           name: solara-builds-${{ github.run_number }}
 
