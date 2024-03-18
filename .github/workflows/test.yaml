@@ -321,7 +321,7 @@ jobs:
           pip install ".[dev, documentation, flask, pytest, server]" "jupyterlab<4" "voila~=${{ matrix.voila }}" "playwright==1.41.2" "pydantic<2"
           (cd packages/solara-enterprise && pip install ".[ssg,auth]" "ipywidgets~=${{ matrix.ipywidgets }}")
           pip install jupyter_core jupyter-packaging
-          pip install https://github.com/widgetti/ipyvue/archive/refs/heads/vue3.zip https://github.com/widgetti/ipyvuetify/archive/refs/heads/vuetify3.zip
+          pip install --pre ipyvue ipyvuetify
           pip freeze > ${{ env.LOCK_FILE_LOCATION }}
           git diff --quiet && echo "::set-output name=exit_code::'NO_DIFF'"
 
@@ -359,7 +359,7 @@ jobs:
           path: ./**/${{ env.LOCK_FILE_LOCATION }}
 
   unit-test:
-    needs: [code-quality]
+    needs: [build, code-quality]
     runs-on: ${{ matrix.os }}-${{matrix.os == 'ubuntu' && '20.04' || 'latest' }}
     strategy:
       fail-fast: false
