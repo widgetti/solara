@@ -177,7 +177,7 @@ jobs:
         run: python -c "import solara_enterprise"
 
   integration-test:
-    needs: [build, code-quality]
+    needs: [build]
     timeout-minutes: 15
     runs-on: ubuntu-latest
     strategy:
@@ -204,6 +204,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+          cache: "pip"
 
       - uses: actions/download-artifact@v2
         with:
@@ -229,14 +230,18 @@ jobs:
         id: install_no_lock
         run: |
           mkdir -p .ci-package-locks/integration
-          pip install ".[dev, documentation, extra, flask, pytest]" "voila~=${{ matrix.voila }}" "jupyterlab<4"  "pydantic<2" "playwright==1.41.2"
-          (cd packages/solara-enterprise && pip install ".[ssg,auth]" "ipywidgets~=${{ matrix.ipywidgets }}")
-          pip freeze > ${{ env.LOCK_FILE_LOCATION }}
+          find dist/ -name '*.whl' -exec pip install {}\[dev,documentation,flask,pytest,server\] \;
+          find packages/solara-enterprise/dist/ -name '*.whl' -exec pip install {}\[ssg,auth\] \;
+          pip install "voila~=${{ matrix.voila }}" "jupyterlab<4"  "pydantic<2" "playwright==1.41.2" "ipywidgets~=${{ matrix.ipywidgets }}"
+          pip freeze --exclude solara --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
           git diff --quiet && echo "::set-output name=exit_code::'NO_DIFF'"
 
       - name: Install
         if: github.event_name != 'schedule' && steps.prepare.outputs.locks_exist == 'true'
-        run: pip install -r ${{ env.LOCK_FILE_LOCATION }}
+        run: |
+          pip install -r ${{ env.LOCK_FILE_LOCATION }}
+          find dist/ -name '*.whl' -exec pip install {}\[dev,documentation,flask,pytest,server\] \;
+          find packages/solara-enterprise/dist/ -name '*.whl' -exec pip install {}\[ssg,auth\] \;
 
       - name: Install playwright
         run: playwright install
@@ -268,7 +273,7 @@ jobs:
           path: ./**/${{ env.LOCK_FILE_LOCATION }}
 
   integration-test-vue3:
-    needs: [build, code-quality]
+    needs: [build]
     timeout-minutes: 15
     runs-on: ubuntu-latest
     strategy:
@@ -293,6 +298,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+          cache: "pip"
 
       - uses: actions/download-artifact@v2
         with:
@@ -318,16 +324,20 @@ jobs:
         if: github.event_name == 'schedule' || steps.prepare.outputs.locks_exist == 'false'
         run: |
           mkdir -p .ci-package-locks/integration-vue3
-          pip install ".[dev, documentation, flask, pytest, server]" "jupyterlab<4" "voila~=${{ matrix.voila }}" "playwright==1.41.2" "pydantic<2"
-          (cd packages/solara-enterprise && pip install ".[ssg,auth]" "ipywidgets~=${{ matrix.ipywidgets }}")
+          find dist/ -name '*.whl' -exec pip install {}\[dev,documentation,flask,pytest,server\] \;
+          find packages/solara-enterprise/dist/ -name '*.whl' -exec pip install {}\[ssg,auth\] \;
+          pip install "jupyterlab<4" "voila~=${{ matrix.voila }}" "playwright==1.41.2" "pydantic<2" "ipywidgets~=${{ matrix.ipywidgets }}"
           pip install jupyter_core jupyter-packaging
           pip install --pre ipyvue ipyvuetify
-          pip freeze > ${{ env.LOCK_FILE_LOCATION }}
+          pip freeze --exclude solara --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
           git diff --quiet && echo "::set-output name=exit_code::'NO_DIFF'"
 
       - name: Install
         if: github.event_name != 'schedule' && steps.prepare.outputs.locks_exist == 'true'
-        run: pip install -r ${{ env.LOCK_FILE_LOCATION }}
+        run: |
+          pip install -r ${{ env.LOCK_FILE_LOCATION }}
+          find dist/ -name '*.whl' -exec pip install {}\[dev,documentation,flask,pytest,server\] \;
+          find packages/solara-enterprise/dist/ -name '*.whl' -exec pip install {}\[ssg,auth\] \;
 
       - name: Install playwright
         run: playwright install
@@ -359,7 +369,7 @@ jobs:
           path: ./**/${{ env.LOCK_FILE_LOCATION }}
 
   unit-test:
-    needs: [build, code-quality]
+    needs: [build]
     runs-on: ${{ matrix.os }}-${{matrix.os == 'ubuntu' && '20.04' || 'latest' }}
     strategy:
       fail-fast: false
@@ -388,6 +398,10 @@ jobs:
           python-version: ${{ matrix.python }}
           cache: "pip"
 
+      - uses: actions/download-artifact@v2
+        with:
+          name: solara-builds-${{ github.run_number }}
+
       - name: Prepare
         id: prepare
         run: |
@@ -402,14 +416,18 @@ jobs:
         if: github.event_name == 'schedule' || steps.prepare.outputs.locks_exist == 'false'
         run: |
           mkdir -p .ci-package-locks/unit
-          pip install ".[dev, extra]" "jupyterlab<4" diskcache redis "ipywidgets~=${{ matrix.ipywidgets }}"
-          (cd packages/solara-enterprise && pip install ".[ssg,auth]")
-          pip freeze > ${{ env.LOCK_FILE_LOCATION }}
+          find dist/ -name '*.whl' -exec pip install {}\[dev,extra\] \;
+          find packages/solara-enterprise/dist/ -name '*.whl' -exec pip install {}\[ssg,auth\] \;
+          pip install "jupyterlab<4" diskcache redis "ipywidgets~=${{ matrix.ipywidgets }}"
+          pip freeze --exclude solara --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
           git diff --quiet && echo "::set-output name=exit_code::'NO_DIFF'"
 
       - name: Install
         if: github.event_name != 'schedule' && steps.prepare.outputs.locks_exist == 'true'
-        run: pip install -r ${{ env.LOCK_FILE_LOCATION }}
+        run: |
+          pip install -r ${{ env.LOCK_FILE_LOCATION }}
+          find dist/ -name '*.whl' -exec pip install {}\[dev,extra\] \;
+          find packages/solara-enterprise/dist/ -name '*.whl' -exec pip install {}\[ssg,auth\] \;
 
       - name: Start Redis
         if: matrix.os != 'windows' && steps.install_no_lock.outputs.exit_code != 'NO_DIFF'
@@ -426,7 +444,7 @@ jobs:
           path: ./**/${{ env.LOCK_FILE_LOCATION }}
 
   update-ci-package-locks:
-    needs: [integration-test, integration-test-vue3, unit-test]
+    needs: [code-quality, integration-test, integration-test-vue3, unit-test]
     runs-on: ubuntu-latest
 
     steps:
