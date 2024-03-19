@@ -5,6 +5,7 @@ import pickle
 import sys
 import threading
 import traceback
+import warnings
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional, cast
@@ -148,9 +149,16 @@ class AppScript:
                 mod = importlib.import_module(self.name)
                 routes = solara.generate_routes(mod)
 
-        app = solara.autorouting.RenderPage(self.app_name)
-        if not hasattr(routes[0].module, self.app_name) and routes[0].children:
+        # when the root moduled defined routes, skip the enclosing route object
+        if len(routes) == 1 and routes[0].module and hasattr(routes[0].module, "routes"):
+            if routes[0].component:
+                warnings.warn(
+                    f"{self.name} has a component defined, but you are also defining routes."
+                    " To avoid confusing, consider renaming the {self.app_name} component."
+                )
             routes = routes[0].children
+
+        app = solara.autorouting.RenderPage(self.app_name)
 
         if settings.ssg.build_path is None:
             settings.ssg.build_path = self.directory.parent.resolve() / "build"
