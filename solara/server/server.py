@@ -13,7 +13,6 @@ import ipyvue
 import ipywidgets
 import jinja2
 import requests
-
 import solara
 import solara.routing
 import solara.settings
@@ -302,9 +301,9 @@ def read_root(path: str, root_path: str = "", render_kwargs={}, use_nbextensions
             code = content_utf8
         elif embed:
             content_utf8 = content.decode("utf-8")
-            code = f"<style>/*\npath={path}\n*/\n{content_utf8}</style>"
+            code = f'<style class="solara-template-css">/*\npath={path}\n*/\n{content_utf8}</style>'
         else:
-            code = f'<link rel="stylesheet" type="text/css" href="{url}">'
+            code = f'<link rel="stylesheet" type="text/css" href="{url}" class="solara-template-css">'
         return Markup(code)
 
     def include_js(path: str, module=False) -> Markup:

@@ -205,6 +205,10 @@ def _ssg_data(html: str) -> Optional[SSGData]:
     rendered_styles = soup.find_all("style")
     for style in rendered_styles:
         style_html = str(style)
+        # skip css that was already in the template so we don't include it multiple times
+        # or such that we do not include the CSS from the theme as ssg build time
+        if 'class="solara-template-css"' in style_html:
+            continue
         # in case we want to skip the mathjax css
         # if "MJXZERO" in style_html:
         #     continue
