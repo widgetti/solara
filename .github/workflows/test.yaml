@@ -462,6 +462,7 @@ jobs:
           fi
 
       - uses: actions/download-artifact@v2
+        if: github.event_name == 'schedule' || steps.prepare.outputs.locks_exist == 'false'
         with:
           name: ci-package-locks
 
