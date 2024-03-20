@@ -234,7 +234,7 @@ jobs:
           find packages/solara-enterprise/dist/ -name '*.whl' -exec pip install {}\[ssg,auth\] \;
           pip install "voila~=${{ matrix.voila }}" "jupyterlab<4"  "pydantic<2" "playwright==1.41.2" "ipywidgets~=${{ matrix.ipywidgets }}"
           pip freeze --exclude solara --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
-          git diff --quiet && echo "::set-output name=exit_code::'NO_DIFF'"
+          git diff --quiet || echo "::set-output name=has_diff::true"
 
       - name: Install
         if: github.event_name != 'schedule' && steps.prepare.outputs.locks_exist == 'true'
@@ -247,7 +247,7 @@ jobs:
         run: playwright install
 
       - name: test
-        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.exit_code != 'NO_DIFF'
+        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.has_diff == true
         env:
           AUTH0_USERNAME: maartenbreddels+solara-test@gmail.com
           AUTH0_PASSWORD: ${{ secrets.AUTH0_PASSWORD }}
@@ -259,14 +259,14 @@ jobs:
         run: pytest tests/integration --timeout=360 --video=retain-on-failure --output=test-results -vv -s --log-cli-level=warning
 
       - name: Upload Test artifacts
-        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.exit_code != 'NO_DIFF'
+        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.has_diff == true
         uses: actions/upload-artifact@v3
         with:
           name: test-results
           path: test-results
 
       - name: Upload CI package locks
-        if: (steps.install_no_lock.outputs.exit_code != 'NO_DIFF' && github.event_name == 'schedule') || steps.prepare.outputs.locks_exist == 'false'
+        if: steps.install_no_lock.outputs.has_diff == true || steps.prepare.outputs.locks_exist == 'false'
         uses: actions/upload-artifact@v3
         with:
           name: ci-package-locks
@@ -330,7 +330,7 @@ jobs:
           pip install jupyter_core jupyter-packaging
           pip install --pre ipyvue ipyvuetify
           pip freeze --exclude solara --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
-          git diff --quiet && echo "::set-output name=exit_code::'NO_DIFF'"
+          git diff --quiet || echo "::set-output name=has_diff::true"
 
       - name: Install
         if: github.event_name != 'schedule' && steps.prepare.outputs.locks_exist == 'true'
@@ -343,7 +343,7 @@ jobs:
         run: playwright install
 
       - name: test
-        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.exit_code != 'NO_DIFF'
+        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.has_diff == true
         env:
           AUTH0_USERNAME: maartenbreddels+solara-test@gmail.com
           AUTH0_PASSWORD: ${{ secrets.AUTH0_PASSWORD }}
@@ -355,14 +355,14 @@ jobs:
         run: pytest tests/integration/widget_test.py --timeout=360 --video=retain-on-failure --output=test-results -vv -s --log-cli-level=warning
 
       - name: Upload Test artifacts
-        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.exit_code != 'NO_DIFF'
+        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.has_diff == true
         uses: actions/upload-artifact@v3
         with:
           name: test-results
           path: test-results
 
       - name: Upload CI package locks
-        if: (steps.install_no_lock.outputs.exit_code != 'NO_DIFF' && github.event_name == 'schedule') || steps.prepare.outputs.locks_exist == 'false'
+        if: steps.install_no_lock.outputs.has_diff == true || steps.prepare.outputs.locks_exist == 'false'
         uses: actions/upload-artifact@v3
         with:
           name: ci-package-locks
@@ -420,7 +420,7 @@ jobs:
           find packages/solara-enterprise/dist/ -name '*.whl' -exec pip install {}\[ssg,auth\] \;
           pip install "jupyterlab<4" diskcache redis "ipywidgets~=${{ matrix.ipywidgets }}"
           pip freeze --exclude solara --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
-          git diff --quiet && echo "::set-output name=exit_code::'NO_DIFF'"
+          git diff --quiet && echo "::set-output name=has_diff::'NO_DIFF'"
 
       - name: Install
         if: github.event_name != 'schedule' && steps.prepare.outputs.locks_exist == 'true'
@@ -430,14 +430,14 @@ jobs:
           find packages/solara-enterprise/dist/ -name '*.whl' -exec pip install {}\[ssg,auth\] \;
 
       - name: Start Redis
-        if: matrix.os != 'windows' && steps.install_no_lock.outputs.exit_code != 'NO_DIFF'
+        if: ( github.event_name != 'schedule' || steps.install_no_lock.outputs.has_diff == true ) && matrix.os != 'windows'
         uses: shogo82148/actions-setup-redis@v1
 
       - name: test
         run: pytest tests/unit --doctest-modules --timeout=60
 
       - name: Upload CI package locks
-        if: (steps.install_no_lock.outputs.exit_code != 'NO_DIFF' && github.event_name == 'schedule') || steps.prepare.outputs.locks_exist == 'false'
+        if: steps.install_no_lock.outputs.has_diff == true || steps.prepare.outputs.locks_exist == 'false'
         uses: actions/upload-artifact@v3
         with:
           name: ci-package-locks
