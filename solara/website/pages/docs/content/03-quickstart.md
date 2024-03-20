@@ -37,9 +37,9 @@ def Page():
     solara.InputText(label="Your sentence", value=sentence, continuous_update=True)
 
     # Display messages based on the current word count and word limit.
-    if word_count >= int(word_limit.value):
-        solara.Error(f"With {word_count} words, you passed the word limit of {word_limit.value}.")
-    elif word_count >= int(0.8 * word_limit.value):
+    if word_count > int(word_limit.value):
+        solara.Error(f"With {word_count} words, you have gone over the word limit.")
+    if word_count == int(word_limit.value-1):
         solara.Warning(f"With {word_count} words, you are close to the word limit of {word_limit.value}.")
     else:
         solara.Success("Great short writing!")
