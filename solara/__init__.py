@@ -48,6 +48,7 @@ except ModuleNotFoundError:
     import reacton.ipyvuetify as v  # type: ignore # noqa: F401
 from . import util
 
+from . import html
 from .reactive import *
 
 # flake8: noqa: F402
