@@ -1,3 +1,6 @@
+# Unlike the Python package release, the javascript release doesn't depend on tests passing
+# If a broken version is release without a Python release it isn't used, since the version
+# is fixed in the Python package
 name: Release solara-vuetify3-app package
 
 on:
