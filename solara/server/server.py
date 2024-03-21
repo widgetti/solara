@@ -34,6 +34,7 @@ ipykernel_major = int(ipykernel.__version__.split(".")[0])
 ipywidgets_major = int(ipywidgets.__version__.split(".")[0])
 cache_memory = solara.cache.Memory(max_items=128)
 vue3 = ipyvue.__version__.startswith("3")
+_redirects: Dict[str, str] = {}
 
 # first look at the project directory, then the builtin solara directory
 

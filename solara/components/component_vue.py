@@ -78,7 +78,7 @@ def component_vue(vue_path: str, vuetify=True) -> Callable[[Callable[P, None]], 
     [See the vue v2 api](https://v2.vuejs.org/v2/api/) for more information on how to use Vue, like `watch`,
     `methods` and lifecycle hooks such as `mounted` and `destroyed`.
 
-    See the [Vue component example](/examples/general/vue_component) for an example of how to use this decorator.
+    See the [Vue component example](/documentation/examples/general/vue_component) for an example of how to use this decorator.
 
     ## Arguments
 

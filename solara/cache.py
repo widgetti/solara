@@ -221,7 +221,7 @@ def memoize(
     memory content.
 
     The storage can be any object that implements the MutableMapping interface, for instance a dict or
-    a cachetools.LRUCache. Or a new instance of `solara.cache.Memory`, see [caching](/docs/reference/caching)
+    a cachetools.LRUCache. Or a new instance of `solara.cache.Memory`, see [caching](/documentation/getting_started/reference/caching)
     for cache storage options.
 
     The return value of the decorator behaves like the original function, but also has a few attributes:
@@ -233,7 +233,7 @@ def memoize(
         If the value is already cached, the function will not be executed in a thread.
 
 
-    See also the [reference on caching](/docs/reference/caching) for more caching details.
+    See also the [reference on caching](/documentation/getting_started/reference/caching) for more caching details.
 
     """
 

@@ -17,9 +17,9 @@ def Tab(
 ):
     """An item in a Tabs component.
 
-    (*Note: [This component is experimental and its API may change in the future](/docs/lab).*)
+    (*Note: [This component is experimental and its API may change in the future](/documentation/getting_started/lab).*)
 
-    Should be a direct child of a [Tabs](/api/tabs).
+    Should be a direct child of a [Tabs](/documentation/components/lab/tabs).
 
     ## Arguments
      * `label`: The label of the tab.
@@ -62,12 +62,12 @@ def Tabs(
 ):
     """A tabbed container showing one tab at a time.
 
-    (*Note: [This component is experimental and its API may change in the future](/docs/lab).*)
+    (*Note: [This component is experimental and its API may change in the future](/documentation/getting_started/lab).*)
 
-    Note that if Tabs are used as a child of the [AppBar](/api/appbar) component, the tabs
+    Note that if Tabs are used as a child of the [AppBar](/documentation/components/layout/app_bar) component, the tabs
     will be placed under the app bar. See our [authorization app](/apps/authorization) for an example.
 
-    If the children [Tab](/api/tab) elements are passed a `path_or_route` argument, the active tab
+    If the children [Tab](/documentation/components/lab/tab) elements are passed a `path_or_route` argument, the active tab
     will be based on the path of the current page.
 
 
@@ -89,7 +89,7 @@ def Tabs(
 
     ### Tabs with content
 
-    This is usually only used when the tabs are placed in the [AppBar](/api/appbar) component.
+    This is usually only used when the tabs are placed in the [AppBar](/documentation/components/layout/app_bar) component.
 
     ```solara
     import solara

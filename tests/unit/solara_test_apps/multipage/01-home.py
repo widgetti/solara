@@ -1,3 +1,3 @@
-import solara.website.pages.api.button as mod
+import solara.website.pages.documentation.components.input.button as mod
 
 Page = mod.Page

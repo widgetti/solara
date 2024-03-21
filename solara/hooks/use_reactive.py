@@ -13,7 +13,7 @@ def use_reactive(
 
     It is a useful alternative to `use_state` when you want to use a
     reactive variable for the component state.
-    See also [our documentation on state management](/docs/fundamentals/state-management).
+    See also [our documentation on state management](/documentation/getting_started/fundamentals/state-management).
 
     If the variable passed is a reactive variable, it will be returned instead and no
     new reactive variable will be created. This is useful for implementing component
@@ -92,7 +92,7 @@ def use_reactive(
     except RuntimeError as e:
         raise RuntimeError(
             "use_reactive must be called from a component function, inside the render function.\n"
-            "Do not call it top level, use [solara.reactive()](https://solara.dev/api/reactive) instead."
+            "Do not call it top level, use [solara.reactive()](https://solara.dev/documentation/api/utilities/reactive) instead."
         ) from e
     on_change_ref.current = on_change
 

@@ -371,7 +371,7 @@ def generate_routes(module: ModuleType) -> List[solara.Route]:
     files are not Python modules.
 
 
-    See [our multipage guide](/docs/howto/multipage#as-a-package) for more details.
+    See [our multipage guide](/documentation/advanced/howto/multipage#as-a-package) for more details.
 
 
     """
@@ -474,7 +474,7 @@ def generate_routes_directory(path: Path) -> List[solara.Route]:
     Python files ending in .py, or Jupyter notebooks ending in .ipynb
     will be executed and its `Page` component will be rendered.
 
-    Automatic titles will be [generated as explained in the multipage guide](/docs/howto/multipage).
+    Automatic titles will be [generated as explained in the multipage guide](/documentation/advanced/howto/multipage).
 
     """
 

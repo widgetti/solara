@@ -3,9 +3,8 @@ from typing import Any, List, cast
 
 import ipyvuetify
 import reacton.ipyvuetify as v
-import traitlets
-
 import solara
+import traitlets
 from solara import CellAction, ColumnAction
 
 from ..lab.hooks.dataframe import use_df_column_names
@@ -55,7 +54,7 @@ def CrossFilterSelect(
 ):
     """A Select widget that will cross filter a DataFrame.
 
-    See [use_cross_filter](/api/use_cross_filter) for more information about how to use cross filtering.
+    See [use_cross_filter](/documentation/api/hooks/use_cross_filter) for more information about how to use cross filtering.
 
     ## Arguments
 
@@ -170,7 +169,7 @@ def CrossFilterReport(df, classes: List[str] = []):
 
     Shows number of rows filtered, and the total number of rows.
 
-    See [use_cross_filter](/api/use_cross_filter) for more information about how to use cross filtering.
+    See [use_cross_filter](/documentation/api/hooks/use_cross_filter) for more information about how to use cross filtering.
 
     ## Arguments
 
@@ -214,7 +213,7 @@ def CrossFilterSlider(
 ):
     """A Slider widget that will cross filter a DataFrame.
 
-    See [use_cross_filter](/api/use_cross_filter) for more information about how to use cross filtering.
+    See [use_cross_filter](/documentation/api/hooks/use_cross_filter) for more information about how to use cross filtering.
 
     ## Arguments
 
@@ -318,9 +317,9 @@ def CrossFilterSlider(
 def CrossFilterDataFrame(df, items_per_page=20, column_actions: List[ColumnAction] = [], cell_actions: List[CellAction] = [], scrollable=False):
     """Display a DataFrame with filters applied from the cross filter.
 
-    This component wraps [DataFrame](/api/dataframe).
+    This component wraps [DataFrame](/documentation/components/data/dataframe).
 
-    See [use_cross_filter](/api/use_cross_filter) for more information about how to use cross filtering.
+    See [use_cross_filter](/documentation/api/hooks/use_cross_filter) for more information about how to use cross filtering.
 
     # Arguments
 

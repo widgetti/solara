@@ -23,7 +23,7 @@ def Page():
                 It creates the `component_state` [using the use_reactive hook](https://solara.dev/api/use_reactive)
                 so that the state is bound to the component.
 
-                See also [about state management](https://solara.dev/docs/fundamentals/state-management) for more information.
+                See also [about state management](https://solara.dev/documentation/getting_started/fundamentals/state-management) for more information.
 
 
                 component_state: {component_state.value}

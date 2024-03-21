@@ -40,7 +40,7 @@ from starlette.middleware import Middleware
 from starlette.middleware.authentication import AuthenticationMiddleware
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.requests import HTTPConnection, Request
-from starlette.responses import HTMLResponse, JSONResponse, Response
+from starlette.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from starlette.routing import Mount, Route, WebSocketRoute
 from starlette.staticfiles import StaticFiles
 from starlette.types import Receive, Scope, Send
@@ -315,6 +315,9 @@ async def root(request: Request, fullpath: str = ""):
     request_path = request.url.path
     if request_path.startswith(root_path):
         request_path = request_path[len(root_path) :]
+    if request_path in server._redirects.keys():
+        return RedirectResponse(server._redirects[request_path])
+
     content = server.read_root(request_path, root_path)
     if content is None:
         if settings.oauth.private and not request.user.is_authenticated:

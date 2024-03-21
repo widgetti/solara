@@ -14,7 +14,7 @@ def reactive(value: T) -> Reactive[T]:
     Solara web applications. They provide an easy-to-use mechanism for keeping
     track of the changing state of data and for propagating those changes to
     the appropriate UI components. For managing local or component-specific
-    state, consider using the [`solara.use_state()`](/api/use_state) function.
+    state, consider using the [`solara.use_state()`](/documentation/api/hooks/use_state) function.
 
 
     Reactive variables can be accessed using the `.value` attribute. To modify

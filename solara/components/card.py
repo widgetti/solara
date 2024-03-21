@@ -1,7 +1,6 @@
 from typing import Dict, List, Optional, Union
 
 import reacton.ipyvuetify as v
-
 import solara
 from solara.util import _combine_classes
 
@@ -79,7 +78,7 @@ def Card(
 def CardActions(children: List[solara.Element] = []):
     """Container for actions in a card.
 
-    See [Card](/api/card) for an example.
+    See [Card](/documentation/components/layout/card) for an example.
 
     # Arguments
 

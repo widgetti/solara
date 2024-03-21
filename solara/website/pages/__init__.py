@@ -3,13 +3,208 @@ import contextlib
 import solara
 from solara.alias import rv
 from solara.components.title import Title
+from solara.server import server
 
 from ..components import Header, Hero
 from ..components.mailchimp import MailChimp
 
 title = "Home"
 
-route_order = ["/", "showcase", "docs", "api", "examples", "apps"]
+route_order = ["/", "showcase", "documentation", "apps", "contact", "changelog"]
+
+
+server._redirects = {
+    "/docs": "/documentation/getting_started/introduction",
+    "/docs/installing": "/documentation/getting_started/installing",
+    "/docs/quickstart": "/documentation/getting_started",
+    "/docs/tutorial": "/documentation/getting_started/tutorials",
+    "/docs/tutorial/data-science": "/documentation/getting_started/tutorials/data-science",
+    "/docs/tutorial/web-app": "/documentation/getting_started/tutorials/web-app",
+    "/docs/tutorial/ipywidgets": "/documentation/getting_started/tutorials/ipywidgets",
+    "/docs/tutorial/streamlit": "/documentation/getting_started/tutorials/streamlit",
+    "/docs/tutorial/dash": "/documentation/getting_started/tutorials/dash",
+    "/docs/tutorial/jupyter-dashboard-part1": "/documentation/getting_started/tutorials/jupyter-dashboard-part1",
+    "/docs/fundamentals": "/documentation/getting_started/fundamentals",
+    "/docs/fundamentals/components": "/documentation/getting_started/fundamentals/components",
+    "/docs/fundamentals/state-management": "/documentation/getting_started/fundamentals/state-management",
+    "/docs/howto": "/documentation/advanced/howto",
+    "/docs/howto/contribute": "/documentation/advanced/development/contribute",
+    "/docs/howto/multipage": "/documentation/advanced/howto/multipage",
+    "/docs/howto/layout": "/documentation/advanced/howto/layout",
+    "/docs/howto/testing": "/documentation/advanced/howto/testing",
+    "/docs/howto/debugging": "/documentation/advanced/howto/debugging",
+    "/docs/howto/embed": "/documentation/advanced/howto/embed",
+    "/docs/howto/ipywidget-libraries": "/documentation/advanced/howto/ipywidget-libraries",
+    "/docs/reference": "/documentation/getting_started/reference",
+    "/docs/reference/static-files": "/documentation/getting_started/reference/static-files",
+    "/docs/reference/asset-files": "/documentation/getting_started/reference/asset-files",
+    "/docs/reference/static-site-generation": "/documentation/getting_started/reference/static-site-generation",
+    "/docs/reference/search": "/documentation/getting_started/reference/search",
+    "/docs/reference/reloading": "/documentation/getting_started/reference/reloading",
+    "/docs/reference/notebook-support": "/documentation/getting_started/reference/notebook-support",
+    "/docs/reference/caching": "/documentation/getting_started/reference/caching",
+    "/docs/understanding": "/documentation/advanced/understanding",
+    "/docs/understanding/ipywidgets": "/documentation/advanced/understanding/ipywidgets",
+    "/docs/understanding/ipyvuetify": "/documentation/advanced/understanding/ipyvuetify",
+    "/docs/understanding/reacton": "/documentation/advanced/understanding/reacton",
+    "/docs/understanding/reacton-basics": "/documentation/advanced/understanding/reacton-basics",
+    "/docs/understanding/anatomy": "/documentation/advanced/understanding/anatomy",
+    "/docs/understanding/rules-of-hooks": "/documentation/advanced/understanding/rules-of-hooks",
+    "/docs/understanding/containers": "/documentation/advanced/understanding/containers",
+    "/docs/understanding/solara": "/documentation/advanced/understanding/solara",
+    "/docs/understanding/routing": "/documentation/advanced/understanding/routing",
+    "/docs/understanding/solara-server": "/documentation/advanced/understanding/solara-server",
+    "/docs/understanding/voila": "/documentation/advanced/understanding/voila",
+    "/docs/deploying": "/documentation/getting_started/deploying",
+    "/docs/deploying/self-hosted": "/documentation/getting_started/deploying/self-hosted",
+    "/docs/deploying/cloud-hosted": "/documentation/getting_started/deploying/cloud-hosted",
+    "/docs/enterprise": "/documentation/advanced/enterprise",
+    "/docs/enterprise/oauth": "/documentation/advanced/enterprise/oauth",
+    "/docs/development": "/documentation/advanced/development/setup",
+    "/docs/troubleshoot": "/documentation/getting_started/troubleshoot",
+    "/docs/changelog": "/changelog",
+    "/docs/contact": "/contact",
+    "/docs/faq": "/documentation/faq",
+    "/docs/lab": "/documentation/getting_started/lab",
+    "/api": "/documentation/api",
+    "/api/altair": "/documentation/components/viz/altair",
+    "/api/app_bar": "/documentation/components/layout/app_bar",
+    "/api/app_bar_title": "/documentation/components/layout/app_bar_title",
+    "/api/app_layout": "/documentation/components/layout/app_layout",
+    "/api/avatar": "/documentation/components/enterprise/avatar",
+    "/api/avatar_menu": "/documentation/components/enterprise/avatar_menu",
+    "/api/card": "/documentation/components/layout/card",
+    "/api/card_actions": "/documentation/components/layout/card_actions",
+    "/api/column": "/documentation/components/layout/column",
+    "/api/columns": "/documentation/components/layout/columns",
+    "/api/columns_responsive": "/documentation/components/layout/columns_responsive",
+    "/api/cross_filter_dataframe": "/documentation/api/cross_filter/cross_filter_dataframe",
+    "/api/cross_filter_report": "/documentation/api/cross_filter/cross_filter_report",
+    "/api/cross_filter_select": "/documentation/api/cross_filter/cross_filter_select",
+    "/api/cross_filter_slider": "/documentation/api/cross_filter/cross_filter_slider",
+    "/api/generate_routes": "/documentation/api/routing/generate_routes",
+    "/api/generate_routes_directory": "/documentation/api/routing/generate_routes_directory",
+    "/api/resolve_path": "/documentation/api/routing/resolve_path",
+    "/api/resolve_path/kiwi": "/documentation/api/routing/resolve_path/kiwi",
+    "/api/resolve_path/banana": "/documentation/api/routing/resolve_path/banana",
+    "/api/resolve_path/apple": "/documentation/api/routing/resolve_path/apple",
+    "/api/link": "/documentation/components/advanced/link",
+    "/api/link/kiwi": "/documentation/components/advanced/link/kiwi",
+    "/api/link/banana": "/documentation/components/advanced/link/banana",
+    "/api/link/apple": "/documentation/components/advanced/link/apple",
+    "/api/use_route": "/documentation/api/routing/use_route",
+    "/api/use_route/fruit": "/documentation/api/routing/use_route/fruit",
+    "/api/use_route/fruit/kiwi": "/documentation/api/routing/use_route/fruit/kiwi",
+    "/api/use_route/fruit/banana": "/documentation/api/routing/use_route/fruit/banana",
+    "/api/use_route/fruit/apple": "/documentation/api/routing/use_route/fruit/apple",
+    "/api/use_router": "/documentation/api/routing/use_router",
+    "/api/use_cross_filter": "/documentation/api/hooks/use_cross_filter",
+    "/api/use_dark_effective": "/documentation/api/hooks/use_dark_effective",
+    "/api/use_effect": "/documentation/api/hooks/use_effect",
+    "/api/use_exception": "/documentation/api/hooks/use_exception",
+    "/api/use_memo": "/documentation/api/hooks/use_memo",
+    "/api/use_previous": "/documentation/api/hooks/use_previous",
+    "/api/use_reactive": "/documentation/api/hooks/use_reactive",
+    "/api/use_state": "/documentation/api/hooks/use_state",
+    "/api/use_state_or_update": "/documentation/api/hooks/use_state_or_update",
+    "/api/use_task": "/documentation/components/lab/use_task",
+    "/api/use_thread": "/documentation/api/hooks/use_thread",
+    "/api/use_trait_observe": "/documentation/api/hooks/use_trait_observe",
+    "/examples/fullscreen": "/documentation/examples/fullscreen",
+    "/examples/fullscreen/authorization": "/documentation/examples/fullscreen/authorization",
+    "/examples/fullscreen/layout_demo": "/documentation/examples/fullscreen/layout_demo",
+    "/examples/fullscreen/multipage": "/documentation/examples/fullscreen/multipage",
+    "/examples/fullscreen/scatter": "/documentation/examples/fullscreen/scatter",
+    "/examples/fullscreen/scrolling": "/documentation/examples/fullscreen/scrolling",
+    "/examples/fullscreen/tutorial_streamlit": "/documentation/examples/fullscreen/tutorial_streamlit",
+    "/api/route": "/documentation/api/routing/route",
+    "/api/route/kiwi": "/documentation/api/routing/route/kiwi",
+    "/api/route/banana": "/documentation/api/routing/route/banana",
+    "/api/route/apple": "/documentation/api/routing/route/apple",
+    "/examples/libraries": "/documentation/examples/libraries",
+    "/examples/libraries/altair": "/documentation/examples/libraries/altair",
+    "/examples/libraries/bqplot": "/documentation/examples/libraries/bqplot",
+    "/examples/libraries/ipyleaflet": "/documentation/examples/libraries/ipyleaflet",
+    "/examples/libraries/ipyleaflet_advanced": "/documentation/examples/libraries/ipyleaflet_advanced",
+    "/examples/utilities": "/documentation/examples/utilities",
+    "/examples/utilities/calculator": "/documentation/examples/utilities/calculator",
+    "/examples/utilities/countdown_timer": "/documentation/examples/utilities/countdown_timer",
+    "/examples/utilities/todo": "/documentation/examples/utilities/todo",
+    "/examples/visualization": "/documentation/examples/visualization",
+    "/examples/visualization/annotator": "/documentation/examples/visualization/annotator",
+    "/examples/visualization/linked_views": "/documentation/examples/visualization/linked_views",
+    "/examples/visualization/plotly": "/documentation/examples/visualization/plotly",
+    "/examples/general": "/documentation/examples/general",
+    "/examples/general/custom_storage": "/documentation/examples/general/custom_storage",
+    "/examples/general/deploy_model": "/documentation/examples/general/deploy_model",
+    "/examples/general/live_update": "/documentation/examples/general/live_update",
+    "/examples/general/login_oauth": "/documentation/examples/general/login_oauth",
+    "/examples/general/pokemon_search": "/documentation/examples/general/pokemon_search",
+    "/examples/general/vue_component": "/documentation/examples/general/vue_component",
+    "/examples": "/documentation/examples",
+    "/examples/ai": "/documentation/examples/ai",
+    "/examples/ai/chatbot": "/documentation/examples/ai/chatbot",
+    "/examples/ai/tokenizer": "/documentation/examples/ai/tokenizer",
+    "/examples/basics": "/documentation/examples/basics",
+    "/examples/basics/sine": "/documentation/examples/basics/sine",
+    "/api/get_kernel_id": "/documentation/api/utilities/get_kernel_id",
+    "/api/get_session_id": "/documentation/api/utilities/get_session_id",
+    "/api/on_kernel_start": "/documentation/api/utilities/on_kernel_start",
+    "/api/component_vue": "/documentation/api/utilities/component_vue",
+    "/api/plotly": "/documentation/components/viz/plotly",
+    "/api/plotly_express": "/documentation/components/viz/plotly_express",
+    "/api/tab": "/documentation/components/lab/tab",
+    "/api/tabs": "/documentation/components/lab/tabs",
+    "/api/task": "/documentation/components/lab/task",
+    "/api/computed": "/documentation/api/utilities/computed",
+    "/api/markdown": "/documentation/components/output/markdown",
+    "/api/markdown_editor": "/documentation/components/output/markdown_editor",
+    "/api/matplotlib": "/documentation/components/viz/matplotlib",
+    "/api/echarts": "/documentation/components/viz/echarts",
+    "/api/theming": "/documentation/components/lab/theming",
+    "/api/griddraggable": "/documentation/components/layout/griddraggable",
+    "/api/gridfixed": "/documentation/components/layout/gridfixed",
+    "/api/html": "/documentation/components/output/html",
+    "/api/file_download": "/documentation/components/output/file_download",
+    "/api/hbox": "/documentation/components/layout/hbox",
+    "/api/vbox": "/documentation/components/layout/vbox",
+    "/api/sidebar": "/documentation/components/layout/sidebar",
+    "/api/row": "/documentation/components/layout/row",
+    "/api/error": "/documentation/components/status/error",
+    "/api/info": "/documentation/components/status/info",
+    "/api/progress": "/documentation/components/status/progress",
+    "/api/spinner": "/documentation/components/status/spinner",
+    "/api/success": "/documentation/components/status/success",
+    "/api/warning": "/documentation/components/status/warning",
+    "/api/image": "/documentation/components/output/image",
+    "/api/sql_code": "/documentation/components/output/sql_code",
+    "/api/tooltip": "/documentation/components/output/tooltip",
+    "/api/chat": "/documentation/components/lab/chat",
+    "/api/confirmation_dialog": "/documentation/components/lab/confirmation_dialog",
+    "/api/cookies_headers": "/documentation/components/lab/cookies_headers",
+    "/api/input_date": "/documentation/components/lab/input_date",
+    "/api/button": "/documentation/components/input/button",
+    "/api/checkbox": "/documentation/components/input/checkbox",
+    "/api/file_browser": "/documentation/components/input/file_browser",
+    "/api/file_drop": "/documentation/components/input/file_drop",
+    "/api/meta": "/documentation/components/advanced/meta",
+    "/api/style": "/documentation/components/advanced/style",
+    "/api/menu": "/documentation/components/lab/menu",
+    "/api/head": "/documentation/components/page/head",
+    "/api/input": "/documentation/components/input/input",
+    "/api/select": "/documentation/components/input/select",
+    "/api/slider": "/documentation/components/input/slider",
+    "/api/switch": "/documentation/components/input/switch",
+    "/api/togglebuttons": "/documentation/components/input/togglebuttons",
+    "/api/dataframe": "/documentation/components/data/dataframe",
+    "/api/pivot_table": "/documentation/components/data/pivot_table",
+    "/api/display": "/documentation/api/utilities/display",
+    "/api/memoize": "/documentation/api/utilities/memoize",
+    "/api/reactive": "/documentation/api/utilities/reactive",
+    "/api/widget": "/documentation/api/utilities/widget",
+    "/api/default_layout": "/documentation/components/layout",
+    "/api/title": "/documentation/components/page/title",
+}
 
 
 @solara.component
@@ -96,8 +291,10 @@ def Layout(children=[]):
                 button_text="Quickstart",
             )
 
-        with rv.Container(tag="section", fluid=True, ma_0=True, pa_0=True, class_="fill-height mb-8 solara-content-main"):
-            if route_current is not None and route_current.path == "/":
+        with rv.Container(tag="section", fluid=True, ma_0=True, pa_0=True, class_="fill-height solara-content-main"):
+            if route_current is None:
+                return solara.Error("Page not found")
+            elif route_current.path == "/":
                 description = "Use ipywidgets with Solara to build powerful and scalable web apps for Jupyter and production in Python."
                 # both tags in one
                 solara.Meta(name="description", property="og:description", content=description)
@@ -123,9 +320,9 @@ def Layout(children=[]):
                         """
                         )
                         with solara.HBox():
-                            with solara.Link("/docs"):
-                                solara.Button(label="Read more", class_="ma-1 homepage-button", href="/docs", color="primary", dark=True)
-                            with solara.Link("/docs/quickstart"):
+                            with solara.Link("/documentation"):
+                                solara.Button(label="Read more", class_="ma-1 homepage-button", href="/documentation", color="primary", dark=True)
+                            with solara.Link("/documentation/getting_started"):
                                 solara.Button(label="Quickstart", class_="ma-1 homepage-button", color="primary", dark=True)
                     # with rv.Col(md=4, sm=5):
                     #     rv.Img(src="https://dxhl76zpt6fap.cloudfront.net/public/landing/what.webp", style_="width:900px")
@@ -181,7 +378,7 @@ def Layout(children=[]):
                                 text=True,
                                 outlined=False,
                             )
-                            with solara.Link("/examples"):
+                            with solara.Link("/documentation/examples"):
                                 with solara.Column(style="width: 100%;"):
                                     solara.Button(
                                         label="More examples",
@@ -197,7 +394,7 @@ def Layout(children=[]):
                                     In Jupyter or standalone, and run them in production
                                     using FastAPI or starlette.
 
-                                    Get more inspiration from our [examples](/examples).
+                                    Get more inspiration from our [examples](/documentation/examples).
                                 """
                             )
                             with rv.ExpansionPanels(v_model=target, on_v_model=set_target, mandatory=True, flat=True):
@@ -209,7 +406,8 @@ def Layout(children=[]):
                                     rv.ExpansionPanelHeader(children=["FastAPI"])
                                     with rv.ExpansionPanelContent():
                                         solara.Markdown(
-                                            "Using [solara-server](/docs/understanding/solara-server), we can run our app in production using FastAPI."
+                                            """Using [solara-server](documentation/advanced/understanding/solara-server),
+                                            we can run our app in production using FastAPI."""
                                         )
 
                 with solara.Column(style={"width": "100%"}):
@@ -262,26 +460,32 @@ def Layout(children=[]):
                         solara.Markdown("#### Join our Mailing list to get the latest news")
                         with solara.Div(style={"width": "80%"}):
                             MailChimp(location=router.path)
-
             else:
                 with rv.Row(
-                    style_="gap:6rem; flex-wrap: nowrap;", justify="center" if route_current is not None and route_current.path == "showcase" else "start"
+                    style_="flex-wrap: nowrap; margin: 0; min-height: calc(100vh - 215.5px);",
+                    justify="center" if route_current is not None and route_current.path in ["documentation", "showcase"] else "start",
                 ):
                     if route_current is not None and hasattr(route_current.module, "Sidebar"):
                         route_current.module.Sidebar()  # type: ignore
                     else:
-                        if route_current is not None and route_current.path != "showcase":
+                        if route_current is not None and route_current.path not in ["documentation", "showcase", "contact", "changelog"]:
                             Sidebar()
-                    with rv.Col(tag="main", md=True, class_="pt-12 pl-12 pr-10", style_="max-width: 1024px; overflow: auto;"):
+                    with rv.Col(
+                        tag="main",
+                        md=True,
+                        class_="pa-0",
+                        style_=f"""max-width: {'1024px' if route_current.path not in ['documentation', 'contact', 'changelog']
+                                               else 'unset'}; overflow: hidden auto;""",
+                    ):
                         if route_current is not None and route_current.path == "/":
                             with rv.Row(align="center"):
                                 pass
-                                # with rv.Col(md=6, class_="pa-0"):
-                                #     rv.Html(tag="h1", children=["Live Demo"])
-                                # with rv.Col(md=6, class_="d-flex", style_="justify-content: end"):
-                                #     rv.Btn(elevation=0, large=True, children=["Running App"], color="primary", class_="btn-size--xlarge")
-                            # solara.Padding(6)
-                        with rv.Row(children=children, class_="solara-page-content-search"):
+                        with solara.Row(
+                            children=children,
+                            justify="center",
+                            classes=["solara-page-content-search"],
+                            style=f"height: {'100%' if route_current.path == 'documentation' else 'unset'};",
+                        ):
                             pass
 
             # absolute = True prevents the drawer from being below the overlay it generates
@@ -344,7 +548,6 @@ def Testimonial(text, name, position, img):
         max_width=max_width,
         class_="testimonial-card",
     ):
-        # rv.CardTitle(children=["Former Plotly CEO"])
         with rv.CardActions():
             with rv.ListItem(class_="grow"):
                 with rv.ListItemAvatar(color="grey darken-3"):

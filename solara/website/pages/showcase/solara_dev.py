@@ -22,7 +22,7 @@ def Page():
 
         Solara.dev is designed to be responsive, working seamlessly on both desktop and mobile devices.
         On smaller screens, the top navigation bar is replaced with a drawer for easy navigation.
-        The [`ColumnsResponsive`](/api/columns_responsive) component can be used to create responsive content layouts.
+        The [`ColumnsResponsive`](/documentation/components/layout/columns_responsive) component can be used to create responsive content layouts.
 
         """
         )
