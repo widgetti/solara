@@ -1,12 +1,15 @@
 import base64
 import contextlib
+import gzip
 import hashlib
+import json
 import os
 import sys
 import threading
 from collections import abc
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Tuple, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
+from urllib.parse import urlencode
 
 if TYPE_CHECKING:
     import numpy as np
@@ -26,6 +29,19 @@ def github_url(file):
     rel_path = os.path.relpath(file, Path(solara.__file__).parent.parent)
     github_url = solara.github_url + f"/blob/{solara.git_branch}/" + rel_path
     return github_url
+
+
+def pycafe_url(*, path: Path, requirements: Optional[List[str]] = None):
+    json_object = {"code": path.read_text("utf8")}
+    if requirements:
+        json_object["requirements"] = "\n".join(requirements)
+    json_text = json.dumps(json_object)
+    # gzip -> base64
+    compressed_json_text = gzip.compress(json_text.encode("utf8"))
+    base64_text = base64.b64encode(compressed_json_text).decode("utf8")
+    query = urlencode({"c": base64_text})
+    base_url = "https://app.py.cafe"
+    return f"{base_url}/snippet/solara?{query}"
 
 
 def github_edit_url(file):
