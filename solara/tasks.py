@@ -32,12 +32,7 @@ P = typing_extensions.ParamSpec("P")
 
 logger = logging.getLogger("solara.task")
 
-try:
-    threading.Thread(target=lambda: None).start()
-    has_threads = True
-except RuntimeError:
-    has_threads = False
-has_threads
+has_threads = solara.util.has_threads
 
 
 class TaskState(Enum):

@@ -21,6 +21,12 @@ SOLARA_ALLOW_OTHER_TRACER = os.environ.get("SOLARA_ALLOW_OTHER_TRACER", False) i
 ipyvuetify_major_version = int(ipyvuetify.__version__.split(".")[0])
 ipywidgets_major = int(ipywidgets.__version__.split(".")[0])
 
+try:
+    threading.Thread(target=lambda: None).start()
+    has_threads = True
+except RuntimeError:
+    has_threads = False
+
 
 def github_url(file):
     rel_path = os.path.relpath(file, Path(solara.__file__).parent.parent)
