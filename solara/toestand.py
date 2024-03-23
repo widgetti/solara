@@ -749,9 +749,9 @@ class AutoSubscribeContextManagerReacton(AutoSubscribeContextManagerBase):
 
 
 class AutoSubscribeContextManager(AutoSubscribeContextManagerBase):
-    on_change: Callable[[], None]
+    on_change: Callable[[Any, Any], None]
 
-    def __init__(self, on_change: Callable[[], None]):
+    def __init__(self, on_change: Callable[[Any, Any], None]):
         super().__init__()
         self.on_change = on_change
 
