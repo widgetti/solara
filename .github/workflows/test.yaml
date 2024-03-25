@@ -420,7 +420,7 @@ jobs:
           find packages/solara-enterprise/dist/ -name '*.whl' -exec pip install {}\[ssg,auth\] \;
           pip install "jupyterlab<4" diskcache redis "ipywidgets~=${{ matrix.ipywidgets }}"
           pip freeze --exclude solara --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
-          git diff --quiet && echo "::set-output name=has_diff::true"
+          git diff --quiet || echo "::set-output name=has_diff::true"
 
       - name: Install
         if: github.event_name != 'schedule' && steps.prepare.outputs.locks_exist == 'true'
