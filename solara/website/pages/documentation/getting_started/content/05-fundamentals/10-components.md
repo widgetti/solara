@@ -1,3 +1,8 @@
+---
+title: Introduction to Solara components
+description: In Solara, components are the building blocks of your web application. They allow you to create modular, reusable, and maintainable user interface elements
+    that can be combined to create a complete and interactive application
+---
 <!-- TODO: column auto -->
 
 # Introduction to Components

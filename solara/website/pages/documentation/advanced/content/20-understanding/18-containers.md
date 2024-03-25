@@ -1,3 +1,9 @@
+---
+title: Using Solara with containers to build complex UIs
+description: Solara allows for using python with statements to populate your UIs in a structured manner. This makes it easy to compose different components to build cohesive
+    wholes.
+---
+
 # Laying out components with containers
 
 ## Introduction
