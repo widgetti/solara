@@ -82,6 +82,7 @@ def Page(children=[]):
 @solara.component
 def Sidebar():
     route_current, all_routes = solara.use_route()
+    router = solara.use_router()
     if route_current is None:
         return solara.Error("Page not found")
 
@@ -89,11 +90,11 @@ def Sidebar():
         clipped=True, width="20rem", height="unset", style_="min-height: calc(100vh - 215.5px);", class_="d-none d-md-block"
     ) as main:
         with solara.v.List(expand=True, nav=True, style_="height: calc(100vh - 215.5px); display: flex; flex-direction: column;"):
-            with solara.v.ListItemGroup():
+            with solara.v.ListItemGroup(v_model=router.path):
                 for route in all_routes:
                     if len(route.children) == 1 or route.path == "/":
                         with solara.Link("/documentation/" + route.path if route.path != "/" else "/documentation"):
-                            with solara.v.ListItem():
+                            with solara.v.ListItem(value="/documentation/" + route.path if route.path != "/" else "/documentation"):
                                 if route.path == "/":
                                     solara.v.ListItemIcon(children=[solara.v.Icon(children=["mdi-home"])])
                                 solara.v.ListItemTitle(style_="padding: 0 20px;", children=[route.label])
@@ -107,7 +108,8 @@ def Sidebar():
                                         style_="padding: 0 20px;",
                                     ),
                                 }
-                            ]
+                            ],
+                            value=router.path.startswith("/documentation/" + route.path),
                         ):
                             for item in route.children:
                                 if item.path == "/":
@@ -124,6 +126,7 @@ def Sidebar():
                                         ],
                                         sub_group=True,
                                         no_action=True,
+                                        value=router.path.startswith("/documentation/" + route.path + "/" + item.path),
                                     ):
                                         for subitem in item.children:
                                             # skip pages that are only used to demonstrate Link or Router usage
@@ -137,19 +140,19 @@ def Sidebar():
                                             with solara.Link(
                                                 path,
                                             ):
-                                                with solara.v.ListItem(dense=True, style_="padding: 0 20px;"):
+                                                with solara.v.ListItem(dense=True, style_="padding: 0 20px;", value=path):
                                                     solara.v.ListItemContent(
                                                         children=[subitem.label],
                                                     )
-                            else:
-                                with solara.v.ListItemGroup():
-                                    with solara.Link(
-                                        "/documentation/" + route.path + "/" + item.path,
-                                    ):
-                                        with solara.v.ListItem(dense=True, style_="padding: 0 20px;"):
-                                            solara.v.ListItemContent(
-                                                children=[item.label],
-                                            )
+                                else:
+                                    with solara.v.ListItemGroup(value="/documentation/" + route.path + "/" + item.path):
+                                        with solara.Link(
+                                            "/documentation/" + route.path + "/" + item.path,
+                                        ):
+                                            with solara.v.ListItem(dense=True, style_="padding: 0 20px;"):
+                                                solara.v.ListItemContent(
+                                                    children=[item.label],
+                                                )
             solara.v.Spacer(style_="flex-grow: 1;")
             with solara.v.ListItemGroup():
                 with solara.Link("/contact"):

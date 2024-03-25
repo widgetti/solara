@@ -31,7 +31,6 @@ def test_docs_basics(page_session: playwright.sync_api.Page, solara_server, sola
         page_session.locator("text=+/-").wait_for()
         page_session.screenshot(path="tmp/screenshot_calculator.png")
 
-        page_session.locator("text=Examples").first.click()
         page_session.locator("text=Libraries").first.click()
         page_session.locator("text=Bqplot").first.click()
         page_session.locator("text=Exponent").wait_for()
