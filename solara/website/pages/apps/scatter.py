@@ -1,3 +1,5 @@
+import pathlib
+import sys
 from typing import Optional, cast
 
 import pandas as pd
@@ -9,11 +11,11 @@ from solara.components.columns import Columns
 from solara.components.file_drop import FileDrop
 
 github_url = solara.util.github_url(__file__)
-try:
-    # fails on pyodide
-    df_sample = pd.read_csv("https://raw.githubusercontent.com/plotly/datasets/master/gapminderDataFiveYear.csv")
-except:  # noqa
-    df_sample = None
+if sys.platform != "emscripten":
+    pycafe_url = solara.util.pycafe_url(path=pathlib.Path(__file__), requirements=["solara", "pandas", "plotly"])
+else:
+    pycafe_url = None
+df_sample = pd.read_csv("https://raw.githubusercontent.com/plotly/datasets/master/gapminderDataFiveYear.csv")
 
 
 class State:
@@ -72,7 +74,10 @@ def Page():
                 with solara.Row():
                     solara.Button("Sample dataset", color="primary", text=True, outlined=True, on_click=State.load_sample, disabled=df is not None)
                     solara.Button("Clear dataset", color="primary", text=True, outlined=True, on_click=State.reset)
-                FileDrop(on_file=State.load_from_file, on_total_progress=lambda *args: None, label="Drag file here")
+                if sys.platform != "emscripten":
+                    FileDrop(on_file=State.load_from_file, on_total_progress=lambda *args: None, label="Drag file here")
+                else:
+                    solara.Info("File upload not supported in this environment")
 
                 if df is not None:
                     solara.SliderFloat(label="Size", value=State.size_max, min=1, max=100)
@@ -112,7 +117,16 @@ def Page():
     else:
         solara.Info("No data loaded, click on the sample dataset button to load a sample dataset, or upload a file.")
 
-    solara.Button(label="View source", icon_name="mdi-github-circle", attributes={"href": github_url, "target": "_blank"}, text=True, outlined=True)
+    with solara.Column(style={"max-width": "400px"}):
+        solara.Button(label="View source", icon_name="mdi-github-circle", attributes={"href": github_url, "target": "_blank"}, text=True, outlined=True)
+        if sys.platform != "emscripten":
+            solara.Button(
+                label="Edit this example live on py.cafe",
+                icon_name="mdi-coffee-to-go-outline",
+                attributes={"href": pycafe_url, "target": "_blank"},
+                text=True,
+                outlined=True,
+            )
 
 
 @solara.component
