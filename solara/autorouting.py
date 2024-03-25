@@ -509,7 +509,7 @@ def _generate_route_path(subpath: Path, layout=None, first=False, has_index=Fals
         component = markdown_renderer
         reload.reloader.watcher.add_file(subpath)
     elif subpath.is_dir():
-        children = generate_routes_directory(subpath)
+        children = generate_routes_directory(subpath, markdown_renderer=markdown_renderer)
     else:
         reload.reloader.watcher.add_file(subpath)
         module = source_to_module(subpath, initial_namespace=initial_namespace)
