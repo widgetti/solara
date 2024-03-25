@@ -1,4 +1,10 @@
 import asyncio
+
+try:
+    import contextvars
+except ModuleNotFoundError:
+    contextvars = None  # type: ignore
+
 import dataclasses
 import enum
 import inspect
@@ -7,6 +13,7 @@ import os
 import pickle
 import threading
 import time
+import typing
 from pathlib import Path
 from types import FrameType, ModuleType
 from typing import Any, Callable, Dict, List, NamedTuple, Optional, cast
@@ -292,12 +299,35 @@ def create_dummy_context():
     return kernel_context
 
 
+if contextvars is not None:
+    if typing.TYPE_CHECKING:
+        async_context_id = contextvars.ContextVar[str]("async_context_id")
+    else:
+        async_context_id = contextvars.ContextVar("async_context_id")
+    async_context_id.set("default")
+else:
+    async_context_id = None
+
+
 def get_current_thread_key() -> str:
-    thread = threading.current_thread()
-    return get_thread_key(thread)
+    if not solara.server.settings.kernel.threaded:
+        if async_context_id is not None:
+            try:
+                key = async_context_id.get()
+            except LookupError:
+                raise RuntimeError("no kernel context set")
+        else:
+            raise RuntimeError("No threading support, and no contextvars support (Python 3.6 is not supported for this)")
+    else:
+        thread = threading.current_thread()
+        key = get_thread_key(thread)
+    return key
 
 
 def get_thread_key(thread: threading.Thread) -> str:
+    if not solara.server.settings.kernel.threaded:
+        if async_context_id is not None:
+            return async_context_id.get()
     thread_key = thread._name + str(thread._ident)  # type: ignore
     return thread_key
 
@@ -355,6 +385,7 @@ def initialize_virtual_kernel(session_id: str, kernel_id: str, websocket: websoc
             widgets.register_comm_target(kernel)
             appmodule.register_solara_comm_target(kernel)
     with context:
+        assert has_current_context()
         assert kernel is Kernel.instance()
         kernel.shell_stream = WebsocketStreamWrapper(websocket, "shell")
         kernel.control_stream = WebsocketStreamWrapper(websocket, "control")

@@ -6,7 +6,7 @@ import os
 import sys
 import threading
 import typing
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any, Dict, List, Optional, Set, Union, cast
 from uuid import uuid4
 
 import anyio
@@ -96,10 +96,14 @@ class WebsocketDebugInfo:
 class WebsocketWrapper(websocket.WebsocketWrapper):
     ws: starlette.websockets.WebSocket
 
-    def __init__(self, ws: starlette.websockets.WebSocket, portal: anyio.from_thread.BlockingPortal) -> None:
+    def __init__(self, ws: starlette.websockets.WebSocket, portal: Optional[anyio.from_thread.BlockingPortal]) -> None:
         self.ws = ws
         self.portal = portal
         self.to_send: List[Union[str, bytes]] = []
+        # following https://docs.python.org/3/library/asyncio-task.html#asyncio.create_task
+        # we store a strong reference
+        self.tasks: Set[asyncio.Task] = set()
+        self.event_loop = asyncio.get_event_loop()
         if settings.main.experimental_performance:
             self.task = asyncio.ensure_future(self.process_messages_task())
 
@@ -114,28 +118,44 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
                     await self.ws.send_text(first)
 
     def close(self):
-        self.portal.call(self.ws.close)  # type: ignore
+        if self.portal is None:
+            asyncio.ensure_future(self.ws.close())
+        else:
+            self.portal.call(self.ws.close)  # type: ignore
 
     def send_text(self, data: str) -> None:
-        if settings.main.experimental_performance:
-            self.to_send.append(data)
+        if self.portal is None:
+            task = self.event_loop.create_task(self.ws.send_text(data))
+            self.tasks.add(task)
+            task.add_done_callback(self.tasks.discard)
         else:
-            self.portal.call(self.ws.send_bytes, data)  # type: ignore
+            if settings.main.experimental_performance:
+                self.to_send.append(data)
+            else:
+                self.portal.call(self.ws.send_bytes, data)  # type: ignore
 
     def send_bytes(self, data: bytes) -> None:
-        if settings.main.experimental_performance:
-            self.to_send.append(data)
+        if self.portal is None:
+            task = self.event_loop.create_task(self.ws.send_bytes(data))
+            self.tasks.add(task)
+            task.add_done_callback(self.tasks.discard)
         else:
-            self.portal.call(self.ws.send_bytes, data)  # type: ignore
+            if settings.main.experimental_performance:
+                self.to_send.append(data)
+            else:
+                self.portal.call(self.ws.send_bytes, data)  # type: ignore
 
     async def receive(self):
-        if hasattr(self.portal, "start_task_soon"):
-            # version 3+
-            fut = self.portal.start_task_soon(self.ws.receive)  # type: ignore
+        if self.portal is None:
+            message = await asyncio.ensure_future(self.ws.receive())
         else:
-            fut = self.portal.spawn_task(self.ws.receive)  # type: ignore
+            if hasattr(self.portal, "start_task_soon"):
+                # version 3+
+                fut = self.portal.start_task_soon(self.ws.receive)  # type: ignore
+            else:
+                fut = self.portal.spawn_task(self.ws.receive)  # type: ignore
 
-        message = await asyncio.wrap_future(fut)
+            message = await asyncio.wrap_future(fut)
         if "text" in message:
             return message["text"]
         elif "bytes" in message:
@@ -237,35 +257,45 @@ async def _kernel_connection(ws: starlette.websockets.WebSocket):
         WebsocketDebugInfo.connecting -= 1
         WebsocketDebugInfo.open += 1
 
-    def websocket_thread_runner(ws: starlette.websockets.WebSocket, portal: anyio.from_thread.BlockingPortal):
-        async def run():
+    async def run(ws_wrapper: WebsocketWrapper):
+        if kernel_context.async_context_id is not None:
+            kernel_context.async_context_id.set(uuid4().hex)
+        assert session_id is not None
+        assert kernel_id is not None
+        telemetry.connection_open(session_id)
+        headers_dict: Dict[str, List[str]] = {}
+        for k, v in ws.headers.items():
+            if k not in headers_dict.keys():
+                headers_dict[k] = [v]
+            else:
+                headers_dict[k].append(v)
+        await server.app_loop(ws_wrapper, ws.cookies, headers_dict, session_id, kernel_id, page_id, user)
+
+    def websocket_thread_runner(ws_wrapper: WebsocketWrapper, portal: anyio.from_thread.BlockingPortal):
+        async def run_wrapper():
             try:
-                assert session_id is not None
-                assert kernel_id is not None
-                telemetry.connection_open(session_id)
-                headers_dict: Dict[str, List[str]] = {}
-                for k, v in ws.headers.items():
-                    if k not in headers_dict.keys():
-                        headers_dict[k] = [v]
-                    else:
-                        headers_dict[k].append(v)
-                await server.app_loop(ws_wrapper, ws.cookies, headers_dict, session_id, kernel_id, page_id, user)
+                await run(ws_wrapper)
             except:  # noqa
-                await portal.stop(cancel_remaining=True)
+                if portal is not None:
+                    await portal.stop(cancel_remaining=True)
                 raise
             finally:
                 telemetry.connection_close(session_id)
 
         # sometimes throws: RuntimeError: Already running asyncio in this thread
-        anyio.run(run)  # type: ignore
+        anyio.run(run_wrapper)  # type: ignore
 
     # this portal allows us to sync call the websocket calls from this current event loop we are in
     # each websocket however, is handled from a separate thread
     try:
-        async with anyio.from_thread.BlockingPortal() as portal:
-            ws_wrapper = WebsocketWrapper(ws, portal)
-            thread_return = anyio.to_thread.run_sync(websocket_thread_runner, ws, portal, limiter=limiter)  # type: ignore
-            await thread_return
+        if settings.kernel.threaded:
+            async with anyio.from_thread.BlockingPortal() as portal:
+                ws_wrapper = WebsocketWrapper(ws, portal)
+                thread_return = anyio.to_thread.run_sync(websocket_thread_runner, ws_wrapper, portal, limiter=limiter)  # type: ignore
+                await thread_return
+        else:
+            ws_wrapper = WebsocketWrapper(ws, None)
+            await run(ws_wrapper)
     finally:
         if settings.main.experimental_performance:
             try:

@@ -295,7 +295,10 @@ def _WidgetContextAwareThread__bootstrap(self):
         # we need to call this manually, because set_context_for_thread
         # uses this, and the original _bootstrap calls it too late for us
         self._set_ident()
+        if kernel_context.async_context_id is not None:
+            kernel_context.async_context_id.set(self.current_context.id)
         kernel_context.set_context_for_thread(self.current_context, self)
+
         shell = self.current_context.kernel.shell
         shell.display_pub.register_hook(shell.display_in_reacton_hook)
     try:

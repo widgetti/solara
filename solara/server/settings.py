@@ -86,6 +86,7 @@ class Assets(BaseSettings):
 class Kernel(BaseSettings):
     cull_timeout: str = "24h"
     max_count: Optional[int] = None
+    threaded: bool = solara.util.has_threads
 
     class Config:
         env_prefix = "solara_kernel_"

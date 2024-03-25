@@ -3,6 +3,7 @@ from pathlib import Path
 
 import playwright
 import playwright.sync_api
+import pytest
 import reacton.ipywidgets as w
 
 import solara
@@ -154,3 +155,43 @@ def test_run_in_iframe(page_session: playwright.sync_api.Page, solara_server, so
         iframe = page_session.frame("main")
         el = iframe.locator(".jupyter-widgets")
         assert el.text_content() == "Hello world"
+
+
+@solara.component
+def ClickTaskButton():
+    count = solara.use_reactive(0)
+
+    @solara.lab.use_task(dependencies=None)
+    def on_click():
+        count.value += 1
+
+    return solara.Button(f"Clicked: {count}", on_click=on_click)
+
+
+def test_kernel_asyncio(browser: playwright.sync_api.Browser, solara_server, solara_app, extra_include_path, request):
+    if request.node.callspec.params["solara_server"] != "starlette":
+        pytest.skip("Async is only supported on starlette.")
+        return
+    # ClickTaskButton also tests the use of tasks
+    try:
+        threaded = solara.server.settings.kernel.threaded
+        solara.server.settings.kernel.threaded = False
+        with extra_include_path(HERE), solara_app("server_test:ClickTaskButton"):
+            context1 = browser.new_context()
+            page1 = context1.new_page()
+            page1.goto(solara_server.base_url)
+            page1.locator("text=Clicked: 0").click()
+            page1.locator("text=Clicked: 1").click()
+            context2 = browser.new_context()
+            page2 = context2.new_page()
+            page2.goto(solara_server.base_url)
+            page2.locator("text=Clicked: 0").click()
+            page2.locator("text=Clicked: 1").click()
+            page1.locator("text=Clicked: 2").wait_for()
+            page2.locator("text=Clicked: 2").wait_for()
+    finally:
+        page1.close()
+        page2.close()
+        context1.close()
+        context2.close()
+        solara.server.settings.kernel.threaded = threaded
