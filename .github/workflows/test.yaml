@@ -434,6 +434,7 @@ jobs:
         uses: shogo82148/actions-setup-redis@v1
 
       - name: test
+        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.has_diff == true
         run: pytest tests/unit --doctest-modules --timeout=60
 
       - name: Upload CI package locks
