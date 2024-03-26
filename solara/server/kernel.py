@@ -5,7 +5,7 @@ import queue
 import struct
 import warnings
 from binascii import b2a_base64
-from datetime import datetime
+from datetime import date, datetime
 from typing import Set
 
 import ipykernel
@@ -47,9 +47,11 @@ def json_default(obj):
     if isinstance(obj, datetime):
         obj = _ensure_tzinfo(obj)
         return obj.isoformat().replace("+00:00", "Z")
+    elif isinstance(obj, date):
+        return obj.isoformat()
     elif isinstance(obj, bytes):
         return b2a_base64(obj).decode("ascii")
-    if type(obj).__module__ == "numpy":
+    elif type(obj).__module__ == "numpy":
         import numpy as np
 
         if isinstance(obj, np.number):
