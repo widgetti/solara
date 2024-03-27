@@ -49,6 +49,7 @@ def _get_playwright():
 
     pw.browser = pw.sync_playwright.chromium.launch(headless=not settings.ssg.headed)
     pw.page = pw.browser.new_page()
+    playwrights.append(pw)
     return pw
 
 
@@ -81,12 +82,13 @@ def ssg_crawl(base_url: str):
 
     for result in results:
         wait(result)
-    thread_pool.terminate()
+    thread_pool.close()
+    thread_pool.join()
     for pw in playwrights:
         assert pw.browser is not None
         assert pw.context_manager is not None
         pw.browser.close()
-        pw.context_manager.stop()
+        pw.context_manager.__exit__(None, None, None)
 
     rprint("Done building SSG")
 
