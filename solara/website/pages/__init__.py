@@ -1,6 +1,7 @@
 import contextlib
 
 import solara
+from solara import autorouting
 from solara.alias import rv
 from solara.components.title import Title
 from solara.server import server
@@ -13,7 +14,7 @@ title = "Home"
 route_order = ["/", "showcase", "documentation", "apps", "contact", "changelog"]
 
 
-server._redirects = {
+_redirects = {
     "/docs": "/documentation/getting_started/introduction",
     "/docs/installing": "/documentation/getting_started/installing",
     "/docs/quickstart": "/documentation/getting_started",
@@ -111,12 +112,18 @@ server._redirects = {
     "/api/use_thread": "/documentation/api/hooks/use_thread",
     "/api/use_trait_observe": "/documentation/api/hooks/use_trait_observe",
     "/examples/fullscreen": "/documentation/examples/fullscreen",
-    "/examples/fullscreen/authorization": "/documentation/examples/fullscreen/authorization",
-    "/examples/fullscreen/layout_demo": "/documentation/examples/fullscreen/layout_demo",
-    "/examples/fullscreen/multipage": "/documentation/examples/fullscreen/multipage",
-    "/examples/fullscreen/scatter": "/documentation/examples/fullscreen/scatter",
-    "/examples/fullscreen/scrolling": "/documentation/examples/fullscreen/scrolling",
-    "/examples/fullscreen/tutorial_streamlit": "/documentation/examples/fullscreen/tutorial_streamlit",
+    "/examples/fullscreen/authorization": "/apps/authorization",
+    "documentation/examples/fullscreen/authorization": "/apps/authorization",
+    "/examples/fullscreen/layout-demo": "/apps/layout-demo",
+    "/documentation/examples/fullscreen/layout-demo": "/apps/layout-demo",
+    "/examples/fullscreen/multipage": "/apps/multipage",
+    "/documentation/examples/fullscreen/multipage": "/apps/multipage",
+    "/examples/fullscreen/scatter": "apps/scatter",
+    "/documentation/examples/fullscreen/scatter": "/apps/scatter",
+    "/examples/fullscreen/scrolling": "/apps/scrolling",
+    "/documentation/examples/fullscreen/scrolling": "/apps/scrolling",
+    "/examples/fullscreen/tutorial-streamlit": "/apps/tutorial-streamlit",
+    "/documentation/examples/fullscreen/tutorial-streamlit": "/apps/tutorial-streamlit",
     "/api/route": "/documentation/api/routing/route",
     "/api/route/kiwi": "/documentation/api/routing/route/kiwi",
     "/api/route/banana": "/documentation/api/routing/route/banana",
@@ -205,6 +212,10 @@ server._redirects = {
     "/api/default_layout": "/documentation/components/layout",
     "/api/title": "/documentation/components/page/title",
 }
+
+
+server._redirects = _redirects
+autorouting._redirects = _redirects
 
 
 @solara.component
