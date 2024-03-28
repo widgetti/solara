@@ -33,6 +33,7 @@ from .togglebuttons import (  # noqa: #F401 F403
     ToggleButtonsSingle,
 )
 from .input import InputText, InputFloat, InputInt  # noqa: #F401 F403
+from .input_text_area import InputTextArea
 from .pivot_table import PivotTableView, PivotTable, PivotTableCard  # noqa: #F401 F403
 from .head import Head  # noqa: #F401 F403
 from .title import Title  # noqa: #F401 F403
