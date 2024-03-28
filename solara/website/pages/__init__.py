@@ -247,6 +247,8 @@ def Sidebar():
             for route in all_routes:
                 if route.children and route.data is None:
                     path = solara.resolve_path(route.children[0])
+                    path = getattr(route.module, "redirect", path)
+                    path = getattr(route.children[0].module, "redirect", path)
                     with solara.Link(path) if path is not None else contextlib.nullcontext():
                         with SimpleListItem(route.label, class_="active" if path == selected else None):
                             with List():
