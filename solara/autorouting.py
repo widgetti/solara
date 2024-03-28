@@ -24,6 +24,7 @@ DEBUG = False
 solara_root = Path(solara.__file__).parent
 
 DefaultLayout = solara.AppLayout
+_redirects: Dict[str, str] = {}
 
 
 def source_to_module(path: Path, initial_namespace={}) -> ModuleType:
@@ -89,12 +90,19 @@ def arg_cast(args: List[str], f: Callable):
 def RoutingProvider(children: List[reacton.core.Element] = [], routes: List[solara.Route] = [], pathname: str = ""):
     """Wraps the app, adds extra context, like navigation/routing."""
     path, set_path = solara.use_state(pathname, key="solara-context-path")
+
+    def set_path_with_redirect(path):
+        # path = _resolve_redirect(path, routes)
+        path = _redirects.get(path, path)
+        # redirects
+        set_path(path)
+
     # TODO: since we provide a cross filter context here, I don't think name `RoutingProvider` is a good name
     # we might want to change/refactor this.
     solara.provide_cross_filter()
-    nav = solara.Navigator(location=path, on_location=set_path)
-    solara.routing._location_context.provide(solara.routing._Location(path, set_path))
-    solara.routing.router_context.provide(solara.routing.Router(path, routes=routes, set_path=set_path))
+    nav = solara.Navigator(location=path, on_location=set_path_with_redirect)
+    solara.routing._location_context.provide(solara.routing._Location(path, set_path_with_redirect))
+    solara.routing.router_context.provide(solara.routing.Router(path, routes=routes, set_path=set_path_with_redirect))
 
     def get_nav_widget():
         # not sure why get_widget(nav) does not work
