@@ -272,10 +272,17 @@ class KernelStoreValue(KernelStore[S]):
         self.default_value = default_value
         cls = type(default_value)
         if key is None:
+            import inspect
+
+            for frame in inspect.stack():
+                file = frame.filename
+                if not (file.endswith("solara/toestand.py") or file.endswith("solara/reactive.py")):
+                    break
+
             with KernelStoreValue.scope_lock:
                 index = self._type_counter[cls]
                 self._type_counter[cls] += 1
-            key = cls.__module__ + ":" + cls.__name__ + ":" + str(index)
+            key = file + ":" + cls.__name__ + ":" + str(index)
         super().__init__(key=key)
 
     def initial_value(self) -> S:
@@ -290,13 +297,18 @@ class KernelStoreFactory(KernelStore[S]):
         except Exception:
             prefix = repr(factory)
         if key is None:
+            import inspect
+
+            for frame in inspect.stack():
+                file = frame.filename
+                if not (file.endswith("solara/toestand.py") or file.endswith("solara/reactive.py")):
+                    break
+
             with KernelStore.scope_lock:
                 index = self._type_counter[prefix]
                 self._type_counter[prefix] += 1
-            try:
-                key = factory.__module__ + ":" + prefix + ":" + str(index)
-            except Exception:
-                key = prefix + ":" + str(index)
+
+            key = file + ":" + prefix + ":" + str(index)
         super().__init__(key=key)
 
     def initial_value(self) -> S:
