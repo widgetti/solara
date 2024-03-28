@@ -145,7 +145,7 @@ def RenderPage(main_name: str = "Page"):
 
     layouts = []  # nested layouts
     level_max = len(router.path_routes) - 1
-    for level in range(level_max + 1):
+    for level in range(len(router.path_routes)):
         # we always level_start the 'package'/'root' layout
         roots = [k for k in router.path_routes_siblings[level] if k.path == "/"]
         if len(roots) == 1:
@@ -156,20 +156,21 @@ def RenderPage(main_name: str = "Page"):
         # and, if not the root layout, include the layout for the current route
         if route.path != "/" and route.layout:
             layouts.append(route.layout)
-        # used in for example the docs for use_route, only the route path are specified,
-        # nothing else, which means we will not follow that route path, but limit it to rendering
-        # router.path_routes[level_max] instead. It's assumed that component (Page) will continue
-        # handling the rest of the routing
-        if route.data is None and route.module is None and route.component is None:
-            level_max = level - 1
+        # We found the leaf (or node) that defines a component or markdown file
+        if (route.file and route.file.suffix == ".md") or route.component:
+            level_max = level
+            break
+
     route_current = router.path_routes[level_max]
     routes_siblings = router.path_routes_siblings[level_max]
     routes_siblings_index = routes_siblings.index(route_current)
+
     # if no layouts are found, we use the default layout
     if layouts == []:
         layouts = [DefaultLayout]
-    if route_current.data is None and route_current.module is None and route_current.component is None:
-        return solara.Error(f"Page not found: {router.path}, route does not link to a path or module or component")
+
+    if route_current.component is None and route_current.module is None and (route_current.file is None or route_current.file.suffix != ".md"):
+        return solara.Error(f"Page not found: {router.path}, route does not link to a (markdown) path or module or component")
 
     def wrap_in_layouts(element: reacton.core.Element, layouts):
         for Layout in reversed(layouts):
@@ -401,7 +402,6 @@ def generate_routes(module: ModuleType) -> List[solara.Route]:
         reload.reloader.watcher.add_file(module.__file__)
         for info in pkgutil.iter_modules([str(Path(module.__file__).parent)]):
             submod = importlib.import_module(module.__name__ + f".{info.name}")
-            subfile = Path(submod.__file__) if submod.__file__ is not None else None
             title = get_title(submod)
 
             name = info.name
@@ -409,9 +409,11 @@ def generate_routes(module: ModuleType) -> List[solara.Route]:
             # however, this may break things.
             # name = name.replace("_", "-")
             if info.ispkg:
-                route = solara.Route(
-                    name, component=get_page(submod, required=False), children=generate_routes(submod), module=submod, layout=None, label=title
-                )
+                # we are in a package, like 'portal/solara_portal/pages', not the module itself
+                # (e.g. portal/solara_portal/pages/__init__.py)
+                # so here name='pages', and the children will come from the submodules
+                children = generate_routes(submod)
+                route = solara.Route(name, component=None, children=children, module=submod, layout=None, label=title)
                 # skip empty subpackages
                 if len(route.children) == 0:
                     continue
@@ -419,13 +421,7 @@ def generate_routes(module: ModuleType) -> List[solara.Route]:
                 # skip empty modules
                 if get_renderable(submod) is None and not hasattr(submod, "routes"):
                     continue
-                children = getattr(submod, "routes", [])
-                if subfile:
-                    children = fix_routes(children, subfile)
-                module_layout = getattr(submod, "Layout", None)
-                route = solara.Route(
-                    name, component=get_page(submod, required=False), module=submod, layout=module_layout, children=children, label=title, file=subfile
-                )
+                route = _generate_route(name, submod)
             routes.append(route)
         if route_order:
             lookup = {k.path: k for k in routes}
@@ -437,27 +433,7 @@ def generate_routes(module: ModuleType) -> List[solara.Route]:
                 warnings.warn(f"Some routes are not in route_order: {set(lookup) - set(route_order)}")
 
     else:
-        layout = getattr(module, "Layout", None)
-        children = []
-        if hasattr(module, "routes"):
-            children = getattr(module, "routes", [])
-            root = get_root(children)
-            if layout is not None and root is not None and root.layout is None:
-                warnings.warn(f'You defined routes in {file}, in this case, layout should be set on the root route (with path="/"), not on the module level')
-                layout = None
-        children = fix_routes(children, file, layout)
-        return [
-            solara.Route(
-                path="/",
-                component=get_page(module, required=False),
-                data=None,
-                module=module,
-                label=get_title(module),
-                layout=layout,
-                children=children,
-                file=file,
-            )
-        ]
+        return [_generate_route("/", module)]
 
     return routes
 
@@ -527,24 +503,29 @@ def _generate_route_path(subpath: Path, layout=None, first=False, has_index=Fals
     else:
         reload.reloader.watcher.add_file(subpath)
         module = source_to_module(subpath, initial_namespace=initial_namespace)
-        title = get_title(module)
-        layout = getattr(module, "Layout", module_layout)
-        root = get_root(children)
-        if hasattr(module, "routes"):
-            children = getattr(module, "routes", [])
-            root = get_root(children)
-            if layout is not None and root is not None and root.layout is None:
-                warnings.warn(f'You defined routes in {subpath}, in this case, layout should be set on the root route (with path="/"), not on the module level')
-                layout = None
-        children = fix_routes(children, subpath, layout)
-        component = get_page(module, required=False)
-        if root and component and root.component and component is not root.component:
-            warnings.warn(
-                f"In {subpath}, you defined a Page component, but also a component on the root route (with path='/') "
-                "which is not equal to the Page component at the module level. This is not recommended."
-            )
+        return _generate_route(route_path, module, default_layout=module_layout)
     route = solara.Route(route_path, component=component, module=module, label=title, children=children, data=data, layout=layout, file=subpath)
     return route
+
+
+def _generate_route(route_path: str, module: ModuleType, default_layout=None, data=None) -> solara.Route:
+    path = Path(module.__file__) if module.__file__ is not None else None
+    title = get_title(module)
+    layout = getattr(module, "Layout", default_layout)
+    if inspect.isclass(layout) and issubclass(layout, ipywidgets.Layout):
+        layout = None
+    component = None
+    children = getattr(module, "routes", [])
+    root_route = get_root(children)
+    # if we have no children or the children have no explicit root component (at '/')
+    if not children or (root_route and root_route.component is None):
+        component = get_page(module, required=False)
+    if root_route and component and root_route.component and component is not root_route.component:
+        warnings.warn(
+            f"In {path}, you defined a Page component, but also a component on the root route (with path='/') "
+            "which is not equal to the Page component at the module level. This is not recommended."
+        )
+    return solara.Route(route_path, component=component, module=module, label=title, children=children, data=data, layout=layout, file=path)
 
 
 def get_root(routes: List[solara.Route]) -> Optional[solara.Route]:

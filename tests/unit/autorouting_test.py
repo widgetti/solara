@@ -178,6 +178,11 @@ def test_routes_directory():
     title = rc._find(TitleWidget).widget
     assert "My Fruit" == title.title
 
+    nav.location = "my-fruit/kiwi"
+    title = rc._find(TitleWidget).widget
+    assert "My Fruit" == title.title
+    template = rc.find(v.Btn).widget.children[0] == "You chose kiwi"
+
     nav.location = "/some-markdown"
     title = rc._find(TitleWidget).widget
     assert "Some Markdown" == title.title
@@ -193,6 +198,9 @@ def test_routes_directory():
     assert "Another Markdown" == title.title
     alert = rc._find(v.Alert).widget
     assert "Footer" == alert.children[0]
+
+    nav.location = "/a-directory/not-an-app"
+    rc.find(v.Btn, children=["Reset to initial layout"]).assert_single()
 
     nav.location = "/and-notebooks"
     assert rc._find(v.Slider, label="Language")
