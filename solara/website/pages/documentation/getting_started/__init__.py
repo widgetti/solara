@@ -12,4 +12,4 @@ routes = generate_routes_directory(HERE.parent / "content")
 
 @solara.component
 def Page(route_external=None):
-    solara.Markdown(Path(HERE.parent / "content" / "00-introduction.md").read_text())
+    solara.Markdown(Path(HERE.parent / "content" / "01-introduction.md").read_text())
