@@ -46,6 +46,21 @@ def test_docs_basics(page_session: playwright.sync_api.Page, solara_server, sola
         page_session.locator("text=how to annotate images with").first.wait_for()
 
 
+def test_docs_routes(page_session: playwright.sync_api.Page, solara_server, solara_app):
+    with solara_app("solara.website.pages"):
+        page_session.goto(solara_server.base_url + "/documentation/getting_started/tutorials/streamlit")
+        page_session.locator("text=Streamlit example").first.wait_for()
+
+        page_session.goto(solara_server.base_url + "/documentation/api/routing/use_route/")
+        page_session.locator("text=Go to fruit/banana").wait_for()
+
+        page_session.goto(solara_server.base_url + "/documentation/api/routing/use_route/fruit/fruit/banana")
+        page_session.locator("text=You chose banana").wait_for()
+
+        page_session.locator("text=Wrong fruit").click()
+        page_session.locator("text=Fruit not found, go to banana").wait_for()
+
+
 @solara.component
 def ClickButton():
     count, set_count = solara.use_state(0)
