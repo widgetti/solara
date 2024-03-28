@@ -33,7 +33,7 @@ def Page():
                     solara.Info("two per column on small screens, three per column on large screens")
 ```
 
-[Navigate here to watch this layout in a full browser window](/documentation/examples/fullscreen/layout_demo)
+[Navigate here to watch this layout in a full browser window](/documentation/examples/fullscreen/layout-demo)
 
 The key takeaways are:
 

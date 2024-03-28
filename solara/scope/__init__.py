@@ -50,7 +50,7 @@ def get_kernel_id(ipython_fallback=True) -> str:
     See [Understanding solara server](/docs/understanding/solara-server) for understanding the concept of virtual kernels
     and their lifetime.
 
-    This unique ID can be useful to to implement storing state, scoped to a kernel. See [the scope example](/examples/general/scopes) for an example.
+    This unique ID can be useful to to implement storing state, scoped to a kernel. See [the scope example](/examples/general/custom_storage) for an example.
 
     If `ipython_fallback` is `True` (default), this function will also work in IPython notebooks, where it will return the IPython kernel id.
 
@@ -79,7 +79,8 @@ def get_session_id() -> str:
 
     See [Understanding solara server](/docs/understanding/solara-server#session) for more information about the Solara sessions.
 
-    This unique ID can be useful to to implement storing state, scoped to a browser session. See [the scope example](/examples/general/scopes) for an example.
+    This unique ID can be useful to to implement storing state, scoped to a browser session. See [the scope example](/examples/general/custom_storage)
+    for an example.
     """
     import solara.server.kernel_context
 

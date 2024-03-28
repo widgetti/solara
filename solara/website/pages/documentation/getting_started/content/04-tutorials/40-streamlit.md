@@ -49,7 +49,7 @@ You will see:
 
 Because we do some styling and because the sidebar is already used up, our preview on this page looks slightly different.
 
-[Navigate to /apps/tutorial-streamlit](/documentation/examples/fullscreen/tutorial_streamlit) to see this app fullscreen.
+[Navigate to /apps/tutorial-streamlit](/apps/tutorial-streamlit) to see this app fullscreen.
 
 
 ### Running this example in the notebook

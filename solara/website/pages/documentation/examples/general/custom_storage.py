@@ -10,7 +10,7 @@ function to get a unique id tied to the users browser. This can be used to store
 
 In case you want to store state/data scoped to a user, you can use a similar strategy, but use a unique identifier based on the user,
 instead of the session id. You can take a look at [Our oauth example](examples/general/login_oauth) or
-[the authorization example](/examples/apps/authorization) for inspiration.
+[the authorization example](/apps/authorization) for inspiration.
 
 """
 from typing import Dict
