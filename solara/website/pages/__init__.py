@@ -1,6 +1,7 @@
 import contextlib
 
 import solara
+from solara import autorouting
 from solara.alias import rv
 from solara.components.title import Title
 from solara.server import server
@@ -13,7 +14,7 @@ title = "Home"
 route_order = ["/", "showcase", "documentation", "apps", "contact", "changelog"]
 
 
-server._redirects = {
+_redirects = {
     "/docs": "/documentation/getting_started/introduction",
     "/docs/installing": "/documentation/getting_started/installing",
     "/docs/quickstart": "/documentation/getting_started",
@@ -205,6 +206,10 @@ server._redirects = {
     "/api/default_layout": "/documentation/components/layout",
     "/api/title": "/documentation/components/page/title",
 }
+
+
+server._redirects = _redirects
+autorouting._redirects = _redirects
 
 
 @solara.component
