@@ -1,3 +1,7 @@
+---
+title: Contributing to Solara
+description: You do not need to be a developer to contribute to Solara. We welcome all contributions, bug reports, documentation improvements and code contributions.
+---
 # Contributing to Solara
 
 You do not need to be a developer to contribute to Solara. We welcome all contributions, bug reports, documentation improvements and code contributions.

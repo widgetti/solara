@@ -1,3 +1,7 @@
+---
+title: Troubleshoot issues with your Solara application
+description: It is common to run into some issues when developing your application. See here for best practices for troubleshooting anything you run into
+---
 # Troubleshoot
 
 ## Issues in Jupyter

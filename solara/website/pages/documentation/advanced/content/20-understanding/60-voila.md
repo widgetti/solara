@@ -1,3 +1,8 @@
+---
+title: Working together with Voila
+description: Voilà, together with `voila-vuetify` is an alternative to Solara server. The most significant difference is that Voilà will start one kernel/process
+    per page request, while Solara server is more scalable.
+---
 # Voilà
 
 [Voilà](https://voila.readthedocs.io/) allows you to convert a Jupyter Notebook into an interactive dashboard that allows you to share your work with others.

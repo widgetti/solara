@@ -1,3 +1,7 @@
+---
+title: Using Solara as an alternative to Dash
+description: If you are familiar with Dash, Solara should be easy to adapt to. In Solara the state is managed and stored on the server, and components are declaratively reusable
+---
 # Tutorial: Dash users
 
 Dash is quite different from Solara. In Dash, state lives in your browser, and via callbacks your app will change from 1 state to another. In Solara, the state lives on the server, and also state transitions happen at the server.

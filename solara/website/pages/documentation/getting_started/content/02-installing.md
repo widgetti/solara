@@ -1,3 +1,7 @@
+---
+title: Installing Solara
+description: Installation should be as easy as running pip install solara. More options are available.
+---
 # Installation
 
 ## Create a virtual environment

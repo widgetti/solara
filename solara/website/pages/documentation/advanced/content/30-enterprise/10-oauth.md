@@ -1,3 +1,7 @@
+---
+title: Using OAuth in your Solara app
+description: Open Authorization can be readily integrated into your Solara applications via the Solara-Enterprise package.
+---
 # OAuth: authentication and authorization support
 
 ## What is OAuth

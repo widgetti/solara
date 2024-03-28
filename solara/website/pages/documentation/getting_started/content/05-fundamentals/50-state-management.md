@@ -1,3 +1,8 @@
+---
+title: Introduction to state management in Solara
+description: State management is a crucial aspect of building data-focused web applications with Solara. By effectively managing state, you can create interactive
+    and responsive applications that react to changes in data and user input.
+---
 # Introduction
 
 State management is a crucial aspect of building data-focused web applications with Solara. By effectively managing state, you can create interactive and responsive applications that react to changes in data and user input. In Solara, there are two primary ways to define state: global application state using [`solara.reactive`](/documentation/api/utilities/reactive) and local component state using [`solara.use_state`](/documentation/api/hooks/use_state) or [`solara.use_reactive`](/documentation/api/hooks/use_reactive). This article will discuss these two approaches and provide examples of how to use them in your Solara applications.

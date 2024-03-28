@@ -1,3 +1,8 @@
+---
+title: Building multi-page apps in Solara
+description: The simplest way to create a multi-page app is to create a directory with multiple scripts.
+---
+
 # Multi-page support
 
 In the [Web App tutorial](/documentation/getting_started/tutorials/web-app), we created an application consisting of a single page. Web applications generally have multiple pages, and Solara supports this as well.

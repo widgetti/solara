@@ -1,3 +1,7 @@
+---
+title: Incorporating search into your Solara application
+description: If you are using static site generation (SSG) in your Solara application, you can make use of our search feature for it too!
+---
 # Search
 
 Solara can provide search, if [SSG](/documentation/getting_started/reference/static-site-generation) is enabled. This allows you to add a search box to you website, which performs a full-text search to provide quick access to pages. The solara website itself uses the

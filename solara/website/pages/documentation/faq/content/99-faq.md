@@ -1,4 +1,7 @@
-
+---
+title: FAQ about Solara
+description: Answers to some common questions about using Solara, and building your app using the framework
+---
 # FAQ
 
 ## I am not interested in the server, I'm happy with Jupyter/Voila, what's in it for me?

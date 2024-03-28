@@ -1,3 +1,7 @@
+---
+title: Hosting your Solara app on the cloud
+description: Solara apps can be easily hosted either through our service, or via Ploomber cloud.
+---
 # Cloud hosted
 
 ## Integrated solution (in development)

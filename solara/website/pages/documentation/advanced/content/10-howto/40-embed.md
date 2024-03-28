@@ -1,3 +1,9 @@
+---
+title: Embedding Solara applications into existing websites
+description: Solara can be embedded into existing websites. Although it is technically possible to embed a Solara app into an existing webpage,
+    we currently support embedding primarily via iframes.
+---
+
 # Embedding in existing websites
 
 Solara can be embedded into existing websites. Although it is technically possible to embed a Solara app into an existing webpage, we currently support embedding primarily via iframes.

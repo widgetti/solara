@@ -1,3 +1,7 @@
+---
+title: The anatomy of Solara's functionality
+description: Dive deep into how Solara uses the technologies it builds on.
+---
 # Anatomy
 
 For communication, it is useful to speak the same language and use the same idiom.
