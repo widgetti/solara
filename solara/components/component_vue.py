@@ -20,8 +20,8 @@ def _widget_from_signature(classname, base_class: Type[widgets.Widget], func: Ca
         if name.startswith("event_"):
             event_name = name[6:]
 
-            def event_handler(self, data, buffers=None, event_name=event_name):
-                callback = self._event_callbacks.get(event_name)
+            def event_handler(self, data, buffers=None, event_name=event_name, param=param):
+                callback = self._event_callbacks.get(event_name, param.default)
                 if callback:
                     if buffers:
                         callback(data, buffers)
@@ -29,14 +29,15 @@ def _widget_from_signature(classname, base_class: Type[widgets.Widget], func: Ca
                         callback(data)
 
             classprops[f"vue_{event_name}"] = event_handler
-        if name.startswith("on_") and name[3:] in parameters:
+        elif name.startswith("on_") and name[3:] in parameters:
             # callback, will be handled by reacton
             continue
-        if param.default == inspect.Parameter.empty:
-            trait = traitlets.Any()
         else:
-            trait = traitlets.Any(default_value=param.default)
-        classprops[name] = trait.tag(sync=True, **widgets.widget_serialization)
+            if param.default == inspect.Parameter.empty:
+                trait = traitlets.Any()
+            else:
+                trait = traitlets.Any(default_value=param.default)
+            classprops[name] = trait.tag(sync=True, **widgets.widget_serialization)
     # maps event_foo to a callable
     classprops["_event_callbacks"] = traitlets.Dict(default_value={})
 
