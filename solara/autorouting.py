@@ -92,9 +92,7 @@ def RoutingProvider(children: List[reacton.core.Element] = [], routes: List[sola
     path, set_path = solara.use_state(pathname, key="solara-context-path")
 
     def set_path_with_redirect(path):
-        # path = _resolve_redirect(path, routes)
         path = _redirects.get(path, path)
-        # redirects
         set_path(path)
 
     # TODO: since we provide a cross filter context here, I don't think name `RoutingProvider` is a good name
