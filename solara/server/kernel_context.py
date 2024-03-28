@@ -150,6 +150,9 @@ class VirtualKernelContext:
         current_context[key] = local.kernel_context_stack.pop()
 
     def close(self):
+        if self.closed_event.is_set():
+            logger.error("Tried to close a kernel context that is already closed: %s", self.id)
+            return
         logger.info("Shut down virtual kernel: %s", self.id)
         with self:
             for f in reversed(self._on_close_callbacks):
