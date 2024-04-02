@@ -97,6 +97,8 @@ jobs:
       fail-fast: false
       matrix:
         python-version: [3.8, "3.9"]
+    env:
+      LOCK_FILE_LOCATION: .ci-package-locks/code-quality/python${{ matrix.python-version }}.txt
 
     steps:
       - uses: actions/checkout@v4
@@ -106,9 +108,23 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install dependencies
+      - name: Prepare
+        id: prepare
         run: |
-          pip install ".[dev]" mypy==1.6.0 black==22.12.0 codespell==2.2.4 "click<8.1.4" "traitlets<5.10.0" "matplotlib<3.8.0"
+          if [ -f ${{ env.LOCK_FILE_LOCATION }} ]; then
+            echo "::set-output name=locks_exist::true"
+          else
+            echo "::set-output name=locks_exist::false"
+          fi
+
+      - name: Install without locking versions
+        if: github.event_name == 'schedule' || steps.prepare.outputs.locks_exist == 'false'
+        id: install_no_lock
+        run: pip install ".[dev]" mypy==1.6.0 black==22.12.0 codespell==2.2.4 "click<8.1.4" "traitlets<5.10.0" "matplotlib<3.8.0"
+
+      - name: Install
+        if: github.event_name != 'schedule' && steps.prepare.outputs.locks_exist == 'true'
+        run: pip install -r ${{ env.LOCK_FILE_LOCATION }}
 
       - name: Run codespell
         run: codespell
@@ -123,6 +139,13 @@ jobs:
 
       - name: mypy
         run: mypy --install-types --non-interactive solara
+
+      - name: Upload CI package locks
+        if: steps.install_no_lock.outputs.has_diff == true || steps.prepare.outputs.locks_exist == 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-package-locks-code-quality-python${{ matrix.python-version }}
+          path: ./**/${{ env.LOCK_FILE_LOCATION }}
 
   test-install:
     needs: [build]
@@ -444,7 +467,7 @@ jobs:
           path: ./**/${{ env.LOCK_FILE_LOCATION }}
 
   update-ci-package-locks:
-    needs: [code-quality, integration-test, integration-test-vue3, unit-test]
+    needs: [build, code-quality, integration-test, integration-test-vue3, unit-test]
     runs-on: ubuntu-latest
 
     steps:
