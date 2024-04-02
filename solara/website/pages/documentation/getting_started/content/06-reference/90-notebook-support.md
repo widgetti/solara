@@ -1,6 +1,6 @@
 ---
 title: Using Solara within notebooks
-description: Solara can be used to generate an interactive app directly from your notebook file by running just one command
+description: Solara can be used to generate an interactive app directly using your notebook file by running just one command.
 ---
 # Notebook support
 

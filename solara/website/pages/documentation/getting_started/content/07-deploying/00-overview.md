@@ -1,6 +1,6 @@
 ---
 title: Overview of how to deploy your Solara application or dashboard
-description: Solara apps can be easily either self hosted, or hosted on a variety of cloud platforms
+description: Solara apps can be easily either self hosted, or hosted on a variety of cloud platforms.
 ---
 # Deploying a solara app
 

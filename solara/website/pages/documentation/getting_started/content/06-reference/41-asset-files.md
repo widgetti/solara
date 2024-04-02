@@ -1,6 +1,6 @@
 ---
 title: Incorporating your assets, styles, and logos into your app
-description: Solara by default looks for overrides of certain style and asset files in the assets folder. You can use these to incorporate your branding into your dashboard or app
+description: Solara looks for overrides of certain style and asset files in the assets folder by default. You can use these to incorporate your branding into your dashboard or app.
 ---
 # Assets files
 

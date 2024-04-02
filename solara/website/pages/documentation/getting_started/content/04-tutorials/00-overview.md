@@ -1,7 +1,7 @@
 ---
 title: Solara Tutorials
 description: A collection of tutorials for those learning to use Solara, each geared towards a users coming from particular backgrounds, such as data science, or
-    users coming from other frameworks like Streamlit
+    users coming from other frameworks like Streamlit.
 ---
 # Tutorials
 

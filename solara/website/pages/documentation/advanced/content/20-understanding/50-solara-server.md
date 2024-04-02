@@ -1,6 +1,6 @@
 ---
 title: Understanding the way Solara server works
-description: The solara server enables running ipywidgets based applications as standalone dashboards and apps, allowing multiple "Virtual kernels" to share
+description: Solara server enables running ipywidgets-based applications as standalone dashboards and apps, allowing multiple "Virtual kernels" to share
    the same process for better performance and scalability.
 ---
 # Solara server

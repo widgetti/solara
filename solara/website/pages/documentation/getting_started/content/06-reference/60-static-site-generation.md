@@ -1,6 +1,6 @@
 ---
 title: Generating a static site version of your app or dashboard
-description: Solara's static site generation (SSG) feature allows you to pre-render HTML for your app or dashboard, improving the user experience by providing quick page loads
+description: Solara's static site generation (SSG) feature allows you to pre-render HTML for your app or dashboard, improving the user experience by providing quick page loads.
 ---
 ## Static Site Generation
 ## Introduction

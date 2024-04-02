@@ -316,11 +316,6 @@ def get_page(module: ModuleType, required=True):
     return page
 
 
-def get_markdown_renderer(module: ModuleType):
-    markdown_renderer = getattr(module, "MarkdownRenderer", None)
-    return markdown_renderer
-
-
 def get_renderable(module: ModuleType, required=False):
     var_names = "app Page page".split()
     for var_name in var_names:
@@ -446,7 +441,7 @@ def generate_routes(module: ModuleType) -> List[solara.Route]:
     return routes
 
 
-def generate_routes_directory(path: Path, markdown_renderer=None) -> List[solara.Route]:
+def generate_routes_directory(path: Path, markdown_component=None) -> List[solara.Route]:
     """Generate routes for a directory.
 
     This is a recursive function that will generate routes for all
@@ -471,7 +466,6 @@ def generate_routes_directory(path: Path, markdown_renderer=None) -> List[solara
     if init.exists():
         init_module = source_to_module(init)
         layout = getattr(init_module, "Layout", None)
-        markdown_renderer = get_markdown_renderer(init_module) or markdown_renderer
 
     suffixes = [".py", ".ipynb", ".md"]
     for subpath in subpaths:
@@ -480,13 +474,13 @@ def generate_routes_directory(path: Path, markdown_renderer=None) -> List[solara
             continue
         if subpath.stem.startswith("_") or subpath.stem.startswith("."):
             continue
-        route = _generate_route_path(subpath, layout=layout, first=first, has_index=has_index, markdown_renderer=markdown_renderer)
+        route = _generate_route_path(subpath, layout=layout, first=first, has_index=has_index, markdown_component=markdown_component)
         first = False
         routes.append(route)
     return routes
 
 
-def _generate_route_path(subpath: Path, layout=None, first=False, has_index=False, initial_namespace={}, markdown_renderer=None) -> solara.Route:
+def _generate_route_path(subpath: Path, layout=None, first=False, has_index=False, initial_namespace={}, markdown_component=None) -> solara.Route:
     from .server import reload
 
     name = subpath.stem
@@ -506,10 +500,10 @@ def _generate_route_path(subpath: Path, layout=None, first=False, has_index=Fals
     module_layout = layout if first else None
     if subpath.suffix == ".md":
         data = subpath
-        component = markdown_renderer
+        component = markdown_component
         reload.reloader.watcher.add_file(subpath)
     elif subpath.is_dir():
-        children = generate_routes_directory(subpath, markdown_renderer=markdown_renderer)
+        children = generate_routes_directory(subpath, markdown_component=markdown_component)
     else:
         reload.reloader.watcher.add_file(subpath)
         module = source_to_module(subpath, initial_namespace=initial_namespace)

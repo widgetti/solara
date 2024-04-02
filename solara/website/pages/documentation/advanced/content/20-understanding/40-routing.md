@@ -1,6 +1,6 @@
 ---
 title: Understanding routing in multi-page solara apps
-description: Dive into solara's routing, which provides a powerful way to compose multiple pages or dashboards into an integrated app.
+description: Dive into Solara's routing, which provides a powerful way to compose multiple pages or dashboards into an integrated app.
 ---
 # Routing
 

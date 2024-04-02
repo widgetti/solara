@@ -1,6 +1,6 @@
 ---
 title: Installing Solara
-description: Installation should be as easy as running pip install solara. More options are available.
+description: Installation should be as easy as running pip install Solara. Read on for advanced setups.
 ---
 # Installation
 

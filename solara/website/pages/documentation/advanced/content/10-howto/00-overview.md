@@ -1,5 +1,5 @@
 ---
-title: overview of how-to articles
+title: Overview of how-to articles
 description: The how-tos are meant as deeper dives into specific topics from various perspectives
 ---
 

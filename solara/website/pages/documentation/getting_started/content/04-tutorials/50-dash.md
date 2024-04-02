@@ -1,6 +1,6 @@
 ---
 title: Using Solara as an alternative to Dash
-description: If you are familiar with Dash, Solara should be easy to adapt to. In Solara the state is managed and stored on the server, and components are declaratively reusable
+description: If you are familiar with Dash, Solara should be easy to adapt to. In Solara the state is managed and stored on the server, and components are declaratively reusable.
 ---
 # Tutorial: Dash users
 

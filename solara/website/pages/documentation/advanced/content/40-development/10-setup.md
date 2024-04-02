@@ -1,6 +1,6 @@
 ---
 title: Development setup for Solara
-description: Learn how to set up your installation for building on the Solara framework.
+description: Learn how to set up your installation for developing on the Solara itself.
 ---
 # Development
 
