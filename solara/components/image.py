@@ -163,7 +163,7 @@ def Image(
             layout=layout,
         )
     elif solara.util.isinstanceof(image, "numpy:ndarray"):
-        value = solara.util.numpy_to_image(image, format="png")
+        value = solara.util.numpy_to_image(image, format="png")  # type: ignore
         return rw.Image(
             value=value,
             format="png",
