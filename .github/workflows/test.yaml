@@ -49,7 +49,7 @@ jobs:
           key: ${{ runner.os }}-js-bundle-${{ hashFiles('packages/solara-vuetify-app/**', 'packages/solara-vuetify3-app/**', 'packages/solara-widget-manager/**', 'packages/solara-widget-manager8/src/**') }}
 
       - name: Build solara widget manager
-        if: steps.cache-js-bundle-v2.outputs.cache-hit != 'true'
+        if: steps.cache-js-bundle-v2.outputs.cache-hit != true
         run: |
           cd packages/solara-widget-manager
           npm install
@@ -61,7 +61,7 @@ jobs:
           cd ../../
 
       - name: Build solara app package
-        if: steps.cache-js-bundle-v2.outputs.cache-hit != 'true'
+        if: steps.cache-js-bundle-v2.outputs.cache-hit != true
         run: |
           cd packages/solara-vuetify-app
           npm install
@@ -112,18 +112,22 @@ jobs:
         id: prepare
         run: |
           if [ -f ${{ env.LOCK_FILE_LOCATION }} ]; then
-            echo "::set-output name=locks_exist::true"
+            echo "LOCKS_EXIST=true" >> "$GITHUB_OUTPUT"
           else
-            echo "::set-output name=locks_exist::false"
+            echo "LOCKS_EXIST=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Install without locking versions
-        if: github.event_name == 'schedule' || steps.prepare.outputs.locks_exist == 'false'
+        if: github.event_name == 'schedule' || steps.prepare.outputs.LOCKS_EXIST == 'false'
         id: install_no_lock
-        run: pip install ".[dev]" mypy==1.6.0 black==22.12.0 codespell==2.2.4 "click<8.1.4" "traitlets<5.10.0" "matplotlib<3.8.0"
+        run: |
+          mkdir -p .ci-package-locks/code-quality
+          pip install ".[dev]" mypy==1.6.0 black==22.12.0 codespell==2.2.4 "click<8.1.4" "traitlets<5.10.0" "matplotlib<3.8.0"
+          pip freeze --exclude solara --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
+          git diff --quiet || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
 
       - name: Install
-        if: github.event_name != 'schedule' && steps.prepare.outputs.locks_exist == 'true'
+        if: github.event_name != 'schedule' && steps.install_no_lock.outputs.LOCKS_EXIST == 'true'
         run: pip install -r ${{ env.LOCK_FILE_LOCATION }}
 
       - name: Run codespell
@@ -141,7 +145,7 @@ jobs:
         run: mypy --install-types --non-interactive solara
 
       - name: Upload CI package locks
-        if: steps.install_no_lock.outputs.has_diff == true || steps.prepare.outputs.locks_exist == 'false'
+        if: steps.install_no_lock.outputs.HAS_DIFF == 'true' || steps.prepare.outputs.LOCKS_EXIST == 'false'
         uses: actions/upload-artifact@v4
         with:
           name: ci-package-locks-code-quality-python${{ matrix.python-version }}
@@ -242,13 +246,13 @@ jobs:
         run: |
           mkdir test-results
           if [ -f ${{ env.LOCK_FILE_LOCATION }} ]; then
-            echo "::set-output name=locks_exist::true"
+            echo "LOCKS_EXIST=true" >> "$GITHUB_OUTPUT"
           else
-            echo "::set-output name=locks_exist::false"
+            echo "LOCKS_EXIST=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Install without locking versions
-        if: github.event_name == 'schedule' || steps.prepare.outputs.locks_exist == 'false'
+        if: github.event_name == 'schedule' || steps.prepare.outputs.LOCKS_EXIST == 'false'
         id: install_no_lock
         run: |
           mkdir -p .ci-package-locks/integration
@@ -256,10 +260,10 @@ jobs:
           find packages/solara-enterprise/dist/ -name '*.whl' -exec pip install {}\[ssg,auth\] \;
           pip install "voila~=${{ matrix.voila }}" "jupyterlab<4"  "pydantic<2" "playwright==1.41.2" "ipywidgets~=${{ matrix.ipywidgets }}"
           pip freeze --exclude solara --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
-          git diff --quiet || echo "::set-output name=has_diff::true"
+          git diff --quiet || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
 
       - name: Install
-        if: github.event_name != 'schedule' && steps.prepare.outputs.locks_exist == 'true'
+        if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
         run: |
           pip install -r ${{ env.LOCK_FILE_LOCATION }}
           find dist/ -name '*.whl' -exec pip install {}\[dev,documentation,flask,pytest,server\] \;
@@ -269,7 +273,7 @@ jobs:
         run: playwright install
 
       - name: test
-        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.has_diff == true
+        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true'
         env:
           AUTH0_USERNAME: maartenbreddels+solara-test@gmail.com
           AUTH0_PASSWORD: ${{ secrets.AUTH0_PASSWORD }}
@@ -281,14 +285,14 @@ jobs:
         run: pytest tests/integration --timeout=360 --video=retain-on-failure --output=test-results -vv -s --log-cli-level=warning
 
       - name: Upload Test artifacts
-        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.has_diff == true
+        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: test-results-integration-os${{ matrix.os }}-python${{ matrix.python-version }}-voila${{ matrix.voila }}-ipywidgets${{ matrix.ipywidgets }}
           path: test-results
 
       - name: Upload CI package locks
-        if: steps.install_no_lock.outputs.has_diff == true || steps.prepare.outputs.locks_exist == 'false'
+        if: steps.install_no_lock.outputs.HAS_DIFF == 'true' || steps.prepare.outputs.LOCKS_EXIST == 'false'
         uses: actions/upload-artifact@v4
         with:
           name: ci-package-locks-integration-os${{ matrix.os }}-python${{ matrix.python-version }}-voila${{ matrix.voila }}-ipywidgets${{ matrix.ipywidgets }}
@@ -336,14 +340,14 @@ jobs:
         run: |
           mkdir test-results
           if [ -f ${{ env.LOCK_FILE_LOCATION }} ]; then
-            echo "::set-output name=locks_exist::true"
+            echo "LOCKS_EXIST=true" >> "$GITHUB_OUTPUT"
           else
-            echo "::set-output name=locks_exist::false"
+            echo "LOCKS_EXIST=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Install without locking versions
         id: install_no_lock
-        if: github.event_name == 'schedule' || steps.prepare.outputs.locks_exist == 'false'
+        if: github.event_name == 'schedule' || steps.prepare.outputs.LOCKS_EXIST == 'false'
         run: |
           mkdir -p .ci-package-locks/integration-vue3
           find dist/ -name '*.whl' -exec pip install {}\[dev,documentation,flask,pytest,server\] \;
@@ -352,10 +356,10 @@ jobs:
           pip install jupyter_core jupyter-packaging
           pip install --pre ipyvue ipyvuetify
           pip freeze --exclude solara --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
-          git diff --quiet || echo "::set-output name=has_diff::true"
+          git diff --quiet || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
 
       - name: Install
-        if: github.event_name != 'schedule' && steps.prepare.outputs.locks_exist == 'true'
+        if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
         run: |
           pip install -r ${{ env.LOCK_FILE_LOCATION }}
           find dist/ -name '*.whl' -exec pip install {}\[dev,documentation,flask,pytest,server\] \;
@@ -365,7 +369,7 @@ jobs:
         run: playwright install
 
       - name: test
-        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.has_diff == true
+        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true'
         env:
           AUTH0_USERNAME: maartenbreddels+solara-test@gmail.com
           AUTH0_PASSWORD: ${{ secrets.AUTH0_PASSWORD }}
@@ -377,14 +381,14 @@ jobs:
         run: pytest tests/integration/widget_test.py --timeout=360 --video=retain-on-failure --output=test-results -vv -s --log-cli-level=warning
 
       - name: Upload Test artifacts
-        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.has_diff == true
+        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: test-results-integration-vue3-os${{ matrix.os }}-voila${{ matrix.voila }}-ipywidgets${{ matrix.ipywidgets }}
           path: test-results
 
       - name: Upload CI package locks
-        if: steps.install_no_lock.outputs.has_diff == true || steps.prepare.outputs.locks_exist == 'false'
+        if: steps.install_no_lock.outputs.HAS_DIFF == 'true' || steps.prepare.outputs.LOCKS_EXIST == 'false'
         uses: actions/upload-artifact@v4
         with:
           name: ci-package-locks-integration-vue3-os${{ matrix.os }}-voila${{ matrix.voila }}-ipywidgets${{ matrix.ipywidgets }}
@@ -428,39 +432,39 @@ jobs:
         id: prepare
         run: |
           if [ -f ${{ env.LOCK_FILE_LOCATION }} ]; then
-            echo "::set-output name=locks_exist::true"
+            echo "LOCKS_EXIST=true" >> "$GITHUB_OUTPUT"
           else
-            echo "::set-output name=locks_exist::false"
+            echo "LOCKS_EXIST=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Install without locking versions
         id: install_no_lock
-        if: github.event_name == 'schedule' || steps.prepare.outputs.locks_exist == 'false'
+        if: github.event_name == 'schedule' || steps.prepare.outputs.LOCKS_EXIST == 'false'
         run: |
           mkdir -p .ci-package-locks/unit
           find dist/ -name '*.whl' -exec pip install {}\[dev,extra\] \;
           find packages/solara-enterprise/dist/ -name '*.whl' -exec pip install {}\[ssg,auth\] \;
           pip install "jupyterlab<4" diskcache redis "ipywidgets~=${{ matrix.ipywidgets }}"
           pip freeze --exclude solara --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
-          git diff --quiet || echo "::set-output name=has_diff::true"
+          git diff --quiet || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
 
       - name: Install
-        if: github.event_name != 'schedule' && steps.prepare.outputs.locks_exist == 'true'
+        if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
         run: |
           pip install -r ${{ env.LOCK_FILE_LOCATION }}
           find dist/ -name '*.whl' -exec pip install {}\[dev,extra\] \;
           find packages/solara-enterprise/dist/ -name '*.whl' -exec pip install {}\[ssg,auth\] \;
 
       - name: Start Redis
-        if: ( github.event_name != 'schedule' || steps.install_no_lock.outputs.has_diff == true ) && matrix.os != 'windows'
+        if: ( github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == true ) && matrix.os != 'windows'
         uses: shogo82148/actions-setup-redis@v1
 
       - name: test
-        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.has_diff == true
+        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true'
         run: pytest tests/unit --doctest-modules --timeout=60
 
       - name: Upload CI package locks
-        if: steps.install_no_lock.outputs.has_diff == true || steps.prepare.outputs.locks_exist == 'false'
+        if: steps.install_no_lock.outputs.HAS_DIFF == 'true' || steps.prepare.outputs.LOCKS_EXIST == 'false'
         uses: actions/upload-artifact@v4
         with:
           name: ci-package-locks-unit-os${{ matrix.os }}-python${{ matrix.python }}-ipywidgets${{ matrix.ipywidgets }}
@@ -481,19 +485,19 @@ jobs:
         id: prepare
         run: |
           if [ -d .ci-package-locks ]; then
-            echo "::set-output name=locks_exist::true"
+            echo "LOCKS_EXIST=true" >> "$GITHUB_OUTPUT"
           else
-            echo "::set-output name=locks_exist::false"
+            echo "LOCKS_EXIST=false" >> "$GITHUB_OUTPUT"
           fi
 
       - uses: actions/download-artifact@v4
-        if: github.event_name == 'schedule' || steps.prepare.outputs.locks_exist == 'false'
+        if: github.event_name == 'schedule' || steps.prepare.outputs.LOCKS_EXIST == 'false'
         with:
           pattern: ci-package-locks-*
           merge-multiple: true
 
       - name: Update CI package locks
-        if: github.event_name == 'schedule' || steps.prepare.outputs.locks_exist == 'false'
+        if: github.event_name == 'schedule' || steps.prepare.outputs.LOCKS_EXIST == 'false'
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
