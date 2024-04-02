@@ -109,7 +109,6 @@ jobs:
       - name: Install dependencies
         run: |
           pip install ".[dev]" mypy==1.6.0 black==22.12.0 codespell==2.2.4 "click<8.1.4" "traitlets<5.10.0" "matplotlib<3.8.0"
-          mypy --install-types --non-interactive solara
 
       - name: Run codespell
         run: codespell
@@ -123,7 +122,7 @@ jobs:
           checkName: 'code-quality'
 
       - name: mypy
-        run: mypy solara
+        run: mypy --install-types --non-interactive solara
 
   test-install:
     needs: [build]
