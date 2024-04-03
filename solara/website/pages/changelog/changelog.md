@@ -1,5 +1,20 @@
 # Solara Changelog
 
+## Version 1.30.0
+
+### Details
+
+   * Feature: Multiple file support for `FileDrop`. [#562](https://github.com/widgetti/solara/pull/562)
+   * Feature: Solara server is now compatible with Pyodide (threads are combined if they cannot be used). [#569](https://github.com/widgetti/solara/pull/569)
+   * Bug Fix: Nested Vuetify apps were not displayed correctly. [#570](https://github.com/widgetti/solara/pull/570)
+   * Bug Fix: `on_kernel_start` callbacks were accumulating on hot reload. [#556](https://github.com/widgetti/solara/pull/556)
+   * Bug Fix: ES Modules were being loaded multiple times on hot reload. [#559](https://github.com/widgetti/solara/pull/559)
+   * Bug Fix: Theme CSS was not loaded when `rootPath` was non-trivial. [829946c](https://github.com/widgetti/solara/commit/829946c4bf47a2ea78d783bb500faaab93b2549b)
+   * Fix: `Route.component` is now rendered, instead of the internal `RenderPage` component. [#555](https://github.com/widgetti/solara/pull/555)
+   * Fix: `Route.layout` now allows for layouts to be used when defining routes manually. [#554](https://github.com/widgetti/solara/pull/554)
+   * Fix: Allow custom command like arguments that can be parsed by the application. [#558](https://github.com/widgetti/solara/pull/558)
+
+
 ## Version 1.29.1
 
 ### Details
