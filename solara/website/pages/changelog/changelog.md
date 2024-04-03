@@ -1,5 +1,14 @@
 # Solara Changelog
 
+## Version 1.30.1
+
+### Details
+
+   * Bug Fix: Serialization error from attempt to serialize default event handles in `component_vue`. [793cbb1](https://github.com/widgetti/solara/commit/793cbb19d8c361490b7e0b1e436a3e9ef3acea71)
+   * Bug Fix: `on_kernel_start` callback cleanups could have been triggered multiple times. [4b75ca9](https://github.com/widgetti/solara/commit/4b75ca934f4e905a3592911bfca6657e491d1425)
+   * Bug Fix: Autorender did not render child routes. [#575](https://github.com/widgetti/solara/pull/575)
+
+
 ## Version 1.30.0
 
 ### Details
