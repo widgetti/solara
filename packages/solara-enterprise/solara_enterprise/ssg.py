@@ -53,6 +53,15 @@ def _get_playwright():
     return pw
 
 
+def close_playwrights():
+    for pw in playwrights:
+        if pw.browser is not None:
+            pw.browser.close()
+        if pw.context_manager is not None:
+            pw.context_manager.__exit__(None, None, None)
+    playwrights.clear()
+
+
 def ssg_crawl(base_url: str):
     license.check("SSG")
     import solara.server.app
@@ -82,13 +91,10 @@ def ssg_crawl(base_url: str):
 
     for result in results:
         wait(result)
+
+    thread_pool.apply_async(close_playwrights)
     thread_pool.close()
     thread_pool.join()
-    for pw in playwrights:
-        assert pw.browser is not None
-        assert pw.context_manager is not None
-        pw.browser.close()
-        pw.context_manager.__exit__(None, None, None)
 
     rprint("Done building SSG")
 
