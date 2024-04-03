@@ -1,3 +1,7 @@
+---
+title: Understanding how Solara builds on Reacton
+description: Solara adapts the React way of using components declaratively to build UIs and brings it to Python.
+---
 # Reacton
 
  * [Documentation](https://reacton.solara.dev/)

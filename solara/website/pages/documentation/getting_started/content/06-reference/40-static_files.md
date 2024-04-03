@@ -1,3 +1,7 @@
+---
+title: Using static files and resources in your Solara application
+description: When using Solara, you can host static files, like images, which will then be available at /static/public, in the ../public folder.
+---
 # Static files
 
 Files located on your local filesystem at the `../public` directory will be served by the Solara server at `/static/public`. A typical directory layout looks like this:

@@ -1,3 +1,8 @@
+---
+title: Using Solara as a more scalable alternative to Streamlit
+description: If you are coming from Streamlit, it should be simple to adapt to using Solara, and take advantage of partial re-execution, state
+    management, and reusable components.
+---
 # Tutorial: Streamlit
 
 If you are coming from [Streamlit](https://streamlit.io/) you may be happy to know Solara does not re-execute your whole script. We execute components (starting with the `Page` component), and only need to re-execute what needs to.

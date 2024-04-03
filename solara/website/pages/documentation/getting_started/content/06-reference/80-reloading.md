@@ -1,3 +1,7 @@
+---
+title: Automatic reloading of source files when developing with Solara
+description: Solara automatically detects changes in certain source file types, and hot reloads your application when you save them.
+---
 # Reloading
 
 ## Reloading of Python files

@@ -1,3 +1,8 @@
+---
+title: Caching resources for your solara application or dashboard
+description: Solara has a dict-like object at `solara.cache.storage` that can be used to store objects in under a key. So we can use this global
+    object as normal dict.
+---
 # Caching
 
 Solara has a dict-like object at `solara.cache.storage` that can be used to store objects in under a key. So we can use this global

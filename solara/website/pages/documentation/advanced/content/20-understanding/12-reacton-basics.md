@@ -1,3 +1,7 @@
+---
+title: Understanding the basics of Reacton
+description: Using your favorite component, we try to understand better how it works to improve your understanding of Reacton and, thus, how to use Solara.
+---
 # Reacton basic understanding
 
 

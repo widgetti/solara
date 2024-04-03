@@ -1,3 +1,7 @@
+---
+title: A quick introduction to Solara
+description: Solara is an Open Source library that lets you use and build data-focused web apps (data apps) using reusable UI components. Here you'll learn the basics!
+---
 # Introduction
 
 

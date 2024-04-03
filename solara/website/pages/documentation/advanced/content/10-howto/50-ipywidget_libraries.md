@@ -1,3 +1,7 @@
+---
+title: Using various ipywidgets libraries within a Solara application
+description: Solara can work with virtually any ipywidget library, and enables powerful interactivity with libraries like ipyleaflet, ipydatagrid, and bqplot.
+---
 # How can I use ipywidget library X?
 
 Solara can work with any ipywidget library, such as [ipyleaflet](https://github.com/jupyter-widgets/ipyleaflet), [ipydatagrid](https://github.com/bloomberg/ipydatagrid) or [bqplot](https://github.com/bqplot/bqplot).

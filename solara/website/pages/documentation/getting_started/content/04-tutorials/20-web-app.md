@@ -1,3 +1,8 @@
+---
+title: Tutorial - Building web apps in python using Solara
+description: In this tutorial, you will learn how to use Solara to create a tiny web app using only Python. You can run these apps using either Solara server,
+    Jupyter lab / notebook, or whatever server infrastructure you prefer.
+---
 # Tutorial: Web app
 
 In this tutorial, you will learn how to use Solara to create a tiny web app using only Python.

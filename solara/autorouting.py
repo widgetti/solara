@@ -191,9 +191,10 @@ def RenderPage(main_name: str = "Page"):
         else:
             return []
 
-    if isinstance(route_current.data, Path):
+    if str(route_current.file).endswith(".md") or isinstance(route_current.data, Path):
         path = cast(Path, route_current.data)
         if path.suffix == ".md":
+            component = route_current.component or solara.Markdown
             with solara.HBox() as navigation:
                 if routes_siblings_index > 0:
                     prev = routes_siblings[routes_siblings_index - 1]
@@ -213,9 +214,11 @@ def RenderPage(main_name: str = "Page"):
                         solara.Button(
                             icon_name="mdi-pencil", icon=True, href=url, target="_blank", style={"position": "absolute", "top": "0px", "right": "0px"}
                         )
-                    solara.Markdown(path.read_text(), unsafe_solara_execute=True)
+                    # solara.Markdown(path.read_text(), unsafe_solara_execute=True)
+                    component(path.read_text(), unsafe_solara_execute=True)
             else:
-                content = solara.Markdown(path.read_text(), unsafe_solara_execute=True)
+                # content = solara.Markdown(path.read_text(), unsafe_solara_execute=True)
+                content = component(path.read_text(), unsafe_solara_execute=True)
 
             main = solara.Div(
                 classes=["solara-autorouter-content"],
@@ -444,7 +447,7 @@ def generate_routes(module: ModuleType) -> List[solara.Route]:
     return routes
 
 
-def generate_routes_directory(path: Path) -> List[solara.Route]:
+def generate_routes_directory(path: Path, markdown_component=None) -> List[solara.Route]:
     """Generate routes for a directory.
 
     This is a recursive function that will generate routes for all
@@ -477,13 +480,13 @@ def generate_routes_directory(path: Path) -> List[solara.Route]:
             continue
         if subpath.stem.startswith("_") or subpath.stem.startswith("."):
             continue
-        route = _generate_route_path(subpath, layout=layout, first=first, has_index=has_index)
+        route = _generate_route_path(subpath, layout=layout, first=first, has_index=has_index, markdown_component=markdown_component)
         first = False
         routes.append(route)
     return routes
 
 
-def _generate_route_path(subpath: Path, layout=None, first=False, has_index=False, initial_namespace={}) -> solara.Route:
+def _generate_route_path(subpath: Path, layout=None, first=False, has_index=False, initial_namespace={}, markdown_component=None) -> solara.Route:
     from .server import reload
 
     name = subpath.stem
@@ -503,9 +506,10 @@ def _generate_route_path(subpath: Path, layout=None, first=False, has_index=Fals
     module_layout = layout if first else None
     if subpath.suffix == ".md":
         data = subpath
+        component = markdown_component
         reload.reloader.watcher.add_file(subpath)
     elif subpath.is_dir():
-        children = generate_routes_directory(subpath)
+        children = generate_routes_directory(subpath, markdown_component=markdown_component)
     else:
         reload.reloader.watcher.add_file(subpath)
         module = source_to_module(subpath, initial_namespace=initial_namespace)

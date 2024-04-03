@@ -1,3 +1,8 @@
+---
+title: Solara Quickstart
+description: Get started with building web- and data-apps in pure python with Solara.
+---
+
 # Quickstart
 
 This 1-minute quickstart will get you to:

@@ -1,3 +1,8 @@
+---
+title: Making different layouts in Solara
+description: Solara comes with a layout system ideal for data apps. Learn how to use them in this short guide.
+---
+
 # Layout
 
 Solara comes with a layout system ideal for data apps.

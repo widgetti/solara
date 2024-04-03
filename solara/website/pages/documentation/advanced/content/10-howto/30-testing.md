@@ -1,3 +1,8 @@
+---
+title: Testing your Solara application, both front and back end
+description: Using solara you can test both the front and back end functionalities of your application.
+---
+
 # Testing with Solara
 # Testing Application Logic
 

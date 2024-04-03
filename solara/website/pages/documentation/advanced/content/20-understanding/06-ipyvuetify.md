@@ -1,3 +1,7 @@
+---
+title: Using ipyvuetify widgets with Solara
+description: Ipyvuetify is an ipywidgets based library that wraps the Vuetify javascript framework for use with python widgets. Learn how to use these to build apps with Solara.
+---
 # ipyvuetify
 
  * [Documentation](https://ipyvuetify.readthedocs.io/)

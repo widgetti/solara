@@ -1,3 +1,7 @@
+---
+title: Tutorial - Building ipywidgets based apps
+description: Ipywidgets can be used together with Solara to build and quickly get to users your data apps or dashboards.
+---
 # Tutorial: IPywidgets
 
 If you are already using [ipywidgets](/documentation/advanced/understanding/ipywidgets) in the notebook, possibly using [Voila](/documentation/advanced/understanding/voila), you might be pleased to know that you

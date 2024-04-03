@@ -1,3 +1,7 @@
+---
+title: Deploying and hosting your own Solara app
+description: Solara is compatible with many different hosting solutions, such as Flask, Starlette, FastAPI, and Voila.
+---
 # Self hosted deployment
 
  * [Flask](#flask)

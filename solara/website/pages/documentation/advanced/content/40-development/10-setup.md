@@ -1,3 +1,7 @@
+---
+title: Development setup for Solara
+description: Learn how to set up your installation for developing on the Solara itself.
+---
 # Development
 
 See also [the contributing guide](/documentation/advanced/development/contribute) for more information on how to contribute to Solara.

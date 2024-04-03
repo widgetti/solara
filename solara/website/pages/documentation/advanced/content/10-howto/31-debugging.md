@@ -1,4 +1,7 @@
-
+---
+title: Debugging Solara applications
+description: You can use the Python debugger to debug your Solara app.
+---
 # Debugging
 
 ## PDB

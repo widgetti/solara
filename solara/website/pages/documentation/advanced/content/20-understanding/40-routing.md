@@ -1,3 +1,7 @@
+---
+title: Understanding routing in multi-page solara apps
+description: Dive into Solara's routing, which provides a powerful way to compose multiple pages or dashboards into an integrated app.
+---
 # Routing
 
 Routing takes care of linking a web address (more specifically the [pathname](https://developer.mozilla.org/en-US/docs/Web/API/Location), e.g. "/docs/basics/solara") to a state of the UI,

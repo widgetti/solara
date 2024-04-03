@@ -1,3 +1,8 @@
+---
+title: Understanding how ipywidgets work together with Solara
+description: Solara's primarily standalone app approach differs from the ipywidgets one. This article dives deeper into the different approaches and adapting to using
+    ipywidgets within Solara.
+---
 # IPywidgets
 
  * [Documentation](https://ipywidgets.readthedocs.io/en/stable/)
