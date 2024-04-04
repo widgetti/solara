@@ -30,10 +30,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.10"
 
       - uses: actions/setup-node@v4
         with:
@@ -122,7 +122,7 @@ jobs:
         id: install_no_lock
         run: |
           mkdir -p .ci-package-locks/code-quality
-          pip install ".[dev]" mypy==1.6.0 black==22.12.0 codespell==2.2.4 "click<8.1.4" "traitlets<5.10.0" "matplotlib<3.8.0"
+          pip install ".[dev]" mypy==1.6.0 black==22.12.0 codespell==2.2.4 flake8==7.0.0 "click<8.1.4" "traitlets<5.10.0" "matplotlib<3.8.0"
           pip freeze --exclude solara --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
           git diff --quiet || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
 
@@ -137,9 +137,7 @@ jobs:
         run: black solara
 
       - name: Run flake8
-        uses: suo/flake8-github-action@releases/v1
-        with:
-          checkName: 'code-quality'
+        run: flake8 solara
 
       - name: mypy
         run: mypy --install-types --non-interactive solara
@@ -191,10 +189,8 @@ jobs:
         run: solara run test.py&
 
       - name: Wait for Solara server to get online
-        uses: ifaxity/wait-on-action@v1
-        with:
-          resource: http-get://localhost:8765/
-          timeout: 20000
+        run: |
+          curl --head -X GET --retry 35 --retry-connrefused --retry-delay 5 http://localhost:8765
 
       - name: Install
         run: pip install packages/solara-enterprise/dist/*.whl
