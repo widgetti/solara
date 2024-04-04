@@ -5,7 +5,7 @@ import time
 import typing
 import urllib
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import solara
 from rich import print as rprint
@@ -29,7 +29,7 @@ class Playwright(threading.local):
 
 
 pw = Playwright()
-playwrights: List[Playwright] = []
+_used: List[Tuple["playwright.sync_api.Browser", "playwright.sync_api._context_manager.PlaywrightContextManager"]] = []
 
 
 class SSGData(TypedDict):
@@ -44,22 +44,14 @@ def _get_playwright():
         return pw
     from playwright.sync_api import sync_playwright
 
+    pw.number = 42
     pw.context_manager = sync_playwright()
     pw.sync_playwright = pw.context_manager.start()
 
     pw.browser = pw.sync_playwright.chromium.launch(headless=not settings.ssg.headed)
     pw.page = pw.browser.new_page()
-    playwrights.append(pw)
+    _used.append((pw.browser, pw.context_manager))
     return pw
-
-
-def close_playwrights():
-    for pw in playwrights:
-        if pw.browser is not None:
-            pw.browser.close()
-        if pw.context_manager is not None:
-            pw.context_manager.__exit__(None, None, None)
-    playwrights.clear()
 
 
 def ssg_crawl(base_url: str):
@@ -92,9 +84,13 @@ def ssg_crawl(base_url: str):
     for result in results:
         wait(result)
 
-    thread_pool.apply_async(close_playwrights)
     thread_pool.close()
     thread_pool.join()
+
+    for browser, context_manager in _used:
+        browser.close()
+        context_manager.__exit__(None, None, None)
+    _used.clear()
 
     rprint("Done building SSG")
 
