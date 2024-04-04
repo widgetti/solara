@@ -49,7 +49,7 @@ jobs:
           key: ${{ runner.os }}-js-bundle-${{ hashFiles('packages/solara-vuetify-app/**', 'packages/solara-vuetify3-app/**', 'packages/solara-widget-manager/**', 'packages/solara-widget-manager8/src/**') }}
 
       - name: Build solara widget manager
-        if: steps.cache-js-bundle-v2.outputs.cache-hit != true
+        if: steps.cache-js-bundle-v2.outputs.cache-hit != 'true'
         run: |
           cd packages/solara-widget-manager
           npm install
@@ -61,7 +61,7 @@ jobs:
           cd ../../
 
       - name: Build solara app package
-        if: steps.cache-js-bundle-v2.outputs.cache-hit != true
+        if: steps.cache-js-bundle-v2.outputs.cache-hit != 'true'
         run: |
           cd packages/solara-vuetify-app
           npm install
@@ -127,7 +127,7 @@ jobs:
           git diff --quiet || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
 
       - name: Install
-        if: github.event_name != 'schedule' && steps.install_no_lock.outputs.LOCKS_EXIST == 'true'
+        if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
         run: pip install -r ${{ env.LOCK_FILE_LOCATION }}
 
       - name: Run codespell
