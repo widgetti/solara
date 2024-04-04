@@ -85,7 +85,7 @@ def test_input_date_incomplete_entry():
 
     @solara.component
     def Test():
-        def update_value(value: int):
+        def update_value(value: dt.date):
             on_value(value)
             set_value(value)
 

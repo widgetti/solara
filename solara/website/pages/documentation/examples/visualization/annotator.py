@@ -6,6 +6,7 @@ below to draw shapes and visualize the canvas callback.
 
 Check [plotly docs](https://dash.plotly.com/annotations) for more information about image annotation.
 """
+
 import json
 
 import plotly.graph_objects as go

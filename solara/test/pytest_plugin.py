@@ -177,7 +177,6 @@ def SyncWrapper():
     if id is None:
         solara.Error("No id found in url")
     else:
-
         import reacton.ipywidgets as w
 
         used_contexts[id] = solara.server.kernel_context.get_current_context()

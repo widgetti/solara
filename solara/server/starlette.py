@@ -371,7 +371,11 @@ async def root(request: Request, fullpath: str = ""):
         samesite = "none"
         secure = True
     response.set_cookie(
-        server.COOKIE_KEY_SESSION_ID, value=session_id, expires="Fri, 01 Jan 2038 00:00:00 GMT", samesite=samesite, secure=secure  # type: ignore
+        server.COOKIE_KEY_SESSION_ID,
+        value=session_id,
+        expires="Fri, 01 Jan 2038 00:00:00 GMT",
+        samesite=samesite,  # type: ignore
+        secure=secure,  # type: ignore
     )  # type: ignore
     return response
 

@@ -2,6 +2,7 @@
 # HBox
 Lays out children in horizontal direction.
 """
+
 import solara
 
 from ..common import ColorCard

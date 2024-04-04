@@ -15,7 +15,6 @@ kernel_start_path = HERE / "solara_test_apps" / "kernel_start.py"
 
 @pytest.mark.parametrize("as_module", [False, True])
 def test_script_reload_component(tmpdir, kernel_context, extra_include_path, no_kernel_context, as_module):
-
     target = Path(tmpdir) / "kernel_start.py"
     shutil.copy(kernel_start_path, target)
     with extra_include_path(str(tmpdir)):

@@ -1,6 +1,5 @@
-"""# FileBrowser
+"""# FileBrowser"""
 
-"""
 from pathlib import Path
 from typing import Optional, cast
 

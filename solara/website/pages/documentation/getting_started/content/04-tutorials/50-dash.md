@@ -56,7 +56,7 @@ def Page():
 
 Since this component combines two components, we have to put them together in a [container](/documentation/advanced/understanding/containers) component, here implicitly a [Column](/documentation/components/layout/column).
 
-## Making a re-usable component
+## Making a reusable component
 
 ### In dash
 
@@ -139,6 +139,6 @@ def MarkdownWithColor(markdown_text : str):
 @solara.component
 def Page():
     with solara.Columns():
-        MarkdownWithColor("## Re-use is simple")
+        MarkdownWithColor("## Reuse is simple")
         MarkdownWithColor("## With solara")
 ```

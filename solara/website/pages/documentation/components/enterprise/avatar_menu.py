@@ -2,6 +2,7 @@
 # AvatarMenu
 
 """
+
 try:
     from solara_enterprise import auth
 except ImportError:

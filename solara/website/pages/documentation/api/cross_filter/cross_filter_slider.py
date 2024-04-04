@@ -1,5 +1,5 @@
-"""# CrossFilterSlider
-"""
+"""# CrossFilterSlider"""
+
 import plotly
 
 import solara

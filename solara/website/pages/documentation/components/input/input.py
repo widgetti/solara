@@ -4,6 +4,7 @@ This page contains all the input fields available in Solara.
 
 # InputText
 """
+
 import solara
 from solara.website.components import NoPage
 from solara.website.utils import apidoc

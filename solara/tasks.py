@@ -146,20 +146,16 @@ class Task(Generic[P, R], abc.ABC):
         return self._exception.value
 
     @abc.abstractmethod
-    def retry(self) -> None:
-        ...
+    def retry(self) -> None: ...
 
     @abc.abstractmethod
-    def cancel(self) -> None:
-        ...
+    def cancel(self) -> None: ...
 
     @abc.abstractmethod
-    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> None:
-        ...
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> None: ...
 
     @abc.abstractmethod
-    def is_current(self) -> bool:
-        ...
+    def is_current(self) -> bool: ...
 
     def _prestart(self):
         self._result.value = TaskResult[R](latest=self._last_value, _state=TaskState.STARTING)
@@ -437,8 +433,7 @@ def task(
     f: None = None,
     *,
     prefer_threaded: bool = ...,
-) -> Callable[[Callable[P, R]], Task[P, R]]:
-    ...
+) -> Callable[[Callable[P, R]], Task[P, R]]: ...
 
 
 @overload
@@ -446,8 +441,7 @@ def task(
     f: Callable[P, Union[Coroutine[Any, Any, R], R]],
     *,
     prefer_threaded: bool = ...,
-) -> Task[P, R]:
-    ...
+) -> Task[P, R]: ...
 
 
 def task(
@@ -694,8 +688,7 @@ def use_task(
     dependencies: None = ...,
     raise_error=...,
     prefer_threaded=...,
-) -> Callable[[Callable[P, R]], Task[P, R]]:
-    ...
+) -> Callable[[Callable[P, R]], Task[P, R]]: ...
 
 
 @overload
@@ -705,8 +698,7 @@ def use_task(
     dependencies: None = ...,
     raise_error=...,
     prefer_threaded=...,
-) -> Task[P, R]:
-    ...
+) -> Task[P, R]: ...
 
 
 @overload
@@ -716,8 +708,7 @@ def use_task(
     dependencies: List = ...,
     raise_error=...,
     prefer_threaded=...,
-) -> Callable[[Callable[[], R]], "Task[[], R]"]:
-    ...
+) -> Callable[[Callable[[], R]], "Task[[], R]"]: ...
 
 
 @overload
@@ -727,8 +718,7 @@ def use_task(
     dependencies: List = ...,
     raise_error=...,
     prefer_threaded=...,
-) -> "Task[[], R]":
-    ...
+) -> "Task[[], R]": ...
 
 
 def use_task(

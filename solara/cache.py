@@ -152,8 +152,7 @@ def memoize(
     key: None = None,
     storage: Optional[Storage] = None,
     allow_nonlocals=False,
-) -> Callable[[Callable[P, R]], MemoizedFunction[P, R]]:
-    ...
+) -> Callable[[Callable[P, R]], MemoizedFunction[P, R]]: ...
 
 
 @overload
@@ -162,8 +161,7 @@ def memoize(
     key: Callable[P, R] = ...,
     storage: Optional[Storage] = None,
     allow_nonlocals=False,
-) -> Callable[[Callable[P, R]], MemoizedFunction[P, R]]:
-    ...
+) -> Callable[[Callable[P, R]], MemoizedFunction[P, R]]: ...
 
 
 @overload
@@ -172,8 +170,7 @@ def memoize(
     key: None = None,
     storage: None = None,
     allow_nonlocals=False,
-) -> MemoizedFunction[P, R]:
-    ...
+) -> MemoizedFunction[P, R]: ...
 
 
 def memoize(

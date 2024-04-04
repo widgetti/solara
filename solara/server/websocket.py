@@ -2,6 +2,7 @@
 abstract base class for websocket with a sync interface.
 Async implementation have to come up with a way how to do this sync (see e.g. the starlette implementation)
 """
+
 import abc
 import json
 from typing import Union

@@ -13,6 +13,7 @@ instead of the session id. You can take a look at [Our oauth example](examples/g
 [the authorization example](/apps/authorization) for inspiration.
 
 """
+
 from typing import Dict
 
 import solara

@@ -233,12 +233,29 @@ class SessionWebsocket(session.Session):
             except:  # noqa
                 pass
 
-    def send(self, stream, msg_or_type, content=None, parent=None, ident=None, buffers=None, track=False, header=None, metadata=None):
+    def send(
+        self,
+        stream,
+        msg_or_type,
+        content=None,
+        parent=None,
+        ident=None,
+        buffers=None,
+        track=False,
+        header=None,
+        metadata=None,
+    ):
         try:
             if isinstance(msg_or_type, dict):
                 msg = msg_or_type
             else:
-                msg = self.msg(msg_or_type, content=content, parent=parent, header=header, metadata=metadata)
+                msg = self.msg(
+                    msg_or_type,
+                    content=content,
+                    parent=parent,
+                    header=header,
+                    metadata=metadata,
+                )
             _fix_msg(msg)
             msg["channel"] = stream.channel
             # not using pdb guard for performance reasons
@@ -259,6 +276,8 @@ class SessionWebsocket(session.Session):
 
 
 class Kernel(ipykernel.kernelbase.Kernel):
+    session: SessionWebsocket
+
     implementation = "solara"
     implementation_version = solara.__version__
     banner = "solara"

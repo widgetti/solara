@@ -32,8 +32,7 @@ def ToggleButtonsSingle(
     mandatory: Literal[True] = ...,
     classes: List[str] = ...,
     style: Union[str, Dict[str, str], None] = ...,
-) -> reacton.core.ValueElement[v.BtnToggle, T]:
-    ...
+) -> reacton.core.ValueElement[v.BtnToggle, T]: ...
 
 
 @overload
@@ -47,8 +46,7 @@ def ToggleButtonsSingle(
     mandatory: Literal[False] = ...,
     classes: List[str] = ...,
     style: Union[str, Dict[str, str], None] = ...,
-) -> reacton.core.ValueElement[v.BtnToggle, T]:
-    ...
+) -> reacton.core.ValueElement[v.BtnToggle, T]: ...
 
 
 @solara.value_component(None)

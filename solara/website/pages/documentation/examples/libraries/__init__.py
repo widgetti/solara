@@ -1,4 +1,5 @@
 """ipywidget library example"""
+
 import solara
 
 redirect = None

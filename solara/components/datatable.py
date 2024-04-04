@@ -2,7 +2,7 @@ import dataclasses
 import math
 import os
 from dataclasses import replace
-from typing import Callable, List, Optional
+from typing import Any, Callable, List, Optional, cast
 
 import ipyvuetify as v
 import ipywidgets
@@ -33,7 +33,7 @@ class DataTableWidget(v.VuetifyTemplate):
     template_file = os.path.realpath(os.path.join(os.path.dirname(__file__), "datatable.vue"))
 
     total_length = traitlets.CInt().tag(sync=True)
-    checked = traitlets.List([]).tag(sync=True)  # indices of which rows are selected
+    checked = traitlets.List(cast(List[Any], [])).tag(sync=True)  # indices of which rows are selected
     column_actions = traitlets.List(trait=traitlets.Instance(ColumnAction), default_value=[]).tag(
         sync=True, to_json=_drop_keys_from_list_of_mappings(["on_click"])
     )
@@ -54,7 +54,7 @@ class DataTableWidget(v.VuetifyTemplate):
     # for use with scrollable, when used in the default UI
     height = traitlets.Unicode(None, allow_none=True).tag(sync=True)
 
-    hidden_components = traitlets.List([]).tag(sync=False)
+    hidden_components = traitlets.List(cast(List[Any], [])).tag(sync=False)
     column_header_hover = traitlets.Unicode(allow_none=True).tag(sync=True)
     column_header_widget = traitlets.Any(allow_none=True).tag(sync=True, **ipywidgets.widget_serialization)
 

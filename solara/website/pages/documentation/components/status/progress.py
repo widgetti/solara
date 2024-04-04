@@ -1,5 +1,5 @@
-"""# ProgressLinear
-"""
+"""# ProgressLinear"""
+
 import solara
 from solara.website.components import NoPage
 from solara.website.utils import apidoc

@@ -1,4 +1,5 @@
 """Utility apps, slightly more complex."""
+
 import solara
 
 redirect = None

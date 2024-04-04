@@ -1,6 +1,5 @@
-"""# generate_routes_directory
+"""# generate_routes_directory"""
 
-"""
 import solara
 import solara.autorouting
 from solara.website.components import NoPage

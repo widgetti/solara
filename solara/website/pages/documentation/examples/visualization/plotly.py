@@ -11,6 +11,7 @@ Solara supports plotly and plotly express. Create your figure (not a figure widg
 and pass it to the [FigurePlotly](/documentation/components/viz/plotly) component.
 
 """
+
 import pandas as pd
 import plotly.express as px
 import solara

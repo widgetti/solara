@@ -131,7 +131,7 @@
 
  * Performance: Under starlette, we throttle sending websocket messages to get better performance, this is experimental and can be enabled by setting the
    environment variable `SOLARA_EXPERIMENTAL_PERFORMANCE=1` [#400](https://github.com/widgetti/solara/pull/400)
- * Performance: Re-use the jinja environment when rendering templates (this also saves memory).
+ * Performance: Reuse the jinja environment when rendering templates (this also saves memory).
 
 ## Version 1.24.0
 

@@ -1,4 +1,5 @@
 """Build webapps using IPywidgets"""
+
 __version__ = "1.30.1"
 github_url = "https://github.com/widgetti/solara"
 git_branch = "master"
@@ -18,6 +19,7 @@ def _using_solara_server():
 
 
 # isort: skip_file
+# ruff: noqa: F401 F403
 from reacton import (
     component,
     component_interactive,
@@ -38,19 +40,18 @@ from reacton import (
     use_side_effect,
     use_state,
     use_state_widget,
-)  # noqa: F403, F401
-from reacton.core import Element  # noqa: F403, F401
+)
+from reacton.core import Element
 
 try:
-    import ipyvuetify.components as v  # type: ignore # noqa: F401
+    import ipyvuetify.components as v  # type: ignore
 except ModuleNotFoundError:
     # backwards compatibility
-    import reacton.ipyvuetify as v  # type: ignore # noqa: F401
+    import reacton.ipyvuetify as v  # type: ignore
 from . import util
 
 from .reactive import *
 
-# flake8: noqa: F402
 from .datatypes import *
 from .hooks import *
 from .cache import memoize

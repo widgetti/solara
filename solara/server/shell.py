@@ -176,6 +176,7 @@ class SolaraDisplayPublisher(DisplayPublisher):
 class SolaraInteractiveShell(InteractiveShell):
     display_pub_class = Type(SolaraDisplayPublisher)
     history_manager = Any()  # type: ignore
+    display_pub: SolaraDisplayPublisher
 
     def set_parent(self, parent):
         """Tell the children about the parent message."""
@@ -219,7 +220,15 @@ class SolaraInteractiveShell(InteractiveShell):
         if rc is not None and not rc.reconsolidating and msg["msg_type"] == "display_data":
             from reacton.ipywidgets import Output
 
-            Output(outputs=[{"output_type": "display_data", "data": msg["content"]["data"], "metadata": msg["content"]["metadata"]}])
+            Output(
+                outputs=[
+                    {
+                        "output_type": "display_data",
+                        "data": msg["content"]["data"],
+                        "metadata": msg["content"]["metadata"],
+                    }
+                ]
+            )
             return None  # do not send to the frontend
         return msg
 

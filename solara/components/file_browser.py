@@ -1,7 +1,7 @@
 import os
 from os.path import isfile, join
 from pathlib import Path
-from typing import Callable, List, Optional, Union, cast
+from typing import Callable, Dict, List, Optional, Union, cast
 
 import humanize
 import ipyvuetify as vy
@@ -26,7 +26,7 @@ def list_dir(path, filter: Callable[[Path], bool] = lambda x: True, directory_fi
 class FileListWidget(vy.VuetifyTemplate):
     template_file = (__file__, "file_list_widget.vue")
 
-    files = traitlets.List().tag(sync=True)
+    files = traitlets.List(cast(List[Dict], [])).tag(sync=True)
     clicked = traitlets.Dict(allow_none=True, default_value=None).tag(sync=True)
     double_clicked = traitlets.Dict(allow_none=True, default_value=None).tag(sync=True)
     scroll_pos = traitlets.Int(allow_none=True).tag(sync=True)

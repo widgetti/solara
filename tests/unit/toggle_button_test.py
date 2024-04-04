@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 
 import solara
 
@@ -25,7 +25,7 @@ def test_toggle_buttons_single():
 
 
 def test_toggle_buttons_multiple():
-    value: solara.Reactive[Optional[str]] = solara.reactive(None)
+    value: solara.Reactive[Optional[List[str]]] = solara.reactive(None)
 
     @solara.component
     def Test():

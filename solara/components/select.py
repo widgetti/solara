@@ -20,8 +20,7 @@ def Select(
     disabled: bool = ...,
     classes: List[str] = [],
     style: Union[str, Dict[str, str], None] = None,
-) -> reacton.core.ValueElement[v.Select, T]:
-    ...
+) -> reacton.core.ValueElement[v.Select, T]: ...
 
 
 @overload
@@ -34,8 +33,7 @@ def Select(
     disabled: bool = ...,
     classes: List[str] = [],
     style: Union[str, Dict[str, str], None] = None,
-) -> reacton.core.ValueElement[v.Select, T]:
-    ...
+) -> reacton.core.ValueElement[v.Select, T]: ...
 
 
 @overload
@@ -48,8 +46,7 @@ def Select(
     disabled: bool = ...,
     classes: List[str] = [],
     style: Union[str, Dict[str, str], None] = None,
-) -> reacton.core.ValueElement[v.Select, T]:
-    ...
+) -> reacton.core.ValueElement[v.Select, T]: ...
 
 
 @overload
@@ -62,8 +59,7 @@ def Select(
     disabled: bool = ...,
     classes: List[str] = [],
     style: Union[str, Dict[str, str], None] = None,
-) -> reacton.core.ValueElement[v.Select, T]:
-    ...
+) -> reacton.core.ValueElement[v.Select, T]: ...
 
 
 @solara.value_component(None)

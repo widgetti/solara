@@ -1078,7 +1078,6 @@ def test_use_reactive_on_change():
 
 
 def test_reactive_var_in_use_effect():
-
     var = Reactive(1)
 
     @solara.component

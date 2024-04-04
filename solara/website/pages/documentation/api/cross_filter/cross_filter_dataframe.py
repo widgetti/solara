@@ -1,5 +1,5 @@
-"""# CrossFilterDataFrame
-"""
+"""# CrossFilterDataFrame"""
+
 import plotly
 
 import solara

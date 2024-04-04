@@ -113,7 +113,15 @@ def is_ready(url) -> bool:
     return False
 
 
-async def app_loop(ws: websocket.WebsocketWrapper, cookies: Dict[str, str], headers, session_id: str, kernel_id: str, page_id: str, user: dict = None):
+async def app_loop(
+    ws: websocket.WebsocketWrapper,
+    cookies: Dict[str, str],
+    headers,
+    session_id: str,
+    kernel_id: str,
+    page_id: str,
+    user: dict = None,
+):
     context = initialize_virtual_kernel(session_id, kernel_id, ws)
     if context is None:
         logging.warning("invalid kernel id: %r", kernel_id)
@@ -228,7 +236,9 @@ def process_kernel_messages(kernel: Kernel, msg: Dict) -> bool:
         target_name = msg.get("target_name", None)
 
         comms = {
-            k: dict(target_name=v.target_name) for (k, v) in comm_manager.comms.items() if v.target_name == target_name or target_name is None  # type: ignore
+            k: dict(target_name=v.target_name)
+            for (k, v) in comm_manager.comms.items()
+            if v.target_name == target_name or target_name is None  # type: ignore
         }
         reply_content = dict(comms=comms, status="ok")
         with busy_idle(msg["header"]):
@@ -248,7 +258,13 @@ def process_kernel_messages(kernel: Kernel, msg: Dict) -> bool:
         return False
 
 
-def read_root(path: str, root_path: str = "", render_kwargs={}, use_nbextensions=True, ssg_data=None) -> Optional[str]:
+def read_root(
+    path: str,
+    root_path: str = "",
+    render_kwargs={},
+    use_nbextensions=True,
+    ssg_data=None,
+) -> Optional[str]:
     if settings.ssg.enabled and ssg_data is None:
         # simply return the pre-rendered html
         from solara_enterprise import ssg
@@ -276,7 +292,10 @@ def read_root(path: str, root_path: str = "", render_kwargs={}, use_nbextensions
             directories = [default_app.directory.parent / "public"]
             filename = path[len("/static/public/") :]
         elif path.startswith("/static/assets/"):
-            directories = [default_app.directory.parent / "assets", solara_static.parent / "assets"]
+            directories = [
+                default_app.directory.parent / "assets",
+                solara_static.parent / "assets",
+            ]
             filename = path[len("/static/assets/") :]
         elif path.startswith("/static/"):
             directories = [solara_static.parent / "static"]

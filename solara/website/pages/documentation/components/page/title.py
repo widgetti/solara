@@ -1,5 +1,4 @@
-"""# Title
-"""
+"""# Title"""
 
 from typing import Optional, cast
 

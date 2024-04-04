@@ -1,6 +1,5 @@
-"""# use_trait_observe
+"""# use_trait_observe"""
 
-"""
 import solara
 import solara.autorouting
 import solara.lab

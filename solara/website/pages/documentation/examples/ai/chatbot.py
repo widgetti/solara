@@ -1,9 +1,8 @@
 """
-    # Chatbot
+# Chatbot
 
-    A way to create a chatbot using OpenAI's GPT-4 API, utilizing their new API, and the streaming feature.
+A way to create a chatbot using OpenAI's GPT-4 API, utilizing their new API, and the streaming feature.
 """
-
 
 import os
 from typing import List

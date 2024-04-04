@@ -2,6 +2,7 @@
 meaning it will catch urls like /viz/scatter/titanic and pass two argument to the Page component,
 so we can render content dynamically.
 """
+
 from typing import Optional
 
 import plotly.express as px

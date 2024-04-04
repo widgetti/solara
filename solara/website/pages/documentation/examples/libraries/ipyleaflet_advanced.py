@@ -5,6 +5,7 @@ Extends the [basic ipyleaflet example](/documentation/examples/libraries/ipyleaf
 dropdown to select the map style. Two buttons allow to reset the map to the default zoom and center and to zoom
 to the marker.
 """
+
 import ipyleaflet
 
 import solara

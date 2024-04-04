@@ -1,4 +1,5 @@
 """Large Language Models and Generative AI examples."""
+
 import solara
 
 title = "AI"

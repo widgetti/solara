@@ -9,6 +9,7 @@ Also check out the [Chatbot](/documentation/examples/ai/chatbot) example.
 
 # ChatBox
 """
+
 import solara
 from solara.website.components import NoPage
 from solara.website.utils import apidoc
