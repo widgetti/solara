@@ -122,7 +122,7 @@ jobs:
         id: install_no_lock
         run: |
           mkdir -p .ci-package-locks/code-quality
-          pip install ".[dev]" mypy==1.6.0 black==22.12.0 codespell==2.2.4 flake8==7.0.0 "click<8.1.4" "traitlets<5.10.0" "matplotlib<3.8.0"
+          pip install ".[dev]" ruff "click<8.1.4" "matplotlib<3.8.0"
           pip freeze --exclude solara --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
           git diff --quiet || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
 
@@ -130,17 +130,11 @@ jobs:
         if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
         run: pip install -r ${{ env.LOCK_FILE_LOCATION }}
 
-      - name: Run codespell
-        run: codespell
+      - name: Install pre-commit
+        run: pre-commit install
 
-      - name: Run black
-        run: black solara
-
-      - name: Run flake8
-        run: flake8 solara
-
-      - name: mypy
-        run: mypy --install-types --non-interactive solara
+      - name: Run pre-commit
+        run: pre-commit run --all-files
 
       - name: Upload CI package locks
         if: steps.install_no_lock.outputs.HAS_DIFF == 'true' || steps.prepare.outputs.LOCKS_EXIST == 'false'
