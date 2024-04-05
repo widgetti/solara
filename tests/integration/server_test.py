@@ -168,6 +168,7 @@ def test_run_in_iframe(page_session: playwright.sync_api.Page, solara_server, so
         )
 
         iframe = page_session.frame("main")
+        assert iframe is not None
         el = iframe.locator(".jupyter-widgets")
         assert el.text_content() == "Hello world"
 

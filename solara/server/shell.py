@@ -92,6 +92,7 @@ class SolaraDisplayPublisher(DisplayPublisher):
         # Use 2-stage process to send a message,
         # in order to put it through the transform
         # hooks before potentially sending.
+        assert self.session is not None
         msg = self.session.msg(msg_type, json_clean(content), parent=self.parent_header)
 
         # Each transform either returns a new
@@ -119,6 +120,7 @@ class SolaraDisplayPublisher(DisplayPublisher):
             This reduces bounce during repeated clear & display loops.
 
         """
+        assert self.session is not None
         content = dict(wait=wait)
         self._flush_streams()
         msg = self.session.msg("clear_output", json_clean(content), parent=self.parent_header)

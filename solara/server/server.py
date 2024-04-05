@@ -237,7 +237,7 @@ def process_kernel_messages(kernel: Kernel, msg: Dict) -> bool:
 
         comms = {
             k: dict(target_name=v.target_name)
-            for (k, v) in comm_manager.comms.items()
+            for (k, v) in comm_manager.comms.items()  # type: ignore
             if v.target_name == target_name or target_name is None  # type: ignore
         }
         reply_content = dict(comms=comms, status="ok")

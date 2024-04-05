@@ -69,7 +69,9 @@ def test_oauth_private(page_session: playwright.sync_api.Page, solara_server, so
             response = page_session.goto(solara_server.base_url + "/static/public/beach.jpeg?cache=off")
             assert response is not None
             assert response.status == 401
-            assert page_session.goto(solara_server.base_url + "/invalid_url").status == 401
+            response_invalid = page_session.goto(solara_server.base_url + "/invalid_url")
+            assert response_invalid is not None
+            assert response_invalid.status == 401
             page_session.goto(solara_server.base_url + "/documentation/components/advanced/style")
             page_session.locator('css=input[name="username"]').fill(os.environ["AUTH0_USERNAME"])
             page_session.locator('css=input[name="password"]').fill(os.environ["AUTH0_PASSWORD"])

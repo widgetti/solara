@@ -41,6 +41,7 @@ def test_select():
     assert on_value_multiple.call_args[0][0] == ["test0", "test1"]
 
     # test disable
+    assert disabled is not None
     disabled.set(True)
     assert len(rc.find(vw.Select, disabled=True).widgets) == 2
 

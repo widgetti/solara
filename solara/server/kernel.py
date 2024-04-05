@@ -6,7 +6,7 @@ import struct
 import warnings
 from binascii import b2a_base64
 from datetime import datetime
-from typing import Set
+from typing import Set, Union
 
 import ipykernel
 import ipykernel.kernelbase
@@ -78,6 +78,8 @@ if ipykernel_version >= (6, 18, 0):
     import comm.base_comm
 
     class Comm(comm.base_comm.BaseComm):
+        kernel: Union[ipykernel.kernelbase.Kernel, None]
+
         def __init__(self, **kwargs) -> None:
             if ipykernel.kernelbase.Kernel.initialized():
                 self.kernel = ipykernel.kernelbase.Kernel.instance()
@@ -86,7 +88,7 @@ if ipykernel_version >= (6, 18, 0):
             super().__init__(**kwargs)
 
         def publish_msg(self, msg_type, data=None, metadata=None, buffers=None, **keys):
-            if self.kernel is None:
+            if self.kernel is None or self.kernel.session is None:
                 return
             data = {} if data is None else data
             metadata = {} if metadata is None else metadata
@@ -276,7 +278,8 @@ class SessionWebsocket(session.Session):
 
 
 class Kernel(ipykernel.kernelbase.Kernel):
-    session: SessionWebsocket
+    session: SessionWebsocket  # type: ignore
+    # Ideally we have `session = Instance(Session, allow_none=True)`, but MyPy does not like it
 
     implementation = "solara"
     implementation_version = solara.__version__

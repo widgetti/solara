@@ -1,4 +1,5 @@
 import asyncio
+import sys
 
 try:
     import contextvars
@@ -231,7 +232,10 @@ class VirtualKernelContext:
                     self.close()
                 current_event_loop.call_soon_threadsafe(future.set_result, None)
             except asyncio.CancelledError:
-                current_event_loop.call_soon_threadsafe(future.cancel, "cancelled because a new cull task was scheduled")
+                if sys.version_info >= (3, 9):
+                    current_event_loop.call_soon_threadsafe(future.cancel, "cancelled because a new cull task was scheduled")
+                else:
+                    current_event_loop.call_soon_threadsafe(future.cancel)
                 raise
 
         has_connected_pages = PageStatus.CONNECTED in self.page_status.values()

@@ -56,7 +56,7 @@ def add_document(base_url: str, route: solara.Route, build_path: Path, documents
             else:
                 # split by h1 and h2
                 parts: List[List[Any]] = [[]]
-                ids = [None]
+                ids = []
                 titles = [soup.title.string if soup.title else ""]
                 current = parts[-1]
                 # remove invisible title elements

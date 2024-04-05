@@ -24,11 +24,11 @@ class VegaLite(v.VuetifyTemplate):
     cdn = traitlets.Unicode(None, allow_none=True).tag(sync=True)
 
     def vue_altair_click(self, *args):
-        if self.on_click:
+        if self.on_click is not None:
             self.on_click(*args)
 
     def vue_altair_hover(self, *args):
-        if self.on_hover:
+        if self.on_hover is not None:
             self.on_hover(*args)
 
     @traitlets.default("cdn")
