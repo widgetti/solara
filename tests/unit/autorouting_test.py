@@ -105,7 +105,7 @@ def test_routes_examples_api_button():
 def test_routes_examples_getting_started():
     routes = solara.autorouting.generate_routes(solara.website.pages.documentation.getting_started)
 
-    assert len(routes) == 9
+    assert len(routes) == 8
     assert routes[0].path == "/"
     assert routes[0].label == "Quickstart"
 

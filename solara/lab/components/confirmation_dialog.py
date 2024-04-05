@@ -58,7 +58,7 @@ def ConfirmationDialog(
 ):
     """A dialog used to confirm a user action.
 
-    (*Note: [This component is experimental and its API may change in the future](/documentation/getting_started/lab).*)
+    (*Note: [This component is experimental and its API may change in the future](/documentation/getting_started/what-is-lab).*)
 
     By default, has a title, a text explaining the
     decision to be made, and two buttons "OK" and "Cancel".

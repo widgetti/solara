@@ -145,7 +145,7 @@ def FileDownload(
 
     Note that the data will be kept in memory when downloading.
     If the file is large (>10 MB), and when using [Solara server](/documentation/advanced/understanding/solara-server), we recommend using the
-    [static files directory](/documentation/getting_started/reference/static-files) instead.
+    [static files directory](/documentation/advanced/reference/static-files) instead.
 
     """
     request_download, set_request_download = solara.use_state(False)

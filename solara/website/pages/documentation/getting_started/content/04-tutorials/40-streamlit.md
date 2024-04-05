@@ -74,7 +74,7 @@ If you are using [Solara server](/documentation/advanced/understanding/solara-se
 
 ### Execution model
 As the introduction says, Solara does not re-execute your whole script after user interactions.
-The main script is executed only once. With Solara you can use your main script to read large dataframes, or do some pre-calculations without the need for [caching](/documentation/getting_started/reference/caching).
+The main script is executed only once. With Solara you can use your main script to read large dataframes, or do some pre-calculations without the need for [caching](/documentation/advanced/reference/caching).
 
 When a user navigates to a Solara server, the `Page` component (basically a function) will get executed. The `Page` component will call (lazily) new components like [solara.Markdown](/documentation/components/output/markdown) to build up the page. If state changes due to user input, Solara will trigger a cascade of re-excecutions of components which inputs or state changed, but never your whole script, nor every component.
 

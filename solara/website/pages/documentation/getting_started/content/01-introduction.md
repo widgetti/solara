@@ -83,7 +83,7 @@ Solara is actually two things.
 
 ### Solara server
 [Solara server](/documentation/advanced/understanding/solara-server) renders ipywidgets in the browser in a very efficient manner and takes care of many other things
-such as [routing](/documentation/advanced/understanding/routing) and [Static Site Generation](/documentation/getting_started/reference/static-site-generation).
+such as [routing](/documentation/advanced/understanding/routing) and [Static Site Generation](/documentation/advanced/reference/static-site-generation).
 
 ### Solara UI
 
@@ -110,7 +110,7 @@ We recommend going through the documentation linearly following the arrows on th
 If you want to know more about specific parts, you can go through the [How-to section](/documentation/advanced/howto) to learn more. Feel free to skip chapters, and go back to topics when you need to.
 
 
-If you want to know what components or hooks are available, or want to know more about a specific component, check out the [Documentation](/documentation) which includes live code examples. Other reference documentation can be found at the [reference section](/documentation/getting_started/reference)
+If you want to know what components or hooks are available, or want to know more about a specific component, check out the [Documentation](/documentation) which includes live code examples. Other reference documentation can be found at the [reference section](/documentation/advanced/reference)
 
 If you feel like you miss some basic understanding and want to give a bit deeper into the what and why feel free to explore the [Understanding section](/documentation/advanced/understanding).
 

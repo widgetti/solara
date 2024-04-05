@@ -73,7 +73,7 @@ Lets modify the script a little bit, possibly in this way:
 ```
 
 If we save the script, Solara will automatically reload your script and update
-your browser (we call this feature [hot reloading](/documentation/getting_started/reference/reloading)).
+your browser (we call this feature [hot reloading](/documentation/advanced/reference/reloading)).
 
 Note that Solara will remember your state (e.g., the number of buttons clicked) when the app reloads.
 
