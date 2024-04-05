@@ -113,10 +113,7 @@ if ipykernel_version >= (6, 18, 0):
 
     global_comm_manager = comm.get_comm_manager()
     comm.get_comm_manager = get_comm_manager
-else:
-    from ipykernel.comm import CommManager as _CommManager
 
-    global_comm_manager = _CommManager()
 # from notebook.base.zmqhandlers import serialize_binary_message
 # this saves us a dependency on notebook/jupyter_server when e.g.
 # running on pyodide
