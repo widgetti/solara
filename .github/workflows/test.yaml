@@ -122,7 +122,7 @@ jobs:
         id: install_no_lock
         run: |
           mkdir -p .ci-package-locks/code-quality
-          pip install ".[dev]" ruff "click<8.1.4" "matplotlib<3.8.0"
+          pip install ".[dev]" "click<8.1.4" "matplotlib<3.8.0"
           pip freeze --exclude solara --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
           git diff --quiet || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
 
@@ -246,8 +246,8 @@ jobs:
         id: install_no_lock
         run: |
           mkdir -p .ci-package-locks/integration
-          find dist/ -name '*.whl' -exec pip install {}\[dev,documentation,flask,pytest,server\] \;
-          find packages/solara-enterprise/dist/ -name '*.whl' -exec pip install {}\[ssg,auth\] \;
+          pip install `echo dist/*.whl`[dev,documentation,flask,pytest]
+          pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
           pip install "voila~=${{ matrix.voila }}" "jupyterlab<4"  "pydantic<2" "playwright==1.41.2" "ipywidgets~=${{ matrix.ipywidgets }}"
           pip freeze --exclude solara --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
           git diff --quiet || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
@@ -256,8 +256,8 @@ jobs:
         if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
         run: |
           pip install -r ${{ env.LOCK_FILE_LOCATION }}
-          find dist/ -name '*.whl' -exec pip install {}\[dev,documentation,flask,pytest,server\] \;
-          find packages/solara-enterprise/dist/ -name '*.whl' -exec pip install {}\[ssg,auth\] \;
+          pip install `echo dist/*.whl`[dev,documentation,flask,pytest]
+          pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
 
       - name: Install playwright
         run: playwright install
@@ -340,8 +340,8 @@ jobs:
         if: github.event_name == 'schedule' || steps.prepare.outputs.LOCKS_EXIST == 'false'
         run: |
           mkdir -p .ci-package-locks/integration-vue3
-          find dist/ -name '*.whl' -exec pip install {}\[dev,documentation,flask,pytest,server\] \;
-          find packages/solara-enterprise/dist/ -name '*.whl' -exec pip install {}\[ssg,auth\] \;
+          pip install `echo dist/*.whl`[dev,documentation,flask,pytest]
+          pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
           pip install "jupyterlab<4" "voila~=${{ matrix.voila }}" "playwright==1.41.2" "pydantic<2" "ipywidgets~=${{ matrix.ipywidgets }}"
           pip install jupyter_core jupyter-packaging
           pip install --pre ipyvue ipyvuetify
@@ -352,8 +352,8 @@ jobs:
         if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
         run: |
           pip install -r ${{ env.LOCK_FILE_LOCATION }}
-          find dist/ -name '*.whl' -exec pip install {}\[dev,documentation,flask,pytest,server\] \;
-          find packages/solara-enterprise/dist/ -name '*.whl' -exec pip install {}\[ssg,auth\] \;
+          pip install `echo dist/*.whl`[dev,documentation,flask,pytest]
+          pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
 
       - name: Install playwright
         run: playwright install
@@ -432,8 +432,8 @@ jobs:
         if: github.event_name == 'schedule' || steps.prepare.outputs.LOCKS_EXIST == 'false'
         run: |
           mkdir -p .ci-package-locks/unit
-          find dist/ -name '*.whl' -exec pip install {}\[dev,extra\] \;
-          find packages/solara-enterprise/dist/ -name '*.whl' -exec pip install {}\[ssg,auth\] \;
+          pip install `echo dist/*.whl`[dev,extra]
+          pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
           pip install "jupyterlab<4" diskcache redis "ipywidgets~=${{ matrix.ipywidgets }}"
           pip freeze --exclude solara --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
           git diff --quiet || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
@@ -442,8 +442,8 @@ jobs:
         if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
         run: |
           pip install -r ${{ env.LOCK_FILE_LOCATION }}
-          find dist/ -name '*.whl' -exec pip install {}\[dev,extra\] \;
-          find packages/solara-enterprise/dist/ -name '*.whl' -exec pip install {}\[ssg,auth\] \;
+          pip install `echo dist/*.whl`[dev,extra]
+          pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
 
       - name: Start Redis
         if: ( github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == true ) && matrix.os != 'windows'
