@@ -377,7 +377,7 @@ class Singleton(Reactive[S]):
     _storage: KernelStore[S]
 
     def __init__(self, factory: Callable[[], S], key=None):
-        import solara.server.kernel_context
+        import solara.lifecycle
 
         super().__init__(KernelStoreFactory(factory, key=key))
 
@@ -388,7 +388,7 @@ class Singleton(Reactive[S]):
 
             return cleanup
 
-        solara.server.kernel_context.on_kernel_start(reset)
+        solara.lifecycle.on_kernel_start(reset)
 
     def __set__(self, obj, value):
         raise AttributeError("Can't set a singleton")
@@ -398,6 +398,8 @@ class Computed(Reactive[S]):
     _storage: KernelStore[S]
 
     def __init__(self, f: Callable[[], S], key=None):
+        import solara.lifecycle
+
         self.f = f
 
         def on_change(*ignore):
@@ -423,7 +425,7 @@ class Computed(Reactive[S]):
 
             return cleanup
 
-        solara.server.kernel_context.on_kernel_start(reset)
+        solara.lifecycle.on_kernel_start(reset)
 
     def __repr__(self):
         value = super().__repr__()

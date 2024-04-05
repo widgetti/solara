@@ -4,15 +4,30 @@ description: Using solara you can test both the front and back end functionaliti
 ---
 
 # Testing with Solara
-# Testing Application Logic
+
+
+## Testing without a Browser
 
 We recommend using pytest to test the application logic of your Solara components. To get inspiration for writing tests that cover component logic and their interactions with existing components, refer to the [tests in the Solara repository](https://github.com/widgetti/solara/tree/master/tests).
 
-# Testing with a Browser
+## Testing with a Browser
 
-If you have custom components that depend on a connected browser because it is using JavaScript, we recommend using the Solara pytest plugin, which is installed by default when you install Solara. The plugin provides a fixture called `solara_test` that you can use to test your components. Here's an example:
+### Installation
+
+Solara is using the `pytest-ipywidgets` pytest plugin together with [Playwright for Python](https://playwright.dev/python/) to test your widgets, components or applications using a browser, for both unit as well as integration tests.
+
+To install `pytest-ipywidgets` and Playwright for Python, run the following commands:
+```
+$ pip install "pytest-ipywidgets[solara]"  # or "pytest-ipywidgets[all]" if you also want to test with Jupyter Lab, Jupiter Notebook and Voila.
+$ playwright install chromium
+```
+
+### Testing widgets using Solara server
+
+The most convenient way to test a widget, is by including the `solara_test` fixture in your test function arguments. Here's an example:
 
 ```python
+# file tests/ui/test_widget_button.py
 import ipywidgets as widgets
 import playwright.sync_api
 from IPython.display import display
@@ -32,23 +47,16 @@ def test_widget_button_solara(solara_test, page_session: playwright.sync_api.Pag
     button_sel.click()
     page_session.locator("text=Tested event").wait_for()
 ```
+When this fixture is used, we can use the standard IPython display call to add your widget to the page. Using the `page_session` fixture, we can interact with the widget in the browser,
+in this case we trigger a button click in the browser and check if the button description changes to "Tested event".
 
-Run this test with pytest:
+Run this test with pytest as follows:
 
 ```bash
 pytest tests/ui/test_widget_button.py --headed # remove --headed to run headless
 ```
 
-This require playwright to be installed:
 
-```
-$ pip install playwright pytest-playwright
-# $ pip install "solara[pytest]"  # if you haven't installed solara already
-$ playwright install chromium
-```
-
-
-In this example, use the standard IPython display call to add your widget to the page.
 
 # Testing in the main Jupyter Environments
 

@@ -1,10 +1,10 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling==1.22.2"]
 build-backend = "hatchling.build"
 
 
 [project]
-name = "solara"
+name = "solara-ui"
 readme = "README.md"
 authors = [{name = "Maarten A. Breddels", email = "maartenbreddels@gmail.com"}]
 license = {file = "LICENSE"}
@@ -15,28 +15,16 @@ packages = [
 ]
 dependencies = [
     "reacton>=1.7.1",
-    "ipywidgets",
-    "cachetools",
-    "filelock",
-    "markdown",
-    "pymdown-extensions",
-    "humanize",
-    "ipyvuetify>=1.8.10",
+    "ipywidgets>=7.7",
+    "ipyvuetify>=1.6.10",
     "ipyvue>=1.9.0",
-    "jinja2",
-    "MarkupSafe",
-    "click>=7.1.0",
-    "rich_click",
-    "uvicorn",
-    "websockets",
-    "starlette",
-    "jupyter_client>=7.0.0",
-    "watchdog",
     "requests",
-    "nbformat",
-    "ipykernel",
-    "watchfiles; python_version > '3.6'",
+    "humanize",
 ]
+
+[project.urls]
+Home = "https://www.github.com/widgetti/solara"
+Documentation = "https://solara.dev"
 
 [tool.hatch.build.targets.wheel.shared-data]
 "prefix/etc/jupyter" = "etc/jupyter"
@@ -48,6 +36,14 @@ path = "solara/__init__.py"
 # when using SSG
 [tool.hatch.build]
 ignore-vcs = true
+
+[tool.hatch.build.targets.wheel]
+include = [
+    "solara",
+    "prefix",
+    "packages/solara-widget-manager/LICENSE.voila.txt",
+]
+exclude = ["packages"]
 
 [tool.hatch.build.targets.sdist]
 # unclear from hatch docs, but README.md and LICENSE are included by default
@@ -63,80 +59,27 @@ include = [
 exclude = ["packages"]
 
 [project.optional-dependencies]
-extra = [
-    "pygments",
-    "numpy",
-    "pillow",
+all = [
+    "solara-ui[markdown]",
+    "solara-ui[cache]",
+    "solara-ui[extra]",
+]
+
+markdown = [
+    "markdown",
+    "pymdown-extensions",
     "pygments",
     "pygments==2.10; python_version < '3.7'",
 ]
-dev = [
-    "codespell",
-    "python-dotenv",
-    "bqplot",
-    "bqplot-image-gl",
-    "ipyreact; python_version > '3.6'",
-    "vaex-core",
-    "vaex-hdf5",
-    "vaex-jupyter",
-    "mypy",
-    "mdit-py-plugins",
-    "plotly",
-    "types-requests",
-    "types-markdown",
-    "types-PyYAML",
-    "pytest",
-    "pytest-mock",
-    "pytest-cov",
-    "pytest-timeout",
-    "pre-commit",
-    "ruff; python_version > '3.6'",
-    "bump2version",
-    "dask[dataframe]; python_version < '3.7'",
-    "playwright; python_version > '3.6'",
-    "pytest-playwright; python_version > '3.6'",
-    "polars",
+
+cache = [
+    "cachetools"
 ]
-assets = [
-    "solara-assets==1.30.1"
-]
-flask = [
-    "flask",
-    "flask-sock",
-]
-documentation = [
+
+extra = [
     "numpy",
-    "bqplot",
-    "altair",
-    "folium",
-    "ipycanvas",
-    "ipyleaflet",
-    "matplotlib",
-    "vega_datasets",
-    "openai",
-    "plotly",
-    "vaex-core",
-    "vaex-hdf5",
-    "tiktoken",
-]
-pytest = [
-    "pytest",
-    "playwright; python_version > '3.6'",
-    "pytest-playwright; python_version > '3.6'",
-    "voila",
-    "jupyterlab",
     "pillow",
-    "pixelmatch",
 ]
-
-[project.urls]
-Home = "https://www.github.com/widgetti/solara"
-
-[project.scripts]
-solara = "solara.__main__:main"
-
-[project.entry-points.pytest11]
-solara = "solara.test.pytest_plugin"
 
 [tool.ruff]
 fix = false
@@ -149,4 +92,4 @@ timeout = 180
 
 
 [tool.codespell]
-skip='equis-in-vidi.md,substiterat-vati.md,.*,solara/website/build,*.svg,highlight-dark.css,packages/**/dist/*,node_modules,packages/assets,package*.json,tsconfig.tsbuildinfo,*.csv'
+skip='equis-in-vidi.md,substiterat-vati.md,.*,solara/website/build,*.svg,highlight-dark.css,packages/**/dist/*,node_modules,packages/solara-assets,package*.json,tsconfig.tsbuildinfo,*.csv'

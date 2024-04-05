@@ -37,6 +37,7 @@ def source_to_module(path: Path, initial_namespace={}) -> ModuleType:
             ast = compile(f.read(), path, "exec")
             exec(ast, mod.__dict__)
     elif path.suffix == ".ipynb":
+        # TODO: this is a dependency of solara-server, but this packages is in solara-ui
         import nbformat
 
         nb: nbformat.NotebookNode = nbformat.read(path, 4)

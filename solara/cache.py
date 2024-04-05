@@ -15,7 +15,13 @@ from typing import (
     overload,
 )
 
-import cachetools
+try:
+    import cachetools
+
+    has_cachetools = True
+except ModuleNotFoundError:
+    has_cachetools = False
+
 import solara
 import solara.settings
 import solara.util
@@ -39,9 +45,15 @@ P = typing_extensions.ParamSpec("P")
 Storage = MutableMapping[K, V]
 
 
-class Memory(cachetools.LRUCache):
-    def __init__(self, max_items=solara.settings.cache.memory_max_items):
-        super().__init__(maxsize=max_items)
+if has_cachetools:
+
+    class Memory(cachetools.LRUCache):
+        def __init__(self, max_items=solara.settings.cache.memory_max_items):
+            super().__init__(maxsize=max_items)
+else:
+
+    class Memory(dict):  # type: ignore
+        pass
 
 
 def _default_key(*args, **kwargs):

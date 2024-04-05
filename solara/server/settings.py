@@ -8,7 +8,10 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional
 
-from filelock import FileLock
+try:
+    from filelock import FileLock
+except ModuleNotFoundError:
+    FileLock = None  # type: ignore
 
 import solara.util
 from solara.minisettings import BaseSettings
@@ -184,7 +187,7 @@ if settings.assets.proxy:
         # in this case, we would need to install solara-assets?
         pass
 
-if telemetry.server_user_id == "not_set":
+if telemetry.server_user_id == "not_set" and FileLock is not None:
     home = get_solara_home()
     server_user_id_file = home / "server_user_id.txt"
     try:

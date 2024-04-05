@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 import solara.lab
-import solara.server.kernel_context
+import solara.lifecycle
 from solara.server import reload
 from solara.server.app import AppScript
 
@@ -18,8 +18,8 @@ def test_script_reload_component(tmpdir, kernel_context, extra_include_path, no_
     target = Path(tmpdir) / "kernel_start.py"
     shutil.copy(kernel_start_path, target)
     with extra_include_path(str(tmpdir)):
-        on_kernel_start_callbacks = solara.server.kernel_context._on_kernel_start_callbacks.copy()
-        callbacks_start = [k.callback for k in solara.server.kernel_context._on_kernel_start_callbacks]
+        on_kernel_start_callbacks = solara.lifecycle._on_kernel_start_callbacks.copy()
+        callbacks_start = [k.callback for k in solara.lifecycle._on_kernel_start_callbacks]
         if as_module:
             app = AppScript(f"{target.stem}")
         else:
@@ -27,7 +27,7 @@ def test_script_reload_component(tmpdir, kernel_context, extra_include_path, no_
         try:
             app.run()
             callback = app.routes[0].module.test_callback  # type: ignore
-            callbacks = [k.callback for k in solara.server.kernel_context._on_kernel_start_callbacks]
+            callbacks = [k.callback for k in solara.lifecycle._on_kernel_start_callbacks]
             assert callbacks == [*callbacks_start, callback]
             prev = callbacks.copy()
             reload.reloader.reload_event_next.clear()
@@ -36,13 +36,13 @@ def test_script_reload_component(tmpdir, kernel_context, extra_include_path, no_
             reload.reloader.reload_event_next.wait()
             app.run()
             callback = app.routes[0].module.test_callback  # type: ignore
-            callbacks = [k[0] for k in solara.server.kernel_context._on_kernel_start_callbacks]
+            callbacks = [k[0] for k in solara.lifecycle._on_kernel_start_callbacks]
             assert callbacks != prev
             assert callbacks == [*callbacks_start, callback]
         finally:
             app.close()
-            solara.server.kernel_context._on_kernel_start_callbacks.clear()
-            solara.server.kernel_context._on_kernel_start_callbacks.extend(on_kernel_start_callbacks)
+            solara.lifecycle._on_kernel_start_callbacks.clear()
+            solara.lifecycle._on_kernel_start_callbacks.extend(on_kernel_start_callbacks)
 
 
 def test_on_kernel_start_cleanup(kernel_context, no_kernel_context):
@@ -50,6 +50,6 @@ def test_on_kernel_start_cleanup(kernel_context, no_kernel_context):
         pass
 
     cleanup = solara.lab.on_kernel_start(test_callback_cleanup)
-    assert test_callback_cleanup in [k.callback for k in solara.server.kernel_context._on_kernel_start_callbacks]
+    assert test_callback_cleanup in [k.callback for k in solara.lifecycle._on_kernel_start_callbacks]
     cleanup()
-    assert test_callback_cleanup not in [k.callback for k in solara.server.kernel_context._on_kernel_start_callbacks]
+    assert test_callback_cleanup not in [k.callback for k in solara.lifecycle._on_kernel_start_callbacks]
