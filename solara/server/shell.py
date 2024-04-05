@@ -92,6 +92,7 @@ class SolaraDisplayPublisher(DisplayPublisher):
         # Use 2-stage process to send a message,
         # in order to put it through the transform
         # hooks before potentially sending.
+        assert self.session is not None
         msg = self.session.msg(msg_type, json_clean(content), parent=self.parent_header)
 
         # Each transform either returns a new
@@ -119,6 +120,7 @@ class SolaraDisplayPublisher(DisplayPublisher):
             This reduces bounce during repeated clear & display loops.
 
         """
+        assert self.session is not None
         content = dict(wait=wait)
         self._flush_streams()
         msg = self.session.msg("clear_output", json_clean(content), parent=self.parent_header)
@@ -176,6 +178,7 @@ class SolaraDisplayPublisher(DisplayPublisher):
 class SolaraInteractiveShell(InteractiveShell):
     display_pub_class = Type(SolaraDisplayPublisher)
     history_manager = Any()  # type: ignore
+    display_pub: SolaraDisplayPublisher
 
     def set_parent(self, parent):
         """Tell the children about the parent message."""
@@ -219,7 +222,15 @@ class SolaraInteractiveShell(InteractiveShell):
         if rc is not None and not rc.reconsolidating and msg["msg_type"] == "display_data":
             from reacton.ipywidgets import Output
 
-            Output(outputs=[{"output_type": "display_data", "data": msg["content"]["data"], "metadata": msg["content"]["metadata"]}])
+            Output(
+                outputs=[
+                    {
+                        "output_type": "display_data",
+                        "data": msg["content"]["data"],
+                        "metadata": msg["content"]["metadata"],
+                    }
+                ]
+            )
             return None  # do not send to the frontend
         return msg
 

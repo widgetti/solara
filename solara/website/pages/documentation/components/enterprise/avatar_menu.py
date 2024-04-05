@@ -2,6 +2,11 @@
 # AvatarMenu
 
 """
+
+from types import ModuleType
+from typing import Optional
+
+auth: Optional[ModuleType]
 try:
     from solara_enterprise import auth
 except ImportError:

@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import BinaryIO, Callable, Optional, Union, cast
+from typing import BinaryIO, Callable, List, Optional, Union, cast
 
 import ipyvuetify as vy
 import ipywidgets as widgets
@@ -10,7 +10,7 @@ import solara
 
 class FileDownloadWidget(vy.VuetifyTemplate):
     template_file = (__file__, "download.vue")
-    children = traitlets.List().tag(sync=True, **widgets.widget_serialization)
+    children = traitlets.List(cast(List[solara.Element], [])).tag(sync=True, **widgets.widget_serialization)
     filename = traitlets.Unicode().tag(sync=True)
     bytes = traitlets.Bytes(None, allow_none=True).tag(sync=True)
     mime_type = traitlets.Unicode("application/octet-stream").tag(sync=True)

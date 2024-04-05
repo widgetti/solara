@@ -83,7 +83,7 @@ def InputText(
     @solara.component
     def Page():
         solara.Checkbox(label="Continuous update", value=continuous_update)
-        solara.InputText("Enter a passsword", value=password, continuous_update=continuous_update.value, password=True)
+        solara.InputText("Enter a password", value=password, continuous_update=continuous_update.value, password=True)
         with solara.Row():
             solara.Button("Clear", on_click=lambda: password.set(""))
             solara.Button("Reset", on_click=lambda: password.set("Super secret"))
@@ -150,8 +150,7 @@ def InputFloat(
     clearable: bool = ...,
     classes: List[str] = ...,
     style: Optional[Union[str, Dict[str, str]]] = ...,
-) -> reacton.core.ValueElement[vw.TextField, Any]:
-    ...
+) -> reacton.core.ValueElement[vw.TextField, Any]: ...
 
 
 @overload
@@ -166,8 +165,7 @@ def InputFloat(
     clearable: bool = ...,
     classes: List[str] = ...,
     style: Optional[Union[str, Dict[str, str]]] = ...,
-) -> reacton.core.ValueElement[vw.TextField, Any]:
-    ...
+) -> reacton.core.ValueElement[vw.TextField, Any]: ...
 
 
 @solara.component
@@ -254,8 +252,7 @@ def InputInt(
     clearable: bool = ...,
     classes: List[str] = ...,
     style: Optional[Union[str, Dict[str, str]]] = ...,
-) -> reacton.core.ValueElement[vw.TextField, Any]:
-    ...
+) -> reacton.core.ValueElement[vw.TextField, Any]: ...
 
 
 @overload
@@ -270,8 +267,7 @@ def InputInt(
     clearable: bool = ...,
     classes: List[str] = ...,
     style: Optional[Union[str, Dict[str, str]]] = ...,
-) -> reacton.core.ValueElement[vw.TextField, Any]:
-    ...
+) -> reacton.core.ValueElement[vw.TextField, Any]: ...
 
 
 @solara.component

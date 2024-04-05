@@ -1,5 +1,4 @@
-"""# HTML
-"""
+"""# HTML"""
 
 import solara
 from solara.website.utils import apidoc

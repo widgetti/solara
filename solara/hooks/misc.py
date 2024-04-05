@@ -110,7 +110,7 @@ def use_download(
 
 
 def use_fetch(url, chunk_size=chunk_size_default):
-    # re-use the same file like object
+    # reuse the same file like object
     f = solara.use_memo(io.BytesIO, [url])
     result = use_download(f, url, return_content=True, chunk_size=chunk_size)
     return dataclasses.replace(result, value=f.getvalue() if result.progress == 1 else None)

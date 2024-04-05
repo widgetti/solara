@@ -1,9 +1,11 @@
 import sys
-from typing import Any, Dict
+from types import ModuleType
+from typing import Any, Dict, Optional
 
 import ipyvuetify as v
 import pytest
 
+redis: Optional[ModuleType]
 try:
     import redis
 except ImportError:

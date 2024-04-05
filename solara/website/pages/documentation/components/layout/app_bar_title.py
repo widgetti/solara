@@ -2,6 +2,7 @@
 # AppBarTitle
 
 """
+
 import solara
 import solara.lab
 from solara.website.components import NoPage

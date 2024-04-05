@@ -1,4 +1,5 @@
 import os
+from typing import Dict, List, cast
 
 import ipyvuetify as v
 import ipywidgets
@@ -23,11 +24,11 @@ class VegaLite(v.VuetifyTemplate):
     cdn = traitlets.Unicode(None, allow_none=True).tag(sync=True)
 
     def vue_altair_click(self, *args):
-        if self.on_click:
+        if self.on_click is not None:
             self.on_click(*args)
 
     def vue_altair_hover(self, *args):
-        if self.on_hover:
+        if self.on_hover is not None:
             self.on_hover(*args)
 
     @traitlets.default("cdn")
@@ -47,7 +48,7 @@ class GridLayout(v.VuetifyTemplate):
     template_file = os.path.join(os.path.dirname(__file__), "vue/gridlayout.vue")
     gridlayout_loaded = traitlets.Bool(False).tag(sync=True)
     items = traitlets.Union([traitlets.List(), traitlets.Dict()], default_value=[]).tag(sync=True, **ipywidgets.widget_serialization)
-    grid_layout = traitlets.List(default_value=[]).tag(sync=True)
+    grid_layout = traitlets.List(default_value=cast(List[Dict], [])).tag(sync=True)
     draggable = traitlets.CBool(True).tag(sync=True)
     resizable = traitlets.CBool(True).tag(sync=True)
 

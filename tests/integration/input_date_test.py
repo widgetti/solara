@@ -1,4 +1,5 @@
 import datetime as dt
+from typing import List
 from unittest.mock import MagicMock
 
 from playwright.sync_api import Page, expect
@@ -15,7 +16,7 @@ def test_input_date_single(solara_test, page_session: Page):
 
     @solara.component
     def Page():
-        def update_value(value: float):
+        def update_value(value: dt.date):
             on_value(value)
             set_value(value)
 
@@ -64,7 +65,7 @@ def test_input_date_range(solara_test, page_session: Page):
 
     @solara.component
     def Page():
-        def update_value(value: float):
+        def update_value(value: List[dt.date]):
             on_value(value)
             set_value(value)
 

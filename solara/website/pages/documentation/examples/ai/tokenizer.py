@@ -10,6 +10,7 @@ Inspired by: [Understanding GPT tokenizers by Simon Willison](https://simonwilli
 Install pandas and tiktoken with `pip install pandas tiktoken`
 
 """
+
 import random
 
 import pandas as pd

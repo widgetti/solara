@@ -1,5 +1,5 @@
 import operator
-from typing import Any, List, cast
+from typing import Any, Dict, List, Optional, cast
 
 import ipyvuetify
 import reacton.ipyvuetify as v
@@ -35,7 +35,7 @@ class Select(ipyvuetify.VuetifyTemplate):
     label = traitlets.Unicode().tag(sync=True)
     clearable = traitlets.Bool().tag(sync=True)
     return_object = traitlets.Bool().tag(sync=True)
-    items = traitlets.List().tag(sync=True)
+    items = traitlets.List(cast(List[Dict[str, Any]], [])).tag(sync=True)
     filtered = traitlets.Bool().tag(sync=True)
     count = traitlets.Int().tag(sync=True)
     multiple = traitlets.Bool().tag(sync=True)
@@ -226,7 +226,7 @@ def CrossFilterSlider(
 
     """
     filter, set_filter = solara.use_cross_filter(id(df), "filter-slider")
-    filter_value, set_filter_value = solara.use_state(None)
+    filter_value, set_filter_value = solara.use_state(cast(Optional[float], None))
     column, set_column = solara.use_state_or_update(column)
     invert, set_invert = solara.use_state_or_update(invert)
     enable, set_enable = solara.use_state_or_update(enable)

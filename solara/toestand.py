@@ -435,8 +435,7 @@ def computed(
     f: None,
     *,
     key: Optional[str] = ...,
-) -> Callable[[Callable[[], T]], Reactive[T]]:
-    ...
+) -> Callable[[Callable[[], T]], Reactive[T]]: ...
 
 
 @overload
@@ -444,8 +443,7 @@ def computed(
     f: Callable[[], T],
     *,
     key: Optional[str] = ...,
-) -> Reactive[T]:
-    ...
+) -> Reactive[T]: ...
 
 
 def computed(

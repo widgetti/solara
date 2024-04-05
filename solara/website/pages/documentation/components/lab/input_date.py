@@ -5,6 +5,7 @@ This page contains the two variants of datepickers available in solara
 
 # InputDate
 """
+
 import solara
 from solara.website.components import NoPage
 from solara.website.utils import apidoc

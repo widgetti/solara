@@ -1,6 +1,6 @@
 import threading
 import typing
-from typing import Callable, List, Optional, Union, cast
+from typing import Any, Callable, List, Optional, Union, cast
 
 import traitlets
 from ipyvue import Template
@@ -23,7 +23,7 @@ class FileDropZone(FileInput):
     # override to narrow traitlet of FileInput
     template = traitlets.Instance(Template).tag(sync=True, **widget_serialization)
     template_file = (__file__, "file_drop.vue")
-    items = traitlets.List(default_value=[]).tag(sync=True)
+    items = traitlets.List(default_value=cast(List[Any], [])).tag(sync=True)
     label = traitlets.Unicode().tag(sync=True)
     multiple = traitlets.Bool(True).tag(sync=True)
 

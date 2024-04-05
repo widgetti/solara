@@ -1,6 +1,5 @@
-"""#Memoize
+"""#Memoize"""
 
-"""
 import time
 
 import solara

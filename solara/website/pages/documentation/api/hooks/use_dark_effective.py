@@ -1,6 +1,5 @@
-"""# use_dark_effective
+"""# use_dark_effective"""
 
-"""
 import solara
 import solara.autorouting
 import solara.lab

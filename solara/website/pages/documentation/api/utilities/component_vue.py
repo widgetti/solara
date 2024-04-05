@@ -1,6 +1,5 @@
-"""# component_vue
+"""# component_vue"""
 
-"""
 import solara
 import solara.autorouting
 from solara.website.components import NoPage

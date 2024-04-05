@@ -1,5 +1,5 @@
-"""# CrossFilterReport
-"""
+"""# CrossFilterReport"""
+
 import plotly
 
 import solara

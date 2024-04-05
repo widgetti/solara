@@ -73,14 +73,12 @@ extra = [
 dev = [
     "codespell",
     "python-dotenv",
-    "flake8",
     "bqplot",
     "bqplot-image-gl",
     "ipyreact; python_version > '3.6'",
     "vaex-core",
     "vaex-hdf5",
     "vaex-jupyter",
-    "black",
     "mypy",
     "mdit-py-plugins",
     "plotly",
@@ -92,6 +90,7 @@ dev = [
     "pytest-cov",
     "pytest-timeout",
     "pre-commit",
+    "ruff; python_version > '3.6'",
     "bump2version",
     "dask[dataframe]; python_version < '3.7'",
     "playwright; python_version > '3.6'",
@@ -139,15 +138,10 @@ solara = "solara.__main__:main"
 [project.entry-points.pytest11]
 solara = "solara.test.pytest_plugin"
 
-[tool.black]
-line-length = 160
-
 [tool.ruff]
+fix = false
 line-length = 160
-
-[tool.isort]
-profile = "black"
-
+lint.ignore = ["E402"]
 
 [tool.pytest.ini_options]
 addopts = "--ignore=tests/integration/app_widget.py  --ignore=tests/unit/solara_test_apps"

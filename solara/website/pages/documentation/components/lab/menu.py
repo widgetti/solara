@@ -5,6 +5,7 @@ This page contains the various kinds of menu elements available to use in solara
 
 # Menu
 """
+
 import solara
 from solara.website.components import NoPage
 from solara.website.utils import apidoc

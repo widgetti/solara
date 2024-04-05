@@ -7,6 +7,7 @@ This example show how to use the [on_click handler](/documentation/components/vi
 Based on [an Altair example](https://altair-viz.github.io/gallery/annual_weather_heatmap.html)
 
 """
+
 import altair as alt
 import pandas as pd
 import solara

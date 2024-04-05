@@ -91,7 +91,6 @@ def NotebookExecute(notebook_path: Path, show_last_expressions=False, auto_show_
 
     solara.components.applayout.should_use_embed.provide(True)
     with solara.Column(style={"max-width": "100%"}) as main:
-
         for cell_index, cell, executor in values:
             cell_index += 1  # used 1 based
             if cell.cell_type == "code":

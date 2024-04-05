@@ -369,6 +369,8 @@ def test_task_and_computed(no_kernel_context):
     def square_minus_one():
         nonlocal called
         called += 1
+        if square.latest is None:
+            return None
         return square.latest - 1
 
     kernel1 = kernel.Kernel()

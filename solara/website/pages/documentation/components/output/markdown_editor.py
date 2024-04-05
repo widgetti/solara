@@ -1,6 +1,4 @@
-"""# MarkdownEditor
-"""
-
+"""# MarkdownEditor"""
 
 import solara
 from solara.alias import rv

@@ -1,4 +1,5 @@
 import asyncio
+import sys
 
 try:
     import contextvars
@@ -106,7 +107,7 @@ class VirtualKernelContext:
     # anything we need to attach to the context
     # e.g. for a react app the render context, so that we can store/restore the state
     app_object: Optional[Any] = None
-    reload: Callable = lambda: None
+    reload: Callable = lambda: None  # noqa: E731
     state: Any = None
     container: Optional[DOMWidget] = None
     # we track which pages are connected to implement kernel culling
@@ -118,7 +119,7 @@ class VirtualKernelContext:
 
     def __post_init__(self):
         with self:
-            for (f, *_) in _on_kernel_start_callbacks:
+            for f, *_ in _on_kernel_start_callbacks:
                 cleanup = f()
                 if cleanup:
                     self.on_close(cleanup)
@@ -231,7 +232,10 @@ class VirtualKernelContext:
                     self.close()
                 current_event_loop.call_soon_threadsafe(future.set_result, None)
             except asyncio.CancelledError:
-                current_event_loop.call_soon_threadsafe(future.cancel, "cancelled because a new cull task was scheduled")
+                if sys.version_info >= (3, 9):
+                    current_event_loop.call_soon_threadsafe(future.cancel, "cancelled because a new cull task was scheduled")
+                else:
+                    current_event_loop.call_soon_threadsafe(future.cancel)
                 raise
 
         has_connected_pages = PageStatus.CONNECTED in self.page_status.values()

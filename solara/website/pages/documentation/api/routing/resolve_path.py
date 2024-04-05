@@ -1,6 +1,5 @@
-"""# resolve_route
+"""# resolve_route"""
 
-"""
 import solara
 from solara.website.utils import apidoc
 

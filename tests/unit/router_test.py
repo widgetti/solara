@@ -110,7 +110,7 @@ def test_resolve_path_str():
 
 def test_toggle_buttons_single():
     value: Optional[str] = None
-    set_path: Callable[[str], None] = lambda x: None
+    set_path: Callable[[str], None] = lambda x: None  # noqa: E731
 
     def set(value_):
         nonlocal value

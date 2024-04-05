@@ -1,5 +1,5 @@
-"""# CrossFilterSelect
-"""
+"""# CrossFilterSelect"""
+
 import plotly
 
 import solara

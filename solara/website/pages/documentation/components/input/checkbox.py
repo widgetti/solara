@@ -1,6 +1,4 @@
-"""# Checkbox
-
-"""
+"""# Checkbox"""
 
 import solara
 from solara.website.components import NoPage

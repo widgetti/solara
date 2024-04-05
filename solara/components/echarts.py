@@ -22,15 +22,15 @@ class EchartsWidget(ipyvuetify.VuetifyTemplate):
     on_mouseout_enabled = traitlets.Bool(False).tag(sync=True)
 
     def vue_on_click(self, data):
-        if self.on_click:
+        if self.on_click is not None:
             self.on_click(data)
 
     def vue_on_mouseover(self, data):
-        if self.on_mouseover:
+        if self.on_mouseover is not None:
             self.on_mouseover(data)
 
     def vue_on_mouseout(self, data):
-        if self.on_mouseout:
+        if self.on_mouseout is not None:
             self.on_mouseout(data)
 
 

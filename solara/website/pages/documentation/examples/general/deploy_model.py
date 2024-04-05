@@ -11,6 +11,7 @@ similate the deployment taking time.
  * A confirmation dialog is used before executing the deployment.
  * If the deployment fails, a confirmation dialog is shown to retry the deployment.
 """
+
 import time
 
 import numpy as np

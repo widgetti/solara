@@ -1,7 +1,10 @@
 import pprint
+from types import ModuleType
+from typing import Optional
 
 import reacton.ipyvuetify as v
 
+auth: Optional[ModuleType]
 try:
     from solara_enterprise import auth
 except ImportError:
@@ -11,6 +14,7 @@ import solara as sl
 
 @sl.component
 def UserCard():
+    assert auth is not None
     user = auth.user.value
     if user:
         user_info = user.get("userinfo")
@@ -35,6 +39,7 @@ def UserCard():
 
 @sl.component
 def Page():
+    assert auth is not None
     sl.Title("Login demo using OAuth")
     with sl.AppBar():
         if auth.user.value:

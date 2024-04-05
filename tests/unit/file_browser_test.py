@@ -46,7 +46,7 @@ def test_file_browser_callback_no_select():
     assert list.clicked is not None
     assert list.clicked["name"] == "conftest.py"
 
-    list.clicked = None
+    list.clicked = None  # type: ignore
     on_file_open.assert_called_once()
     on_path_select.assert_not_called()
 

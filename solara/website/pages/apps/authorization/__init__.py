@@ -6,6 +6,7 @@ how to use `use_route` to implement authorization.
 The `Layout` component checks if the current route requires authorization and if the user is logged in. If not, it
 redirects to the login form.
 """
+
 import dataclasses
 from typing import Optional, cast
 

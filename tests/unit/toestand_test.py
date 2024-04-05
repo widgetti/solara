@@ -1020,7 +1020,7 @@ def test_use_reactive_ref():
     reactive_var = Reactive({"a": 1})
     reactive_ref = Ref(reactive_var.fields["a"])
 
-    reactive_ref_test: Reactive[int] = None
+    reactive_ref_test: Optional[Reactive[int]] = None
 
     @solara.component
     def Test():
@@ -1078,7 +1078,6 @@ def test_use_reactive_on_change():
 
 
 def test_reactive_var_in_use_effect():
-
     var = Reactive(1)
 
     @solara.component

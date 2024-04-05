@@ -19,8 +19,7 @@ def ConfirmationDialog(
     children: List[solara.Element] = [],
     max_width: Union[int, str] = 500,
     persistent: bool = False,
-):
-    ...
+): ...
 
 
 # when open is a boolean, on_close should be given, otherwise a dialog can never be closed
@@ -39,8 +38,7 @@ def ConfirmationDialog(
     children: List[solara.Element] = [],
     max_width: Union[int, str] = 500,
     persistent: bool = False,
-):
-    ...
+): ...
 
 
 @solara.component
