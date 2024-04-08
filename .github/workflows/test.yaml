@@ -446,7 +446,7 @@ jobs:
           pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
 
       - name: Start Redis
-        if: ( github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == true ) && matrix.os != 'windows'
+        if: ( github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true' ) && matrix.os != 'windows'
         uses: shogo82148/actions-setup-redis@v1
 
       - name: test
