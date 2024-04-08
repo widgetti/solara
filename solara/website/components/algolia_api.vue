@@ -24,11 +24,17 @@
                 </v-list-item-content>
             </v-list-item>
         </v-list>
-        <v-list v-else>
+        <v-list v-else :style="{width: menuWidth + 'px'}">
             <v-list-item-group v-model="item">
                 <v-list-item v-for="(element, index) in this.results.hits" :key="element['url']">
                     <v-list-item-content>
-                        <v-list-item-title>{{ element.hierarchy[element.type] }}</v-list-item-title>
+                        <v-list-item-title>
+                            {{ element.hierarchy.lvl1 }}
+                        </v-list-item-title>
+                        <v-list-item-subtitle v-if="element.hierarchy.lvl2 !== null">
+                            {{ element.hierarchy.lvl2 }}
+                        </v-list-item-subtitle>
+                        <v-list-item-subtitle v-html="getSnippet(element)"></v-list-item-subtitle>
                     </v-list-item-content>
                 </v-list-item>
             </v-list-item-group>
@@ -49,6 +55,9 @@ module.exports = {
         this.algoliasearch = (await this.import([`https://cdn.jsdelivr.net/npm/algoliasearch@4.20.0/dist/algoliasearch-lite.umd.js`]))[0];
         this.initSearch();
         window.search = this;
+        this.updateMenuWidth();
+        window.addEventListener('resize', this.updateMenuWidth);
+
     },
     watch: {
         query ( value ) {
@@ -96,6 +105,26 @@ module.exports = {
             }else{
                 this.$set(this.results, []);
             }
+        },
+        getSnippet( element ) {
+            if (element.type == "content") {
+                return element._highlightResult.content.value;
+            }
+            let snippet = element._highlightResult.hierarchy[element.type].value;
+            if (snippet.matchLevel === "none" ) {
+                snippet = element._highlightResult.hierarchy["lvl" + parseInt(element.type[3] - 1)].value
+            }
+            return snippet;
+        },
+        updateMenuWidth() {
+            // Ensure the element is rendered and has dimensions
+            this.$nextTick(() => {
+                const activator = this.$refs.search;
+                if (activator && activator.$el) {
+                // Update the menuWidth with the activator's width
+                this.menuWidth = activator.$el.offsetWidth;
+                }
+            });
         },
         import(dependencies) {
             return this.loadRequire().then(
@@ -151,6 +180,7 @@ module.exports = {
             item: null,
             show_results: false,
             mac: false,
+            menuWidth: 0,
         }
     },
 }
