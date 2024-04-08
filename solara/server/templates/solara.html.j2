@@ -13,7 +13,7 @@
 
     {{ pre_rendered_css | safe }}
     {% if vue3 == True %}
-    <link href="{{cdn}}/@widgetti/solara-vuetify3-app@5.0.1/dist/main{{ipywidget_major_version}}.css" rel="stylesheet" class="solara-template-css"></link>
+    <link href="{{cdn}}/@widgetti/solara-vuetify3-app@5.0.2/dist/main{{ipywidget_major_version}}.css" rel="stylesheet" class="solara-template-css"></link>
     {% else %}
     <link href="{{cdn}}/@widgetti/solara-vuetify-app@10.0.2/dist/main{{ipywidget_major_version}}.css" rel="stylesheet" class="solara-template-css"></link>
     {% endif %}
@@ -221,11 +221,11 @@
     </script>
     {% block after_pre_rendered_html %}{% endblock %}
     {% if vue3 == True %}
-        <link href="{{cdn}}/@widgetti/solara-vuetify3-app@5.0.1/dist/fonts.css" rel="stylesheet"></link>
+        <link href="{{cdn}}/@widgetti/solara-vuetify3-app@5.0.2/dist/fonts.css" rel="stylesheet"></link>
         {% if production %}
-        <script src="{{cdn}}/@widgetti/solara-vuetify3-app@5.0.1/dist/solara-vuetify-app{{ipywidget_major_version}}.min.js"></script>
+        <script src="{{cdn}}/@widgetti/solara-vuetify3-app@5.0.2/dist/solara-vuetify-app{{ipywidget_major_version}}.min.js"></script>
         {% else %}
-        <script src="{{cdn}}/@widgetti/solara-vuetify3-app@5.0.1/dist/solara-vuetify-app{{ipywidget_major_version}}.js"></script>
+        <script src="{{cdn}}/@widgetti/solara-vuetify3-app@5.0.2/dist/solara-vuetify-app{{ipywidget_major_version}}.js"></script>
         {% endif %}
     {% else %}
         <link href="{{cdn}}/@widgetti/solara-vuetify-app@10.0.2/dist/fonts.css" rel="stylesheet" fetchpriority="low"></link>
