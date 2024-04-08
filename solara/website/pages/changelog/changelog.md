@@ -1,5 +1,17 @@
 # Solara Changelog
 
+
+## Version 1.31
+
+We changed solara from a single package into multiple packages.
+
+The `solara` package is a meta package that installs all the necessary dependencies to get started with Solara. By default, we install:
+
+  * [`pip install "solara-ui[all]"`](https://pypi.org/project/solara-ui)
+  * [`pip install "solara-server[starlette,dev]"`](https://pypi.org/project/solara-ui)
+
+Notebook users can simply install `solara-ui` if they do not need the solara-server. Read our [installation guide](https://solara.dev/documentation/getting_started/installing) for more information.
+
 ## Version 1.30.1
 
 ### Details
