@@ -41,8 +41,7 @@ jobs:
 
       - name: Install solara
         run: |
-          pip install -e ".[documentation]" playwright==1.39.0
-          (cd packages/solara-enterprise && pip install ".[all]")
+          pip install -e ."[all]" -e packages/solara-server"[starlette]" -e packages/solara-meta"[documentation]" -e packages/solara-enterprise"[all]" playwright==1.39.0
 
       - name: Install Playwright
         run: |
