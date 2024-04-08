@@ -183,6 +183,12 @@ blockquote p:last-child {
     background-color: var(--dark-color-primary-lightest);
 }
 
+/* Algolia search results styling */
+.algolia-docsearch-suggestion--highlight {
+    color: var(--color-primary);
+    font-weight: 700;
+}
+
 /* API PAGE REFACTOR STYLE */
 
 .v-sheet.api-search-container{
