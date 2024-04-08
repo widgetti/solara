@@ -122,7 +122,7 @@ jobs:
         id: install_no_lock
         run: |
           mkdir -p .ci-package-locks/code-quality
-          pip install ".[dev]" "click<8.1.4" "matplotlib<3.8.0"
+          pip install pre-commit
           pip freeze --exclude solara --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
           git diff --quiet || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
 
