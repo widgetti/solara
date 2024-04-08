@@ -7,6 +7,17 @@ description: Solara server enables running ipywidgets-based applications as stan
 
 The solara server enables running ipywidgets based applications without a real Jupyter kernel, allowing multiple "Virtual kernels" to share the same process for better performance and scalability.
 
+## Installation
+
+To install the solara server, run:
+
+```bash
+$ pip install "solara-server[starlette]"
+$ # pip install solara # to get all solara packages
+```
+
+See [our installation guide](/documentation/getting_started/installing) for more information.
+
 ## WebSocket in Solara
 Solara uses a WebSocket to transmit state and updates directly from the server to the browser. This ensures that the state remains centralized on the server, facilitating state transitions server-side and enabling live updates to be pushed directly to the browser.
 

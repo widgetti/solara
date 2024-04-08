@@ -7,9 +7,15 @@ import warnings
 from typing import Any, Dict, List, Union, cast
 
 import ipyvuetify as v
-import pymdownx.emoji
-import pymdownx.highlight
-import pymdownx.superfences
+
+try:
+    import pymdownx.emoji
+    import pymdownx.highlight
+    import pymdownx.superfences
+
+    has_pymdownx = True
+except ModuleNotFoundError:
+    has_pymdownx = False
 
 import solara
 import solara.components.applayout
@@ -271,7 +277,8 @@ def MarkdownIt(md_text: str, highlight: List[int] = [], unsafe_solara_execute: b
     return v.VuetifyTemplate.element(template=_markdown_template(html)).key(hash)
 
 
-_index = pymdownx.emoji.emojione(None, None)
+if has_pymdownx:
+    _index = pymdownx.emoji.emojione(None, None)
 
 
 def _no_deep_copy_emojione(options, md):

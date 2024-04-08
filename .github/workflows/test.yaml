@@ -77,6 +77,15 @@ jobs:
       - name: Build solara
         run: hatch build
 
+      - name: Build solara-server
+        run: (cd packages/solara-server; hatch build)
+
+      - name: Build pytest-ipywidgets
+        run: (cd packages/pytest-ipywidgets; hatch build)
+
+      - name: Build solara-meta
+        run: (cd packages/solara-meta; hatch build)
+
       - name: Build solara-enterprise
         run: (cd packages/solara-enterprise; hatch build)
 
@@ -87,6 +96,10 @@ jobs:
           name: solara-builds-${{ github.run_number }}
           path: |
             dist
+            packages/assets/dist
+            packages/solara-server/dist
+            packages/solara-meta/dist
+            packages/pytest-ipywidgets/dist
             packages/solara-enterprise/dist
             packages/solara-vuetify-app/dist
             packages/solara-vuetify3-app/dist
@@ -170,11 +183,16 @@ jobs:
       - name: Debug
         run: ls -R dist
 
-      - name: Install
-        run: pip install dist/*.whl
+      - name: Install solara-ui
+        run:
+          pip install dist/*.whl
 
       - name: Test import
         run: python -c "import solara"
+
+      - name: Install solara-server
+        run:
+          pip install `echo packages/solara-server/dist/*.whl`[starlette]
 
       - name: Run solara create
         run: solara create button test.py
@@ -191,6 +209,11 @@ jobs:
 
       - name: Test import
         run: python -c "import solara_enterprise"
+
+      - name: Install solara-meta
+        run:
+          pip install packages/solara-meta/dist/*.whl
+
 
   integration-test:
     needs: [build]
@@ -246,17 +269,23 @@ jobs:
         id: install_no_lock
         run: |
           mkdir -p .ci-package-locks/integration
-          pip install `echo dist/*.whl`[dev,documentation,flask,pytest]
+          pip install `echo dist/*.whl`[all]
+          pip install `echo packages/solara-server/dist/*.whl`[all]
+          pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all]
+          pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
           pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
           pip install "voila~=${{ matrix.voila }}" "jupyterlab<4"  "pydantic<2" "playwright==1.41.2" "ipywidgets~=${{ matrix.ipywidgets }}"
-          pip freeze --exclude solara --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
+          pip freeze --exclude solara --exclude solara-ui --exclude solara-server --exclude pytest-ipywidgets--exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
           git diff --quiet || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
 
       - name: Install
         if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
         run: |
           pip install -r ${{ env.LOCK_FILE_LOCATION }}
-          pip install `echo dist/*.whl`[dev,documentation,flask,pytest]
+          pip install `echo dist/*.whl`[all]
+          pip install `echo packages/solara-server/dist/*.whl`[all]
+          pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all]
+          pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
           pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
 
       - name: Install playwright
@@ -340,19 +369,25 @@ jobs:
         if: github.event_name == 'schedule' || steps.prepare.outputs.LOCKS_EXIST == 'false'
         run: |
           mkdir -p .ci-package-locks/integration-vue3
-          pip install `echo dist/*.whl`[dev,documentation,flask,pytest]
+          pip install `echo dist/*.whl`[all]
+          pip install `echo packages/solara-server/dist/*.whl`[all]
+          pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all]
+          pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
           pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
           pip install "jupyterlab<4" "voila~=${{ matrix.voila }}" "playwright==1.41.2" "pydantic<2" "ipywidgets~=${{ matrix.ipywidgets }}"
           pip install jupyter_core jupyter-packaging
           pip install --pre ipyvue ipyvuetify
-          pip freeze --exclude solara --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
+          pip freeze --exclude solara --exclude solara-ui --exclude solara-server --exclude pytest-ipywidgets --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
           git diff --quiet || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
 
       - name: Install
         if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
         run: |
           pip install -r ${{ env.LOCK_FILE_LOCATION }}
-          pip install `echo dist/*.whl`[dev,documentation,flask,pytest]
+          pip install `echo dist/*.whl`[all]
+          pip install `echo packages/solara-server/dist/*.whl`[all]
+          pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all]
+          pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
           pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
 
       - name: Install playwright
@@ -432,17 +467,23 @@ jobs:
         if: github.event_name == 'schedule' || steps.prepare.outputs.LOCKS_EXIST == 'false'
         run: |
           mkdir -p .ci-package-locks/unit
-          pip install `echo dist/*.whl`[dev,extra]
+          pip install `echo dist/*.whl`[all]
+          pip install `echo packages/solara-server/dist/*.whl`[all]
+          pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all]
+          pip install `echo packages/solara-meta/dist/*.whl`[dev,extra]
           pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
           pip install "jupyterlab<4" diskcache redis "ipywidgets~=${{ matrix.ipywidgets }}"
-          pip freeze --exclude solara --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
+          pip freeze --exclude solara --exclude solara-ui --exclude solara-server --exclude pytest-ipywidgets--exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
           git diff --quiet || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
 
       - name: Install
         if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
         run: |
           pip install -r ${{ env.LOCK_FILE_LOCATION }}
-          pip install `echo dist/*.whl`[dev,extra]
+          pip install `echo dist/*.whl`[all]
+          pip install `echo packages/solara-server/dist/*.whl`[all]
+          pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all]
+          pip install `echo packages/solara-meta/dist/*.whl`[dev,extra]
           pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
 
       - name: Start Redis
@@ -498,7 +539,6 @@ jobs:
 
   release:
     needs: [build, code-quality, test-install, integration-test, integration-test-vue3, unit-test]
-    if: startsWith(github.event.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
 
     steps:
@@ -516,10 +556,16 @@ jobs:
       - name: Install build tools
         run: pip install hatch
 
-      - name: Install solara
+      - name: Install solara-ui
         run: pip install dist/*.whl
 
-      - name: Test import
+      - name: Test import solara-ui
+        run: python -c "import solara"
+
+      - name: Install solara-server
+        run: pip install `echo packages/solara-server/dist/*.whl`[starlette]
+
+      - name: Test import of solara-server
         run: python -c "import solara; import solara.server.starlette"
 
       - name: Install solara-enterprise
@@ -528,14 +574,19 @@ jobs:
       - name: Test import solara-enterprise
         run: python -c "import solara_enterprise"
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Build assets
-        run: (cd packages/assets; hatch build)
+      - name: Publish solara-meta to PyPI
+        if: startsWith(github.event.ref, 'refs/tags/v')
+        env:
+          HATCH_INDEX_USER: __token__
+          HATCH_INDEX_AUTH: ${{ secrets.pypi_password }}
+        run: |
+          cd packages/solara-meta
+          openssl sha256 dist/*
+          hatch publish
+          openssl sha256 dist/*
 
       - name: Publish solara-enterprise to PyPI
+        if: startsWith(github.event.ref, 'refs/tags/v')
         env:
           HATCH_INDEX_USER: __token__
           HATCH_INDEX_AUTH: ${{ secrets.pypi_enterprise }}
@@ -545,20 +596,37 @@ jobs:
           hatch publish
           openssl sha256 dist/*
 
-      - name: Publish solara to PyPI
+      - name: Publish solara-assets to PyPI
+        if: startsWith(github.event.ref, 'refs/tags/v')
         env:
           HATCH_INDEX_USER: __token__
-          HATCH_INDEX_AUTH: ${{ secrets.pypi_password }}
+          HATCH_INDEX_AUTH: ${{ secrets.pypi_assets }}
+        run: |
+          cd packages/assets
+          openssl sha256 dist/*
+          hatch publish
+          openssl sha256 dist/*
+
+      - name: Publish solara-ui to PyPI
+        if: startsWith(github.event.ref, 'refs/tags/v')
+        env:
+          HATCH_INDEX_USER: __token__
+          HATCH_INDEX_AUTH: ${{ secrets.pypi_ui }}
         run: |
           openssl sha256 dist/*
           hatch publish
           openssl sha256 dist/*
 
-      - name: Publish solara-assets to PyPI
+      - name: Publish solara-server to PyPI
+        if: startsWith(github.event.ref, 'refs/tags/v')
         env:
           HATCH_INDEX_USER: __token__
-          HATCH_INDEX_AUTH: ${{ secrets.pypi_assets }}
-        run: (cd packages/assets; openssl sha256 dist/*; hatch publish; openssl sha256 dist/*)
+          HATCH_INDEX_AUTH: ${{ secrets.pypi_server }}
+        run: |
+          cd packages/solara-server
+          openssl sha256 dist/*
+          hatch publish
+          openssl sha256 dist/*
 
       - name: remove assets
         run: rm -rf packages/assets/dist

@@ -8,7 +8,6 @@ except ModuleNotFoundError:
 
 import dataclasses
 import enum
-import inspect
 import logging
 import os
 import pickle
@@ -16,8 +15,7 @@ import threading
 import time
 import typing
 from pathlib import Path
-from types import FrameType, ModuleType
-from typing import Any, Callable, Dict, List, NamedTuple, Optional, cast
+from typing import Any, Callable, Dict, List, Optional, cast
 
 import ipywidgets as widgets
 import reacton
@@ -27,6 +25,7 @@ import solara.server.settings
 import solara.util
 
 from . import kernel, kernel_context, websocket
+from .. import lifecycle
 from .kernel import Kernel, WebsocketStreamWrapper
 
 WebSocket = Any
@@ -44,48 +43,6 @@ class PageStatus(enum.Enum):
     CONNECTED = "connected"
     DISCONNECTED = "disconnected"
     CLOSED = "closed"
-
-
-class _on_kernel_callback_entry(NamedTuple):
-    callback: Callable[[], Optional[Callable[[], None]]]
-    callpoint: Optional[Path]
-    module: Optional[ModuleType]
-    cleanup: Callable[[], None]
-
-
-_on_kernel_start_callbacks: List[_on_kernel_callback_entry] = []
-
-
-def _find_root_module_frame() -> Optional[FrameType]:
-    # basically the module where the call stack origined from
-    current_frame = inspect.currentframe()
-    root_module_frame = None
-
-    while current_frame is not None:
-        if current_frame.f_code.co_name == "<module>":
-            root_module_frame = current_frame
-            break
-        current_frame = current_frame.f_back
-
-    return root_module_frame
-
-
-def on_kernel_start(f: Callable[[], Optional[Callable[[], None]]]) -> Callable[[], None]:
-    root = _find_root_module_frame()
-    path: Optional[Path] = None
-    module: Optional[ModuleType] = None
-    if root is not None:
-        path_str = inspect.getsourcefile(root)
-        module = inspect.getmodule(root)
-        if path_str is not None:
-            path = Path(path_str)
-
-    def cleanup():
-        return _on_kernel_start_callbacks.remove(kce)
-
-    kce = _on_kernel_callback_entry(f, path, module, cleanup)
-    _on_kernel_start_callbacks.append(kce)
-    return cleanup
 
 
 @dataclasses.dataclass
@@ -119,7 +76,7 @@ class VirtualKernelContext:
 
     def __post_init__(self):
         with self:
-            for f, *_ in _on_kernel_start_callbacks:
+            for f, *_ in lifecycle._on_kernel_start_callbacks:
                 cleanup = f()
                 if cleanup:
                     self.on_close(cleanup)

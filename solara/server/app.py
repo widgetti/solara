@@ -16,6 +16,7 @@ import reacton
 from reacton.core import Element, render
 
 import solara
+import solara.lifecycle
 from solara.util import nested_get
 
 from . import kernel_context, patch, reload, settings
@@ -252,7 +253,7 @@ class AppScript:
             # we need to remove callbacks that are added in the app code
             # which will be re-executed after the reload and we do not
             # want to keep executing the old ones.
-            for kc in kernel_context._on_kernel_start_callbacks.copy():
+            for kc in solara.lifecycle._on_kernel_start_callbacks.copy():
                 callback, path, module, cleanup = kc
                 will_reload = False
                 if module is not None:
