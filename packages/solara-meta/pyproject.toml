@@ -24,6 +24,13 @@ Home = "https://www.github.com/widgetti/solara"
 Documentation = "https://solara.dev"
 
 [project.optional-dependencies]
+all = [
+    "solara[assets]",
+    "solara[documentation]",
+    "solara[pytest]",
+    "solara[dev]"
+]
+
 assets = [
     "solara-assets==1.31.0"
 ]
