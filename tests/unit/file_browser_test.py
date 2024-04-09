@@ -179,7 +179,7 @@ def test_file_browser_filter():
     list: solara.components.file_browser.FileListWidget = div.children[1]
     items = list.files
     names = {k["name"] for k in items}
-    assert names == {"unit", "ui", "integration", ".."}
+    assert names == {"unit", "ui", "docs", "integration", ".."}
 
 
 def test_file_browser_test_change_directory():
@@ -212,11 +212,11 @@ def test_file_browser_control_directory():
     file_list.observe(mock, "files")
     items = file_list.files
     names = {k["name"] for k in items}
-    assert names == {"unit", "ui", "integration", ".."}
+    assert names == {"unit", "ui", "docs", "integration", ".."}
     file_list.test_click("..")
     assert mock.call_count == 0
     file_list.test_click("integration")
     items = file_list.files
     names = {k["name"] for k in items}
-    assert names != {"unit", "ui", "integration", ".."}
+    assert names != {"unit", "ui", "docs", "integration", ".."}
     assert mock.call_count == 1
