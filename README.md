@@ -100,7 +100,7 @@ By building on top of ipywidgets, we automatically leverage an existing ecosyste
 
 Visit our main website or jump directly to the introduction
 
-[![Introduction](https://dabuttonfactory.com/button.png?t=Introduction&f=Open+Sans-Bold&ts=20&tc=fff&hp=45&vp=12&c=8&bgt=unicolored&bgc=f19f41)](https://solara.dev/documentation)
+[![Introduction](https://dabuttonfactory.com/button.png?t=Introduction&f=Open+Sans-Bold&ts=20&tc=fff&hp=45&vp=12&c=8&bgt=unicolored&bgc=f19f41)](https://solara.dev/documentation/getting_started/introduction)
 [![Quickstart](https://dabuttonfactory.com/button.png?t=Quickstart&f=Open+Sans-Bold&ts=20&tc=fff&hp=45&vp=12&c=8&bgt=unicolored&bgc=f19f41)](https://solara.dev/documentation/getting_started)
 
 *Note that the solara.dev website is created using Solara*
