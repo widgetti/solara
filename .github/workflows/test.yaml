@@ -515,27 +515,25 @@ jobs:
           ref: ${{ github.head_ref || github.ref }}
           repository: ${{ github.event.pull_request.head.repo.full_name || github.event.repository.full_name }}
 
-      - name: Prepare
-        id: prepare
-        run: |
-          if [ -d .ci-package-locks ]; then
-            echo "LOCKS_EXIST=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "LOCKS_EXIST=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - uses: actions/download-artifact@v4
-        if: github.event_name == 'schedule' || steps.prepare.outputs.LOCKS_EXIST == 'false'
         with:
           pattern: ci-package-locks-*
           merge-multiple: true
 
-      - name: Update CI package locks
-        if: github.event_name == 'schedule' || steps.prepare.outputs.LOCKS_EXIST == 'false'
+      - name: Prepare
+        id: prepare
+        # We check if lock files have changed. This should only be the case if we are either running on a schedule
+        # or if some lock files did not exist yet.
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
 
+          git add -N .ci-package-locks
+          git diff --quiet || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
+
+      - name: Update CI package locks
+        if: steps.prepare.outputs.HAS_DIFF == 'true'
+        run: |
           git add .ci-package-locks
           git commit -m "Update CI package locks"
           git push
