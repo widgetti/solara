@@ -230,14 +230,14 @@ jobs:
         os: [ubuntu, windows]
         # just 1 version, it's heavy
         python-version: [3.8]
-        ipywidgets: ["7.7", "8.0"]
+        ipywidgets_major: ["7", "8"]
         include:
-          - ipywidgets: "7.7"
-            voila: "0.3.0"
-          - ipywidgets: "8.0"
-            voila: "0.4.0"
+          - ipywidgets_major: "7"
+            ipywidgets: "7.7"
+          - ipywidgets_major: "8"
+            ipywidgets: "8.0"
     env:
-      LOCK_FILE_LOCATION: .ci-package-locks/integration/os${{ matrix.os }}-python${{ matrix.python-version }}-voila${{ matrix.voila }}-ipywidgets${{ matrix.ipywidgets }}.txt
+      LOCK_FILE_LOCATION: .ci-package-locks/integration/os${{ matrix.os }}-python${{ matrix.python-version }}-ipywidgets${{ matrix.ipywidgets_major }}.txt
 
     steps:
       - uses: actions/checkout@v4
@@ -274,10 +274,10 @@ jobs:
           mkdir -p .ci-package-locks/integration
           pip install `echo dist/*.whl`[all]
           pip install `echo packages/solara-server/dist/*.whl`[all]
-          pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all]
+          pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets${{ matrix.ipywidgets_major }}]
           pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
           pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
-          pip install "voila~=${{ matrix.voila }}" "jupyterlab<4"  "pydantic<2" "playwright==1.41.2" "ipywidgets~=${{ matrix.ipywidgets }}"
+          pip install "jupyterlab<4"  "pydantic<2" "playwright==1.41.2" "ipywidgets~=${{ matrix.ipywidgets }}"
           pip freeze --exclude solara --exclude solara-ui --exclude solara-server --exclude pytest-ipywidgets--exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
           git diff --quiet || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
 
@@ -287,7 +287,7 @@ jobs:
           pip install -r ${{ env.LOCK_FILE_LOCATION }}
           pip install `echo dist/*.whl`[all]
           pip install `echo packages/solara-server/dist/*.whl`[all]
-          pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all]
+          pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets${{ matrix.ipywidgets_major }}]
           pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
           pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
 
@@ -310,14 +310,14 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-integration-os${{ matrix.os }}-python${{ matrix.python-version }}-voila${{ matrix.voila }}-ipywidgets${{ matrix.ipywidgets }}
+          name: test-results-integration-os${{ matrix.os }}-python${{ matrix.python-version }}-ipywidgets${{ matrix.ipywidgets_major }}
           path: test-results
 
       - name: Upload CI package locks
         if: steps.install_no_lock.outputs.HAS_DIFF == 'true' || steps.prepare.outputs.LOCKS_EXIST == 'false'
         uses: actions/upload-artifact@v4
         with:
-          name: ci-package-locks-integration-os${{ matrix.os }}-python${{ matrix.python-version }}-voila${{ matrix.voila }}-ipywidgets${{ matrix.ipywidgets }}
+          name: ci-package-locks-integration-os${{ matrix.os }}-python${{ matrix.python-version }}-ipywidgets${{ matrix.ipywidgets_major }}
           path: ./**/${{ env.LOCK_FILE_LOCATION }}
 
   integration-test-vue3:
@@ -332,12 +332,12 @@ jobs:
         os: [ubuntu]
         # just 1 version, it's heavy
         python-version: [3.8]
-        ipywidgets: ["8.0"]
+        ipywidgets_major: ["8"]
         include:
-          - ipywidgets: "8.0"
-            voila: "0.4.0"
+          - ipywidgets_major: "8"
+            ipywidgets: "8.0"
     env:
-      LOCK_FILE_LOCATION: .ci-package-locks/integration-vue3/os${{ matrix.os }}-voila${{ matrix.voila }}-ipywidgets${{ matrix.ipywidgets }}.txt
+      LOCK_FILE_LOCATION: .ci-package-locks/integration-vue3/os${{ matrix.os }}-ipywidgets${{ matrix.ipywidgets_major }}.txt
 
     steps:
       - uses: actions/checkout@v4
@@ -374,10 +374,10 @@ jobs:
           mkdir -p .ci-package-locks/integration-vue3
           pip install `echo dist/*.whl`[all]
           pip install `echo packages/solara-server/dist/*.whl`[all]
-          pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all]
+          pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets${{ matrix.ipywidgets_major }}]
           pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
           pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
-          pip install "jupyterlab<4" "voila~=${{ matrix.voila }}" "playwright==1.41.2" "pydantic<2" "ipywidgets~=${{ matrix.ipywidgets }}"
+          pip install "jupyterlab<4" "playwright==1.41.2" "pydantic<2" "ipywidgets~=${{ matrix.ipywidgets }}"
           pip install jupyter_core jupyter-packaging
           pip install --pre ipyvue ipyvuetify
           pip freeze --exclude solara --exclude solara-ui --exclude solara-server --exclude pytest-ipywidgets --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
@@ -389,7 +389,7 @@ jobs:
           pip install -r ${{ env.LOCK_FILE_LOCATION }}
           pip install `echo dist/*.whl`[all]
           pip install `echo packages/solara-server/dist/*.whl`[all]
-          pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all]
+          pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets${{ matrix.ipywidgets_major }}]
           pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
           pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
 
@@ -412,14 +412,14 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-integration-vue3-os${{ matrix.os }}-voila${{ matrix.voila }}-ipywidgets${{ matrix.ipywidgets }}
+          name: test-results-integration-vue3-os${{ matrix.os }}-ipywidgets${{ matrix.ipywidgets_major }}
           path: test-results
 
       - name: Upload CI package locks
         if: steps.install_no_lock.outputs.HAS_DIFF == 'true' || steps.prepare.outputs.LOCKS_EXIST == 'false'
         uses: actions/upload-artifact@v4
         with:
-          name: ci-package-locks-integration-vue3-os${{ matrix.os }}-voila${{ matrix.voila }}-ipywidgets${{ matrix.ipywidgets }}
+          name: ci-package-locks-integration-vue3-os${{ matrix.os }}-ipywidgets${{ matrix.ipywidgets_major }}
           path: ./**/${{ env.LOCK_FILE_LOCATION }}
 
   unit-test:
