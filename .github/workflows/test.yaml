@@ -476,7 +476,7 @@ jobs:
           pip install `echo packages/solara-meta/dist/*.whl`[dev,extra]
           pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
           pip install "jupyterlab<4" diskcache redis "ipywidgets~=${{ matrix.ipywidgets }}"
-          pip freeze --exclude solara --exclude solara-ui --exclude solara-server --exclude pytest-ipywidgets--exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
+          pip freeze --exclude solara --exclude solara-ui --exclude solara-server --exclude pytest-ipywidgets --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
           git diff --quiet || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
 
       - name: Install
