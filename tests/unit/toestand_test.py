@@ -4,6 +4,8 @@ import unittest.mock
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Set, TypeVar
 
+import pytest
+
 import ipyvuetify as v
 import react_ipywidgets as react
 from typing_extensions import TypedDict
@@ -14,6 +16,7 @@ import solara.lab
 import solara.toestand as toestand
 from solara.server import kernel, kernel_context
 from solara.toestand import Reactive, Ref, State, use_sync_external_store
+import pandas as pd
 
 from .common import click
 
@@ -1204,3 +1207,47 @@ def test_computed_reload(no_kernel_context):
             assert text.widget.v_model == "4.0"
     finally:
         app.close()
+
+
+def test_mutate_initial_value():
+    initial_values = [1, 2, 3]
+    reactive = Reactive(initial_values)
+    assert reactive.value == initial_values
+    initial_values.append(4)
+    assert reactive.value != initial_values
+    with pytest.raises(ValueError):
+        toestand.check_mutations()
+
+
+def test_mutate_value_public_value():
+    values = [1, 2, 3]
+    reactive = Reactive(values)
+    reactive.value.append(4)
+    with pytest.raises(ValueError, match="Reactive variable was read when it had the value of \[1, 2, 3\].*"):
+        reactive.check_mutations()
+
+
+def test_mutate_value_set_value():
+    values = [1, 2, 3]
+    reactive = Reactive(values)
+    new_values = [1, 2, 3, 4]
+    reactive.value = new_values
+    new_values.append(5)
+    # print(reactive.value)
+    with pytest.raises(ValueError, match="Reactive variable was set.*"):
+        reactive.check_mutations()
+
+
+def test_mutate_value_set_value_dataframe():
+    # dataframes do not support simple equality checks
+    # and we cannot have false equals(a, b) == False result when they
+    # actually are equal
+    df = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
+    df_orig = df.copy()
+    reactive_df = Reactive[Optional[pd.DataFrame]](None)
+    assert reactive_df.equals(df, df_orig)
+    reactive_df.value = df
+    df["a"][0] = 100
+    assert not reactive_df.equals(df, df_orig)
+    with pytest.raises(ValueError, match="Reactive variable was set.*"):
+        reactive_df.check_mutations()
