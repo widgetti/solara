@@ -11,7 +11,7 @@ import solara.hooks.dataframe
 import solara.lab
 import traitlets
 from solara.lab.hooks.dataframe import use_df_column_names
-from solara.lab.utils.dataframe import df_type
+from solara.lab.utils.dataframe import df_records
 
 from .. import CellAction, ColumnAction
 
@@ -102,19 +102,13 @@ def DataTable(
     columns = use_df_column_names(df)
 
     items = []
-    column_data = {}
     dfs = df[i1:i2]
 
-    if df_type(df) == "pandas":
-        column_data = dfs[columns].to_dict("records")
-    elif df_type(df) == "polars":
-        column_data = dfs[columns].to_dicts()
-    else:
-        column_data = dfs[columns].to_records()
+    records = df_records(dfs)
     for i in range(i2 - i1):
         item = {"__row__": i + i1}  # special key for the row number
         for column in columns:
-            item[column] = format(dfs, column, i + i1, column_data[i][column])
+            item[column] = format(dfs, column, i + i1, records[i][column])
         items.append(item)
 
     headers = [{"text": name, "value": name, "sortable": False} for name in columns]
