@@ -133,8 +133,8 @@ You can also configure Solara to use our Fief test account. To do this, you need
 
 ```bash
 SOLARA_SESSION_SECRET_KEY="change me"  # required if you don't use the default test account
-SOLARA_OAUTH_CLIENT_ID="x2np62qgwp6hnEGTP4JYUE3igdZWhT-AvjpjwwDyKXU"  # found in the Auth0 dashboard Clients->General Tab->Secret
-SOLARA_OAUTH_CLIENT_SECRET="XQlByE1pVIz5h2SBN2GYDwT_ziqArHJgLD3KqMlCHjg" # found in the Auth0 dashboard Clients->General Tab->ID
+SOLARA_OAUTH_CLIENT_ID="x2np62qgwp6hnEGTP4JYUE3igdZWhT-AvjpjwwDyKXU"  # found in the Auth0 dashboard Clients->General Tab->ID
+SOLARA_OAUTH_CLIENT_SECRET="XQlByE1pVIz5h2SBN2GYDwT_ziqArHJgLD3KqMlCHjg" # found in the Auth0 dashboard Clients->General Tab->Secret
 SOLARA_OAUTH_API_BASE_URL="solara-dev.fief.dev"  # found in the Fief dashboard Tenants->Base URL
  # different from Solara's default
 SOLARA_OAUTH_LOGOUT_PATH="logout"
