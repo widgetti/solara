@@ -1,3 +1,4 @@
--e .[all]
--e ./packages/solara-server[all]
--e ./packages/solara-enterprise[all]
+.[all]
+./packages/solara-server[all]
+./packages/solara-enterprise[all]
+./packages/solara-meta[all]
