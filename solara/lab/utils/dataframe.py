@@ -1,3 +1,6 @@
+from typing import List
+
+
 def get_pandas_major():
     import pandas as pd
 
@@ -6,6 +9,18 @@ def get_pandas_major():
 
 def df_type(df):
     return df.__class__.__module__.split(".")[0]
+
+
+def df_records(df) -> List[dict]:
+    """A list of records from a dataframe."""
+    if df_type(df) == "pandas":
+        return df.to_dict("records")
+    elif df_type(df) == "polars":
+        return df.to_dicts()
+    elif df_type(df) == "vaex":
+        return df.to_records()
+    else:
+        raise TypeError(f"{type(df)} not supported")
 
 
 def df_unique(df, column, limit=None):
