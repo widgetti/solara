@@ -31,6 +31,7 @@ all = [
     "pytest-ipywidgets[jupyterlab]",
     "pytest-ipywidgets[notebook]",
 ]
+
 # currently empty, but in the future we want to make the core package not depend
 # on solara, but now we can have the docs future compatible.
 solara = [
@@ -39,11 +40,22 @@ solara = [
 voila = [
     "voila",
 ]
+
 jupyterlab = [
     "jupyterlab<4",
 ]
+
 notebook = [
     "notebook<7",
+]
+
+ipywidgets7 = [
+    "voila~=0.3.0",
+    "lxml<5.2"
+]
+
+ipywidgets8 = [
+    "voila>=0.4"
 ]
 
 [project.entry-points.pytest11]
