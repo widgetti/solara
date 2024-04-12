@@ -1204,3 +1204,32 @@ def test_computed_reload(no_kernel_context):
             assert text.widget.v_model == "4.0"
     finally:
         app.close()
+
+
+def test_pydantic_basic():
+    from pydantic import BaseModel
+
+    class Person(BaseModel):
+        name: str
+        height: float
+
+    person = Reactive[Person](Person(name="Jos", height=1.8))
+    assert person.get() == Person(name="Jos", height=1.8)
+    assert person.get().name == "Jos"
+    assert person.get().height == 1.8
+    assert Ref(person.fields.name).get() == "Jos"
+    assert Ref(person.fields.height).get() == 1.8
+
+    person.set(Person(name="Maria", height=1.7))
+    assert person.get() == Person(name="Maria", height=1.7)
+    assert person.get().name == "Maria"
+    assert person.get().height == 1.7
+    assert Ref(person.fields.name).get() == "Maria"
+    assert Ref(person.fields.height).get() == 1.7
+
+    Ref(person.fields.height).set(2.0)
+    assert person.get() == Person(name="Maria", height=2.0)
+    assert person.get().name == "Maria"
+    assert person.get().height == 2.0
+    assert Ref(person.fields.name).get() == "Maria"
+    assert Ref(person.fields.height).get() == 2.0
