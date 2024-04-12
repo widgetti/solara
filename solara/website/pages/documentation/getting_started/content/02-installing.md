@@ -125,7 +125,7 @@ The `solara-server` packages supports the following optional dependencies:
 ### The `pytest-ipywidgets` package
 
 This package is a plugin for pytest that lets you test ipywidgets with playwright. It is useful for testing your ipywidgets or solara applications in a (headless) browser.
-See [Our testing documentation](https://solara.dev/docs/advanced/testing) for more information.
+See [Our testing documentation](https://solara.dev/documentation/advanced/howto/testing) for more information.
 
  * `pip install "pytest-ipywidgets"` - Minimal installation for testing ipywidgets.
  * `pip install "pytest-ipywidgets[voila]"` - The above, with a compatible version of voila.
