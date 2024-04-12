@@ -929,7 +929,8 @@ def test_reactive_auto_subscribe(kernel_context):
     assert rc.find(v.Slider).widget.v_model == 2
     y.value = "hello"
     assert rc.find(v.Slider).widget.label == "hello"
-    assert len(get_storage(x).listeners2) == 1
+    assert len(get_storage(x).listeners2[kernel_context.id]) == 1
+    assert len(get_storage(x).listeners_changed[kernel_context.id]) == 0
     # force an extra listener
     x.value = 0
     # and remove it
@@ -950,6 +951,7 @@ def test_reactive_auto_subscribe(kernel_context):
     rc.close()
     assert not get_storage(x).listeners[kernel_context.id]
     assert not get_storage(x).listeners2[kernel_context.id]
+    assert not get_storage(x).listeners_changed[kernel_context.id]
 
 
 def test_reactive_auto_subscribe_sub():
@@ -974,7 +976,7 @@ def test_reactive_auto_subscribe_sub():
     ref.value += 1
     assert rc.find(v.Alert).widget.children[0] == "2 bears around here"
     assert reactive_used == {ref}
-    # now check that we didn't listen to the while object, just count changes
+    # now check that we didn't listen to the whole object, just count changes
     renders_before = renders
     Ref(bears.fields.type).value = "pink"
     assert renders == renders_before
@@ -1457,6 +1459,7 @@ def test_mutate_value_set_value_dataframe():
     assert not reactive_df._storage.equals(df, df_orig)
     with pytest.raises(ValueError, match="Reactive variable was set.*"):
         reactive_df._storage.check_mutations()  # type: ignore
+
 @dataclasses.dataclass(frozen=True)
 class Profile:
     name: str
