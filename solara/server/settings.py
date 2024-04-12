@@ -1,4 +1,5 @@
 import os
+import importlib
 import re
 import site
 import sys
@@ -6,7 +7,7 @@ import uuid
 import warnings
 from enum import Enum
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 
 try:
     from filelock import FileLock
@@ -79,6 +80,23 @@ class Assets(BaseSettings):
     proxy_cache_dir: Path = Path(prefix + "/share/solara/cdn/")
     fontawesome_enabled: bool = True
     fontawesome_path: str = "/font-awesome@4.5.0/css/font-awesome.min.css"
+    extra_locations: List[str] = []
+
+    def extra_paths(self) -> List[Path]:
+        # translate locations (packages, directories) into list of paths
+        paths = []
+        for location in self.extra_locations:
+            if Path(location).exists():
+                paths.append(Path(location))
+            else:
+                try:
+                    package = importlib.import_module(location)
+                except ModuleNotFoundError:
+                    raise RuntimeError(f"Could not find {location} as a file or package (SOLARA_ASSETS_EXTRA_LOCATION={self.extra_locations!r}) ")
+                if not hasattr(package, "__path__"):
+                    raise RuntimeError(f"{location} is not a package (SOLARA_ASSETS_EXTRA_LOCATION={self.extra_locations!r}) ")
+                paths.append(Path(package.__path__[0]))
+        return paths
 
     class Config:
         env_prefix = "solara_assets_"
@@ -213,3 +231,7 @@ if oauth.client_id:
         # for the test accounts, this is fine
         if session.https_only is None:
             session.https_only = False
+
+
+# call early so a misconfiguration fails early
+assets.extra_paths()

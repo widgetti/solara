@@ -258,6 +258,13 @@ def process_kernel_messages(kernel: Kernel, msg: Dict) -> bool:
         return False
 
 
+def asset_directories():
+    application = [app.directory.parent / "assets" for app in app.apps.values()]
+    extra_paths = settings.assets.extra_paths()
+    solara_assets = solara_static.parent / "assets"
+    return [*application, *extra_paths, solara_assets]
+
+
 def read_root(
     path: str,
     root_path: str = "",
@@ -292,10 +299,7 @@ def read_root(
             directories = [default_app.directory.parent / "public"]
             filename = path[len("/static/public/") :]
         elif path.startswith("/static/assets/"):
-            directories = [
-                default_app.directory.parent / "assets",
-                solara_static.parent / "assets",
-            ]
+            directories = asset_directories()
             filename = path[len("/static/assets/") :]
         elif path.startswith("/static/"):
             directories = [solara_static.parent / "static"]
