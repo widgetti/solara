@@ -138,7 +138,9 @@ async function solaraInit(mountId, appName) {
     });
 
     window.addEventListener('solara.router', function (event) {
-        app.$data.loadingPage = true;
+        if(kernel.status == 'busy') {
+            app.$data.loadingPage = true;
+        }
     });
     kernel.statusChanged.connect(() => {
         // the first idle after a loadingPage == true (a router event)
