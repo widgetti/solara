@@ -77,7 +77,12 @@ def merge_state(d1: S, **kwargs) -> S:
     if dataclasses.is_dataclass(d1):
         return dataclasses.replace(d1, **kwargs)  # type: ignore
     if "pydantic" in sys.modules and isinstance(d1, sys.modules["pydantic"].BaseModel):
-        return type(d1)(**{**d1.dict(), **kwargs})  # type: ignore
+        module = sys.modules["pydantic"]
+        version_major = int(module.__version__.split(".")[0])
+        if version_major >= 2:
+            return d1.model_copy(update=kwargs)
+        else:
+            return d1.copy(update=kwargs)
     return cast(S, {**cast(dict, d1), **kwargs})
 
 
