@@ -89,7 +89,7 @@ $ pip install solara-air-gapped/*.whl
 The `solara` package is a meta package that installs all the necessary dependencies to get started with Solara. By default, we install:
 
   * [`pip install "solara-ui[all]"`](https://pypi.org/project/solara-ui)
-  * [`pip install "solara-server[starlette,dev]"`](https://pypi.org/project/solara-ui) -
+  * [`pip install "solara-server[starlette,dev]"`](https://pypi.org/project/solara-ui)
 
 Note that the solara (meta) package will pin exact versions of solara-ui and solara-server, which ensures you always get compatible version of the subpackages.
 For more flexibility, and control over what you install, you can install the subpackages directly.
