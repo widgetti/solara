@@ -4,11 +4,7 @@ import solara
 import solara.lab
 from solara.alias import rv
 from solara.server import settings
-
-
-@solara.component_vue("algolia_api.vue")
-def Algolia():
-    pass
+from .algolia import Algolia
 
 
 @solara.component
@@ -34,18 +30,12 @@ def Header(
                 if route_current is not None and route_current.module is not None and hasattr(route_current.module, "Sidebar"):
                     with solara.Button(icon=True, class_="hidden-md-and-up", on_click=lambda: on_toggle_left_menu and on_toggle_left_menu()):
                         rv.Icon(children=["mdi-menu"])
+
+            with solara.Row(classes=["central-elements-flex-container"], style={"background-color": "transparent", "flex-grow": "1"}):
                 with solara.Link(path_or_route="/"):
                     solara.Image(router.root_path + f"/static/assets/images/logo{'_white' if dark_effective else ''}.svg")
-            rv.Spacer()
 
-            if (
-                route_current_with_children is not None
-                and route_current is not None
-                and route_current.path == "documentation"
-                and route_current_with_children.path == "/"
-            ):
-                solara.v.Spacer()
-            else:
+            with rv.Html(tag="ul", class_="main-menu menu d-none d-md-flex", style_="flex-grow: 1;"):
                 if settings.search.enabled:
                     from solara_enterprise.search.search import Search
 
@@ -53,7 +43,7 @@ def Header(
                 else:
                     with solara.Row(justify="end", style={"align-items": "center", "flex-grow": "1", "background-color": "transparent"}):
                         Algolia()
-            with rv.Html(tag="ul", class_="main-menu menu d-none d-md-flex"):
+
                 for route in all_routes:
                     if route.path in ["apps", "contact", "changelog"]:
                         continue
