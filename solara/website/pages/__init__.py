@@ -5,6 +5,7 @@ from solara import autorouting
 from solara.alias import rv
 from solara.components.title import Title
 from solara.server import server
+from solara.website.components.algolia import Algolia
 
 from ..components import Header, Hero
 from ..components.mailchimp import MailChimp
@@ -512,6 +513,7 @@ def Layout(children=[]):
                 overlay_opacity=0.5,
                 style_="height: 100vh",
             ):
+                Algolia()
                 with rv.List(nav=True):
                     with rv.ListItemGroup(active_class="text--primary"):
                         for route in all_routes:
