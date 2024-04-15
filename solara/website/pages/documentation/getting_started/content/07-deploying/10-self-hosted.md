@@ -226,30 +226,46 @@ configuration would be:
 server {
     server_name widgetti.io;
     listen 80
-    location /solara/ {
+    location / {
             # the local solara server (could be using Starlette/uvicorn)
             proxy_pass http://localhost:8765/;
 
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Script-Name /solara;  # informs solara to produce correct urls
+            proxy_set_header X-Forwarded-Proto $scheme;
 
             proxy_http_version 1.1;
             proxy_set_header Upgrade $http_upgrade;
             proxy_set_header Connection "upgrade";
             proxy_read_timeout 86400;
     }
+
+    # If you do not host solara on the root path, you can use the following
+    # location /solara/ {
+    #        ...
+    #        proxy_set_header X-Script-Name /solara;  # informs solara to produce correct urls
+    #        ...
+    # }
 }
 ```
-
-Note that if we use `location /` instead of `location /solara/`, we can skip the `proxy_set_header X-Script-Name /solara` line.
 
 An alternative to using the `X-Script-Name` header with uvicorn, would be to pass the `--root-path` flag, e.g.:
 
 ```
 $ SOLARA_APP=sol.py uvicorn --workers 1 --root-path /solara -b 0.0.0.0:8765 solara.server.flask:app
 ```
+
+In the case of an [OAuth setup](https://solara.dev/documentation/advanced/enterprise/oauth) it is important to make sure that the `X-Forwarded-Proto` and `Host` headers are forwarded correctly.
+If you are running uvicorn (the default if you use `solara run ...`) you will need to configure uvicorn to accept these headers using e.g.:
+
+```bash
+export UVICORN_PROXY_HEADERS=1
+export FORWARDED_ALLOW_IPS = "127.0.0.1"  # If your solara-server can *only* be reached by the proxy, you can set it to "*", otherwise put in the IP of the reverse proxy
+```
+
+Make sure you replace the IP with the correct IP of the reverse proxy server (instead of `127.0.0.1`). If you are sure that only the reverse proxy can reach the solara server, you can consider
+setting `FORWARDED_ALLOW_IPS="*"`.
 
 ## Docker
 

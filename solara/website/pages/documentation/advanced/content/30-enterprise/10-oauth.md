@@ -169,3 +169,12 @@ Please note that Python 3.6 is not supported for Solara OAuth.
 ### Wrong redirection
 
 If the redirection back to solara return to the wrong address, it might be due to solara not choosing the right default for `SOLARA_BASE_URL`. For instance this variable could be set to `SOLARA_BASE_URL=https://solara.dev` for the solara.dev server. If you application runs behind a subpath, e.g. `/myapp`, you might have to set `SOLARA_ROOT_PATH=/myapp`.
+
+
+### Wrong schema detected for redirect URL
+
+Solara needs to give the OAuth providers a redirect URL to get back to your Solara application after navigating to the OAuth provider website. For our documentation server, we ask the OAuth provider to redirect to `https://solara.dev/_solara/auth/authorize`. The protocol part (`https`) and the domain name part (`solara.dev`) or this URL is constructed from the request URL (what the browser sends to the server).
+
+If you are running Aolara behind a reverse proxy server (like nginx), make sure that the `X-Forwarded-Proto` and `Host` headers are forwarded correctly so Solara can construct the correct redirect URL to send to the OAuth provider.
+
+See our [self hosted deployment](https://solara.dev/documentation/getting_started/deploying/self-hosted) for more information on how to configure your reverse proxy server.
