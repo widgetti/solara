@@ -67,7 +67,7 @@ iniconfig==2.0.0
 ipydatawidgets==4.3.5
 ipykernel==6.29.4
 ipyleaflet==0.18.2
-ipympl==0.9.3
+ipympl==0.9.4
 ipyreact==0.4.1
 ipython==8.18.1
 ipython-genutils==0.2.0
@@ -102,7 +102,7 @@ Markdown==3.6
 markdown-it-py==3.0.0
 MarkupSafe==2.1.5
 matplotlib==3.8.4
-matplotlib-inline==0.1.6
+matplotlib-inline==0.1.7
 mdit-py-plugins==0.4.0
 mdurl==0.1.2
 mistune==3.0.2
@@ -130,7 +130,7 @@ platformdirs==4.2.0
 playwright==1.43.0
 plotly==5.20.0
 pluggy==1.4.0
-polars==0.20.20
+polars==0.20.21
 pre-commit==3.7.0
 progressbar2==4.4.2
 prometheus_client==0.20.0
