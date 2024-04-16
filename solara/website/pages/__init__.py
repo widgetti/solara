@@ -1,5 +1,3 @@
-import contextlib
-
 import solara
 from solara import autorouting
 from solara.alias import rv
@@ -238,39 +236,6 @@ def List(children=[], class_: str = None):
 
 
 @solara.component
-def Sidebar():
-    route_current, all_routes = solara.use_route()
-    router = solara.use_router()
-    selected = router.path
-    with rv.Col(tag="aside", md=4, lg=3, class_="sidebar bg-grey d-none d-md-block") as main:
-        with List():
-            for route in all_routes:
-                if route.children and route.data is None:
-                    path = solara.resolve_path(route.children[0])
-                    path = getattr(route.module, "redirect", path)
-                    path = getattr(route.children[0].module, "redirect", path)
-                    with solara.Link(path) if path is not None else contextlib.nullcontext():
-                        with SimpleListItem(route.label, class_="active" if path == selected else None):
-                            with List():
-                                for child in route.children[1:]:
-                                    path = solara.resolve_path(child)
-                                    path = getattr(child.module, "redirect", path)
-                                    with solara.Link(path) if path is not None else contextlib.nullcontext():
-                                        title = child.label or "no label"
-                                        if callable(title):
-                                            title = "Error: dynamic title"
-                                        SimpleListItem(title, class_="active" if path == selected else None)
-                else:
-                    path = solara.resolve_path(route)
-                    path = getattr(route.module, "redirect", path)
-                    if route.children:
-                        path = getattr(route.children[0].module, "redirect", path)
-                    with solara.Link(path) if path is not None else contextlib.nullcontext():
-                        SimpleListItem(route.label, class_="active" if path == selected else None)
-    return main
-
-
-@solara.component
 def Layout(children=[]):
     router = solara.use_router()
     route_current, all_routes = solara.use_route()
@@ -476,17 +441,22 @@ def Layout(children=[]):
                     style_="flex-wrap: nowrap; margin: 0; min-height: calc(100vh - 215.5px);",
                     justify="center" if route_current is not None and route_current.path in ["documentation", "showcase"] else "start",
                 ):
-                    if route_current is not None and hasattr(route_current.module, "Sidebar"):
-                        route_current.module.Sidebar()  # type: ignore
-                    else:
-                        if route_current is not None and route_current.path not in ["documentation", "showcase", "contact", "changelog"]:
-                            Sidebar()
+                    if route_current is not None and route_current.module is not None and hasattr(route_current.module, "Sidebar"):
+                        with solara.v.NavigationDrawer(
+                            clipped=True,
+                            class_="d-none d-md-block",
+                            height="unset",
+                            style_="min-height: calc(100vh - 215.5px);",
+                            width="20rem",
+                            v_model=True,  # Forces menu to display even if it had somehow been closed
+                        ):
+                            route_current.module.Sidebar()
                     with rv.Col(
                         tag="main",
                         md=True,
                         class_="pa-0",
                         style_=f"""max-width: {'1024px' if route_current.path not in ['documentation', 'contact', 'changelog']
-                                               else 'unset'}; overflow: hidden auto;""",
+                                               else 'unset'}; overflow-x: hidden;""",
                     ):
                         if route_current is not None and route_current.path == "/":
                             with rv.Row(align="center"):
@@ -520,32 +490,18 @@ def Layout(children=[]):
                             with solara.Link(route):
                                 solara.ListItem(route.label)
 
-            # Drawer navigation for sidebar
-            with rv.NavigationDrawer(
-                v_model=show_left_menu,
-                on_v_model=set_show_left_menu,
-                fixed=True,
-                absolute=True,
-                hide_overlay=False,
-                overlay_color="#000000",
-                overlay_opacity=0.5,
-                style_="height: 100vh",
-            ):
-                with rv.List(nav=True):
-                    current_path = router.path
-                    with rv.ListItemGroup(active_class="text--primary", v_model=current_path):
-                        for route in all_routes_sidebar:
-                            # this gets rid of the api/link child routes
-                            if len([k for k in route.children if k.label]) == 0:
-                                with solara.Link(route):
-                                    solara.ListItem(route.label, value=solara.resolve_path(route))
-                            else:
-                                with solara.ListItem(route.label or "no-title", value=solara.resolve_path(route) + "_no_select"):
-                                    for subroute in route.children:
-                                        if subroute.label:
-                                            with solara.Link(subroute):
-                                                with solara.ListItem(subroute.label, value=solara.resolve_path(subroute)):
-                                                    pass
+            if route_current is not None and route_current.module is not None and hasattr(route_current.module, "Sidebar"):
+                with solara.v.NavigationDrawer(
+                    absolute=True,
+                    clipped=True,
+                    class_="d-md-none d-block",
+                    height="unset",
+                    style_="min-height: 100vh;",
+                    v_model=show_left_menu,
+                    on_v_model=set_show_left_menu,
+                    width="20rem",
+                ):
+                    route_current.module.Sidebar()
 
     return main
 
