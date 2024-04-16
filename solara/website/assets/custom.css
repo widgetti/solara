@@ -243,10 +243,9 @@ blockquote p:last-child {
     padding: 0.35rem;
 }
 
-@media screen and (max-width: 800px) {
-    .central-elements-flex-container{
-        flex-direction: column !important;
-        justify-content: center;
+@media screen and (max-width: 960px) {
+    .header-logo-container{
+        justify-content: center !important;
     }
 }
 

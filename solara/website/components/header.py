@@ -31,7 +31,9 @@ def Header(
                     with solara.Button(icon=True, class_="hidden-md-and-up", on_click=lambda: on_toggle_left_menu and on_toggle_left_menu()):
                         rv.Icon(children=["mdi-menu"])
 
-            with solara.Row(classes=["central-elements-flex-container"], style={"background-color": "transparent", "flex-grow": "1"}):
+            with solara.Row(
+                justify="start", classes=["header-logo-container"], style={"flex-grow": "1", "background-color": "transparent", "align-items": "center"}
+            ):
                 with solara.Link(path_or_route="/"):
                     solara.Image(router.root_path + f"/static/assets/images/logo{'_white' if dark_effective else ''}.svg")
 
