@@ -287,21 +287,25 @@ class KernelStoreValue(KernelStore[S]):
         return self.default_value
 
 
+def _create_key_callable(f: Callable[[], S]):
+    try:
+        prefix = f.__qualname__
+    except Exception:
+        prefix = repr(f)
+    with KernelStore.scope_lock:
+        index = KernelStore._type_counter[prefix]
+        KernelStore._type_counter[prefix] += 1
+    try:
+        key = f.__module__ + ":" + prefix + ":" + str(index)
+    except Exception:
+        key = prefix + ":" + str(index)
+    return key
+
+
 class KernelStoreFactory(KernelStore[S]):
     def __init__(self, factory: Callable[[], S], key=None):
         self.factory = factory
-        try:
-            prefix = factory.__qualname__
-        except Exception:
-            prefix = repr(factory)
-        if key is None:
-            with KernelStore.scope_lock:
-                index = self._type_counter[prefix]
-                self._type_counter[prefix] += 1
-            try:
-                key = factory.__module__ + ":" + prefix + ":" + str(index)
-            except Exception:
-                key = prefix + ":" + str(index)
+        key = key or _create_key_callable(factory)
         super().__init__(key=key)
 
     def initial_value(self) -> S:

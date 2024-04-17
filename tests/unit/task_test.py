@@ -72,6 +72,11 @@ def SquareButton(value, on_render=lambda: None):
             raise RuntimeError("should not happen")
 
 
+def test_task_key():
+    assert "something" in something._result._storage.storage_key  # type: ignore
+    assert "something" in something._instance._storage.storage_key  # type: ignore
+
+
 def test_task_basic():
     results = []
 
