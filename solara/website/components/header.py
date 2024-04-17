@@ -35,7 +35,7 @@ def Header(
                 justify="start", classes=["header-logo-container"], style={"flex-grow": "1", "background-color": "transparent", "align-items": "center"}
             ):
                 with solara.Link(path_or_route="/"):
-                    solara.Image(router.root_path + f"/static/assets/images/logo{'_white' if dark_effective else ''}.svg")
+                    solara.Image(router.root_path + f"/static/assets/images/logo{'_white' if dark_effective else ''}.svg", classes=["header-logo"])
 
             with rv.Html(tag="ul", class_="main-menu menu d-none d-md-flex", style_="flex-grow: 1;"):
                 if settings.search.enabled:

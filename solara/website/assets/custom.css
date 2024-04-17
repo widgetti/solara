@@ -272,6 +272,9 @@ blockquote p:last-child {
 }
 
 /* header */
+.header-logo {
+    display: block;
+}
 .news {
     background-color: var(--color-primary);
     padding: 10px;
