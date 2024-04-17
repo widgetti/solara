@@ -310,8 +310,12 @@ def AppLayout(
                     if title or children_appbartitle:
                         v.ToolbarTitle(children=children_appbartitle or [title])
                     v.Spacer()
-                    for child in children_appbar:
-                        solara.display(child)
+                    for i, child in enumerate(children_appbar):
+                        # if the user already provided a key, don't override it
+                        if child._key is None:
+                            solara.display(child.key(f"app-layout-appbar-user-child-{i}"))
+                        else:
+                            solara.display(child)
                     solara.Button(icon_name="mdi-fullscreen", on_click=lambda: set_fullscreen(True), icon=True, dark=False)
             with v.Row(no_gutters=False, class_="solara-content-main"):
                 v.Col(cols=12, children=children_content)
