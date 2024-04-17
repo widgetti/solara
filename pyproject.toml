@@ -93,3 +93,7 @@ timeout = 180
 
 [tool.codespell]
 skip='equis-in-vidi.md,substiterat-vati.md,.*,solara/website/build,*.svg,highlight-dark.css,packages/**/dist/*,node_modules,packages/solara-assets,package*.json,tsconfig.tsbuildinfo,*.csv'
+
+
+[project.scripts]
+solara = "solara.__main__:main"
