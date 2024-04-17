@@ -31,7 +31,7 @@ def Header(
             )
         with solara.v.AppBar(tag="header", flat=True, class_="bg-primary-fade padding-40", height="auto", clipped_left=True):
             with rv.ToolbarTitle(class_="d-flex", style_="align-items:center"):
-                if route_current and len(route_current.children) > 0:
+                if route_current is not None and route_current.module is not None and hasattr(route_current.module, "Sidebar"):
                     with solara.Button(icon=True, class_="hidden-md-and-up", on_click=lambda: on_toggle_left_menu and on_toggle_left_menu()):
                         rv.Icon(children=["mdi-menu"])
                 with solara.Link(path_or_route="/"):
