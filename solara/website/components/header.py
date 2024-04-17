@@ -35,7 +35,7 @@ def Header(
                     with solara.Button(icon=True, class_="hidden-md-and-up", on_click=lambda: on_toggle_left_menu and on_toggle_left_menu()):
                         rv.Icon(children=["mdi-menu"])
                 with solara.Link(path_or_route="/"):
-                    solara.Image(router.root_path + f"/static/assets/images/logo{'_white' if dark_effective else ''}.svg")
+                    solara.Image(router.root_path + f"/static/assets/images/logo{'_white' if dark_effective else ''}.svg", classes=["header-logo"])
             rv.Spacer()
 
             if (
