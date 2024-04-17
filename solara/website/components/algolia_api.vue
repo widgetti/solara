@@ -12,9 +12,10 @@
                     rounded
                     clearable
                     ref="search"
-                    style="max-width: 50%; flex-grow: 1;"
+                    style="flex-grow: 1; max-width: 650px;"
                     @click="show($event, on);"
                     @keyup.enter="item = 0"
+                    class="algolia"
                 ></v-text-field>
         </template>
         <v-list v-if="results != null && results.length == 0">

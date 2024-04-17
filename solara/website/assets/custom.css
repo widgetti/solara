@@ -239,6 +239,16 @@ blockquote p:last-child {
     border-radius: 8px;
 }
 
+.v-navigation-drawer__content .algolia {
+    padding: 0.35rem;
+}
+
+@media screen and (max-width: 960px) {
+    .header-logo-container{
+        justify-content: center !important;
+    }
+}
+
 /* vuetify component overrides */
 
 .v-btn.solara-docs-button {

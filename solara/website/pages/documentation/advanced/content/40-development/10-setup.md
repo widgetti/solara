@@ -11,7 +11,7 @@ Assuming you have created a virtual environment as described in [the installatio
 
     $ git clone git@github.com:widgetti/solara.git
     $ cd solara
-    $ pip install ".[dev,documentation]"  # documentation is optional
+    $ pip install -r requirements-dev.txt
 
 
 ## Running Solara server in auto restart mode
