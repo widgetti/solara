@@ -11,7 +11,7 @@ import solara.hooks.dataframe
 import solara.lab
 import traitlets
 from solara.lab.hooks.dataframe import use_df_column_names
-from solara.lab.utils.dataframe import df_records
+from solara.lab.utils.dataframe import df_len, df_records, df_slice
 
 from .. import CellAction, ColumnAction
 
@@ -89,7 +89,7 @@ def DataTable(
     on_column_header_hover: Optional[Callable[[Optional[str]], None]] = None,
     column_header_info: Optional[solara.Element] = None,
 ):
-    total_length = len(df)
+    total_length = df_len(df)
     options = {"descending": False, "page": page + 1, "itemsPerPage": items_per_page, "sortBy": [], "totalItems": total_length}
     options, set_options = solara.use_state(options, key="options")
     format = format or format_default
@@ -102,8 +102,7 @@ def DataTable(
     columns = use_df_column_names(df)
 
     items = []
-    dfs = df[i1:i2]
-
+    dfs = df_slice(df, i1, i2)
     records = df_records(dfs)
     for i in range(i2 - i1):
         item = {"__row__": i + i1}  # special key for the row number
