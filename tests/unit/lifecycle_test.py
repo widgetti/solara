@@ -84,20 +84,21 @@ async def test_kernel_lifecycle_close_single(close_first, short_cull_timeout):
 async def test_kernel_lifecycle_close_while_disconnected(close_first, short_cull_timeout):
     # a reconnect should be possible within the reconnect window
     websocket = Mock()
-    context = kernel_context.initialize_virtual_kernel("session-id-1", "kernel-id-1", websocket)
+    context = kernel_context.initialize_virtual_kernel(f"session-id-1-{close_first}", f"kernel-id-1-{close_first}", websocket)
     context.page_connect("page-id-1")
     cull_task_1 = context.page_disconnect("page-id-1")
     await asyncio.sleep(0.1)
     # after 0.1 we connect again, but close it directly
     context.page_connect("page-id-2")
     if close_first:
-        context.page_close("page-id-2")
+        cull_task_2 = context.page_close("page-id-2")
         await asyncio.sleep(0.01)
-        cull_task_2 = context.page_disconnect("page-id-2")
+        context.page_disconnect("page-id-2")
     else:
-        cull_task_2 = context.page_disconnect("page-id-2")
+        context.page_disconnect("page-id-2")
         await asyncio.sleep(0.01)
-        context.page_close("page-id-2")
+        cull_task_2 = context.page_close("page-id-2")
+    assert cull_task_2 is not None
     assert not context.closed_event.is_set()
     await asyncio.sleep(0.15)
     # but even though we closed, the first page is still in the disconnected state
