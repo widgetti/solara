@@ -16,6 +16,18 @@ def df_len(df) -> int:
     return len(df)
 
 
+def df_columns(df) -> List[str]:
+    """Return a list of column names from a dataframe."""
+    if df_type(df) == "vaex":
+        return df.get_column_names()
+    elif df_type(df) == "pandas":
+        return df.columns.tolist()
+    elif df_type(df) == "polars":
+        return df.columns
+    else:
+        raise TypeError(f"{type(df)} not supported")
+
+
 def df_slice(df, start: int, stop: int):
     """Return a subset of rows from a dataframe."""
     if df_type(df) == "pandas":
