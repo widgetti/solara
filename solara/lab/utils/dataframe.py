@@ -18,7 +18,10 @@ def df_len(df) -> int:
 
 def df_slice(df, start: int, stop: int):
     """Return a subset of rows from a dataframe."""
-    return df[start:stop]
+    if df_type(df) == "pandas":
+        return df.iloc[start:stop]
+    else:
+        return df[start:stop]
 
 
 def df_records(df) -> List[dict]:
