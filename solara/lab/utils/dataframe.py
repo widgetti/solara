@@ -11,6 +11,16 @@ def df_type(df):
     return df.__class__.__module__.split(".")[0]
 
 
+def df_len(df) -> int:
+    """Return the number of rows in a dataframe."""
+    return len(df)
+
+
+def df_slice(df, start: int, stop: int):
+    """Return a subset of rows from a dataframe."""
+    return df[start:stop]
+
+
 def df_records(df) -> List[dict]:
     """A list of records from a dataframe."""
     if df_type(df) == "pandas":
