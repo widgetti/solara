@@ -73,6 +73,7 @@ class VirtualKernelContext:
     _last_kernel_cull_task: "Optional[asyncio.Future[None]]" = None
     closed_event: threading.Event = dataclasses.field(default_factory=threading.Event)
     _on_close_callbacks: List[Callable[[], None]] = dataclasses.field(default_factory=list)
+    lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
 
     def __post_init__(self):
         with self:
@@ -108,14 +109,15 @@ class VirtualKernelContext:
         current_context[key] = local.kernel_context_stack.pop()
 
     def close(self):
-        if self.closed_event.is_set():
-            logger.error("Tried to close a kernel context that is already closed: %s", self.id)
-            return
-        logger.info("Shut down virtual kernel: %s", self.id)
-        with self:
+        with self, self.lock:
+            for key in self.page_status:
+                self.page_status[key] = PageStatus.CLOSED
+            if self.closed_event.is_set():
+                logger.error("Tried to close a kernel context that is already closed: %s", self.id)
+                return
+            logger.info("Shut down virtual kernel: %s", self.id)
             for f in reversed(self._on_close_callbacks):
                 f()
-        with self:
             if self.app_object is not None:
                 if isinstance(self.app_object, reacton.core._RenderContext):
                     try:
@@ -128,9 +130,9 @@ class VirtualKernelContext:
             # import gc
             # gc.collect()
             self.kernel.session.close()
-        if self.id in contexts:
-            del contexts[self.id]
-        self.closed_event.set()
+            if self.id in contexts:
+                del contexts[self.id]
+            self.closed_event.set()
 
     def _state_reset(self):
         state_directory = Path(".") / "states"
@@ -157,77 +159,125 @@ class VirtualKernelContext:
 
     def page_connect(self, page_id: str):
         logger.info("Connect page %s for kernel %s", page_id, self.id)
-        assert self.page_status.get(page_id) != PageStatus.CLOSED, "cannot connect with the same page_id after a close"
-        self.page_status[page_id] = PageStatus.CONNECTED
-        if self._last_kernel_cull_task:
-            self._last_kernel_cull_task.cancel()
+        with self.lock:
+            if self.closed_event.is_set():
+                raise RuntimeError("Cannot connect a page to a closed kernel")
+            if page_id in self.page_status and self.page_status.get(page_id) == PageStatus.CLOSED:
+                raise RuntimeError("Cannot connect a page that is already closed")
+            self.page_status[page_id] = PageStatus.CONNECTED
+            if self._last_kernel_cull_task:
+                logger.info("Cancelling previous kernel cull task for virtual kernel %s", self.id)
+                self._last_kernel_cull_task.cancel()
 
-    def page_disconnect(self, page_id: str) -> "asyncio.Future[None]":
-        """Signal that a page has disconnected, and schedule a kernel cull if needed.
-
-        During the kernel reconnect window, we will keep the kernel alive, even if all pages have disconnected.
-
-        Returns a future that is set when the kernel cull is done.
-        The scheduled kernel cull can be cancelled when a new page connects, a new disconnect is scheduled,
-        or a page if explicitly closed.
-        """
-        logger.info("Disconnect page %s for kernel %s", page_id, self.id)
-        future: "asyncio.Future[None]" = asyncio.Future()
-        self.page_status[page_id] = PageStatus.DISCONNECTED
-        current_event_loop = asyncio.get_event_loop()
-
+    def _bump_kernel_cull(self):
         async def kernel_cull():
             try:
                 cull_timeout_sleep_seconds = solara.util.parse_timedelta(solara.server.settings.kernel.cull_timeout)
                 logger.info("Scheduling kernel cull, will wait for max %s before shutting down the virtual kernel %s", cull_timeout_sleep_seconds, self.id)
                 await asyncio.sleep(cull_timeout_sleep_seconds)
-                has_connected_pages = PageStatus.CONNECTED in self.page_status.values()
-                if has_connected_pages:
-                    logger.info("We have (re)connected pages, keeping the virtual kernel %s alive", self.id)
-                else:
-                    logger.info("No connected pages, and timeout reached, shutting down virtual kernel %s", self.id)
-                    self.close()
-                current_event_loop.call_soon_threadsafe(future.set_result, None)
+                logger.info("Timeout reached, checking if we should be shutting down virtual kernel %s", self.id)
+                with self.lock:
+                    has_connected_pages = PageStatus.CONNECTED in self.page_status.values()
+                    if has_connected_pages:
+                        logger.info("We have (re)connected pages, keeping the virtual kernel %s alive", self.id)
+                    else:
+                        logger.info("No connected pages, and timeout reached, shutting down virtual kernel %s", self.id)
+                        self.close()
+                if current_event_loop is not None and future is not None:
+                    current_event_loop.call_soon_threadsafe(future.set_result, None)
             except asyncio.CancelledError:
-                if sys.version_info >= (3, 9):
-                    current_event_loop.call_soon_threadsafe(future.cancel, "cancelled because a new cull task was scheduled")
-                else:
-                    current_event_loop.call_soon_threadsafe(future.cancel)
+                if current_event_loop is not None and future is not None:
+                    if sys.version_info >= (3, 9):
+                        current_event_loop.call_soon_threadsafe(future.cancel, "cancelled because a new cull task was scheduled")
+                    else:
+                        current_event_loop.call_soon_threadsafe(future.cancel)
                 raise
 
-        has_connected_pages = PageStatus.CONNECTED in self.page_status.values()
-        if not has_connected_pages:
-            # when we have no connected pages, we will schedule a kernel cull
+        async def create_task():
+            task = asyncio.create_task(kernel_cull())
+            # create a reference to the task so we can cancel it later
+            self._last_kernel_cull_task = task
+            await task
+
+        with self.lock:
+            future: "Optional[asyncio.Future[None]]" = None
+            current_event_loop: Optional[asyncio.AbstractEventLoop] = None
+            try:
+                future = asyncio.Future()
+                current_event_loop = asyncio.get_event_loop()
+            except RuntimeError:
+                pass
             if self._last_kernel_cull_task:
+                logger.info("Cancelling previous kernel cull tas for virtual kernel %s", self.id)
                 self._last_kernel_cull_task.cancel()
 
-            async def create_task():
-                task = asyncio.create_task(kernel_cull())
-                # create a reference to the task so we can cancel it later
-                self._last_kernel_cull_task = task
-                await task
-
+            logger.info("Scheduling kernel cull for virtual kernel %s", self.id)
             asyncio.run_coroutine_threadsafe(create_task(), keep_alive_event_loop)
-        else:
-            future.set_result(None)
-        return future
+            return future
+
+    def page_disconnect(self, page_id: str) -> "Optional[asyncio.Future[None]]":
+        """Signal that a page has disconnected, and schedule a kernel cull if needed.
+
+        During the kernel reconnect window, we will keep the kernel alive, even if all pages have disconnected.
+
+        Will return a future that is set when the kernel cull is done, when an event loop is available.
+        The scheduled kernel cull can be cancelled when a new page connects, a new disconnect is scheduled,
+        or a page if explicitly closed.
+        """
+
+        logger.info("Disconnect page %s for kernel %s", page_id, self.id)
+        future: "asyncio.Future[None]" = asyncio.Future()
+        with self.lock:
+            if self.page_status[page_id] == PageStatus.CLOSED:
+                # this happens when the close beackon call happens before the websocket disconnect
+                logger.info("Page %s already closed for kernel %s", page_id, self.id)
+                future.set_result(None)
+                return future
+            assert self.page_status[page_id] == PageStatus.CONNECTED, "cannot disconnect a page that is in state: %r" % self.page_status[page_id]
+            self.page_status[page_id] = PageStatus.DISCONNECTED
+            has_connected_pages = PageStatus.CONNECTED in self.page_status.values()
+            if not has_connected_pages:
+                # when we have no connected pages, we will schedule a kernel cull
+                future = self._bump_kernel_cull()
+            else:
+                logger.info("Still have connected pages, do nothing for kernel %s", self.id)
+                future.set_result(None)
+            return future
 
     def page_close(self, page_id: str):
-        """Signal that a page has closed, and close the context if needed.
+        """Signal that a page has closed, close the context if needed and schedule a kernel cull if needed.
 
         Closing the browser tab or a page navigation means an explicit close, which is
         different from a websocket/page disconnect, which we might want to recover from.
 
         """
-        self.page_status[page_id] = PageStatus.CLOSED
-        logger.info("Close page %s for kernel %s", page_id, self.id)
-        has_connected_pages = PageStatus.CONNECTED in self.page_status.values()
-        has_disconnected_pages = PageStatus.DISCONNECTED in self.page_status.values()
-        if not (has_connected_pages or has_disconnected_pages):
-            logger.info("No connected or disconnected pages, shutting down virtual kernel %s", self.id)
-            if self._last_kernel_cull_task:
-                self._last_kernel_cull_task.cancel()
-            self.close()
+        future: "Optional[asyncio.Future[None]]" = None
+
+        try:
+            future = asyncio.Future()
+        except RuntimeError:
+            pass
+        else:
+            future.set_result(None)
+        with self.lock:
+            if self.page_status[page_id] == PageStatus.CLOSED:
+                logger.info("Page %s already closed for kernel %s", page_id, self.id)
+                return
+            self.page_status[page_id] = PageStatus.CLOSED
+            logger.info("Close page %s for kernel %s", page_id, self.id)
+            has_connected_pages = PageStatus.CONNECTED in self.page_status.values()
+            has_disconnected_pages = PageStatus.DISCONNECTED in self.page_status.values()
+            # if we have disconnected pages, we may have cancelled the kernel cull task
+            # if we still have connected pages, it will go to a disconnected state again
+            # which will also trigger a new kernel cull
+            if has_disconnected_pages:
+                future = self._bump_kernel_cull()
+            if not (has_connected_pages or has_disconnected_pages):
+                logger.info("No connected or disconnected pages, shutting down virtual kernel %s", self.id)
+                self.close()
+            else:
+                logger.info("Still have connected or disconnected pages, keeping virtual kernel %s alive", self.id)
+        return future
 
 
 try:

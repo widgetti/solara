@@ -1,4 +1,3 @@
-import threading
 from pathlib import Path
 from typing import cast
 
@@ -81,12 +80,4 @@ def test_kernel_lifecycle_close_while_disconnected(
         page_session.locator("text=Clicks-1").click()
         page_session.locator("text=Clicks-2").wait_for()
         page_session.goto("about:blank")
-        # give a bit of time to make sure the cull task is started
-        page_session.wait_for_timeout(100)
-        cull_task_2 = context._last_kernel_cull_task
-        assert cull_task_2 is not None
-        # we can't mix do async, so we hook up an event to the Future
-        event = threading.Event()
-        cull_task_2.add_done_callback(lambda x: event.set())
-        event.wait()
-        assert context.closed_event.is_set()
+        assert context.closed_event.wait(timeout=20)
