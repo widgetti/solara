@@ -162,8 +162,8 @@ def kernels_connection(ws: simple_websocket.Server, kernel_id: str, name: str):
 @blueprint.route("/_solara/api/close/<kernel_id>", methods=["GET", "POST"])
 def close(kernel_id: str):
     page_id = request.args["session_id"]
-    if kernel_id in kernel_context.contexts:
-        context = kernel_context.contexts[kernel_id]
+    context = kernel_context.contexts.get(kernel_id, None)
+    if context is not None:
         context.page_close(page_id)
     return ""
 
