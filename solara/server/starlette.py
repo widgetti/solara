@@ -311,8 +311,8 @@ async def _kernel_connection(ws: starlette.websockets.WebSocket):
 def close(request: Request):
     kernel_id = request.path_params["kernel_id"]
     page_id = request.query_params["session_id"]
-    if kernel_id in kernel_context.contexts:
-        context = kernel_context.contexts[kernel_id]
+    context = kernel_context.contexts.get(kernel_id, None)
+    if context is not None:
         context.page_close(page_id)
     response = HTMLResponse(content="", status_code=200)
     return response
