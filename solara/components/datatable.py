@@ -10,7 +10,7 @@ import solara
 import solara.hooks.dataframe
 import solara.lab
 import traitlets
-from solara.lab.hooks.dataframe import use_df_column_names
+from solara.lab.hooks.dataframe import use_df_column_names, use_df_row_names
 from solara.lab.utils.dataframe import df_len, df_records, df_slice
 
 from .. import CellAction, ColumnAction
@@ -100,12 +100,12 @@ def DataTable(
     i2 = min(total_length, (page + 1) * items_per_page)
 
     columns = use_df_column_names(df)
-
+    rows = use_df_row_names(df)
     items = []
     dfs = df_slice(df, i1, i2)
     records = df_records(dfs)
     for i in range(i2 - i1):
-        item = {"__row__": i + i1}  # special key for the row number
+        item = {"__row__": rows[i + i1]}  # special key for the row number
         for column in columns:
             item[column] = format(dfs, column, i + i1, records[i][column])
         items.append(item)

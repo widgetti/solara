@@ -27,6 +27,16 @@ def df_columns(df) -> List[str]:
     else:
         raise TypeError(f"{type(df)} not supported")
 
+def df_rows(df) -> List[str]:
+    """Return a list of row names from a dataframe."""
+    if df_type(df) == "vaex":
+        return list(range(df_len(df)))
+    elif df_type(df) == "pandas":
+        return df.index.tolist()
+    elif df_type(df) == "polars":
+        return list(range(df_len(df)))
+    else:
+        raise TypeError(f"{type(df)} not supported")
 
 def df_slice(df, start: int, stop: int):
     """Return a subset of rows from a dataframe."""
