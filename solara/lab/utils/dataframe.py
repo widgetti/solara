@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 
 
 def get_pandas_major():
@@ -27,7 +27,7 @@ def df_columns(df) -> List[str]:
     else:
         raise TypeError(f"{type(df)} not supported")
 
-def df_rows(df) -> List[str]:
+def df_rows(df) -> Union[List[str], List[int]]:
     """Return a list of row names from a dataframe."""
     if df_type(df) == "vaex":
         return list(range(df_len(df)))
