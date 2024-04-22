@@ -1,6 +1,7 @@
+import inspect
 import os
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, List, Type
 
 # similar API to pydantic/pydantic-settings but we prefer not to have a dependency on pydantic
 # since we cannot be compatible with pydantic1 and 2
@@ -61,11 +62,16 @@ class _Field:
 
 
 def convert(annotation, value: str) -> Any:
-    check_optional_types = [str, int, float, bool, Path]
-    for check_type in check_optional_types:
-        if annotation == Optional[check_type]:
-            annotation = check_type
+    check_sub_types: List[Type] = [str, int, float, bool, Path]
+    for sub_type in check_sub_types:
+        if annotation == Optional[sub_type]:
+            annotation = sub_type
             return convert(annotation, value)
+    for sub_type in check_sub_types:
+        if annotation == List[sub_type]:  # type: ignore
+            annotation = sub_type
+            values = value.split(",")
+            return [convert(sub_type, k) for k in values]
     if annotation == str:
         return value
     elif annotation == int:
@@ -120,6 +126,8 @@ class BaseSettings:
             if key == "Config":
                 continue
             if not isinstance(field, _Field):
+                if inspect.isfunction(field):
+                    continue
                 field = Field(field)
                 setattr(cls, key, field)
                 field.__set_name__(cls, key)

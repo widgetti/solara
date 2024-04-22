@@ -34,3 +34,39 @@ Putting the `assets` directory 1 level higher than the `pages` directory avoids 
 
 
 Although the `assets` directory can be used for serving arbitrary files, we recommend using the [static files](/documentation/advanced/reference/static-files) directory instead, to avoid name collisions.
+
+
+## Extra asset locations
+
+If for instance you are creating a library on top of Solara, you might want to have your own assets files, like stylesheets or JavaScript files.
+For this purpose, solara-server can be configured to look into other directories for assets files by setting the `SOLARA_ASSETS_EXTRA_LOCATIONS` environment variable.
+This string contains a comma-separated list of directories or Python package names to look for asset files. The directories are searched in order, after looking in the application specific directory, and the first file found is used.
+
+For example, if we run solara as:
+
+```
+$ export SOLARA_ASSETS_EXTRA_LOCATIONS=/path/to/assets,my_package.assets
+$ solara run solara.website.pages
+Solara server is starting at http://localhost:8765...
+```
+
+And we would fetch `http://localhost:8765/static/assets/my-image.jpg`, Solara-server would look for the file in the following order:
+
+1. `.../solara/website/assets/my-image.jpg`
+1. `/path/to/assets/my-image.jpg`
+1. `.../my_package/assets/my-image.jpg`
+1. `...site-package/solara/server/assets/my-image.jpg`
+
+## Recommended pattern for libraries to add asset locations
+
+If you are creating a library on top of Solara, and you want to programmatically add asset locations, you can do so by adding the following code to your library:
+
+```python
+import solara.server.settings
+import my_package.assets
+
+
+path = my_package.assets.__path__[0]
+# append at the end, so SOLARA_ASSETS_EXTRA_LOCATIONS can override
+solara.server.settings.assets.extra_locations.append(path)
+```
