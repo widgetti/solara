@@ -74,3 +74,30 @@ Voila and Solara set the following environment variables (based on the CGI spec)
 
 Jupyter Notebook/Lab/Server do not set these variables. With this information,
 it should be possible to recognize in which environment you are running in.
+
+
+## I cannot find or run `solara` from the command line
+
+
+On Linux or OSX you might see
+
+```
+$ solara
+command not found: solara
+```
+
+On Windows you might see
+
+```
+C:Users\myusername> solara
+solara: The term 'solara' is not recognized as the name of a cdlet, function,
+script file, or operable program.
+```
+
+The solara command before version 1.30 was installed with the package `solara`, but now it is installed with the package `solara-server`.
+
+If you upgrade from an older version to 1.30 or later, the order in which pip installs packages can cause the `solara` command to be uninstalled. To fix this, reinstall the `solara-server` package:
+
+```bash
+$ pip install solara-server --force-reinstall
+```
