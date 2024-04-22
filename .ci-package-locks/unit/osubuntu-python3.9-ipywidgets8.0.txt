@@ -2,7 +2,7 @@ aiofiles==22.1.0
 aiosqlite==0.20.0
 annotated-types==0.6.0
 anyio==4.3.0
-anywidget==0.9.8
+anywidget==0.9.9
 aplus==0.11.0
 argon2-cffi==23.1.0
 argon2-cffi-bindings==21.2.0
@@ -128,7 +128,7 @@ platformdirs==4.2.0
 playwright==1.43.0
 plotly==5.21.0
 pluggy==1.5.0
-polars==0.20.21
+polars==0.20.22
 pre-commit==3.7.0
 progressbar2==4.4.2
 prometheus_client==0.20.0
