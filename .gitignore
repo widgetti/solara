@@ -82,8 +82,8 @@ build/
 ./tmp
 ./examples
 node_modules
-packages/assets/cdn
-packages/assets/dist/*
+packages/solara-assets/cdn
+packages/solara-assets/dist/*
 
 solara-env
 states
