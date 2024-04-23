@@ -71,6 +71,7 @@ dev = [
     "types-requests",
     "types-markdown",
     "types-PyYAML",
+    "objgraph",
     "pytest",
     "pytest-mock",
     "pytest-cov",
