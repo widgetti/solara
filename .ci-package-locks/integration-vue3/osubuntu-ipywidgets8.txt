@@ -110,7 +110,7 @@ matplotlib-inline==0.1.7
 mdit-py-plugins==0.4.0
 mdurl==0.1.2
 mistune==3.0.2
-mypy==1.9.0
+mypy==1.10.0
 mypy-extensions==1.0.0
 nbclassic==1.0.0
 nbclient==0.7.4
@@ -121,7 +121,7 @@ nodeenv==1.8.0
 notebook==6.5.6
 notebook_shim==0.2.4
 numpy==1.24.4
-openai==1.23.3
+openai==1.23.6
 overrides==7.7.0
 packaging==24.0
 pandas==2.0.3
@@ -170,7 +170,7 @@ pytz==2024.1
 PyYAML==6.0.1
 pyzmq==24.0.1
 reacton==1.8.3
-referencing==0.34.0
+referencing==0.35.0
 regex==2024.4.16
 requests==2.31.0
 rfc3339-validator==0.1.4

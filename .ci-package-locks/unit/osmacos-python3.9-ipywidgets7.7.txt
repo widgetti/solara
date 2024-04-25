@@ -106,7 +106,7 @@ matplotlib-inline==0.1.7
 mdit-py-plugins==0.4.0
 mdurl==0.1.2
 mistune==3.0.2
-mypy==1.9.0
+mypy==1.10.0
 mypy-extensions==1.0.0
 nbclassic==1.0.0
 nbclient==0.7.4
@@ -164,7 +164,7 @@ PyYAML==6.0.1
 pyzmq==24.0.1
 reacton==1.8.3
 redis==5.0.4
-referencing==0.34.0
+referencing==0.35.0
 requests==2.31.0
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
