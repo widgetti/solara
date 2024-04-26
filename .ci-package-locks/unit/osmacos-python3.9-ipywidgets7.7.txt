@@ -19,7 +19,7 @@ bleach==6.1.0
 blinker==1.7.0
 bqplot==0.12.43
 bqplot-image-gl==1.4.11
-branca==0.7.1
+branca==0.7.2
 bump2version==1.0.1
 cachetools==5.3.3
 certifi==2024.2.2
@@ -171,7 +171,7 @@ rfc3986-validator==0.1.1
 rich==13.7.1
 rich-click==1.7.4
 rpds-py==0.18.0
-ruff==0.4.1
+ruff==0.4.2
 Send2Trash==1.8.3
 simple-websocket==1.0.0
 six==1.16.0
