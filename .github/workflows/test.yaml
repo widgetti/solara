@@ -161,7 +161,7 @@ jobs:
 
   test-install:
     needs: [build]
-    runs-on: ${{ matrix.os }}-${{matrix.os == 'ubuntu' && '20.04' || 'latest' }}
+    runs-on: ${{ matrix.os }}-${{(matrix.os == 'ubuntu' && matrix.python == '3.6') && '20.04' || (matrix.os == 'macos' && matrix.python == '3.6') && '13' || 'latest' }}
     strategy:
       fail-fast: false
       matrix:
@@ -424,7 +424,7 @@ jobs:
 
   unit-test:
     needs: [build]
-    runs-on: ${{ matrix.os }}-${{matrix.os == 'ubuntu' && '20.04' || 'latest' }}
+    runs-on: ${{ matrix.os }}-${{(matrix.os == 'ubuntu' && matrix.python == '3.6') && '20.04' || (matrix.os == 'macos' && matrix.python == '3.6') && '13' || 'latest' }}
     strategy:
       fail-fast: false
       matrix:
