@@ -341,34 +341,45 @@ def Markdown(md_text: str, unsafe_solara_execute=False, style: Union[str, Dict, 
                 logger.exception("Error highlighting code: %s", src)
                 return repr(e)
 
-        return markdown.Markdown(  # type: ignore
-            extensions=[
-                "pymdownx.highlight",
-                "pymdownx.superfences",
-                "pymdownx.emoji",
-                "toc",  # so we get anchors for h1 h2 etc
-                "tables",
-            ],
-            extension_configs={
-                "pymdownx.emoji": {
-                    "emoji_index": _no_deep_copy_emojione,
+        if has_pymdownx:
+            return markdown.Markdown(  # type: ignore
+                extensions=[
+                    "pymdownx.highlight",
+                    "pymdownx.superfences",
+                    "pymdownx.emoji",
+                    "toc",  # so we get anchors for h1 h2 etc
+                    "tables",
+                ],
+                extension_configs={
+                    "pymdownx.emoji": {
+                        "emoji_index": _no_deep_copy_emojione,
+                    },
+                    "pymdownx.superfences": {
+                        "custom_fences": [
+                            {
+                                "name": "mermaid",
+                                "class": "mermaid",
+                                "format": pymdownx.superfences.fence_div_format,
+                            },
+                            {
+                                "name": "solara",
+                                "class": "",
+                                "format": highlight,
+                            },
+                        ],
+                    },
                 },
-                "pymdownx.superfences": {
-                    "custom_fences": [
-                        {
-                            "name": "mermaid",
-                            "class": "mermaid",
-                            "format": pymdownx.superfences.fence_div_format,
-                        },
-                        {
-                            "name": "solara",
-                            "class": "",
-                            "format": highlight,
-                        },
-                    ],
-                },
-            },
-        )
+            )
+        else:
+            logger.warning("Pymdownx not installed, using default markdown. For a better experience, install pymdownx.")
+            return markdown.Markdown(  # type: ignore
+                extensions=[
+                    "fenced_code",
+                    "codehilite",
+                    "toc",
+                    "tables",
+                ],
+            )
 
     md = solara.use_memo(make_markdown_object, dependencies=[unsafe_solara_execute])
     html = md.convert(md_text)
