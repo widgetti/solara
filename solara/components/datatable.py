@@ -105,7 +105,7 @@ def DataTable(
     dfs = df_slice(df, i1, i2)
     records = df_records(dfs)
     for i in range(i2 - i1):
-        item = {"__row__": format(rows[i + i1])}  # special key for the row number
+        item = {"__row__": format(dfs, columns, i + 1, rows[i + i1])}  # special key for the row number
         for column in columns:
             item[column] = format(dfs, column, i + i1, records[i][column])
         items.append(item)

@@ -27,7 +27,7 @@ def df_columns(df) -> List[str]:
     else:
         raise TypeError(f"{type(df)} not supported")
 
-def df_row_names(df) -> List[any]:
+def df_row_names(df) -> List[Union[int, str]]:
     """Return a list of row names from a dataframe."""
     if df_type(df) == "vaex" or df_type(df) == "polars":
         return list(range(df_len(df)))
