@@ -1,4 +1,5 @@
-<template><span></span></template>
+<template>
+</template>
 
 <script>
 module.exports = {
