@@ -133,7 +133,7 @@ def Notebook(notebook_path: Path, show_last_expressions=False, auto_show_page=Fa
     if execute:
         return NotebookExecute(notebook_path, show_last_expressions, auto_show_page)
     else:
-        with solara.Column(style={"max-width": "100%"}) as main:
+        with solara.Column(style={"max-width": "1024px"}) as main:
             nb: nbformat.NotebookNode = nbformat.read(notebook_path, 4)
             for cell_index, cell in enumerate(nb.cells):
                 cell_index += 1
