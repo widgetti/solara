@@ -2,7 +2,7 @@ aiofiles==22.1.0
 aiosqlite==0.20.0
 annotated-types==0.6.0
 anyio==4.3.0
-anywidget==0.9.9
+anywidget==0.9.10
 aplus==0.11.0
 appnope==0.1.4
 argon2-cffi==23.1.0
@@ -16,7 +16,7 @@ Babel==2.14.0
 beautifulsoup4==4.12.3
 blake3==0.4.1
 bleach==6.1.0
-blinker==1.7.0
+blinker==1.8.1
 bqplot==0.12.43
 bqplot-image-gl==1.4.11
 branca==0.7.2
@@ -44,7 +44,7 @@ entrypoints==0.4
 exceptiongroup==1.2.1
 executing==2.0.1
 fastjsonschema==2.19.1
-filelock==3.13.4
+filelock==3.14.0
 Flask==3.0.3
 flask-sock==0.7.0
 fonttools==4.51.0
@@ -110,7 +110,7 @@ mypy==1.10.0
 mypy-extensions==1.0.0
 nbclassic==1.0.0
 nbclient==0.7.4
-nbconvert==7.16.3
+nbconvert==7.16.4
 nbformat==5.10.4
 nest-asyncio==1.6.0
 nodeenv==1.8.0
@@ -130,7 +130,7 @@ platformdirs==4.2.1
 playwright==1.43.0
 plotly==5.21.0
 pluggy==1.5.0
-polars==0.20.22
+polars==0.20.23
 pre-commit==3.7.0
 progressbar2==4.4.2
 prometheus_client==0.20.0
@@ -145,9 +145,9 @@ pydantic==2.7.1
 pydantic_core==2.18.2
 pyee==11.1.0
 Pygments==2.17.2
-pymdown-extensions==10.8
+pymdown-extensions==10.8.1
 pyparsing==3.1.2
-pytest==8.1.1
+pytest==8.2.0
 pytest-base-url==2.1.0
 pytest-cov==5.0.0
 pytest-mock==3.14.0
@@ -169,7 +169,7 @@ requests==2.31.0
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
 rich==13.7.1
-rich-click==1.7.4
+rich-click==1.8.0
 rpds-py==0.18.0
 ruff==0.4.2
 Send2Trash==1.8.3
@@ -202,7 +202,7 @@ vaex-core==4.17.1
 vaex-hdf5==0.14.1
 vaex-jupyter==0.8.2
 vaex-viz==0.5.4
-virtualenv==20.26.0
+virtualenv==20.26.1
 voila==0.5.6
 watchdog==4.0.0
 watchfiles==0.21.0
