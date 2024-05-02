@@ -113,7 +113,7 @@ nbconvert==7.16.4
 nbformat==5.10.4
 nest-asyncio==1.6.0
 nodeenv==1.8.0
-notebook==6.5.6
+notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.26.4
 overrides==7.7.0
@@ -127,7 +127,7 @@ pillow==10.3.0
 pixelmatch==0.3.0
 platformdirs==4.2.1
 playwright==1.43.0
-plotly==5.21.0
+plotly==5.22.0
 pluggy==1.5.0
 polars==0.20.23
 pre-commit==3.7.0
@@ -160,10 +160,10 @@ python-utils==3.8.2
 pythreejs==2.4.2
 pytz==2024.1
 PyYAML==6.0.1
-pyzmq==24.0.1
+pyzmq==26.0.3
 reacton==1.8.3
 redis==5.0.4
-referencing==0.35.0
+referencing==0.35.1
 requests==2.31.0
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
