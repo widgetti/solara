@@ -1,6 +1,14 @@
 # Solara Changelog
 
 
+## Version 1.32.1
+
+### Details
+
+   * Bug Fix: `solara.display` not working when running a solara server in production mode, or when running a Solara app with flask. [#622](https://github.com/widgetti/solara/pull/622)
+   * Bug Fix: `solara.Markdown` would raise a `NameError` if `pymdown-extensions` was not installed. [#621](https://github.com/widgetti/solara/pull/621)
+
+
 ## Version 1.32.0
 
 ### Details
