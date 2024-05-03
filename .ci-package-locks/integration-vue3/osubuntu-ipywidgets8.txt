@@ -74,7 +74,7 @@ ipyreact==0.4.1
 ipython==8.12.3
 ipython-genutils==0.2.0
 ipyvolume==0.6.3
-ipyvue==1.11.0
+ipyvue==1.11.1
 ipyvuetify==1.9.4
 ipywebrtc==0.6.0
 ipywidgets==8.1.2
@@ -121,7 +121,7 @@ nodeenv==1.8.0
 notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.24.4
-openai==1.25.0
+openai==1.25.1
 overrides==7.7.0
 packaging==24.0
 pandas==2.0.3
@@ -196,7 +196,7 @@ tomli==2.0.1
 tomlkit==0.12.4
 toolz==0.12.1
 tornado==6.4
-tqdm==4.66.2
+tqdm==4.66.4
 traitlets==5.14.3
 traittypes==0.2.1
 types-Markdown==3.6.0.20240316
