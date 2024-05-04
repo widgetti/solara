@@ -33,7 +33,7 @@ contourpy==1.2.1
 coverage==7.5.0
 cryptography==42.0.5
 cycler==0.12.1
-dask==2024.4.2
+dask==2024.5.0
 debugpy==1.8.1
 decorator==5.1.1
 defusedxml==0.7.1
@@ -170,7 +170,7 @@ rfc3986-validator==0.1.1
 rich==13.7.1
 rich-click==1.8.0
 rpds-py==0.18.0
-ruff==0.4.2
+ruff==0.4.3
 Send2Trash==1.8.3
 simple-websocket==1.0.0
 six==1.16.0
