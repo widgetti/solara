@@ -31,8 +31,8 @@ cloudpickle==3.0.0
 codespell==2.2.6
 comm==0.2.2
 contourpy==1.2.1
-coverage==7.5.0
-cryptography==42.0.5
+coverage==7.5.1
+cryptography==42.0.6
 cycler==0.12.1
 dask==2024.5.0
 debugpy==1.8.1
@@ -144,7 +144,7 @@ pycparser==2.22
 pydantic==2.7.1
 pydantic_core==2.18.2
 pyee==11.1.0
-Pygments==2.17.2
+Pygments==2.18.0
 pymdown-extensions==10.8.1
 pyparsing==3.1.2
 pytest==8.2.0
