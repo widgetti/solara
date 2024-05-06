@@ -11,7 +11,7 @@ arrow==1.3.0
 asttokens==2.4.1
 attrs==23.2.0
 Authlib==1.3.0
-Babel==2.14.0
+Babel==2.15.0
 backcall==0.2.0
 beautifulsoup4==4.12.3
 blake3==0.4.1
@@ -50,7 +50,7 @@ flask-sock==0.7.0
 folium==0.16.0
 fonttools==4.51.0
 fqdn==1.5.1
-frozendict==2.4.2
+frozendict==2.4.3
 fsspec==2024.3.1
 future==1.0.0
 greenlet==3.0.3
@@ -80,7 +80,7 @@ ipywidgets==7.8.1
 isoduration==20.11.0
 itsdangerous==2.2.0
 jedi==0.19.1
-Jinja2==3.1.3
+Jinja2==3.1.4
 json5==0.9.25
 jsonpointer==2.4
 jsonschema==4.22.0
@@ -119,7 +119,7 @@ nodeenv==1.8.0
 notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.24.4
-openai==1.25.1
+openai==1.25.2
 packaging==24.0
 pandas==2.0.3
 pandocfilters==1.5.1
@@ -218,7 +218,7 @@ webcolors==1.13
 webencodings==0.5.1
 websocket-client==1.8.0
 websockets==12.0
-Werkzeug==3.0.2
+Werkzeug==3.0.3
 widgetsnbextension==3.6.6
 wsproto==1.2.0
 xarray==2023.1.0
