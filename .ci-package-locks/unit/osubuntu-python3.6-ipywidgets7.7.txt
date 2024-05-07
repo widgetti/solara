@@ -41,7 +41,7 @@ entrypoints==0.4
 filelock==3.4.1
 Flask==2.0.3
 flask-sock==0.7.0
-frozendict==2.4.3
+frozendict==2.4.4
 fsspec==2022.1.0
 future==1.0.0
 h11==0.12.0
