@@ -119,7 +119,7 @@ nodeenv==1.8.0
 notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.24.4
-openai==1.26.0
+openai==1.27.0
 packaging==24.0
 pandas==2.0.3
 pandocfilters==1.5.1
@@ -134,7 +134,7 @@ platformdirs==4.2.1
 playwright==1.41.2
 plotly==5.22.0
 pluggy==1.5.0
-polars==0.20.24
+polars==0.20.25
 pre-commit==3.5.0
 progressbar2==4.4.2
 prometheus_client==0.20.0
