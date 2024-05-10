@@ -121,7 +121,7 @@ nodeenv==1.8.0
 notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.24.4
-openai==1.27.0
+openai==1.28.0
 overrides==7.7.0
 packaging==24.0
 pandas==2.0.3
@@ -171,14 +171,14 @@ PyYAML==6.0.1
 pyzmq==26.0.3
 reacton==1.8.3
 referencing==0.35.1
-regex==2024.4.28
+regex==2024.5.10
 requests==2.31.0
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
 rich==13.7.1
 rich-click==1.8.1
 rpds-py==0.18.1
-ruff==0.4.3
+ruff==0.4.4
 Send2Trash==1.8.3
 simple-websocket==1.0.0
 six==1.16.0
