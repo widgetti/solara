@@ -253,7 +253,7 @@ server {
 An alternative to using the `X-Script-Name` header with uvicorn, would be to pass the `--root-path` flag, e.g.:
 
 ```
-$ SOLARA_APP=sol.py uvicorn --workers 1 --root-path /solara -b 0.0.0.0:8765 solara.server.flask:app
+$ SOLARA_APP=sol.py uvicorn --workers 1 --root-path /solara -b 0.0.0.0:8765 solara.server.starlette:app
 ```
 
 In the case of an [OAuth setup](https://solara.dev/documentation/advanced/enterprise/oauth) it is important to make sure that the `X-Forwarded-Proto` and `Host` headers are forwarded correctly.
