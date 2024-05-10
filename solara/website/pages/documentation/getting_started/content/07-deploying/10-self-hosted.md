@@ -267,6 +267,20 @@ export FORWARDED_ALLOW_IPS = "127.0.0.1"  # If your solara-server can *only* be 
 Make sure you replace the IP with the correct IP of the reverse proxy server (instead of `127.0.0.1`). If you are sure that only the reverse proxy can reach the solara server, you can consider
 setting `FORWARDED_ALLOW_IPS="*"`.
 
+## HTTPS
+
+Solara does not support running in HTTPS (secure) mode directly. You can use a reverse proxy like Nginx, Traefik or Caddy to handle HTTPS for you.
+
+However, when running solara via uvicorn, it is possible to run uvicorn with HTTPS enabled. For more information, see the uvicorn documentation:
+ https://www.uvicorn.org/deployment/#running-with-https
+
+
+An example command would be:
+
+```
+$ SOLARA_APP=sol.py uvicorn --host 0.0.0.0 --port 8765 solara.server.starlette:app --ssl-keyfile=./key.pem --ssl-certfile=./cert.pem
+```
+
 ## Docker
 
 There is nothing special about running Solara in Docker. The only things you probably need to change is the interface the server binds to.
