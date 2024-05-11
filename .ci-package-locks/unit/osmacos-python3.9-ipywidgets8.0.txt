@@ -131,7 +131,7 @@ playwright==1.43.0
 plotly==5.22.0
 pluggy==1.5.0
 polars==0.20.25
-pre-commit==3.7.0
+pre-commit==3.7.1
 progressbar2==4.4.2
 prometheus_client==0.20.0
 prompt-toolkit==3.0.43
