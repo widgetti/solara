@@ -361,7 +361,7 @@ To limit the ipywidgets_runner fixture to only run in a specific environment, us
 
 
 ### Organizing Tests and Managing Snapshots
-We recommend organizing your visual tests in a separate directory, such as `tests/ui`. This allows you to run fast tests (`test/unit`) separately from slow tests (t`est/ui`). Use the `solara_snapshots_directory` fixture to change the default directory for storing snapshots, which is `tests/ui/snapshots` by default.
+We recommend organizing your visual tests in a separate directory, such as `tests/ui`. This allows you to run fast tests (`test/unit`) separately from slow tests (`test/ui`). Use the `solara_snapshots_directory` fixture to change the default directory for storing snapshots, which is `tests/ui/snapshots` by default.
 
 ```bash
 $ pytest tests/unit  # run fast test
