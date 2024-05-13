@@ -1,6 +1,13 @@
 # Solara Changelog
 
 
+## Version 1.32.2
+
+### Details
+
+   * Bug Fix: Theme change not behaving correctly for `solara.Markdown` and `ipywidgets`. [#636](https://github.com/widgetti/solara/pull/636)
+
+
 ## Version 1.32.1
 
 ### Details
