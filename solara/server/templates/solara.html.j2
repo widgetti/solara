@@ -347,11 +347,11 @@
                 },
                 '$vuetify.theme.dark': function (value) {
                     if ( value ) {
-                        this.changeThemeCSS('dark');
+                        changeThemeCSS('dark');
                         appContainer.classList.remove('theme--light');
                         appContainer.classList.add('theme--dark');
                     } else {
-                        this.changeThemeCSS('light');
+                        changeThemeCSS('light');
                         appContainer.classList.remove('theme--dark');
                         appContainer.classList.add('theme--light');
                     }
