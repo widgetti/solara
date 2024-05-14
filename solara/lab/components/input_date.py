@@ -44,6 +44,8 @@ def InputDate(
     style: Optional[Union[str, Dict[str, str]]] = None,
     classes: Optional[List[str]] = None,
     date_picker_type: str = "date",
+    min_date: Optional[str] = None,
+    max_date: Optional[str] = None,
 ):
     """
     Show a textfield, which when clicked, opens a datepicker. The input date should be of type `datetime.date`.
@@ -80,6 +82,8 @@ def InputDate(
     * style: CSS style to apply to the text field. Either a string or a dictionary of CSS properties (i.e. `{"property": "value"}`).
     * classes: List of CSS classes to apply to the text field.
     * date_picker_type: Sets the type of the datepicker. Use `"date"` for date selection or `"month"` for month selection. Defaults to `"date"`.
+    * min_date: Earliest allowed date/month (ISO 8601 format). If not specified, there is no limit.
+    * max_date: Latest allowed date/month (ISO 8601 format). If not specified, there is no limit.
     """
     value_reactive = solara.use_reactive(value, on_value)  # type: ignore
     del value, on_value
@@ -153,6 +157,8 @@ def InputDate(
             on_v_model=set_date_cast,
             first_day_of_week=first_day_of_the_week,
             style_="width: 100%;",
+            max=max_date,
+            min=min_date,
             type=date_picker_type,
         ):
             if len(children) > 0:
@@ -173,6 +179,8 @@ def InputDateRange(
     style: Optional[Union[str, Dict[str, str]]] = None,
     classes: Optional[List[str]] = None,
     date_picker_type: str = "date",
+    min_date: Optional[str] = None,
+    max_date: Optional[str] = None,
 ):
     """
     Show a textfield, which when clicked, opens a datepicker that allows users to select a range of dates by choosing a starting and ending date.
@@ -211,6 +219,8 @@ def InputDateRange(
     * style: CSS style to apply to the text field. Either a string or a dictionary of CSS properties (i.e. `{"property": "value"}`).
     * classes: List of CSS classes to apply to the text field.
     * date_picker_type: Sets the type of the datepicker. Use `"date"` for date selection or `"month"` for month selection. Defaults to `"date"`.
+    * min_date: Earliest allowed date/month (ISO 8601 format). If not specified, there is no limit.
+    * max_date: Latest allowed date/month (ISO 8601 format). If not specified, there is no limit.
 
     ## A More Advanced Example
 
@@ -313,6 +323,8 @@ def InputDateRange(
             range=True,
             first_day_of_week=first_day_of_the_week,
             style_="width: 100%;",
+            max=max_date,
+            min=min_date,
             type=date_picker_type,
         ):
             if len(children) > 0:
