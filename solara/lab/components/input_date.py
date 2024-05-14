@@ -181,6 +181,7 @@ def InputDateRange(
     date_picker_type: str = "date",
     min_date: Optional[str] = None,
     max_date: Optional[str] = None,
+    sort: Optional[bool] = False,
 ):
     """
     Show a textfield, which when clicked, opens a datepicker that allows users to select a range of dates by choosing a starting and ending date.
@@ -221,6 +222,8 @@ def InputDateRange(
     * date_picker_type: Sets the type of the datepicker. Use `"date"` for date selection or `"month"` for month selection. Defaults to `"date"`.
     * min_date: Earliest allowed date/month (ISO 8601 format). If not specified, there is no limit.
     * max_date: Latest allowed date/month (ISO 8601 format). If not specified, there is no limit.
+    * sort: If True, selected dates will be sorted in ascending order, regardless of the order they were picked. If False, preserves the order the
+    dates were selected.
 
     ## A More Advanced Example
 
@@ -292,6 +295,10 @@ def InputDateRange(
         )
         if len(date_value) > 1 and date_value[1] is not None:
             datepicker_is_open.set(False)
+
+            if sort:
+                date_value = cast(Tuple[dt.date, dt.date], tuple(sorted(date_value)))
+
         value_reactive.value = date_value
 
     string_dates, error_message = dates_to_string(value_reactive.value)
