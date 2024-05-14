@@ -122,7 +122,9 @@ To create your own Auth0 application, follow these steps:
 
     Set your `SOLARA_SESSION_SECRET_KEY` to a random string. See the [Generating a secret key](#generating-a-secret-key) for a convenient way to generate a secret key.
 
-    If you want to test on localhost, you might also want to set `SOLARA_SESSION_HTTPS_ONLY="false"`
+    Solara forces you to set a value for `SOLARA_SESSION_HTTPS_ONLY`, because the OAuth login is only secure when this setting is `True` and your app runs over HTTPS.
+    For development, where your app likely doesn't run over HTTPS, you must set it to `False`, otherwise OAuth login will not work.
+    For more information on configuring Solara to run over HTTPS, see [HTTPS](/documentation/getting_started/deploying/self-hosted#https).
 
     Now you can run the above solara example using your own auth0 provider.
 
