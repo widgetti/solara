@@ -202,7 +202,7 @@ vaex-core==4.17.1
 vaex-hdf5==0.14.1
 vaex-jupyter==0.8.2
 vaex-viz==0.5.4
-virtualenv==20.26.1
+virtualenv==20.26.2
 voila==0.5.6
 watchdog==4.0.0
 watchfiles==0.21.0
