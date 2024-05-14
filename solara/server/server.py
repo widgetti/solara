@@ -431,8 +431,12 @@ def get_nbextensions() -> Tuple[List[str], Dict[str, Optional[str]]]:
 
     def exists(name):
         for directory in nbextensions_directories:
-            if (directory / (name + ".js")).exists():
-                return True
+            try:
+                file_path = directory / (name + ".js")
+                if file_path.exists():
+                    return True
+            except PermissionError:
+                logger.warning(f"Caught PermissionError while checking for existence of nbextension {name!r} at path: {file_path}. This path will be ignored.")
         logger.info(f"nbextension {name} not found")
         return False
 
@@ -444,10 +448,14 @@ def get_nbextensions() -> Tuple[List[str], Dict[str, Optional[str]]]:
             h = hashlib.new("md5", usedforsecurity=False)  # type: ignore
 
         for directory in nbextensions_directories:
-            if (directory / (name + ".js")).exists():
-                for file in directory.glob("**/*.*"):
-                    data = file.read_bytes()
-                    h.update(data)
+            try:
+                file_path = directory / (name + ".js")
+                if file_path.exists():
+                    for file in directory.glob("**/*.*"):
+                        data = file.read_bytes()
+                        h.update(data)
+            except PermissionError:
+                logger.warning(f"Caught PermissionError while checking for existence of nbextension {name!r} at path: {file_path}. This path will be ignored.")
 
         return h.hexdigest()
 
