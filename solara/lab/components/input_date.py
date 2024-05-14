@@ -194,8 +194,8 @@ def InputDateRange(
     Intended to be used in conjunction with a custom set of controls to close the datepicker.
     * on_open_value: a callback function for when open_value changes. Also receives the new value as an argument.
     * date_format: Sets the format of the date displayed in the text field. Defaults to `"%Y/%m/%d"`. For more information,
-    * optional: Determines whether go show an error when value is `None`. If `True`, no error is shown.
     see <a href="https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes" target="_blank">the Python documentation</a>.
+    * optional: Determines whether go show an error when value is `None`. If `True`, no error is shown.
     * first_day_of_the_week: Sets the first day of the week, as an `int` starting count from Sunday (`=0`). Defaults to `1`, which is Monday.
     * style: CSS style to apply to the text field. Either a string or a dictionary of CSS properties (i.e. `{"property": "value"}`).
     * classes: List of CSS classes to apply to the text field.
