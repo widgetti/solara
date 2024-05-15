@@ -29,7 +29,6 @@ def Details(summary="Summary", children=[], expand=False):
             expand=False
         )
 
-        solara.render(details_component)
     ```
 
 
