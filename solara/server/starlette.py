@@ -439,9 +439,8 @@ class StaticAssets(StaticFilesOptionalAuth):
     ) -> List[Union[str, "os.PathLike[str]"]]:
         # we only know the .directory at runtime (after startup)
         # which means we cannot pass the directory to the StaticFiles constructor
-        overrides = [app.directory.parent / "assets" for app in appmod.apps.values()]
-        default = server.solara_static.parent / "assets"
-        return cast(List[Union[str, "os.PathLike[str]"]], [*overrides, default])
+        directories = server.asset_directories()
+        return cast(List[Union[str, "os.PathLike[str]"]], directories)
 
 
 class StaticCdn(StaticFilesOptionalAuth):

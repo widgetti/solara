@@ -1,6 +1,34 @@
 # Solara Changelog
 
 
+## Version 1.32.2
+
+### Details
+
+   * Bug Fix: Theme change not behaving correctly for `solara.Markdown` and `ipywidgets`. [#636](https://github.com/widgetti/solara/pull/636)
+
+
+## Version 1.32.1
+
+### Details
+
+   * Bug Fix: `solara.display` not working when running a solara server in production mode, or when running a Solara app with flask. [#622](https://github.com/widgetti/solara/pull/622)
+   * Bug Fix: `solara.Markdown` would raise a `NameError` if `pymdown-extensions` was not installed. [#621](https://github.com/widgetti/solara/pull/621)
+
+
+## Version 1.32.0
+
+### Details
+
+   * Feature: Support for multiple custom asset locations. [#602](https://github.com/widgetti/solara/pull/602)
+   * Refactor: Improve API for working with third-party dataframes. [#600](https://github.com/widgetti/solara/pull/600)
+   * Bug Fix: Give task results more unique keys. [#609](https://github.com/widgetti/solara/pull/609)
+   * Bug Fix: Avoid closing kernel multiple times. [e5ca67b](https://github.com/widgetti/solara/commit/e5ca67b6be46a8d236cc127cc06068702aa40754)
+   * Bug Fix: Make `page_close` beacon thread safe. [2501c83](https://github.com/widgetti/solara/commit/2501c83f135bc342ed9845198f7aff3bdcf09bc0)
+   * Bug Fix: Viewing embedded Solara application in fullscreen could cause a Reacton error. [#603](https://github.com/widgetti/solara/pull/603)
+   * Bug Fix: Remove fade when navigation is done from a thread/task. [#594](https://github.com/widgetti/solara/pull/594)
+   * Bug Fix: Support Pydantic 1 and 2 in reactive variables. [#601](https://github.com/widgetti/solara/pull/601)
+
 ## Version 1.31
 
 We changed solara from a single package into multiple packages.

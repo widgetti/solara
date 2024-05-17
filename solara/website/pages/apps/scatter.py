@@ -12,7 +12,7 @@ from solara.components.file_drop import FileDrop
 
 github_url = solara.util.github_url(__file__)
 if sys.platform != "emscripten":
-    pycafe_url = solara.util.pycafe_url(path=pathlib.Path(__file__), requirements=["solara", "pandas", "plotly"])
+    pycafe_url = solara.util.pycafe_url(path=pathlib.Path(__file__), requirements=["pandas", "plotly"])
 else:
     pycafe_url = None
 df_sample = pd.read_csv("https://raw.githubusercontent.com/plotly/datasets/master/gapminderDataFiveYear.csv")

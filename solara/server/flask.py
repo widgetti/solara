@@ -184,9 +184,7 @@ def public(path):
 def assets(path):
     if not allowed():
         abort(401)
-    overrides = [app.directory.parent / "assets" for app in appmod.apps.values()]
-    default = server.solara_static.parent / "assets"
-    directories = [*overrides, default]
+    directories = server.asset_directories()
     for directory in directories:
         file = directory / path
         if file.exists():

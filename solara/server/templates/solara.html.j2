@@ -15,7 +15,7 @@
     {% if vue3 == True %}
     <link href="{{cdn}}/@widgetti/solara-vuetify3-app@5.0.2/dist/main{{ipywidget_major_version}}.css" rel="stylesheet" class="solara-template-css"></link>
     {% else %}
-    <link href="{{cdn}}/@widgetti/solara-vuetify-app@10.0.2/dist/main{{ipywidget_major_version}}.css" rel="stylesheet" class="solara-template-css"></link>
+    <link href="{{cdn}}/@widgetti/solara-vuetify-app@10.0.3/dist/main{{ipywidget_major_version}}.css" rel="stylesheet" class="solara-template-css"></link>
     {% endif %}
 
 
@@ -228,11 +228,11 @@
         <script src="{{cdn}}/@widgetti/solara-vuetify3-app@5.0.2/dist/solara-vuetify-app{{ipywidget_major_version}}.js"></script>
         {% endif %}
     {% else %}
-        <link href="{{cdn}}/@widgetti/solara-vuetify-app@10.0.2/dist/fonts.css" rel="stylesheet" fetchpriority="low"></link>
+        <link href="{{cdn}}/@widgetti/solara-vuetify-app@10.0.3/dist/fonts.css" rel="stylesheet" fetchpriority="low"></link>
         {% if production %}
-        <script src="{{cdn}}/@widgetti/solara-vuetify-app@10.0.2/dist/solara-vuetify-app{{ipywidget_major_version}}.min.js"></script>
+        <script src="{{cdn}}/@widgetti/solara-vuetify-app@10.0.3/dist/solara-vuetify-app{{ipywidget_major_version}}.min.js"></script>
         {% else %}
-        <script src="{{cdn}}/@widgetti/solara-vuetify-app@10.0.2/dist/solara-vuetify-app{{ipywidget_major_version}}.js"></script>
+        <script src="{{cdn}}/@widgetti/solara-vuetify-app@10.0.3/dist/solara-vuetify-app{{ipywidget_major_version}}.js"></script>
         {% endif %}
     {% endif %}
     <script>
@@ -347,11 +347,11 @@
                 },
                 '$vuetify.theme.dark': function (value) {
                     if ( value ) {
-                        this.changeThemeCSS('dark');
+                        changeThemeCSS('dark');
                         appContainer.classList.remove('theme--light');
                         appContainer.classList.add('theme--dark');
                     } else {
-                        this.changeThemeCSS('light');
+                        changeThemeCSS('light');
                         appContainer.classList.remove('theme--dark');
                         appContainer.classList.add('theme--light');
                     }

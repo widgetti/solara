@@ -95,10 +95,7 @@ module.exports = [
                 "@widgetti/solara-widget-manager": "@widgetti/solara-widget-manager8",
                 // why would we need codemirror?
                 '@jupyterlab/codemirror': path.resolve(__dirname, "src", "empty.js"),
-                // used in @jupyterlab/rendermine/lib/registry
-                '@jupyterlab/apputils/lib/sanitizer': path.resolve(__dirname, "src", "empty.js"),
                 // do not think we use these
-                'htmlparser2': path.resolve(__dirname, "src", "empty.js"),
                 'postcss': path.resolve(__dirname, "src", "empty.js"),
                 'moment': path.resolve(__dirname, "src", "empty.js"),
             }

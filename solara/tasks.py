@@ -1,6 +1,7 @@
 import abc
 import asyncio
 import dataclasses
+import functools
 import inspect
 import logging
 import threading
@@ -76,12 +77,13 @@ class TaskResult(Generic[T]):
 
 
 class Task(Generic[P, R], abc.ABC):
-    def __init__(self):
-        self._result = solara.reactive(
+    def __init__(self, key: str):
+        self._result = solara.Reactive(
             TaskResult[R](
                 value=None,
                 _state=TaskState.NOTCALLED,
-            )
+            ),
+            key="solara.tasks:TaskResult:" + key,
         )
         self._last_value: Optional[R] = None
         self._last_progress: Optional[float] = None
@@ -171,10 +173,10 @@ class TaskAsyncio(Task[P, R]):
     _cancel: Optional[Callable[[], None]] = None
     _retry: Optional[Callable[[], None]] = None
 
-    def __init__(self, run_in_thread: bool, function: Callable[P, Coroutine[Any, Any, R]]):
+    def __init__(self, run_in_thread: bool, function: Callable[P, Coroutine[Any, Any, R]], key: str):
         self.run_in_thread = run_in_thread
         self.function = function
-        super().__init__()
+        super().__init__(key)
 
     def cancel(self) -> None:
         if self._cancel:
@@ -290,8 +292,8 @@ class TaskThreaded(Task[P, R]):
     _cancel: Optional[Callable[[], None]] = None
     _retry: Optional[Callable[[], None]] = None
 
-    def __init__(self, function: Callable[P, R]):
-        super().__init__()
+    def __init__(self, function: Callable[P, R], key: str):
+        super().__init__(key)
         self.__qualname__ = function.__qualname__
         self.function = function
         self.lock = threading.Lock()
@@ -667,11 +669,14 @@ def task(
     """
 
     def wrapper(f: Union[None, Callable[P, Union[Coroutine[Any, Any, R], R]]]) -> Task[P, R]:
+        # we use wraps to make the key of the reactive variable more unique
+        # and less likely to mixup during hot reloads
+        @functools.wraps(f)  # type: ignore
         def create_task():
             if inspect.iscoroutinefunction(f):
-                return TaskAsyncio[P, R](prefer_threaded and has_threads, f)
+                return TaskAsyncio[P, R](prefer_threaded and has_threads, f, key=solara.toestand._create_key_callable(create_task))
             else:
-                return TaskThreaded[P, R](cast(Callable[P, R], f))
+                return TaskThreaded[P, R](cast(Callable[P, R], f), key=solara.toestand._create_key_callable(create_task))
 
         return cast(Task[P, R], Proxy(create_task))
 
@@ -806,7 +811,10 @@ def use_task(
     """
 
     def wrapper(f):
-        task_instance = solara.use_memo(lambda: task(f, prefer_threaded=prefer_threaded), dependencies=[])
+        def create_task() -> Task[P, R]:
+            return task(f, prefer_threaded=prefer_threaded)
+
+        task_instance = solara.use_memo(create_task, dependencies=[])
         # we always update the function so we do not have stale data in the function
         task_instance.function = f  # type: ignore
 
@@ -828,6 +836,7 @@ def use_task(
         solara.use_effect(run, dependencies=dependencies)
         if raise_error:
             if task_instance.error:
+                assert task_instance.exception is not None
                 raise task_instance.exception
         return task_instance
 
