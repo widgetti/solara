@@ -229,4 +229,4 @@ xarray==2023.1.0
 xyzservices==2024.4.0
 y-py==0.6.2
 ypy-websocket==0.8.4
-zipp==3.18.1
+zipp==3.18.2
