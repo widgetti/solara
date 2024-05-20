@@ -152,7 +152,7 @@ pyee==11.0.1
 Pygments==2.18.0
 pymdown-extensions==10.8.1
 pyparsing==3.1.2
-pytest==8.2.0
+pytest==8.2.1
 pytest-base-url==2.1.0
 pytest-cov==5.0.0
 pytest-mock==3.14.0
