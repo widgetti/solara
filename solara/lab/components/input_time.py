@@ -9,25 +9,6 @@ import solara.lab
 from solara.components.input import _use_input_type
 
 
-def use_close_menu(el: reacton.core.Element, is_open: solara.Reactive[bool]):
-    is_open_ref = solara.use_ref(is_open)
-    is_open_ref.current = is_open
-
-    def monitor_events():
-        def close_menu(*ignore_args):
-            is_open_ref.current.set(False)
-
-        widget = cast(ipyvue.VueWidget, solara.get_widget(el))
-        widget.on_event("keyup.enter", close_menu)
-        widget.on_event("keydown.tab", close_menu)
-
-        def cleanup():
-            widget.on_event("keyup.enter", close_menu, remove=True)
-            widget.on_event("keydown.tab", close_menu, remove=True)
-
-        return cleanup
-
-    solara.use_effect(monitor_events, [])
 
 
 @solara.component
