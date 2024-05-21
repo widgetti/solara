@@ -20,7 +20,7 @@ def InputTime(
     open_value: Union[solara.Reactive[bool], bool] = False,
     on_open_value: Optional[Callable[[bool], None]] = None,
     optional: bool = False,
-    time_format: str = "%H:%M",
+    twelve_hour_clock: bool = False,
     style: Optional[Union[str, Dict[str, str]]] = None,
     classes: Optional[List[str]] = None,
 ):
