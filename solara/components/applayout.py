@@ -196,9 +196,10 @@ def AppLayout(
     children=[],
     sidebar_open=True,
     title=None,
+    show_app_bar: Optional[bool] = None,
     navigation=True,
-    toolbar_dark=True,
-    color: Optional[str] = "primary",
+    toolbar_dark: Optional[bool] = None,
+    color: Optional[str] = None,
     classes: List[str] = [],
     style: Optional[Union[str, Dict[str, str]]] = None,
 ):
@@ -222,9 +223,14 @@ def AppLayout(
 
     # Arguments
 
-     * `children`: The children of the AppLayout. The first child is used as the sidebar content, the rest as the main content.
+     * `children`: The children of the AppLayout. Note: Since Solara 2.0, the first child is no longer placed in the sidebar.
+        Use [Sidebar](/documentation/components/layout/sidebar) instead.
      * `sidebar_open`: Whether the sidebar is open or not.
      * `title`: The title of the app shown in the app bar, can also be set using the [Title](/documentation/components/page/title) component.
+     * `show_app_bar`: Whether the app bar should be shown. If `None` (the default), `AppBar` is shown if:
+         * There are one or more sibling routes to the current page.
+         * **OR**: There are one or more children of the `AppBar` component.
+         * **OR**: There are one or more children of the `AppBarTitle` component.
      * `toolbar_dark`: Whether the toolbar should be dark or not.
      * `navigation`: Whether the navigation tabs based on routing should be shown.
      * `color`: The color of the toolbar.
@@ -243,18 +249,10 @@ def AppLayout(
 
     sidebar_open, set_sidebar_open = solara.use_state_or_update(sidebar_open)
     # remove the appbar from the children
-    children_without_portal_sources = [c for c in children if c.component != AppBar]
-    use_drawer = len(children_without_portal_sources) > 1
-    children_content = children
-    children_sidebar = []
-    if use_drawer:
-        child_sidebar = children_without_portal_sources.pop(0)
-        children_sidebar = [child_sidebar]
-        children_content = [c for c in children if c is not child_sidebar]
-    children_sidebar = children_sidebar + sidebar_portal.use_portal()
+    children_content = [c for c in children if c.component != AppBar]
+    children_sidebar = sidebar_portal.use_portal()
+    use_drawer = len(children_sidebar) > 0
     children_appbar = appbar_portal.use_portal()
-    if children_sidebar:
-        use_drawer = True
     title = t.use_title_get() or title
     children_appbartitle = apptitle_portal.use_portal()
     v_slots = []
@@ -267,7 +265,8 @@ def AppLayout(
             tabs_element = child_appbar
             children_appbar.remove(tabs_element)
 
-    show_app_bar = (title and (len(routes) > 1 and navigation)) or bool(children_appbar) or bool(use_drawer) or bool(children_appbartitle) or bool(tabs_element)
+    if show_app_bar is None:
+        show_app_bar = (len(routes) > 1) or bool(children_appbar) or bool(use_drawer) or bool(children_appbartitle) or bool(tabs_element)
 
     if style is None:
         style = {"height": "100%", "max-height": "100%", "overflow": "auto"}
@@ -282,7 +281,7 @@ def AppLayout(
     if (tabs_element is None) and routes and navigation and (len(routes) > 1):
         with solara.lab.Tabs(value=index, on_value=set_path, align="center") as tabs_element:
             for route in routes:
-                name = route.path if route.path != "/" else "Home"
+                name = route.label if route.label is not None else (route.path if route.path != "/" else "Home")
                 solara.lab.Tab(name)
         # with v.Tabs(v_model=index, on_v_model=set_path, centered=True) as tabs:
         #     for route in routes:
@@ -294,7 +293,7 @@ def AppLayout(
         # this version doesn't need to run fullscreen
         # also ideal in jupyter notebooks
         with v.Html(tag="div") as main:
-            if show_app_bar or use_drawer:
+            if show_app_bar:
                 with v.AppBar(color=color, dark=toolbar_dark, v_slots=v_slots):
                     if use_drawer:
                         icon = AppIcon(sidebar_open, on_click=lambda: set_sidebar_open(not sidebar_open), v_on="x.on")
