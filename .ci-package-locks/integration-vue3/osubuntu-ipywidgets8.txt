@@ -137,7 +137,7 @@ platformdirs==4.2.2
 playwright==1.41.2
 plotly==5.22.0
 pluggy==1.5.0
-polars==0.20.26
+polars==0.20.27
 pre-commit==3.5.0
 progressbar2==4.4.2
 prometheus_client==0.20.0
@@ -172,7 +172,7 @@ pyzmq==26.0.3
 reacton==1.8.3
 referencing==0.35.1
 regex==2024.5.15
-requests==2.32.1
+requests==2.32.2
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
 rich==13.7.1
