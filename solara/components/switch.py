@@ -12,6 +12,7 @@ def Switch(
     value: Union[bool, solara.Reactive[bool]] = True,
     on_value: Callable[[bool], None] = None,
     disabled: bool = False,
+    color: str = None,
     children: list = [],
     classes: List[str] = [],
     style: Optional[Union[str, Dict[str, str]]] = None,
@@ -46,6 +47,7 @@ def Switch(
      * `value`: The current value of the switch (True or False).
      * `on_value`: A callback that is called when the switch is toggled.
      * `disabled`: If True, the switch is disabled and cannot be used.
+     * `color`: The color of the switch. Can be any of the Vuetify color classes.
      * `children`: A list of child elements to display on the switch.
      * `classes`: Additional CSS classes to apply.
      * `style`: CSS style to apply.
@@ -62,6 +64,7 @@ def Switch(
         v_model=reactive_value.value,
         on_v_model=reactive_value.set,
         disabled=disabled,
+        color=color,
         class_=solara.util._combine_classes(classes),
         style_=solara.util._flatten_style(style),
         children=children,
