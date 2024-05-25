@@ -47,7 +47,7 @@ fastjsonschema==2.19.1
 filelock==3.14.0
 Flask==3.0.3
 flask-sock==0.7.0
-fonttools==4.51.0
+fonttools==4.52.1
 fqdn==1.5.1
 frozendict==2.4.4
 fsspec==2024.5.0
@@ -108,7 +108,7 @@ mdurl==0.1.2
 mistune==3.0.2
 mypy==1.10.0
 mypy-extensions==1.0.0
-nbclassic==1.0.0
+nbclassic==1.1.0
 nbclient==0.10.0
 nbconvert==7.16.4
 nbformat==5.10.4
