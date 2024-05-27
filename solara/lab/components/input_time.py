@@ -9,6 +9,25 @@ import solara.lab
 from solara.components.input import _use_input_type
 
 
+def use_close_menu(el: reacton.core.Element, is_open: solara.Reactive[bool]):
+    is_open_ref = solara.use_ref(is_open)
+    is_open_ref.current = is_open
+
+    def monitor_events():
+        def close_menu(*ignore_args):
+            is_open_ref.current.set(False)
+
+        widget = cast(ipyvue.VueWidget, solara.get_widget(el))
+        widget.on_event("keyup.enter", close_menu)
+        widget.on_event("keydown.tab", close_menu)
+
+        def cleanup():
+            widget.on_event("keyup.enter", close_menu, remove=True)
+            widget.on_event("keydown.tab", close_menu, remove=True)
+
+        return cleanup
+
+    solara.use_effect(monitor_events, [])
 
 
 @solara.component
@@ -20,7 +39,7 @@ def InputTime(
     open_value: Union[solara.Reactive[bool], bool] = False,
     on_open_value: Optional[Callable[[bool], None]] = None,
     optional: bool = False,
-    twelve_hour_clock: bool = False,
+    allowed_minutes: Optional[List[int]] = None,
     style: Optional[Union[str, Dict[str, str]]] = None,
     classes: Optional[List[str]] = None,
 ):
@@ -39,7 +58,7 @@ def InputTime(
     def Page():
         time = solara.use_reactive(dt.time(12, 0))
 
-        solara.lab.InputTime(time)
+        solara.lab.TimePickerWithSeconds(time, allowed_minutes=[0, 15, 30, 45])
         solara.Text(str(time.value))
     ```
 
@@ -53,11 +72,11 @@ def InputTime(
     Intended to be used in conjunction with a custom set of controls to close the timepicker.
     * on_open_value: a callback function for when open_value changes. Also receives the new value as an argument.
     * optional: Determines whether to show an error when value is `None`. If `True`, no error is shown.
-    * time_format: Sets the format of the time displayed in the text field. Defaults to `"%H:%M"`. For more information, see
-    <a href="https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes" target="_blank">the Python documentation</a>.
+    * allowed_minutes: List of allowed minutes for the timepicker. Restricts the input to specific minute intervals.
     * style: CSS style to apply to the text field. Either a string or a dictionary of CSS properties (i.e. `{"property": "value"}`).
     * classes: List of CSS classes to apply to the text field.
     """
+    time_format = "%H:%M:%S"
     value_reactive = solara.use_reactive(value, on_value)  # type: ignore
     del value, on_value
     timepicker_is_open = solara.use_reactive(open_value, on_open_value)  # type: ignore
@@ -82,7 +101,7 @@ def InputTime(
 
     def set_time_cast(new_value: Optional[str]):
         if new_value:
-            time_value = dt.datetime.strptime(new_value, "%H:%M").time()
+            time_value = dt.datetime.strptime(new_value, time_format).time()
             timepicker_is_open.set(False)
             value_reactive.value = time_value
 
@@ -90,7 +109,7 @@ def InputTime(
         if time is None:
             return None
         else:
-            return time.strftime("%H:%M")
+            return time.strftime(time_format)
 
     time_standard_str = standard_strfy(value_reactive.value)
 
@@ -122,6 +141,8 @@ def InputTime(
             v_model=time_standard_str,
             on_v_model=set_time_cast,
             format=time_format,
+            allowed_minutes=allowed_minutes,
+            use_seconds=True,
             style_="width: 100%;",
         ):
             if len(children) > 0:
