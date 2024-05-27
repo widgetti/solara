@@ -31,7 +31,7 @@ cloudpickle==3.0.0
 codespell==2.3.0
 comm==0.2.2
 contourpy==1.1.1
-coverage==7.5.1
+coverage==7.5.2
 cryptography==42.0.7
 cycler==0.12.1
 dask==2023.5.0
@@ -134,7 +134,7 @@ platformdirs==4.2.2
 playwright==1.41.2
 plotly==5.22.0
 pluggy==1.5.0
-polars==0.20.29
+polars==0.20.30
 pre-commit==3.5.0
 progressbar2==4.4.2
 prometheus_client==0.20.0
@@ -225,4 +225,4 @@ xarray==2023.1.0
 xyzservices==2024.4.0
 y-py==0.6.2
 ypy-websocket==0.8.4
-zipp==3.18.2
+zipp==3.19.0
