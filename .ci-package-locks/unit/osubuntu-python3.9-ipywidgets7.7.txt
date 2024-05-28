@@ -46,7 +46,7 @@ fastjsonschema==2.19.1
 filelock==3.14.0
 Flask==3.0.3
 flask-sock==0.7.0
-fonttools==4.52.1
+fonttools==4.52.4
 fqdn==1.5.1
 frozendict==2.4.4
 fsspec==2024.5.0
@@ -133,7 +133,7 @@ polars==0.20.30
 pre-commit==3.7.1
 progressbar2==4.4.2
 prometheus_client==0.20.0
-prompt-toolkit==3.0.43
+prompt_toolkit==3.0.44
 psutil==5.9.8
 psygnal==0.11.1
 ptyprocess==0.7.0
@@ -204,7 +204,7 @@ vaex-viz==0.5.4
 virtualenv==20.26.2
 voila==0.5.7
 watchdog==4.0.1
-watchfiles==0.21.0
+watchfiles==0.22.0
 wcwidth==0.2.13
 webcolors==1.13
 webencodings==0.5.1
