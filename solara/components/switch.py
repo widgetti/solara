@@ -47,7 +47,7 @@ def Switch(
      * `value`: The current value of the switch (True or False).
      * `on_value`: A callback that is called when the switch is toggled.
      * `disabled`: If True, the switch is disabled and cannot be used.
-     * `color`: The color of the switch. Can be any of the Vuetify color classes.
+     * `color`: The color of the switch. Can be the name of a [theme](https://solara.dev/documentation/components/lab/theming) color variable (i.e. "success"), a color from the [Material color palette](https://v2.vuetifyjs.com/en/styles/colors/#material-colors) (i.e. "red darken-3"), or a CSS color (i.e. "#ff991f").
      * `children`: A list of child elements to display on the switch.
      * `classes`: Additional CSS classes to apply.
      * `style`: CSS style to apply.
