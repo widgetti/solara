@@ -200,7 +200,7 @@ tzdata==2024.1
 uri-template==1.3.0
 urllib3==2.2.1
 userpath==1.9.2
-uvicorn==0.30.0
+uvicorn==0.30.1
 vaex-core==4.17.1
 vaex-hdf5==0.14.1
 vaex-jupyter==0.8.2
