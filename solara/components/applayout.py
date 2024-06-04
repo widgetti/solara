@@ -258,18 +258,16 @@ def AppLayout(
     title = t.use_title_get() or title
     children_appbartitle = apptitle_portal.use_portal()
     v_slots = []
-    # Separate tabs from the other children. We want to keep a reference to any tabs that were added through children
-    # so we can make sure AppBar is rendered even when tabs are the only children
-    tabs = None
+
+    tabs_element = None
     for child_appbar in children_appbar.copy():
         if child_appbar.component == solara.lab.Tabs:
-            if tabs is not None:
+            if tabs_element is not None:
                 raise ValueError("Only one Tabs component is allowed in the AppBar")
-            tabs = child_appbar
-            children_appbar.remove(tabs)
-    tabs_to_render = tabs
+            tabs_element = child_appbar
+            children_appbar.remove(tabs_element)
 
-    show_app_bar = (title and (len(routes) > 1 and navigation)) or bool(children_appbar) or bool(use_drawer) or bool(children_appbartitle) or bool(tabs)
+    show_app_bar = (title and (len(routes) > 1 and navigation)) or bool(children_appbar) or bool(use_drawer) or bool(children_appbartitle) or bool(tabs_element)
 
     if style is None:
         style = {"height": "100%", "max-height": "100%", "overflow": "auto"}
@@ -281,8 +279,8 @@ def AppLayout(
         path = paths[index]
         location.pathname = path
 
-    if (tabs_to_render is None) and routes and navigation and (len(routes) > 1):
-        with solara.lab.Tabs(value=index, on_value=set_path, align="center") as tabs_to_render:
+    if (tabs_element is None) and routes and navigation and (len(routes) > 1):
+        with solara.lab.Tabs(value=index, on_value=set_path, align="center") as tabs_element:
             for route in routes:
                 name = route.path if route.path != "/" else "Home"
                 solara.lab.Tab(name)
@@ -290,8 +288,8 @@ def AppLayout(
         #     for route in routes:
         #         name = route.path if route.path != "/" else "Home"
         #         v.Tab(children=[name])
-    if tabs_to_render is not None and navigation:
-        v_slots = [{"name": "extension", "children": tabs_to_render}]
+    if tabs_element is not None and navigation:
+        v_slots = [{"name": "extension", "children": tabs_element}]
     if embedded_mode and not fullscreen:
         # this version doesn't need to run fullscreen
         # also ideal in jupyter notebooks
