@@ -1,65 +1,22 @@
 """# Todo application
 
-Demonstrates the use of reactive variables in combinations with dataclasses.
-
-With solara we can get a type safe view onto a field in a dataclass, pydantic model, or
-attr object.
-
-This is using the experimental `solara.lab.Ref` class, which is not yet part of the
-official API.
-
+Demonstrates the use of reactive variables in an externally defined state class.
 
 ```python
-import dataclasses
 import solara
-from solara.lab import Ref
 
-@dataclasses.dataclass(frozen=True)
 class TodoItem:
-    text: str
-    done: bool
+    def __init__(self, text='', done=False):
+        self.text = solara.reactive(text)
+        self.done = solara.reactive(done)
 
-todo_item = solara.reactive(TodoItem("Buy milk", False))
+todo_item = TodoItem("Buy milk", False)
 
-# now text is a reactive variable that is always in sync with todo_item.text
-text = Ref(todo_item.fields.text)
-
-
-# we can now modify the reactive text variable
-# and see its value reflect in the todo_item
-text.value = "Buy skimmed milk"
-assert todo_item.value.text == "Buy skimmed milk"
-
-# Or, the other way around
-todo_item.value = TodoItem("Buy whole milk", False)
-assert text.value == "Buy whole milk"
+todo_items = solara.reactive([TodoItem("Buy milk", False),
+                              TodoItem("Buy whole milk", False)])
 ```
-
-Apart from dataclasses, pydantic models etc, we also supports dictionaries and lists.
-
-```python
-todo_items = solara.reactive([TodoItem("Buy milk", False), TodoItem("Buy eggs", False)])
-todo_item_eggs = Ref(todo_items.fields[1])
-todo_item_eggs.value = TodoItem("Buy eggs", True)
-assert todo_items.value[1].done == True
-
-# However, if a list becomes shorter, and the valid index is now out of range, the
-# reactive variables will act as if it is "not connected", and will not trigger
-# updates anymore. Accessing the value will raise an IndexError.
-
-todo_items.value = [TodoItem("Buy milk", False)]
-# anyone listening to todo_item_eggs will *not* be notified.
-try:
-    value = todo_item_eggs.value
-except IndexError:
-    print("this is expected")
-else:
-    raise AssertionError("Expected an IndexError")
-```
-
 """
 
-import dataclasses
 from typing import Callable
 
 import reacton.ipyvuetify as v
@@ -68,24 +25,23 @@ import solara
 from solara.lab.toestand import Ref
 
 
-# our model for a todo item, immutable/frozen avoids common bugs
-@dataclasses.dataclass(frozen=True)
 class TodoItem:
-    text: str
-    done: bool
+    def __init__(self, text='', done=False):
+        self.text = solara.reactive(text)
+        self.done = solara.reactive(done)
 
 
 @solara.component
 def TodoEdit(todo_item: solara.Reactive[TodoItem], on_delete: Callable[[], None], on_close: Callable[[], None]):
     """Takes a reactive todo item and allows editing it. Will not modify the original item until 'save' is clicked."""
-    copy = solara.use_reactive(todo_item.value)
+    copy = TodoItem(todo_item.text, todo_item.done)
 
     def save():
-        todo_item.value = copy.value
+        todo_item.text.value = copy.text.value
         on_close()
 
     with solara.Card("Edit", margin=0):
-        solara.InputText(label="", value=Ref(copy.fields.text))
+        solara.InputText(label="", value=copy.text)
         with solara.CardActions():
             v.Spacer()
             solara.Button("Save", icon_name="mdi-content-save", on_click=save, outlined=True, text=True)
@@ -102,15 +58,15 @@ def TodoListItem(todo_item: solara.Reactive[TodoItem], on_delete: Callable[[Todo
     """
     edit, set_edit = solara.use_state(False)
     with v.ListItem():
-        solara.Button(icon_name="mdi-delete", icon=True, on_click=lambda: on_delete(todo_item.value))
-        solara.Checkbox(value=Ref(todo_item.fields.done))  # , color="success")
-        solara.InputText(label="", value=Ref(todo_item.fields.text))
+        solara.Button(icon_name="mdi-delete", icon=True, on_click=lambda: on_delete(todo_item))
+        solara.Checkbox(value=todo_item.done)  # , color="success")
+        solara.InputText(label="", value=todo_item.text)
         solara.Button(icon_name="mdi-pencil", icon=True, on_click=lambda: set_edit(True))
         with v.Dialog(v_model=edit, persistent=True, max_width="500px", on_v_model=set_edit):
             if edit:  # 'reset' the component state on open/close
 
                 def on_delete_in_edit():
-                    on_delete(todo_item.value)
+                    on_delete(todo_item)
                     set_edit(False)
 
                 TodoEdit(todo_item, on_delete=on_delete_in_edit, on_close=lambda: set_edit(False))
@@ -141,7 +97,7 @@ initial_items = [
 ]
 
 
-# We store out reactive state, and our logic in a class for organization
+# We store our reactive state, and our logic in a class for organization
 # purposes, but this is not required.
 # Note that all the above components do not refer to this class, but only
 # to do the Todo items.
@@ -151,25 +107,23 @@ initial_items = [
 
 
 class State:
-    todos = solara.reactive(initial_items)
+    def __init__(self, initial_items):
+        self.todos = solara.reactive(initial_items)
 
-    @staticmethod
-    def on_new(item: TodoItem):
-        State.todos.value = [item] + State.todos.value
+    def on_new(self, item: TodoItem):
+        self.todos.value = [item] + self.todos.value
 
-    @staticmethod
-    def on_delete(item: TodoItem):
-        new_items = list(State.todos.value)
+    def on_delete(self, item: TodoItem):
+        new_items = list(self.todos.value)
         new_items.remove(item)
-        State.todos.value = new_items
+        self.todos.value = new_items
 
 
 @solara.component
-def TodoStatus():
+def TodoStatus(items):
     """Status of our todo list"""
-    items = State.todos.value
     count = len(items)
-    items_done = [item for item in items if item.done]
+    items_done = [item for item in items if item.done.value]
     count_done = len(items_done)
 
     if count != count_done:
@@ -183,14 +137,16 @@ def TodoStatus():
         solara.Success("All done, awesome!", dense=True)
 
 
+state = State(initial_items)
+
+
 @solara.component
 def Page():
     with solara.Card("Todo list", style="min-width: 500px"):
-        TodoNew(on_new=State.on_new)
-        if State.todos.value:
-            TodoStatus()
-            for index, item in enumerate(State.todos.value):
-                todo_item = Ref(State.todos.fields[index])
-                TodoListItem(todo_item, on_delete=State.on_delete)
+        TodoNew(on_new=state.on_new)
+        if state.todos.value:
+            TodoStatus(state.todos.value)
+            for item in state.todos.value:
+                TodoListItem(item, on_delete=state.on_delete)
         else:
             solara.Info("No todo items, enter some text above, and hit enter")
