@@ -52,7 +52,7 @@ folium==0.16.0
 fonttools==4.53.0
 fqdn==1.5.1
 frozendict==2.4.4
-fsspec==2024.5.0
+fsspec==2024.6.0
 future==1.0.0
 greenlet==3.0.3
 h11==0.14.0
@@ -121,7 +121,7 @@ nodeenv==1.9.0
 notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.24.4
-openai==1.30.5
+openai==1.31.0
 overrides==7.7.0
 packaging==24.0
 pandas==2.0.3
@@ -149,7 +149,7 @@ pure-eval==0.2.2
 pyarrow==16.1.0
 pycparser==2.22
 pydantic==1.10.15
-pydantic_core==2.18.3
+pydantic_core==2.18.4
 pyee==11.0.1
 Pygments==2.18.0
 pymdown-extensions==10.8.1
