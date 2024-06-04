@@ -32,7 +32,7 @@ class TodoItem:
 
 
 @solara.component
-def TodoEdit(todo_item: solara.Reactive[TodoItem], on_delete: Callable[[], None], on_close: Callable[[], None]):
+def TodoEdit(todo_item: TodoItem, on_delete: Callable[[], None], on_close: Callable[[], None]):
     """Takes a reactive todo item and allows editing it. Will not modify the original item until 'save' is clicked."""
     copy = TodoItem(todo_item.text, todo_item.done)
 
@@ -50,7 +50,7 @@ def TodoEdit(todo_item: solara.Reactive[TodoItem], on_delete: Callable[[], None]
 
 
 @solara.component
-def TodoListItem(todo_item: solara.Reactive[TodoItem], on_delete: Callable[[TodoItem], None]):
+def TodoListItem(todo_item: TodoItem, on_delete: Callable[[TodoItem], None]):
     """Displays a single todo item, modifications are done 'in place'.
 
     For demonstration purposes, we allow editing the item in a dialog as well.
