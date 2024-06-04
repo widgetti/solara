@@ -61,7 +61,7 @@ def _run_solara(code):
         Page = local_scope["Page"]
         app = solara.components.applayout._AppLayoutEmbed(children=[ExceptionGuard(children=[Page()])])
     else:
-        raise NameError("No Page of app defined")
+        raise NameError("No Page or app defined")
     box = v.Html(tag="div")
     box, rc = solara.render(cast(solara.Element, app), container=box)  # type: ignore
     widget_id = box._model_id
