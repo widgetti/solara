@@ -22,7 +22,6 @@ from typing import Callable
 import reacton.ipyvuetify as v
 
 import solara
-from solara.lab.toestand import Ref
 
 
 class TodoItem:
