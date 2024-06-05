@@ -541,6 +541,8 @@ jobs:
   release:
     needs: [build, code-quality, test-install, integration-test, integration-test-vue3, unit-test]
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # this permission is mandatory for trusted publishing
 
     steps:
       - uses: actions/checkout@v4
@@ -628,6 +630,11 @@ jobs:
           openssl sha256 dist/*
           hatch publish
           openssl sha256 dist/*
+
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: packages/pytest-ipywidgets/dist
 
       - name: remove assets
         run: rm -rf packages/solara-assets/dist
