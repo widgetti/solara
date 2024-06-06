@@ -29,14 +29,14 @@ def Details(summary="Summary", children=[], expand=False):
             expand=False
         )
 
-        ```
+    ```
 
 
-        ## Arguments:
+    ## Arguments:
 
-        * summary: String showing the summary text for the expandable section: Defaults "Summary"
-        * children: List showing the children content of the expandable section: Defaults to an Empty list
-        * expand: Boolean showing if the section is expanded or collapsed: Defaults to False
+    * summary: String showing the summary text for the expandable section: Defaults "Summary"
+    * children: List showing the children content of the expandable section: Defaults to an Empty list
+    * expand: Boolean showing if the section is expanded or collapsed: Defaults to False
     """
 
     expand, set_expand = solara.use_state_or_update(expand)
