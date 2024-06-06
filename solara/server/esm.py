@@ -28,6 +28,8 @@ def define_module(name, module: Union[str, Path]):
     if name in _modules:
         old_module, dependencies = _modules[name]
     _modules[name] = (module, dependencies)
+    if kernel_context.has_current_context():
+        create_modules()
     return None
 
 
