@@ -1,5 +1,14 @@
 # Solara Changelog
 
+## Version 1.33.0
+
+### Details
+
+   * Feature: Add support for `color` argument to `solara.Switch`. [#658](https://github.com/widgetti/solara/pull/658)
+   * Bug Fix: Support `define` for ES Modules when running with virtual kernel. [#668](https://github.com/widgetti/solara/pull/668)
+   * Bug Fix: Typo in `NameError` message. [#666](https://github.com/widgetti/solara/pull/666)
+   * Bug Fix: Show `solara.AppBar` when navigation tabs are the only child. [#656](https://github.com/widgetti/solara/pull/656)
+   * Bug Fix: PermissionError for nbextensions on startup in `solara>=1.29`. [#648](https://github.com/widgetti/solara/pull/648)
 
 ## Version 1.32.2
 
