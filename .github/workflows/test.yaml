@@ -632,6 +632,7 @@ jobs:
           openssl sha256 dist/*
 
       - name: Publish package distributions to PyPI
+        if: startsWith(github.event.ref, 'refs/tags/v')
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: packages/pytest-ipywidgets/dist
