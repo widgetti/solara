@@ -162,7 +162,7 @@ pytz==2024.1
 PyYAML==6.0.1
 pyzmq==26.0.3
 reacton==1.8.3
-redis==5.0.4
+redis==5.0.5
 referencing==0.35.1
 requests==2.32.3
 rfc3339-validator==0.1.4
@@ -185,7 +185,7 @@ text-unidecode==1.3
 tinycss2==1.3.0
 tomli==2.0.1
 toolz==0.12.1
-tornado==6.4
+tornado==6.4.1
 traitlets==5.14.3
 traittypes==0.2.1
 types-Markdown==3.6.0.20240316
@@ -206,7 +206,7 @@ voila==0.5.7
 watchdog==4.0.1
 watchfiles==0.22.0
 wcwidth==0.2.13
-webcolors==1.13
+webcolors==24.6.0
 webencodings==0.5.1
 websocket-client==1.8.0
 websockets==12.0
@@ -214,7 +214,7 @@ Werkzeug==3.0.3
 widgetsnbextension==3.6.6
 wsproto==1.2.0
 xarray==2024.5.0
-xyzservices==2024.4.0
+xyzservices==2024.6.0
 y-py==0.6.2
 ypy-websocket==0.8.4
 zipp==3.19.2

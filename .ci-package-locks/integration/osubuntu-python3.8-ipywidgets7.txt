@@ -119,7 +119,7 @@ nodeenv==1.9.1
 notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.24.4
-openai==1.31.1
+openai==1.32.0
 packaging==24.0
 pandas==2.0.3
 pandocfilters==1.5.1
@@ -191,7 +191,7 @@ tiktoken==0.7.0
 tinycss2==1.3.0
 tomli==2.0.1
 toolz==0.12.1
-tornado==6.4
+tornado==6.4.1
 tqdm==4.66.4
 traitlets==5.14.3
 traittypes==0.2.1
@@ -214,7 +214,7 @@ voila==0.3.8
 watchdog==4.0.1
 watchfiles==0.22.0
 wcwidth==0.2.13
-webcolors==1.13
+webcolors==24.6.0
 webencodings==0.5.1
 websocket-client==1.8.0
 websockets==12.0
@@ -222,7 +222,7 @@ Werkzeug==3.0.3
 widgetsnbextension==3.6.6
 wsproto==1.2.0
 xarray==2023.1.0
-xyzservices==2024.4.0
+xyzservices==2024.6.0
 y-py==0.6.2
 ypy-websocket==0.8.4
 zipp==3.19.2
