@@ -92,6 +92,7 @@ module.exports = {
         await this.loadRequire();
         this.mermaid = await this.loadMermaid();
         this.mermaid.init();
+        await this.loadMHchem();
         this.latexSettings = {
                 delimiters: [
                     {left: "$$", right: "$$", display: true},
@@ -157,6 +158,11 @@ module.exports = {
         async loadMermaid() {
             return (await this.import([`${this.getCdn()}/mermaid@10.8.0/dist/mermaid.min.js`]))[0]
         },
+        async loadMHchem() {
+            await this.loadKatex();
+            return (await this.import([`${this.getCdn()}/katex@0.16.9/dist/contrib/mhchem.min.js`]))[0];
+        },
+
         import(dependencies) {
             return this.loadRequire().then(
                 () => {
