@@ -81,7 +81,7 @@ itsdangerous==2.2.0
 jedi==0.19.1
 Jinja2==3.1.4
 json5==0.9.25
-jsonpointer==2.4
+jsonpointer==3.0.0
 jsonschema==4.22.0
 jsonschema-specifications==2023.12.1
 jupyter-events==0.10.0
@@ -135,7 +135,7 @@ polars==0.20.31
 pre-commit==3.7.1
 progressbar2==4.4.2
 prometheus_client==0.20.0
-prompt_toolkit==3.0.46
+prompt_toolkit==3.0.47
 psutil==5.9.8
 psygnal==0.11.1
 pure-eval==0.2.2
