@@ -165,7 +165,7 @@ pywinpty==2.0.13
 PyYAML==6.0.1
 pyzmq==26.0.3
 reacton==1.8.3
-redis==5.0.5
+redis==5.0.6
 referencing==0.35.1
 requests==2.32.3
 rfc3339-validator==0.1.4
@@ -217,7 +217,7 @@ websockets==12.0
 Werkzeug==3.0.3
 widgetsnbextension==3.6.6
 wsproto==1.2.0
-xarray==2024.5.0
+xarray==2024.6.0
 xyzservices==2024.6.0
 y-py==0.6.2
 ypy-websocket==0.8.4
