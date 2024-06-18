@@ -48,6 +48,7 @@ documentation = [
     "vaex-core",
     "vaex-hdf5",
     "tiktoken",
+    "numpy<2",
 ]
 
 # for backwards compatibility to support solara[pytest]
