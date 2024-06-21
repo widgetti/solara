@@ -83,6 +83,7 @@ dev = [
     "playwright; python_version > '3.6'",
     "pytest-playwright; python_version > '3.6'",
     "polars",
+    "numpy<2",
 ]
 
 [tool.hatch.build.targets.wheel]
