@@ -117,6 +117,10 @@ module.exports = {
         //   eventBus.dispatch("find", { type: "", query: SEARCH_FOR });
         // }
       });
+
+      window.addEventListener("resize", () => {
+        pdfViewer.currentScaleValue = "page-width";
+      });
       this.pdfLinkService = pdfLinkService;
       this.pdfViewer = pdfViewer;
       this.eventBus = eventBus;
@@ -124,8 +128,8 @@ module.exports = {
     },
 
     loadPdf(name) {
-        if (!name) {
-            // Unset PDF data
+      if (!name) {
+        // Unset PDF data
         this.pdfViewer.setDocument(null);
         this.pdfLinkService.setDocument(null, null);
         this.oldFile = this.current_file;
