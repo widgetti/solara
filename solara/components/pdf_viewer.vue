@@ -1,3 +1,4 @@
+// Credit for js example: https://github.com/mozilla/pdf.js/blob/master/examples/components/simpleviewer.mjs
 <template :pdf_name_b64_map="pdf_name_b64_map" :current_file="current_file">
   <div id="pdfViewerRoot" :style="'height: ' + height">
     <div id="viewerContainer">
@@ -68,8 +69,6 @@ module.exports = {
 
       // Some PDFs need external cmaps.
       //
-      const DEFAULT_URL =
-        "https://github.com/mozilla/pdf.js/raw/master/web/compressed.tracemonkey-pldi-09.pdf";
       // const CMAP_URL = "../../node_modules/pdfjs-dist/cmaps/";
       const CMAP_PACKED = true;
 
