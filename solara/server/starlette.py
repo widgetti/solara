@@ -352,7 +352,7 @@ async def root(request: Request, fullpath: str = ""):
     if content is None:
         if settings.oauth.private and not request.user.is_authenticated:
             raise HTTPException(status_code=401, detail="Unauthorized")
-        return HTMLResponse(content="Page not found by Solara router", status_code=404)
+        raise HTTPException(status_code=404, detail="Page not found by Solara router")
 
     if settings.oauth.private and not request.user.is_authenticated:
         from solara_enterprise.auth.starlette import login
