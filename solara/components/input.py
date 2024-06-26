@@ -11,7 +11,7 @@ from solara.alias import rv as v
 T = TypeVar("T")
 
 
-def use_change(el: reacton.core.Element, on_value: Callable[[Any], Any], enabled=True, update_events=["blur", "keyup.enter"]):
+def use_change(el: reacton.core.Element, on_value: Callable[[Any], Any], enabled=True, update_events=["focusout", "keyup.enter"]):
     """Trigger a callback when a blur events occurs or the enter key is pressed."""
     on_value_ref = solara.use_ref(on_value)
     on_value_ref.current = on_value
@@ -44,7 +44,7 @@ def InputText(
     disabled: bool = False,
     password: bool = False,
     continuous_update: bool = False,
-    update_events: List[str] = ["blur", "keyup.enter"],
+    update_events: List[str] = ["focusout", "keyup.enter"],
     error: Union[bool, str] = False,
     message: Optional[str] = None,
     classes: List[str] = [],
