@@ -25,13 +25,13 @@ def test_input_int_optional():
     input = rc.find(vw.TextField)
     input.widget.v_model = "43"
     assert on_value.call_count == 0
-    input.widget.fire_event("blur")
+    input.widget.fire_event("focusout")
     assert on_value.call_count == 1
     assert on_value.call_args[0][0] == 43
 
     input.widget.v_model = ""
     assert on_value.call_count == 1
-    input.widget.fire_event("blur")
+    input.widget.fire_event("focusout")
     assert on_value.call_count == 2
     assert on_value.call_args[0][0] is None
     rc.close()
@@ -57,7 +57,7 @@ def test_input_int():
     assert on_value.call_count == 0
     assert on_v_model.call_count == 1
     on_v_model.reset_mock()
-    input.widget.fire_event("blur")
+    input.widget.fire_event("focusout")
     assert on_value.call_count == 1
     assert on_value.call_args[0][0] == 43
     assert on_v_model.call_count == 0
@@ -66,7 +66,7 @@ def test_input_int():
     assert on_value.call_count == 1
     assert on_v_model.call_count == 1
     on_v_model.reset_mock()
-    input.widget.fire_event("blur")
+    input.widget.fire_event("focusout")
     assert on_value.call_count == 1
     assert on_value.call_args[0][0] == 43
     assert input.widget.error
@@ -76,7 +76,7 @@ def test_input_int():
     input.widget.v_model = "44"
     assert on_value.call_count == 1
     assert on_v_model.call_count == 1
-    input.widget.fire_event("blur")
+    input.widget.fire_event("focusout")
     assert on_v_model.call_count == 1
     assert on_value.call_count == 2
     assert on_value.call_args[0][0] == 44
@@ -105,7 +105,7 @@ def test_input_int_managed():
     input.widget.v_model = "1e3"
     assert on_value.call_count == 0
     assert on_v_model.call_count == 1
-    input.widget.fire_event("blur")
+    input.widget.fire_event("focusout")
     assert on_value.call_count == 0
     assert input.widget.error
     assert input.widget.label == "label (Value must be an integer)"
@@ -113,7 +113,7 @@ def test_input_int_managed():
     assert on_v_model.call_count == 1
 
     input.widget.v_model = "1"
-    input.widget.fire_event("blur")
+    input.widget.fire_event("focusout")
     assert on_value.call_count == 1
     assert on_v_model.call_count == 2
     assert not input.widget.error
@@ -122,7 +122,7 @@ def test_input_int_managed():
     assert on_value.call_count == 1
     assert on_v_model.call_count == 3
     assert not input.widget.error
-    input.widget.fire_event("blur")
+    input.widget.fire_event("focusout")
     # no change
     assert on_value.call_count == 1
     assert input.widget.error
@@ -156,7 +156,7 @@ def test_input_int_external():
     assert on_value.call_count == 0
     assert on_v_model_input.call_count == 1
     assert on_v_model_slider.call_count == 0
-    input.widget.fire_event("blur")
+    input.widget.fire_event("focusout")
     assert on_value.call_count == 1
     assert on_v_model_input.call_count == 1
     assert on_v_model_slider.call_count == 1
@@ -175,7 +175,7 @@ def test_input_int_external():
     assert on_v_model_input.call_count == 3
     assert on_v_model_slider.call_count == 2
     assert not input.widget.error
-    input.widget.fire_event("blur")
+    input.widget.fire_event("focusout")
     # No call to on_value or slider v_model, because the value is invalid
     assert on_value.call_count == 2
     assert on_v_model_slider.call_count == 2
@@ -209,7 +209,7 @@ def test_input_float_managed():
     input.widget.v_model = "1.1e3"
     assert on_value.call_count == 0
     assert on_v_model.call_count == 1
-    input.widget.fire_event("blur")
+    input.widget.fire_event("focusout")
     assert on_value.call_count == 1
     assert on_v_model.call_count == 1
     assert on_value.call_args[0][0] == 1100
@@ -220,7 +220,7 @@ def test_input_float_managed():
     input.widget.v_model = "1,1e3"
     assert on_value.call_count == 1
     assert on_v_model.call_count == 2
-    input.widget.fire_event("blur")
+    input.widget.fire_event("focusout")
     assert on_value.call_count == 1
     assert on_v_model.call_count == 2
     # assert on_value.call_args[0][0] == 1100
@@ -231,7 +231,7 @@ def test_input_float_managed():
     input.widget.v_model = "1.1e0"
     assert on_value.call_count == 1
     assert on_v_model.call_count == 3
-    input.widget.fire_event("blur")
+    input.widget.fire_event("focusout")
     assert on_value.call_count == 2
     assert on_v_model.call_count == 3
     assert on_value.call_args[0][0] == 1.1
@@ -243,7 +243,7 @@ def test_input_float_managed():
     input.widget.v_model = "1.1"
     assert on_v_model.call_count == 4
     assert on_value.call_count == 2
-    input.widget.fire_event("blur")
+    input.widget.fire_event("focusout")
     assert on_v_model.call_count == 4
     # no change
     assert on_value.call_count == 2
