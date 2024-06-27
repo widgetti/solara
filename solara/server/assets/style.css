@@ -134,6 +134,19 @@ div.highlight {
   cursor: default;
 }
 
+/* Originally from nbconvert, required for accordion widget to work correctly */
+.p-Widget.p-mod-hidden, /* </DEPRECATED> */
+.lm-Widget.lm-mod-hidden {
+  display: none !important;
+}
+
+.lm-AccordionPanel[data-orientation='horizontal'] > .lm-AccordionPanel-title {
+  /* Title is rotated for horizontal accordion panel using CSS */
+  display: block;
+  transform-origin: top left;
+  transform: rotate(-90deg) translate(-100%);
+}
+
 /* change font settings for ipywidgets */
 .jupyter-widgets {
   font-weight:400;
