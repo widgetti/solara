@@ -7,7 +7,7 @@ import solara
 
 @solara.component
 def Tooltip(
-    tooltip=Union[str, solara.Element],
+    tooltip: Union[str, solara.Element],
     children=[],
     color: Optional[str] = None,
 ):
