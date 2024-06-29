@@ -43,6 +43,9 @@ def InputDate(
     first_day_of_the_week: int = 1,
     style: Optional[Union[str, Dict[str, str]]] = None,
     classes: Optional[List[str]] = None,
+    date_picker_type: str = "date",
+    min_date: Optional[str] = None,
+    max_date: Optional[str] = None,
 ):
     """
     Show a textfield, which when clicked, opens a datepicker. The input date should be of type `datetime.date`.
@@ -78,11 +81,21 @@ def InputDate(
     * first_day_of_the_week: Sets the first day of the week, as an `int` starting count from Sunday (`=0`). Defaults to `1`, which is Monday.
     * style: CSS style to apply to the text field. Either a string or a dictionary of CSS properties (i.e. `{"property": "value"}`).
     * classes: List of CSS classes to apply to the text field.
+    * date_picker_type: Sets the type of the datepicker. Use `"date"` for date selection or `"month"` for month selection. Defaults to `"date"`.
+    * min_date: Earliest allowed date/month (ISO 8601 format). If not specified, there is no limit.
+    * max_date: Latest allowed date/month (ISO 8601 format). If not specified, there is no limit.
     """
     value_reactive = solara.use_reactive(value, on_value)  # type: ignore
     del value, on_value
     datepicker_is_open = solara.use_reactive(open_value, on_open_value)  # type: ignore
     del open_value, on_open_value
+
+    if date_picker_type == "date":
+        internal_date_format = "%Y-%m-%d"
+    elif date_picker_type == "month":
+        internal_date_format = "%Y-%m"
+    else:
+        raise ValueError("date_picker_type must be either 'date' or 'month'.")
 
     def set_date_typed_cast(value: Optional[str]):
         if value:
@@ -103,7 +116,7 @@ def InputDate(
 
     def set_date_cast(new_value: Optional[str]):
         if new_value:
-            date_value = dt.datetime.strptime(new_value, "%Y-%m-%d").date()
+            date_value = dt.datetime.strptime(new_value, internal_date_format).date()
             datepicker_is_open.set(False)
             value_reactive.value = date_value
 
@@ -111,7 +124,7 @@ def InputDate(
         if date is None:
             return None
         else:
-            return date.strftime("%Y-%m-%d")
+            return date.strftime(internal_date_format)
 
     date_standard_str = standard_strfy(value_reactive.value)
 
@@ -144,6 +157,9 @@ def InputDate(
             on_v_model=set_date_cast,
             first_day_of_week=first_day_of_the_week,
             style_="width: 100%;",
+            max=max_date,
+            min=min_date,
+            type=date_picker_type,
         ):
             if len(children) > 0:
                 solara.display(*children)
@@ -162,6 +178,10 @@ def InputDateRange(
     first_day_of_the_week: int = 1,
     style: Optional[Union[str, Dict[str, str]]] = None,
     classes: Optional[List[str]] = None,
+    date_picker_type: str = "date",
+    min_date: Optional[str] = None,
+    max_date: Optional[str] = None,
+    sort: Optional[bool] = False,
 ):
     """
     Show a textfield, which when clicked, opens a datepicker that allows users to select a range of dates by choosing a starting and ending date.
@@ -194,11 +214,16 @@ def InputDateRange(
     Intended to be used in conjunction with a custom set of controls to close the datepicker.
     * on_open_value: a callback function for when open_value changes. Also receives the new value as an argument.
     * date_format: Sets the format of the date displayed in the text field. Defaults to `"%Y/%m/%d"`. For more information,
-    * optional: Determines whether go show an error when value is `None`. If `True`, no error is shown.
     see <a href="https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes" target="_blank">the Python documentation</a>.
+    * optional: Determines whether go show an error when value is `None`. If `True`, no error is shown.
     * first_day_of_the_week: Sets the first day of the week, as an `int` starting count from Sunday (`=0`). Defaults to `1`, which is Monday.
     * style: CSS style to apply to the text field. Either a string or a dictionary of CSS properties (i.e. `{"property": "value"}`).
     * classes: List of CSS classes to apply to the text field.
+    * date_picker_type: Sets the type of the datepicker. Use `"date"` for date selection or `"month"` for month selection. Defaults to `"date"`.
+    * min_date: Earliest allowed date/month (ISO 8601 format). If not specified, there is no limit.
+    * max_date: Latest allowed date/month (ISO 8601 format). If not specified, there is no limit.
+    * sort: If True, selected dates will be sorted in ascending order, regardless of the order they were picked. If False, preserves the order the
+    dates were selected.
 
     ## A More Advanced Example
 
@@ -244,7 +269,15 @@ def InputDateRange(
     """
     value_reactive = solara.use_reactive(value, on_value)  # type: ignore
     del value, on_value
-    date_standard_strings = [date.strftime("%Y-%m-%d") for date in value_reactive.value if date is not None]
+
+    if date_picker_type == "date":
+        internal_date_format = "%Y-%m-%d"
+    elif date_picker_type == "month":
+        internal_date_format = "%Y-%m"
+    else:
+        raise ValueError("date_picker_type must be either 'date' or 'month'.")
+
+    date_standard_strings = [date.strftime(internal_date_format) for date in value_reactive.value if date is not None]
     datepicker_is_open = solara.use_reactive(open_value, on_open_value)  # type: ignore
     del open_value, on_open_value
     style_flat = solara.util._flatten_style(style)
@@ -252,15 +285,20 @@ def InputDateRange(
     def dates_to_string(dates: Tuple[Optional[dt.date], Optional[dt.date]]):
         string_dates = [date.strftime(date_format) if date is not None else "" for date in dates]
         if (len(dates) < 2 or dates[1] is None) and not optional:
-            return string_dates[0], "Please select two dates"
+            return string_dates[0], f"Please select two {date_picker_type}s"
         return " - ".join(string_dates), None
 
     def set_dates_cast(values):
         date_value = cast(
-            Tuple[Optional[dt.date], Optional[dt.date]], tuple([dt.datetime.strptime(item, "%Y-%m-%d").date() if item is not None else None for item in values])
+            Tuple[Optional[dt.date], Optional[dt.date]],
+            tuple([(dt.datetime.strptime(item, internal_date_format).date() if item is not None else None) for item in values]),
         )
         if len(date_value) > 1 and date_value[1] is not None:
             datepicker_is_open.set(False)
+
+            if sort:
+                date_value = cast(Tuple[dt.date, dt.date], tuple(sorted(date_value)))
+
         value_reactive.value = date_value
 
     string_dates, error_message = dates_to_string(value_reactive.value)
@@ -292,6 +330,9 @@ def InputDateRange(
             range=True,
             first_day_of_week=first_day_of_the_week,
             style_="width: 100%;",
+            max=max_date,
+            min=min_date,
+            type=date_picker_type,
         ):
             if len(children) > 0:
                 for el in children:
