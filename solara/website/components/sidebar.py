@@ -39,8 +39,10 @@ def Sidebar():
                         value=top_level_expanded,
                     ):
                         for item in route.children:
-                            if item.path == "/":
-                                continue
+                            label = item.label
+                            if item.path == "/" and route.path in ["examples", "api", "components"]:
+                                # the 'homepage' of the subpage are named Overview
+                                label = "Overview"
                             path_sub = "/documentation/" + route.path + "/" + item.path
                             sub_should_be_expanded = router.path.startswith(path_sub)
                             if item.children != [] and any([c.label is not None and c.path != "/" for c in item.children]):
@@ -49,7 +51,7 @@ def Sidebar():
                                         {
                                             "name": "activator",
                                             "children": solara.v.ListItemTitle(
-                                                children=[item.label],
+                                                children=[label],
                                             ),
                                         }
                                     ],
