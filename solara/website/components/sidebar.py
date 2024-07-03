@@ -73,7 +73,7 @@ def Sidebar():
                                         with solara.Link(
                                             path,
                                         ):
-                                            with solara.v.ListItem(dense=True, style_="padding: 0 20px;", value=path):
+                                            with solara.v.ListItem(dense=True, style_="margin-left: 40px; padding: 0 20px;", value=path):
                                                 solara.v.ListItemContent(
                                                     children=[subitem.label],
                                                 )
