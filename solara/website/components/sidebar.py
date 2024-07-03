@@ -16,6 +16,7 @@ def Sidebar():
 
     with solara.v.List(expand=True, nav=True, style_="height: 100%; display: flex; flex-direction: column;") as main:
         with solara.v.ListItemGroup(v_model=router.path):
+            # e.g. getting_started, examples, components, api, advanced, faq
             for route in all_routes:
                 if len(route.children) == 1 or route.path == "/":
                     with solara.Link("/documentation/" + route.path if route.path != "/" else "/documentation"):
