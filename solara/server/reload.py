@@ -15,6 +15,7 @@ NO_WATCHDOG = False
 try:
     from watchdog.events import FileSystemEventHandler
     from watchdog.observers import Observer
+    import watchdog.events
 except ImportError:
     pass
     NO_WATCHDOG = True
@@ -99,26 +100,34 @@ else:
                 self.observers.append(observer)
                 self.directories.add(directory)
 
+        def on_moved(self, event):
+            logger.debug("Moved event: %s", event)
+            if isinstance(event, watchdog.events.FileMovedEvent):
+                if event.dest_path in self.files:
+                    self._handle_possible_change(event.dest_path)
+
         def on_modified(self, event):
-            super().on_modified(event)
-            logger.debug("Watch event: %s", event)
+            logger.debug("Modified event: %s", event)
             if not event.is_directory:
                 if event.src_path in self.files:
-                    mtime_new = os.path.getmtime(event.src_path)
-                    changed = mtime_new > self.mtimes[event.src_path]
-                    self.mtimes[event.src_path] = mtime_new
-                    if changed:
-                        logger.debug("File modified: %s", event.src_path)
-                        try:
-                            self.on_change(event.src_path)
-                        except:  # noqa
-                            # we are in the watchdog thread here, all we can do is report
-                            # and continue running (otherwise reload stops working)
-                            logger.exception("Error while executing on change handler")
-                    else:
-                        logger.debug("File reported modified, but mtime did not change: %s", event.src_path)
+                    self._handle_possible_change(event.src_path)
                 else:
                     logger.debug("Ignore file modification: %s", event.src_path)
+
+        def _handle_possible_change(self, path: str):
+            mtime_new = os.path.getmtime(path)
+            changed = mtime_new > self.mtimes[path]
+            self.mtimes[path] = mtime_new
+            if changed:
+                logger.debug("File modified: %s", path)
+                try:
+                    self.on_change(path)
+                except:  # noqa
+                    # we are in the watchdog thread here, all we can do is report
+                    # and continue running (otherwise reload stops working)
+                    logger.exception("Error while executing on change handler")
+            else:
+                logger.debug("File reported modified, but mtime did not change: %s", path)
 
     WatcherType = WatcherWatchdog  # type: ignore
 
