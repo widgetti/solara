@@ -66,7 +66,7 @@ def Sidebar():
                                         if subitem.path == "/" or subitem.label is None:
                                             continue
                                         path = (
-                                            "/documentation/" + route.path + "/" + item.path + "/" + subitem.path
+                                            "/documentation/" + route.path + "/" + item.path + "/" + (subitem.path if subitem.path != "/" else "")
                                             if item.path != "fullscreen"
                                             else "/apps/" + subitem.path
                                         )
