@@ -37,6 +37,7 @@ def Sidebar():
                             }
                         ],
                         value=top_level_expanded,
+                        eager=True,  # better for SEO
                     ):
                         for item in route.children:
                             label = item.label
@@ -57,6 +58,7 @@ def Sidebar():
                                     ],
                                     sub_group=True,
                                     no_action=True,
+                                    eager=True,  # better for SEO
                                     value=sub_should_be_expanded,
                                 ):
                                     for subitem in item.children:
