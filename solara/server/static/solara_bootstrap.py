@@ -119,7 +119,7 @@ async def main():
     ]
     for dep in requirements:
         await micropip.install(dep, keep_going=True)
-    await micropip.install("/wheels/solara-1.33.0-py2.py3-none-any.whl", keep_going=True)
+    await micropip.install("/wheels/solara-1.34.0-py2.py3-none-any.whl", keep_going=True)
     import solara
 
     el = solara.Warning("lala")
