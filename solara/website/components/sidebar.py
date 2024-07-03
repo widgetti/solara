@@ -24,6 +24,8 @@ def Sidebar():
                                 solara.v.ListItemIcon(children=[solara.v.Icon(children=["mdi-home"])])
                             solara.v.ListItemTitle(style_="padding: 0 20px;", children=[route.label])
                 else:
+                    path_top_level = "/documentation/" + route.path
+                    top_level_expanded = router.path.startswith(path_top_level)
                     with solara.v.ListGroup(
                         v_slots=[
                             {
@@ -34,11 +36,13 @@ def Sidebar():
                                 ),
                             }
                         ],
-                        value=router.path.startswith("/documentation/" + route.path),
+                        value=top_level_expanded,
                     ):
                         for item in route.children:
                             if item.path == "/":
                                 continue
+                            path_sub = "/documentation/" + route.path + "/" + item.path
+                            sub_should_be_expanded = router.path.startswith(path_sub)
                             if item.children != [] and any([c.label is not None and c.path != "/" for c in item.children]):
                                 with solara.v.ListGroup(
                                     v_slots=[
@@ -51,7 +55,7 @@ def Sidebar():
                                     ],
                                     sub_group=True,
                                     no_action=True,
-                                    value=router.path.startswith("/documentation/" + route.path + "/" + item.path),
+                                    value=sub_should_be_expanded,
                                 ):
                                     for subitem in item.children:
                                         # skip pages that are only used to demonstrate Link or Router usage
