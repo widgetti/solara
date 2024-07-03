@@ -1,5 +1,17 @@
 # Solara Changelog
 
+## Version 1.34.0
+
+   * Feature: Enhancements for Solara `InputDate` and `InputDateRange` components [#672](https://github.com/widgetti/solara/pull/672):
+      * Limiting allowed dates with `min_date` and `max_date` arguments.
+      * Monthly granularity with `date_picker_type="month"`.
+      * `InputDateRange` selection can be sorted in ascending order with `sort` argument.
+   * Bug Fix: Typo in `solara.Tooltip`. [#695](https://github.com/widgetti/solara/pull/695)
+   * Bug Fix: `ipywidgets.Accordion` content was not hidden when closed. [#694](https://github.com/widgetti/solara/pull/694)
+   * Bug Fix: `solara.Tooltip` would break any functionality in it's children that relied on the `blur`, `keydown`, or `focus` events. [#696](https://github.com/widgetti/solara/pull/696)
+   * Bug Fix: Raise an error instead of showing a custom page on 404. Enables custom 404 pages in Solara apps. [#670](https://github.com/widgetti/solara/pull/670)
+   * Bug Fix: Prevent broken installation by restricting Numpy version. [#687](https://github.com/widgetti/solara/pull/687) and [`286e196`](https://github.com/widgetti/solara/commit/286e196ee990af814768d0612b98b5138f5ceb51).
+
 ## Version 1.33.0
 
 ### Details
