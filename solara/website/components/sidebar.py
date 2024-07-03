@@ -62,8 +62,8 @@ def Sidebar():
                                     value=sub_should_be_expanded,
                                 ):
                                     for subitem in item.children:
-                                        # skip pages that are only used to demonstrate Link or Router usage
-                                        if subitem.path == "/" or subitem.label is None:
+                                        # skip the 'homepage' of the examples only
+                                        if subitem.path == "/" and route.path not in ["getting_started", "advanced"]:
                                             continue
                                         path = (
                                             "/documentation/" + route.path + "/" + item.path + "/" + (subitem.path if subitem.path != "/" else "")
