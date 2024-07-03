@@ -78,21 +78,18 @@ def Sidebar():
                                                     children=[subitem.label],
                                                 )
                             else:
-                                with solara.v.ListItemGroup(value="/documentation/" + route.path + "/" + item.path):
-                                    with solara.Link(
-                                        "/documentation/" + route.path + "/" + item.path,
-                                    ):
-                                        with solara.v.ListItem(dense=True, style_="padding: 0 20px;"):
-                                            solara.v.ListItemContent(
-                                                children=[item.label],
-                                            )
-        with solara.v.ListItemGroup():
+                                path = "/documentation/" + route.path + ("/" + item.path if item.path != "/" else "")
+                                with solara.Link(path):
+                                    with solara.v.ListItem(dense=True, style_="padding: 0 20px;", value=path):
+                                        solara.v.ListItemContent(
+                                            children=[label],
+                                        )
             with solara.Link("/contact"):
-                with solara.v.ListItem():
+                with solara.v.ListItem(value="/contact"):
                     solara.v.ListItemIcon(children=[solara.v.Icon(children=["mdi-email"])])
                     solara.v.ListItemTitle(style_="padding: 0 20px;", children=["Contact"])
             with solara.Link("/changelog"):
-                with solara.v.ListItem():
+                with solara.v.ListItem(value="/changelog"):
                     solara.v.ListItemIcon(children=[solara.v.Icon(children=["mdi-history"])])
                     solara.v.ListItemTitle(style_="padding: 0 20px;", children=["Changelog"])
 
