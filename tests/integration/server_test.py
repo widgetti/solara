@@ -28,7 +28,7 @@ def test_docs_basics(page_session: playwright.sync_api.Page, solara_server, sola
 
         page_session.locator("text=Search the Solara Documentation").wait_for()
         page_session.locator(".docs-card", has_text="Examples").first.click()
-        page_session.locator("text=Calculator").first.click()
+        page_session.locator(".v-card >> text=Calculator").first.click()
         page_session.locator("text=+/-").wait_for()
         page_session.screenshot(path="tmp/screenshot_calculator.png")
 
@@ -39,7 +39,7 @@ def test_docs_basics(page_session: playwright.sync_api.Page, solara_server, sola
 
         page_session.locator("text=Visualization").first.click()
         page_session.locator("text=Scatter plot using Plotly").first.click()
-        page_session.locator("text=plotly express").first.wait_for()
+        page_session.locator("text=This example shows how to use Plotly").wait_for()
         page_session.screenshot(path="tmp/screenshot_plotly.png")
 
         page_session.locator("text=Plotly Image Annotator").first.click()
