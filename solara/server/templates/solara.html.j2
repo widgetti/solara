@@ -237,6 +237,11 @@
     {% endif %}
     <script>
         solara.rootPath = {{ root_path | tojson | safe}};
+        solara.cdn = {{ cdn | tojson | safe }};
+        // the vue templates expect it to not have a trailing slash
+        solara.cdn = solara.cdn.replace(/\/$/, '');
+        // keep this for backwards compatibility
+        window.solara_cdn = solara.cdn;
         console.log("rootPath", solara.rootPath);
 
         async function changeThemeCSS(theme) {
