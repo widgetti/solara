@@ -1,5 +1,11 @@
 # Solara Changelog
 
+## Version 1.34.1
+
+   * Bug Fix: Using `SOLARA_ASSETS_PROXY=False` (default on [py.cafe](https://py.cafe)) would break grid layout. [#705](https://github.com/widgetti/solara/pull/705)
+   * Bug Fix: Hot reload work in more situations on Linux. [#702](https://github.com/widgetti/solara/pull/702)
+
+
 ## Version 1.34.0
 
    * Feature: Enhancements for Solara `InputDate` and `InputDateRange` components [#672](https://github.com/widgetti/solara/pull/672):
