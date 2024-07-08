@@ -153,7 +153,7 @@ module.exports = {
         async loadKatexExt() {
             this.loadKatex();
             return (await this.import([
-                `${this.getCdn()}/katex@0.16.9/dist/contrib/auto-render.min.js`, 
+                `${this.getCdn()}/katex@0.16.9/dist/contrib/auto-render.min.js`,
                 `${this.getCdn()}/katex@0.16.9/dist/contrib/mhchem.min.js`
             ]))[0]
         },
