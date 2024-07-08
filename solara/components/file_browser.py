@@ -98,11 +98,11 @@ def FileBrowser(
     scroll_pos, set_scroll_pos = solara.use_state(0)
     selected, set_selected = solara.use_state(None)
 
-    def change_dir(new_dir: str):
+    def change_dir(new_dir: Path):
         if os.access(new_dir, os.R_OK):
-            current_dir.value = Path(new_dir)
+            current_dir.value = new_dir
             if on_directory_change:
-                on_directory_change(Path(new_dir))
+                on_directory_change(new_dir)
             set_warning(None)
             return True
         else:
@@ -114,8 +114,7 @@ def FileBrowser(
                 on_path_select(None)
             return
         if item["name"] == "..":
-            current_dir_str = str(current_dir.value)
-            new_dir = current_dir_str[: current_dir_str.rfind(os.path.sep)]
+            new_dir = current_dir.value.parent
             action_change_directory = (can_select and double_click) or (not can_select and not double_click)
             if action_change_directory and change_dir(new_dir):
                 if scroll_pos_stack:
@@ -128,17 +127,17 @@ def FileBrowser(
                     on_path_select(None)
             if can_select and not double_click:
                 if on_path_select:
-                    on_path_select(Path(new_dir))
+                    on_path_select(new_dir)
             return
 
-        path = os.path.join(current_dir.value, item["name"])
+        path = current_dir.value / item["name"]
         is_file = item["is_file"]
         if (can_select and double_click) or (not can_select and not double_click):
             if is_file:
                 if on_file_open:
-                    on_file_open(Path(path))
+                    on_file_open(path)
                 if on_file_name is not None:
-                    on_file_name(path)
+                    on_file_name(str(path))
             else:
                 if change_dir(path):
                     set_scroll_pos_stack(scroll_pos_stack + [scroll_pos])
@@ -149,7 +148,7 @@ def FileBrowser(
                 on_path_select(None)
         elif can_select and not double_click:
             if on_path_select:
-                on_path_select(Path(path))
+                on_path_select(path)
         else:  # not can_select and double_click is ignored
             raise RuntimeError("Combination should not happen")  # pragma: no cover
 
