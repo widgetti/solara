@@ -51,12 +51,12 @@ class FileListWidget(vy.VuetifyTemplate):
 @solara.component
 def FileBrowser(
     directory: Union[None, str, Path, solara.Reactive[Path]] = None,
-    on_directory_change: Callable[[Path], None] = None,
-    on_path_select: Callable[[Optional[Path]], None] = None,
-    on_file_open: Callable[[Path], None] = None,
+    on_directory_change: Optional[Callable[[Path], None]] = None,
+    on_path_select: Optional[Callable[[Optional[Path]], None]] = None,
+    on_file_open: Optional[Callable[[Path], None]] = None,
     filter: Callable[[Path], bool] = lambda x: True,
     directory_first: bool = False,
-    on_file_name: Callable[[str], None] = None,
+    on_file_name: Optional[Callable[[str], None]] = None,
     start_directory=None,
     can_select=False,
 ):
