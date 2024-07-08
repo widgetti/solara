@@ -152,7 +152,10 @@ module.exports = {
         },
         async loadKatexExt() {
             this.loadKatex();
-            return (await this.import([`${this.getCdn()}/katex@0.16.9/dist/contrib/auto-render.min.js`, `${this.getCdn()}/katex@0.16.9/dist/contrib/mhchem.min.js`]))[0]
+            return (await this.import([
+                `${this.getCdn()}/katex@0.16.9/dist/contrib/auto-render.min.js`, 
+                `${this.getCdn()}/katex@0.16.9/dist/contrib/mhchem.min.js`
+            ]))[0]
         },
         async loadMermaid() {
             return (await this.import([`${this.getCdn()}/mermaid@10.8.0/dist/mermaid.min.js`]))[0]
