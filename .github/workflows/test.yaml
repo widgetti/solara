@@ -217,6 +217,94 @@ jobs:
         run:
           pip install packages/solara-meta/dist/*.whl
 
+  webview-test:
+    needs: [build]
+    timeout-minutes: 15
+    runs-on: ${{ matrix.os }}-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos]
+        python-version: ["3.10"]
+    env:
+      LOCK_FILE_LOCATION: .ci-package-locks/webview/os${{ matrix.os }}-python${{ matrix.python-version }}-ipywidgets${{ matrix.ipywidgets_major }}.txt
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: solara-builds-${{ github.run_number }}
+
+      - name: Link solara app package
+        if: matrix.os != 'windows'
+        run: |
+          cd packages/solara-vuetify-app
+          npm run devlink
+
+      - name: Copy solara app package
+        if: matrix.os == 'windows'
+        run: |
+          cd packages/solara-vuetify-app
+          npm run wincopy
+
+      - name: Prepare
+        id: prepare
+        run: |
+          mkdir test-results
+          if [ -f ${{ env.LOCK_FILE_LOCATION }} ]; then
+            echo "LOCKS_EXIST=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "LOCKS_EXIST=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install without locking versions
+        if: github.event_name == 'schedule' || steps.prepare.outputs.LOCKS_EXIST == 'false'
+        id: install_no_lock
+        run: |
+          mkdir -p .ci-package-locks/integration
+          if [ "${{ matrix.os }}" = "ubuntu" ]; then
+            pip install "pywebview[gtk]"
+          else
+            pip install "pywebview"
+          fi
+          pip install `echo dist/*.whl`[all]
+          pip install `echo packages/solara-server/dist/*.whl`[all]
+          pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
+          pip freeze --exclude solara --exclude solara-ui --exclude solara-server > ${{ env.LOCK_FILE_LOCATION }}
+          git diff --quiet || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
+
+      - name: Install
+        if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
+        run: |
+          pip install -r ${{ env.LOCK_FILE_LOCATION }}
+          pip install `echo dist/*.whl`[all]
+          pip install `echo packages/solara-server/dist/*.whl`[all]
+          pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
+
+      - name: test pywebview
+        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true'
+        run: |
+          python tests/webview/solara-pywebview-test.py
+
+      - name: Upload Test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-integration-os${{ matrix.os }}-python${{ matrix.python-version }}-ipywidgets${{ matrix.ipywidgets_major }}
+          path: test-results
+
+      - name: Upload CI package locks
+        if: steps.install_no_lock.outputs.HAS_DIFF == 'true' || steps.prepare.outputs.LOCKS_EXIST == 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-package-locks-integration-os${{ matrix.os }}-python${{ matrix.python-version }}-ipywidgets${{ matrix.ipywidgets_major }}
+          path: ./**/${{ env.LOCK_FILE_LOCATION }}
 
   integration-test:
     needs: [build]
@@ -299,21 +387,6 @@ jobs:
           pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets${{ matrix.ipywidgets_major }}]
           pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
           pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
-
-      - name: install pywebview
-        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true' && matrix.os == 'ubuntu'
-        run: |
-          pip install "pywebview[gtk]"
-
-      - name: install pywebview
-        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true' && matrix.os == 'windows'
-        run: |
-          pip install "pywebview"
-
-      - name: test pywebview
-        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true'
-        run: |
-          python tests/webview/solara-pywebview-test.py
 
       - name: Install playwright
         run: playwright install
