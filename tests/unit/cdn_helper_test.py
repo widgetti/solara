@@ -2,6 +2,9 @@ import hashlib
 import os
 from pathlib import Path
 
+from pytest import TempPathFactory
+import pytest
+
 from solara.server.cdn_helper import get_cdn_url, get_data, get_from_cache, put_in_cache, get_path
 
 
@@ -66,6 +69,26 @@ def test_get_data(tmp_path_factory):
 
     data = get_data(base_cache_dir, path2)
     assert data == b"test_cached_2"
+
+
+def test_get_data_secure(tmp_path_factory: TempPathFactory):
+    # we should never be able to get data from the parent directory
+
+    root_dir = tmp_path_factory.mktemp("root")
+    base_cache_dir = root_dir / "cdn"
+    base_cache_dir.mkdir()
+
+    (root_dir / "secret").write_bytes(b"not allowed")
+
+    project_dir = base_cache_dir / "project"
+    project_dir.mkdir()
+
+    (project_dir / "file").write_bytes(b"a")
+
+    data = get_data(base_cache_dir, "project/file")
+    assert data == b"a"
+    with pytest.raises(PermissionError):
+        get_data(base_cache_dir, "project/../../secret")
 
 
 def test_redirect(tmp_path_factory):
