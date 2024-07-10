@@ -106,15 +106,9 @@ class HookValidator(ast.NodeVisitor):
         self.generic_visit(node)
 
     def error_on_invalid_assign(self, node: ast.Assign):
-        if (
-            isinstance(node.value, ast.Attribute)
-            and node.value.attr in self.use_functions
-        ):
+        if isinstance(node.value, ast.Attribute) and node.value.attr in self.use_functions:
             line = node.lineno + self.line_offset
-            message = (
-                f"Assigning a variable to a reactive function on line {line} is not"
-                " allowed since it complicates the tracking of valid hook use."
-            )
+            message = f"Assigning a variable to a reactive function on line {line} is not" " allowed since it complicates the tracking of valid hook use."
 
             raise HookValidationError(
                 InvalidReactivityCauses.VARIABLE_ASSIGNMENT,
@@ -125,16 +119,12 @@ class HookValidator(ast.NodeVisitor):
         """
         Checks if the latest use of a reactive function occurs after the earliest return
         """
-        if (
-            self.root_function_return
-            and self.root_function_return.lineno <= use_node.lineno
-        ):
+        if self.root_function_return and self.root_function_return.lineno <= use_node.lineno:
             offset_return = self.root_function_return.lineno + self.line_offset
             offset_use = use_node.lineno + self.line_offset
             raise HookValidationError(
                 InvalidReactivityCauses.USE_AFTER_RETURN,
-                f"{self.get_function_name()}: `{use_node_id}` found on line"
-                f" {offset_use} despite early return on line {offset_return}",
+                f"{self.get_function_name()}: `{use_node_id}` found on line" f" {offset_use} despite early return on line {offset_return}",
             )
 
     def error_on_invalid_scope(self, use_node: ast.Call, use_node_id: str):
@@ -156,8 +146,7 @@ class HookValidator(ast.NodeVisitor):
         scope_line = self.outer_scope.lineno + self.line_offset
         raise HookValidationError(
             cause,
-            f"{self.get_function_name()}: `{use_node_id}` found on line"
-            f" {offset_use} within a {cause.value} created on line {scope_line}",
+            f"{self.get_function_name()}: `{use_node_id}` found on line" f" {offset_use} within a {cause.value} created on line {scope_line}",
         )
 
     def get_function_name(self):
