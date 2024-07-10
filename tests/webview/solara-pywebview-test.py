@@ -39,7 +39,6 @@ def run(port: int):
         window.destroy()
         print("failed")
         if html:
-            print("html", html)
             with open("test-results/pywebview-failed.html", "w") as f:
                 f.write(html)
         else:
