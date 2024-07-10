@@ -37,6 +37,7 @@ logger = logging.getLogger("solara.pytest_plugin")
 TEST_PORT_START = int(os.environ.get("PORT", "18765")) + 100  # do not interfere with the solara integration tests
 TEST_HOST = solara.server.settings.main.host
 TIMEOUT = float(os.environ.get("SOLARA_PW_TIMEOUT", "18"))
+PYTEST_IPYWIDGETS_SOLARA_APP_WAIT_TIMEOUT = int(os.environ.get("PYTEST_IPYWIDGETS_SOLARA_APP_WAIT_TIMEOUT", "10"))
 
 
 @pytest.fixture(scope="session")
@@ -192,7 +193,7 @@ def _solara_test(solara_server, solara_app, page_session: "playwright.sync_api.P
         run_events[id] = run_event = threading.Event()
         page_session.goto(solara_server.base_url + f"?id={id}")
         try:
-            assert run_event.wait(10)
+            assert run_event.wait(PYTEST_IPYWIDGETS_SOLARA_APP_WAIT_TIMEOUT)
             context = used_contexts[id]
             with context:
                 test_output_warmup = widgets.Output()
