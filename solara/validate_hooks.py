@@ -34,8 +34,8 @@ class HookValidator(ast.NodeVisitor):
     def __init__(self, component: t.Callable, use_functions=DEFAULT_USE_FUNCTIONS):
         self.use_functions = use_functions
 
-        self.root_function_return: ast.Return | None = None
-        self.outer_scope: ScopeNodesType | None = None
+        self.root_function_return: t.Optional[ast.Return] = None
+        self.outer_scope: t.Optional[ScopeNodesType] = None
 
         self.filename = component.__code__.co_filename
         self.line_offset = component.__code__.co_firstlineno - 1
