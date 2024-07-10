@@ -40,7 +40,7 @@ def get_module_names():
 def create_modules():
     kernel_id = kernel_context.get_current_context().id
     _modules_added = _modules_added_per_kernel[kernel_id]
-    logger.info("define modules %s", _modules)
+    logger.info("create modules %s", _modules)
     widgets = {}
     with lock:
         for name, (module, dependencies) in _modules.items():
