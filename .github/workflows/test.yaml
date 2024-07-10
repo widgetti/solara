@@ -304,6 +304,7 @@ jobs:
         if: github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true'
         run: |
           pip install "pywebview[qt]"
+          export QT_QPA_PLATFORM=offscreen
           python tests/webview/solara-pywebview-test.py
 
       - name: Install playwright
