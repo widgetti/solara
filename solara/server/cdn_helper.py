@@ -1,4 +1,5 @@
 import logging
+import os
 import pathlib
 import shutil
 
@@ -22,12 +23,14 @@ def put_in_cache(base_cache_dir: pathlib.Path, path, data: bytes):
 
 
 def get_from_cache(base_cache_dir: pathlib.Path, path):
-    cache_path = (base_cache_dir / path).resolve()
-    # make sure cache_path is a subdirectory of base_cache_dir
+    cache_path = pathlib.Path(base_cache_dir / path)
+    # Make sure cache_path is a subdirectory of base_cache_dir
     # so we don't accidentally read files from the parent directory
-    # which is a security risk
-    if not str(cache_path).startswith(str(base_cache_dir.resolve())):
-        logger.warning("Trying to read from outside of cache directory: %s", cache_path)
+    # which is a security risk.
+    # We use os.path.normpath() because we do not want to follow symlinks
+    # in editable installs, since some packages are symlinked
+    if not os.path.normpath(cache_path).startswith(str(base_cache_dir.resolve())):
+        logger.warning("Trying to read from outside of cache directory: %s is not a subdir of %s", cache_path, base_cache_dir)
         raise PermissionError("Trying to read from outside of cache directory")
 
     try:
