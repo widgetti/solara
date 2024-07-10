@@ -10,13 +10,13 @@ authors = [{name = "Maarten A. Breddels", email = "maartenbreddels@gmail.com"}]
 license = {file = "LICENSE"}
 classifiers = ["License :: OSI Approved :: MIT License"]
 dynamic = ["description"]
-version = "1.34.1"
+version = "1.35.0"
 packages = [
     { include = "solara" }
 ]
 dependencies = [
-    "solara-ui[all]==1.34.1",
-    "solara-server[starlette,dev]==1.34.1"
+    "solara-ui[all]==1.35.0",
+    "solara-server[starlette,dev]==1.35.0"
 ]
 
 [project.urls]
@@ -32,7 +32,7 @@ all = [
 ]
 
 assets = [
-    "solara-assets==1.34.1"
+    "solara-assets==1.35.0"
 ]
 
 documentation = [
@@ -53,7 +53,7 @@ documentation = [
 
 # for backwards compatibility to support solara[pytest]
 pytest = [
-    "pytest-ipywidgets[all]==1.34.1"
+    "pytest-ipywidgets[all]==1.35.0"
 ]
 
 # for backwards compatibility to support solara[dev]
