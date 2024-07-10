@@ -300,6 +300,12 @@ jobs:
           pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
           pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
 
+      - name: test pywebview
+        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true'
+        run: |
+          pip install "pywebview[qt]"
+          python tests/webview/solara-pywebview-test.py
+
       - name: Install playwright
         run: playwright install
 

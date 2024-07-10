@@ -271,7 +271,7 @@
         window.solara.browser_platform = true;
         {% endif %}
         var debug = true;
-
+    function loadApp(solaraVuetify) {
         var appComponent = {
             // if we do prerendering, keep it unmounted, and mount
             // when loading becomes false
@@ -389,14 +389,14 @@
         };
         const vue3 = Vue.version.startsWith('3');
         if(vue3) {
-            var app = Vue.createApp(appComponent).use(vuetifyPlugin)
+            window.app = Vue.createApp(appComponent).use(vuetifyPlugin)
                 .component("jupyter-widget-mount-point", jupyterWidgetMountPoint)
                 .mount('#app');
 
         } else {
             Vue.component('jupyter-widget-mount-point', jupyterWidgetMountPoint);
             Vue.use(Vuetify);
-            var app = new Vue({
+            window.app = new Vue({
                 vuetify: new Vuetify({
                     theme: {
                         dark: inDarkMode(),
@@ -406,6 +406,7 @@
                 ...appComponent,
             });
         }
+    }
         // Loading classic notebook extensions.
         {% if 'jupyter-vuetify/extension' in resources.nbextensions -%}
         window.enable_nbextensions = true;
@@ -439,12 +440,15 @@
             {% for ext in resources.nbextensions if ext != 'jupyter-vuetify/extension' and ext != 'jupyter-vue/extension' -%}
         "{{root_path}}/static/nbextensions/{{ ext }}.js",
             {% endfor %}
-        ]);
-        (async function () {
-            await Promise.all([
-                solaraInit('solara-main')
-            ]);
-        })();
+        ], function (solaraVuetify) {
+            loadApp();
+            (async function () {
+                await Promise.all([
+                    await solaraInit('solara-main')
+                ]);
+            })();
+
+        });
 
     </script>
 
