@@ -300,11 +300,19 @@ jobs:
           pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
           pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
 
+      - name: install pywebview
+        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true' && matrix.os == 'ubuntu'
+        run: |
+          pip install "pywebview[gtk]"
+
+      - name: install pywebview
+        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true' && matrix.os == 'windows'
+        run: |
+          pip install "pywebview"
+
       - name: test pywebview
         if: github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true'
         run: |
-          pip install "pywebview[qt]"
-          export QT_QPA_PLATFORM=offscreen
           python tests/webview/solara-pywebview-test.py
 
       - name: Install playwright
