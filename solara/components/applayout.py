@@ -342,7 +342,7 @@ def AppLayout(
                     ):
                         if not show_app_bar:
                             AppIcon(sidebar_open, on_click=lambda: set_sidebar_open(not sidebar_open))
-                        v.Html(tag="div", children=children_sidebar, style_="padding: 12px;").meta(ref="sidebar-content")
+                        v.Html(tag="div", children=children_sidebar, style_="padding: 12px; height: 100%").meta(ref="sidebar-content")
             if show_app_bar:
                 # if hide_on_scroll is True, and we have a little bit of scrolling, vuetify seems to act strangely
                 # when scrolling (on @mariobuikhuizen/vuetify v2.2.26-rc.0
