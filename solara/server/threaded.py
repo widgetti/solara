@@ -2,15 +2,24 @@ import logging
 import threading
 import time
 from typing import Optional
+import socket
 
 logger = logging.getLogger("solara.server.threaded")
+
+
+def get_free_port():
+    sock = socket.socket()
+    sock.bind(("", 0))
+    port = sock.getsockname()[1]
+    sock.close()
+    return port
 
 
 class ServerBase(threading.Thread):
     name = "not set"
 
     def __init__(self, port: int, host: str = "localhost", **kwargs):
-        self.port = port
+        self.port = get_free_port() if port == 0 else port
         self.host = host
         self.base_url = f"http://{self.host}:{self.port}"
 
