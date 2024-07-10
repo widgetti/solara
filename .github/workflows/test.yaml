@@ -402,12 +402,13 @@ jobs:
       - name: Install
         if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
         run: |
-          pip install -r ${{ env.LOCK_FILE_LOCATION }}
-          pip install `echo dist/*.whl`[all]
-          pip install `echo packages/solara-server/dist/*.whl`[all]
-          pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets${{ matrix.ipywidgets_major }}]
-          pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
-          pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
+          pip install uv
+          uv pip install -r ${{ env.LOCK_FILE_LOCATION }}
+          uv pip install `echo dist/*.whl`[all]
+          uv pip install `echo packages/solara-server/dist/*.whl`[all]
+          uv pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets${{ matrix.ipywidgets_major }}]
+          uv pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
+          uv pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
 
       - name: Install playwright
         run: playwright install
