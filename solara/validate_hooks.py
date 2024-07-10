@@ -41,7 +41,10 @@ class HookValidator(ast.NodeVisitor):
         self.line_offset = component.__code__.co_firstlineno - 1
         self.component = component
 
-        parsed = ast.parse(inspect.getsource(self.component))
+        source = inspect.getsource(self.component)
+        # dedent the source code to avoid indentation errors
+        source = inspect.cleandoc(source)
+        parsed = ast.parse(source)
         # Get nodes from inside the function body
         func_definition = t.cast(ast.FunctionDef, parsed.body[0])
         self.function_scope: ast.FunctionDef = func_definition
