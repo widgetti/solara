@@ -221,7 +221,7 @@ jobs:
   integration-test:
     needs: [build]
     timeout-minutes: 15
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}-latest
     strategy:
       fail-fast: false
       matrix:
@@ -253,9 +253,16 @@ jobs:
           name: solara-builds-${{ github.run_number }}
 
       - name: Link solara app package
+        if: matrix.os != 'windows'
         run: |
           cd packages/solara-vuetify-app
           npm run devlink
+
+      - name: Copy solara app package
+        if: matrix.os == 'windows'
+        run: |
+          cd packages/solara-vuetify-app
+          npm run wincopy
 
       - name: Prepare
         id: prepare
