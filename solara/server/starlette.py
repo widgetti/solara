@@ -3,6 +3,7 @@ import json
 import logging
 import math
 import os
+from pathlib import Path
 import sys
 import threading
 import typing
@@ -13,6 +14,8 @@ import anyio
 import starlette.websockets
 import uvicorn.server
 import websockets.legacy.http
+
+from solara.server.utils import path_is_child_of
 
 try:
     import solara_enterprise
@@ -405,6 +408,9 @@ class StaticNbFiles(StaticFilesOptionalAuth):
             original_path = os.path.join(directory, path)
             full_path = os.path.realpath(original_path)
             directory = os.path.realpath(directory)
+            # return early if someone tries to access a file outside of the directory
+            if not path_is_child_of(Path(full_path), Path(directory)):
+                return "", None
             try:
                 return full_path, os.stat(full_path)
             except (FileNotFoundError, NotADirectoryError):
@@ -449,7 +455,6 @@ class StaticCdn(StaticFilesOptionalAuth):
             full_path = str(get_path(settings.assets.proxy_cache_dir, path))
         except Exception:
             return "", None
-
         return full_path, os.stat(full_path)
 
 

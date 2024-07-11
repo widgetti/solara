@@ -199,7 +199,7 @@ def nbext(dir, filename):
     for directory in server.nbextensions_directories:
         file = directory / dir / filename
         if file.exists():
-            return send_from_directory(directory / dir, filename)
+            return send_from_directory(directory, dir + os.path.sep + filename)
     return flask.Response("not found", status=404)
 
 
@@ -217,7 +217,10 @@ if solara.settings.assets.proxy:
         if not allowed():
             abort(401)
         cache_directory = settings.assets.proxy_cache_dir
-        content = cdn_helper.get_data(Path(cache_directory), path)
+        try:
+            content = cdn_helper.get_data(Path(cache_directory), path)
+        except PermissionError:
+            return flask.Response("not found", status=404)
         mime = mimetypes.guess_type(path)
         return flask.Response(content, mimetype=mime[0])
 
