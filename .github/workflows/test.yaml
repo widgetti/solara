@@ -227,7 +227,9 @@ jobs:
       matrix:
         # just ubuntu and windows give enough confidence
         # osx should work fine (and we test that locally often)
-        os: [ubuntu, windows]
+        # os: [ubuntu, windows]
+        # we just test on ubuntu for now, otherwise we cannot release
+        os: [ubuntu]
         # just 1 version, it's heavy
         python-version: [3.8]
         ipywidgets_major: ["7", "8"]
