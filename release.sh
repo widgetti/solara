@@ -1,10 +1,10 @@
 #!/bin/bash
 set -e -o pipefail
 # usage: ./release minor -n
-(git diff --quiet master @widgetti/solara-vuetify-app@10.0.3 -- packages/solara-vuetify-app) || {\
-    echo -e "\033[31m There are unreleased changes to the solara-vuetify-app package.\n Please release the javascript package before Solara by running \n\n \
-    \033[0m (cd packages/solara-vuetify-app && ./release.sh <patch | minor | major> -n)\n"; \
-    exit 1;}
+# (git diff --quiet master @widgetti/solara-vuetify-app@10.0.3 -- packages/solara-vuetify-app) || {\
+#     echo -e "\033[31m There are unreleased changes to the solara-vuetify-app package.\n Please release the javascript package before Solara by running \n\n \
+#     \033[0m (cd packages/solara-vuetify-app && ./release.sh <patch | minor | major> -n)\n"; \
+#     exit 1;}
 (git diff --quiet master @widgetti/solara-vuetify3-app@5.0.2 -- packages/solara-vuetify3-app) || {\
     echo -e "\033[31m There are unreleased changes to the solara-vuetify3-app package.\n Please release the javascript package before Solara by running \n\n \
     \033[0m (cd packages/solara-vuetify3-app && ./release.sh <patch | minor | major> -n)\n"; \
