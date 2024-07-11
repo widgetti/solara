@@ -229,7 +229,7 @@ class AppScript:
         path = Path(name)
         if path.suffix == ".vue":
             logger.info("Vue file changed: %s", name)
-            template_content = path.read_text()
+            template_content = path.read_text(encoding="utf-8")
             for context in list(kernel_context.contexts.values()):
                 with context:
                     for filepath, widget in context.templates.items():

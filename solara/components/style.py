@@ -52,7 +52,7 @@ def Style(value: Union[str, Path] = ""):
                 try:
                     async for _ in watchfiles.awatch(value):
                         print(value, "changed, reloading css")  # noqa
-                        set_css_content_reloaded(cast(Path, value).read_text())
+                        set_css_content_reloaded(cast(Path, value).read_text(encoding="utf-8"))
                 except RuntimeError:
                     pass  # swallow the RuntimeError: Already borrowed errors from watchfiles
                 except Exception:
@@ -70,7 +70,7 @@ def Style(value: Union[str, Path] = ""):
     if css_content_reloaded is not None:
         css_content = css_content_reloaded
     else:
-        css_content = value.read_text() if isinstance(value, Path) else value
+        css_content = value.read_text(encoding="utf-8") if isinstance(value, Path) else value
     # del value
     hash = hashlib.sha256(css_content.encode("utf-8")).hexdigest()
     # the key is unique for this component + value
