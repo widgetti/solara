@@ -653,7 +653,7 @@ def markdown(target: typing.Optional[Path] = None):
 
 
 def write_script(name: str, target: typing.Optional[Path]):
-    code = (HERE / "template" / f"{name}.py").read_text()
+    code = (HERE / "template" / f"{name}.py").read_text(encoding="utf-8")
     if target is None:
         target = Path("sol.py")
     else:

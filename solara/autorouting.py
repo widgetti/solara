@@ -215,11 +215,9 @@ def RenderPage(main_name: str = "Page"):
                         solara.Button(
                             icon_name="mdi-pencil", icon=True, href=url, target="_blank", style={"position": "absolute", "top": "0px", "right": "0px"}
                         )
-                    # solara.Markdown(path.read_text(), unsafe_solara_execute=True)
-                    component(path.read_text(), unsafe_solara_execute=True)
+                    component(path.read_text(encoding="utf-8"), unsafe_solara_execute=True)
             else:
-                # content = solara.Markdown(path.read_text(), unsafe_solara_execute=True)
-                content = component(path.read_text(), unsafe_solara_execute=True)
+                content = component(path.read_text(encoding="utf-8"), unsafe_solara_execute=True)
 
             main = solara.Div(
                 classes=["solara-autorouter-content"],
