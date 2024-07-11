@@ -29,8 +29,14 @@ def get_from_cache(base_cache_dir: pathlib.Path, path):
     # which is a security risk.
     # We use os.path.normpath() because we do not want to follow symlinks
     # in editable installs, since some packages are symlinked
-    if not os.path.normpath(cache_path).startswith(str(base_cache_dir.resolve())):
-        logger.warning("Trying to read from outside of cache directory: %s is not a subdir of %s", cache_path, base_cache_dir)
+    if not os.path.normpath(cache_path).startswith(os.path.normpath(base_cache_dir)):
+        logger.warning(
+            "Trying to read from outside of cache directory: %s is not a subdir of %s (%s - %s)",
+            cache_path,
+            base_cache_dir,
+            os.path.normpath(cache_path),
+            os.path.normpath(base_cache_dir),
+        )
         raise PermissionError("Trying to read from outside of cache directory")
 
     try:
