@@ -5,8 +5,11 @@ import playwright
 import playwright.sync_api
 import pytest
 import reacton.ipywidgets as w
+import requests
 
 import solara
+import solara.server.server
+from solara.server import settings
 
 HERE = Path(__file__).parent
 
@@ -211,3 +214,100 @@ def test_kernel_asyncio(browser: playwright.sync_api.Browser, solara_server, sol
         context1.close()
         context2.close()
         solara.server.settings.kernel.threaded = threaded
+
+
+def test_cdn_secure(solara_server, solara_app, extra_include_path):
+    cdn_url = solara_server.base_url + "/_solara/cdn"
+    assert solara.settings.assets.proxy
+
+    with extra_include_path(HERE), solara_app("server_test:ClickButton"):
+        url = cdn_url + "/vue-grid-layout@1.0.2/dist/vue-grid-layout.min.js"
+        response = requests.get(url)
+        assert response.status_code == 200
+        # create a file in /share/solara
+        test_file = settings.assets.proxy_cache_dir.parent / "not-allowed"
+        test_file.write_text("test")
+        url = cdn_url + "/..%2fnot-allowed"
+        response = requests.get(url)
+        assert response.status_code == 404
+
+
+def test_nbextension_secure(solara_server, solara_app, extra_include_path):
+    nbextensions_url = solara_server.base_url + "/static/nbextensions"
+    nbextensions_directories = [k for k in solara.server.server.nbextensions_directories if k.exists()]
+    assert nbextensions_directories, "we should at least test one directory"
+    nbextensions_directory = nbextensions_directories[0]
+
+    with extra_include_path(HERE), solara_app("server_test:ClickButton"):
+        url = nbextensions_url + "/jupyter-vuetify/nodeps.js"
+        response = requests.get(url)
+        assert response.status_code == 200
+        test_file = nbextensions_directory.parent / "not-allowed"
+        test_file.write_text("test")
+        url = nbextensions_url + "/..%2fnot-allowed"
+        response = requests.get(url)
+        assert response.status_code == 404
+
+        url = nbextensions_url + "/foo/..%2f..%2fnot-allowed"
+        response = requests.get(url)
+        assert response.status_code == 404
+
+
+def test_assets_secure(solara_server, solara_app, extra_include_path):
+    assets_url = solara_server.base_url + "/static/assets"
+    assets_directory = solara.server.server.solara_static.parent / "assets"
+
+    with extra_include_path(HERE), solara_app("server_test:ClickButton"):
+        url = assets_url + "/theme.js"
+        response = requests.get(url)
+        assert response.status_code == 200
+        test_file = assets_directory.parent / "__init__.py"
+        assert test_file.exists()
+        url = assets_url + "/..%2f__init__.py"
+        response = requests.get(url)
+        assert response.status_code == 404
+
+        url = assets_url + "/foo/..%2f..%2f__init__.py"
+        response = requests.get(url)
+        assert response.status_code == 404
+
+
+def test_public_secure(solara_server, solara_app, extra_include_path):
+    public_url = solara_server.base_url + "/static/public"
+
+    with solara_app(str(HERE / "apps/secure/app.py")):
+        apps = list(solara.server.app.apps.values())
+        assert len(apps) == 1
+        app = apps[0]
+        public_directory = app.directory.parent / "public"
+        url = public_url + "/test.txt"
+        response = requests.get(url)
+        assert response.status_code == 200
+        test_file = public_directory.parent / "not-allowed"
+        assert test_file.exists()
+        url = public_url + "/..%2fnot-allowed"
+        response = requests.get(url)
+        assert response.status_code == 404
+
+        url = public_url + "/foo/..%2f..%2fnot-allowed"
+        response = requests.get(url)
+        assert response.status_code == 404
+
+
+def test_static_secure(solara_server, solara_app, extra_include_path):
+    static_url = solara_server.base_url + "/static"
+    static_directory = solara.server.server.solara_static
+
+    with extra_include_path(HERE), solara_app("server_test:ClickButton"):
+        url = static_url + "/main.js"
+        response = requests.get(url)
+        assert response.status_code == 200
+        test_file = static_directory.parent / "__init__.py"
+        assert test_file.exists()
+        url = static_url + "/..%2f__init__.py"
+        response = requests.get(url)
+        assert response.status_code == 404
+
+        url = static_url + "/foo/..%2f..%2f__init__.py"
+        response = requests.get(url)
+        assert response.status_code == 404

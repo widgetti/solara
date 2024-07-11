@@ -1,9 +1,9 @@
 import logging
-import os
 import pathlib
 import shutil
 
 import requests
+from solara.server.utils import path_is_child_of
 
 import solara.settings
 
@@ -14,6 +14,9 @@ cdn_url_path = "_solara/cdn"
 
 def put_in_cache(base_cache_dir: pathlib.Path, path, data: bytes):
     cache_path = base_cache_dir / path
+    if not path_is_child_of(cache_path, base_cache_dir):
+        raise PermissionError("Trying to write outside of cache directory")
+
     pathlib.Path(cache_path.parent).mkdir(parents=True, exist_ok=True)
     try:
         logger.info("Writing cache file: %s", cache_path)
@@ -27,16 +30,8 @@ def get_from_cache(base_cache_dir: pathlib.Path, path):
     # Make sure cache_path is a subdirectory of base_cache_dir
     # so we don't accidentally read files from the parent directory
     # which is a security risk.
-    # We use os.path.normpath() because we do not want to follow symlinks
-    # in editable installs, since some packages are symlinked
-    if not os.path.normpath(cache_path).startswith(os.path.normpath(base_cache_dir)):
-        logger.warning(
-            "Trying to read from outside of cache directory: %s is not a subdir of %s (%s - %s)",
-            cache_path,
-            base_cache_dir,
-            os.path.normpath(cache_path),
-            os.path.normpath(base_cache_dir),
-        )
+    if not path_is_child_of(cache_path, base_cache_dir):
+        logger.warning("Trying to read from outside of cache directory: %s is not a subdir of %s", cache_path, base_cache_dir)
         raise PermissionError("Trying to read from outside of cache directory")
 
     try:
@@ -73,6 +68,9 @@ def get_path(base_cache_dir: pathlib.Path, path) -> pathlib.Path:
     parts = path.replace("\\", "/").split("/")
     store_path = path if len(parts) != 1 else pathlib.Path(path) / "__main.js"
     cache_path = base_cache_dir / store_path
+
+    if not path_is_child_of(cache_path, base_cache_dir):
+        raise PermissionError("Trying to read from outside of cache directory")
 
     if cache_path.exists():
         # before d7eba856f100d5c3c64f4eec22c62390f084cb40 on windows, we could
