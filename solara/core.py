@@ -1,11 +1,11 @@
-from typing import Any, Callable, Dict, Union, overload
+from typing import Any, Callable, Dict, Union, overload, TypeVar
 import typing_extensions
 import reacton
 from . import validate_hooks
 
 
 P = typing_extensions.ParamSpec("P")
-FuncT = typing_extensions.TypeVar("FuncT", bound=Callable[..., reacton.core.Element])
+FuncT = TypeVar("FuncT", bound=Callable[..., reacton.core.Element])
 
 
 @overload
