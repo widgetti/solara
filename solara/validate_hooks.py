@@ -1,16 +1,13 @@
+from __future__ import annotations
+
 import ast
 import inspect
+import re
 import typing as t
 from enum import Enum
+import sys
 
-DEFAULT_USE_FUNCTIONS = (
-    "use_state",
-    "use_reactive",
-    "use_thread",
-    "use_task",
-    "use_effect",
-    "use_memo",
-)
+DEFAULT_USE_FUNCTIONS = ("^use_.*$",)
 
 
 class InvalidReactivityCauses(Enum):
@@ -19,9 +16,18 @@ class InvalidReactivityCauses(Enum):
     LOOP_USE = "loop"
     NESTED_FUNCTION_USE = "nested function"
     VARIABLE_ASSIGNMENT = "assignment"
+    EXCEPTION_USE = "exception"
 
 
-ScopeNodesType = t.Union[ast.For, ast.While, ast.If, ast.FunctionDef]
+if sys.version_info < (3, 11):
+    ScopeNodeType = t.Union[ast.For, ast.While, ast.If, ast.Try, ast.FunctionDef]
+    TryNodes = (ast.Try,)
+else:
+    # except* nodes are only standardized in 3.11+
+    ScopeNodeType = t.Union[
+        ast.For, ast.While, ast.If, ast.Try, ast.TryStar, ast.FunctionDef
+    ]
+    TryNodes = (ast.Try, ast.TryStar)
 
 
 class HookValidationError(Exception):
@@ -32,10 +38,10 @@ class HookValidationError(Exception):
 
 class HookValidator(ast.NodeVisitor):
     def __init__(self, component: t.Callable, use_functions=DEFAULT_USE_FUNCTIONS):
-        self.use_functions = use_functions
+        self.use_functions = [re.compile(use_func) for use_func in use_functions]
 
         self.root_function_return: t.Optional[ast.Return] = None
-        self.outer_scope: t.Optional[ScopeNodesType] = None
+        self.outer_scope: t.Optional[ScopeNodeType] = None
 
         self.filename = component.__code__.co_filename
         self.line_offset = component.__code__.co_firstlineno - 1
@@ -54,9 +60,23 @@ class HookValidator(ast.NodeVisitor):
         for node in self._root_function_scope.body:
             self.visit(node)
 
+    def matches_use_function(self, name: str) -> bool:
+        return any(use_func.match(name) for use_func in self.use_functions)
+
+    def node_to_scope_cause(self, node: ScopeNodeType) -> InvalidReactivityCauses:
+        if isinstance(node, ast.If):
+            return InvalidReactivityCauses.CONDITIONAL_USE
+        elif isinstance(node, (ast.For, ast.While)):
+            return InvalidReactivityCauses.LOOP_USE
+        elif isinstance(node, ast.FunctionDef):
+            return InvalidReactivityCauses.NESTED_FUNCTION_USE
+        elif isinstance(node, TryNodes):
+            return InvalidReactivityCauses.EXCEPTION_USE
+        else:
+            raise ValueError(f"Unexpected scope node type: {node}, {node.lineno=}")
+
     def visit_Call(self, node: ast.Call):
         """Records calls of use functions, i.e. solara.use_state(...)"""
-
         func = node.func
         if isinstance(func, ast.Call):
             # Nested function, it will appear in another node later
@@ -67,7 +87,7 @@ class HookValidator(ast.NodeVisitor):
             id_ = func.attr
         else:
             raise ValueError(f"Unexpected function node type: {func}, {func.lineno=}")
-        if id_ in self.use_functions:
+        if self.matches_use_function(id_):
             self.error_on_early_return(node, id_)
             self.error_on_invalid_scope(node, id_)
         self.generic_visit(node)
@@ -81,13 +101,19 @@ class HookValidator(ast.NodeVisitor):
     def visit_While(self, node: ast.While):
         self._visit_children_using_scope(node)
 
+    def visit_Try(self, node: ast.Try) -> t.Any:
+        self._visit_children_using_scope(node)
+
+    def visit_TryStar(self, node: ast.TryStar) -> t.Any:
+        self._visit_children_using_scope(node)
+
     def visit_FunctionDef(self, node: ast.FunctionDef):
         old_function_scope = self.function_scope
         self.function_scope = node
         self._visit_children_using_scope(node)
         self.function_scope = old_function_scope
 
-    def _visit_children_using_scope(self, node: ScopeNodesType):
+    def _visit_children_using_scope(self, node: ScopeNodeType):
         outer_scope = self.outer_scope
         self.outer_scope = node
         for child in node.body:
@@ -109,9 +135,12 @@ class HookValidator(ast.NodeVisitor):
         self.generic_visit(node)
 
     def error_on_invalid_assign(self, node: ast.Assign):
-        if isinstance(node.value, ast.Attribute) and node.value.attr in self.use_functions:
+        if (
+            isinstance(node.value, ast.Attribute)
+            and node.value.attr in self.use_functions
+        ):
             line = node.lineno + self.line_offset
-            message = f"Assigning a variable to a reactive function on line {line} is not" " allowed since it complicates the tracking of valid hook use."
+            message = f"Assigning a variable to a reactive function on line {line} is not allowed since it complicates the tracking of valid hook use."
 
             raise HookValidationError(
                 InvalidReactivityCauses.VARIABLE_ASSIGNMENT,
@@ -122,12 +151,16 @@ class HookValidator(ast.NodeVisitor):
         """
         Checks if the latest use of a reactive function occurs after the earliest return
         """
-        if self.root_function_return and self.root_function_return.lineno <= use_node.lineno:
+        if (
+            self.root_function_return
+            and self.root_function_return.lineno <= use_node.lineno
+        ):
             offset_return = self.root_function_return.lineno + self.line_offset
             offset_use = use_node.lineno + self.line_offset
             raise HookValidationError(
                 InvalidReactivityCauses.USE_AFTER_RETURN,
-                f"{self.get_function_name()}: `{use_node_id}` found on line" f" {offset_use} despite early return on line {offset_return}",
+                f"{self.get_function_name()}: `{use_node_id}` found on line"
+                f" {offset_use} despite early return on line {offset_return}",
             )
 
     def error_on_invalid_scope(self, use_node: ast.Call, use_node_id: str):
@@ -137,19 +170,13 @@ class HookValidator(ast.NodeVisitor):
         if self.outer_scope is None:
             return
         offset_use = use_node.lineno + self.line_offset
-        if isinstance(self.outer_scope, ast.If):
-            cause = InvalidReactivityCauses.CONDITIONAL_USE
-        elif isinstance(self.outer_scope, (ast.For, ast.While)):
-            cause = InvalidReactivityCauses.LOOP_USE
-        elif isinstance(self.outer_scope, ast.FunctionDef):
-            cause = InvalidReactivityCauses.NESTED_FUNCTION_USE
-        else:
-            raise ValueError(f"Unexpected scope node: {self.outer_scope}")
+        cause = self.node_to_scope_cause(self.outer_scope)
 
         scope_line = self.outer_scope.lineno + self.line_offset
         raise HookValidationError(
             cause,
-            f"{self.get_function_name()}: `{use_node_id}` found on line" f" {offset_use} within a {cause.value} created on line {scope_line}",
+            f"{self.get_function_name()}: `{use_node_id}` found on line"
+            f" {offset_use} within a {cause.value} created on line {scope_line}",
         )
 
     def get_function_name(self):
