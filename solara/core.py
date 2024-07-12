@@ -20,7 +20,9 @@ def component(obj: FuncT, mime_bundle: Dict[str, Any] = ...) -> FuncT: ...
 def component(obj: Callable[P, None], mime_bundle: Dict[str, Any] = ...) -> Callable[P, reacton.core.Element]: ...
 
 
-def component(obj: Union[Callable[P, None], FuncT, None] = None, mime_bundle: Dict[str, Any] = reacton.core.mime_bundle_default) -> Union[Callable[[FuncT], FuncT], FuncT, Callable[P, reacton.core.Element]]:
+def component(
+    obj: Union[Callable[P, None], FuncT, None] = None, mime_bundle: Dict[str, Any] = reacton.core.mime_bundle_default
+) -> Union[Callable[[FuncT], FuncT], FuncT, Callable[P, reacton.core.Element]]:
     def wrapper(obj: Union[Callable[P, None], FuncT]) -> FuncT:
         validate_hooks.HookValidator(obj).run()
         return reacton.component(obj, mime_bundle)  # type: ignore
