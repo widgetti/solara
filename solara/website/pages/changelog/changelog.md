@@ -1,5 +1,20 @@
 # Solara Changelog
 
+## Version 1.35.1
+
+   * Bug Fix: Vulnerability which allowed for accessing any file on the system. [CVE-2024-39903](https://nvd.nist.gov/vuln/detail/CVE-2024-39903)
+     [391e212](https://github.com/widgetti/solara/commit/391e2124a502622fe7a04321a540af6f252d8d4b).
+   * Bug Fix: On windows we now read all text files (like CSS) with utf8 encoding by default [681f69b](https://github.com/widgetti/solara/commit/681f69b7779da2bd3586d6e9fd0b21d36e6fb124)
+
+
+## Version 1.35.0
+
+   * Feature: On slower systems, pytest-ipywidgets could time out when connecting to the app, `PYTEST_IPYWIDGETS_SOLARA_APP_WAIT_TIMEOUT` can be set to increase the timeout. [c302caf](https://github.com/widgetti/solara/commit/c302caf520b6bd4825f4104ac4d629b1d9543607) and [Our testing docs](https://solara.dev/documentation/advanced/howto/testing).
+   * Bug Fix: The sidebar container did not have `height: 100%` set, causing the sidebar to not fill the entire height of the page. [5358f0f](https://github.com/widgetti/solara/commit/5358f0f1b8582422041bfc6553e6d95e103a9aa9)
+   * Bug Fix: Vulnerability which allowed for accessing any file on the system. [CVE-2024-39903](https://nvd.nist.gov/vuln/detail/CVE-2024-39903)
+     [391e212](https://github.com/widgetti/solara/commit/391e2124a502622fe7a04321a540af6f252d8d4b). A follow up fix was need for this in 1.35.1, we recommend upgrading to that version.
+   * Bug Fix: Allow the FileBrowser to navigate to the root on Windows [707](https://github.com/widgetti/solara/pull/707) - Contributed by Jochem Smit.
+
 ## Version 1.34.1
 
    * Bug Fix: Using `SOLARA_ASSETS_PROXY=False` (default on [py.cafe](https://py.cafe)) would break grid layout. [#705](https://github.com/widgetti/solara/pull/705)
