@@ -52,5 +52,18 @@ class Assets(BaseSettings):
         env_file = ".env"
 
 
+class MainSettings(BaseSettings):
+    check_hooks: str = "warn"
+
+    class Config:
+        env_prefix = "solara_"
+        case_sensitive = False
+        env_file = ".env"
+
+
 assets: Assets = Assets()
 cache: Cache = Cache()
+main = MainSettings()
+
+if main.check_hooks not in ["off", "warn", "error"]:
+    raise ValueError(f"Invalid value for check_hooks: {main.check_hooks}, expected one of ['off', 'warn', 'error']")

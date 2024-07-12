@@ -4,6 +4,7 @@ import re
 import typing as t
 from enum import Enum
 import sys
+import warnings
 
 DEFAULT_USE_FUNCTIONS = ("^use_.*$",)
 
@@ -43,18 +44,35 @@ class HookValidator(ast.NodeVisitor):
         self.line_offset = component.__code__.co_firstlineno - 1
         self.component = component
 
-        source = inspect.getsource(self.component)
+        self.source = inspect.getsource(self.component)
+        # lines before we dedent
+        self.lines = self.source.split("\n")
         # dedent the source code to avoid indentation errors
-        source = inspect.cleandoc(source)
-        parsed = ast.parse(source)
+        parsed_source = inspect.cleandoc(self.source)
+        parsed = ast.parse(parsed_source)
         # Get nodes from inside the function body
         func_definition = t.cast(ast.FunctionDef, parsed.body[0])
         self.function_scope: ast.FunctionDef = func_definition
         self._root_function_scope = self.function_scope
 
     def run(self):
-        for node in self._root_function_scope.body:
-            self.visit(node)
+        import solara.settings
+
+        if solara.settings.main.check_hooks == "off":
+            return
+        func_def_line = self.lines[self._root_function_scope.lineno - 1]
+        if "#" in func_def_line:
+            comment = func_def_line[func_def_line.index("#") + 1 :]
+            if "noqa" in comment:
+                return
+        try:
+            for node in self._root_function_scope.body:
+                self.visit(node)
+        except HookValidationError as e:
+            if solara.settings.main.check_hooks == "error":
+                raise e
+            elif solara.settings.main.check_hooks == "warn":
+                warnings.warn(str(e))
 
     def matches_use_function(self, name: str) -> bool:
         return any(use_func.match(name) for use_func in self.use_functions)
@@ -164,6 +182,12 @@ class HookValidator(ast.NodeVisitor):
         cause = self.node_to_scope_cause(self.outer_scope)
 
         scope_line = self.outer_scope.lineno + self.line_offset
+        line = self.lines[use_node.lineno - 1]
+        # check if we have a # noqa comment
+        if "#" in line:
+            comment = line[line.index("#") + 1 :]
+            if "noqa" in comment:
+                return
         raise HookValidationError(
             cause,
             f"{self.get_source_context(offset_use)}: `{use_node_id}` found on line within a {cause.value} created on line {scope_line}",
