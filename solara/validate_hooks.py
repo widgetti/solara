@@ -10,7 +10,7 @@ import sys
 DEFAULT_USE_FUNCTIONS = ("^use_.*$",)
 
 
-class InvalidReactivityCauses(Enum):
+class InvalidReactivityCause(Enum):
     USE_AFTER_RETURN = "early return"
     CONDITIONAL_USE = "conditional"
     LOOP_USE = "loop"
@@ -24,14 +24,12 @@ if sys.version_info < (3, 11):
     TryNodes = (ast.Try,)
 else:
     # except* nodes are only standardized in 3.11+
-    ScopeNodeType = t.Union[
-        ast.For, ast.While, ast.If, ast.Try, ast.TryStar, ast.FunctionDef
-    ]
+    ScopeNodeType = t.Union[ast.For, ast.While, ast.If, ast.Try, ast.TryStar, ast.FunctionDef]
     TryNodes = (ast.Try, ast.TryStar)
 
 
 class HookValidationError(Exception):
-    def __init__(self, cause: InvalidReactivityCauses, message: str):
+    def __init__(self, cause: InvalidReactivityCause, message: str):
         self.cause = cause
         super().__init__(message)
 
@@ -63,15 +61,15 @@ class HookValidator(ast.NodeVisitor):
     def matches_use_function(self, name: str) -> bool:
         return any(use_func.match(name) for use_func in self.use_functions)
 
-    def node_to_scope_cause(self, node: ScopeNodeType) -> InvalidReactivityCauses:
+    def node_to_scope_cause(self, node: ScopeNodeType) -> InvalidReactivityCause:
         if isinstance(node, ast.If):
-            return InvalidReactivityCauses.CONDITIONAL_USE
+            return InvalidReactivityCause.CONDITIONAL_USE
         elif isinstance(node, (ast.For, ast.While)):
-            return InvalidReactivityCauses.LOOP_USE
+            return InvalidReactivityCause.LOOP_USE
         elif isinstance(node, ast.FunctionDef):
-            return InvalidReactivityCauses.NESTED_FUNCTION_USE
+            return InvalidReactivityCause.NESTED_FUNCTION_USE
         elif isinstance(node, TryNodes):
-            return InvalidReactivityCauses.EXCEPTION_USE
+            return InvalidReactivityCause.EXCEPTION_USE
         else:
             raise ValueError(f"Unexpected scope node type: {node}, {node.lineno=}")
 
@@ -135,15 +133,12 @@ class HookValidator(ast.NodeVisitor):
         self.generic_visit(node)
 
     def error_on_invalid_assign(self, node: ast.Assign):
-        if (
-            isinstance(node.value, ast.Attribute)
-            and node.value.attr in self.use_functions
-        ):
+        if isinstance(node.value, ast.Attribute) and node.value.attr in self.use_functions:
             line = node.lineno + self.line_offset
             message = f"Assigning a variable to a reactive function on line {line} is not allowed since it complicates the tracking of valid hook use."
 
             raise HookValidationError(
-                InvalidReactivityCauses.VARIABLE_ASSIGNMENT,
+                InvalidReactivityCause.VARIABLE_ASSIGNMENT,
                 f"{self.get_function_name()}: {message}",
             )
 
@@ -151,16 +146,12 @@ class HookValidator(ast.NodeVisitor):
         """
         Checks if the latest use of a reactive function occurs after the earliest return
         """
-        if (
-            self.root_function_return
-            and self.root_function_return.lineno <= use_node.lineno
-        ):
+        if self.root_function_return and self.root_function_return.lineno <= use_node.lineno:
             offset_return = self.root_function_return.lineno + self.line_offset
             offset_use = use_node.lineno + self.line_offset
             raise HookValidationError(
-                InvalidReactivityCauses.USE_AFTER_RETURN,
-                f"{self.get_function_name()}: `{use_node_id}` found on line"
-                f" {offset_use} despite early return on line {offset_return}",
+                InvalidReactivityCause.USE_AFTER_RETURN,
+                f"{self.get_function_name()}: `{use_node_id}` found on line" f" {offset_use} despite early return on line {offset_return}",
             )
 
     def error_on_invalid_scope(self, use_node: ast.Call, use_node_id: str):
@@ -175,8 +166,7 @@ class HookValidator(ast.NodeVisitor):
         scope_line = self.outer_scope.lineno + self.line_offset
         raise HookValidationError(
             cause,
-            f"{self.get_function_name()}: `{use_node_id}` found on line"
-            f" {offset_use} within a {cause.value} created on line {scope_line}",
+            f"{self.get_function_name()}: `{use_node_id}` found on line" f" {offset_use} within a {cause.value} created on line {scope_line}",
         )
 
     def get_function_name(self):
