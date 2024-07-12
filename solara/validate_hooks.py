@@ -102,8 +102,10 @@ class HookValidator(ast.NodeVisitor):
     def visit_Try(self, node: ast.Try) -> t.Any:
         self._visit_children_using_scope(node)
 
-    def visit_TryStar(self, node: ast.TryStar) -> t.Any:
-        self._visit_children_using_scope(node)
+    if sys.version_info >= (3, 11):
+
+        def visit_TryStar(self, node: ast.TryStar) -> t.Any:
+            self._visit_children_using_scope(node)
 
     def visit_FunctionDef(self, node: ast.FunctionDef):
         old_function_scope = self.function_scope
