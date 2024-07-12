@@ -86,6 +86,9 @@ fix = false
 line-length = 160
 lint.ignore = ["E402"]
 
+[tool.black]
+line-length = 160
+
 [tool.pytest.ini_options]
 addopts = "--ignore=tests/integration/app_widget.py  --ignore=tests/unit/solara_test_apps"
 timeout = 180
