@@ -1,3 +1,4 @@
+import warnings
 from typing import Any, Callable, Dict, Union, overload, TypeVar
 import typing_extensions
 import reacton
@@ -24,7 +25,13 @@ def component(
     obj: Union[Callable[P, None], FuncT, None] = None, mime_bundle: Dict[str, Any] = reacton.core.mime_bundle_default
 ) -> Union[Callable[[FuncT], FuncT], FuncT, Callable[P, reacton.core.Element]]:
     def wrapper(obj: Union[Callable[P, None], FuncT]) -> FuncT:
-        validate_hooks.HookValidator(obj).run()
+        try:
+            validate_hooks.HookValidator(obj).run()
+        except Exception as e:
+            if not isinstance(e, validate_hooks.HookValidationError):
+                # we probably failed because of a unknown reason, but we do not want to break the user's code
+                warnings.warn(f"Failed to validate hooks for component {obj.__qualname__}: {e}")
+
         return reacton.component(obj, mime_bundle)  # type: ignore
 
     if obj is not None:
