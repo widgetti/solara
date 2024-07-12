@@ -740,7 +740,7 @@ def use_task(
 
     Unlike with the [`@task`](/api/task) decorator, the result is not globally shared, but only available to the component that called `use_task`.
 
-    Note that unlike the [`@task`](/api/task) decorator, the task is invoked immediately when dependencies are passed.
+    Note that unlike the [`@task`](/api/task) decorator, the task is invoked immediately when dependencies are passed. To prevent this, pass `dependencies=None`.
 
 
     ## Example
@@ -799,7 +799,7 @@ def use_task(
     ## Arguments
 
     - `f`: The function or coroutine to run as a task.
-    - `dependencies`: A list of dependencies that will trigger a rerun of the task when changed.
+    - `dependencies`: A list of dependencies that will trigger a rerun of the task when changed, the task will run automatically execute when the `dependencies=None`
     - `raise_error`: If true, an error in the task will be raised. If false, the error should be handled by the
         user and is available in the `.exception` attribute of the task result object.
     - `prefer_threaded` - bool: Will run coroutine functions as a task in a thread when threads are available.
