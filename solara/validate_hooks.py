@@ -190,7 +190,7 @@ class HookValidator(ast.NodeVisitor):
                 return
         raise HookValidationError(
             cause,
-            f"{self.get_source_context(offset_use)}: `{use_node_id}` found on line within a {cause.value} created on line {scope_line}",
+            f"{self.get_source_context(offset_use)}: `{use_node_id}` found within a {cause.value} created on line {scope_line}",
         )
 
     def get_source_context(self, lineno):
