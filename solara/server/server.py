@@ -452,8 +452,9 @@ def get_nbextensions() -> Tuple[List[str], Dict[str, Optional[str]]]:
                 file_path = directory / (name + ".js")
                 if file_path.exists():
                     for file in directory.glob("**/*.*"):
-                        data = file.read_bytes()
-                        h.update(data)
+                        if file.is_file():  # Skip directories
+                            data = file.read_bytes()
+                            h.update(data)
             except PermissionError:
                 logger.warning(f"Caught PermissionError while checking for existence of nbextension {name!r} at path: {file_path}. This path will be ignored.")
 
