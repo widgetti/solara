@@ -228,6 +228,107 @@ jobs:
         run:
           pip install packages/solara-meta/dist/*.whl
 
+  pyinstaller-test:
+    needs: [build]
+    timeout-minutes: 15
+    runs-on: ${{ matrix.os }}-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu, macos, windows]
+        # just 1 version, it's heavy
+        python-version: ["3.10"]
+    env:
+      LOCK_FILE_LOCATION: .ci-package-locks/pyinstaller/os${{ matrix.os }}-python${{ matrix.python-version }}.txt
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: solara-builds-${{ github.run_number }}
+
+      - name: Link solara app package
+        if: matrix.os != 'windows'
+        run: |
+          cd packages/solara-vuetify-app
+          npm run devlink
+
+      - name: Copy solara app package
+        if: matrix.os == 'windows'
+        run: |
+          cd packages/solara-vuetify-app
+          npm run wincopy
+
+      - name: Prepare
+        id: prepare
+        run: |
+          mkdir test-results
+          if [ -f ${{ env.LOCK_FILE_LOCATION }} ]; then
+            echo "LOCKS_EXIST=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "LOCKS_EXIST=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install without locking versions
+        if: github.event_name == 'schedule' || steps.prepare.outputs.LOCKS_EXIST == 'false'
+        id: install_no_lock
+        run: |
+          mkdir -p .ci-package-locks/pyinstaller
+          pip install `echo dist/*.whl`[all]
+          pip install `echo packages/solara-server/dist/*.whl`[all]
+          pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
+          # pefile >= 2023.2.7 make pyinstaller incredibly slow https://github.com/erocarrera/pefile/issues/420
+          pip install "jupyterlab<4"  "pydantic<2" "playwright==1.41.2" pyinstaller pefile==2023.2.7
+          pip freeze --exclude solara --exclude solara-ui --exclude solara-server > ${{ env.LOCK_FILE_LOCATION }}
+          git diff --quiet || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
+          git diff --exit-code | tee ${{ env.DIFF_FILE_LOCATION }}
+          [ -s ${{ env.DIFF_FILE_LOCATION }} ] || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
+
+      - name: Install
+        if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
+        run: |
+          pip install -r ${{ env.LOCK_FILE_LOCATION }}
+          pip install `echo dist/*.whl`[all]
+          pip install `echo packages/solara-server/dist/*.whl`[all]
+          pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
+
+      - name: Build standalone executable
+        run: (cd pyinstaller/minimal; pyinstaller ./solara.spec --log-level DEBUG)
+
+      - name: Install playwright
+        run: playwright install
+
+      - name: Run solara server (pyinstaller)
+        run: pyinstaller/minimal/dist/solara/solara --port 18765 &
+
+      - name: Wait for Solara server to get online
+        run: |
+          curl --head --retry 35 --retry-connrefused --retry-delay 5 http://localhost:18765
+
+      - name: Test
+        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true'
+        run: pytest tests/pyinstaller --timeout=360 --video=retain-on-failure --output=test-results -vv -s --log-cli-level=warning
+
+      - name: Upload Test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-pyinstaller-os${{ matrix.os }}-python${{ matrix.python-version }}
+          path: test-results
+
+      - name: Upload CI package locks
+        if: steps.install_no_lock.outputs.HAS_DIFF == 'true' || steps.prepare.outputs.LOCKS_EXIST == 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-package-locks-pyinstaller-os${{ matrix.os }}-python${{ matrix.python-version }}
+          path: ./**/${{ env.LOCK_FILE_LOCATION }}
 
   integration-test:
     needs: [build]

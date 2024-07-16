@@ -77,7 +77,7 @@ See this snippet run live at https://solara.dev/documentation/getting_started
 
 ## Demo
 
-The following demo app can be used to explore a dataset (buildin or upload yourself) using
+The following demo app can be used to explore a dataset (build in or upload yourself) using
 a scatter plot. The plot can be interacted with to filter the dataset, and the filtered dataset can
 be downloaded.
 

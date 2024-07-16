@@ -54,3 +54,6 @@ include = ["LICENSE"]
 
 [tool.hatch.build.targets.sdist]
 include = ["LICENSE"]
+
+[project.entry-points."pyinstaller40"]
+hook-dirs = "solara.server.pyinstaller:get_hook_dirs"
