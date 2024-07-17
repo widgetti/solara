@@ -495,7 +495,10 @@ jobs:
 
       - name: test
         if: github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true'
-        run: pytest tests/unit --doctest-modules --timeout=60
+        run: |
+          # otherwise Python's inspect cannot find the source code
+          mv solara _solara
+          pytest tests/unit --doctest-modules --timeout=60
 
       - name: Upload CI package locks
         if: steps.install_no_lock.outputs.HAS_DIFF == 'true' || steps.prepare.outputs.LOCKS_EXIST == 'false'
