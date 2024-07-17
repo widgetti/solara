@@ -65,7 +65,6 @@ def line_to_noqa(line: str) -> t.Optional[t.Set[InvalidReactivityCause]]:
 
 def should_skip_qa(global_no_qa: t.Optional[t.Set[InvalidReactivityCause]], cause: InvalidReactivityCause, line: str) -> bool:
     line_qa = line_to_noqa(line)
-    print("should_skip_qa", global_no_qa, line_qa, cause, line)
     if global_no_qa is None and line_qa is None:
         # there is not a noqa on the function or line
         return False
