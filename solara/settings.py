@@ -65,5 +65,5 @@ assets: Assets = Assets()
 cache: Cache = Cache()
 main = MainSettings()
 
-if main.check_hooks not in ["off", "warn", "error"]:
-    raise ValueError(f"Invalid value for check_hooks: {main.check_hooks}, expected one of ['off', 'warn', 'error']")
+if main.check_hooks not in ["off", "warn", "raise"]:
+    raise ValueError(f"Invalid value for check_hooks: {main.check_hooks}, expected one of ['off', 'warn', 'raise']")
