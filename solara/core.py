@@ -31,6 +31,8 @@ def component(
             if not isinstance(e, validate_hooks.HookValidationError):
                 # we probably failed because of a unknown reason, but we do not want to break the user's code
                 warnings.warn(f"Failed to validate hooks for component {obj.__qualname__}: {e}")
+            else:
+                raise
 
         return reacton.component(obj, mime_bundle)  # type: ignore
 
