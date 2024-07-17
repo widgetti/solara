@@ -18,6 +18,18 @@ class InvalidReactivityCause(Enum):
     EXCEPTION_USE = "exception"
 
 
+noqa_code_to_cause = {
+    "SH101": InvalidReactivityCause.USE_AFTER_RETURN,
+    "SH102": InvalidReactivityCause.CONDITIONAL_USE,
+    "SH103": InvalidReactivityCause.LOOP_USE,
+    "SH104": InvalidReactivityCause.NESTED_FUNCTION_USE,
+    "SH105": InvalidReactivityCause.VARIABLE_ASSIGNMENT,
+    "SH106": InvalidReactivityCause.EXCEPTION_USE,
+}
+cause_to_noqa_code = {v: k for k, v in noqa_code_to_cause.items()}
+noqa_pattern = re.compile(r".*# noqa(?::\s*([A-Z]{2,3}\d{2,3})(?:,\s*([A-Z]{2,3}\d{2,3}))*)?")
+
+
 if sys.version_info < (3, 11):
     ScopeNodeType = t.Union[ast.For, ast.While, ast.If, ast.Try, ast.FunctionDef]
     TryNodes = (ast.Try,)
@@ -25,6 +37,43 @@ else:
     # except* nodes are only standardized in 3.11+
     ScopeNodeType = t.Union[ast.For, ast.While, ast.If, ast.Try, ast.TryStar, ast.FunctionDef]
     TryNodes = (ast.Try, ast.TryStar)
+
+
+def line_to_noqa(line: str) -> t.Optional[t.Set[InvalidReactivityCause]]:
+    """Return set of noqa code for which to not do quality assurance checks, or None when to do all qa."""
+    if "#" in line:
+        no_qa = set()
+        match = noqa_pattern.match(line)
+        if match is not None:
+            # not sure why we get some None values
+            groups = [k for k in match.groups() if k is not None]
+            if groups:  # `noqa: SHXXX`` found
+                for group in groups:
+                    if group not in noqa_code_to_cause:
+                        if group.startswith("SH"):
+                            raise ValueError(f"Unknown noqa code {group}")
+                    else:
+                        no_qa.add(noqa_code_to_cause[group])
+            else:  # we found `noqa`
+                # skip all qa
+                no_qa = set(noqa_code_to_cause.values())
+            return no_qa
+        else:
+            return None  # no noqa found
+    return None  # fast path, no comment found
+
+
+def should_skip_qa(global_no_qa: t.Optional[t.Set[InvalidReactivityCause]], cause: InvalidReactivityCause, line: str) -> bool:
+    line_qa = line_to_noqa(line)
+    print("should_skip_qa", global_no_qa, line_qa, cause, line)
+    if global_no_qa is None and line_qa is None:
+        # there is not a noqa on the function or line
+        return False
+    else:
+        noqa = global_no_qa or set()
+        if line_qa is not None:
+            noqa |= line_qa
+        return cause in noqa
 
 
 class HookValidationError(Exception):
@@ -54,6 +103,8 @@ class HookValidator(ast.NodeVisitor):
         func_definition = t.cast(ast.FunctionDef, parsed.body[0])
         self.function_scope: ast.FunctionDef = func_definition
         self._root_function_scope = self.function_scope
+        # None means, *DO* qa
+        self.no_qa: t.Optional[t.Set[InvalidReactivityCause]] = None
 
     def run(self):
         import solara.settings
@@ -61,10 +112,7 @@ class HookValidator(ast.NodeVisitor):
         if solara.settings.main.check_hooks == "off":
             return
         func_def_line = self.lines[self._root_function_scope.lineno - 1]
-        if "#" in func_def_line:
-            comment = func_def_line[func_def_line.index("#") + 1 :]
-            if "noqa" in comment:
-                return
+        self.no_qa = line_to_noqa(func_def_line)
         try:
             for node in self._root_function_scope.body:
                 self.visit(node)
@@ -167,14 +215,21 @@ class HookValidator(ast.NodeVisitor):
         if self.root_function_return and self.root_function_return.lineno <= use_node.lineno:
             offset_return = self.root_function_return.lineno + self.line_offset
             offset_use = use_node.lineno + self.line_offset
+            cause = InvalidReactivityCause.USE_AFTER_RETURN
+            line = self.lines[use_node.lineno - 1]
+            if should_skip_qa(self.no_qa, cause, line):
+                return
+
             raise HookValidationError(
-                InvalidReactivityCause.USE_AFTER_RETURN,
-                f"{self.get_source_context(offset_use)}: `{use_node_id}` found despite early return on line {offset_return}",
+                cause,
+                f"""{self.get_source_context(offset_use)}: `{use_node_id}` found despite early return on line {offset_return}
+{_hint_supress(line, cause)}""",
             )
 
     def error_on_invalid_scope(self, use_node: ast.Call, use_node_id: str):
         """
-        Checks if the latest use of a reactive function occurs after the earliest return
+        Checks if the latest use of a reactive function occurs after the earliest return or in an invalid scope
+        such as try-except blocks.
         """
         if self.outer_scope is None:
             return
@@ -183,15 +238,22 @@ class HookValidator(ast.NodeVisitor):
 
         scope_line = self.outer_scope.lineno + self.line_offset
         line = self.lines[use_node.lineno - 1]
-        # check if we have a # noqa comment
-        if "#" in line:
-            comment = line[line.index("#") + 1 :]
-            if "noqa" in comment:
-                return
+        if should_skip_qa(self.no_qa, cause, line):
+            return
         raise HookValidationError(
             cause,
-            f"{self.get_source_context(offset_use)}: `{use_node_id}` found within a {cause.value} created on line {scope_line}",
+            f"""{self.get_source_context(offset_use)}: `{use_node_id}` found within a {cause.value} created on line {scope_line}
+{_hint_supress(line, cause)}""",
         )
 
     def get_source_context(self, lineno):
         return f"{self.filename}:{lineno}: {self.component.__qualname__}"
+
+
+def _hint_supress(line, cause):
+    return f"""To suppress this check, replace the line with:
+{line}  # noqa: {cause_to_noqa_code[cause]}
+
+Make sure you understand the consequences of this, by reading about the rules of hooks at:
+    https://solara.dev/documentation/advanced/understanding/rules-of-hooks
+"""
