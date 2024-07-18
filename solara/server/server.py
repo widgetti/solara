@@ -452,7 +452,7 @@ def get_nbextensions() -> Tuple[List[str], Dict[str, Optional[str]]]:
                 file_path = directory / (name + ".js")
                 if file_path.exists():
                     for file in directory.glob("**/*.*"):
-                        if file.is_file():  # Skip directories
+                        if file.is_file():  # Otherwise directories with a dot in the name are included
                             data = file.read_bytes()
                             h.update(data)
             except PermissionError:
