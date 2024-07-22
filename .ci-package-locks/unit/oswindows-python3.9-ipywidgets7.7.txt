@@ -138,7 +138,7 @@ prometheus_client==0.20.0
 prompt_toolkit==3.0.47
 psutil==6.0.0
 psygnal==0.11.1
-pure-eval==0.2.2
+pure_eval==0.2.3
 pyarrow==17.0.0
 pycparser==2.22
 pydantic==2.8.2
