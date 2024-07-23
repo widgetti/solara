@@ -10,10 +10,10 @@ authors = [{name = "Maarten A. Breddels", email = "maartenbreddels@gmail.com"}]
 license = {file = "LICENSE"}
 classifiers = ["License :: OSI Approved :: MIT License"]
 dynamic = ["description"]
-version = "1.35.1"
+version = "1.36.0"
 dependencies = [
-    "solara-ui==1.35.1",
-    "solara-server[starlette]==1.35.1",
+    "solara-ui==1.36.0",
+    "solara-server[starlette]==1.36.0",
     "pytest",
     "playwright; python_version > '3.6'",
     "pytest-playwright; python_version > '3.6'",

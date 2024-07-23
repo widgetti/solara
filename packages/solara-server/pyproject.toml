@@ -9,7 +9,7 @@ readme = "README.md"
 authors = [{name = "Maarten A. Breddels", email = "maartenbreddels@gmail.com"}]
 license = {file = "LICENSE"}
 classifiers = ["License :: OSI Approved :: MIT License"]
-version = "1.35.1"
+version = "1.36.0"
 dynamic = ["description"]
 dependencies = [
     "solara-ui",
