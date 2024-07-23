@@ -211,6 +211,12 @@
         }
         // Init theme
         let appContainer = document.getElementById('app');
+        const searchParams = new URLSearchParams(window.location.search);
+        if(searchParams.has('modelid')) {
+            // indicates that we are not mounting the application, but a specific
+            // widget (for instance using ipypopout)
+            document.body.classList.add('jupyter-widgets-popout-container');
+        }
         if (inDarkMode()) {
             appContainer.classList.remove('theme--light');
             appContainer.classList.add('theme--dark');
