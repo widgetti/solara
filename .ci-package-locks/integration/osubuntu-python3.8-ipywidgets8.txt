@@ -67,7 +67,7 @@ iniconfig==2.0.0
 ipycanvas==0.13.2
 ipydatawidgets==4.3.5
 ipykernel==6.29.5
-ipyleaflet==0.19.1
+ipyleaflet==0.19.2
 ipympl==0.9.3
 ipyreact==0.4.1
 ipython==8.12.3
@@ -86,7 +86,7 @@ jsonpointer==3.0.0
 jsonschema==4.23.0
 jsonschema-specifications==2023.12.1
 jupyter-events==0.10.0
-jupyter-leaflet==0.19.1
+jupyter-leaflet==0.19.2
 jupyter-ydoc==0.2.5
 jupyter_client==7.4.9
 jupyter_core==5.7.2
@@ -119,7 +119,7 @@ nodeenv==1.9.1
 notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.24.4
-openai==1.36.1
+openai==1.37.0
 overrides==7.7.0
 packaging==24.1
 pandas==2.0.3
