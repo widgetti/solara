@@ -1,0 +1,1 @@
+../../tests/qtapp/solara-qt-test.py
