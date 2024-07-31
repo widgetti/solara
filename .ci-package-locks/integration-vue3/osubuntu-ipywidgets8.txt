@@ -110,7 +110,7 @@ matplotlib-inline==0.1.7
 mdit-py-plugins==0.4.1
 mdurl==0.1.2
 mistune==3.0.2
-mypy==1.11.0
+mypy==1.11.1
 mypy-extensions==1.0.0
 nbclassic==1.1.0
 nbclient==0.10.0

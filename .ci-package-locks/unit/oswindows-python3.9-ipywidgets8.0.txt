@@ -107,7 +107,7 @@ matplotlib-inline==0.1.7
 mdit-py-plugins==0.4.1
 mdurl==0.1.2
 mistune==3.0.2
-mypy==1.11.0
+mypy==1.11.1
 mypy-extensions==1.0.0
 nbclassic==1.1.0
 nbclient==0.10.0
@@ -165,7 +165,7 @@ pywinpty==2.0.13
 PyYAML==6.0.1
 pyzmq==26.0.3
 reacton==1.8.3
-redis==5.0.7
+redis==5.0.8
 referencing==0.35.1
 requests==2.32.3
 rfc3339-validator==0.1.4
@@ -217,7 +217,7 @@ websockets==12.0
 Werkzeug==3.0.3
 widgetsnbextension==4.0.11
 wsproto==1.2.0
-xarray==2024.6.0
+xarray==2024.7.0
 xyzservices==2024.6.0
 y-py==0.6.2
 ypy-websocket==0.8.4
