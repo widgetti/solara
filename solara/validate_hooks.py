@@ -134,7 +134,7 @@ class HookValidator(ast.NodeVisitor):
         elif isinstance(node, TryNodes):
             return InvalidReactivityCause.EXCEPTION_USE
         else:
-            raise ValueError(f"Unexpected scope node type: {node}, line={node.lineno}")
+            warnings.warn(f"Unexpected scope node type: {node}, line={node.lineno}")
 
     def visit_Call(self, node: ast.Call):
         """Records calls of use functions, i.e. solara.use_state(...)"""
@@ -147,7 +147,8 @@ class HookValidator(ast.NodeVisitor):
         elif isinstance(func, ast.Attribute):
             id_ = func.attr
         else:
-            raise ValueError(f"Unexpected function node type: {func}, line={node.lineno}")
+            warnings.warn(f"Unexpected function node type: {func}, line={node.lineno}")
+            return
         if self.matches_use_function(id_):
             self.error_on_early_return(node, id_)
             self.error_on_invalid_scope(node, id_)
