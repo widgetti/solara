@@ -21,7 +21,6 @@ def _using_solara_server():
 # isort: skip_file
 # ruff: noqa: F401 F403
 from reacton import (
-    component,
     component_interactive,
     value_component,
     create_context,
@@ -42,6 +41,7 @@ from reacton import (
     use_state_widget,
 )
 from reacton.core import Element
+from .core import component
 
 try:
     import ipyvuetify.components as v  # type: ignore

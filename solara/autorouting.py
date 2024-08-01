@@ -4,6 +4,7 @@ import importlib
 import inspect
 import pkgutil
 import re
+import linecache
 import warnings
 from pathlib import Path
 from types import ModuleType
@@ -46,7 +47,17 @@ def source_to_module(path: Path, initial_namespace={}) -> ModuleType:
                 cell_index += 1  # used 1 based
                 if cell.cell_type == "code":
                     source = cell.source
-                    cell_path = f"{path} input cell {cell_index}"
+                    # similar to ipython/ipython/IPython/core/compilerop.py
+                    # inspect.py:findsource accepts non-filenames with '<' and '>' around it
+                    cell_path = f"<{str(path)} input cell {cell_index}>"
+                    # put an entry in linecache so that we can use inspect.getsource
+                    entry = (
+                        len(source),
+                        None,
+                        [line + "\n" for line in source.splitlines()],
+                        cell_path,
+                    )
+                    linecache.cache[cell_path] = entry
                     ast = compile(source, cell_path, "exec")
                     exec(ast, mod.__dict__)
     else:
