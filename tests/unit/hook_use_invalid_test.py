@@ -140,11 +140,13 @@ def test_hook_use_in_try():
             pass
 
 
-# not sure what we should test here
-# def test_hook_use_invalid_assign():
-#     # sometimes we know that the use of a hook is stable, even when in a loop
+def test_hook_use_invalid_assign():
+    # sometimes we know that the use of a hook is stable, even when in a loop
 
-#     with hook_check_raise(), pytest.raises(HookValidationError):
-#         @solara.component
-#         def Page():
-#             use_lala = 1
+    with hook_check_raise(), pytest.raises(HookValidationError):
+
+        @solara.component
+        def Page():
+            alias = solara.use_state
+            if 1 < 3:
+                alias(1)

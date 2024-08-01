@@ -199,12 +199,13 @@ class HookValidator(ast.NodeVisitor):
         self.generic_visit(node)
 
     def error_on_invalid_assign(self, node: ast.Assign):
-        if isinstance(node.value, ast.Attribute) and node.value.attr in self.use_functions:
+        if isinstance(node.value, ast.Attribute) and self.matches_use_function(node.value.attr):
             line = node.lineno + self.line_offset
-            message = "Assigning a variable to a reactive function is not allowed since it complicates the tracking of valid hook use."
+            cause = InvalidReactivityCause.VARIABLE_ASSIGNMENT
+            message = f"Assigning the hook `{node.value.attr}` to a variable is not allowed since it complicates the tracking of valid hook use {_hint_supress(line, cause)}"
 
             raise HookValidationError(
-                InvalidReactivityCause.VARIABLE_ASSIGNMENT,
+                cause,
                 f"{self.get_source_context(line)}: {message}",
             )
 
