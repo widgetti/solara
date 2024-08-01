@@ -1,5 +1,15 @@
 # Solara Changelog
 
+## Version 1.37.0
+
+   * Feature: We now check if a component follows the rules of hooks https://solara.dev/documentation/advanced/understanding/rules-of-hooks [#706](https://github.com/widgetti/solara/pull/706)
+
+      Use SOLARA_CHECK_HOOKS=off to disable this check in case this gives unexpected issues, [and please open an issue](https://github.com/widgetti/solara/issues/new).
+   * Fix: solara-server skips directories when reading extensions which might cause a startup failure otherwise [#715](https://github.com/widgetti/solara/pull/715)
+
+## Version 1.36.0
+   * Feature: Provide a jupyter-widgets-popout-container css class on body for doing specific styling in combination with ipypoout [85c1899](85c189919a42b2590558d9713fc3a2440f46b7c0)
+
 ## Version 1.35.1
 
    * Bug Fix: Vulnerability which allowed for accessing any file on the system. [CVE-2024-39903](https://nvd.nist.gov/vuln/detail/CVE-2024-39903)
