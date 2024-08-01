@@ -99,6 +99,19 @@ def test_hook_use_early_return():
         return
         solara.use_state(1)
 
+    @solara.component
+    def Page3(  # noqa: SH101
+        mul=1,
+        ti=2,
+        line=3,
+        should="be triggered",
+        by="having many and long",
+        arguments="otherwise",
+        out="linting will correct it",
+    ):
+        return
+        solara.use_state(1)
+
 
 def test_hook_use_nested_function():
     # sometimes we know that the use of a hook is stable, even when in a loop
