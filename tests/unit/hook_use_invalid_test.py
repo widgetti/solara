@@ -70,6 +70,14 @@ def test_hook_use_invalid_loop():
         solara.Text("Done")
 
 
+def test_hook_validate_ast_checks():
+    # a Call on a Subscript failed
+    @solara.component
+    def Page4():
+        funcs = [lambda x: x]
+        funcs[0](1)
+
+
 def test_hook_use_invalid_conditional():
     with hook_check_warn(), pytest.warns(UserWarning):
 

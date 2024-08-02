@@ -142,14 +142,12 @@ class HookValidator(ast.NodeVisitor):
         if isinstance(func, ast.Call):
             # Nested function, it will appear in another node later
             return
+        id_ = None
         if isinstance(func, ast.Name):
             id_ = func.id
         elif isinstance(func, ast.Attribute):
             id_ = func.attr
-        else:
-            warnings.warn(f"Unexpected function node type: {func}, line={node.lineno}")
-            return
-        if self.matches_use_function(id_):
+        if id_ is not None and self.matches_use_function(id_):
             self.error_on_early_return(node, id_)
             self.error_on_invalid_scope(node, id_)
         self.generic_visit(node)
