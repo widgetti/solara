@@ -29,7 +29,7 @@ def component(
             validate_hooks.HookValidator(obj).run()
         except Exception as e:
             if not isinstance(e, validate_hooks.HookValidationError):
-                # we probably failed because of a unknown reason, but we do not want to break the user's code
+                # we probably failed because of an unknown reason, but we do not want to break the user's code
                 warnings.warn(f"Failed to validate hooks for component {obj.__qualname__}: {e}")
             else:
                 raise
