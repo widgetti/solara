@@ -177,6 +177,6 @@ If the redirection back to solara return to the wrong address, it might be due t
 
 Solara needs to give the OAuth providers a redirect URL to get back to your Solara application after navigating to the OAuth provider website. For our documentation server, we ask the OAuth provider to redirect to `https://solara.dev/_solara/auth/authorize`. The protocol part (`https`) and the domain name part (`solara.dev`) or this URL is constructed from the request URL (what the browser sends to the server).
 
-If you are running Aolara behind a reverse proxy server (like nginx), make sure that the `X-Forwarded-Proto` and `Host` headers are forwarded correctly so Solara can construct the correct redirect URL to send to the OAuth provider.
+If you are running Solara behind a reverse proxy server (like nginx), make sure that the `X-Forwarded-Proto` and `Host` headers are forwarded correctly so Solara can construct the correct redirect URL to send to the OAuth provider.
 
 See our [self hosted deployment](https://solara.dev/documentation/getting_started/deploying/self-hosted) for more information on how to configure your reverse proxy server.
