@@ -36,7 +36,7 @@ coverage==7.6.1
 cryptography==43.0.0
 cycler==0.12.1
 dask==2024.7.1
-debugpy==1.8.3
+debugpy==1.8.5
 decorator==5.1.1
 defusedxml==0.7.1
 diskcache==5.6.3
