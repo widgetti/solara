@@ -44,12 +44,12 @@ from solara_enterprise import auth
 @solara.component
 def Page():
     if not auth.user.value:
-        solara.Button("Login", icon_name="mdi-login", href=auth.get_login_url())
+        solara.Button("Login", icon_name="mdi-login", href=auth.get_login_url("documentation/advanced/enterprise/oauth"))
     else:
         userinfo = auth.user.value['userinfo']
         if 'name' in userinfo:
             solara.Markdown(f"### Welcome {userinfo['name']}")
-        solara.Button("Logout", icon_name="mdi-logout", href=auth.get_logout_url())
+        solara.Button("Logout", icon_name="mdi-logout", href=auth.get_logout_url("documentation/advanced/enterprise/oauth"))
 ```
 ## How to configure OAuth
 
