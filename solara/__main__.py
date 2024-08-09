@@ -367,7 +367,10 @@ def run(
 
     if log_level is not None:
         LOGGING_CONFIG["loggers"]["solara"]["level"] = log_level.upper()
+        settings.main.log_level = log_level.upper()
         # LOGGING_CONFIG["loggers"]["reacton"]["level"] = log_level.upper()
+    else:
+        settings.main.log_level = "ERROR"
 
     log_level = log_level_uvicorn
     del log_level_uvicorn
