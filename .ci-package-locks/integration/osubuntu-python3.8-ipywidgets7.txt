@@ -120,7 +120,7 @@ nodeenv==1.9.1
 notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.24.4
-openai==1.40.2
+openai==1.40.3
 packaging==24.1
 pandas==2.0.3
 pandocfilters==1.5.1
@@ -215,7 +215,7 @@ voila==0.3.8
 watchdog==4.0.1
 watchfiles==0.23.0
 wcwidth==0.2.13
-webcolors==24.6.0
+webcolors==24.8.0
 webencodings==0.5.1
 websocket-client==1.8.0
 websockets==12.0

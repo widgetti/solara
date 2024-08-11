@@ -207,7 +207,7 @@ voila==0.5.7
 watchdog==4.0.1
 watchfiles==0.23.0
 wcwidth==0.2.13
-webcolors==24.6.0
+webcolors==24.8.0
 webencodings==0.5.1
 websocket-client==1.8.0
 websockets==12.0
