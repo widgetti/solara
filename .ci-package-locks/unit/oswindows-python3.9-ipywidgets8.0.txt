@@ -207,7 +207,7 @@ vaex-jupyter==0.8.2
 vaex-viz==0.5.4
 virtualenv==20.26.3
 voila==0.5.7
-watchdog==4.0.1
+watchdog==4.0.2
 watchfiles==0.23.0
 wcwidth==0.2.13
 webcolors==24.8.0
@@ -221,4 +221,4 @@ xarray==2024.7.0
 xyzservices==2024.6.0
 y-py==0.6.2
 ypy-websocket==0.8.4
-zipp==3.19.2
+zipp==3.20.0
