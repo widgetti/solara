@@ -62,7 +62,7 @@ humanize==4.10.0
 identify==2.6.0
 idna==3.7
 importlib_metadata==8.2.0
-importlib_resources==6.4.0
+importlib_resources==6.4.2
 iniconfig==2.0.0
 ipydatawidgets==4.3.5
 ipykernel==6.29.5
@@ -131,7 +131,7 @@ platformdirs==4.2.2
 playwright==1.46.0
 plotly==5.23.0
 pluggy==1.5.0
-polars==1.4.1
+polars==1.5.0
 pre-commit==3.8.0
 progressbar2==4.4.2
 prometheus_client==0.20.0
