@@ -62,7 +62,7 @@ humanize==4.10.0
 identify==2.6.0
 idna==3.7
 importlib_metadata==8.2.0
-importlib_resources==6.4.2
+importlib_resources==6.4.3
 iniconfig==2.0.0
 ipycanvas==0.13.2
 ipydatawidgets==4.3.5
