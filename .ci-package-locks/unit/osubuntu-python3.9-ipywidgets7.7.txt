@@ -59,7 +59,7 @@ httpx==0.27.0
 humanize==4.10.0
 identify==2.6.0
 idna==3.7
-importlib_metadata==8.2.0
+importlib_metadata==8.3.0
 importlib_resources==6.4.3
 iniconfig==2.0.0
 ipydatawidgets==4.3.5
@@ -160,7 +160,7 @@ python-utils==3.8.2
 pythreejs==2.4.2
 pytz==2024.1
 PyYAML==6.0.2
-pyzmq==26.1.0
+pyzmq==26.1.1
 reacton==1.8.3
 redis==5.0.8
 referencing==0.35.1
