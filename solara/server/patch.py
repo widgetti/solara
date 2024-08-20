@@ -466,6 +466,12 @@ def patch():
             os.environ["MPLBACKEND"] = "module://ipykernel.pylab.backend_inline"
         else:
             os.environ["MPLBACKEND"] = "module://matplotlib_inline.backend_inline"
+        # if matplotlib is already imported, we need to set the backend
+        # similar to how matplotlib does it in it's __init__.py
+        if "matplotlib" in sys.modules:
+            import matplotlib
+
+            matplotlib.rcParams["backend"] = os.environ.get("MPLBACKEND")
 
     # the ipyvue.Template module cannot be accessed like ipyvue.Template
     # because the import in ipvue overrides it
