@@ -199,7 +199,7 @@ def nbext(dir, filename):
     for directory in server.nbextensions_directories:
         file = directory / dir / filename
         if file.exists():
-            return send_from_directory(directory, dir + os.path.sep + filename)
+            return send_from_directory(directory, dir + "/" + filename)
     return flask.Response("not found", status=404)
 
 
