@@ -14,7 +14,7 @@ def _get_type(annotation):
         if annotation == Optional[check_type]:
             return check_type
     if hasattr(annotation, "__origin__"):
-        if annotation.__origin__ == dict:
+        if annotation.__origin__ is dict:
             return dict
     return annotation
 
@@ -72,13 +72,13 @@ def convert(annotation, value: str) -> Any:
             annotation = sub_type
             values = value.split(",")
             return [convert(sub_type, k) for k in values]
-    if annotation == str:
+    if annotation is str:
         return value
-    elif annotation == int:
+    elif annotation is int:
         return int(value)
-    elif annotation == float:
+    elif annotation is float:
         return float(value)
-    elif annotation == bool:
+    elif annotation is bool:
         if value in ("True", "true", "1"):
             return True
         elif value in ("False", "false", "0"):

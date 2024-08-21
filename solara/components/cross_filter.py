@@ -275,14 +275,14 @@ def CrossFilterSlider(
         with solara.HBox(align_items="center"):
             label = f"Select {column} {mode} " if not invert else f"Drop {column} {mode} "
 
-            if py_types[column] == int:
+            if py_types[column] is int:
                 if isinstance(filter_value, int):
                     solara.SliderInt(label=label, value=filter_value, min=vmin, max=vmax, on_value=set_filter_value, disabled=not enable, thumb_label=False)
                 else:
                     solara.Error(f"Filter value is not an integer type, but {type(filter_value)} (value = {filter_value})")
                 if filter_value is not None:
                     solara.Text(f"{filter_value:,}")
-            elif py_types[column] == float:
+            elif py_types[column] is float:
                 if isinstance(filter_value, float):
                     solara.SliderFloat(label=label, value=filter_value, min=vmin, max=vmax, on_value=set_filter_value, disabled=not enable, thumb_label=False)
                 else:
