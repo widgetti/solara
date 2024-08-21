@@ -144,7 +144,6 @@ class ValueBase(Generic[T]):
         for listener2, scope in self.listeners2[scope_id].copy():
             if scope is not None:
                 scopes.add(scope)
-        stack = contextlib.ExitStack()
         with contextlib.ExitStack() as stack:
             for scope in scopes:
                 stack.enter_context(scope)
