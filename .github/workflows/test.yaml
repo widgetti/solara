@@ -112,7 +112,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.8, "3.9"]
+        python-version: ["3.9", "3.12"]  # 3.9 is the lowest version pre-commit supports
     env:
       LOCK_FILE_LOCATION: .ci-package-locks/code-quality/python${{ matrix.python-version }}.txt
 
