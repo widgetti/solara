@@ -19,8 +19,8 @@ repos:
         args: ["--skip=**/solara_portal/**"]
         additional_dependencies:
           - tomli
-  - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: "v0.3.4"
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.1
     hooks:
       - id: ruff
         stages: [commit]
