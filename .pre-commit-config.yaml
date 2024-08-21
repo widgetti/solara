@@ -33,4 +33,4 @@ repos:
         pass_filenames: false
         args: [--explicit-package-bases, .]
         additional_dependencies: [types-requests, types-markdown, types-PyYAML, types-filelock, types-cachetools, types-redis, types-python-dateutil, types-pycurl, reacton, types-six, types-decorator, ipython, ipykernel]
-        exclude: tests/unit/solara_test_apps/multipage/04-a_directory/*|nogit
+        exclude: tests/unit/solara_test_apps/multipage/04-a_directory/.*|nogit
