@@ -3,6 +3,7 @@ import logging
 import os
 from pathlib import Path
 import pdb
+import sys
 import traceback
 
 from rich import print
@@ -20,7 +21,13 @@ def start_error(title, msg, exception: Exception = None):
 def path_is_child_of(path: Path, parent: Path) -> bool:
     # We use os.path.normpath() because we do not want to follow symlinks
     # in editable installs, since some packages are symlinked
-    return os.path.normpath(path).startswith(os.path.normpath(parent))
+    path_string = os.path.normpath(path)
+    parent_string = os.path.normpath(parent)
+    if sys.platform == "win32":
+        # on windows, we sometimes get different casing (only seen on CI)
+        path_string = path_string.lower()
+        parent_string = parent_string.lower()
+    return path_string.startswith(parent_string)
 
 
 @contextlib.contextmanager
