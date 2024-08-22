@@ -265,10 +265,13 @@ class ServerVoila(ServerBase):
             raise RuntimeError("Jupyter server already running, use lsof -i :{self.port} to find the process and kill it")
         cmd = (
             "voila --no-browser --VoilaTest.log_level=DEBUG --Voila.port_retries=0 --VoilaExecutor.timeout=240"
-            f" --Voila.port={self.port} --show_tracebacks=True {self.notebook_path} --enable_nbextensions=True"
+            f' --Voila.port={self.port} --show_tracebacks=True "{self.notebook_path}" --enable_nbextensions=True'
         )
         logger.info(f"Starting Voila server at {self.base_url} with command {cmd}")
-        args = shlex.split(cmd)
+        if sys.platform == "win32":
+            args = cmd
+        else:
+            args = shlex.split(cmd)
         self.popen = subprocess.Popen(args, shell=False, stdout=sys.stdout, stderr=sys.stderr, stdin=None)
         self.started.set()
 
@@ -295,9 +298,12 @@ class ServerJupyter(ServerBase):
     def serve(self):
         if self.has_started():
             raise RuntimeError(f"Jupyter server already running, use lsof -i :{self.port} to find the process and kill it")
-        cmd = f'jupyter lab --port={self.port} --no-browser --ServerApp.token="" --port-retries=0 {self.notebook_path}'
+        cmd = f'jupyter lab --port={self.port} --no-browser --ServerApp.token="" --port-retries=0 "{self.notebook_path}"'
         logger.info(f"Starting Jupyter (lab) server at {self.base_url} with command {cmd}")
-        args = shlex.split(cmd)
+        if sys.platform == "win32":
+            args = cmd
+        else:
+            args = shlex.split(cmd)
         self.popen = subprocess.Popen(args, shell=False, stdout=sys.stdout, stderr=sys.stderr, stdin=None)
         self.started.set()
 
