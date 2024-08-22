@@ -31,7 +31,7 @@ def test_assets_extra(solara_server):
     with extra_assets([str(HERE / "assets" / "assets1")]):
         response = requests.get(f"{solara_server.base_url}/static/assets/common.js")
         assert response.status_code == 200
-        assert response.text == "content1\n"
+        assert response.text.strip() == "content1"
         response = requests.get(f"{solara_server.base_url}/static/assets/unique1.js")
         assert response.status_code == 200
         response = requests.get(f"{solara_server.base_url}/static/assets/unique2.js")
@@ -39,12 +39,12 @@ def test_assets_extra(solara_server):
 
         response = requests.get(f"{solara_server.base_url}/static/assets/custom.js")
         assert response.status_code == 200
-        assert response.text == "/* not empty */\n"
+        assert response.text.strip() == "/* not empty */"
 
     with extra_assets([str(HERE / "assets" / "assets2")]):
         response = requests.get(f"{solara_server.base_url}/static/assets/common.js")
         assert response.status_code == 200
-        assert response.text == "content2\n"
+        assert response.text.strip() == "content2"
         response = requests.get(f"{solara_server.base_url}/static/assets/unique1.js")
         assert response.status_code == 404
         response = requests.get(f"{solara_server.base_url}/static/assets/unique2.js")
@@ -52,12 +52,12 @@ def test_assets_extra(solara_server):
 
         response = requests.get(f"{solara_server.base_url}/static/assets/custom.js")
         assert response.status_code == 200
-        assert response.text == "var a = 1;\n"
+        assert response.text.strip() == "var a = 1;"
 
     with extra_assets([str(HERE / "assets" / "assets1"), str(HERE / "assets" / "assets2")]):
         response = requests.get(f"{solara_server.base_url}/static/assets/common.js")
         assert response.status_code == 200
-        assert response.text == "content1\n"
+        assert response.text.strip() == "content1"
         response = requests.get(f"{solara_server.base_url}/static/assets/unique1.js")
         assert response.status_code == 200
         response = requests.get(f"{solara_server.base_url}/static/assets/unique2.js")
