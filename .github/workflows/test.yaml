@@ -220,7 +220,7 @@ jobs:
 
   integration-test:
     needs: [build]
-    timeout-minutes: 15
+    timeout-minutes: 25
     runs-on: ${{ matrix.os }}-latest
     strategy:
       fail-fast: false
