@@ -3,9 +3,15 @@ repos:
     rev: v4.5.0
     hooks:
       - id: check-yaml
+      - id: check-toml
       - id: end-of-file-fixer
       - id: trailing-whitespace
         exclude: .bumpversion.cfg
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.17.0
+    hooks:
+    -   id: pyupgrade
+        args: [--py36-plus]
   - repo: https://github.com/codespell-project/codespell
     rev: v2.2.6
     hooks:
@@ -14,18 +20,18 @@ repos:
         args: ["--skip=**/solara_portal/**"]
         additional_dependencies:
           - tomli
-  - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: "v0.3.4"
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.1
     hooks:
       - id: ruff
         stages: [commit]
       - id: ruff-format
         stages: [commit]
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.9.0" # Use the sha / tag you want to point at
+    rev: v1.9.0
     hooks:
       - id: mypy
         pass_filenames: false
         args: [--explicit-package-bases, .]
         additional_dependencies: [types-requests, types-markdown, types-PyYAML, types-filelock, types-cachetools, types-redis, types-python-dateutil, types-pycurl, reacton, types-six, types-decorator, ipython, ipykernel]
-        exclude: tests/unit/solara_test_apps/multipage/04-a_directory/*|nogit
+        exclude: tests/unit/solara_test_apps/multipage/04-a_directory/.*|nogit
