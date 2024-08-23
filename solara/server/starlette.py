@@ -370,7 +370,7 @@ async def root(request: Request, fullpath: str = ""):
     # however, samesite=none requires Secure https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite
     # when hosted on the localhost domain we can always set the Secure flag
     # to allow samesite https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#restrict_access_to_cookies
-    if request.headers.get("x-forwarded-proto", "http") == "https" or request.base_url.hostname == "localhost":
+    if request.scope["scheme"] == "https" or request.headers.get("x-forwarded-proto", "http") == "https" or request.base_url.hostname == "localhost":
         samesite = "none"
         secure = True
     response.set_cookie(
