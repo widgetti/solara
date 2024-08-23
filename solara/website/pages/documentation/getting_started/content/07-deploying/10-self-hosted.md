@@ -257,11 +257,11 @@ $ SOLARA_APP=sol.py uvicorn --workers 1 --root-path /solara -b 0.0.0.0:8765 sola
 ```
 
 In the case of an [OAuth setup](https://solara.dev/documentation/advanced/enterprise/oauth) it is important to make sure that the `X-Forwarded-Proto` and `Host` headers are forwarded correctly.
-If you are running uvicorn (the default if you use `solara run ...`) you will need to configure uvicorn to accept these headers using e.g.:
+If you are running uvicorn (the default if you use `solara run ...`) you will need to configure uvicorn to trust these headers using e.g.:
 
 ```bash
-export UVICORN_PROXY_HEADERS=1
-export FORWARDED_ALLOW_IPS = "127.0.0.1"  # If your solara-server can *only* be reached by the proxy, you can set it to "*", otherwise put in the IP of the reverse proxy
+export UVICORN_PROXY_HEADERS=1  # only needed for uvicorn < 0.10, since it is the default after 0.10
+export FORWARDED_ALLOW_IPS = "127.0.0.1"  # 127.0.0.1 is the default, replace this by the ip of the proxy server
 ```
 
 Make sure you replace the IP with the correct IP of the reverse proxy server (instead of `127.0.0.1`). If you are sure that only the reverse proxy can reach the solara server, you can consider

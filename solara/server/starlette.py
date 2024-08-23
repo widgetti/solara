@@ -9,6 +9,7 @@ import threading
 import typing
 from typing import Any, Dict, List, Optional, Set, Union, cast
 from uuid import uuid4
+import warnings
 
 import anyio
 import starlette.websockets
@@ -322,17 +323,45 @@ def close(request: Request):
 
 
 async def root(request: Request, fullpath: str = ""):
+    forwarded_host = request.headers.get("x-forwarded-host")
+    forwarded_proto = request.headers.get("x-forwarded-proto")
+    host = request.headers.get("host")
+    if forwarded_proto and forwarded_proto != request.scope["scheme"]:
+        warnings.warn(f"""Header x-forwarded-proto={forwarded_proto!r} does not match scheme={request.scope['scheme']!r} as given by the asgi framework (probably uvicorn)
+
+This might be a configuration mismatch behind a reverse proxy and can cause issues with redirect urls, and auth.
+
+Most likely, you need to trust your reverse proxy server, see:
+    https://solara.dev/documentation/getting_started/deploying/self-hosted
+
+If you use uvicorn (the default when you use `solara run`), make sure you
+configure the following environment variables for uvicorn correctly:
+UVICORN_PROXY_HEADERS=1  # only needed for uvicorn < 0.10, since it is the default after 0.10
+FORWARDED_ALLOW_IPS="127.0.0.1"  # 127.0.0.1 is the default, replace this by the ip of the proxy server
+
+Make sure you replace the IP with the correct IP of the reverse proxy server (instead of 127.0.0.1).
+
+If you are sure that only the reverse proxy can reach the solara server, you can consider setting:
+FORWARDED_ALLOW_IPS="*" # This can be a security risk, only use when you know what you are doing
+""")
     if settings.oauth.private and not has_auth_support:
         raise RuntimeError("SOLARA_OAUTH_PRIVATE requires solara-enterprise")
     root_path = settings.main.root_path or ""
     if not settings.main.base_url:
+        # Note:
+        # starlette does not respect x-forwarded-host, and therefore
+        # base_url and expected_origin below could be different
+        # x-forwarded-host should only be considered if the same criteria in
+        # uvicorn's ProxyHeadersMiddleware accepts x-forwarded-proto
         settings.main.base_url = str(request.base_url)
     # if not explicltly set,
+    configured_root_path = settings.main.root_path
+    scope = request.scope
+    root_path_asgi = scope.get("route_root_path", scope.get("root_path", ""))
     if settings.main.root_path is None:
         # use the default root path from the app, which seems to also include the path
         # if we are mounted under a path
-        scope = request.scope
-        root_path = scope.get("route_root_path", scope.get("root_path", ""))
+        root_path = root_path_asgi
         logger.debug("root_path: %s", root_path)
         # or use the script-name header, for instance when running under a reverse proxy
         script_name = request.headers.get("script-name")
@@ -344,6 +373,51 @@ async def root(request: Request, fullpath: str = ""):
             logger.debug("override root_path using x-script-name header from %s to %s", root_path, script_name)
             root_path = script_name
         settings.main.root_path = root_path
+
+    # lets be flexible about the trailing slash
+    # TODO: maybe we should be more strict about the trailing slash
+    naked_root_path = settings.main.root_path.rstrip("/")
+    naked_base_url = settings.main.base_url.rstrip("/")
+    if not naked_base_url.endswith(naked_root_path):
+        msg = f"""base url {naked_base_url!r} does not end with root path {naked_root_path!r}
+
+This could be a configuration mismatch behind a reverse proxy and can cause issues with redirect urls, and auth.
+
+See also https://solara.dev/documentation/getting_started/deploying/self-hosted
+"""
+        if "script-name" in request.headers:
+            msg += f"""It looks like the reverse proxy sets the script-name header to {request.headers['script-name']!r}
+            """
+        if "x-script-name" in request.headers:
+            msg += f"""It looks like the reverse proxy sets the x-script-name header to {request.headers['x-script-name']!r}
+            """
+        if configured_root_path:
+            msg += f"""It looks like the root path was configured to {configured_root_path!r} in the settings
+            """
+        if root_path_asgi:
+            msg += f"""It looks like the root path set by the asgi framework was configured to {root_path_asgi!r}
+            """
+        warnings.warn(msg)
+    if host and forwarded_host and forwarded_proto:
+        port = request.base_url.port
+        ports = {"http": 80, "https": 443}
+        expected_origin = f"{forwarded_proto}://{forwarded_host}"
+        if port and port != ports[forwarded_proto]:
+            expected_origin += f":{port}"
+        starlette_origin = settings.main.base_url
+        # strip off trailing / because we compare to the naked root path
+        starlette_origin = starlette_origin.rstrip("/")
+        if naked_root_path:
+            # take off the root path
+            starlette_origin = starlette_origin[: -len(naked_root_path)]
+        if starlette_origin != expected_origin:
+            warnings.warn(f"""Origin as determined by starlette ({starlette_origin!r}) does not match expected origin ({expected_origin!r}) based on x-forwarded-proto ({forwarded_proto!r}) and x-forwarded-host ({forwarded_host!r}) headers.
+
+This might be a configuration mismatch behind a reverse proxy and can cause issues with redirect urls, and auth.
+Most likely your proxy server sets the host header incorrectly (value for this request was {host!r})
+
+See also https://solara.dev/documentation/getting_started/deploying/self-hosted
+""")
 
     request_path = request.url.path
     if request_path.startswith(root_path):
