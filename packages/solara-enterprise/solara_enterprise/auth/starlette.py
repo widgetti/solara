@@ -92,7 +92,7 @@ async def login(request: Request, redirect_uri: Optional[str] = None):
         # where it detect we the OAuth.required=True setting, leading to a redirect
         request.session["redirect_uri"] = str(request.url.path)
     request.session["client_id"] = settings.oauth.client_id
-    result = await oauth.oauth1.authorize_redirect(request, str(request.base_url) + "_solara/auth/authorize")
+    result = await oauth.oauth1.authorize_redirect(request, str(settings.main.base_url) + "_solara/auth/authorize")
     return result
 
 
