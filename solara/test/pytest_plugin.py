@@ -38,6 +38,7 @@ TEST_PORT_START = int(os.environ.get("PORT", "18765")) + 100  # do not interfere
 TEST_HOST = solara.server.settings.main.host
 TIMEOUT = float(os.environ.get("SOLARA_PW_TIMEOUT", "18"))
 PYTEST_IPYWIDGETS_SOLARA_APP_WAIT_TIMEOUT = int(os.environ.get("PYTEST_IPYWIDGETS_SOLARA_APP_WAIT_TIMEOUT", "10"))
+runners = os.environ.get("SOLARA_TEST_RUNNERS", "solara,voila,jupyter_lab,jupyter_notebook").split(",")
 
 
 @pytest.fixture(scope="session")
@@ -303,6 +304,9 @@ class ServerJupyter(ServerBase):
 
 @pytest.fixture(scope="session")
 def voila_server(pytestconfig: Any, notebook_path):
+    if "voila" not in runners:
+        yield None
+        return
     port = pytestconfig.getoption("--voila-port")
     host = pytestconfig.getoption("--solara-host")
     write_notebook(["print('hello')"], notebook_path)
@@ -317,6 +321,9 @@ def voila_server(pytestconfig: Any, notebook_path):
 
 @pytest.fixture(scope="session")
 def jupyter_server(pytestconfig: Any, notebook_path):
+    if "jupyter_lab" not in runners and "jupyter_notebook" not in runners:
+        yield None
+        return
     port = pytestconfig.getoption("--jupyter-port")
     host = pytestconfig.getoption("--solara-host")
     write_notebook(["print('hello')"], notebook_path)
@@ -518,9 +525,6 @@ def create_runner_solara(solara_server, solara_app, page_session: "playwright.sy
 
     with _solara_test(solara_server, solara_app, page_session, require_vuetify_warmup):
         yield run
-
-
-runners = os.environ.get("SOLARA_TEST_RUNNERS", "solara,voila,jupyter_lab,jupyter_notebook").split(",")
 
 
 @pytest.fixture(params=runners)
