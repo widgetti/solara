@@ -33,7 +33,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: "3.12"
 
       - uses: actions/setup-node@v4
         with:
@@ -138,19 +138,12 @@ jobs:
         id: install_no_lock
         run: |
           mkdir -p .ci-package-locks/code-quality
-          pip install pre-commit
           pip freeze --exclude solara --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
           git diff --quiet || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
 
       - name: Install
         if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
         run: pip install -r ${{ env.LOCK_FILE_LOCATION }}
-
-      - name: Install pre-commit
-        run: pre-commit install
-
-      - name: Run pre-commit
-        run: pre-commit run --all-files
 
       - name: Upload CI package locks
         if: steps.install_no_lock.outputs.HAS_DIFF == 'true' || steps.prepare.outputs.LOCKS_EXIST == 'false'
@@ -161,15 +154,12 @@ jobs:
 
   test-install:
     needs: [build]
-    runs-on: ${{ matrix.os }}-${{(matrix.os == 'ubuntu' && matrix.python == '3.6') && '20.04' || (matrix.os == 'macos' && matrix.python == '3.6') && '13' || 'latest' }}
+    runs-on: ${{ matrix.os }}-'latest'
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu, macos, windows]
-        python: ["3.6", "3.10"]
-        exclude:
-          - os: windows
-            python: 3.6
+        python: ["3.8", "3.12"]
 
     steps:
       - name: Set up Python
@@ -229,13 +219,13 @@ jobs:
         # osx should work fine (and we test that locally often)
         os: [ubuntu, windows]
         # just 1 version, it's heavy
-        python-version: [3.8]
+        python-version: ["3.12"]
         ipywidgets_major: ["7", "8"]
         include:
           - ipywidgets_major: "7"
-            ipywidgets: "7.7"
+            ipywidgets: "7.8"
           - ipywidgets_major: "8"
-            ipywidgets: "8.0"
+            ipywidgets: "8.1"
     env:
       LOCK_FILE_LOCATION: .ci-package-locks/integration/os${{ matrix.os }}-python${{ matrix.python-version }}-ipywidgets${{ matrix.ipywidgets_major }}.txt
 
@@ -338,11 +328,11 @@ jobs:
         # osx should work fine (and we test that locally often)
         os: [ubuntu]
         # just 1 version, it's heavy
-        python-version: [3.8]
+        python-version: ["3.12"]
         ipywidgets_major: ["8"]
         include:
           - ipywidgets_major: "8"
-            ipywidgets: "8.0"
+            ipywidgets: "8.1"
     env:
       LOCK_FILE_LOCATION: .ci-package-locks/integration-vue3/os${{ matrix.os }}-ipywidgets${{ matrix.ipywidgets_major }}.txt
 
@@ -431,22 +421,14 @@ jobs:
 
   unit-test:
     needs: [build]
-    runs-on: ${{ matrix.os }}-${{(matrix.os == 'ubuntu' && matrix.python == '3.6') && '20.04' || (matrix.os == 'macos' && matrix.python == '3.6') && '13' || 'latest' }}
+    runs-on: ${{ matrix.os }}-latest
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu, macos, windows]
-        python: [3.6, 3.9]
-        ipywidgets: ["7.7", "8.0"]
-        exclude:
-          - os: windows
-            python: 3.6
-          - os: ubuntu
-            python: 3.6
-            ipywidgets: "8.0"
-          - os: macos
-            python: 3.6
-            ipywidgets: "8.0"
+        python: ["3.8", "3.12"]
+        ipywidgets: ["7.8", "8.1"]
+
     env:
       LOCK_FILE_LOCATION: .ci-package-locks/unit/os${{ matrix.os }}-python${{ matrix.python }}-ipywidgets${{ matrix.ipywidgets }}.txt
 
@@ -557,10 +539,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python 3.7
+      - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
-          python-version: 3.7
+          python-version: "3.12"
 
       - uses: actions/download-artifact@v4
         with:

@@ -1,5 +1,4 @@
 import os
-import sys
 
 import playwright.sync_api
 import pytest
@@ -9,9 +8,6 @@ pytest.importorskip("solara_enterprise")
 from solara_enterprise.auth import get_logout_url  # noqa
 
 from solara.server import settings  # noqa
-
-if sys.version_info[:2] <= (3, 6):
-    pytest.skip("Test requires python 3.7 or higher", allow_module_level=True)
 
 
 @pytest.mark.skipif(not bool(os.environ.get("AUTH0_PASSWORD")), reason="AUTH0_PASSWORD not set")

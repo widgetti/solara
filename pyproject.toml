@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling==1.22.2"]
+requires = ["hatchling==1.25.0"]
 build-backend = "hatchling.build"
 
 
@@ -13,6 +13,7 @@ dynamic = ["version", "description"]
 packages = [
     { include = "solara" }
 ]
+requires-python = ">= 3.8"
 dependencies = [
     "reacton>=1.7.1",
     "ipywidgets>=7.7",
@@ -69,7 +70,6 @@ markdown = [
     "markdown",
     "pymdown-extensions",
     "pygments",
-    "pygments==2.10; python_version < '3.7'",
 ]
 
 cache = [

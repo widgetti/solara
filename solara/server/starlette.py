@@ -4,7 +4,6 @@ import logging
 import math
 import os
 from pathlib import Path
-import sys
 import threading
 import typing
 from typing import Any, Dict, List, Optional, Set, Union, cast
@@ -24,7 +23,7 @@ try:
     has_solara_enterprise = True
 except ImportError:
     has_solara_enterprise = False
-if has_solara_enterprise and sys.version_info[:2] > (3, 6):
+if has_solara_enterprise:
     has_auth_support = True
     from solara_enterprise.auth.middleware import MutateDetectSessionMiddleware
     from solara_enterprise.auth.starlette import (
@@ -198,13 +197,6 @@ class ServerStarlette(ServerBase):
     def serve(self):
         from uvicorn.config import Config
         from uvicorn.server import Server
-
-        if sys.version_info[:2] < (3, 7):
-            # make python 3.6 work
-            import asyncio
-
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
 
         # uvloop will trigger a: RuntimeError: There is no current event loop in thread 'fastapi-thread'
         config = Config(self.app, host=self.host, port=self.port, **self.kwargs, access_log=False, loop="asyncio")

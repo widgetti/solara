@@ -1,5 +1,4 @@
 import json
-import sys
 import typing
 from base64 import b64decode, b64encode
 
@@ -10,10 +9,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from starlette.requests import HTTPConnection
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-if sys.version_info >= (3, 8):  # pragma: no cover
-    from typing import Literal
-else:  # pragma: no cover
-    from typing_extensions import Literal
+from typing import Literal
 
 
 # mutable mapping that keeps track of whether it has been modified
