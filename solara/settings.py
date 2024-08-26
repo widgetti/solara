@@ -8,7 +8,8 @@ from .util import get_solara_home
 
 try:
     import importlib
-    dotenv = importlib.import_module('dotenv')
+
+    dotenv = importlib.import_module("dotenv")
 except ImportError:
     print("dotenv module not installed.")
 except Exception as e:
