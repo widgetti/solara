@@ -7,9 +7,12 @@ from .minisettings import BaseSettings, Field
 from .util import get_solara_home
 
 try:
-    import dotenv
+    import importlib
+    dotenv = importlib.import_module('dotenv')
 except ImportError:
-    pass
+    print("dotenv module not installed.")
+except Exception as e:
+    print(f"Other import error: {e}")
 else:
     dotenv.load_dotenv()
 
