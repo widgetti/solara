@@ -140,7 +140,8 @@ jobs:
           mkdir -p .ci-package-locks/code-quality
           pip install pre-commit
           pip freeze --exclude solara --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
-          git diff --quiet || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
+          git diff --exit-code | tee diff-code-quality-python${{ matrix.python-version }}.txt
+          [ -s diff-code-quality-python${{ matrix.python-version }}.txt ] || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
 
       - name: Install
         if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
@@ -151,6 +152,13 @@ jobs:
 
       - name: Run pre-commit
         run: pre-commit run --all-files
+
+      - name: Upload Test artifacts
+        if: github.event_name == 'schedule' || steps.prepare.outputs.LOCKS_EXIST == 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-code-quality-python${{ matrix.python-version }}
+          path: diff-code-quality-python${{ matrix.python-version }}.txt
 
       - name: Upload CI package locks
         if: steps.install_no_lock.outputs.HAS_DIFF == 'true' || steps.prepare.outputs.LOCKS_EXIST == 'false'
@@ -286,7 +294,8 @@ jobs:
           pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
           pip install "jupyterlab<4"  "pydantic<2" "playwright==1.41.2" "ipywidgets~=${{ matrix.ipywidgets }}"
           pip freeze --exclude solara --exclude solara-ui --exclude solara-server --exclude pytest-ipywidgets --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
-          git diff --quiet || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
+          git diff --exit-code | tee diff-integration-os${{ matrix.os }}-python${{ matrix.python-version }}-ipywidgets${{ matrix.ipywidgets_major }}.txt
+          [ -s diff-integration-os${{ matrix.os }}-python${{ matrix.python-version }}-ipywidgets${{ matrix.ipywidgets_major }}.txt ] || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
 
       - name: Install
         if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
@@ -318,7 +327,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-results-integration-os${{ matrix.os }}-python${{ matrix.python-version }}-ipywidgets${{ matrix.ipywidgets_major }}
-          path: test-results
+          path: |
+            test-results
+            diff-integration-os${{ matrix.os }}-python${{ matrix.python-version }}-ipywidgets${{ matrix.ipywidgets_major }}.txt
 
       - name: Upload CI package locks
         if: steps.install_no_lock.outputs.HAS_DIFF == 'true' || steps.prepare.outputs.LOCKS_EXIST == 'false'
@@ -388,7 +399,8 @@ jobs:
           pip install jupyter_core jupyter-packaging
           pip install --pre ipyvue ipyvuetify
           pip freeze --exclude solara --exclude solara-ui --exclude solara-server --exclude pytest-ipywidgets --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
-          git diff --quiet || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
+          git diff --exit-code | tee diff-integration-vue3-os${{ matrix.os }}-ipywidgets${{ matrix.ipywidgets_major }}.txt
+          [ -s diff-integration-vue3-os${{ matrix.os }}-ipywidgets${{ matrix.ipywidgets_major }}.txt ] || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
 
       - name: Install
         if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
@@ -420,7 +432,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-results-integration-vue3-os${{ matrix.os }}-ipywidgets${{ matrix.ipywidgets_major }}
-          path: test-results
+          path: |
+            test-results
+            diff-integration-vue3-os${{ matrix.os }}-ipywidgets${{ matrix.ipywidgets_major }}.txt
 
       - name: Upload CI package locks
         if: steps.install_no_lock.outputs.HAS_DIFF == 'true' || steps.prepare.outputs.LOCKS_EXIST == 'false'
@@ -484,7 +498,8 @@ jobs:
           pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
           pip install "jupyterlab<4" diskcache redis "ipywidgets~=${{ matrix.ipywidgets }}"
           pip freeze --exclude solara --exclude solara-ui --exclude solara-server --exclude pytest-ipywidgets --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
-          git diff --quiet || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
+          git diff --exit-code | tee diff-unit-os${{ matrix.os }}-python${{ matrix.python }}-ipywidgets${{ matrix.ipywidgets }}.txt
+          [ -s diff-unit-os${{ matrix.os }}-python${{ matrix.python }}-ipywidgets${{ matrix.ipywidgets }}.txt ] || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
 
       - name: Install
         if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
@@ -506,6 +521,13 @@ jobs:
           # otherwise Python's inspect cannot find the source code
           mv solara _solara
           pytest tests/unit --doctest-modules --timeout=60
+
+      - name: upload test artifacts
+        if: github.event_name == 'schedule' || steps.prepare.outputs.LOCKS_EXIST == 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-unit-os${{ matrix.os }}-python${{ matrix.python }}-ipywidgets${{ matrix.ipywidgets }}
+          path: diff-unit-os${{ matrix.os }}-python${{ matrix.python }}-ipywidgets${{ matrix.ipywidgets }}.txt
 
       - name: Upload CI package locks
         if: steps.install_no_lock.outputs.HAS_DIFF == 'true' || steps.prepare.outputs.LOCKS_EXIST == 'false'
