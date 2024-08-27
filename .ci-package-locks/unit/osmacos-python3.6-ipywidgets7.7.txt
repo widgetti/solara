@@ -51,7 +51,7 @@ httpcore==0.14.7
 httpx==0.22.0
 humanize==3.14.0
 identify==2.4.4
-idna==3.7
+idna==3.8
 immutables==0.19
 importlib-metadata==4.8.3
 importlib-resources==5.2.3
@@ -122,7 +122,7 @@ pycparser==2.21
 pydantic==1.9.2
 Pygments==2.10.0
 pymdown-extensions==9.1
-pyparsing==3.1.2
+pyparsing==3.1.4
 pyrsistent==0.18.0
 pytest==7.0.1
 pytest-cov==4.0.0
