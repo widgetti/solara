@@ -176,7 +176,7 @@ libraries_extra = [
     {"python": "bqplot", "classic": "bqplot/extension", "lab": "bqplot"},
     {"python": "ipyvolume", "classic": "ipyvolume/extension", "lab": "ipyvolume"},
     {"python": "ipywebrtc", "classic": "jupyter-webrtc", "lab": "jupyter-webrtc"},
-    {"python": "ipyleaflet", "classic": "ipyleaflet/extension", "lab": "ipyleaflet"},
+    {"python": "ipyleaflet", "classic": "jupyter-leaflet/extension", "lab": "jupyter-leaflet"},
 ]
 
 
