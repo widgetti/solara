@@ -11,7 +11,7 @@ from . import comm  # noqa: F401
 def _using_solara_server():
     import sys
 
-    if "solara.server" in sys.modules:
+    if "solara.server.starlette" in sys.modules or "solara.server.flask" in sys.modules:
         return True
     if sys.argv[0].split("/")[-1] == "solara":
         return True
