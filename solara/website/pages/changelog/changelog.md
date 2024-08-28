@@ -1,5 +1,16 @@
 # Solara Changelog
 
+## Version 1.38.0
+
+   * Feature: We detect and warn when there are possible reverse proxy or uvicorn misconfigurations. [#745](https://github.com/widgetti/solara/pull/745)
+   * Bug Fix: Auth redirect did not respect SOLARA_BASE_URL. [#747](https://github.com/widgetti/solara/pull/747)
+   * Bug Fix: Support for `websockets >= 13.0` and large cookies. [#751](https://github.com/widgetti/solara/pull/751)
+   * Bug Fix: Windows support was broken from version 1.35.0 to 1.37.2. This went undetected due to a CI configuration error. [#712](https://github.com/widgetti/solara/pull/712) [#739](https://github.com/widgetti/solara/pull/739)
+
+## Version 1.37.2
+
+   * Bug Fix: If matplotlib was imported before solara, we did not set the backend, now we do. [#741](https://github.com/widgetti/solara/pull/741)
+
 ## Version 1.37.1
 
    * Bug Fix: The newly introduced hooks validator could emit a warning on certain call syntax. This can fail CI pipelines that do now allow warnings [c7c3b6a](https://github.com/widgetti/solara/commit/c7c3b6ab2929c4da1ffc3ab8e2e423cf0cfa7567).
