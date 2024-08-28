@@ -1,3 +1,3 @@
 "Enterprise features for Solara"
 
-__version__ = "1.37.2"
+__version__ = "1.38.0"
