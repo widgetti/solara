@@ -158,7 +158,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-results-code-quality-python${{ matrix.python-version }}
-          path: diff-code-quality-python${{ matrix.python-version }}.txt
+          path: |
+            diff-code-quality-python${{ matrix.python-version }}.txt
+            ./**/${{ env.LOCK_FILE_LOCATION }}
 
       - name: Upload CI package locks
         if: steps.install_no_lock.outputs.HAS_DIFF == 'true' || steps.prepare.outputs.LOCKS_EXIST == 'false'
@@ -330,6 +332,7 @@ jobs:
           path: |
             test-results
             diff-integration-os${{ matrix.os }}-python${{ matrix.python-version }}-ipywidgets${{ matrix.ipywidgets_major }}.txt
+            ./**/${{ env.LOCK_FILE_LOCATION }}
 
       - name: Upload CI package locks
         if: steps.install_no_lock.outputs.HAS_DIFF == 'true' || steps.prepare.outputs.LOCKS_EXIST == 'false'
@@ -435,6 +438,7 @@ jobs:
           path: |
             test-results
             diff-integration-vue3-os${{ matrix.os }}-ipywidgets${{ matrix.ipywidgets_major }}.txt
+            ./**/${{ env.LOCK_FILE_LOCATION }}
 
       - name: Upload CI package locks
         if: steps.install_no_lock.outputs.HAS_DIFF == 'true' || steps.prepare.outputs.LOCKS_EXIST == 'false'
@@ -527,7 +531,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-results-unit-os${{ matrix.os }}-python${{ matrix.python }}-ipywidgets${{ matrix.ipywidgets }}
-          path: diff-unit-os${{ matrix.os }}-python${{ matrix.python }}-ipywidgets${{ matrix.ipywidgets }}.txt
+          path: |
+            diff-unit-os${{ matrix.os }}-python${{ matrix.python }}-ipywidgets${{ matrix.ipywidgets }}.txt
+            ./**/${{ env.LOCK_FILE_LOCATION }}
 
       - name: Upload CI package locks
         if: steps.install_no_lock.outputs.HAS_DIFF == 'true' || steps.prepare.outputs.LOCKS_EXIST == 'false'
