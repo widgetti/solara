@@ -124,6 +124,9 @@ def SolaraCheck():
 def getcmdline(pid):
     # for linux
     if sys.platform == "linux":
+        # if /proc/{pid}/exe exists, follow the symlink
+        if os.path.exists(f"/proc/{pid}/exe"):
+            return os.readlink(f"/proc/{pid}/exe")
         with open(f"/proc/{pid}/cmdline", "rb") as f:
             return f.read().split(b"\00")[0].decode("utf-8")
     elif sys.platform == "darwin":
