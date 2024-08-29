@@ -136,9 +136,9 @@ platformdirs==4.2.2
 playwright==1.41.2
 plotly==5.23.0
 pluggy==1.5.0
-polars==1.5.0
+polars==1.6.0
 pre-commit==3.5.0
-progressbar2==4.4.2
+progressbar2==4.5.0
 prometheus_client==0.20.0
 prompt_toolkit==3.0.47
 psutil==6.0.0
@@ -215,12 +215,12 @@ vega-datasets==0.9.0
 virtualenv==20.26.3
 voila==0.3.8
 watchdog==4.0.2
-watchfiles==0.23.0
+watchfiles==0.24.0
 wcwidth==0.2.13
 webcolors==24.8.0
 webencodings==0.5.1
 websocket-client==1.8.0
-websockets==13.0
+websockets==13.0.1
 Werkzeug==3.0.4
 widgetsnbextension==3.6.8
 wsproto==1.2.0
