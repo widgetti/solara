@@ -21,7 +21,7 @@ def test_large_cookie(browser: playwright.sync_api.Browser, page_session: playwr
         for i in range(9):
             browser.contexts[0].add_cookies([{"name": f"a_{i}", "value": "a" * 1024, "url": f"http://localhost:{port}"}])
         page_session.goto(solara_server.base_url)
-        page_session.locator("text=Examples").first.click()
+        page_session.locator("text=Documentation").first.click()
 
 
 def test_docs_basics(page_session: playwright.sync_api.Page, solara_server, solara_app):
