@@ -255,7 +255,6 @@ module.exports = {
       const labConfigData = document.getElementById('jupyter-config-data');
       if(labConfigData) {
         /* lab and Voila */
-        // console.log("HOHAODHWa", JSON.parse(labConfigData.textContent).baseUrl);
         return JSON.parse(labConfigData.textContent).baseUrl;
       }
       let base = document.body.dataset.baseUrl || document.baseURI;
