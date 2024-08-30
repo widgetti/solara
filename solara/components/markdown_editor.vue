@@ -255,6 +255,7 @@ module.exports = {
       const labConfigData = document.getElementById('jupyter-config-data');
       if(labConfigData) {
         /* lab and Voila */
+        // console.log("HOHAODHWa", JSON.parse(labConfigData.textContent).baseUrl);
         return JSON.parse(labConfigData.textContent).baseUrl;
       }
       let base = document.body.dataset.baseUrl || document.baseURI;
@@ -264,7 +265,7 @@ module.exports = {
       return base
     },
     getCdn() {
-      return window.solara ? window.solara.cdn : `${this.getJupyterBaseUrl()}_solara/cdn`;
+      return this.cdn || (window.solara ? window.solara.cdn : `${this.getJupyterBaseUrl()}_solara/cdn`);
     },
   },
 };

@@ -10,6 +10,14 @@ class SearchWidget(ipyvue.VueTemplate):
     query = traitlets.Unicode("", allow_none=True).tag(sync=True)
     search_open = traitlets.Bool(False).tag(sync=True)
     failed = traitlets.Bool(False).tag(sync=True)
+    cdn = traitlets.Unicode(None, allow_none=True).tag(sync=True)
+
+    @traitlets.default("cdn")
+    def _cdn(self):
+        import solara.settings
+
+        if not solara.settings.assets.proxy:
+            return solara.settings.assets.cdn
 
 
 @solara.component

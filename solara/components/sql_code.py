@@ -13,6 +13,14 @@ class SqlCodeWidget(ipyvue.VueTemplate):
     query = traitlets.Unicode(allow_none=True, default_value=None).tag(sync=True)
     tables = traitlets.Dict(allow_none=True, default_value=None).tag(sync=True)
     height = traitlets.Unicode("180px").tag(sync=True)
+    cdn = traitlets.Unicode(None, allow_none=True).tag(sync=True)
+
+    @traitlets.default("cdn")
+    def _cdn(self):
+        import solara.settings
+
+        if not solara.settings.assets.proxy:
+            return solara.settings.assets.cdn
 
 
 @solara.component
