@@ -76,6 +76,12 @@ def _markdown_template(
     html,
     style="",
 ):
+    cdn = None
+    import solara.settings
+
+    if not solara.settings.assets.proxy:
+        cdn = solara.settings.assets.cdn
+
     template = (
         """
 <template>
@@ -89,6 +95,9 @@ def _markdown_template(
 <script>
 module.exports = {
     async mounted() {
+        this.cdn = """
+        + (rf"'{cdn}'" if cdn is not None else r"null")
+        + r""";
         await this.loadRequire();
         this.mermaid = await this.loadMermaid();
         this.mermaid.init();

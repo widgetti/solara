@@ -264,7 +264,7 @@ module.exports = {
       return base
     },
     getCdn() {
-      return window.solara ? window.solara.cdn : `${this.getJupyterBaseUrl()}_solara/cdn`;
+      return this.cdn || (window.solara ? window.solara.cdn : `${this.getJupyterBaseUrl()}_solara/cdn`);
     },
   },
 };
