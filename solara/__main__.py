@@ -17,6 +17,7 @@ from uvicorn.main import LEVEL_CHOICES, LOOP_CHOICES
 
 import solara
 from solara.server import settings
+import solara.server.threaded
 
 from .server import telemetry
 
@@ -130,7 +131,11 @@ if "SOLARA_MODE" in os.environ:
 
 
 @cli.command()
-@click.option("--port", default=int(os.environ.get("PORT", 8765)))
+@click.option(
+    "--port",
+    default=int(os.environ.get("PORT", 8765)),
+    help="Port to run the server on, 0 for a random free port, default to $PORT or 8765.",
+)
 @click.option(
     "--host",
     default=settings.main.host,
@@ -302,6 +307,8 @@ def run(
     settings.ssg.enabled = ssg
     settings.search.enabled = search
     reload_dirs = restart_dirs if restart_dirs else None
+    if port == 0:
+        port = solara.server.threaded.get_free_port()
     del restart_dirs
     url = f"http://{host}:{port}"
 
