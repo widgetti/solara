@@ -1,5 +1,11 @@
 # Solara Changelog
 
+## Version 1.39.0
+
+   * Feature: Add option to start Solara server on a random unused port (using `--port=0`). [#762](https://github.com/widgetti/solara/pull/762)
+   * Bug Fix: Extension checking for e.g. ipyleaflet now work correctly on Amazon SageMaker Studio Lab. [#757](https://github.com/widgetti/solara/pull/757)
+   * Bug Fix: Various solara components should now work correctly in notebooks viewed on vscode, colab and voila. [#763](https://github.com/widgetti/solara/pull/763)
+
 ## Version 1.38.0
 
    * Feature: We detect and warn when there are possible reverse proxy or uvicorn misconfigurations. [#745](https://github.com/widgetti/solara/pull/745)
