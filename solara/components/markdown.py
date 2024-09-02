@@ -128,7 +128,7 @@ module.exports = {
                 href = location.pathname + href.substr(1);
                 a.attributes['href'].href = href;
             }
-            let authLink = href.starswith("/_solara/auth/");
+            let authLink = href.startswith("/_solara/auth/");
             if( (href.startsWith("./") || href.startsWith("/")) && !authLink) {
                 a.onclick = e => {
                     console.log("clicked", href)
