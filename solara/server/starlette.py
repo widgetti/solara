@@ -483,9 +483,9 @@ class StaticNbFiles(StaticFilesOptionalAuth):
     # from https://github.com/encode/starlette/pull/1377/files
     def lookup_path(self, path: str) -> typing.Tuple[str, typing.Optional[os.stat_result]]:
         for directory in self.all_directories:
+            directory = os.path.realpath(directory)
             original_path = os.path.join(directory, path)
             full_path = os.path.realpath(original_path)
-            directory = os.path.realpath(directory)
             # return early if someone tries to access a file outside of the directory
             if not path_is_child_of(Path(original_path), Path(directory)):
                 return "", None
