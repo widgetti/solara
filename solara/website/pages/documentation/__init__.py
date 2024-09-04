@@ -17,34 +17,28 @@ def Algolia():
 
 
 @solara.component
-def Page(children=[]):
+def Page():
     # show a gallery of all the api pages
     router = solara.use_router()
     route_current = router.path_routes[-2]
-
-    with solara.Column(style={"width": "100%"}, gap="75px"):
-        if route_current.path == "documentation":
-            with solara.Column(classes=["api-search-container"], gap="50px", style={"justify-content": "center"}, align="center"):
-                solara.Markdown("# Search the Solara Documentation", style={"text-align": "center"})
-                with solara.Row(style={"width": "100%", "min-width": "20rem", "justify-content": "center", "background-color": "transparent"}):
-                    Algolia()
-            with solara.Row(gap="20px", classes=["docs-card-container"]):
-                for route in route_current.children:
-                    if route.path in ["/", "advanced", "faq"]:
-                        continue
-                    with solara.Link("/documentation/" + route.path):
-                        with solara.Row(
-                            classes=["docs-card"],
-                            style={
-                                "background-color": f"var({'--docs-color-grey' if route.path != 'getting_started' else '--color-primary'})",
-                            },
-                        ):
-                            with solara.Column(style={"height": "100%", "flex-grow": "1", "background-color": "transparent"}):
-                                solara.HTML(tag="h2", unsafe_innerHTML=route.label, style={"color": "white", "padding": "1.5rem"})
-                            with solara.Column(style={"justify-content": "center", "height": "100%", "background-color": "transparent"}):
+    if route_current.path == "documentation":
+        with solara.Column(style={"width": "100%", "max-width": "1024px"}, gap="40px"):
+            with solara.Column(style={"width": "100%", "align-items": "center"}, gap="40px"):
+                with solara.Column(gap="20px", classes=["docs-card-container"], style={"max-width": "80%", "padding-top": "64px"}, align="stretch"):
+                    for route in route_current.children:
+                        if route.path in ["/", "advanced", "faq"]:
+                            continue
+                        with solara.Link("/documentation/" + route.path):
+                            with solara.Row(
+                                classes=["docs-card"],
+                                style={
+                                    "background-color": f"var({'--docs-color-grey' if route.path != 'getting_started' else '--color-primary'})",
+                                    "align-items": "center",
+                                },
+                            ):
+                                solara.HTML(tag="h2", unsafe_innerHTML=route.label, style={"color": "white", "display": "block", "flex-grow": "1"})
                                 solara.v.Icon(children=["mdi-arrow-right"], color="var(--color-grey-light)", x_large=True, class_="docs-card-icon")
-            with solara.Row(gap="75px", style={"flex-wrap": "wrap", "row-gap": "75px", "padding-bottom": "75px"}):
-                with solara.Column(style={"padding-left": "10%"}):
+                with solara.Column(gap="10px", style={"flex-wrap": "wrap", "max-width": "80%"}):
                     solara.HTML(tag="h2", unsafe_innerHTML="How to use our documentation:", style={"padding": "1.5rem"})
                     solara.Markdown(
                         """
@@ -58,27 +52,22 @@ def Page(children=[]):
     If a component you would like to use is not available in Solara, you can use the underlying library directly.
                     """
                     )
-                with solara.Column(style={"justify-content": "center", "height": "100%"}):
                     solara.HTML(tag="h2", unsafe_innerHTML="Also Check Out", style={"padding": "1.5rem"})
-                    with solara.Row(gap="20px", style={"flex-wrap": "wrap", "row-gap": "20px", "align-items": "center"}):
+                    with solara.Row(gap="20px", style={"flex-wrap": "wrap", "row-gap": "20px", "align-items": "center", "padding-left": "24px"}):
                         with solara.v.Html(tag="a", attributes={"href": "https://discord.solara.dev", "target": "_blank"}):
                             with solara.Div(classes=["social-logo-container"], style={"background-color": "var(--docs-social-discord)"}):
                                 solara.v.Html(tag="img", attributes={"src": "/static/public/social/discord.svg"}, style_="height: 1.5rem; width: auto;")
                         solara.Text("We use discord to provide support and answer questions there actively.")
-                    with solara.Row(gap="20px", style={"flex-wrap": "wrap", "row-gap": "20px", "align-items": "center"}):
+                    with solara.Row(gap="20px", style={"flex-wrap": "wrap", "row-gap": "20px", "align-items": "center", "padding-left": "24px"}):
                         with solara.v.Html(tag="a", attributes={"href": "https://github.com/widgetti/solara", "target": "_blank"}):
                             with solara.Div(classes=["social-logo-container"], style={"background-color": "var(--docs-social-github)"}):
                                 solara.v.Html(tag="img", attributes={"src": "/static/public/social/github.svg"}, style_="height: 1.5rem; width: auto;")
                         solara.Text("Search for solutions on Github issues, or report bugs.")
-                    with solara.Row(gap="20px", style={"flex-wrap": "wrap", "row-gap": "20px", "align-items": "center"}):
+                    with solara.Row(gap="20px", style={"flex-wrap": "wrap", "row-gap": "20px", "align-items": "center", "padding-left": "24px"}):
                         with solara.v.Html(tag="a", attributes={"href": "https://twitter.com/solara_dev", "target": "_blank"}):
                             with solara.Div(classes=["social-logo-container"], style={"background-color": "var(--docs-social-twitter)"}):
                                 solara.v.Html(tag="img", attributes={"src": "/static/public/social/twitter.svg"}, style_="height: 1.5rem; width: auto;")
                         solara.Text("Get announcements about Solara features, showcases, and events!.")
-
-        else:
-            with solara.Column(align="center", children=children, style={"padding": "0"}):
-                pass
 
 
 @solara.component
@@ -90,7 +79,10 @@ def Layout(children=[]):
     if route_current.path == "/":
         return Page()
     else:
-        return Page(children=children)
+        with solara.Column(
+            align="center", children=children, style={"padding": "0 0 40px 0", "max-width": "90%"}
+        ):  # 40px bottom margin for "runs on Solara" text
+            pass
 
 
 @solara.component

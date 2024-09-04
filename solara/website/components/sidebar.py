@@ -14,7 +14,9 @@ def Sidebar():
             all_routes = route.children
             break
 
-    with solara.v.List(expand=True, nav=True, style_="height: 100%; display: flex; flex-direction: column;") as main:
+    with solara.v.List(
+        expand=True, nav=True, style_="height: 100%; display: flex; flex-direction: column; background-color: var(--color-material-background);"
+    ) as main:
         with solara.v.ListItemGroup(v_model=router.path):
             # e.g. getting_started, examples, components, api, advanced, faq
             for route in all_routes:

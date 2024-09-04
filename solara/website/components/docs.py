@@ -1,5 +1,6 @@
 import solara
-from solara.alias import rv
+from .markdown import MarkdownWithMetadata
+from .breadcrumbs import BreadCrumbs
 
 
 @solara.component
@@ -66,18 +67,19 @@ def NoPage():
 
 
 @solara.component
-def WithCode(module):
-    component = getattr(module, "Page", None)
-    with rv.Sheet() as main:
+def WithCode(route_current):
+    component = getattr(route_current.module, "Page", None)
+    with solara.Column(style={"flex-grow": 1, "padding-top": "56px"}) as main:
+        BreadCrumbs(route_current)
         # It renders code better
-        solara.Markdown(
-            module.__doc__ or "# no docs yet",
+        MarkdownWithMetadata(
+            route_current.module.__doc__ or "# no docs yet",
             unsafe_solara_execute=True,
         )
         if component and component != NoPage:
             with solara.Card("Example", margin=0, classes=["mt-8"]):
                 component()
-                github_url = solara.util.github_url(module.__file__)
+                github_url = solara.util.github_url(route_current.module.__file__)
                 solara.Button(
                     label="View source",
                     icon_name="mdi-github-circle",
@@ -97,7 +99,7 @@ def SubCategoryLayout(children=[]):
     elif route_current.path == "/":
         return solara.Error("Not supposed to be rendered")
     elif route_current.module:
-        WithCode(route_current.module)
+        WithCode(route_current)
     else:
         with solara.Column(align="center", children=children, style={"flex-grow": 1, "padding": "0"}) as main:
             pass
@@ -113,6 +115,6 @@ def CategoryLayout(children=[]):
     if route_current.path == "/":
         return Gallery()
     else:
-        with solara.Column(align="stretch", style={"width": "1024px", "flex-grow": 1}, children=children) as main:
+        with solara.Column(align="stretch", children=children) as main:
             pass
         return main

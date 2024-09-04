@@ -7,9 +7,10 @@
                     v-model="query"
                     prepend-inner-icon="mdi-magnify"
                     hide-details
+                    dense
                     :placeholder="mac ? '⌘K to search' : 'Ctrl+K to search'"
+                    filled
                     outlined
-                    rounded
                     clearable
                     ref="search"
                     style="flex-grow: 1; max-width: 650px;"

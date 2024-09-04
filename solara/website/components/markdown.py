@@ -27,4 +27,11 @@ def MarkdownWithMetadata(content: str, unsafe_solara_execute=True):
                 solara.Meta(property=key, content=value)
             else:
                 solara.Meta(name=key, content=value)
-    solara.Markdown(content, unsafe_solara_execute=unsafe_solara_execute)
+    with solara.v.Html(tag="div", style_="display: flex; flex-direction: row; gap: 15px;", attributes={"id": "markdown-to-navigate"}):
+        solara.Markdown(content, unsafe_solara_execute=unsafe_solara_execute, style="flex-grow: 1;")
+        MarkdownNavigation(id="markdown-to-navigate").key("markdown-nav" + str(hash(content)))
+
+
+@solara.component_vue("markdown_nav.vue")
+def MarkdownNavigation(id: str):
+    pass
