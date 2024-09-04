@@ -15,7 +15,10 @@
                     ref="search"
                     style="flex-grow: 1; max-width: 650px;"
                     @click="show($event, on);"
-                    @keyup.enter="item = 0"
+                    @keyup.enter="hoverItem === null ? item = 0 : item = hoverItem"
+                    @keyup.esc="close();"
+                    @keyup.down="hoverItem = hoverItem == null ? 0 : Math.min(hoverItem + 1, results.hits.length - 1, 9)"
+                    @keyup.up="hoverItem = hoverItem == null ? 9 : Math.max(hoverItem - 1, 0)"
                     class="algolia"
                 ></v-text-field>
         </template>
@@ -28,7 +31,7 @@
         </v-list>
         <v-list v-else :style="{width: menuWidth + 'px'}">
             <v-list-item-group v-model="item">
-                <v-list-item v-for="(element, index) in this.results.hits" :key="element['url']">
+                <v-list-item v-for="(element, index) in this.results.hits" :key="element['url']" :input-value="index === hoverItem">
                     <v-list-item-content>
                         <v-list-item-title>
                             {{ element.hierarchy.lvl1 }}
@@ -40,7 +43,7 @@
                     </v-list-item-content>
                 </v-list-item>
             </v-list-item-group>
-            <v-list-item>
+            <v-list-item v-if="this.results.nbHits > 10">
                 <v-list-item-content>
                     <v-list-item-title>And {{ this.results.nbHits - 10}} More...</v-list-item-title>
                 </v-list-item-content>
@@ -59,7 +62,6 @@ module.exports = {
         window.search = this;
         this.updateMenuWidth();
         window.addEventListener('resize', this.updateMenuWidth);
-
     },
     watch: {
         query ( value ) {
@@ -67,12 +69,17 @@ module.exports = {
             this.search();
         },
         item ( value ) {
-            if ( this.results.hits != null && this.results.hits.length > 0 ) {
+            if ( value === null ) return;
+            if ( this.results.hits != null && this.results.hits.length >= value ) {
                 let url = this.results.hits[value].url;
                 if (url.startsWith("https://solara.dev")) {
                     url = url.slice(18);
                 }
                 solara.router.push( url );
+                this.close();
+                // reset the search
+                this.item = null;
+                this.hoverItem = null;
             }
         },
     },
@@ -82,6 +89,10 @@ module.exports = {
             this.$nextTick( () => {
                 on.click( e )
             } );
+        },
+        close() {
+            this.show_results = false;
+            this.$refs.search.blur();
         },
         initSearch() {
             this.client = this.algoliasearch( '9KW9L7O5EQ', '647ca12ba642437cc40c2adee4a78d08' );
@@ -177,6 +188,7 @@ module.exports = {
             query: '',
             results: [],
             item: null,
+            hoverItem: null,
             show_results: false,
             mac: false,
             menuWidth: 0,
