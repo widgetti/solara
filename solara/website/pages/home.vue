@@ -463,6 +463,35 @@ module.exports = {
             link.id="homepage.css";
             document.head.appendChild(link);
         }
-    }
+        document.querySelectorAll('a').forEach(this.setupRouter);
+    },
+    destroyed() {
+        // Otherwise we have extra css on other pages after front-end navigation
+        document.getElementById('homepage.css').remove();
+    },
+    methods: {
+        setupRouter(a) {
+            let href = a.attributes['href'].value;
+            if(href.startsWith("./")) {
+                // TODO: should we really do this?
+                href = location.pathname + href.substr(1);
+                a.attributes['href'].href = href;
+            }
+            let authLink = href.startsWith("/_solara/auth/");
+            if( (href.startsWith("./") || href.startsWith("/")) && !authLink) {
+                a.onclick = e => {
+                    if(href.startsWith("./")) {
+                        solara.router.push(href);
+                    } else {
+                        solara.router.push(href);
+                    }
+                    e.preventDefault()
+                }
+            } else if(href.startsWith("#")) {
+                href = location.pathname + href;
+                a.attributes['href'].value = href;
+            }
+        },
+    },
 }
 </script>
