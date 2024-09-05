@@ -54,10 +54,10 @@ def Page():
         return solara.Markdown("This example requires vaex, please install it with `pip install vaex`")
     with solara.Div() as main:
         solara.Markdown("# Titanic")
-        selected, on_selected = solara.use_state({"x": [0, 0]})
+        selected, on_selected = solara.use_state({"x": [0, 0]})  # noqa: SH101
         solara.provide_cross_filter()
         with solara.VBox():
-            type, set_type = solara.use_state("view")
+            type, set_type = solara.use_state("view")  # noqa: SH101
             with solara.ToggleButtonsSingle(type, on_value=set_type):
                 solara.Button("PivotTableView", value="view")
                 solara.Button("PivotTable", value="df")

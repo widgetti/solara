@@ -42,8 +42,8 @@ if vaex is not None:
 def Page():
     if vaex is None:
         return solara.Error("Vaex is not installed, run pip install vaex-core vaex-hdf5")
-    query, set_query = solara.use_state("SELECT * from titanic")
-    query_executed, set_query_executed = solara.use_state(cast(Optional[str], None))
+    query, set_query = solara.use_state("SELECT * from titanic")  # noqa: SH101
+    query_executed, set_query_executed = solara.use_state(cast(Optional[str], None))  # noqa: SH101
 
     def run_query(cancel: threading.Event) -> pd.DataFrame:
         if not query_executed:
@@ -55,7 +55,7 @@ def Page():
         df = pd.DataFrame(cursor.fetchall(), columns=[k[0] for k in cursor.description])
         return df
 
-    result: solara.Result[pd.DataFrame] = solara.use_thread(run_query, dependencies=[query_executed])
+    result: solara.Result[pd.DataFrame] = solara.use_thread(run_query, dependencies=[query_executed])  # noqa: SH101
     with solara.VBox() as main:
         solara.SqlCode(query=query, tables=table_hints, on_query=set_query)
         enable_execute = (query != query_executed) or result.error is not None
