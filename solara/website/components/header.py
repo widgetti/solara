@@ -32,9 +32,10 @@ def Header(
                 with solara.Button(icon=True, class_="hidden-md-and-up", on_click=lambda: on_toggle_left_menu and on_toggle_left_menu()):
                     rv.Icon(children=["mdi-menu"])
 
+            display = " d-none d-sm-flex" if route_current is not None and route_current.path not in ["about", "pricing", "careers"] else " d-flex"
             with solara.v.Html(
                 tag="div",
-                class_="header-logo-container d-none d-sm-flex",
+                class_="header-logo-container" + display,
                 style_="""
                     background-color: transparent;
                     flex-grow: 1;
@@ -46,16 +47,17 @@ def Header(
                     solara.Image(router.root_path + f"/static/assets/images/logo{'_white' if dark_effective else ''}.svg", classes=["header-logo"])
                     solara.Text("API", style={"font-size": "20px", "font-weight": "600"})
 
-            if settings.search.enabled:
-                from solara_enterprise.search.search import Search
+            if route_current is not None and route_current.path not in ["about", "pricing", "careers"]:
+                if settings.search.enabled:
+                    from solara_enterprise.search.search import Search
 
-                Search()
-            else:
-                Algolia()
+                    Search()
+                else:
+                    Algolia()
 
             with rv.Html(tag="ul", class_="main-menu menu d-none d-md-flex", style_="justify-content: flex-end;"):
                 for route in all_routes:
-                    if route.path in ["apps", "contact", "changelog"]:
+                    if route.path in ["apps", "contact", "changelog", "our_team", "about", "pricing", "roadmap", "careers"]:
                         continue
                     current = route_current == route
                     with rv.Html(tag="li", class_="active" if current else None):

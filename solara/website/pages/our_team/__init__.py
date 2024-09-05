@@ -3,7 +3,7 @@ import solara
 
 @solara.component
 def Page():
-    with solara.Column(gap="40px"):
+    with solara.Column(gap="40px", style={"max-width": "90%"}):
         solara.Markdown("""
 # Our Team
 
@@ -54,12 +54,12 @@ def DevCard(
     website=None,
     email=None,
 ):
-    with solara.Row(gap="40px", style={"align-items": "stretch"}):
-        with solara.Div(style={"flex": "1 0 200px", "border-radius": "15px", "overflow": "hidden", "aspect-ratio": "1/1"}):
+    with solara.Row(gap="40px", style={"align-items": "stretch", "max-height": "300px", "flex": "1 1 auto"}):
+        with solara.Div(style={"flex": "0 1 300px", "border-radius": "15px", "overflow": "hidden", "aspect-ratio": "1/1"}):
             solara.v.Html(
                 tag="img",
                 attributes={"src": image or "https://dxhl76zpt6fap.cloudfront.net/public/logo.svg", "alt": name},
-                style_="width: 100%; height: 100%; object-fit: cover;",
+                style_="height: 100%; aspect-ratio: 1; object-fit: cover;",
             )
         with solara.Column():
             solara.HTML(tag="h2", unsafe_innerHTML=name)

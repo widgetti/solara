@@ -95,5 +95,9 @@ def Sidebar():
                 with solara.v.ListItem(value="/changelog"):
                     solara.v.ListItemIcon(children=[solara.v.Icon(children=["mdi-history"])])
                     solara.v.ListItemTitle(style_="padding: 0 20px;", children=["Changelog"])
+            with solara.Link("/roadmap"):
+                with solara.v.ListItem(value="/roadmap"):
+                    solara.v.ListItemIcon(children=[solara.v.Icon(children=["mdi-road"])])
+                    solara.v.ListItemTitle(style_="padding: 0 20px;", children=["Roadmap"])
 
     return main
