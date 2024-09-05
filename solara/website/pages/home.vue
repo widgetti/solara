@@ -1,6 +1,15 @@
 <template>
     <main>
         <section id="hero">
+        <nav class="hero-nav"
+            style="position: absolute; top: 0; width: 100%; height: 3.5rem; font-size: 1.25rem; font-weight: 300; display: flex; flex-direction: row; justify-content: flex-end; align-items: center; padding: 0 40px; gap: 40px; box-sizing: border-box;">
+            <a href="/documentation" style="color: var(--color-text)">
+                Documentation
+            </a>
+            <a href="/showcase" style="color: var(--color-text)">
+                Showcase
+            </a>
+        </nav>
             <div class="hero-stars"></div>
             <div class="hero-planet-element"></div>
             <div class="in-hero-banner">
@@ -355,9 +364,6 @@
                 <div class="footer-flex homepage-row" style="width: 40%; padding-right: 60px;">
                     <div class="footer-flex homepage-column">
                         <b>Resources</b>
-                        <a href="/documentation">
-                            Features
-                        </a>
                         <a href="/pricing">
                             Pricing
                         </a>
