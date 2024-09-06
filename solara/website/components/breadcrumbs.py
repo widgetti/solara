@@ -10,7 +10,7 @@ def BreadCrumbs(route_current: solara.Route):
     routes: List[solara.Route] = _resolve_path_to_route(current_path_parts[1:], router.routes, [])
     print("Found routes", [r.path for r in routes])
 
-    with solara.Row(style={"align-items": "center"}) as main:
+    with solara.Row(style={"align-items": "center", "flex-wrap": "wrap"}) as main:
         for i, route in enumerate(routes):
             if i == len(routes) - 1:
                 solara.Text(route.label, style={"color": "var(--color-text-fade)"})

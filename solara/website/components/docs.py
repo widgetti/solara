@@ -115,6 +115,6 @@ def CategoryLayout(children=[]):
     if route_current.path == "/":
         return Gallery()
     else:
-        with solara.Column(align="stretch", children=children) as main:
+        with solara.Column(align="stretch", children=children, style={"max-width": "100%"}) as main:
             pass
         return main
