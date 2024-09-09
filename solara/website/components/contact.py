@@ -1,20 +1,17 @@
+import json
 import os
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+import requests
 
 from typing import Any, Dict, Optional
 import solara
 
 
-# Set up email server details
-smtp_server = "smtp.gmail.com"
-smtp_port = 465  # For SSL
-email_user = None
-email_password = None
+postmark_api_key = None
+contact_email_address = None
+
 try:
-    email_user = os.environ.get("CONTACT_EMAIL_USER")
-    email_password = os.environ.get("CONTACT_EMAIL_PASSWORD")
+    postmark_api_key = os.environ["POSTMARK_API_KEY"]
+    contact_email_address = os.environ["SOLARA_CONTACT_EMAIL_ADDRESS"]
 except Exception:
     pass
 
@@ -35,31 +32,36 @@ def Contact(
     error: solara.Reactive[Optional[str]] = solara.use_reactive(None)
 
     def send(*_ignore):
-        if email_user is None or email_password is None:
-            error.set("Email server details not set. Please set environment variables.")
+        if postmark_api_key is None or contact_email_address is None:
+            error.set("Email service not properly configured. Please contact the site administrator at solara@widgetti.io.")
         else:
             # Create the email content
-            msg = MIMEMultipart()
-            msg["From"] = email_user
-            msg["To"] = "contact@solara.dev"
+            msg = {}
+            msg["From"] = contact_email_address
+            msg["To"] = contact_email_address
             msg["Subject"] = email_subject
+            msg["ReplyTo"] = email.value
 
             # Email body
-            body = f"""
-            First Name: {first_name.value}
-            Last Name: {last_name.value}
-            Email: {email.value}
-            Company: {company.value}
-            Message: {message.value}
+            msg["HtmlBody"] = f"""
+            <b>First Name</b>: {first_name.value}<br />
+            <b>Last Name</b>: {last_name.value}<br />
+            <b>Email</b>: {email.value}<br />
+            <b>Company</b>: {company.value}<br />
+            <b>Message</b>: {message.value}<br />
             """
-            msg.attach(MIMEText(body, "plain"))
 
             # Send the email
             try:
-                server = smtplib.SMTP_SSL(smtp_server, smtp_port)
-                server.login(email_user, email_password)
-                server.sendmail(email_user, msg["To"], msg.as_string())
-                server.quit()
+                requests.post(
+                    "https://api.postmarkapp.com/email",
+                    headers={
+                        "Accept": "application/json",
+                        "Content-Type": "application/json",
+                        "X-Postmark-Server-Token": postmark_api_key,
+                    },
+                    data=json.dumps(msg),
+                )
                 print("Email sent successfully!")
             except Exception as e:
                 error.set(f"Error sending email: {e}")
