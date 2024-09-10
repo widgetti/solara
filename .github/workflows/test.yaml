@@ -323,7 +323,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-results-pyinstaller-os${{ matrix.os }}-python${{ matrix.python-version }}
-          path: test-results
+          path: |
+            test-results
+            ${{ env.DIFF_FILE_LOCATION }}
+            ./**/${{ env.LOCK_FILE_LOCATION }}
+          include-hidden-files: true
 
       - name: Upload CI package locks
         if: steps.install_no_lock.outputs.HAS_DIFF == 'true' || steps.prepare.outputs.LOCKS_EXIST == 'false'
