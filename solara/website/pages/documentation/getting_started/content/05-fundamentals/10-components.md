@@ -41,7 +41,7 @@ By utilizing both Widget Components and Function Components, you can create flex
 In Solara, users can create their own custom components without any special distinction from the built-in components provided by the framework, they are all components. These user-defined components have the same capabilities and can be composed seamlessly alongside Solara's components, allowing for the creation of highly customized and reusable user interfaces.
 
 # Defining Components
-To create a component in Solara, you'll start by defining a Python function decorated with @solara.component. Inside the function, you can create the component's structure by calling Solara's built-in components or creating custom components to suit your specific needs. If a single element is created, it's taken as the component's main element. If multiple elements are created, they are automatically wrapped in a Column component.
+To create a component in Solara, you'll start by defining a Python function decorated with `@solara.component`. Inside the function, you can create the component's structure by calling Solara's built-in components or creating custom components to suit your specific needs. If a single element is created, it's taken as the component's main element. If multiple elements are created, they are automatically wrapped in a [Column component](/documentation/components/layout/column).
 
 Here's an example of a simple Solara component that displays a button:
 
@@ -69,7 +69,7 @@ def MyApp():
     MyButton()
 ```
 
-In this example, we create a `MyApp` function decorated with `@solara.component`. The function create two MyButton elements, resulting in two buttons (or two component instances).
+In this example, we create a `MyApp` function decorated with `@solara.component`. The function creates two MyButton elements, resulting in two buttons (or two component instances).
 
 ## Handling User Interactions
 Components in Solara can capture user input and respond to events, such as button clicks or form submissions. To handle user interactions, you'll define callback functions and connect them to your components using Solara's event handling system.
@@ -87,7 +87,7 @@ def MyInteractiveButton():
     solara.Button("Click me!", on_click=on_button_click)
 ```
 
-In this example, we define a function called on_button_click that will be executed when the button is clicked. In the MyInteractiveButton function, we create a Button component and set the on_click argument to the on_button_click function.
+In this example, we define a function called `on_button_click` that will be executed when the button is clicked. In the `MyInteractiveButton` function, we create a Button component and set the `on_click` argument to the `on_button_click` function.
 
 By following these steps, you can create and use components to build rich, interactive applications with Solara.
 
@@ -111,7 +111,7 @@ def MyButton(text):
 In this example, we define a function called MyButton that takes a single argument, text. The render function creates a Button component from Solara with the specified text.
 
 ### Using Application state in Components
-To manage the state of a component in Solara, you can use the solara.reactive() function to create reactive variables. Reactive variables are used to store values that can change over time and automatically trigger component updates when their values change. This allows you to create components that respond to changes in data and user interactions.
+To manage the state of a component in Solara, you can use the [`solara.reactive()`](/documentation/api/utilities/reactive) function to create reactive variables. Reactive variables are used to store values that can change over time and automatically trigger component updates when their values change. This allows you to create components that respond to changes in data and user interactions.
 
 Here's an example that demonstrates the use of reactive variables in Solara components:
 ```solara
@@ -119,22 +119,25 @@ import solara
 
 counter = solara.reactive(0)
 
+
 def increment():
     counter.value += 1
+
 
 @solara.component
 def CounterDisplay():
     solara.Info(f"Counter: {counter.value}")
 
+
 @solara.component
 def IncrementButton():
     solara.Button("Increment", on_click=increment)
+
 
 @solara.component
 def Page():
     IncrementButton()
     CounterDisplay()
-
 ```
 
 In this example, we create a reactive variable counter with an initial value of 0. We define two components: `CounterDisplay` and `IncrementButton`. `CounterDisplay` renders the current value of counter, while `IncrementButton` increments the value of counter when clicked. Whenever the counter value changes, `CounterDisplay` automatically updates to display the new value.
@@ -143,33 +146,35 @@ By using arguments and state in your Solara components, you can create more dyna
 
 ### Internal State in Components
 
-In addition to using reactive variables for global or application-wide state, you can also manage internal or component-specific state using the use_state hook in Solara. The use_state hook allows you to define state variables that are local to a component, and automatically trigger updates when their values change.
+In addition to using reactive variables for global or application-wide state, you can also manage internal or component-specific state using the [`use_reactive`](/documentation/api/hooks/use_reactive) hook in Solara. The `use_reactive` hook allows you to define reactive variables which are local to a component, and automatically trigger updates when their values change.
 
-To use the use_state hook, call the solara.use_state() function inside your component function. This function takes an initial value as an argument and returns a tuple containing the current state value and a function to update the state.
+To use the `use_reactive` hook, call the solara.use_reactive() function inside your component function. This function takes an initial value as an argument and returns a the same reactive variable on each render.
 
-Here's an example that demonstrates the use of the use_state hook to manage internal state in a Solara component:
+Here's an example that demonstrates the use of the use_reactive hook to manage internal state in a Solara component:
 
 ```solara
 import solara
 
+
 @solara.component
 def Counter():
-    count, set_count = solara.use_state(0)
+    count = solara.use_reactive(0)
 
     def increment():
-        set_count(count + 1)
+        count.value += 1
 
     solara.Button("Increment", on_click=increment)
-    solara.Info(f"Counter: {count}")
+    solara.Info(f"Counter: {count.value}")
+
 
 @solara.component
 def Page():
     Counter()
 ```
 
-In this example, we define a Counter component that uses the use_state hook to manage its internal state. We create a state variable count with an initial value of 0 and a function set_count to update the state. The increment function increments the value of count when the button is clicked. Whenever the count value changes, the component automatically updates to display the new value.
+In this example, we define a Counter component that uses the `use_reactive` hook to manage its internal state. We create a reactive variable called `count` with an initial value of 0 and a function `increment` to update the state. The increment function increments the value of count when the button is clicked. Whenever the count value changes, the component automatically updates to display the new value.
 
-By using the use_state hook, you can manage the internal state of your components and create more dynamic and interactive applications that respond to user input and changes in data.
+By using the `use_reactive` hook, you can manage the internal state of your components and create more dynamic and interactive applications that respond to user input and changes in data.
 
 ## Lazy Rendering in Solara Components
 
@@ -216,7 +221,7 @@ This example demonstrates Solara's lazy rendering, where only the relevant compo
 
 
 ## Conclusions
-In conclusion, understanding components, their arguments, and how to manage their internal state is crucial for building Solara applications. To create more advanced components, you need to have a deeper understanding of hooks, such as the use_state hook we have already discussed.
+In conclusion, understanding components, their arguments, and how to manage their internal state is crucial for building Solara applications. To create more advanced components, you need to have a deeper understanding of hooks, such as the `use_reactive` hook we have already discussed.
 
 In the next fundamentals article, we will explore more hooks available in Solara, which will enable you to build more sophisticated components that cater to a wide range of use cases. By learning about hooks, you can create powerful components that can manage state, interact with other components, and respond to user input.
 
