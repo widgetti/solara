@@ -33,9 +33,9 @@ Solara is primarily developed by [Widgetti](https://widgetti.io/), a software de
         )
         DevCard(
             "Iisakki Rotko",
-            "Junior Software Engineer",
+            "Medior Software Engineer",
             "https://github.com/iisakkirotko",
-            "Iisakki is a junior software engineer at Widgetti, working primarily on Solara. He has a background in physics and web development.",
+            "Iisakki is a medior software engineer at Widgetti, working primarily on Solara. He has a background in physics and web development.",
             image="https://dxhl76zpt6fap.cloudfront.net/public/avatar/iisakki-rotko.jpg",
             linkedin="https://www.linkedin.com/in/iisakkirotko/",
             email="iisakki.rotko@widgetti.io",

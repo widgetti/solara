@@ -18,6 +18,8 @@ As stated before, the `solara-enterprise` package is free for personal use, but 
 - Access to all `solara-enterprise` components and functionality
 - Priority support from the Solara team, including bug fixes and questions
 - Potential for custom components and functionality as agreed separately
+- Trainings and workshops for your team
+- Regular code reviews and/or design consultation
 
 All enterprise licenses are custom and are priced based on the needs of the organization. Please contact us below for more information.
         """)

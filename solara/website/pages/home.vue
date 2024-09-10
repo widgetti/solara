@@ -1,19 +1,19 @@
 <template>
     <main>
         <section id="hero">
-        <nav class="hero-nav"
-            style="position: absolute; top: 0; width: 100%; height: 3.5rem; font-size: 1.25rem; font-weight: 300; display: flex; flex-direction: row; justify-content: flex-end; align-items: center; padding: 0 40px; gap: 40px; box-sizing: border-box;">
-            <a href="/documentation" style="color: var(--color-text)">
-                Documentation
-            </a>
-            <a href="/showcase" style="color: var(--color-text)">
-                Showcase
-            </a>
-        </nav>
+            <nav class="hero-nav"
+                style="position: absolute; top: 0; width: 100%; height: 3.5rem; font-size: 1.25rem; display: flex; flex-direction: row; justify-content: flex-end; align-items: center; padding: 0 30px; gap: 30px; box-sizing: border-box;">
+                <a href="/documentation">
+                    Documentation
+                </a>
+                <a href="/showcase">
+                    Showcase
+                </a>
+            </nav>
             <div class="hero-stars"></div>
             <div class="hero-planet-element"></div>
             <div class="in-hero-banner">
-                Solarathon 2024 • October 13-15 • Last chance to register
+                Catch Us At PyData Paris, September 25-26, 2024
             </div>
             <h1>Build high-quality web applications in pure Python</h1>
             <h2>
@@ -33,12 +33,13 @@
                     <img src="https://dxhl76zpt6fap.cloudfront.net/new-homepage/logos/domino.png" alt="Domino Data Lab"
                         width="80%" />
                 </a>
-                <a href="https://plotly.com/" target="_blank">
-                    <img src="https://dxhl76zpt6fap.cloudfront.net/new-homepage/logos/plotly.png" alt="Plotly"
-                        width="80%" />
+                <a href="https://www.stsci.edu/home" target="_blank">
+                    <img src="https://dxhl76zpt6fap.cloudfront.net/new-homepage/logos/stsci.png"
+                        alt="Space Telescope Science Institute" width="50%" />
                 </a>
-                <a href="https://merck.com/" target="_blank">
-                    <img src="https://dxhl76zpt6fap.cloudfront.net/new-homepage/logos/merck.svg" alt="Merck" width="80%" />
+                <a href="https://www.gluesolutions.io/home" target="_blank">
+                    <img src="https://dxhl76zpt6fap.cloudfront.net/new-homepage/logos/glue-solutions-white.png"
+                        alt="Glue Solutions, Inc." width="50%" />
                 </a>
                 <a href="https://planeto-energy.ch/" target="_blank">
                     <img src="https://dxhl76zpt6fap.cloudfront.net/new-homepage/logos/planeto.png" alt="Planeto Energy"
@@ -207,8 +208,8 @@
             </a>
             <div class="testimonials">
                 <div class="testimonial card-flat">
-                    <img src="https://dxhl76zpt6fap.cloudfront.net/new-homepage/logos/plotly.png" alt="Plotly"
-                        height="60px" />
+                    <img src="https://dxhl76zpt6fap.cloudfront.net/new-homepage/logos/flojoy.svg" alt="Flojoy"
+                        style="filter: grayscale(1) contrast(0.4)" height="60px" />
                     <p>
                         Solara is like streamlit, but for Jupyter. I am really excited to see where this goes!
                     </p>
@@ -216,7 +217,7 @@
                         <img src="https://dxhl76zpt6fap.cloudfront.net/public/avatar/jack-parmer.jpg" alt="Jack Parmer" />
                         <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center;">
                             <h4>Jack Parmer</h4>
-                            <p>Former CEO and Co-Founder, Plotly</p>
+                            <p>Former CEO of Plotly, CEO of Flojoy</p>
                         </div>
                     </div>
                 </div>
@@ -304,12 +305,12 @@
                 <div class="deploy-card-top-text">
                     <h2>Get Started in Seconds</h2>
                     <p>
-                        To deploy a new Project, installed Solara as a normal Python package or get started with the server
+                        To deploy a new Project, install Solara as a normal Python package or get started with the server
                         from
                         the command line.
                     </p>
-                    <a href="/documentation">
-                        Get started &gt;
+                    <a href="/documentation/getting_started">
+                        Install Now &gt;
                     </a>
                 </div>
                 <img src="https://dxhl76zpt6fap.cloudfront.net/new-homepage/backgrounds/what-ship.svg"
@@ -440,14 +441,7 @@
                 </div>
             </div>
             <div class="footer-flex homepage-row">
-                <div>
-                    <a>
-                        Privacy Policy
-                    </a>
-                    <a>
-                        Terms and Conditions
-                    </a>
-                </div>
+                <div></div>
                 <small>
                     © 2024 Widgetti BV. All rights reserved.
                 </small>

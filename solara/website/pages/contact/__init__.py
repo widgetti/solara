@@ -15,7 +15,7 @@ def Page():
 Solara is developed mostly by Maarten Breddels and Mario Buikhuizen, Founders
 of [Widgetti](https://widgetti.io/).
 
-For business inquiries, please reach out using the form below, or send an email to contact@solara.dev](mailto:contact@solara.dev) regarding Solara, or [info@widgetti.io](mailto:info@widgetti.io) regarding more general Jupyter related matters.
+For business inquiries, please reach out using the form below, or send an email to [contact@solara.dev](mailto:contact@solara.dev) regarding Solara, or [info@widgetti.io](mailto:info@widgetti.io) regarding more general Jupyter related matters.
 """)
     Contact(
         title="Contact Us", subtitle="Please fill out the form below and we will get back to you as soon as possible.", email_subject="Contact Form Submission"
