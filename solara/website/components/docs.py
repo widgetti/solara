@@ -70,7 +70,7 @@ def NoPage():
 def WithCode(route_current):
     component = getattr(route_current.module, "Page", None)
     with solara.Column(style={"flex-grow": 1, "padding-top": "56px"}) as main:
-        BreadCrumbs(route_current)
+        BreadCrumbs()
         # It renders code better
         MarkdownWithMetadata(
             route_current.module.__doc__ or "# no docs yet",
