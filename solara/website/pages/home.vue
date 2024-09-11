@@ -11,7 +11,7 @@
                 </a>
             </nav>
             <div class="hero-stars"></div>
-            <div class="hero-planet-element"></div>
+            <div class="hero-planet-element solara-ssg-wait-for-animation"></div>
             <div class="in-hero-banner">
                 Catch Us At PyData Paris, September 25-26, 2024
             </div>
@@ -613,10 +613,14 @@ section#hero > *{
 
     border-radius: 100%;
 
-    animation: 1.5s ease-in 0s 1 sunRise;
     /* border: var(--radius-none, 1px) solid rgba(255, 255, 255, 0.05); */
     background: radial-gradient(51.38% 51.38% at 50% 50%, #14100C 67.59%, #141210 85.76%, #EBAC60 100%);
     box-shadow: 0px 1px 0px 0px #D9B589 inset, 0px -2px 10px 0px rgba(255, 240, 223, 0.50), 0px -2px 40px 0px rgba(217, 179, 137, 0.35), 0px -20px 40px 0px rgba(255, 240, 223, 0.20), 0px -10px 250px 5px #DCB46E;
+}
+
+.solara-pre-rendered #hero .hero-planet-element,
+.solara-no-ssg #hero .hero-planet-element {
+    animation: 1.5s ease-in 0s 1 sunRise;
 }
 
 #hero .hero-stars {
@@ -639,7 +643,10 @@ section#hero > *{
     max-width: 40%;
 }
 
-#hero h1, #hero h2 {
+.solara-pre-rendered #hero h1,
+.solara-pre-rendered #hero h2,
+.solara-no-ssg #hero h1,
+.solara-no-ssg #hero h2 {
     animation: 1.5s ease-in 0s 1 fadeTitles;
 }
 
