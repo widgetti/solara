@@ -154,7 +154,7 @@ reactive_dict.value = dict_copy  # GOOD: re-assign a new dictionary
 
 ### Not mutating user defined classes
 
-Or user defined classes, like a Panda DataFrame.
+Or user defined classes, like a Pandas DataFrame.
 
 ```python
 import solara
