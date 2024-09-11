@@ -1143,8 +1143,10 @@ module.exports = {
         document.querySelectorAll('a').forEach(this.setupRouter);
     },
     destroyed() {
-        // Otherwise we have extra css on other pages after front-end navigation
-        document.getElementById('homepage.css').remove();
+        // when ssg is on, this css is not getting removed
+        if(document.getElementById('ipyvue-solara-website-homepage')) {
+            document.getElementById('ipyvue-solara-website-homepage').remove();
+        }
     },
     methods: {
         setupRouter(a) {
