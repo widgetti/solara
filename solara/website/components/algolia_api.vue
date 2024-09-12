@@ -19,6 +19,7 @@
                     @keyup.esc="close();"
                     @keyup.down="hoverItem = hoverItem == null ? 0 : Math.min(hoverItem + 1, results.hits.length - 1, 9)"
                     @keyup.up="hoverItem = hoverItem == null ? 9 : Math.max(hoverItem - 1, 0)"
+                    @focus="selectText();"
                     class="algolia"
                 ></v-text-field>
         </template>
@@ -118,6 +119,9 @@ module.exports = {
             }else{
                 this.$set(this.results, []);
             }
+        },
+        selectText() {
+            this.$refs.search.$refs.input.select();
         },
         getSnippet( element ) {
             if (element.type == "content") {
