@@ -269,6 +269,12 @@
         solara.production = {{ production | tojson | safe }};
         const themeVariants = ['light', 'dark', 'auto']
         solara.preRendered = {{ pre_rendered_html | safe | length | tojson }} > 0
+        if(solara.preRendered) {
+            document.body.classList.add('solara-ssg', 'solara-pre-rendered');
+        } else {
+            document.body.classList.add('solara-no-ssg');
+        }
+
     </script>
 
     <script>
@@ -329,8 +335,25 @@
                     // if preRendered, the app is not mounted yet
                     // so we mount it when loading becomes false
                     if (solara.preRendered && !this.mounted) {
-                        this.isMounted = true;
-                        this.$mount("#app")
+                        function waitForAnimation(element) {
+                            return new Promise((resolve) => {
+                                element.addEventListener('animationend', resolve, { once: true });
+                            });
+                        }
+
+                        function waitForAllAnimations(elements) {
+                            const animationPromises = Array.from(elements).map(element => waitForAnimation(element));
+                            return Promise.all(animationPromises);
+                        }
+
+                        (async () => {
+                            await waitForAllAnimations(document.querySelectorAll('.solara-ssg-wait-for-animation'));
+                            console.log("animation finished");
+                            document.body.classList.remove('solara-pre-rendered');
+                            document.body.classList.add('solara-pre-rendered-finished');
+                            this.isMounted = true;
+                            this.$mount("#app")
+                        })();
                     } else {
                         this.isMounted = true;
                     }

@@ -1,0 +1,3 @@
+# About Us
+
+Solara is a framework created by Maarten Breddels, and developed by [Widgetti](https://widgetti.io). Widgetti is a small company based in the Netherlands, focusing on developing tools for the Jupyter ecosystem. We combine ipywidgets and python experience with expertise in front-end development to help data scientists and python app developers make the most of their time. If you could use our years of diverse industry experience, reach out [here](/contact). You can find out more about Solara [here](/documentation/getting_started/introduction), or get to know our team [here](/our_team).

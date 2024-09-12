@@ -289,46 +289,6 @@ blockquote p:last-child {
     color: white !important;
 }
 
-/* hero */
-.hero {
-    background: var(--color-primary-lightest) url(https://dxhl76zpt6fap.cloudfront.net/public/hero.webp);
-    background-size: cover;
-    min-height: 660px;
-    padding: 7rem 0;
-}
-
-.theme--dark .hero {
-    background: var(--dark-color-primary-lightest) url(https://dxhl76zpt6fap.cloudfront.net/public/hero.webp);
-    background-size: cover;
-}
-
-.hero h1 {
-    font-size: 4.5rem;
-}
-
-.hero h2 {
-    padding-left: 150px;
-    padding-right: 150px;
-}
-
-.hero b {
-    color: var(--color-primary);
-}
-
-.theme--dark .hero b {
-    color: var(--dark-color-primary);
-}
-
-@media screen and (max-width: 960px) {
-    .hero {
-        padding: 4rem 0;
-        min-height: auto;
-    }
-
-    .hero h1 {
-        font-size: 3rem;
-    }
-}
 
 /* fixes padding issue on drawer menu */
 .v-list-group__items {
@@ -457,13 +417,6 @@ blockquote p:last-child {
 /* MOBILE */
 
 @media screen and (aspect-ratio < 1) {
-    .hero{
-        background-position-x: 29%;
-    }
-        .hero h2{
-            padding-left: 0;
-            padding-right: 0;
-        }
     .container.fill-height > .ma-8.row{
         max-width: 80%;
     }
