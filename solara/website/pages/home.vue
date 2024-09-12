@@ -533,7 +533,7 @@ p {
     color: var(--marketing-primary-text-title, #F3F0EC);
 }
 
-section {
+main > section {
     width: 100%;
     display: flex;
     flex-direction: column;
