@@ -56,3 +56,9 @@ graph TD;
     RUNNING-- "work finished" -->FINISHED
     RUNNING-- "cancel()" -->CANCELLED
 ```
+
+## Future deprecation
+
+Note that [`use_task`](/https://solara.dev/documentation/components/lab/use_task) is an alternative to `use_thread` that will most likely
+replace `use_thread` in the future. Compared to `use_thread`, `use_task` has no intrusive cancel, which turned out to be too large of
+a performance overhead to be useful. Also, `use_task` can run async functions, which is not possible with `use_thread`.
