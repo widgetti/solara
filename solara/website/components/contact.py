@@ -30,10 +30,13 @@ def Contact(
     company = solara.use_reactive("")
     message = solara.use_reactive("")
     error: solara.Reactive[Optional[str]] = solara.use_reactive(None)
+    success = solara.use_reactive(False)
 
     def send(*_ignore):
         if postmark_api_key is None or contact_email_address is None:
             error.set("Email service not properly configured. Please contact the site administrator at solara@widgetti.io.")
+        elif not first_name.value or not last_name.value or not email.value or not message.value:
+            error.set("Please fill out all required fields.")
         else:
             # Create the email content
             msg = {}
@@ -65,6 +68,14 @@ def Contact(
                 print("Email sent successfully!")
             except Exception as e:
                 error.set(f"Error sending email: {e}")
+            else:
+                success.set(True)
+                error.set(None)
+                first_name.set("")
+                last_name.set("")
+                email.set("")
+                company.set("")
+                message.set("")
 
     with solara.Card(title=title, style={"width": "100%", "max-width": "1024px", **style}):
         solara.Markdown(subtitle)
@@ -85,9 +96,6 @@ def Contact(
                 on_click=lambda: [first_name.set(""), last_name.set(""), email.set(""), company.set(""), message.set("")],
             )
 
-    def close_snackbar(*_ignore):
-        error.set(None)
-
     solara.Style(
         """
         .v-snack__wrapper {
@@ -98,10 +106,20 @@ def Contact(
 
     with solara.v.Snackbar(
         v_model=error.value is not None,
-        timeout=50000,
-        on_v_model=close_snackbar,
+        timeout=5000,
+        on_v_model=lambda *_: error.set(None),
         left=True,
-        color="transparent",
+        color="error",
     ):
-        with solara.Error(error.value):
-            solara.Button(icon=True, icon_name="mdi-close", color="white", on_click=close_snackbar)
+        solara.Markdown(error.value or "", style={"--dark-color-text": "white", "--color-text": "white"})
+        solara.Button(icon=True, icon_name="mdi-close", color="white", on_click=lambda: error.set(None))
+
+    with solara.v.Snackbar(
+        v_model=success.value,
+        timeout=5000,
+        on_v_model=lambda *_: success.set(False),
+        left=True,
+        color="success",
+    ):
+        solara.Markdown("Your message has been sent!", style={"--dark-color-text": "white", "--color-text": "white"})
+        solara.Button(icon=True, icon_name="mdi-close", color="white", on_click=lambda: success.set(False))
