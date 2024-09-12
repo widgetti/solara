@@ -22,5 +22,6 @@ def Page():
 
             ## Who Are We Looking For?
             We are looking for developers, technical writers, designers, and everything in between.
-            """
+            """,
+            style={"max-width": "90%", "margin": "0 auto"},
         )

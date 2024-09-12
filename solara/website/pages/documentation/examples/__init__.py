@@ -1,5 +1,5 @@
 import solara
-from solara.website.components import Gallery
+from solara.website.components import Gallery, MarkdownWithMetadata
 
 title = "Examples"
 
@@ -34,7 +34,7 @@ def Layout(children):
                 doc = module.__doc__
                 if doc:
                     with solara.VBox(grow=True):
-                        solara.Markdown(doc)
+                        MarkdownWithMetadata(doc)
                 with solara.HBox():
                     if route_current.path != "/":
                         solara.Button("View source code on GitHub", icon_name="mdi-github-circle", href=github_url, class_="ma-2", target="_blank", text=True)

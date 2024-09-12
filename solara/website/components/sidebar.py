@@ -14,7 +14,9 @@ def Sidebar():
             all_routes = route.children
             break
 
-    with solara.v.List(expand=True, nav=True, style_="height: 100%; display: flex; flex-direction: column;") as main:
+    with solara.v.List(
+        expand=True, nav=True, style_="height: 100%; display: flex; flex-direction: column; background-color: var(--color-material-background);"
+    ) as main:
         with solara.v.ListItemGroup(v_model=router.path):
             # e.g. getting_started, examples, components, api, advanced, faq
             for route in all_routes:
@@ -93,5 +95,9 @@ def Sidebar():
                 with solara.v.ListItem(value="/changelog"):
                     solara.v.ListItemIcon(children=[solara.v.Icon(children=["mdi-history"])])
                     solara.v.ListItemTitle(style_="padding: 0 20px;", children=["Changelog"])
+            with solara.Link("/roadmap"):
+                with solara.v.ListItem(value="/roadmap"):
+                    solara.v.ListItemIcon(children=[solara.v.Icon(children=["mdi-road"])])
+                    solara.v.ListItemTitle(style_="padding: 0 20px;", children=["Roadmap"])
 
     return main

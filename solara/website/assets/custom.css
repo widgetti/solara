@@ -34,6 +34,17 @@
     --docs-social-twitter: #000000;
 }
 
+.theme--dark {
+    --color-border-appbar: hsla(0,0%,100%,.12);
+    --color-material-background: #1e1e1e;
+    --color-text-fade: hsla(0,0%,100%,.7);
+}
+.theme--light {
+    --color-border-appbar: rgba(0,0,0,.12);
+    --color-material-background: #fff;
+    --color-text-fade: rgba(0,0,0,.6);
+}
+
 html,
 body,
 p,
@@ -199,9 +210,8 @@ blockquote p:last-child {
     }
 .v-sheet.docs-card-container{
     width: 100%;
-    padding: 0 10%;
     justify-content: start;
-    align-content: center;
+    align-content: stretch;
     flex-wrap: wrap !important;
     flex-grow: 1;
     row-gap: 20px;
@@ -211,11 +221,14 @@ blockquote p:last-child {
 }
 .v-sheet.docs-card-container > a > .docs-card{
     display: flex;
-    width: 20rem;
-    height: 12rem;
+    flex-grow: 1;
+    height: 4rem;
     border-radius: 16px !important;
     color: var(--color-grey-light);
 }
+    .v-sheet.docs-card-container > a > .docs-card > h2 {
+        padding: 0 24px;
+    }
     .v-sheet.docs-card-container > a .docs-card-icon{
         padding-right: 1.5rem;
         transition: ease padding 0.25s;
@@ -274,6 +287,8 @@ blockquote p:last-child {
 /* header */
 .header-logo {
     display: block;
+    height: 100%;
+    margin: 0;
 }
 .news {
     background-color: var(--color-primary);
@@ -322,7 +337,7 @@ blockquote p:last-child {
 
 .menu li a:link {
     display: block;
-    padding: 1rem 2rem;
+    padding: 0.75rem;
 }
 
 .menu .active {
@@ -385,11 +400,6 @@ blockquote p:last-child {
 
 .sidebar li.active {
     font-weight: bolder;
-}
-
-.solara-autorouter-content {
-    padding-top: 2rem;
-    max-width: 100%;
 }
 
 .jp-RenderedHTMLCommon {

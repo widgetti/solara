@@ -272,7 +272,7 @@ def Layout(children=[]):
                 return solara.Error("Page not found")
             else:
                 with rv.Row(
-                    style_="flex-wrap: nowrap; margin: 0; min-height: calc(100vh - 215.5px);",
+                    style_="flex-wrap: nowrap; margin: 0; min-height: calc(100vh - 64px);",
                     justify="center" if route_current is not None and route_current.path in ["documentation", "showcase"] else "start",
                 ):
                     if route_current is not None and route_current.module is not None and hasattr(route_current.module, "Sidebar"):
@@ -280,7 +280,7 @@ def Layout(children=[]):
                             clipped=True,
                             class_="d-none d-md-block",
                             height="unset",
-                            style_="min-height: calc(100vh - 215.5px);",
+                            style_="min-height: calc(100vh - 64px);",
                             width="20rem",
                             v_model=True,  # Forces menu to display even if it had somehow been closed
                         ):
@@ -289,17 +289,13 @@ def Layout(children=[]):
                         tag="main",
                         md=True,
                         class_="pa-0",
-                        style_=f"""max-width: {'1024px' if route_current.path not in ['documentation', 'contact', 'changelog']
-                                               else 'unset'}; overflow-x: hidden;""",
+                        style_="max-width: 1024px" if route_current.path == "showcase" else "",
                     ):
-                        if route_current is not None and route_current.path == "/":
-                            with rv.Row(align="center"):
-                                pass
                         with solara.Row(
                             children=children,
                             justify="center",
                             classes=["solara-page-content-search"],
-                            style=f"height: {'100%' if route_current.path == 'documentation' else 'unset'};",
+                            style="height: unset",
                         ):
                             pass
 

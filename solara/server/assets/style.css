@@ -75,7 +75,8 @@ div.solara-markdown-output {
 
 
 div.highlight {
-    background-color: #eee;
+    border: 1px solid var(--color-border-appbar);
+    background-color: #fafafa;
     padding: 30px;
     border-radius: 20px;
     margin-top: 15px;
