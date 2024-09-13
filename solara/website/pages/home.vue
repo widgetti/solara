@@ -26,7 +26,7 @@
                 For performance, efficiency and developer experience.
             </h3>
             <h4>
-                Solara is trusted by the most innovative teams on the web.
+                Solara is trusted by the most innovative teams.
             </h4>
             <div class="logo-grid">
                 <a href="https://www.dominodatalab.com/" target="_blank">
@@ -56,7 +56,7 @@
                 <img src="https://dxhl76zpt6fap.cloudfront.net/new-homepage/lazy-deco-stroke.svg" class="lazy-stroke"
                     width="80%" />
                 <h3>
-                    Build high-quality web applications without needing front-end experience.
+                    Build high-quality web applications without front-end experience.
                 </h3>
             </div>
             <div class="double-tile-container homepage-row">
