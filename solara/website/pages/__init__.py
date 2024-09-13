@@ -251,90 +251,95 @@ def Layout(children=[]):
 
     target, set_target = solara.use_state(0)
 
-    if route_current and route_current.path == "apps":
-        return children[0]
-    if route_current is not None and route_current.path == "/":
-        return Home()
-    with solara.VBox(grow=False) as main:
-        Title(title="Solara documentation")
-        solara.Meta(name="twitter:card", content="summary_large_image")
-        solara.Meta(name="twitter:site", content="@solara_dev")
-        solara.Meta(name="twitter:image", content="https://solara.dev/static/assets/images/logo-small.png")
-        solara.Meta(property="og:url", content="https://solara.dev" + router.path)
-        solara.Meta(property="og:image", content="https://solara.dev/static/assets/images/logo-small.png")
-        solara.Meta(property="og:type", content="website")
-        Header(
-            on_toggle_left_menu=lambda: set_show_left_menu(not show_left_menu),
-            on_toggle_right_menu=lambda: set_show_right_menu(not show_right_menu),
-        )
-        with rv.Container(tag="section", fluid=True, ma_0=True, pa_0=True, class_="fill-height solara-content-main"):
-            if route_current is None:
-                return solara.Error("Page not found")
-            else:
-                with rv.Row(
-                    style_="flex-wrap: nowrap; margin: 0; min-height: calc(100vh - 64px);",
-                    justify="center" if route_current is not None and route_current.path in ["documentation", "showcase"] else "start",
-                ):
-                    if route_current is not None and route_current.module is not None and hasattr(route_current.module, "Sidebar"):
-                        with solara.v.NavigationDrawer(
-                            clipped=True,
-                            class_="d-none d-md-block",
-                            height="unset",
-                            style_="min-height: calc(100vh - 64px);",
-                            width="20rem",
-                            v_model=True,  # Forces menu to display even if it had somehow been closed
-                        ):
-                            route_current.module.Sidebar()
-                    with rv.Col(
-                        tag="main",
-                        md=True,
-                        class_="pa-0",
-                        style_="max-width: 1024px" if route_current.path == "showcase" else "",
+    if route_current is not None:
+        with solara.Div(style={"display": "none"}):
+            solara.Meta(name="twitter:card", content="summary_large_image")
+            solara.Meta(name="twitter:site", content="@solara_dev")
+            solara.Meta(name="twitter:image", content="https://solara.dev/static/assets/images/logo-small.png")
+            solara.Meta(property="og:url", content="https://solara.dev" + router.path)
+            solara.Meta(property="og:image", content="https://solara.dev/static/assets/images/logo-small.png")
+            solara.Meta(property="og:type", content="website")
+    if route_current is not None and route_current.path == "apps":
+        Title(title="Solara: Example Apps")
+        children[0]
+    elif route_current is not None and route_current.path == "/":
+        Title(title="Solara: Build high-quality web applications in pure Python")
+        Home()
+    else:
+        with solara.VBox(grow=False) as main:
+            Title(title="Solara documentation")
+            Header(
+                on_toggle_left_menu=lambda: set_show_left_menu(not show_left_menu),
+                on_toggle_right_menu=lambda: set_show_right_menu(not show_right_menu),
+            )
+            with rv.Container(tag="section", fluid=True, ma_0=True, pa_0=True, class_="fill-height solara-content-main"):
+                if route_current is None:
+                    return solara.Error("Page not found")
+                else:
+                    with rv.Row(
+                        style_="flex-wrap: nowrap; margin: 0; min-height: calc(100vh - 64px);",
+                        justify="center" if route_current is not None and route_current.path in ["documentation", "showcase"] else "start",
                     ):
-                        with solara.Row(
-                            children=children,
-                            justify="center",
-                            classes=["solara-page-content-search"],
-                            style="height: unset",
+                        if route_current is not None and route_current.module is not None and hasattr(route_current.module, "Sidebar"):
+                            with solara.v.NavigationDrawer(
+                                clipped=True,
+                                class_="d-none d-md-block",
+                                height="unset",
+                                style_="min-height: calc(100vh - 64px);",
+                                width="20rem",
+                                v_model=True,  # Forces menu to display even if it had somehow been closed
+                            ):
+                                route_current.module.Sidebar()
+                        with rv.Col(
+                            tag="main",
+                            md=True,
+                            class_="pa-0",
+                            style_="max-width: 1024px" if route_current.path == "showcase" else "",
                         ):
-                            pass
+                            with solara.Row(
+                                children=children,
+                                justify="center",
+                                classes=["solara-page-content-search"],
+                                style="height: unset",
+                            ):
+                                pass
 
-            # absolute = True prevents the drawer from being below the overlay it generates
-            # Drawer navigation for top menu
-            with rv.NavigationDrawer(
-                v_model=show_right_menu,
-                on_v_model=set_show_right_menu,
-                fixed=True,
-                absolute=True,
-                right=True,
-                hide_overlay=False,
-                overlay_color="#000000",
-                overlay_opacity=0.5,
-                style_="height: 100vh",
-            ):
-                Algolia()
-                with rv.List(nav=True):
-                    with rv.ListItemGroup(active_class="text--primary"):
-                        for route in all_routes:
-                            if route.path == "apps":
-                                continue
-                            with solara.Link(route):
-                                solara.ListItem(route.label)
-
-            if route_current is not None and route_current.module is not None and hasattr(route_current.module, "Sidebar"):
-                with solara.v.NavigationDrawer(
+                # absolute = True prevents the drawer from being below the overlay it generates
+                # Drawer navigation for top menu
+                with rv.NavigationDrawer(
+                    v_model=show_right_menu,
+                    on_v_model=set_show_right_menu,
+                    fixed=True,
                     absolute=True,
-                    clipped=True,
-                    class_="d-md-none d-block",
-                    height="unset",
-                    style_="min-height: 100vh;",
-                    v_model=show_left_menu,
-                    on_v_model=set_show_left_menu,
-                    width="20rem",
+                    right=True,
+                    hide_overlay=False,
+                    overlay_color="#000000",
+                    overlay_opacity=0.5,
+                    style_="height: 100vh",
                 ):
-                    route_current.module.Sidebar()
+                    Algolia()
+                    with rv.List(nav=True):
+                        with rv.ListItemGroup(active_class="text--primary"):
+                            for route in all_routes:
+                                if route.path == "apps":
+                                    continue
+                                with solara.Link(route):
+                                    solara.ListItem(route.label)
 
-    return main
+                if route_current is not None and route_current.module is not None and hasattr(route_current.module, "Sidebar"):
+                    with solara.v.NavigationDrawer(
+                        absolute=True,
+                        clipped=True,
+                        class_="d-md-none d-block",
+                        height="unset",
+                        style_="min-height: 100vh;",
+                        v_model=show_left_menu,
+                        on_v_model=set_show_left_menu,
+                        width="20rem",
+                    ):
+                        route_current.module.Sidebar()
+
+        return main
 
 
 @solara.component
