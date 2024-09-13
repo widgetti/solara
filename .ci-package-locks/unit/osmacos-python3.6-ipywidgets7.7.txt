@@ -18,7 +18,7 @@ bqplot-image-gl==1.4.11
 bump2version==1.0.1
 cached-property==1.5.2
 cachetools==4.2.4
-certifi==2024.7.4
+certifi==2024.8.30
 cffi==1.15.1
 cfgv==3.3.1
 charset-normalizer==2.0.12
@@ -66,7 +66,7 @@ ipyvolume==0.5.2
 ipyvue==1.11.1
 ipyvuetify==1.10.0
 ipywebrtc==0.6.0
-ipywidgets==7.8.3
+ipywidgets==7.8.4
 itsdangerous==2.0.1
 jedi==0.17.2
 Jinja2==3.0.3
@@ -78,7 +78,7 @@ jupyter-server==1.13.1
 jupyterlab==3.2.9
 jupyterlab-pygments==0.1.2
 jupyterlab-server==2.10.3
-jupyterlab_widgets==1.1.9
+jupyterlab_widgets==1.1.10
 kiwisolver==1.3.1
 locket==1.0.0
 Markdown==3.3.7
@@ -132,7 +132,7 @@ python-dateutil==2.9.0.post0
 python-dotenv==0.20.0
 python-utils==3.5.2
 pythreejs==2.3.0
-pytz==2024.1
+pytz==2024.2
 PyYAML==6.0.1
 pyzmq==25.1.2
 reacton==1.8.3
@@ -163,7 +163,7 @@ types-PyYAML==6.0.12.12
 types-requests==2.31.0.5
 types-urllib3==1.26.25.14
 typing_extensions==4.1.1
-urllib3==1.26.19
+urllib3==1.26.20
 uvicorn==0.16.0
 vaex-core==4.17.1
 vaex-hdf5==0.14.1
@@ -177,7 +177,7 @@ webencodings==0.5.1
 websocket-client==1.3.1
 websockets==9.1
 Werkzeug==2.0.3
-widgetsnbextension==3.6.8
+widgetsnbextension==3.6.9
 wsproto==1.0.0
 xarray==0.16.2
 zipp==3.6.0
