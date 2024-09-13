@@ -32,7 +32,7 @@ gets tested properly, and gradually introduce best practices to the app and your
 
 We continuously do code review and assist your team in making the app more maintainable and scalable. We can also help with the deployment of the app.
 
-Over time, we phase our our involvement and make sure your team is able to maintain and extend the app themselves. We can also provide training and workshops
+Over time, we phase out our involvement and make sure your team is able to maintain and extend the app themselves. We can also provide training and workshops
 if needed.
 
 Please contact us below for a free consultation where we can discuss your needs and how we can help you, or send us an email at [contact@solara.dev](mailto:contact@solara.dev).
