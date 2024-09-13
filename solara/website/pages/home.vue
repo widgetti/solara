@@ -13,7 +13,7 @@
             <div class="hero-stars"></div>
             <div class="hero-planet-element solara-ssg-wait-for-animation"></div>
             <div class="in-hero-banner">
-                Catch Us At PyData Paris, September 25-26, 2024
+                <a href="/scale_ipywidgets">Scale your ipywidgets prototype into a high-quality web app with our expert help. Contact us now.</a>
             </div>
             <h1>Build high-quality web applications in pure Python</h1>
             <h2>

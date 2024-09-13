@@ -9,7 +9,7 @@ from ..components import Header
 
 title = "Home"
 
-route_order = ["/", "showcase", "documentation", "apps", "contact", "changelog", "roadmap", "pricing", "our_team", "careers", "about"]
+route_order = ["/", "showcase", "documentation", "apps", "contact", "changelog", "roadmap", "pricing", "our_team", "careers", "about", "scale_ipywidgets"]
 
 
 _redirects = {
