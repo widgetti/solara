@@ -403,8 +403,8 @@
             </div>
             <div class="footer-flex homepage-row" style="align-items: center;">
                 <div>
-                    <h2>Join our Developer Newsletter</h2>
-                    <h4>Keep up to date with everything Solara, no BS.</h4>
+                    <h2 style="max-width: unset;">Join our Developer Newsletter</h2>
+                    <h4 style="max-width: unset;">Keep up to date with everything Solara, no BS.</h4>
                 </div>
                 <div id="mc_embed_shell">
                     <div id="mc_embed_signup">
@@ -458,8 +458,10 @@
     --color-background-top: #21180D;
     --marketing-primary-text-title: #F3F0EC;
 
-    --color-text: rgba(255, 255, 255, 0.95);
+    --color-text: rgba(255, 255, 255, 0.95) !important;
     --color-text-secondary: #B2B0AD;
+
+    --dark-color-primary: var(--color-text) !important;
 }
 
 html, body {
@@ -477,7 +479,7 @@ body {
     align-items: stretch;
 
     color: var(--color-text);
-    font-family: "Test SÃ¶hne";
+    font-family: "Roboto, sans-serif";
     font-style: normal;
     font-weight: 500;
 }
@@ -489,7 +491,6 @@ h1 {
     line-height: 66px;
     font-style: normal;
     font-weight: 600;
-    letter-spacing: -2.8px;
     margin: 0;
     max-width: 80%;
 }
@@ -513,6 +514,7 @@ h3 {
     font-weight: 400;
     line-height: 28px;
     margin: 0;
+    max-width: 90%;
 }
 
 h4 {
@@ -523,6 +525,7 @@ h4 {
     font-weight: 400;
     line-height: 24px;
     margin: 0;
+    max-width: 90%;
 }
 
 p {
@@ -543,7 +546,7 @@ main > section {
     padding: 60px 0;
 }
 
-a {
+.v-application main > section a, .v-application main > footer a {
     text-decoration: none;
     color: var(--color-text);
 }
@@ -692,13 +695,12 @@ section#hero > *{
 #brand-trust .logo-grid a {
     display: flex;
     width: 100%;
-    height: 100%;
     justify-content: center;
     align-items: center;
 }
 
 #brand-trust .logo-grid img {
-    filter: grayscale(1) contrast(0) brightness(1.5);
+    filter: grayscale(1) contrast(0.2) brightness(1.5);
     transition: 0.3s ease all;
 }
 
@@ -756,8 +758,8 @@ section#hero > *{
     max-width: 1300px;
 
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-    grid-template-rows: repeat(auto-fill, minmax(350px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-rows: repeat(auto-fill, minmax(300px, 1fr));
     justify-content: stretch;
     align-items: stretch;
     gap: 40px;
@@ -1035,6 +1037,7 @@ footer img.logo:hover {
     align-items: stretch;
     flex-wrap: wrap;
     gap: 40px;
+    padding: 20px 0;
 }
 
 .ext-link {
@@ -1051,7 +1054,7 @@ footer img.logo:hover {
 #mc_embed_signup {
     background: transparent;
     clear: left;
-    min-width: 350px;
+    min-width: 250px;
 }
 #mc_embed_signup form {
     display: flex;
@@ -1059,9 +1062,10 @@ footer img.logo:hover {
     justify-content: stretch;
     align-items: center;
     gap: 20px;
+    margin: 0 !important;
 
     box-sizing: border-box;
-    min-width: 350px;
+    min-width: 250px;
     padding: 8px 12px;
     border-radius: var(--Border-Radius-radius-sm, 8px);
     border: 1px solid var(--marketing-stroke-card-10, rgba(194, 180, 163, 0.10));
@@ -1100,17 +1104,29 @@ footer img.logo:hover {
 }
 
 @media screen and (max-width: 1000px) {
+    h1 {
+        font-size: 2rem;
+        line-height: 2.1rem;
+    }
     #hero h1 {
         max-width: 80%;
+        font-size: 2.5rem;
+        line-height: 2.5rem;
     }
     #hero h2 {
         max-width: 65%;
+        font-size: 1.25rem;
+        line-height: 1.25rem;
     }
     .double-tile-container {
         flex-direction: column;
     }
     .modern-tile {
         max-width: 100%;
+    }
+    #brand-trust .logo-grid {
+        width: 60%;
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
     }
 }
 
@@ -1139,7 +1155,7 @@ footer img.logo:hover {
     background-color: transparent !important;
 }
 .theme--light.v-sheet, .theme--dark.v-sheet {
-    color: var(--color-text);
+    color: var(--color-text) !important;
 }
 </style>
 
