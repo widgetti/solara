@@ -49,6 +49,7 @@ def InputText(
     message: Optional[str] = None,
     classes: List[str] = [],
     style: Optional[Union[str, Dict[str, str]]] = None,
+    focus: bool = False
 ):
     """Free form text input.
 
@@ -105,6 +106,7 @@ def InputText(
     * `message`: Message to show below the input. If `error` is a string, this will be ignored.
     * `classes`: List of CSS classes to apply to the input.
     * `style`: CSS style to apply to the input.
+    * `focus`: Determines if the field in question is to be autofocused or not. (Default is False)
     """
     reactive_value = solara.use_reactive(value, on_value)
     del value, on_value
@@ -133,6 +135,7 @@ def InputText(
         messages=messages,
         class_=classes_flat,
         style_=style_flat,
+        autofocus=focus
     )
     use_change(text_field, set_value_cast, enabled=not continuous_update, update_events=update_events)
     return text_field
@@ -150,6 +153,7 @@ def InputFloat(
     clearable: bool = ...,
     classes: List[str] = ...,
     style: Optional[Union[str, Dict[str, str]]] = ...,
+    focus: bool = False,
 ) -> reacton.core.ValueElement[vw.TextField, Any]: ...
 
 
@@ -165,6 +169,7 @@ def InputFloat(
     clearable: bool = ...,
     classes: List[str] = ...,
     style: Optional[Union[str, Dict[str, str]]] = ...,
+    focus: bool = False,
 ) -> reacton.core.ValueElement[vw.TextField, Any]: ...
 
 
@@ -179,6 +184,7 @@ def InputFloat(
     clearable: bool = False,
     classes: List[str] = [],
     style: Optional[Union[str, Dict[str, str]]] = None,
+    focus: bool = False,
 ):
     """Numeric input (floats).
 
@@ -211,6 +217,7 @@ def InputFloat(
     * `clearable`: Whether the input can be cleared.
     * `classes`: List of CSS classes to apply to the input.
     * `style`: CSS style to apply to the input.
+    * `focus`: Determines if the field in question is to be autofocused or not. (Default is False)
 
     """
 
@@ -237,6 +244,7 @@ def InputFloat(
         clearable=clearable,
         classes=classes,
         style=style,
+        focus=focus,
     )
 
 
@@ -252,6 +260,7 @@ def InputInt(
     clearable: bool = ...,
     classes: List[str] = ...,
     style: Optional[Union[str, Dict[str, str]]] = ...,
+    focus: bool = False,
 ) -> reacton.core.ValueElement[vw.TextField, Any]: ...
 
 
@@ -267,6 +276,7 @@ def InputInt(
     clearable: bool = ...,
     classes: List[str] = ...,
     style: Optional[Union[str, Dict[str, str]]] = ...,
+    focus: bool = False,
 ) -> reacton.core.ValueElement[vw.TextField, Any]: ...
 
 
@@ -281,6 +291,7 @@ def InputInt(
     clearable: bool = False,
     classes: List[str] = [],
     style: Optional[Union[str, Dict[str, str]]] = None,
+    focus: bool = False,
 ):
     """Numeric input (integers).
 
@@ -312,6 +323,7 @@ def InputInt(
     * `clearable`: Whether the input can be cleared.
     * `classes`: List of CSS classes to apply to the input.
     * `style`: CSS style to apply to the input.
+    * `focus`: Determines if the field in question is to be autofocused or not. (Default is False)
     """
 
     def str_to_int(value: Optional[str]):
@@ -336,6 +348,7 @@ def InputInt(
         clearable=clearable,
         classes=classes,
         style=style,
+        focus=focus,
     )
 
 
@@ -389,6 +402,7 @@ def _InputNumeric(
     clearable: bool = False,
     classes: List[str] = [],
     style: Optional[Union[str, Dict[str, str]]] = None,
+    focus: bool = False,
 ):
     """Numeric input.
 
@@ -401,6 +415,7 @@ def _InputNumeric(
     * `continuous_update`: Whether to call the `on_value` callback on every change or only when the input loses focus or the enter key is pressed.
     * `classes`: List of CSS classes to apply to the input.
     * `style`: CSS style to apply to the input.
+    `focus`: Determines if the field in question is to be autofocused or not. (Default is False)
     """
     style_flat = solara.util._flatten_style(style)
     classes_flat = solara.util._combine_classes(classes)
@@ -431,6 +446,7 @@ def _InputNumeric(
         error=bool(error),
         class_=classes_flat,
         style_=style_flat,
+        autofocus=focus,
     )
     use_change(text_field, set_value_cast, enabled=not continuous_update)
     return text_field
