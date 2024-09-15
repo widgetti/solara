@@ -49,7 +49,7 @@ def InputText(
     message: Optional[str] = None,
     classes: List[str] = [],
     style: Optional[Union[str, Dict[str, str]]] = None,
-    focus: bool = False
+    focus: bool = False,
 ):
     """Free form text input.
 
@@ -135,7 +135,7 @@ def InputText(
         messages=messages,
         class_=classes_flat,
         style_=style_flat,
-        autofocus=focus
+        autofocus=focus,
     )
     use_change(text_field, set_value_cast, enabled=not continuous_update, update_events=update_events)
     return text_field
