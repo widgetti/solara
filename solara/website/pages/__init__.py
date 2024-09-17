@@ -260,8 +260,7 @@ def Layout(children=[]):
             solara.Meta(property="og:image", content="https://solara.dev/static/assets/images/logo-small.png")
             solara.Meta(property="og:type", content="website")
     if route_current is not None and route_current.path == "apps":
-        Title(title="Solara: Example Apps")
-        children[0]
+        return children[0]
     elif route_current is not None and route_current.path == "/":
         Title(title="Solara: Build high-quality web applications in pure Python")
         Home()
