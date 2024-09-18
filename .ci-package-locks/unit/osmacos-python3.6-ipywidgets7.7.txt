@@ -51,7 +51,7 @@ httpcore==0.14.7
 httpx==0.22.0
 humanize==3.14.0
 identify==2.4.4
-idna==3.9
+idna==3.10
 immutables==0.19
 importlib-metadata==4.8.3
 importlib-resources==5.2.3
