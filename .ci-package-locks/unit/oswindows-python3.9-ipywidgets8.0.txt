@@ -127,7 +127,7 @@ partd==1.4.2
 pillow==10.4.0
 pipx==1.7.1
 pixelmatch==0.3.0
-platformdirs==4.3.2
+platformdirs==4.3.3
 playwright==1.47.0
 plotly==5.24.1
 pluggy==1.5.0
