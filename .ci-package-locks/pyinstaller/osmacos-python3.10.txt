@@ -3,7 +3,7 @@ aiosqlite==0.20.0
 altair==5.4.1
 altgraph==0.17.4
 annotated-types==0.7.0
-anyio==4.4.0
+anyio==4.5.0
 anywidget==0.9.13
 aplus==0.11.0
 appnope==0.1.4
@@ -120,7 +120,7 @@ nodeenv==1.9.1
 notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.26.4
-openai==1.46.0
+openai==1.46.1
 overrides==7.7.0
 packaging==24.1
 pandas==2.2.2
@@ -177,7 +177,7 @@ rfc3986-validator==0.1.1
 rich==13.8.1
 rich-click==1.8.3
 rpds-py==0.20.0
-ruff==0.6.5
+ruff==0.6.6
 Send2Trash==1.8.3
 simple-websocket==1.0.0
 six==1.16.0

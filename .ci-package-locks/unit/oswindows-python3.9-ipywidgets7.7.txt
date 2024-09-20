@@ -1,7 +1,7 @@
 aiofiles==22.1.0
 aiosqlite==0.20.0
 annotated-types==0.7.0
-anyio==4.4.0
+anyio==4.5.0
 anywidget==0.9.13
 aplus==0.11.0
 argcomplete==3.5.0
@@ -173,7 +173,7 @@ rfc3986-validator==0.1.1
 rich==13.8.1
 rich-click==1.8.3
 rpds-py==0.20.0
-ruff==0.6.5
+ruff==0.6.6
 Send2Trash==1.8.3
 simple-websocket==1.0.0
 six==1.16.0
