@@ -120,7 +120,7 @@ notebook_shim==0.2.4
 numpy==1.26.4
 overrides==7.7.0
 packaging==24.1
-pandas==2.2.2
+pandas==2.2.3
 pandocfilters==1.5.1
 parso==0.8.4
 partd==1.4.2
@@ -134,7 +134,7 @@ pluggy==1.5.0
 polars==1.7.1
 pre-commit==3.8.0
 progressbar2==4.5.0
-prometheus_client==0.20.0
+prometheus_client==0.21.0
 prompt_toolkit==3.0.47
 psutil==6.0.0
 psygnal==0.11.1

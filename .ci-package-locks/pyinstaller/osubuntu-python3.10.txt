@@ -108,7 +108,7 @@ mdurl==0.1.2
 mistune==3.0.2
 mypy==1.11.2
 mypy-extensions==1.0.0
-narwhals==1.8.1
+narwhals==1.8.2
 nbclassic==1.1.0
 nbclient==0.10.0
 nbconvert==7.16.4
@@ -118,10 +118,10 @@ nodeenv==1.9.1
 notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.26.4
-openai==1.46.1
+openai==1.47.0
 overrides==7.7.0
 packaging==24.1
-pandas==2.2.2
+pandas==2.2.3
 pandocfilters==1.5.1
 parso==0.8.4
 partd==1.4.2
@@ -135,7 +135,7 @@ pluggy==1.5.0
 polars==1.7.1
 pre-commit==3.8.0
 progressbar2==4.5.0
-prometheus_client==0.20.0
+prometheus_client==0.21.0
 prompt_toolkit==3.0.47
 psutil==6.0.0
 psygnal==0.11.1
