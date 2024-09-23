@@ -6,7 +6,7 @@ description: Solara looks for overrides of certain style and asset files in the 
 
 Asset files are special files with are loaded by Solara-server and thus have a special meaning, and come with defaults. Current supported assets files are:
 
- * `favicon.png` - Image shown by the browser (usually in the tab).
+ * `favicon.png` and/or `favicon.svg` - Image shown by the browser (usually in the tab). If SVG is not provided, default `favicon.svg` of the solara server may override your custom favicon.png depending on the browser. Providing both PNG and SVG versions is recommended.
  * `style.css` - Default `CSS` used by Solara.
  * `custom.css` - Custom `CSS` you can override for your project (empty `CSS` file by default).
  * `custom.js` - Custom Javascript you can use for your project (empty Javascript file by default).
