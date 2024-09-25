@@ -35,7 +35,7 @@ coverage==7.6.1
 cryptography==43.0.1
 cycler==0.12.1
 dask==2023.5.0
-debugpy==1.8.5
+debugpy==1.8.6
 decorator==5.1.1
 defusedxml==0.7.1
 distlib==0.3.8
@@ -48,7 +48,7 @@ filelock==3.16.1
 Flask==3.0.3
 flask-sock==0.7.0
 folium==0.17.0
-fonttools==4.54.0
+fonttools==4.54.1
 fqdn==1.5.1
 frozendict==2.4.4
 fsspec==2024.9.0
@@ -111,7 +111,7 @@ mdurl==0.1.2
 mistune==0.8.4
 mypy==1.11.2
 mypy-extensions==1.0.0
-narwhals==1.8.2
+narwhals==1.8.3
 nbclassic==1.1.0
 nbclient==0.5.13
 nbconvert==6.5.4
@@ -136,7 +136,7 @@ platformdirs==4.3.6
 playwright==1.41.2
 plotly==5.24.1
 pluggy==1.5.0
-polars==1.8.1
+polars==1.8.2
 pre-commit==3.5.0
 progressbar2==4.5.0
 prometheus_client==0.21.0
