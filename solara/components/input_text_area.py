@@ -3,6 +3,7 @@ from .input import use_change
 import solara
 from solara.alias import rv as v
 
+
 @solara.component
 def InputTextArea(
     label: str,
@@ -14,18 +15,18 @@ def InputTextArea(
     error: Union[bool, str] = False,
     message: Optional[str] = None,
     auto_grow: bool = True,
-    rows: int = 5
+    rows: int = 5,
 ):
     r"""Free form text area input.
 
     ### Basic example:
-    
+
     ```solara
     import solara
-    
+
     text = solara.reactive("Hello\nWorld\n!!!")
     continuous_update = solara.reactive(True)
-    
+
     @solara.component
     def Page():
         solara.Checkbox(label="Continuous update", value=continuous_update)
@@ -35,10 +36,10 @@ def InputTextArea(
             solara.Button("Reset", on_click=lambda: text.set("Hello\nWorld\n!!!"))
         solara.Markdown(f"**You entered**: {text.value}")
     ```
-    
-    
+
+
     ## Arguments
-    
+
     * `label`: Label to display next to the slider.
     * `value`: The currently entered value.
     * `on_value`: Callback to call when the value changes.
@@ -52,7 +53,7 @@ def InputTextArea(
     * `message`: Message to show below the input. If `error` is a string, this will be ignored.
     * `classes`: List of CSS classes to apply to the input.
     * `style`: CSS style to apply to the input.
-    """ 
+    """
     reactive_value = solara.use_reactive(value, on_value)
     del value, on_value
 
