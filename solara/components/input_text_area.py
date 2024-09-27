@@ -16,8 +16,8 @@ def InputTextArea(
     auto_grow: bool = True,
     rows: int = 5
 ):
-    """Free form text area input.
-    
+    r"""Free form text area input.
+
     ### Basic example:
     
     ```solara
@@ -34,7 +34,6 @@ def InputTextArea(
             solara.Button("Clear", on_click=lambda: text.set(""))
             solara.Button("Reset", on_click=lambda: text.set("Hello\nWorld\n!!!"))
         solara.Markdown(f"**You entered**: {text.value}")
-        print(text.value)
     ```
     
     
