@@ -33,7 +33,7 @@ comm==0.2.2
 contourpy==1.3.0
 coverage==7.6.1
 cycler==0.12.1
-dask==2024.9.0
+dask==2024.9.1
 debugpy==1.8.6
 decorator==5.1.1
 defusedxml==0.7.1
@@ -109,7 +109,7 @@ mdurl==0.1.2
 mistune==3.0.2
 mypy==1.11.2
 mypy-extensions==1.0.0
-narwhals==1.8.3
+narwhals==1.8.4
 nbclassic==1.1.0
 nbclient==0.10.0
 nbconvert==7.16.4
@@ -119,7 +119,7 @@ nodeenv==1.9.1
 notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.26.4
-openai==1.50.0
+openai==1.50.2
 overrides==7.7.0
 packaging==24.1
 pandas==2.2.3
@@ -148,7 +148,7 @@ pyee==11.0.1
 Pygments==2.18.0
 pyinstaller==6.10.0
 pyinstaller-hooks-contrib==2024.8
-pymdown-extensions==10.10.2
+pymdown-extensions==10.11
 pyparsing==3.1.4
 pytest==8.3.3
 pytest-base-url==2.1.0
@@ -205,14 +205,14 @@ typing_extensions==4.12.2
 tzdata==2024.2
 uri-template==1.3.0
 urllib3==2.2.3
-uvicorn==0.30.6
+uvicorn==0.31.0
 vaex-core==4.17.1
 vaex-hdf5==0.14.1
 vaex-jupyter==0.8.2
 vaex-viz==0.5.4
 vega-datasets==0.9.0
-virtualenv==20.26.5
-watchdog==5.0.2
+virtualenv==20.26.6
+watchdog==5.0.3
 watchfiles==0.24.0
 wcwidth==0.2.13
 webcolors==24.8.0
