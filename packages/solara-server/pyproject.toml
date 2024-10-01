@@ -19,7 +19,7 @@ dependencies = [
     "filelock",
     "ipykernel",
     "nbformat",
-    "jupyter_client>=7.0.0",
+    "jupyter_client",
 ]
 
 [project.urls]
