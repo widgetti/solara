@@ -192,7 +192,7 @@ def assets(path):
     return flask.Response("not found", status=404)
 
 
-@blueprint.route("/static/nbextensions/<dir>/<filename>")
+@blueprint.route("/jupyter/nbextensions/<dir>/<filename>")
 def nbext(dir, filename):
     if not allowed():
         abort(401)
