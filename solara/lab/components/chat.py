@@ -46,7 +46,9 @@ def ChatInput(
     send_callback: Optional[Callable] = None,
     disabled: bool = False,
     style: Optional[Union[str, Dict[str, str]]] = None,
+    input_text_style: Optional[Union[str, Dict[str, str]]] = None,
     classes: List[str] = [],
+    input_text_classes: List[str] = [],
 ):
     """
     The ChatInput component renders a text input together with a send button.
@@ -56,11 +58,14 @@ def ChatInput(
     * `send_callback`: A callback function for when the user presses enter or clicks the send button.
     * `disabled`: Whether the input should be disabled. Useful for disabling sending further messages while a chatbot is replying,
         among other things.
-    * `style`: CSS styles to apply to the component. Either a string or a dictionary. These styles are applied to the container component.
+    * `style`: CSS styles to apply to the `solara.Row` containing the input field and submit button. Either a string or a dictionary.
+    * `input_text_style`: CSS styles to apply to the `InputText` part of the component. Either a string or a dictionary.
     * `classes`: A list of CSS classes to apply to the component. Also applied to the container.
+    * `input_text_classes`: A list of CSS classes to apply to the `InputText` part of the component.
     """
     message, set_message = solara.use_state("")  # type: ignore
     style_flat = solara.util._flatten_style(style)
+    input_text_style_flat = solara.util._flatten_style(input_text_style)
 
     if "align-items" not in style_flat:
         style_flat += " align-items: center;"
@@ -79,8 +84,9 @@ def ChatInput(
             rounded=True,
             filled=True,
             hide_details=True,
-            style_="flex-grow: 1;",
+            style_="flex-grow: 1;" + input_text_style_flat,
             disabled=disabled,
+            class_=" ".join(input_text_classes),
         )
 
         use_change(message_input, send, update_events=["keyup.enter"])

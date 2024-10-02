@@ -391,16 +391,16 @@ See also https://solara.dev/documentation/getting_started/deploying/self-hosted
 """
         if "script-name" in request.headers:
             msg += f"""It looks like the reverse proxy sets the script-name header to {request.headers['script-name']!r}
-            """
+"""
         if "x-script-name" in request.headers:
             msg += f"""It looks like the reverse proxy sets the x-script-name header to {request.headers['x-script-name']!r}
-            """
+"""
         if configured_root_path:
             msg += f"""It looks like the root path was configured to {configured_root_path!r} in the settings
-            """
+"""
         if root_path_asgi:
             msg += f"""It looks like the root path set by the asgi framework was configured to {root_path_asgi!r}
-            """
+"""
         warnings.warn(msg)
     if host and forwarded_host and forwarded_proto:
         port = request.base_url.port

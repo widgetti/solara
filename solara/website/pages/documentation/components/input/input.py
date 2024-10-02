@@ -13,6 +13,8 @@ Page = NoPage
 
 
 __doc__ += apidoc(solara.InputText.f)  # type: ignore
+__doc__ += "# InputTextArea"
+__doc__ += apidoc(solara.InputTextArea.f)  # type: ignore
 __doc__ += "# InputFloat"
 __doc__ += apidoc(solara.InputFloat.f)  # type: ignore
 __doc__ += "# InputInt"
