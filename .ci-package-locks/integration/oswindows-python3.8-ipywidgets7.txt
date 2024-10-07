@@ -51,7 +51,7 @@ flask-sock==0.7.0
 folium==0.17.0
 fonttools==4.54.1
 fqdn==1.5.1
-frozendict==2.4.4
+frozendict==2.4.5
 fsspec==2024.9.0
 future==1.0.0
 greenlet==3.0.3
