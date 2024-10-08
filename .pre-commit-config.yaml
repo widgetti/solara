@@ -3,7 +3,7 @@ ci:
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v5.0.0
     hooks:
       - id: check-yaml
       - id: check-toml
@@ -24,14 +24,14 @@ repos:
         additional_dependencies:
           - tomli
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.6.1
+    rev: v0.6.9
     hooks:
       - id: ruff
-        stages: [commit]
+        stages: [Nonepre-commitNone]
       - id: ruff-format
-        stages: [commit]
+        stages: [Nonepre-commitNone]
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.9.0
+    rev: v1.11.2
     hooks:
       - id: mypy
         pass_filenames: false
