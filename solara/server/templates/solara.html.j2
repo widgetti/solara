@@ -31,7 +31,7 @@
 
     <script id="jupyter-config-data" type="application/json">
     {
-        "baseUrl": "{{root_path}}/",
+        "baseUrl": "{{jupyter_root_path}}/",
         "kernelId": "1234"
     }
     </script>
@@ -243,12 +243,13 @@
     {% endif %}
     <script>
         solara.rootPath = {{ root_path | tojson | safe}};
+        solara.jupyterRootPath = {{ jupyter_root_path | tojson | safe}};
         solara.cdn = {{ cdn | tojson | safe }};
         // the vue templates expect it to not have a trailing slash
         solara.cdn = solara.cdn.replace(/\/$/, '');
         // keep this for backwards compatibility
         window.solara_cdn = solara.cdn;
-        console.log("rootPath", solara.rootPath);
+        console.log("solara config", {rootPath: solara.rootPath, jupyterRootPath: solara.jupyterRootPath, cdn: solara.cdn});
 
         async function changeThemeCSS(theme) {
             let css = await fetch(`${solara.rootPath}/static/assets/theme-${theme}.css`).then(r => r.text());
@@ -441,7 +442,7 @@
         {% endif -%}
         nbextensionHashes = {{ resources.nbextensions_hashes | tojson | safe }};
         requirejs.config({
-            baseUrl: '{{root_path}}/static/',
+            baseUrl: '{{jupyter_root_path}}',
             waitSeconds: 3000,
             map: {
                 '*': {
@@ -466,7 +467,7 @@
             });
         requirejs([
             {% for ext in resources.nbextensions if ext != 'jupyter-vuetify/extension' and ext != 'jupyter-vue/extension' -%}
-        "{{root_path}}/static/nbextensions/{{ ext }}.js",
+        "{{jupyter_root_path}}/nbextensions/{{ ext }}.js",
             {% endfor %}
         ]);
         (async function () {

@@ -233,7 +233,7 @@ def test_cdn_secure(solara_server, solara_app, extra_include_path):
 
 
 def test_nbextension_secure(solara_server, solara_app, extra_include_path):
-    nbextensions_url = solara_server.base_url + "/static/nbextensions"
+    nbextensions_url = solara_server.base_url + "/jupyter/nbextensions"
     nbextensions_directories = [k for k in solara.server.server.nbextensions_directories if k.exists()]
     assert nbextensions_directories, "we should at least test one directory"
     nbextensions_directory = nbextensions_directories[0]

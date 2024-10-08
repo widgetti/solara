@@ -668,7 +668,7 @@ routes = [
     *([Mount(f"/{cdn_url_path}", app=StaticCdn(directory=settings.assets.proxy_cache_dir))] if solara.settings.assets.proxy else []),
     Mount(f"{prefix}/static/public", app=StaticPublic()),
     Mount(f"{prefix}/static/assets", app=StaticAssets()),
-    Mount(f"{prefix}/static/nbextensions", app=StaticNbFiles()),
+    Mount(f"{prefix}/jupyter/nbextensions", app=StaticNbFiles()),
     Mount(f"{prefix}/static", app=StaticFilesOptionalAuth(directory=server.solara_static)),
     Route("/{fullpath:path}", endpoint=root),
 ]

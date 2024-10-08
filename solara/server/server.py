@@ -6,7 +6,7 @@ import os
 import sys
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, TypeVar
+from typing import Dict, List, Optional, Tuple, TypeVar, Union
 
 import ipykernel
 import ipyvue
@@ -268,6 +268,7 @@ def asset_directories():
 def read_root(
     path: str,
     root_path: str = "",
+    jupyter_root_path: Union[str, None] = None,
     render_kwargs={},
     use_nbextensions=True,
     ssg_data=None,
@@ -373,10 +374,14 @@ def read_root(
     else:
         cdn = solara.settings.assets.cdn
 
+    if jupyter_root_path is None:
+        jupyter_root_path = f"{root_path}/jupyter"
+
     render_settings = {
         "title": title,
         "path": path,
         "root_path": root_path,
+        "jupyter_root_path": jupyter_root_path,
         "resources": resources,
         "theme": settings.theme.dict(),
         "production": settings.main.mode == "production",
