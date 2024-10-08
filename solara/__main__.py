@@ -9,7 +9,6 @@ import webbrowser
 from enum import Enum
 from pathlib import Path
 
-import rich
 import rich_click as click
 import uvicorn
 from rich import print as rprint
@@ -18,6 +17,7 @@ from uvicorn.main import LEVEL_CHOICES, LOOP_CHOICES
 import solara
 from solara.server import settings
 import solara.server.threaded
+import solara.server.server
 
 from .server import telemetry
 
@@ -361,16 +361,19 @@ def run(
     #         # window.show()
     #         webview.start(debug=True)
 
-    def open_browser():
-        while not failed and (server is None or not server.started):
+    def check_server_started():
+        while not failed and (server is None or not server.started) or not solara.server.server.is_ready(url):
             time.sleep(0.1)
         if not failed:
-            webbrowser.open(url)
+            # remove the Solara server is starting ... line and print the url (in green)
+            print(f"\r\x1b[1;32mSolara server is running at {url}\x1b[0m")
+            if open:
+                webbrowser.open(url)
 
-    if open:
-        threading.Thread(target=open_browser, daemon=True).start()
+    threading.Thread(target=check_server_started, daemon=True).start()
 
-    rich.print(f"Solara server is starting at {url}")
+    # print in yellow that the server is starting
+    print("\x1b[1;33mSolara server is starting...\x1b[0m", end="", flush=True)
 
     if log_level is not None:
         LOGGING_CONFIG["loggers"]["solara"]["level"] = log_level.upper()
@@ -396,7 +399,7 @@ def run(
     settings.main.tracer = tracer
     settings.main.timing = timing
     items = (
-        "theme_variant_user_selectable dark theme_variant theme_loader use_pdb server open_browser open url failed dev tracer"
+        "theme_variant_user_selectable dark theme_variant theme_loader use_pdb server check_server_started open url failed dev tracer"
         " timing ssg search check_version production".split()
     )
     for item in items:
