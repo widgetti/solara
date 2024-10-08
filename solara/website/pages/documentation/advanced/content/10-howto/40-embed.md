@@ -41,7 +41,8 @@ If you do not see your app, you can open the browser developer tools in your bro
 
 ### Security considerations
 
-Solara uses a cookie to implement sessions. To support cookies settings in an iframe, we set the session cookie using `Secure`, and `SameSite=Strict`. See [https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#restrict_access_to_cookies](MDN) for more details. This means that we can only support loading via iframes via https or localhost.
+Solara uses a cookie to implement sessions. To support cookies settings in an iframe, we set the session cookie using `Secure`, and `SameSite=Strict`. See [https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#restrict_access_to_cookies](MDN) for more details. This means that we can only support loading via iframes via https or localhost. Note that proxy servers can communicate to
+Solara that the connection is secure by forwarding the `X-Forwarded-Proto` header, see [our self hosted deployment documentation for more information](https://solara.dev/documentation/getting_started/deploying/self-hosted).
 
 
 ## Embed into an existing page

@@ -451,6 +451,18 @@ See also https://solara.dev/documentation/getting_started/deploying/self-hosted
     if request.scope["scheme"] == "https" or request.headers.get("x-forwarded-proto", "http") == "https" or request.base_url.hostname == "localhost":
         samesite = "none"
         secure = True
+    elif request.base_url.hostname != "localhost":
+        warnings.warn(f"""Cookies in combination with samesite=none requires https, but according to the asgi framework, the scheme is {request.scope['scheme']!r}
+and the x-forwarded-proto header is {request.headers.get('x-forwarded-proto', 'http')!r}. We will fallback to samesite=lax.
+
+If you embed solara in an iframe, make sure you forward the x-forwarded-proto header correctly so that the session cookie can be set.
+
+See https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite for more information on samesite cookies.
+
+Also check out the following Solara documentation:
+ * https://solara.dev/documentation/getting_started/deploying/self-hosted
+ * https://solara.dev/documentation/advanced/howto/embed
+""")
     response.set_cookie(
         server.COOKIE_KEY_SESSION_ID,
         value=session_id,
