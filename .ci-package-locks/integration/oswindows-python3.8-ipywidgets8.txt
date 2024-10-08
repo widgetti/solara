@@ -82,7 +82,7 @@ isoduration==20.11.0
 itsdangerous==2.2.0
 jedi==0.19.1
 Jinja2==3.1.4
-jiter==0.5.0
+jiter==0.6.0
 json5==0.9.25
 jsonpointer==3.0.0
 jsonschema==4.23.0
@@ -122,7 +122,7 @@ nodeenv==1.9.1
 notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.24.4
-openai==1.51.0
+openai==1.51.1
 overrides==7.7.0
 packaging==24.1
 pandas==2.0.3
