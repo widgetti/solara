@@ -190,13 +190,21 @@
     <script>
         var theme = {{ theme | tojson | safe }}
         function getThemeVariant() {
-            if (localStorage.getItem(':solara:theme.variant')) {
-                return JSON.parse(localStorage.getItem(':solara:theme.variant'))
+            try {
+                if (localStorage.getItem(':solara:theme.variant')) {
+                    return JSON.parse(localStorage.getItem(':solara:theme.variant'))
+                }
+            } catch(e) {
+                // access can be denied in for instance iframes
             }
             return theme.variant;
         }
-        if (localStorage.getItem(':solara:theme.variant')) {
-            theme.variant = JSON.parse(localStorage.getItem(':solara:theme.variant'))
+        try {
+            if (localStorage.getItem(':solara:theme.variant')) {
+                theme.variant = JSON.parse(localStorage.getItem(':solara:theme.variant'))
+            }
+        } catch(e) {
+            // access can be denied in for instance iframes
         }
         function prefersDarkScheme() {
             return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
