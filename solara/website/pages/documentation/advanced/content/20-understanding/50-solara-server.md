@@ -38,7 +38,8 @@ Each virtual kernel runs in its own thread, this ensures that one particular use
 
 
 ## Handling Multiple Workers
-In setups with multiple workers, it's possible for a page to reconnect to a different worker than its original. This would result in a loss of the virtual kernel (since it lives on a different worker), prompting the Solara app to initiate a fresh start. To prevent this scenario, a sticky session configuration is recommended, ensuring consistent client-worker connections. Utilizing a load balancer, such as [nginx](https://www.nginx.com/), can achieve this.
+
+In setups with multiple workers, it's possible for a page to (re)connect to a different worker than its original. This can happen in reconnects, after restoration of a lost network connection. But also the use of [ipypopout](https://github.com/widgetti/ipypopout) will result in a new connection that can end up at a different server. This can result in a loss of the virtual kernel (since it lives on a different worker), prompting the Solara app to initiate a fresh start, or simply failure in the case of ipypopout. To prevent this scenario, a sticky session configuration is recommended, ensuring consistent client-worker connections. Utilizing a load balancer, such as [nginx](https://www.nginx.com/), can achieve this. Note that using multiple workers (e.g. by using gunicorn) cannot work since a connection will be made to a different worker each time.
 
 If you have questions about setting this up, or require assistance, please [contact us](https://solara.dev/docs/contact).
 

@@ -65,7 +65,7 @@ A typical command would be:
 $ SOLARA_APP=sol.py gunicorn --workers 4 --threads=20 -b 0.0.0.0:8765 solara.server.flask:app
 ```
 
-Note that we need at least 1 thread per user due to the use of a websocket.
+Note that we need at least 1 thread per user due to the use of a websocket. *Make sure you understand the implications of using multiple workers by reading [about solara server](https://solara.dev/documentation/advanced/understanding/solara-server)*
 
 ### Embedding in an existing Flask application
 
@@ -97,6 +97,8 @@ For [Starlette](https://www.starlette.io/) we will assume [uvicorn](http://www.u
 ```
 $ SOLARA_APP=sol.py uvicorn --workers 4 --host 0.0.0.0 --port 8765 solara.server.starlette:app
 ```
+
+*Make sure you understand the implications of using multiple workers by reading [about solara server](https://solara.dev/documentation/advanced/understanding/solara-server)*
 
 ### Embedding in an existing Starlette application
 
