@@ -13,6 +13,12 @@ Exciting news! We aim to release Solara 2.0 by the end of the year. For the 2.0 
 
 - [See more details in the 2.0 milestone on GitHub.](https://github.com/widgetti/solara/milestone/1)
 
+
+## Solara 3.0
+
+For version 3.0 we plan to switch to using ipyvue and ipyvuetify 3.0, which will be based on vue version 3.x and ipyvuetify 3.x. For the time being ipyvue and ipyvuetify 3.0 are released as alpha versions, so users of Solara do not pick these versions up. Although Solara 1.x is compatible with ipyvue 3.0, not all components are compatible with ipyvuetify 3.0. The release date for Solara 3.0 is not yet set.
+
+
 ## Medium Term
 
 ### Blog
