@@ -38,6 +38,7 @@ class FakeIPython:
         # needed for the pyplot interface of matplotlib
         # (although we don't really support it)
         self.events = mock.MagicMock()
+        self.user_ns: Dict[Any, Any] = {}
 
     def enable_gui(self, gui):
         logger.error("ignoring call to enable_gui(%s)", gui)
