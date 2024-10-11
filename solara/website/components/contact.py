@@ -65,7 +65,6 @@ def Contact(
                     },
                     data=json.dumps(msg),
                 )
-                print("Email sent successfully!")
             except Exception as e:
                 error.set(f"Error sending email: {e}")
             else:
