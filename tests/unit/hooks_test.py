@@ -55,7 +55,7 @@ def test_use_thread_keep_previous():
             time.sleep(0.1)
             return x**2
 
-        result: solara.Result[int] = use_thread(work, dependencies=[x])
+        result: solara.Result = use_thread(work, dependencies=[x])
         return w.Label(value=f"{result.value}")
 
     label, rc = render_fixed(Test(), handle_error=False)
@@ -99,7 +99,7 @@ def test_hook_iterator():
 def test_use_thread_intrusive_cancel():
     result = None
     last_value = 0
-    seconds = 4
+    seconds = 4.0
 
     @solara.component
     def Test():

@@ -15,7 +15,7 @@ logger = logging.getLogger("solara.hooks.use_thread")
 
 
 def use_thread(
-    callback=Union[
+    callback: Union[
         Callable[[threading.Event], T],
         Iterator[Callable[[threading.Event], T]],
         Callable[[], T],
@@ -69,11 +69,11 @@ def use_thread(
             # result.current = None
             set_result_state(ResultState.RUNNING)
 
-            sig = inspect.signature(callback)
+            sig = inspect.signature(callback)  # type: ignore
             if sig.parameters:
-                f = functools.partial(callback, cancel)
+                f = functools.partial(callback, cancel)  # type: ignore
             else:
-                f = callback
+                f = callback  # type: ignore
             try:
                 try:
                     # we only use the cancel_guard context manager around
