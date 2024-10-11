@@ -54,7 +54,7 @@ def Contact(
             <b>Message</b>: {message.value}<br />
             """
 
-            # Send the email
+            # Send emails
             try:
                 requests.post(
                     "https://api.postmarkapp.com/email",
@@ -64,6 +64,26 @@ def Contact(
                         "X-Postmark-Server-Token": postmark_api_key,
                     },
                     data=json.dumps(msg),
+                )
+                requests.post(
+                    "https://api.postmarkapp.com/email",
+                    headers={
+                        "Accept": "application/json",
+                        "Content-Type": "application/json",
+                        "X-Postmark-Server-Token": postmark_api_key,
+                    },
+                    data=json.dumps(
+                        {
+                            "From": contact_email_address,
+                            "To": email.value,
+                            "Subject": "Thank you for contacting Solara",
+                            "HtmlBody": f"""
+                            <p>Hi {first_name.value},</p>
+                            <p>Thank you for contacting us! We will get back to you as soon as possible.</p>
+                            <p>Best regards,<br />The Solara Team</p>
+                            """,
+                        }
+                    ),
                 )
             except Exception as e:
                 error.set(f"Error sending email: {e}")
