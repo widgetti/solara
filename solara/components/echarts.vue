@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="solara-box" v-bind="parent_attributes">
     <div ref="echarts" class="solara-echarts" v-bind="attributes"></div>
   </div>
 </template>
@@ -14,7 +14,24 @@ module.exports = {
       this.echarts = echarts;
       this.create();
     })();
-  },
+    console.log("responsive:"+str(this.responsive));
+    if(this.responsive){
+    this.resizeObserver = new ResizeObserver(entries => {
+    for (let entry of entries) {
+      if (entry.target === this.$refs.echarts) {
+        this.handleResize();
+      }
+    }
+  });
+  this.resizeObserver.observe(this.$refs.echarts);
+};
+},
+beforeDestroy() {
+  if (this.resizeObserver) {
+    this.resizeObserver.unobserve(this.$refs.echarts);
+    this.resizeObserver.disconnect();
+  }
+},
   watch: {
     option() {
       // notMerge, otherwise we're left with axes etc
@@ -66,6 +83,11 @@ module.exports = {
         if (this.on_mouseout_enabled) this.on_mouseout(eventData);
       });
     },
+    handleResize() {
+  if (this.chart) {
+    this.chart.resize();
+  }
+},
     import(deps) {
       return this.loadRequire().then(() => {
         if (window.jupyterVue) {
@@ -118,5 +140,9 @@ module.exports = {
 
 <style id="solara-markdown-editor">
 .solara-echarts {
+
+}
+.solara-box {
+
 }
 </style>
