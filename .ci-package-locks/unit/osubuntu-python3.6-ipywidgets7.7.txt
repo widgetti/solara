@@ -36,7 +36,7 @@ dataclasses==0.8
 decorator==5.1.1
 defusedxml==0.7.1
 diskcache==5.6.3
-distlib==0.3.8
+distlib==0.3.9
 entrypoints==0.4
 filelock==3.4.1
 Flask==2.0.3
@@ -141,7 +141,7 @@ rfc3986==1.5.0
 rich==12.6.0
 rich-click==1.2.1
 Send2Trash==1.8.3
-simple-websocket==1.0.0
+simple-websocket==1.1.0
 six==1.16.0
 sniffio==1.2.0
 soupsieve==2.3.2.post1
