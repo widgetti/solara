@@ -1,5 +1,11 @@
 # Solara Changelog
 
+## Version 1.40.0
+   * Feature: In Jupyter Notebook and Lab, Solara (server) now renders the [ipypopout](https://github.com/widgetti/ipypopout) window instead of Voila [#805](render ipypopout content in jupyter notebook and lab)
+   * Feature: Support styling input field of [ChatInput component](https://solara.dev/documentation/components/lab/chat). [#800](https://github.com/widgetti/solara/pull/800).
+   * Feature: [InputTextArea component](https://solara.dev/documentation/components/input/input) for multi line text input. [#801](https://github.com/widgetti/solara/pull/801). Contributed by [Alonso Silva](https://github.com/alonsosilvaallende)
+   * Bug Fix: Markdown links triggered a JavaScript error. [#765](https://github.com/widgetti/solara/pull/765)
+
 ## Version 1.39.0
 
    * Feature: Add option to start Solara server on a random unused port (using `--port=0`). [#762](https://github.com/widgetti/solara/pull/762)
