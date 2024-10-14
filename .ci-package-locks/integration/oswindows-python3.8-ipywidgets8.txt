@@ -2,7 +2,7 @@ aiofiles==22.1.0
 aiosqlite==0.20.0
 altair==5.4.1
 annotated-types==0.7.0
-anyio==4.5.0
+anyio==4.6.2
 anywidget==0.9.13
 aplus==0.11.0
 argon2-cffi==23.1.0
@@ -51,7 +51,7 @@ flask-sock==0.7.0
 folium==0.17.0
 fonttools==4.54.1
 fqdn==1.5.1
-frozendict==2.4.5
+frozendict==2.4.6
 fsspec==2024.9.0
 future==1.0.0
 greenlet==3.0.3
