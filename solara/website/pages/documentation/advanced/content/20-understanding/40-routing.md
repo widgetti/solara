@@ -196,7 +196,7 @@ Note that all routes are relative, since a component does not know if it is embe
 
 
 Therefore you should never use the `route.path` for navigation since the route object has no knowledge of the full url
-(e.g. `/docs/basics/ipywigets`) but only knows its small piece of the pathname (e.g. `ipywidgets`)
+(e.g. `/docs/basics/ipywidgets`) but only knows its small piece of the pathname (e.g. `ipywidgets`)
 
 Using [`resolve_path`](/documentation/api/routing/resolve_path) we can request the full url for navigation.
 
