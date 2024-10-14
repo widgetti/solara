@@ -127,7 +127,7 @@ async function solaraInit(mountId, appName) {
             window.navigator.sendBeacon(close_url);
         }
     });
-    let kernel = await solara.connectKernel(solara.rootPath + '/jupyter', kernelId)
+    let kernel = await solara.connectKernel(solara.jupyterRootPath, kernelId)
     if (!kernel) {
         return;
     }
