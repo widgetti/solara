@@ -219,6 +219,16 @@ def LinkToIpywidgets():
     return main
 ```
 
+### Linking to Sections of a Page
+
+The `solara.Link` component also supports linking to HTML elements identified by id. Although most Solara components don't directly support the id attribute, you can assign ids to all ipyvuetify components, using the `attributes` argument:
+
+```python
+solara.v.Btn(attributes={"id": "my-id"}, ...)
+```
+
+You can then link to a particular element by appending `#` followed by its id to your link, i.e. `solara.Link(route_or_path="/page#my-id")`.
+
 ## Fully manual routing
 
 If you want to do routing fully manually, you can use the [`solara.use_router`](/documentation/api/routing/use_router) hook, and use the `.path` attribute.

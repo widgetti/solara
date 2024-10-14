@@ -14,31 +14,33 @@ modules.export = {
     }
     window.solara.router.push = (href) => {
       console.log("external router push", href);
-      // take of the anchor
-      if (href.indexOf("#") !== -1) {
-        href = href.slice(0, href.indexOf("#"));
-      }
-      this.location = href;
+      const url = new URL(href, window.location.origin + solara.rootPath);
+      this.location = url.pathname + url.search;
+      this.hash = url.hash;
     };
     let location = window.location.pathname.slice(solara.rootPath.length);
     this.location = location + window.location.search;
+    this.hash = window.location.hash;
     window.addEventListener("popstate", this.onPopState);
     window.addEventListener("scroll", this.onScroll);
+    window.addEventListener("hashchange", this.onHashChange);
+    window.addEventListener("solara.pageReady", this.onPageLoad);
   },
   destroyed() {
     window.removeEventListener("popstate", this.onPopState);
     window.removeEventListener("scroll", this.onScroll);
+    window.removeEventListener("hashchange", this.onHashChange);
+    window.removeEventListener("solara.pageReady", this.onPageLoad);
   },
   methods: {
     onScroll() {
       window.history.replaceState(
         { top: document.documentElement.scrollTop },
         null,
-        solara.rootPath + this.location
+        this.makeFullRelativeUrl()
       );
     },
     onPopState(event) {
-      console.log("pop state!", event.state, window.location.href);
       if (!window.location.pathname.startsWith(solara.rootPath)) {
         throw `window.location.pathname = ${window.location.pathname}, but it should start with the solara.rootPath = ${solara.rootPath}`;
       }
@@ -53,6 +55,32 @@ modules.export = {
           document.documentElement.scrollTop = top;
         }, 500);
         */
+      }
+    },
+    onHashChange(event) {
+      if (!window.location.pathname.startsWith(solara.rootPath)) {
+        throw `window.location.pathname = ${window.location.pathname}, but it should start with the solara.rootPath = ${solara.rootPath}`;
+      }
+      this.hash = window.location.hash;
+    },
+    onPageLoad(event) {
+      if (!window.location.pathname.startsWith(solara.rootPath)) {
+        throw `window.location.pathname = ${window.location.pathname}, but it should start with the solara.rootPath = ${solara.rootPath}`;
+      }
+      // If we've navigated to a hash with the same name on a different page the watch on hash won't trigger
+      if (this.hash && this.hash === window.location.hash) {
+        this.navigateToHash(this.hash);
+      }
+      this.hash = window.location.hash;
+    },
+    makeFullRelativeUrl() {
+      const url = new URL(this.location, window.location.origin + solara.rootPath);
+      return url.pathname + this.hash + url.search;
+    },
+    navigateToHash(hash) {
+      const targetEl = document.getElementById(hash.slice(1));
+      if (targetEl) {
+        targetEl.scrollIntoView();
       }
     },
   },
@@ -81,7 +109,7 @@ modules.export = {
         document.documentElement.scrollTop
       );
       if (oldLocation != this.location) {
-        window.history.pushState({ top: 0 }, null, solara.rootPath + this.location);
+        window.history.pushState({ top: 0 }, null, this.makeFullRelativeUrl());
         if (pathnameNew != pathnameOld) {
           // we scroll to the top only when we change page, not when we change
           // the search string
@@ -91,6 +119,16 @@ modules.export = {
         window.dispatchEvent(event);
       }
     },
+    hash(value) {
+      if (value) {
+        this.navigateToHash(value);
+      }
+    },
+  },
+  data() {
+    return {
+      hash: "",
+    };
   },
 };
 </script>
