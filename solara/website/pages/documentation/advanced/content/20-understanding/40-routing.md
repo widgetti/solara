@@ -227,7 +227,13 @@ The `solara.Link` component also supports linking to HTML elements identified by
 solara.v.Btn(attributes={"id": "my-id"}, ...)
 ```
 
-You can then link to a particular element by appending `#` followed by its id to your link, i.e. `solara.Link(route_or_path="/page#my-id")`.
+You can then link to a particular element by appending `#` followed by its id to your link, i.e. `solara.Link(route_or_path="/page#my-id")`. If you want the page to smoothly scroll to the linked element, you should give an element that contains it (for instance the `html`-element) the following CSS rule:
+
+```css
+html {
+    scroll-behaviour: smooth;
+}
+```
 
 ## Fully manual routing
 
