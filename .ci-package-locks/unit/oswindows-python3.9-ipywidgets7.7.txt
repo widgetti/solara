@@ -1,7 +1,7 @@
 aiofiles==22.1.0
 aiosqlite==0.20.0
 annotated-types==0.7.0
-anyio==4.6.2
+anyio==4.6.2.post1
 anywidget==0.9.13
 aplus==0.11.0
 argcomplete==3.5.0
@@ -107,7 +107,7 @@ matplotlib-inline==0.1.7
 mdit-py-plugins==0.4.2
 mdurl==0.1.2
 mistune==3.0.2
-mypy==1.11.2
+mypy==1.12.0
 mypy-extensions==1.0.0
 nbclassic==1.1.0
 nbclient==0.10.0
