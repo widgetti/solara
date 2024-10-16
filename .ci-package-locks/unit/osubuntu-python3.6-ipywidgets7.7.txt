@@ -13,7 +13,7 @@ beautifulsoup4==4.12.3
 blake3==0.3.1
 bleach==4.1.0
 bqplot==0.12.43
-bqplot-image-gl==1.4.11
+bqplot-image-gl==1.5.0
 bump2version==1.0.1
 cached-property==1.5.2
 cachetools==4.2.4
