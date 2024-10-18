@@ -28,6 +28,7 @@ repos:
     hooks:
       - id: ruff
         stages: [commit]
+        args: [--fix, .]
       - id: ruff-format
         stages: [commit]
   - repo: https://github.com/pre-commit/mirrors-mypy
