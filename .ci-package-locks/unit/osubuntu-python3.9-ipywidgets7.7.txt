@@ -134,7 +134,7 @@ pre_commit==4.0.1
 progressbar2==4.5.0
 prometheus_client==0.21.0
 prompt_toolkit==3.0.48
-psutil==6.0.0
+psutil==6.1.0
 psygnal==0.11.1
 ptyprocess==0.7.0
 pure_eval==0.2.3
@@ -170,7 +170,7 @@ rfc3986-validator==0.1.1
 rich==13.9.2
 rich-click==1.8.3
 rpds-py==0.20.0
-ruff==0.6.9
+ruff==0.7.0
 Send2Trash==1.8.3
 simple-websocket==1.1.0
 six==1.16.0
@@ -201,7 +201,7 @@ vaex-core==4.17.1
 vaex-hdf5==0.14.1
 vaex-jupyter==0.8.2
 vaex-viz==0.5.4
-virtualenv==20.26.6
+virtualenv==20.27.0
 voila==0.5.7
 watchdog==5.0.3
 watchfiles==0.24.0
