@@ -32,7 +32,7 @@ codespell==2.3.0
 comm==0.2.2
 contourpy==1.1.1
 coverage==7.6.1
-cryptography==43.0.1
+cryptography==43.0.3
 cycler==0.12.1
 dask==2023.5.0
 debugpy==1.8.7
@@ -213,7 +213,7 @@ vaex-jupyter==0.8.2
 vaex-viz==0.5.4
 vega-datasets==0.9.0
 virtualenv==20.27.0
-voila==0.5.7
+voila==0.5.8
 watchdog==4.0.2
 watchfiles==0.24.0
 wcwidth==0.2.13

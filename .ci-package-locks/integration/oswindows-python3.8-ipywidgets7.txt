@@ -33,7 +33,7 @@ colorama==0.4.6
 comm==0.2.2
 contourpy==1.1.1
 coverage==7.6.1
-cryptography==43.0.1
+cryptography==43.0.3
 cycler==0.12.1
 dask==2023.5.0
 debugpy==1.8.7
