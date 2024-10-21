@@ -1,4 +1,5 @@
 import inspect
+import os
 from typing import Any, Callable, Dict, Type
 
 import ipyvue as vue
@@ -48,10 +49,10 @@ def _widget_from_signature(classname, base_class: Type[widgets.Widget], func: Ca
 def _widget_vue(vue_path: str, vuetify=True) -> Callable[[Callable[P, None]], Type[v.VuetifyTemplate]]:
     def decorator(func: Callable[P, None]):
         class VuetifyWidgetSolara(v.VuetifyTemplate):
-            template_file = (inspect.getfile(func), vue_path)
+            template_file = (os.path.abspath(inspect.getfile(func)), vue_path)
 
         class VueWidgetSolara(vue.VueTemplate):
-            template_file = (inspect.getfile(func), vue_path)
+            template_file = (os.path.abspath(inspect.getfile(func)), vue_path)
 
         base_class = VuetifyWidgetSolara if vuetify else VueWidgetSolara
         widget_class = _widget_from_signature("VueWidgetSolaraSub", base_class, func, "vue_")
