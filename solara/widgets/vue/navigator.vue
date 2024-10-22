@@ -37,7 +37,7 @@ modules.export = {
       window.history.replaceState(
         { top: document.documentElement.scrollTop },
         null,
-        this.makeFullRelativeUrl()
+        window.location.href
       );
     },
     onPopState(event) {
