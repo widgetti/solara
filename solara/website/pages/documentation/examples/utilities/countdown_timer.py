@@ -9,7 +9,6 @@ The UI code demonstrates a lot of conditional rendering.
 import time
 
 import solara
-# from solara.alias import rv
 
 
 @solara.component
@@ -41,8 +40,6 @@ def Page():
 
     solara.use_thread(run_timer, dependencies=[duration, running])
 
-    # with solara.VBox() as main:
-    solara.Column()
     if not running:
         if duration < 1:
             solara.Error("Duration must be at least 1 second")
@@ -53,9 +50,9 @@ def Page():
             solara.Markdown(f"# {seconds} seconds left")
         else:
             solara.solara.Markdown("# Time's up!")
-    # rv.TextField(type="number", v_model=duration, on_v_model=on_duration, disabled=running)
+    
     solara.v.TextField(type="number", v_model=duration, on_v_model=on_duration, disabled=running)
-    with solara.HBox():
+    with solara.Row():
         if running:
             solara.Button("Stop", on_click=lambda: set_running(False), icon_name="mdi-stop")
         else:
@@ -63,4 +60,3 @@ def Page():
                 solara.Button("Reset", on_click=lambda: set_seconds(duration), icon_name="mdi-restart")
             else:
                 solara.Button("Start", on_click=lambda: set_running(True), icon_name="mdi-play", disabled=seconds < 1)
-    # return main
