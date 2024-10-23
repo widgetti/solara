@@ -75,7 +75,7 @@ ipyvolume==0.6.3
 ipyvue==1.11.1
 ipyvuetify==1.10.0
 ipywebrtc==0.6.0
-ipywidgets==7.8.4
+ipywidgets==7.8.5
 isoduration==20.11.0
 itsdangerous==2.2.0
 jedi==0.19.1
@@ -96,7 +96,7 @@ jupyter_server_ydoc==0.8.0
 jupyterlab==3.6.8
 jupyterlab_pygments==0.3.0
 jupyterlab_server==2.27.3
-jupyterlab_widgets==1.1.10
+jupyterlab_widgets==1.1.11
 kiwisolver==1.4.7
 locket==1.0.0
 Markdown==3.7
@@ -107,7 +107,7 @@ matplotlib-inline==0.1.7
 mdit-py-plugins==0.4.2
 mdurl==0.1.2
 mistune==3.0.2
-mypy==1.12.1
+mypy==1.13.0
 mypy-extensions==1.0.0
 nbclassic==1.1.0
 nbclient==0.10.0
@@ -170,7 +170,7 @@ referencing==0.35.1
 requests==2.32.3
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
-rich==13.9.2
+rich==13.9.3
 rich-click==1.8.3
 rpds-py==0.20.0
 ruff==0.7.0
@@ -215,7 +215,7 @@ webencodings==0.5.1
 websocket-client==1.8.0
 websockets==13.1
 Werkzeug==3.0.4
-widgetsnbextension==3.6.9
+widgetsnbextension==3.6.10
 wsproto==1.2.0
 xarray==2024.7.0
 xyzservices==2024.9.0
