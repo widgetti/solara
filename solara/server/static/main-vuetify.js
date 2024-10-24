@@ -138,15 +138,25 @@ async function solaraInit(mountId, appName) {
     });
 
     window.addEventListener('solara.router', function (event) {
+        app.$data.urlHasChanged = true;
         if(kernel.status == 'busy') {
             app.$data.loadingPage = true;
         }
     });
     kernel.statusChanged.connect(() => {
+        // When navigation is triggered from the front-end, kernel.status becoming busy and
+        // solara.router event happen in a different order than when navigating through Python, so
+        // if the URL has changed when the kernel becomes busy, we set loadingPage to true
+        if (kernel.status == 'busy' && app.$data.urlHasChanged) {
+            app.$data.loadingPage = true;
+        }
         // the first idle after a loadingPage == true (a router event)
         // will be used as indicator that the page is loaded
         if (app.$data.loadingPage && kernel.status == 'idle') {
             app.$data.loadingPage = false;
+            app.$data.urlHasChanged = false;
+            const event = new Event('solara.pageReady');
+            window.dispatchEvent(event);
         }
     });
 
