@@ -62,6 +62,7 @@ dev = [
     "python-dotenv",
     "bqplot",
     "bqplot-image-gl",
+    "ipyaggrid",
     "ipyreact; python_version > '3.6'",
     "vaex-core",
     "vaex-hdf5",
