@@ -38,6 +38,7 @@ def Page():
         )
         .configure_view(step=13, strokeWidth=0)
         .configure_axis(domain=False)
+        .properties(width="container")
     )
     with solara.Card("Annual Weather Heatmap for Seattle, WA"):
         solara.AltairChart(chart, on_click=on_click)
