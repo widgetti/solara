@@ -1,6 +1,7 @@
 html {
   /* override vuetify's css reset ress.css */
   overflow-y: auto;
+  scroll-behavior: smooth;
 }
 
 .jupyter-widgets code {
