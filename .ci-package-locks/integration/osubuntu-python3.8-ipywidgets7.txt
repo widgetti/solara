@@ -121,7 +121,7 @@ nodeenv==1.9.1
 notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.24.4
-openai==1.52.1
+openai==1.52.2
 packaging==24.1
 pandas==2.0.3
 pandocfilters==1.5.1
