@@ -21,10 +21,6 @@ modules.export = {
       this.location = href;
     };
     let location = window.location.pathname.slice(solara.rootPath.length);
-    // take of the anchor
-    if (location.indexOf("#") !== -1) {
-      location = location.slice(0, location.indexOf("#"));
-    }
     this.location = location + window.location.search;
     window.addEventListener("popstate", this.onPopState);
     window.addEventListener("scroll", this.onScroll);
@@ -47,10 +43,6 @@ modules.export = {
         throw `window.location.pathname = ${window.location.pathname}, but it should start with the solara.rootPath = ${solara.rootPath}`;
       }
       let newLocation = window.location.pathname.slice(solara.rootPath.length);
-      // the router/server shouldn't care about the hash, that's for the frontend
-      if (newLocation.indexOf("#") !== -1) {
-        newLocation = newLocation.slice(0, newLocation.indexOf("#"));
-      }
       this.location = newLocation + window.location.search;
       if (event.state) {
         const top = event.state.top;
