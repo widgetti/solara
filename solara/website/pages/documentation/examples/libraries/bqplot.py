@@ -34,6 +34,6 @@ def Page(x=x0, ymax=5):
     lines = bqplot.Lines(x=x, y=y, scales={"x": x_scale, "y": y_scale}, stroke_width=3, colors=[color], display_legend=display_legend, labels=[label])
     x_axis = bqplot.Axis(scale=x_scale)
     y_axis = bqplot.Axis(scale=y_scale, orientation="vertical")
-    bqplot.Figure(axes=[x_axis, y_axis], marks=[lines], scale_x=x_scale, scale_y=y_scale, layout={"min_width": "800px"})
+    bqplot.Figure(axes=[x_axis, y_axis], marks=[lines], scale_x=x_scale, scale_y=y_scale, layout={"max_width": "100%", "width": "100%"})
 
     # return main

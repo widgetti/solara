@@ -31,7 +31,7 @@ def Page():
         # do things with the location
         marker_location.set(location)
 
-    with solara.Column(style={"min-width": "500px", "height": "500px"}):
+    with solara.Column(style={"width": "100%", "height": "500px"}):
         solara.Markdown(f"Market set to: {marker_location.value}", style={"color": "#6e6e6e"})
 
         map = maps[map_name.value]

@@ -45,9 +45,7 @@ def Page():
     fig = go.FigureWidget(
         layout=go.Layout(
             showlegend=False,
-            autosize=False,
-            width=600,
-            height=600,
+            autosize=True,
             dragmode="drawrect",
             modebar={
                 "add": [
