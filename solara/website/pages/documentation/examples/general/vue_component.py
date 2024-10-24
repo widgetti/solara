@@ -35,7 +35,7 @@ def Page():
     sales_data = np.floor(np.cumsum(gen.random(7) - 0.5) * 100 + 100)
     show_report = solara.use_reactive(False)
 
-    with solara.Column(style={"min-width": "600px"}):
+    with solara.Column():
         if show_report.value:
             with solara.Card("Report"):
                 solara.Markdown("Lorum ipsum dolor sit amet")

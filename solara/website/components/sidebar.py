@@ -15,7 +15,9 @@ def Sidebar():
             break
 
     with solara.v.List(
-        expand=True, nav=True, style_="height: 100%; display: flex; flex-direction: column; background-color: var(--color-material-background);"
+        expand=True,
+        nav=True,
+        style_="height: 100%; max-height: 100vh; display: flex; flex-direction: column; background-color: var(--color-material-background); overflow-y: auto;",
     ) as main:
         with solara.v.ListItemGroup(v_model=router.path):
             # e.g. getting_started, examples, components, api, advanced, faq

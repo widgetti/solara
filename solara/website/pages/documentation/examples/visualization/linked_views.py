@@ -49,8 +49,8 @@ def ClickScatter(df, x, y, color, click_row, on_click: Callable[[ClickPoint], No
         click_y = df[y].values[click_row]
         fig.add_trace(px.scatter(x=[click_x], y=[click_y], text=["⭐️"]).data[0])
     # make the figure a bit smaller
-    fig.update_layout(width=400)
-    with solara.VBox() as main:
+    fig.update_layout(width=340)
+    with solara.Column(style={"width": "340px"}) as main:
         solara.FigurePlotly(fig, on_click=on_click_trace)
         solara.Select(label="X-axis", value=x, values=columns, on_value=set_x)
         solara.Select(label="Y-axis", value=y, values=columns, on_value=set_y)
@@ -65,8 +65,8 @@ def Page():
     else:
         clicked_row = None
 
-    with solara.VBox() as main:
-        with solara.HBox():
+    with solara.Column() as main:
+        with solara.Row(justify="center", style={"flex-wrap": "wrap"}):
             ClickScatter(df, "sepal_length", "sepal_width", "species", clicked_row, on_click=set_click_point)
             ClickScatter(df, "petal_length", "petal_width", "species", clicked_row, on_click=set_click_point)
         if click_point is not None:

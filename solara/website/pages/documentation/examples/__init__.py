@@ -25,28 +25,20 @@ def Layout(children):
     assert module is not None
     github_url = solara.util.github_url(module.__file__)
 
-    with solara.HBox(grow=False) as main:
-        if route_current.path == "fullscreen":
-            with solara.Padding(4, children=children):
-                pass
-        else:
-            with solara.VBox(grow=True, align_items="baseline"):
-                doc = module.__doc__
-                if doc:
-                    with solara.VBox(grow=True):
-                        MarkdownWithMetadata(doc)
-                with solara.HBox():
-                    if route_current.path != "/":
-                        solara.Button("View source code on GitHub", icon_name="mdi-github-circle", href=github_url, class_="ma-2", target="_blank", text=True)
-                        # code = inspect.getsource(module)
-
-                        # code_quoted = urllib.parse.quote_plus(code)
-                        # url = f"https://test.solara.dev/try?code={code_quoted}"
-                        # solara.Button("Run on solara.dev", icon_name="mdi-pencil", href=url, class_="ma-2", target="_blank")
-                # with solara.HBox():
+    if route_current.path == "fullscreen":
+        with solara.Padding(4, children=children):
+            pass
+    else:
+        with solara.Column(align="center", style={"max-width": "100%"}):
+            doc = module.__doc__
+            if doc:
+                with solara.Column():
+                    MarkdownWithMetadata(doc)
+            with solara.Column(style={"max-width": "min(100%, 1024px)", "width": "100%"}):
+                if route_current.path != "/":
+                    solara.Button("View source code on GitHub", icon_name="mdi-github-circle", href=github_url, class_="ma-2", target="_blank", text=True)
                 if not hasattr(module, "Page"):
                     solara.Error(f"No Page component found in {module}")
                 else:
-                    with solara.Padding(4, children=children):
+                    with solara.Div(children=children):
                         pass
-    return main
