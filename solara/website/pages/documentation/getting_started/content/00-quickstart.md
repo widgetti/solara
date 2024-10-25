@@ -87,3 +87,21 @@ In case you forgot how to start a notebook server:
 Or the more modern Jupyter lab:
 
     $ jupyter lab
+
+
+## Run as app (experimental)
+
+You can also run the script as a standalone app. This requires the extra packages `qtpy` and `PySide6` (or `PyQt6`) to be installed.
+
+```bash
+$ pip install pip install qtpy PySide6
+```
+
+Run from the command line in the same directory where you put your file (`sol.py`):
+
+```bash
+$ solara run sol.py --qt
+```
+
+
+<img src="https://dxhl76zpt6fap.cloudfront.net/public/solara-quickstart-app.webp" alt="Markdown Monster icon"/>
