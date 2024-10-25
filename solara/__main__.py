@@ -261,6 +261,12 @@ if "SOLARA_MODE" in os.environ:
     default=True,
     help="Check installed version again pypi version.",
 )
+@click.option(
+    "--qt",
+    is_flag=True,
+    default=False,
+    help="Instead of opening a browser, open a Qt window. Will also stop the server when the window is closed. (experimental)",
+)
 def run(
     app,
     host,
@@ -290,6 +296,7 @@ def run(
     ssg: bool,
     search: bool,
     check_version: bool = True,
+    qt=False,
 ):
     """Run a Solara app."""
     if dev is not None:
@@ -365,9 +372,16 @@ def run(
         while not failed and (server is None or not server.started):
             time.sleep(0.1)
         if not failed:
-            webbrowser.open(url)
+            if qt:
+                from .server.qt import run_qt
 
-    if open:
+                run_qt(url)
+            else:
+                webbrowser.open(url)
+
+    # with qt, we open the browser in the main thread (qt wants that)
+    # otherwise, we open the browser in a separate thread
+    if open and not qt:
         threading.Thread(target=open_browser, daemon=True).start()
 
     rich.print(f"Solara server is starting at {url}")
@@ -397,7 +411,7 @@ def run(
     settings.main.timing = timing
     items = (
         "theme_variant_user_selectable dark theme_variant theme_loader use_pdb server open_browser open url failed dev tracer"
-        " timing ssg search check_version production".split()
+        " timing ssg search check_version production qt".split()
     )
     for item in items:
         del kwargs[item]
@@ -451,14 +465,13 @@ def run(
 
         build_index("")
 
-    start_server()
-
     # TODO: if we want to use webview, it should be sth like this
-    # server_thread = threading.Thread(target=start_server)
-    # server_thread.start()
-    # if open:
-    #     # open_webview()
-    #     open_browser()
+    if qt:
+        server_thread = threading.Thread(target=start_server, daemon=True)
+        server_thread.start()
+        open_browser()
+    else:
+        start_server()
     # server_thread.join()
 
 
