@@ -296,6 +296,10 @@
                     this.forceUpdateTrigger += 1;
                     original_$forceUpdate();
                 });
+                // in case we are showing a popop (e.g. using ipypopout), hide the banner
+                if(searchParams.has('modelid')) {
+                    this.showBanner = false;
+                }
             },
             mounted() {
                 document.querySelector('#app').removeAttribute("style");
@@ -413,6 +417,7 @@
                     loadingPage: false,
                     _lastBusyTimer: null,
                     kernelBusyLong: false,
+                    showBanner: theme.show_banner,
                     // outputMessages: [{ name: 'stderr', text: 'lala' }],
                 }
             }

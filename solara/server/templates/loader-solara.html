@@ -32,7 +32,7 @@
         <jupyter-widget-mount-point mount-id="solara-main">
             A widget with mount-id="solara-main" should go here
         </jupyter-widget-mount-point>
-        <div style="position: absolute; right: 0px; bottom: 0px; padding: 10px;">
+        <div v-if="showBanner" style="position: absolute; right: 0px; bottom: 0px; padding: 10px;">
             <b>This website runs on <a href="https://solara.dev">Solara</a></b>
         </div>
     </div>
