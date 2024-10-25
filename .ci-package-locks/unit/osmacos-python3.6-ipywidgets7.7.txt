@@ -56,6 +56,7 @@ immutables==0.19
 importlib-metadata==4.8.3
 importlib-resources==5.2.3
 iniconfig==1.1.1
+ipyaggrid==0.5.4
 ipydatawidgets==4.3.1.post1
 ipykernel==5.5.6
 ipyleaflet==0.14.0
@@ -143,6 +144,7 @@ rich==12.6.0
 rich-click==1.2.1
 Send2Trash==1.8.3
 simple-websocket==1.1.0
+simplejson==3.19.3
 six==1.16.0
 sniffio==1.2.0
 soupsieve==2.3.2.post1
