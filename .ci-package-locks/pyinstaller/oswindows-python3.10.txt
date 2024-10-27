@@ -69,7 +69,7 @@ ipykernel==6.29.5
 ipyleaflet==0.19.2
 ipympl==0.9.4
 ipyreact==0.4.2
-ipython==8.28.0
+ipython==8.29.0
 ipython-genutils==0.2.0
 ipyvolume==0.6.3
 ipyvue==1.11.1
@@ -221,7 +221,7 @@ webcolors==24.8.0
 webencodings==0.5.1
 websocket-client==1.8.0
 websockets==13.1
-Werkzeug==3.0.5
+Werkzeug==3.0.6
 widgetsnbextension==4.0.13
 wsproto==1.2.0
 xarray==2024.10.0
