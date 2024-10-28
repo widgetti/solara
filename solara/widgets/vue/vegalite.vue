@@ -15,6 +15,11 @@ module.exports = {
     mounted() {
         this.do_plot_debounced();
     },
+    destroyed() {
+        if (this.observer) {
+            this.observer.disconnect();
+        }
+    },
     watch: {
         spec() {
             this.do_plot_debounced();
@@ -29,7 +34,15 @@ module.exports = {
                 (async () => {
                     const spec = {
                         ...this.spec,
+                        "renderer": "svg",
                     };
+                    if (spec.width === "container") {
+                        this.$refs.plotElement.classList.add("width-container")
+                        this.observer = new ResizeObserver(() => {
+                            view.resize();
+                        });
+                        this.observer.observe(this.$refs.plotElement);
+                    }
                     const { view } = await vegaEmbed(this.$refs.plotElement, spec);
                     // events https://github.com/vega/vega-view#event-handling
                     if (this.listen_to_click) {
@@ -110,3 +123,8 @@ module.exports = {
     },
 }
 </script>
+<style id="vega-embed-container-width">
+.width-container.vega-embed {
+    width: 100%;
+}
+</style>
