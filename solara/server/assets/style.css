@@ -125,6 +125,7 @@ div.highlight {
 
 .solara-autorouter-content {
     height: 100%;
+    max-width: 100%;
 }
 
 /* originally from index.css */

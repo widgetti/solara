@@ -280,13 +280,19 @@ def Layout(children=[]):
                         justify="center" if route_current is not None and route_current.path in ["documentation", "showcase"] else "start",
                     ):
                         if route_current is not None and route_current.module is not None and hasattr(route_current.module, "Sidebar"):
-                            with solara.v.NavigationDrawer(
-                                clipped=True,
-                                class_="d-none d-md-block",
-                                height="unset",
-                                style_="min-height: calc(100vh - 64px);",
-                                width="20rem",
-                                v_model=True,  # Forces menu to display even if it had somehow been closed
+                            with solara.v.Sheet(
+                                style_="""
+                                    height: 100vh;
+                                    width: 20rem;
+                                    overflow: auto;
+                                    border-right: 1px solid var(--color-border-appbar);
+                                    position: sticky;
+                                    top: 0;
+                                    flex-direction: column;
+                                    gap: 0;
+                                """,
+                                class_="d-md-flex d-none",
+                                elevation=0,
                             ):
                                 route_current.module.Sidebar()
                         with rv.Col(
