@@ -39,6 +39,7 @@ class FakeIPython:
         # (although we don't really support it)
         self.events = mock.MagicMock()
         self.user_ns: Dict[Any, Any] = {}
+        self.custom_exceptions = ()
 
     def enable_gui(self, gui):
         logger.error("ignoring call to enable_gui(%s)", gui)
