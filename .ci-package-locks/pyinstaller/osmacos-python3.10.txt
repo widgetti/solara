@@ -15,7 +15,7 @@ attrs==24.2.0
 babel==2.16.0
 beautifulsoup4==4.12.3
 blake3==0.4.1
-bleach==6.1.0
+bleach==6.2.0
 blinker==1.8.2
 bqplot==0.12.43
 bqplot-image-gl==1.5.0
@@ -111,7 +111,7 @@ mdurl==0.1.2
 mistune==3.0.2
 mypy==1.13.0
 mypy-extensions==1.0.0
-narwhals==1.11.1
+narwhals==1.12.1
 nbclassic==1.1.0
 nbclient==0.10.0
 nbconvert==7.16.4
@@ -156,7 +156,7 @@ pymdown-extensions==10.12
 pyparsing==3.2.0
 pytest==8.3.3
 pytest-base-url==2.1.0
-pytest-cov==5.0.0
+pytest-cov==6.0.0
 pytest-mock==3.14.0
 pytest-playwright==0.5.2
 pytest-timeout==2.3.1
