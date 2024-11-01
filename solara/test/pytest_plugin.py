@@ -515,6 +515,8 @@ def create_runner_solara(solara_server, solara_app, page_session: "playwright.sy
 
     def run(f: Callable, locals={}):
         nonlocal count
+        from IPython.display import clear_output
+
         path = Path(f.__code__.co_filename)
         cwd = str(path.parent)
         current_dir = os.getcwd()
@@ -523,6 +525,7 @@ def create_runner_solara(solara_server, solara_app, page_session: "playwright.sy
 
         sys.path.append(cwd)
         try:
+            clear_output()
             f()
         finally:
             os.chdir(current_dir)
