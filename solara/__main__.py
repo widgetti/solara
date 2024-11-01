@@ -341,7 +341,14 @@ def run(
         reload_excludes = restart_excludes if restart_excludes else []
         del restart_excludes
         reload_excludes = [str(solara_root / "website"), str(solara_root / "template")]
-        reload_excludes.append(app)
+        app_path = Path(app)
+        if app_path.exists():
+            # if app is not a child of the current working directory
+            # uvcorn crashes
+            if str(app_path.resolve()).startswith(str(Path.cwd().resolve())):
+                reload_excludes.append(str(app_path.resolve()))
+            print("reload_excludes", reload_excludes)
+        del app_path
         del solara_root
         reload = True
         # avoid sending many restarts
