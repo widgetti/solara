@@ -98,6 +98,37 @@ class ValueBase(Generic[T]):
         self.listeners: Dict[str, Set[Tuple[Callable[[T], None], Optional[ContextManager]]]] = defaultdict(set)
         self.listeners2: Dict[str, Set[Tuple[Callable[[T, T], None], Optional[ContextManager]]]] = defaultdict(set)
 
+    # make sure all boolean operations give type errors
+    if not solara.settings.main.allow_reactive_boolean:
+
+        def __bool__(self):
+            raise TypeError("Reactive vars are not allowed in boolean expressions, did you mean to use .value?")
+
+        def __eq__(self, other):
+            raise TypeError(f"'==' not supported between a Reactive and {other.__class__.__name__}, did you mean to use .value?")
+
+        def __ne__(self, other):
+            raise TypeError(f"'!=' not supported between a Reactive and {other.__class__.__name__}, did you mean to use .value?")
+
+        # If we explicitly define __eq__, we need to explicitly define __hash__ as well
+        # Otherwise our class is marked unhashable
+        __hash__ = object.__hash__
+
+    def __lt__(self, other):
+        raise TypeError(f"'<' not supported between a Reactive and {other.__class__.__name__}, did you mean to use .value?")
+
+    def __le__(self, other):
+        raise TypeError(f"'<=' not supported between a Reactive and {other.__class__.__name__}, did you mean to use .value?")
+
+    def __gt__(self, other):
+        raise TypeError(f"'>' not supported between a Reactive and {other.__class__.__name__}, did you mean to use .value?")
+
+    def __ge__(self, other):
+        raise TypeError(f"'>=' not supported between a Reactive and {other.__class__.__name__}, did you mean to use .value?")
+
+    def __len__(self):
+        raise TypeError("'len(...)' is not supported for a Reactive, did you mean to use .value?")
+
     @property
     def lock(self):
         raise NotImplementedError

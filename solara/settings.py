@@ -54,6 +54,7 @@ class Assets(BaseSettings):
 
 class MainSettings(BaseSettings):
     check_hooks: str = "warn"
+    allow_reactive_boolean: bool = True
 
     class Config:
         env_prefix = "solara_"
