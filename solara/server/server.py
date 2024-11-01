@@ -16,6 +16,7 @@ import requests
 import solara
 import solara.routing
 import solara.settings
+import solara.server.settings
 from solara.lab import cookies as solara_cookies
 from solara.lab import headers as solara_headers
 
@@ -66,6 +67,8 @@ nbextensions_ignorelist = [
     "jupyter-js/extension",
     "jupyter-js-widgets/extension",
     "jupyter_dash/main",
+    "dash/main",
+    *solara.server.settings.server.ignore_nbextensions,
 ]
 
 
