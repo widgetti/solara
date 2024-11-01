@@ -19,6 +19,23 @@ The return value of on_kernel_start is a cleanup function that will remove the c
 
 During hot reload, the callbacks that are added from scripts or modules that will be reloaded will be removed before the app is loaded
 again. This can cause the order of the callbacks to be different than at first run.
+
+## Example
+
+```
+import solara
+import solara.lab
+
+
+@solara.lab.on_kernel_start
+def on_kernel_start():
+    id = solara.get_kernel_id()
+    print("Kernel started", id)
+    def cleanup():
+        print("Kernel stopped", id)
+    return cleanup  # this function will be called on kernel shutdown
+```
+
 """
 
 from solara.website.components import NoPage
