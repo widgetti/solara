@@ -83,7 +83,7 @@ isoduration==20.11.0
 itsdangerous==2.2.0
 jedi==0.19.1
 Jinja2==3.1.4
-jiter==0.6.1
+jiter==0.7.0
 json5==0.9.25
 jsonpointer==3.0.0
 jsonschema==4.23.0
@@ -178,10 +178,10 @@ regex==2024.9.11
 requests==2.32.3
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
-rich==13.9.3
+rich==13.9.4
 rich-click==1.8.3
-rpds-py==0.20.0
-ruff==0.7.1
+rpds-py==0.20.1
+ruff==0.7.2
 Send2Trash==1.8.3
 simple-websocket==1.1.0
 simplejson==3.19.3
