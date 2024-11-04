@@ -112,7 +112,7 @@ mdurl==0.1.2
 mistune==3.0.2
 mypy==1.13.0
 mypy-extensions==1.0.0
-narwhals==1.12.1
+narwhals==1.13.1
 nbclassic==1.1.0
 nbclient==0.10.0
 nbconvert==7.16.4
