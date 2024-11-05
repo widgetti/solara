@@ -216,7 +216,7 @@ webcolors==24.8.0
 webencodings==0.5.1
 websocket-client==1.8.0
 websockets==13.1
-Werkzeug==3.1.1
+Werkzeug==3.1.2
 widgetsnbextension==3.6.10
 wsproto==1.2.0
 xarray==2024.7.0
