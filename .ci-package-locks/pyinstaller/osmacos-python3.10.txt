@@ -121,7 +121,7 @@ nodeenv==1.9.1
 notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.26.4
-openai==1.54.1
+openai==1.54.3
 overrides==7.7.0
 packaging==24.1
 pandas==2.2.3
@@ -146,7 +146,7 @@ ptyprocess==0.7.0
 pure_eval==0.2.3
 pyarrow==18.0.0
 pycparser==2.22
-pydantic==1.10.18
+pydantic==1.10.19
 pydantic_core==2.23.4
 pyee==11.0.1
 Pygments==2.18.0
@@ -171,13 +171,13 @@ PyYAML==6.0.2
 pyzmq==26.2.0
 reacton==1.8.3
 referencing==0.35.1
-regex==2024.9.11
+regex==2024.11.6
 requests==2.32.3
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
 rich==13.9.4
 rich-click==1.8.3
-rpds-py==0.20.1
+rpds-py==0.21.0
 ruff==0.7.2
 Send2Trash==1.8.3
 simple-websocket==1.1.0
@@ -196,7 +196,7 @@ tinycss2==1.4.0
 tomli==2.0.2
 toolz==1.0.0
 tornado==6.4.1
-tqdm==4.66.6
+tqdm==4.67.0
 traitlets==5.14.3
 traittypes==0.2.1
 types-Markdown==3.7.0.20240822
