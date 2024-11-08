@@ -75,7 +75,9 @@ def _check_version():
     import requests
 
     try:
-        response = requests.get("https://pypi.org/pypi/solara/json")
+        # Since we already catch the bare-except below, no need to explicitly capture
+        # requests.exceptions.Timeout here
+        response = requests.get("https://pypi.org/pypi/solara/json", timeout=0.2)
         latest_version = response.json()["info"]["version"]
     except:  # noqa: E722
         return
