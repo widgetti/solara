@@ -112,7 +112,7 @@ mdurl==0.1.2
 mistune==3.0.2
 mypy==1.13.0
 mypy-extensions==1.0.0
-narwhals==1.13.2
+narwhals==1.13.3
 nbclassic==1.1.0
 nbclient==0.10.0
 nbconvert==7.16.4
@@ -124,7 +124,7 @@ notebook_shim==0.2.4
 numpy==1.24.4
 openai==1.54.3
 overrides==7.7.0
-packaging==24.1
+packaging==24.2
 pandas==2.0.3
 pandocfilters==1.5.1
 parso==0.8.4
@@ -179,7 +179,7 @@ rfc3986-validator==0.1.1
 rich==13.9.4
 rich-click==1.8.3
 rpds-py==0.20.1
-ruff==0.7.2
+ruff==0.7.3
 Send2Trash==1.8.3
 simple-websocket==1.1.0
 simplejson==3.19.3

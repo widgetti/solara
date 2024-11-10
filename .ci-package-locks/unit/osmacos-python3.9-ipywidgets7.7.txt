@@ -16,7 +16,7 @@ babel==2.16.0
 beautifulsoup4==4.12.3
 blake3==0.4.1
 bleach==6.2.0
-blinker==1.8.2
+blinker==1.9.0
 bqplot==0.12.43
 bqplot-image-gl==1.5.0
 branca==0.8.0
@@ -58,7 +58,7 @@ h5py==3.12.1
 httpcore==1.0.6
 httpx==0.27.2
 humanize==4.11.0
-identify==2.6.1
+identify==2.6.2
 idna==3.10
 importlib_metadata==8.5.0
 importlib_resources==6.4.5
@@ -119,7 +119,7 @@ notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.26.4
 overrides==7.7.0
-packaging==24.1
+packaging==24.2
 pandas==2.2.3
 pandocfilters==1.5.1
 parso==0.8.4
@@ -172,7 +172,7 @@ rfc3986-validator==0.1.1
 rich==13.9.4
 rich-click==1.8.3
 rpds-py==0.21.0
-ruff==0.7.2
+ruff==0.7.3
 Send2Trash==1.8.3
 simple-websocket==1.1.0
 simplejson==3.19.3
@@ -212,8 +212,8 @@ wcwidth==0.2.13
 webcolors==24.8.0
 webencodings==0.5.1
 websocket-client==1.8.0
-websockets==13.1
-Werkzeug==3.1.2
+websockets==14.0
+Werkzeug==3.1.3
 widgetsnbextension==3.6.10
 wsproto==1.2.0
 xarray==2024.7.0
