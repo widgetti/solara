@@ -78,10 +78,10 @@ ipywebrtc==0.6.0
 ipywidgets==8.1.5
 isoduration==20.11.0
 itsdangerous==2.2.0
-jedi==0.19.1
+jedi==0.19.2
 Jinja2==3.1.4
 jiter==0.7.0
-json5==0.9.25
+json5==0.9.27
 jsonpointer==3.0.0
 jsonschema==4.23.0
 jsonschema-specifications==2024.10.1
@@ -150,8 +150,8 @@ pydantic==1.10.19
 pydantic_core==2.23.4
 pyee==11.0.1
 Pygments==2.18.0
-pyinstaller==6.11.0
-pyinstaller-hooks-contrib==2024.9
+pyinstaller==6.11.1
+pyinstaller-hooks-contrib==2024.10
 pymdown-extensions==10.12
 pyparsing==3.2.0
 pytest==8.3.3
@@ -228,4 +228,4 @@ xarray==2024.10.0
 xyzservices==2024.9.0
 y-py==0.6.2
 ypy-websocket==0.8.4
-zipp==3.20.2
+zipp==3.21.0

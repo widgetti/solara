@@ -79,9 +79,9 @@ ipywebrtc==0.6.0
 ipywidgets==8.1.5
 isoduration==20.11.0
 itsdangerous==2.2.0
-jedi==0.19.1
+jedi==0.19.2
 Jinja2==3.1.4
-json5==0.9.25
+json5==0.9.27
 jsonpointer==3.0.0
 jsonschema==4.23.0
 jsonschema-specifications==2024.10.1
@@ -223,4 +223,4 @@ xarray==2024.7.0
 xyzservices==2024.9.0
 y-py==0.6.2
 ypy-websocket==0.8.4
-zipp==3.20.2
+zipp==3.21.0
