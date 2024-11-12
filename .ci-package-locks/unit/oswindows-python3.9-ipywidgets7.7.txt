@@ -81,7 +81,7 @@ isoduration==20.11.0
 itsdangerous==2.2.0
 jedi==0.19.2
 Jinja2==3.1.4
-json5==0.9.27
+json5==0.9.28
 jsonpointer==3.0.0
 jsonschema==4.23.0
 jsonschema-specifications==2024.10.1
@@ -212,7 +212,7 @@ voila==0.5.8
 watchdog==6.0.0
 watchfiles==0.24.0
 wcwidth==0.2.13
-webcolors==24.8.0
+webcolors==24.11.1
 webencodings==0.5.1
 websocket-client==1.8.0
 websockets==14.0
