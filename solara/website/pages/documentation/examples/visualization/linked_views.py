@@ -65,7 +65,6 @@ def Page():
     else:
         clicked_row = None
 
-    
         with solara.Row(justify="center", style={"flex-wrap": "wrap"}):
             ClickScatter(df, "sepal_length", "sepal_width", "species", clicked_row, on_click=set_click_point)
             ClickScatter(df, "petal_length", "petal_width", "species", clicked_row, on_click=set_click_point)
