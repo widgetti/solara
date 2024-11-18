@@ -188,7 +188,7 @@ def test_hook_use_fetch():
 
 
 def test_hook_use_json():
-    url = "https://jherr-pokemon.s3.us-west-1.amazonaws.com/index.json"
+    url = "https://raw.githubusercontent.com/jherr/pokemon/0722479d4153b1db0d0326956b08b37f44a95a5f/index.json"
     pokemons = 799
 
     result = None
