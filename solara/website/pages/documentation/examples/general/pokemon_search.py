@@ -10,8 +10,8 @@ from solara import use_fetch
 from solara.alias import rv
 
 github_url = solara.util.github_url(__file__)
-
-json_url = "https://jherr-pokemon.s3.us-west-1.amazonaws.com/index.json"
+pokemon_base_url = "https://raw.githubusercontent.com/jherr/pokemon/0722479d4153b1db0d0326956b08b37f44a95a5f"
+json_url = f"{pokemon_base_url}/index.json"
 
 
 @solara.component
@@ -40,7 +40,7 @@ def Page():
                     for pokemon in pokemons[:20]:
                         with solara.Div():
                             name = pokemon["name"]
-                            url = "https://jherr-pokemon.s3.us-west-1.amazonaws.com/" + pokemon["image"]
+                            url = f'{pokemon_base_url}/{pokemon["image"]}'
                             # TODO: how to do this with solara
                             rv.Img(src=url, contain=True, max_height="200px")
                             solara.Text(name)
