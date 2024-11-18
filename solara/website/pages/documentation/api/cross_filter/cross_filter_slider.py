@@ -16,4 +16,5 @@ def Page():
     solara.CrossFilterSlider(df, "pop", mode=">")
     solara.CrossFilterSlider(df, "gdpPercap", mode="<")
 
+
 __doc__ += apidoc(solara.CrossFilterSlider.f)  # type: ignore
