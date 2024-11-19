@@ -29,10 +29,10 @@ click==8.1.7
 cloudpickle==3.1.0
 codespell==2.3.0
 comm==0.2.2
-contourpy==1.3.0
-coverage==7.6.4
+contourpy==1.3.1
+coverage==7.6.7
 cycler==0.12.1
-dask==2024.11.1
+dask==2024.11.2
 debugpy==1.8.8
 decorator==5.1.1
 defusedxml==0.7.1
@@ -43,10 +43,10 @@ exceptiongroup==1.2.2
 executing==2.1.0
 fastjsonschema==2.20.0
 filelock==3.16.1
-Flask==3.0.3
+Flask==3.1.0
 flask-sock==0.7.0
 folium==0.18.0
-fonttools==4.54.1
+fonttools==4.55.0
 fqdn==1.5.1
 frozendict==2.4.6
 fsspec==2024.10.0
@@ -54,7 +54,7 @@ future==1.0.0
 greenlet==3.0.3
 h11==0.14.0
 h5py==3.12.1
-httpcore==1.0.6
+httpcore==1.0.7
 httpx==0.27.2
 humanize==4.11.0
 identify==2.6.2
@@ -71,7 +71,7 @@ ipyreact==0.4.2
 ipython==8.29.0
 ipython-genutils==0.2.0
 ipyvolume==0.6.3
-ipyvue==1.11.1
+ipyvue==1.11.2
 ipyvuetify==1.10.0
 ipywebrtc==0.6.0
 ipywidgets==8.1.5
@@ -79,7 +79,7 @@ isoduration==20.11.0
 itsdangerous==2.2.0
 jedi==0.19.2
 Jinja2==3.1.4
-jiter==0.7.0
+jiter==0.7.1
 json5==0.9.28
 jsonpointer==3.0.0
 jsonschema==4.23.0
@@ -109,7 +109,7 @@ mdurl==0.1.2
 mistune==3.0.2
 mypy==1.13.0
 mypy-extensions==1.0.0
-narwhals==1.13.3
+narwhals==1.14.0
 nbclassic==1.1.0
 nbclient==0.10.0
 nbconvert==7.16.4
@@ -119,7 +119,7 @@ nodeenv==1.9.1
 notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.26.4
-openai==1.54.3
+openai==1.54.4
 overrides==7.7.0
 packaging==24.2
 pandas==2.2.3
@@ -133,7 +133,7 @@ platformdirs==4.3.6
 playwright==1.41.2
 plotly==5.24.1
 pluggy==1.5.0
-polars==1.12.0
+polars==1.14.0
 pre_commit==4.0.1
 progressbar2==4.5.0
 prometheus_client==0.21.0
@@ -174,9 +174,9 @@ requests==2.32.3
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
 rich==13.9.4
-rich-click==1.8.3
+rich-click==1.8.4
 rpds-py==0.21.0
-ruff==0.7.3
+ruff==0.7.4
 Send2Trash==1.8.3
 simple-websocket==1.1.0
 simplejson==3.19.3
@@ -184,7 +184,7 @@ six==1.16.0
 sniffio==1.3.1
 soupsieve==2.6
 stack-data==0.6.3
-starlette==0.41.2
+starlette==0.41.3
 tabulate==0.9.0
 tenacity==9.0.0
 terminado==0.18.1
@@ -218,7 +218,7 @@ wcwidth==0.2.13
 webcolors==24.11.1
 webencodings==0.5.1
 websocket-client==1.8.0
-websockets==14.0
+websockets==14.1
 Werkzeug==3.1.3
 widgetsnbextension==4.0.13
 wsproto==1.2.0
