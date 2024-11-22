@@ -35,7 +35,7 @@ coverage==7.6.1
 cryptography==43.0.3
 cycler==0.12.1
 dask==2023.5.0
-debugpy==1.8.8
+debugpy==1.8.9
 decorator==5.1.1
 defusedxml==0.7.1
 distlib==0.3.9
@@ -149,7 +149,7 @@ pure_eval==0.2.3
 pyarrow==17.0.0
 pycparser==2.22
 pydantic==1.10.19
-pydantic_core==2.27.0
+pydantic_core==2.27.1
 pyee==11.0.1
 Pygments==2.18.0
 pymdown-extensions==10.12
@@ -195,7 +195,7 @@ tiktoken==0.7.0
 tinycss2==1.4.0
 tomli==2.1.0
 toolz==1.0.0
-tornado==6.4.1
+tornado==6.4.2
 tqdm==4.67.0
 traitlets==5.14.3
 traittypes==0.2.1
