@@ -344,10 +344,9 @@ def run(
         app_path = Path(app)
         if app_path.exists():
             # if app is not a child of the current working directory
-            # uvcorn crashes
-            if str(app_path.resolve()).startswith(str(Path.cwd().resolve())):
+            # uvicorn crashes
+            if not str(app_path.resolve()).startswith(str(Path.cwd().resolve())):
                 reload_excludes.append(str(app_path.resolve()))
-            print("reload_excludes", reload_excludes)
         del app_path
         del solara_root
         reload = True
