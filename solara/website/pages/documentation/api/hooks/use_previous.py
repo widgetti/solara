@@ -28,5 +28,3 @@ def Page():
     **Previous**: `{value_previous}`
 """
     )
-
-
