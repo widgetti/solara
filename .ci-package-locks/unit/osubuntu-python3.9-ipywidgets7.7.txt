@@ -30,7 +30,7 @@ cloudpickle==3.1.0
 codespell==2.3.0
 comm==0.2.2
 contourpy==1.3.0
-coverage==7.6.7
+coverage==7.6.8
 cryptography==43.0.3
 cycler==0.12.1
 dask==2024.8.0
@@ -127,7 +127,7 @@ pexpect==4.9.0
 pillow==11.0.0
 pixelmatch==0.3.0
 platformdirs==4.3.6
-playwright==1.48.0
+playwright==1.49.0
 plotly==5.24.1
 pluggy==1.5.0
 polars==1.14.0
@@ -171,7 +171,7 @@ rfc3986-validator==0.1.1
 rich==13.9.4
 rich-click==1.8.4
 rpds-py==0.21.0
-ruff==0.7.4
+ruff==0.8.0
 Send2Trash==1.8.3
 simple-websocket==1.1.0
 simplejson==3.19.3
