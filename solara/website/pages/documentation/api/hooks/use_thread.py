@@ -29,7 +29,6 @@ def Page():
     # work will be cancelled/restarted every time the dependency changes
     result: solara.Result[bool] = solara.use_thread(work, dependencies=[number])
 
-    
     rw.IntText(value=number, on_value=set_number)
     if result.state == solara.ResultState.FINISHED:
         if result.value:
@@ -41,4 +40,3 @@ def Page():
     else:
         solara.Info(f"Running... (status = {result.state})")
         solara.v.ProgressLinear(indeterminate=True)
-
