@@ -20,14 +20,13 @@ title = "use_previous"
 def Page():
     value, set_value = solara.use_state(4)
     value_previous = solara.use_previous(value)
-    with solara.VBox() as main:
-        solara.IntSlider("value", value=value, on_value=set_value)
-        solara.Markdown(
-            f"""
-        **Current**:  `{value}`
+    solara.IntSlider("value", value=value, on_value=set_value)
+    solara.Markdown(
+        f"""
+    **Current**:  `{value}`
 
-        **Previous**: `{value_previous}`
+    **Previous**: `{value_previous}`
 """
-        )
+    )
 
-    return main
+
