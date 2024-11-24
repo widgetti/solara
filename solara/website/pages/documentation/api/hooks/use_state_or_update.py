@@ -64,5 +64,3 @@ def Page():
             "(a performance penalty)."
         )
         SliderWithState(parent_value).key(f"slider-{parent_value}")
-
-
