@@ -206,7 +206,7 @@ vaex-viz==0.5.4
 virtualenv==20.27.1
 voila==0.5.8
 watchdog==6.0.0
-watchfiles==0.24.0
+watchfiles==1.0.0
 wcwidth==0.2.13
 webcolors==24.11.1
 webencodings==0.5.1

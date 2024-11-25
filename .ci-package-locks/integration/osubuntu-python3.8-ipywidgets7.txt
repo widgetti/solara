@@ -196,7 +196,7 @@ tinycss2==1.4.0
 tomli==2.1.0
 toolz==1.0.0
 tornado==6.4.2
-tqdm==4.67.0
+tqdm==4.67.1
 traitlets==5.14.3
 traittypes==0.2.1
 types-Markdown==3.7.0.20240822
