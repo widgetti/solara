@@ -59,7 +59,7 @@ h5py==3.12.1
 httpcore==1.0.7
 httpx==0.27.2
 humanize==4.11.0
-identify==2.6.2
+identify==2.6.3
 idna==3.10
 importlib_metadata==8.5.0
 importlib_resources==6.4.5
@@ -132,7 +132,7 @@ platformdirs==4.3.6
 playwright==1.49.0
 plotly==5.24.1
 pluggy==1.5.0
-polars==1.14.0
+polars==1.15.0
 pre_commit==4.0.1
 progressbar2==4.5.0
 prometheus_client==0.21.0
@@ -140,7 +140,7 @@ prompt_toolkit==3.0.48
 psutil==6.1.0
 psygnal==0.11.1
 pure_eval==0.2.3
-pyarrow==18.0.0
+pyarrow==18.1.0
 pycparser==2.22
 pydantic==2.10.1
 pydantic_core==2.27.1
@@ -152,13 +152,13 @@ pytest==8.3.3
 pytest-base-url==2.1.0
 pytest-cov==6.0.0
 pytest-mock==3.14.0
-pytest-playwright==0.5.2
+pytest-playwright==0.6.1
 pytest-timeout==2.3.1
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
 python-json-logger==2.0.7
 python-slugify==8.0.4
-python-utils==3.9.0
+python-utils==3.9.1
 pythreejs==2.4.2
 pytz==2024.2
 pywin32==308
@@ -207,7 +207,7 @@ vaex-core==4.17.1
 vaex-hdf5==0.14.1
 vaex-jupyter==0.8.2
 vaex-viz==0.5.4
-virtualenv==20.27.1
+virtualenv==20.28.0
 voila==0.5.8
 watchdog==6.0.0
 watchfiles==1.0.0
