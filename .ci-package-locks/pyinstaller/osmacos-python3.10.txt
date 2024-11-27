@@ -80,8 +80,8 @@ isoduration==20.11.0
 itsdangerous==2.2.0
 jedi==0.19.2
 Jinja2==3.1.4
-jiter==0.7.1
-json5==0.9.28
+jiter==0.8.0
+json5==0.10.0
 jsonpointer==3.0.0
 jsonschema==4.23.0
 jsonschema-specifications==2024.10.1
@@ -158,7 +158,7 @@ pytest==8.3.3
 pytest-base-url==2.1.0
 pytest-cov==6.0.0
 pytest-mock==3.14.0
-pytest-playwright==0.6.1
+pytest-playwright==0.6.2
 pytest-timeout==2.3.1
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1

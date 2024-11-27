@@ -81,7 +81,7 @@ isoduration==20.11.0
 itsdangerous==2.2.0
 jedi==0.19.2
 Jinja2==3.1.4
-json5==0.9.28
+json5==0.10.0
 jsonpointer==3.0.0
 jsonschema==4.23.0
 jsonschema-specifications==2024.10.1
@@ -142,7 +142,7 @@ psygnal==0.11.1
 pure_eval==0.2.3
 pyarrow==18.1.0
 pycparser==2.22
-pydantic==2.10.1
+pydantic==2.10.2
 pydantic_core==2.27.1
 pyee==12.0.0
 Pygments==2.18.0
@@ -152,7 +152,7 @@ pytest==8.3.3
 pytest-base-url==2.1.0
 pytest-cov==6.0.0
 pytest-mock==3.14.0
-pytest-playwright==0.6.1
+pytest-playwright==0.6.2
 pytest-timeout==2.3.1
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
