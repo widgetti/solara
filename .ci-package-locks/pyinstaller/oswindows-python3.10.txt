@@ -56,7 +56,7 @@ greenlet==3.0.3
 h11==0.14.0
 h5py==3.12.1
 httpcore==1.0.7
-httpx==0.27.2
+httpx==0.28.0
 humanize==4.11.0
 identify==2.6.3
 idna==3.10
@@ -110,7 +110,7 @@ mdurl==0.1.2
 mistune==3.0.2
 mypy==1.13.0
 mypy-extensions==1.0.0
-narwhals==1.14.2
+narwhals==1.14.3
 nbclassic==1.1.0
 nbclient==0.10.0
 nbconvert==7.16.4
@@ -120,7 +120,7 @@ nodeenv==1.9.1
 notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.26.4
-openai==1.55.2
+openai==1.55.3
 overrides==7.7.0
 packaging==24.2
 pandas==2.2.3
@@ -178,7 +178,7 @@ rfc3986-validator==0.1.1
 rich==13.9.4
 rich-click==1.8.4
 rpds-py==0.21.0
-ruff==0.8.0
+ruff==0.8.1
 Send2Trash==1.8.3
 simple-websocket==1.1.0
 simplejson==3.19.3
