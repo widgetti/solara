@@ -43,7 +43,7 @@ distro==1.9.0
 entrypoints==0.4
 exceptiongroup==1.2.2
 executing==2.1.0
-fastjsonschema==2.21.0
+fastjsonschema==2.21.1
 filelock==3.16.1
 Flask==3.0.3
 flask-sock==0.7.0
@@ -110,6 +110,7 @@ matplotlib-inline==0.1.7
 mdit-py-plugins==0.4.2
 mdurl==0.1.2
 mistune==0.8.4
+mkdocs-pycafe==0.3.0
 mypy==1.13.0
 mypy-extensions==1.0.0
 narwhals==1.15.1

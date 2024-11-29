@@ -42,6 +42,7 @@ documentation = [
     "ipycanvas",
     "ipyleaflet",
     "matplotlib",
+    "mkdocs-pycafe",
     "vega_datasets",
     "openai",
     "plotly",
