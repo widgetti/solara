@@ -24,7 +24,7 @@ Run `pip install solara`, or follow the [Installation instructions](/documentati
 
 Put the following Python snippet in a file (we suggest `sol.py`), or put it in a Jupyter notebook cell:
 
-```solara
+```solara {pycafe-link}
 import solara
 
 # Declare reactive variables at the top level. Components using these variables

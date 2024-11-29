@@ -1,3 +1,4 @@
+altair==4.1.0
 anyio==3.6.2
 aplus==0.11.0
 argon2-cffi==21.3.0
@@ -14,6 +15,7 @@ blake3==0.3.1
 bleach==4.1.0
 bqplot==0.12.43
 bqplot-image-gl==1.5.0
+branca==0.5.0
 bump2version==1.0.1
 cached-property==1.5.2
 cachetools==4.2.4
@@ -41,6 +43,7 @@ entrypoints==0.4
 filelock==3.4.1
 Flask==2.0.3
 flask-sock==0.7.0
+folium==0.13.0
 frozendict==2.4.6
 fsspec==2022.1.0
 future==1.0.0
@@ -56,6 +59,7 @@ importlib-metadata==4.8.3
 importlib-resources==5.2.3
 iniconfig==1.1.1
 ipyaggrid==0.5.4
+ipycanvas==0.13.3
 ipydatawidgets==4.3.1.post1
 ipykernel==5.5.6
 ipyleaflet==0.14.0
@@ -88,6 +92,7 @@ matplotlib==3.3.4
 mdit-py-plugins==0.3.0
 mdurl==0.1.0
 mistune==0.8.4
+mkdocs-pycafe==0.3.0
 mypy==0.971
 mypy-extensions==1.0.0
 nbclassic==0.3.5
@@ -98,6 +103,7 @@ nest-asyncio==1.6.0
 nodeenv==1.6.0
 notebook==6.4.10
 numpy==1.19.5
+openai==0.8.0
 packaging==21.3
 pandas==1.1.5
 pandocfilters==1.5.1
@@ -156,6 +162,7 @@ toml==0.10.2
 tomli==1.2.3
 toolz==0.12.0
 tornado==6.1
+tqdm==4.64.1
 traitlets==4.3.3
 traittypes==0.2.1
 typed-ast==1.5.5
@@ -170,6 +177,7 @@ vaex-core==4.17.1
 vaex-hdf5==0.14.1
 vaex-jupyter==0.8.2
 vaex-viz==0.5.4
+vega-datasets==0.9.0
 virtualenv==20.16.2
 voila==0.3.0
 watchdog==2.3.1

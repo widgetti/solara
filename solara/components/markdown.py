@@ -1,10 +1,12 @@
+import functools
 import hashlib
 import html
 import logging
 import textwrap
 import traceback
 import warnings
-from typing import Any, Dict, List, Union, cast
+from typing import Any, Dict, List, Optional, Union, cast
+import typing
 
 import ipyvuetify as v
 
@@ -29,6 +31,9 @@ except ModuleNotFoundError:
 else:
     from pygments.formatters import HtmlFormatter
     from pygments.lexers import get_lexer_by_name
+
+if typing.TYPE_CHECKING:
+    import markdown
 
 logger = logging.getLogger(__name__)
 
@@ -231,7 +236,7 @@ module.exports = {
     return template
 
 
-def _highlight(src, language, unsafe_solara_execute, extra, *args, **kwargs):
+def _highlight(src, language, unsafe_solara_execute, *args, **kwargs):
     """Highlight a block of code"""
 
     if not has_pygments:
@@ -256,6 +261,10 @@ def _highlight(src, language, unsafe_solara_execute, extra, *args, **kwargs):
             return src_html + html_no_execute_enabled
     else:
         return src_html
+
+
+def formatter(unsafe_solara_execute: bool):
+    return functools.partial(_highlight, unsafe_solara_execute=unsafe_solara_execute)
 
 
 @solara.component
@@ -293,7 +302,7 @@ def _no_deep_copy_emojione(options, md):
 
 
 @solara.component
-def Markdown(md_text: str, unsafe_solara_execute=False, style: Union[str, Dict, None] = None):
+def Markdown(md_text: str, unsafe_solara_execute=False, style: Union[str, Dict, None] = None, md_parser: Optional["markdown.Markdown"] = None):
     """Renders markdown text
 
     Renders markdown using https://python-markdown.github.io/
@@ -333,6 +342,7 @@ def Markdown(md_text: str, unsafe_solara_execute=False, style: Union[str, Dict, 
      * `unsafe_solara_execute`: If True, code marked with language "solara" will be executed. This is potentially unsafe
         if the markdown text can come from user input and should only be used for trusted markdown.
      * `style`: A string or dict of css styles to apply to the rendered markdown.
+     * `md_parser`: A markdown object to use for rendering. If not provided, a markdown object will be created.
 
     """
     import markdown
@@ -341,13 +351,9 @@ def Markdown(md_text: str, unsafe_solara_execute=False, style: Union[str, Dict, 
     style = solara.util._flatten_style(style)
 
     def make_markdown_object():
-        def highlight(src, language, *args, **kwargs):
-            try:
-                return _highlight(src, language, unsafe_solara_execute, *args, **kwargs)
-            except Exception as e:
-                logger.exception("Error highlighting code: %s", src)
-                return repr(e)
-
+        if md_parser is not None:
+            # we won't use the use_memo
+            return None
         if has_pymdownx:
             return markdown.Markdown(  # type: ignore
                 extensions=[
@@ -371,7 +377,7 @@ def Markdown(md_text: str, unsafe_solara_execute=False, style: Union[str, Dict, 
                             {
                                 "name": "solara",
                                 "class": "",
-                                "format": highlight,
+                                "format": formatter(unsafe_solara_execute),
                             },
                         ],
                     },
@@ -388,8 +394,11 @@ def Markdown(md_text: str, unsafe_solara_execute=False, style: Union[str, Dict, 
                 ],
             )
 
-    md = solara.use_memo(make_markdown_object, dependencies=[unsafe_solara_execute])
-    html = md.convert(md_text)
+    md_self = solara.use_memo(make_markdown_object, dependencies=[unsafe_solara_execute])
+    if md_parser is None:
+        assert md_self is not None
+        md_parser = md_self
+    html = md_parser.convert(md_text)
     # if we update the template value, the whole vue tree will rerender (ipvue/ipyvuetify issue)
     # however, using the hash we simply generate a new widget each time
     hash = hashlib.sha256((html + str(unsafe_solara_execute)).encode("utf-8")).hexdigest()
