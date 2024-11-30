@@ -8,13 +8,13 @@ aplus==0.11.0
 argon2-cffi==23.1.0
 argon2-cffi-bindings==21.2.0
 arrow==1.3.0
-asttokens==2.4.1
+asttokens==3.0.0
 attrs==24.2.0
 Authlib==1.3.2
 babel==2.16.0
 backcall==0.2.0
 beautifulsoup4==4.12.3
-blake3==0.4.1
+blake3==1.0.0
 bleach==6.1.0
 blinker==1.8.2
 bqplot==0.12.43
@@ -115,7 +115,7 @@ mypy==1.13.0
 mypy-extensions==1.0.0
 narwhals==1.14.3
 nbclassic==1.1.0
-nbclient==0.10.0
+nbclient==0.10.1
 nbconvert==7.16.4
 nbformat==5.10.4
 nest-asyncio==1.6.0
