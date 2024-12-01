@@ -15,7 +15,7 @@ routes = [
 @solara.component
 def Page():
     route_current, routes = solara.use_route()
-    
+
     # solara.Warning("Note the address bar in the browser. It should change to the path of the link.")
     solara.Markdown("*Click on one of the links below to change the route and see the url in your browser change, and match the text.*")
     with solara.VBox():
@@ -29,7 +29,6 @@ def Page():
                     solara.Success(f"You are at {path}")
                 else:
                     solara.Info(f"{route.path} will navigate to {path}")
-
 
 
 __doc__ += apidoc(solara.resolve_path)  # type: ignore
