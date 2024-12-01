@@ -103,7 +103,7 @@ locket==1.0.0
 Markdown==3.7
 markdown-it-py==3.0.0
 MarkupSafe==3.0.2
-matplotlib==3.9.2
+matplotlib==3.9.3
 matplotlib-inline==0.1.7
 mdit-py-plugins==0.4.2
 mdurl==0.1.2
