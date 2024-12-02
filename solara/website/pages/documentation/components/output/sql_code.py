@@ -56,7 +56,7 @@ def Page():
         return df
 
     result: solara.Result[pd.DataFrame] = solara.use_thread(run_query, dependencies=[query_executed])  # noqa: SH101
-  
+
     solara.SqlCode(query=query, tables=table_hints, on_query=set_query)
     enable_execute = (query != query_executed) or result.error is not None
 
@@ -79,7 +79,6 @@ def Page():
         with solara.Div():
             solara.Text("Loading data...")
             solara.v.ProgressCircular(indeterminate=True, class_="solara-progress")
-   
 
 
 __doc__ += apidoc(solara.SqlCode.f)  # type: ignore
