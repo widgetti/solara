@@ -36,5 +36,4 @@ def Page():
     )
 
 
-
 __doc__ += apidoc(solara.Info.f)  # type: ignore
