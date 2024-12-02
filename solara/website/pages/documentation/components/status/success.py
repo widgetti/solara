@@ -34,7 +34,6 @@ def Page():
         outlined=outlined.value,
         icon=icon.value,
     )
- 
 
 
 __doc__ += apidoc(solara.Success.f)  # type: ignore
