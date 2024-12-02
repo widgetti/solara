@@ -6,7 +6,6 @@ from solara.website.utils import apidoc
 
 @solara.component
 def Page():
-   
     solara.Info("Nothing to see here, only in this page's source code, or by looking at the google search results for this page.")
     with solara.Head():
         solara.Meta(
