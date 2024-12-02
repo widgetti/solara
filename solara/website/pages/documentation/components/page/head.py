@@ -12,5 +12,4 @@ def Page():
         solara.Title("Custom title")
 
 
-
 __doc__ += apidoc(solara.Head.f)  # type: ignore
