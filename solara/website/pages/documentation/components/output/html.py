@@ -16,5 +16,4 @@ def Page():
     solara.HTML(tag="div", unsafe_innerHTML=html)
 
 
-
 __doc__ += apidoc(solara.HTML.f)  # type: ignore
