@@ -147,7 +147,7 @@ pyee==12.0.0
 Pygments==2.18.0
 pymdown-extensions==10.12
 pyparsing==3.2.0
-pytest==8.3.3
+pytest==8.3.4
 pytest-base-url==2.1.0
 pytest-cov==6.0.0
 pytest-mock==3.14.0
@@ -169,7 +169,7 @@ requests==2.32.3
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
 rich==13.9.4
-rich-click==1.8.4
+rich-click==1.8.5
 rpds-py==0.21.0
 ruff==0.8.1
 Send2Trash==1.8.3

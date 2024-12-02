@@ -111,7 +111,7 @@ mdurl==0.1.2
 mistune==3.0.2
 mypy==1.13.0
 mypy-extensions==1.0.0
-narwhals==1.15.0
+narwhals==1.15.1
 nbclassic==1.1.0
 nbclient==0.10.1
 nbconvert==7.16.4
@@ -154,7 +154,7 @@ pyinstaller==6.11.1
 pyinstaller-hooks-contrib==2024.10
 pymdown-extensions==10.12
 pyparsing==3.2.0
-pytest==8.3.3
+pytest==8.3.4
 pytest-base-url==2.1.0
 pytest-cov==6.0.0
 pytest-mock==3.14.0
@@ -176,7 +176,7 @@ requests==2.32.3
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
 rich==13.9.4
-rich-click==1.8.4
+rich-click==1.8.5
 rpds-py==0.21.0
 ruff==0.8.1
 Send2Trash==1.8.3
