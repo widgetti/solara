@@ -47,7 +47,7 @@ documentation = [
     "plotly",
     "vaex-core",
     "vaex-hdf5",
-    "tiktoken",
+    "tiktoken; python_version > '3.6'",
     "numpy<2",
 ]
 
