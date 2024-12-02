@@ -17,4 +17,3 @@ def Page():
     with solara.GridFixed(columns=3):
         for color in colors:
             ColorCard(color, color)
-   
