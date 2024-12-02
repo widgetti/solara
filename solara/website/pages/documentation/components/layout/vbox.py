@@ -15,4 +15,3 @@ def Page():
     with solara.VBox():
         for color in colors:
             ColorCard(color, color)
-
