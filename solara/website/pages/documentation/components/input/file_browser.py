@@ -26,4 +26,5 @@ def Page():
     solara.Info(f"You selected path: {path}")
     solara.Info(f"You opened file: {file}")
 
+
 __doc__ += apidoc(solara.FileBrowser.f)  # type: ignore
