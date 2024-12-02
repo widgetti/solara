@@ -56,30 +56,30 @@ def Page():
         return df
 
     result: solara.Result[pd.DataFrame] = solara.use_thread(run_query, dependencies=[query_executed])  # noqa: SH101
-    with solara.VBox() as main:
-        solara.SqlCode(query=query, tables=table_hints, on_query=set_query)
-        enable_execute = (query != query_executed) or result.error is not None
+  
+    solara.SqlCode(query=query, tables=table_hints, on_query=set_query)
+    enable_execute = (query != query_executed) or result.error is not None
 
-        def execute():
-            set_query_executed(query)
-            if query == query_executed and result.error:
-                result.retry()  # type: ignore
+    def execute():
+        set_query_executed(query)
+        if query == query_executed and result.error:
+            result.retry()  # type: ignore
 
-        solara.Button("Execute", on_click=execute, disabled=not enable_execute)
-        if result.error:
-            solara.Error(f"Ooops {result.error}")
-        elif not query:
-            solara.Info("No query")
+    solara.Button("Execute", on_click=execute, disabled=not enable_execute)
+    if result.error:
+        solara.Error(f"Ooops {result.error}")
+    elif not query:
+        solara.Info("No query")
 
-        elif result.value is not None:
-            solara.Markdown(f"Result for query: `{query_executed}`")
-            df = result.value
-            solara.DataFrame(df)
-        elif query_executed is not None:
-            with solara.Div():
-                solara.Text("Loading data...")
-                rv.ProgressCircular(indeterminate=True, class_="solara-progress")
-    return main
+    elif result.value is not None:
+        solara.Markdown(f"Result for query: `{query_executed}`")
+        df = result.value
+        solara.DataFrame(df)
+    elif query_executed is not None:
+        with solara.Div():
+            solara.Text("Loading data...")
+            rv.ProgressCircular(indeterminate=True, class_="solara-progress")
+   
 
 
 __doc__ += apidoc(solara.SqlCode.f)  # type: ignore
