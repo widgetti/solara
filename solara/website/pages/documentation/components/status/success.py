@@ -21,7 +21,7 @@ def Page():
     dense = solara.use_reactive(False)
     outlined = solara.use_reactive(True)
     text = solara.use_reactive(True)
-   
+
     with solara.GridFixed(4):
         solara.Checkbox(label="Use icon", value=icon)
         solara.Checkbox(label="Show dense", value=dense)
@@ -35,6 +35,5 @@ def Page():
         icon=icon,
     )
  
-
 
 __doc__ += apidoc(solara.Success.f)  # type: ignore
