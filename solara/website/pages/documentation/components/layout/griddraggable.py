@@ -33,30 +33,30 @@ def Page():
 
     # some placeholders
     items = [ColorCard(title=f"Child {i}", color=colors[i]) for i in range(len(grid_layout))]
-    with solara.VBox() as main:
-        resizable = solara.ui_checkbox("Allow resizing", value=True)
-        draggable = solara.ui_checkbox("Allow dragging", value=True)
 
-        def reset_layout():
-            set_grid_layout(grid_layout_initial)
+    resizable = solara.ui_checkbox("Allow resizing", value=True)
+    draggable = solara.ui_checkbox("Allow dragging", value=True)
 
-        solara.Button("Reset to initial layout", on_click=reset_layout)
+    def reset_layout():
+        set_grid_layout(grid_layout_initial)
 
-        solara.GridDraggable(items=items, grid_layout=grid_layout, resizable=resizable, draggable=draggable, on_grid_layout=set_grid_layout)
+    solara.Button("Reset to initial layout", on_click=reset_layout)
 
-        # some string kung fu to make this print nicely
-        grid_layout_formatted = pprint.pformat(grid_layout, indent=4)
-        grid_layout_formatted = textwrap.indent(grid_layout_formatted, " " * len("grid_layout = "))
-        grid_layout_formatted = grid_layout_formatted[len("grid_layout = ") :]
-        solara.Markdown(
-            f"""
-            # Resulting layout
+    solara.GridDraggable(items=items, grid_layout=grid_layout, resizable=resizable, draggable=draggable, on_grid_layout=set_grid_layout)
 
-            This layout can be copy pasted to put in your code as an initial layout:
+    # some string kung fu to make this print nicely
+    grid_layout_formatted = pprint.pformat(grid_layout, indent=4)
+    grid_layout_formatted = textwrap.indent(grid_layout_formatted, " " * len("grid_layout = "))
+    grid_layout_formatted = grid_layout_formatted[len("grid_layout = ") :]
+    solara.Markdown(
+        f"""
+        # Resulting layout
 
-            ```python
-            grid_layout = {grid_layout_formatted}
-            ```
-            """
-        )
-    return main
+        This layout can be copy pasted to put in your code as an initial layout:
+
+        ```python
+        grid_layout = {grid_layout_formatted}
+        ```
+        """
+    )
+ 
