@@ -21,20 +21,20 @@ def Page():
     dense, set_dense = solara.use_state(False)
     outlined, set_outlined = solara.use_state(True)
     text, set_text = solara.use_state(True)
-    with solara.VBox() as main:
-        with solara.GridFixed(4):
-            solara.Checkbox(label="Use icon", value=icon, on_value=set_icon)
-            solara.Checkbox(label="Show dense", value=dense, on_value=set_dense)
-            solara.Checkbox(label="Show as text", value=text, on_value=set_text)
-            solara.Checkbox(label="Show outlined", value=outlined, on_value=set_outlined)
-        solara.Success(
-            f"This is solara.Success(label='...', text={text}, dense={dense}, outlined={outlined}, icon={icon})",
-            text=text,
-            dense=dense,
-            outlined=outlined,
-            icon=icon,
-        )
-    return main
+   
+    with solara.GridFixed(4):
+        solara.Checkbox(label="Use icon", value=icon, on_value=set_icon)
+        solara.Checkbox(label="Show dense", value=dense, on_value=set_dense)
+        solara.Checkbox(label="Show as text", value=text, on_value=set_text)
+        solara.Checkbox(label="Show outlined", value=outlined, on_value=set_outlined)
+    solara.Success(
+        f"This is solara.Success(label='...', text={text}, dense={dense}, outlined={outlined}, icon={icon})",
+        text=text,
+        dense=dense,
+        outlined=outlined,
+        icon=icon,
+    )
+ 
 
 
 __doc__ += apidoc(solara.Success.f)  # type: ignore
