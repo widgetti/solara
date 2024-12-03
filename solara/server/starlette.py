@@ -86,8 +86,8 @@ prefix = ""
 # Since starlette seems to accept really large values for http, lets do the same for websockets
 # An arbitrarily large value we settled on for now is 32kb
 # If we don't do this, users with many cookies will fail to get a websocket connection.
-ws_version = tuple(map(int, websockets.__version__.split(".")))
-if ws_version[0] >= 13:
+ws_major_version = int(websockets.__version__.split(".")[0])
+if ws_major_version >= 13:
     websockets.legacy.http.MAX_LINE_LENGTH = int(os.environ.get("WEBSOCKETS_MAX_LINE_LENGTH", str(1024 * 32)))  # type: ignore
 else:
     websockets.legacy.http.MAX_LINE = 1024 * 32  # type: ignore
