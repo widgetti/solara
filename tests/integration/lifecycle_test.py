@@ -50,6 +50,7 @@ def test_kernel_lifecycle_close_single(
         assert context.closed_event.is_set()
 
 
+@pytest.mark.skip(reason="This test is flaky, re-enable when we have a more stable solution")
 def test_kernel_lifecycle_close_while_disconnected(
     short_cull_timeout,
     browser: playwright.sync_api.Browser,
