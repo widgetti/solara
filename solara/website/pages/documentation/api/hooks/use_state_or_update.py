@@ -41,29 +41,26 @@ def Page():
     parent_value, set_parent_value = solara.use_state(4)
     # used to force rerenders
     rerender_counter, set_rerender_counter = solara.use_state(4)
-    with solara.VBox() as main:
-        with solara.Card("Parent value selection"):
-            solara.Info("This slider value gets passed down to the child components")
-            solara.IntSlider("parent value", value=parent_value, on_value=set_parent_value)
-            solara.Button("Force redraw", on_click=lambda: set_rerender_counter(rerender_counter + 1))
+    with solara.Card("Parent value selection"):
+        solara.Info("This slider value gets passed down to the child components")
+        solara.IntSlider("parent value", value=parent_value, on_value=set_parent_value)
+        solara.Button("Force redraw", on_click=lambda: set_rerender_counter(rerender_counter + 1))
 
-        with solara.Card("Child without state"):
-            solara.Info("This child will simply render the value passed into the argument, a redraw will reset it to its parent value.")
-            SliderWithoutState(parent_value)
+    with solara.Card("Child without state"):
+        solara.Info("This child will simply render the value passed into the argument, a redraw will reset it to its parent value.")
+        SliderWithoutState(parent_value)
 
-        with solara.Card("Child with state"):
-            solara.Info("This child will not care about the value passed into the prop, it manages its own state.")
-            SliderWithState(parent_value)
+    with solara.Card("Child with state"):
+        solara.Info("This child will not care about the value passed into the prop, it manages its own state.")
+        SliderWithState(parent_value)
 
-        with solara.Card("Child with state (or update)"):
-            solara.Info("This child will update when the passes in a new value, but a redraw will not reset it.")
-            SliderWithStateOrUpdate(parent_value)
+    with solara.Card("Child with state (or update)"):
+        solara.Info("This child will update when the passes in a new value, but a redraw will not reset it.")
+        SliderWithStateOrUpdate(parent_value)
 
-        with solara.Card("Child with state + key"):
-            solara.Info(
-                "We can also use the `.key(...)` method to force the component to forget its state, this will however cause the widget to be re-created"
-                "(a performance penalty)."
-            )
-            SliderWithState(parent_value).key(f"slider-{parent_value}")
-
-    return main
+    with solara.Card("Child with state + key"):
+        solara.Info(
+            "We can also use the `.key(...)` method to force the component to forget its state, this will however cause the widget to be re-created"
+            "(a performance penalty)."
+        )
+        SliderWithState(parent_value).key(f"slider-{parent_value}")
