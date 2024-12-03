@@ -94,10 +94,29 @@ def WithCode(route_current):
 @solara.component
 def SubCategoryLayout(children=[]):
     route_current, all_routes = solara.use_route()
+    router = solara.use_router()
+    sibling_routes = router.path_routes[-2]
     if route_current is None:
         return solara.Error("Page not found")
     elif route_current.path == "/":
-        return solara.Error("Not supposed to be rendered")
+        with solara.Column(
+            gap="10px", classes=["docs-card-container"], style={"flex-grow": 1, "max-width": "80%", "width": "550px", "padding-top": "64px"}, align="stretch"
+        ):
+            solara.HTML(tag="h2", unsafe_innerHTML=route_current.label, attributes={"id": route_current.path}, style="padding-left: 10%;")
+            for route in sibling_routes.children:
+                if route.path == "/":
+                    continue
+                with solara.Link(route.path):
+                    with solara.Row(
+                        classes=["docs-card"],
+                        style={
+                            "background-color": "var(--docs-color-grey)",
+                            "align-items": "center",
+                            "height": "3rem",
+                        },
+                    ):
+                        solara.HTML(tag="h3", unsafe_innerHTML=route.label, style={"color": "white", "display": "block", "flex-grow": "1", "padding": "0 24px"})
+                        solara.v.Icon(children=["mdi-arrow-right"], color="var(--color-grey-light)", class_="docs-card-icon")
     elif route_current.module:
         WithCode(route_current)
     else:
