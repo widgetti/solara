@@ -18,16 +18,14 @@ def Page():
     value_previous = solara.use_previous(value)
     exception, clear_exception = solara.use_exception()
     # print(exception)
-    with solara.VBox() as main:
-        if exception:
+    if exception:
 
-            def reset():
-                set_value(value_previous)
-                clear_exception()
+        def reset():
+            set_value(value_previous)
+            clear_exception()
 
-            solara.Text("Exception: " + str(exception))
-            solara.Button(label="Go to previous state", on_click=reset)
-        else:
-            solara.IntSlider(value=value, min=0, max=10, on_value=set_value, label="Pick a number, except 3")
-            UnstableComponent(value)
-    return main
+        solara.Text("Exception: " + str(exception))
+        solara.Button(label="Go to previous state", on_click=reset)
+    else:
+        solara.IntSlider(value=value, min=0, max=10, on_value=set_value, label="Pick a number, except 3")
+        UnstableComponent(value)
