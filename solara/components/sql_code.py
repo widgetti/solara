@@ -13,13 +13,21 @@ class SqlCodeWidget(ipyvue.VueTemplate):
     query = traitlets.Unicode(allow_none=True, default_value=None).tag(sync=True)
     tables = traitlets.Dict(allow_none=True, default_value=None).tag(sync=True)
     height = traitlets.Unicode("180px").tag(sync=True)
+    cdn = traitlets.Unicode(None, allow_none=True).tag(sync=True)
+
+    @traitlets.default("cdn")
+    def _cdn(self):
+        import solara.settings
+
+        if not solara.settings.assets.proxy:
+            return solara.settings.assets.cdn
 
 
 @solara.component
 def SqlCode(label="Query", query: str = None, tables: Dict[str, List[str]] = None, on_query=None, height="180px"):
     """SQL textfield input with auto complete and SQL syntax highlighting.
 
-    To get auto complete for the colum names, prefix it with the table name, i.e. "titanic.sur ctrl+space"
+    To get auto complete for the column names, prefix it with the table name, i.e. "titanic.sur ctrl+space"
 
     ## Arguments
 

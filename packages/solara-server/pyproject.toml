@@ -1,0 +1,59 @@
+[build-system]
+requires = ["hatchling==1.22.2"]
+build-backend = "hatchling.build"
+
+
+[project]
+name = "solara-server"
+readme = "README.md"
+authors = [{name = "Maarten A. Breddels", email = "maartenbreddels@gmail.com"}]
+license = {file = "LICENSE"}
+classifiers = ["License :: OSI Approved :: MIT License"]
+version = "1.41.0"
+dynamic = ["description"]
+dependencies = [
+    "solara-ui",
+    "jinja2",
+    "click>=7.1.0",
+    "rich_click",
+    "filelock",
+    "ipykernel",
+    "nbformat",
+    "jupyter_client",
+]
+
+[project.urls]
+Home = "https://www.github.com/widgetti/solara"
+Documentation = "https://solara.dev"
+
+[project.optional-dependencies]
+all = [
+    "solara-server[dev]",
+    "solara-server[starlette]",
+    "solara-server[flask]",
+]
+dev = [
+    "watchfiles; python_version > '3.6'",
+    "watchdog",
+]
+starlette = [
+    "uvicorn",
+    "websockets",
+    "starlette",
+]
+flask = [
+    "flask",
+    "flask-sock",
+]
+
+[project.scripts]
+solara = "solara.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+include = ["LICENSE"]
+
+[tool.hatch.build.targets.sdist]
+include = ["LICENSE"]
+
+[project.entry-points."pyinstaller40"]
+hook-dirs = "solara.server.pyinstaller:get_hook_dirs"

@@ -11,8 +11,10 @@
             </v-card-title>
         </v-card>
     </div>
-    <jupyter-widget-mount-point v-if="!loading" mount-id="solara-main">
-        A widget with mount-id="solara-main" should go here
-    </jupyter-widget-mount-point>
+    <div v-else>
+        <jupyter-widget-mount-point v-if="!loading" mount-id="solara-main">
+            A widget with mount-id="solara-main" should go here
+        </jupyter-widget-mount-point>
+    </div>
 </v-fade-y-transition>
 {% endraw -%}

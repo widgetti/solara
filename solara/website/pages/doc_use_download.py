@@ -20,7 +20,7 @@ def DownloadFile(file_path=file_path, url=url, expected_size=expected_size, on_d
         status = "Done 🎉"
     else:
         MEGABYTES = 2.0**20.0
-        status = "Downloading %s... (%6.2f/%6.2f MB)" % (file_path, downloaded_size / MEGABYTES, expected_size / MEGABYTES)
+        status = f"Downloading {file_path}... ({downloaded_size / MEGABYTES:6.2f}/{expected_size / MEGABYTES:6.2f} MB)"
     # status = "hi"
     # return MarkdownIt(f'{status}')
     assert download.progress is not None

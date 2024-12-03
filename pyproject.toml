@@ -1,11 +1,11 @@
 [build-system]
-requires = ["flit_core >=3.2,<4"]
-build-backend = "flit_core.buildapi"
-
+requires = ["hatchling==1.22.2"]
+build-backend = "hatchling.build"
 
 
 [project]
-name = "solara"
+name = "solara-ui"
+readme = "README.md"
 authors = [{name = "Maarten A. Breddels", email = "maartenbreddels@gmail.com"}]
 license = {file = "LICENSE"}
 classifiers = ["License :: OSI Approved :: MIT License"]
@@ -14,104 +14,85 @@ packages = [
     { include = "solara" }
 ]
 dependencies = [
-    "reacton>=1.1.0",
-    "ipywidgets<8",
-    "cachetools",
-    "filelock",
-    "markdown",
-    "pygments",
-    "pymdown-extensions",
-    "markdown-it-py",
-    "mdit-py-plugins",
-    "humanize",
-    "ipyvuetify",
-    "ipyvue>=1.8.0",
-    "numpy",
-    "pillow",
-    "jinja2",
-    "MarkupSafe<2.1",
-    "pydantic",
-    "click>=7.1.0",
-    "rich_click",
-    "uvicorn",
-    "watchgod",
-    "websockets",
-    "starlette",
-    "nbconvert",
-    "jupyter_server",
-    "jupyter_client>=7.0.0",
-    "watchdog",
+    "reacton>=1.7.1",
+    "ipywidgets>=7.7",
+    "ipyvuetify>=1.6.10",
+    "ipyvue>=1.9.0",
     "requests",
-    "pygments==2.10; python_version < '3.7'",
-]
-
-[tool.flit.external-data]
-directory = "prefix"
-
-[tool.flit.module]
-name = "solara"
-
-
-
-[project.optional-dependencies]
-dev = [
-    "flake8",
-    "bqplot",
-    "bqplot-image-gl",
-    "vaex-core",
-    "vaex-hdf5",
-    "vaex-jupyter",
-    "black",
-    "mypy",
-    "plotly",
-    "types-requests",
-    "types-markdown",
-    "types-PyYAML",
-    "pytest",
-    "pytest-mock",
-    "pytest-cov",
-    "pytest-timeout",
-    "pre-commit",
-    "bump2version",
-    "dask[dataframe]; python_version < '3.7'",
-    "playwright; python_version > '3.6'",
-    "pytest-playwright; python_version > '3.6'",
-]
-assets = [
-    "solara-assets==1.2.1"
-]
-flask = [
-    "flask",
-    "flask-sock",
-]
-documentation = [
-    "numpy",
-    "bqplot",
-    "altair",
-    "ipycanvas",
-    "matplotlib",
-    "vega_datasets",
-    "plotly",
-    "vaex-core",
-    "vaex-hdf5",
+    "humanize",
 ]
 
 [project.urls]
 Home = "https://www.github.com/widgetti/solara"
+Documentation = "https://solara.dev"
 
-[project.scripts]
-solara = "solara.__main__:main"
+[tool.hatch.build.targets.wheel.shared-data]
+"prefix/etc/jupyter" = "etc/jupyter"
+
+[tool.hatch.version]
+path = "solara/__init__.py"
+
+# we ignore build/ but on the website we add solara/website/build
+# when using SSG
+[tool.hatch.build]
+ignore-vcs = true
+
+[tool.hatch.build.targets.wheel]
+include = [
+    "solara",
+    "prefix",
+    "packages/solara-widget-manager/LICENSE.voila.txt",
+]
+exclude = ["packages"]
+
+[tool.hatch.build.targets.sdist]
+# unclear from hatch docs, but README.md and LICENSE are included by default
+# even when we explicitly have an include list
+include = [
+    "solara",
+    "tests",
+    "prefix",
+    "packages/solara-widget-manager/LICENSE.voila.txt",
+]
+# and even when we have an include list, we still need to exclude
+# packages (which I think makes no sense)
+exclude = ["packages"]
+
+[project.optional-dependencies]
+all = [
+    "solara-ui[markdown]",
+    "solara-ui[cache]",
+    "solara-ui[extra]",
+]
+
+markdown = [
+    "markdown",
+    "pymdown-extensions",
+    "pygments",
+    "pygments==2.10; python_version < '3.7'",
+]
+
+cache = [
+    "cachetools"
+]
+
+extra = [
+    "numpy",
+    "pillow",
+]
+
+[tool.ruff]
+fix = false
+line-length = 160
+lint.ignore = ["E402"]
 
 [tool.black]
 line-length = 160
 
-[tool.ruff]
-line-length = 160
-
-[tool.isort]
-profile = "black"
-
-
 [tool.pytest.ini_options]
-addopts = "--disable-warnings --ignore=tests/integration/app_widget.py  --ignore=tests/unit/solara_test_apps"
+addopts = "--ignore=tests/integration/app_widget.py  --ignore=tests/unit/solara_test_apps"
 timeout = 180
+
+
+[tool.codespell]
+skip='equis-in-vidi.md,substiterat-vati.md,.*,solara/website/build,*.svg,highlight-dark.css,packages/**/dist/*,node_modules,packages/solara-assets,package*.json,tsconfig.tsbuildinfo,*.csv'

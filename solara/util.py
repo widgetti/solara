@@ -1,19 +1,59 @@
 import base64
 import contextlib
+import gzip
+import hashlib
+import json
 import os
 import sys
+import threading
+from collections import abc
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
+from urllib.parse import urlencode
 
-import numpy as np
-import PIL.Image
+if TYPE_CHECKING:
+    import numpy as np
+
+import ipyvuetify
+import ipywidgets
+import reacton
 
 import solara
+
+SOLARA_ALLOW_OTHER_TRACER = os.environ.get("SOLARA_ALLOW_OTHER_TRACER", False) in (True, "True", "true", "1")
+ipyvuetify_major_version = int(ipyvuetify.__version__.split(".")[0])
+ipywidgets_major = int(ipywidgets.__version__.split(".")[0])
+
+try:
+    threading.Thread(target=lambda: None).start()
+    has_threads = True
+except RuntimeError:
+    has_threads = False
 
 
 def github_url(file):
     rel_path = os.path.relpath(file, Path(solara.__file__).parent.parent)
     github_url = solara.github_url + f"/blob/{solara.git_branch}/" + rel_path
+    return github_url
+
+
+def pycafe_url(*, path: Path, requirements: Optional[List[str]] = None):
+    json_object = {"code": path.read_text("utf8")}
+    if requirements:
+        json_object["requirements"] = "\n".join(requirements)
+    json_text = json.dumps(json_object)
+    # gzip -> base64
+    compressed_json_text = gzip.compress(json_text.encode("utf8"))
+    base64_text = base64.b64encode(compressed_json_text).decode("utf8")
+    query = urlencode({"c": base64_text})
+    base_url = "https://app.py.cafe"
+    return f"{base_url}/snippet/solara?{query}"
+
+
+def github_edit_url(file):
+    # e.g. https://github.com/widgetti/solara/edit/master/solara/__init__.py
+    rel_path = os.path.relpath(file, Path(solara.__file__).parent.parent)
+    github_url = solara.github_url + f"/edit/{solara.git_branch}/" + rel_path
     return github_url
 
 
@@ -44,6 +84,10 @@ def numpy_to_image(data: "np.ndarray", format="png"):
     import io
 
     if data.ndim == 3:
+        try:
+            import PIL.Image
+        except ModuleNotFoundError:
+            raise ModuleNotFoundError("Pillow is required to convert numpy array to image, use pip install pillow to install it.")
         if data.shape[2] == 3:
             im = PIL.Image.fromarray(data[::], "RGB")
         elif data.shape[2] == 4:
@@ -54,7 +98,7 @@ def numpy_to_image(data: "np.ndarray", format="png"):
         im.save(f, format)
         return f.getvalue()
     else:
-        raise ValueError(f"Expected an image with 3 dimensions (height, width, channe), not {data.shape}")
+        raise ValueError(f"Expected an image with 3 dimensions (height, width, channel), not {data.shape}")
 
 
 @contextlib.contextmanager
@@ -68,6 +112,8 @@ def cwd(path):
 
 
 def numpy_equals(a, b):
+    import numpy as np
+
     if a is b:
         return True
     if a is None or b is None:
@@ -87,7 +133,7 @@ def _flatten_style(style: Union[str, Dict, None] = None) -> str:
     elif isinstance(style, str):
         return style
     elif isinstance(style, dict):
-        return ";".join(f"{k}:{v}" for k, v in style.items())
+        return ";".join(f"{k}:{v}" for k, v in style.items()) + ";"
     else:
         raise ValueError(f"Expected style to be a string or dict, got {type(style)}")
 
@@ -103,18 +149,23 @@ def import_item(name: str):
 
 
 def get_solara_home() -> Path:
-    """Get solara home directory, defaults to $HOME/.solara.
+    """Get solara home directory, defaults to ~/.solara.
 
     The $SOLARA_HOME environment variable can be set to override this default.
 
-    If both $SOLARA_HOME and $HOME are not defined, the current working directory is used.
+    If $SOLARA_HOME is not defined and ~ cannot be expanded, the current working directory + ".solara" is used.
     """
+    os_home = None
+    try:
+        os_home = Path.home()
+    except Exception:
+        pass
     if "SOLARA_HOME" in os.environ:
         return Path(os.environ["SOLARA_HOME"])
-    elif "HOME" in os.environ:
-        return Path(os.path.join(os.environ["HOME"], ".solara"))
+    elif os_home:
+        return os_home / ".solara"
     else:
-        return Path(os.getcwd())
+        return Path(os.getcwd()) / ".solara"
 
 
 def parse_size(size: str) -> int:
@@ -135,3 +186,123 @@ def parse_size(size: str) -> int:
         return int(float(size[:-1]))
     else:
         return int(size)
+
+
+def nested_get(object, dotted_name: str, default=None):
+    names = dotted_name.split(".")
+    for name in names:
+        if isinstance(object, abc.Mapping):
+            if name == names[-1]:
+                object = object.get(name, default)
+            else:
+                object = object.get(name)
+        else:
+            if name == names[-1]:
+                object = getattr(object, name, default)
+            else:
+                object = getattr(object, name)
+    return object
+
+
+# inherit from BaseException so less change of being caught
+# in an except
+class CancelledError(BaseException):
+    pass
+
+
+# not available in python 3.6
+class nullcontext(contextlib.AbstractContextManager):
+    def __init__(self, enter_result=None):
+        self.enter_result = enter_result
+
+    def __enter__(self):
+        return self.enter_result
+
+    def __exit__(self, *excinfo):
+        pass
+
+
+@contextlib.contextmanager
+def cancel_guard(cancelled: threading.Event):
+    def tracefunc(frame, event, arg):
+        # this gets called at least for every line executed
+        if cancelled.is_set():
+            rc = reacton.core.get_render_context(required=False)
+            # we do not want to cancel the rendering cycle
+            if rc is None or not rc._is_rendering:
+                # this will bubble up
+                raise CancelledError()
+        if prev and SOLARA_ALLOW_OTHER_TRACER:
+            prev(frame, event, arg)
+        # keep tracing:
+        return tracefunc
+
+    # see https://docs.python.org/3/library/sys.html#sys.settrace
+    # it is for the calling thread only
+    # not every Python implementation has it
+    prev = None
+    if hasattr(sys, "gettrace"):
+        prev = sys.gettrace()
+    if hasattr(sys, "settrace"):
+        sys.settrace(tracefunc)
+    try:
+        yield
+    finally:
+        if hasattr(sys, "settrace"):
+            sys.settrace(prev)
+
+
+def parse_timedelta(size: str) -> float:
+    """Turn a human readable time delta into seconds.
+    Supports days(d), hours (h), minutes (m) and seconds (s).
+    If not unit is specified, seconds is assumed.
+    >>> parse_timedelta("1d")
+    86400
+    >>> parse_timedelta("1h")
+    3600
+    >>> parse_timedelta("30m")
+    1800
+    >>> parse_timedelta("10s")
+    10
+    >>> parse_timedelta("10")
+    10
+    """
+    if size.endswith("d"):
+        return float(size[:-1]) * 24 * 60 * 60
+    elif size.endswith("h"):
+        return float(size[:-1]) * 60 * 60
+    elif size.endswith("m"):
+        return float(size[:-1]) * 60
+    elif size.endswith("s"):
+        return float(size[:-1])
+    else:
+        return float(size)
+
+
+def get_file_hash(path: Path, algorithm="md5") -> Tuple[bytes, str]:
+    """Compute the hash of a file. Note that we also return the file content as bytes."""
+    data = path.read_bytes()
+    if sys.version_info[:2] < (3, 9):
+        # usedforsecurity is only available in Python 3.9+
+        h = hashlib.new(algorithm)
+    else:
+        h = hashlib.new(algorithm, usedforsecurity=False)  # type: ignore
+    h.update(data)
+    return data, h.hexdigest()
+
+
+def is_running_in_colab():
+    try:
+        import google.colab  # noqa
+
+        return True
+    except ImportError:
+        return False
+
+
+def is_running_in_vscode():
+    return "VSCODE_PID" in os.environ or "VSCODE_CWD" in os.environ
+
+
+def is_running_in_voila():
+    return os.environ.get("SERVER_SOFTWARE", "").startswith("voila")

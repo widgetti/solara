@@ -1,0 +1,95 @@
+[build-system]
+requires = ["hatchling==1.22.2"]
+build-backend = "hatchling.build"
+
+
+[project]
+name = "solara"
+readme = "main.README.md"
+authors = [{name = "Maarten A. Breddels", email = "maartenbreddels@gmail.com"}]
+license = {file = "LICENSE"}
+classifiers = ["License :: OSI Approved :: MIT License"]
+dynamic = ["description"]
+version = "1.41.0"
+packages = [
+    { include = "solara" }
+]
+dependencies = [
+    "solara-ui[all]==1.41.0",
+    "solara-server[starlette,dev]==1.41.0"
+]
+
+[project.urls]
+Home = "https://www.github.com/widgetti/solara"
+Documentation = "https://solara.dev"
+
+[project.optional-dependencies]
+all = [
+    "solara[assets]",
+    "solara[documentation]",
+    "solara[pytest]",
+    "solara[dev]"
+]
+
+assets = [
+    "solara-assets==1.41.0"
+]
+
+documentation = [
+    "bqplot",
+    "altair",
+    "folium",
+    "ipycanvas",
+    "ipyleaflet",
+    "matplotlib",
+    "mkdocs-pycafe",
+    "vega_datasets",
+    "openai",
+    "plotly",
+    "vaex-core",
+    "vaex-hdf5",
+    "tiktoken; python_version > '3.6'",
+    "numpy<2",
+]
+
+# for backwards compatibility to support solara[pytest]
+pytest = [
+    "pytest-ipywidgets[all]==1.41.0"
+]
+
+# for backwards compatibility to support solara[dev]
+dev = [
+    "codespell",
+    "python-dotenv",
+    "bqplot",
+    "bqplot-image-gl",
+    "ipyaggrid",
+    "ipyreact; python_version > '3.6'",
+    "vaex-core",
+    "vaex-hdf5",
+    "vaex-jupyter",
+    "mypy",
+    "mdit-py-plugins",
+    "plotly",
+    "types-requests",
+    "types-markdown",
+    "types-PyYAML",
+    "pytest",
+    "pytest-mock",
+    "pytest-cov",
+    "pytest-timeout",
+    "pre-commit",
+    "ruff; python_version > '3.6'",
+    "bump2version",
+    "dask[dataframe]; python_version < '3.7'",
+    "playwright; python_version > '3.6'",
+    "pytest-playwright; python_version > '3.6'",
+    "polars",
+    "numpy<2",
+]
+
+[tool.hatch.build.targets.wheel]
+include = ["LICENSE"]
+
+[tool.hatch.build.targets.sdist]
+include = ["LICENSE"]

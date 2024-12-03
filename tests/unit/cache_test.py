@@ -1,8 +1,15 @@
 import sys
-from typing import Any, Dict
+from types import ModuleType
+from typing import Any, Dict, Optional
 
 import ipyvuetify as v
 import pytest
+
+redis: Optional[ModuleType]
+try:
+    import redis
+except ImportError:
+    redis = None
 
 import solara
 import solara.cache
@@ -162,7 +169,7 @@ def test_cache_disk(tmpdir):
     assert len(c) == 2
 
 
-@pytest.mark.skipif(condition=sys.platform.startswith("win"), reason="skipping windows, no redis on windows+GHA")
+@pytest.mark.skipif(condition=redis is None or sys.platform.startswith("win"), reason="redis not installed")
 def test_cache_redis(tmpdir):
     c = solara.cache.create("redis", clear=True, prefix=b"solara-test:cache:")
     c["a"] = 1
@@ -222,7 +229,7 @@ def test_multi_level_cache():
     assert l2 == {"key1": 1}
 
     cache2 = solara.cache.create("memory,disk")
-    assert type(cache) == type(cache2)
+    assert type(cache) is type(cache2)
 
 
 def test_memoize_hook():
@@ -244,11 +251,49 @@ def test_memoize_hook():
             return solara.Text("running")
 
     box, rc = solara.render(Test(), handle_error=False)
-    rc.find(v.Btn, children=["0"]).wait_for()
+    rc.find(v.Btn, children=["0"]).wait_for(timeout=10)
     result_values.clear()
     click(rc.find(v.Btn).widget)
-    rc.find(v.Btn, children=["1"]).wait_for()
+    rc.find(v.Btn, children=["1"]).wait_for(timeout=10)
     assert len(result_values) == 1
     # we should directly get the result from the cache, so we don't go into running state
     assert result_values[0].state == solara.ResultState.FINISHED
     assert result_values[0].value == 100
+
+
+def test_memoize_hook_no_None_after_hit():
+    has_been_none = False
+
+    selected = solara.Reactive("1")
+
+    @solara.memoize
+    def something(i):
+        return i
+
+    @solara.component
+    def Test():
+        result = something.use_thread(selected.value)
+
+        if result.state == solara.ResultState.FINISHED:
+            if result.value is None:
+                # this should not happen
+                nonlocal has_been_none
+                has_been_none = True
+
+            solara.Text(str(result.value))
+
+    box, rc = solara.render(Test(), handle_error=False)
+    rc.find(v.Html, children=["1"]).wait_for(timeout=2)
+
+    assert not has_been_none
+    selected.set("2")
+    rc.find(v.Html, children=["2"]).wait_for(timeout=2)
+    assert not has_been_none
+
+    selected.set("1")
+    rc.find(v.Html, children=["1"]).wait_for(timeout=2)
+    assert not has_been_none
+
+    selected.set("3")
+    rc.find(v.Html, children=["3"]).wait_for(timeout=2)
+    assert not has_been_none

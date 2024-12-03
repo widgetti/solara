@@ -6,12 +6,16 @@ import logging
 import os
 import sys
 import threading
-from typing import Callable, Dict, List, Optional, Set, Type
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Set, Type
+
+import solara.server.settings as settings
 
 NO_WATCHDOG = False
 try:
     from watchdog.events import FileSystemEventHandler
     from watchdog.observers import Observer
+    import watchdog.events
 except ImportError:
     pass
     NO_WATCHDOG = True
@@ -48,7 +52,7 @@ else:
     class WatcherWatchdog(FileSystemEventHandler):
         def __init__(self, files, on_change: Callable[[str], None]):
             self.on_change = on_change
-            self.observers: List[Observer] = []
+            self.observers: List[Any] = []
             self.directories: Set[str] = set()
             self.files: List[str] = []
             self.mtimes: Dict[str, float] = dict()
@@ -66,7 +70,7 @@ else:
         def add_file(self, file):
             file = os.path.abspath(os.path.realpath(file))
             if file not in self.files:
-                logger.info("Watching file %s", file)
+                logger.debug("Watching file %s", file)
                 if file in self.files:
                     raise RuntimeError(f"{file} was already added")
                 self.files.append(file)
@@ -96,26 +100,34 @@ else:
                 self.observers.append(observer)
                 self.directories.add(directory)
 
+        def on_moved(self, event):
+            logger.debug("Moved event: %s", event)
+            if isinstance(event, watchdog.events.FileMovedEvent):
+                if event.dest_path in self.files:
+                    self._handle_possible_change(event.dest_path)
+
         def on_modified(self, event):
-            super(WatcherWatchdog, self).on_modified(event)
-            logger.debug("Watch event: %s", event)
+            logger.debug("Modified event: %s", event)
             if not event.is_directory:
                 if event.src_path in self.files:
-                    mtime_new = os.path.getmtime(event.src_path)
-                    changed = mtime_new > self.mtimes[event.src_path]
-                    self.mtimes[event.src_path] = mtime_new
-                    if changed:
-                        logger.debug("File modified: %s", event.src_path)
-                        try:
-                            self.on_change(event.src_path)
-                        except:  # noqa
-                            # we are in the watchdog thread here, all we can do is report
-                            # and continue running (otherwise reload stops working)
-                            logger.exception("Error while executing on change handler")
-                    else:
-                        logger.debug("File reported modified, but mtime did not change: %s", event.src_path)
+                    self._handle_possible_change(event.src_path)
                 else:
                     logger.debug("Ignore file modification: %s", event.src_path)
+
+        def _handle_possible_change(self, path: str):
+            mtime_new = os.path.getmtime(path)
+            changed = mtime_new > self.mtimes[path]
+            self.mtimes[path] = mtime_new
+            if changed:
+                logger.debug("File modified: %s", path)
+                try:
+                    self.on_change(path)
+                except:  # noqa
+                    # we are in the watchdog thread here, all we can do is report
+                    # and continue running (otherwise reload stops working)
+                    logger.exception("Error while executing on change handler")
+            else:
+                logger.debug("File reported modified, but mtime did not change: %s", path)
 
     WatcherType = WatcherWatchdog  # type: ignore
 
@@ -125,10 +137,19 @@ class Reloader:
         self.watched_modules: Set[str] = set()
         self._first = True
         self.on_change: Optional[Callable[[str], None]] = on_change
-        self.watcher = WatcherType([], self._on_change)
+        WatcherCls = WatcherType if settings.main.mode == "development" else WatcherDummy
+        self.watcher = WatcherCls([], self._on_change)
         self.requires_reload = False
         self.ignore_modules: Set[str] = set()
         self.reload_event_next = threading.Event()
+        # should be set at app.directory
+        self.root_path: Optional[Path] = None
+        # maybe we want this mode enabled in the future via configuration
+        # this is useful if you have some packages installed in editable mode
+        # and you want to quick reload. However this does not always work:
+        #  * https://github.com/widgetti/solara/issues/177
+        #  * https://github.com/widgetti/solara/issues/148
+        self.aggresive_reload = False
 
     def start(self):
         if self._first:
@@ -136,42 +157,57 @@ class Reloader:
             # it can happen that an import is done at runtime, that we miss (could be in a thread)
             # so we always reload all modules except the ignore_modules
             self.ignore_modules = set(sys.modules)
-            logger.info("Ignoring reloading modules: %s", self.ignore_modules)
+            logger.debug("Ignoring reloading modules: %s", self.ignore_modules)
             self._first = False
 
     def _on_change(self, name):
-        # used for testing
-        self.reload_event_next.set()
-        self.reload_event_next.clear()
         # flag that we need to reload all modules next time
         self.requires_reload = True
         # and forward callback
         if self.on_change:
             self.on_change(name)
+        # used for testing
+        self.reload_event_next.set()
 
     def close(self):
         self.watcher.close()
+
+    def get_reload_module_names(self):
+        if self.aggresive_reload:
+            # not sure why, but if we reload pandas, the integration/reload_test.py fails
+            return {
+                k for k in set(sys.modules) - set(self.ignore_modules) if not (k.startswith("solara.server") or k.startswith("anyio") or k.startswith("pandas"))
+            }
+        else:
+            reload = []
+            for name in sorted(sys.modules):
+                mod = sys.modules[name]
+                if name.startswith("solara.server"):
+                    continue  # this will break everything
+                if name in self.ignore_modules:
+                    continue  # nothing we imported from solara itself like starlette etc
+                # we only reload modules that are in the root path
+                if (getattr(mod, "__file__", None) or "").startswith(str(self.root_path)):
+                    reload.append(name)
+            return reload
 
     def reload(self):
         # before we did this:
         # # don't reload modules like solara.server and react
         # # that may cause issues (like 2 Element classes existing)
-        # not sure why, but if we reload pandas, the integration/reload_test.py fails
-        reload_modules = {
-            k for k in set(sys.modules) - set(self.ignore_modules) if not (k.startswith("solara.server") or k.startswith("anyio") or k.startswith("pandas"))
-        }
+        reload_modules = self.get_reload_module_names()
         # which picks up import that are done in threads etc, but it will also reload starlette, httptools etc
         # which causes issues with exceptions and isinstance checks.
         # reload_modules = self.watched_modules
         logger.info("Reloading modules... %s", reload_modules)
         # not sure if this is needed
         importlib.invalidate_caches()
-        for mod in sorted(reload_modules):
+        for mod_name in sorted(reload_modules):
             # don't reload modules like solara.server and react
             # that may cause issues (like 2 Element classes existing)
-            logger.debug("Reloading module %s", mod)
-            sys.modules.pop(mod, None)
-        # if all succesfull...
+            logger.debug("Reloading module %s", mod_name)
+            sys.modules.pop(mod_name, None)
+        # if all successful...
         self.requires_reload = False
 
     @contextlib.contextmanager
@@ -201,13 +237,13 @@ class Reloader:
                     path = inspect.getfile(module)
                 except Exception:
                     pass
-                if path:
+                if path and Path(path).exists():
                     if not path.startswith(sys.prefix):
                         self.watcher.add_file(path)
                         self.watched_modules.add(modname)
                         modules_watching.add(modname)
             if modules_watching:
-                logger.info("Watching modules: %s for reload", modules_watching)
+                logger.debug("Watching modules: %s for reload", modules_watching)
 
 
 # there is only a reloader, and there should be only 1 app

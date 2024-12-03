@@ -17,7 +17,7 @@ def Page():
                     )
 
         solara.Info("I'm in the main content area, put your main content here")
-        with solara.Card("Use solara.Columns to create relativly sized columns"):
+        with solara.Card("Use solara.Columns to create relatively sized columns"):
             with solara.Columns([1, 2]):
                 solara.Success("I'm in the first column")
                 solara.Warning("I'm in the second column, I am twice as wide")

@@ -1,0 +1,12 @@
+diff --git a/node_modules/@jupyterlab/outputarea/lib/widget.js b/node_modules/@jupyterlab/outputarea/lib/widget.js
+index b3fb52a..8497376 100644
+--- a/node_modules/@jupyterlab/outputarea/lib/widget.js
++++ b/node_modules/@jupyterlab/outputarea/lib/widget.js
+@@ -1,6 +1,6 @@
+ // Copyright (c) Jupyter Development Team.
+ // Distributed under the terms of the Modified BSD License.
+-import { WidgetTracker } from '@jupyterlab/apputils';
++import { WidgetTracker } from '@jupyterlab/apputils/lib/widgettracker';
+ import { KernelMessage } from '@jupyterlab/services';
+ import { PromiseDelegate, UUID } from '@lumino/coreutils';
+ import { AttachedProperty } from '@lumino/properties';

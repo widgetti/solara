@@ -1,10 +1,8 @@
-from typing import Any, Callable, List
+import warnings
+from typing import Any, Callable, Dict, List, Union
 
-import ipyvue as vue
 import reacton
-import reacton.ipyvuetify as ipyvue
 import reacton.ipyvuetify as v
-
 import solara
 import solara.widgets
 from solara.util import _combine_classes
@@ -80,37 +78,28 @@ def ui_slider(value=1, label="", min=0, max=100, key=None, tick_labels=None, thu
 
 
 @solara.component
-def Card(title: str = None, subtitle: str = None, elevation: int = 2, margin=2, children: List[reacton.core.Element] = [], classes: List[str] = []):
-    class_ = _combine_classes([f"ma-{margin}", *classes])
-    with v.Card(elevation=elevation, class_=class_) as main:
-        if title:
-            with v.CardTitle(
-                children=[title],
-            ):
-                pass
-        if subtitle:
-            with v.CardSubtitle(
-                children=[subtitle],
-            ):
-                pass
-        with v.CardText(children=children):
-            pass
-    return main
+def Text(text, style: Union[str, Dict[str, str], None] = None, classes: List[str] = []):
+    style_flat = solara.util._flatten_style(style)
+    return v.Html(tag="span", class_=_combine_classes(classes), style_=style_flat, children=[text])
 
 
 @solara.component
-def Text(text):
-    return vue.Html.element(tag="span", children=[text])
+def Div(children=[], classes: List[str] = [], style: Union[str, Dict[str, str], None] = None, **kwargs):
+    style_flat = solara.util._flatten_style(style)
+    classes = classes.copy()
+    kwargs = kwargs.copy()
+    if "class_" in kwargs:
+        classes.append(kwargs.pop("class_"))
+    if "style_" in kwargs:
+        style_flat += kwargs.pop("style_")
+    class_ = _combine_classes(classes)
 
-
-@solara.component
-def Div(children=[], **kwargs):
-    return vue.Html.element(tag="div", children=children, **kwargs)
+    return v.Html(tag="div", children=children, class_=class_, style_=style_flat, **kwargs)
 
 
 @solara.component
 def Preformatted(text, **kwargs):
-    return vue.Html.element(tag="pre", children=[text], **kwargs)
+    return v.Html(tag="pre", children=[text], **kwargs)
 
 
 @solara.component
@@ -166,43 +155,90 @@ def HBox(children=[], grow=True, align_items="stretch", classes: List[str] = [])
 
 
 @solara.component
-def Row(children=[], gap="12px", classes: List[str] = [], style: str = ""):
+def Row(children=[], gap="12px", justify="start", margin: int = 0, classes: List[str] = [], style: Union[str, Dict[str, str], None] = None):
     """Lays out children in a row, side by side, with the given gap between them.
+
+    See also [Column](/documentation/components/layout/column).
 
     Example with three children side by side:
 
-    ```python
-    with Row(gap="10px"):
-        solara.Text("On the left")
-        solara.Text("In the middle")
-        solara.Text("On the right")
+    ```solara
+    import solara
+
+    @solara.component
+    def Page():
+        with solara.Row(gap="10px", justify="space-around"):
+            solara.Text("On the left")
+            solara.Text("In the middle")
+            solara.Text("On the right")
     ```
+    ## Arguments
+
+     * `children`: List of children to render in the column.
+     * `gap`: The gap between each child, as a CSS string.
+     * `justify`: How children are distributed along the x/horizontal-axis, can be "start" (default), "center", "end", "space-around",
+        "space-between" or "space-evenly".
+        (*Note: this translates to justify-content in CSS*).
+     * `margin`: The margin around the column, translate to 4*margin pixels.
+     * `classes`: List of CSS classes to apply to the column.
+     * `style`: CSS style to apply to the column.
+
     """
     align_items = "stretch"
-    style = f"flex-direction: row; align-items: {align_items}; column-gap: {gap};" + style + ";"
-    class_ = _combine_classes(["d-flex", *classes])
-    return v.Sheet(class_=class_, style_=style, elevation=0, children=children)
+    style_flat = solara.util._flatten_style(style)
+    style_flat = f"flex-direction: row; align-items: {align_items}; justify-content: {justify}; column-gap: {gap};" + style_flat + ";"
+    # valid css values, but we don't list them as options to avoid confusion
+    extra_justify_options = ["left", "right", "flex-start", "flex-end"]
+    if justify not in (["start", "center", "end", "space-around", "space-between", "space-evenly"] + extra_justify_options):
+        warnings.warn(f"Invalid value for justify: {justify}, possible values are: start, center, end, space-around, space-between, space-evenly")
+    class_ = _combine_classes(["d-flex", f"ma-{margin}", *classes])
+    return v.Sheet(class_=class_, style_=style_flat, elevation=0, children=children)
 
 
 @solara.component
-def Column(children=[], gap="12px", margin: int = 0, classes: List[str] = [], style: str = ""):
-    """Lays out children in a column on top of eachother, with the given gap between them.
+def Column(children=[], gap="12px", align="stretch", margin: int = 0, classes: List[str] = [], style: Union[str, Dict[str, str], None] = None):
+    """Lays out children in a column on top of each other, with the given gap between them.
 
-    Example with three children on top of eachother:
+    See also [Row](/documentation/components/layout/row).
 
-    ```python
+    Example with three children on top of each other:
 
-    with Column(gap="10px"):
-        solara.Text("On top")
-        solara.Text("In the middle")
-        solara.Text("On bottom")
+    ```solara
+    import solara
+
+    @solara.component
+    def Page():
+        with solara.Column(gap="10px"):
+            solara.Text("On top")
+            solara.Text("In the middle")
+            solara.Text("On bottom")
     ```
 
+    ## Arguments
+
+     * `children`: List of children to render in the column.
+     * `gap`: The gap between each child, as a CSS string.
+     * `align`: The alignment of the children, can be "start", "center", "end", "stretch" (default).
+        (*Note: this translates to align-items in CSS*).
+     * `margin`: The margin around the column, translate to 4*margin pixels.
+     * `classes`: List of CSS classes to apply to the column.
+     * `style`: CSS style to apply to the column.
+
     """
-    align_items = "stretch"
-    style = f"flex-direction: column; align-items: {align_items}; row-gap: {gap};" + style + ";"
+    if align == "left":
+        warnings.warn("align='left' does not exists, you probably want align='start' instead")
+        align = "start"
+    if align == "right":
+        warnings.warn("align='right' does not exists, you probably want align='end' instead")
+        align = "end"
+    # valid css options, but we don't list them as options to avoid confusion
+    extra_align_options = ["flex-start", "flex-end", "self-start", "self-end", "baseline"]
+    if align not in (["start", "center", "end", "stretch"] + extra_align_options):
+        warnings.warn(f"Invalid value for align: {align}, possible values are 'start', 'center', 'end' or 'stretch'")
+    style_flat = solara.util._flatten_style(style)
+    style_flat = f"flex-direction: column; align-items: {align}; row-gap: {gap};" + style_flat + ";"
     class_ = _combine_classes(["d-flex", f"ma-{margin}", *classes])
-    return v.Sheet(class_=class_, style_=style, elevation=0, children=children)
+    return v.Sheet(class_=class_, style_=style_flat, elevation=0, children=children)
 
 
 @solara.component
@@ -235,30 +271,29 @@ def FigurePlotly(
     on_click: Callable[[Any], None] = None,
     on_hover: Callable[[Any], None] = None,
     on_unhover: Callable[[Any], None] = None,
+    on_relayout: Callable[[Any], None] = None,
     dependencies=None,
 ):
     from plotly.graph_objs._figurewidget import FigureWidget
 
     def on_points_callback(data):
-        if data:
-            event_type = data["event_type"]
-            if event_type == "plotly_click":
-                if on_click:
-                    on_click(data)
-            elif event_type == "plotly_hover":
-                if on_hover:
-                    on_hover(data)
-            elif event_type == "plotly_unhover":
-                if on_unhover:
-                    on_unhover(data)
-            elif event_type == "plotly_selected":
-                if on_selection:
-                    on_selection(data)
-            elif event_type == "plotly_deselect":
-                if on_deselect:
-                    on_deselect(data)
+        if not data:
+            return
 
-    fig_element = FigureWidget.element(on__js2py_pointsCallback=on_points_callback)
+        event_type = data["event_type"]
+        event_mapping = {
+            "plotly_click": on_click,
+            "plotly_hover": on_hover,
+            "plotly_unhover": on_unhover,
+            "plotly_selected": on_selection,
+            "plotly_deselect": on_deselect,
+        }
+
+        callback = event_mapping.get(event_type)
+        if callback:
+            callback(data)
+
+    fig_element = FigureWidget.element(on__js2py_pointsCallback=on_points_callback, on__js2py_relayout=on_relayout)
 
     def update_data():
         fig_widget: FigureWidget = solara.get_widget(fig_element)

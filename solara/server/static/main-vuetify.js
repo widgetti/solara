@@ -1,6 +1,5 @@
-Vue.use(Vuetify);
 
-Vue.component('jupyter-widget-mount-point', {
+var jupyterWidgetMountPoint = {
     data() {
         return {
             renderFn: undefined,
@@ -12,6 +11,7 @@ Vue.component('jupyter-widget-mount-point', {
         requestWidget(this.mountId);
     },
     mounted() {
+        const vue3 = Vue.version.startsWith('3');
         requestWidget(this.mountId)
             .then(widgetView => {
                 if (['VuetifyView', 'VuetifyTemplateView'].includes(widgetView.model.get('_view_name'))) {
@@ -29,6 +29,8 @@ Vue.component('jupyter-widget-mount-point', {
             );
     },
     render(createElement) {
+        // in vue3 we have Vue.h, otherwise fall back to createElement (vue2)
+        let h = Vue.h || createElement;
         if (this.renderFn) {
             /* workaround for v-menu click */
             if (!this.elem) {
@@ -36,10 +38,10 @@ Vue.component('jupyter-widget-mount-point', {
             }
             return this.elem;
         }
-        return createElement('div', this.$slots.default ||
-            [createElement('v-chip', `[${this.mountId}]`)]);
+        return h('div', this.$slots.default ||
+            [h('v-chip', `[${this.mountId}]`)]);
     }
-});
+};
 
 const widgetResolveFns = {};
 const widgetPromises = {};
@@ -79,40 +81,6 @@ function injectDebugMessageInterceptor(kernel) {
 }
 
 
-class WebSocketRedirectWebWorker {
-    // redirects to webworker
-    constructor(url) {
-        console.log('connect url intercepted', url)
-        function make_default(name) {
-            return () => {
-                console.log("default ", name)
-            }
-        }
-        this.onopen = make_default('onopen')
-        this.onclose = make_default('onclose')
-        this.onmessage = make_default('onmessage')
-        setTimeout(() => this.start(), 10)
-    }
-    send(msg) {
-        // console.log('send msg', msg)
-        solaraWorker.postMessage({ 'type': 'send', 'value': msg })
-    }
-    start() {
-        solaraWorker.addEventListener('message', async (event) => {
-            let msg = event.data
-            // console.log('on msg', msg)
-            if (msg.type == 'opened') {
-                this.onopen()
-            }
-            if (msg.type == 'send') {
-                this.onmessage({ data: msg.value })
-            }
-        });
-        // solaraWorker.postMessage({ 'type': 'open' })
-    }
-}
-
-
 function getCookiesMap(cookiesString) {
     return cookiesString.split(";")
         .map(function (cookieString) {
@@ -146,30 +114,53 @@ function generateUuid() {
 async function solaraInit(mountId, appName) {
     console.log('solara init', mountId, appName);
     define("vue", [], () => Vue);
-    define("vuetify", [], { framework: app.$vuetify });
+    define("vuetify", [], () => Vuetify);
     cookies = getCookiesMap(document.cookie);
-    uuid = generateUuid()
+    const searchParams = new URLSearchParams(window.location.search);
+    let kernelId = searchParams.get('kernelid') || generateUuid()
     let unloading = false;
     window.addEventListener('beforeunload', function (e) {
         unloading = true;
         kernel.dispose()
-        window.navigator.sendBeacon(close_url);
+        // allow to opt-out to make testing easier
+        if (!searchParams.has('solara-no-close-beacon')) {
+            window.navigator.sendBeacon(close_url);
+        }
     });
-
-    if (for_pyodide) {
-        options = { WebSocket: WebSocketRedirectWebWorker }
-    } else {
-        options = {}
-    }
-    let kernel = await solara.connectKernel(solara.rootPath + '/jupyter', uuid, options)
+    let kernel = await solara.connectKernel(solara.jupyterRootPath, kernelId)
     if (!kernel) {
         return;
     }
-    const close_url = solara.rootPath + '/_solara/api/close/' + kernel.clientId;
+    const close_url = `${solara.rootPath}/_solara/api/close/${kernelId}?session_id=${kernel.clientId}`;
     let skipReconnectedCheck = true;
     kernel.statusChanged.connect(() => {
         app.$data.kernelBusy = kernel.status == 'busy';
     });
+
+    window.addEventListener('solara.router', function (event) {
+        app.$data.urlHasChanged = true;
+        if(kernel.status == 'busy') {
+            app.$data.loadingPage = true;
+        }
+    });
+    kernel.statusChanged.connect(() => {
+        // When navigation is triggered from the front-end, kernel.status becoming busy and
+        // solara.router event happen in a different order than when navigating through Python, so
+        // if the URL has changed when the kernel becomes busy, we set loadingPage to true
+        if (kernel.status == 'busy' && app.$data.urlHasChanged) {
+            app.$data.loadingPage = true;
+        }
+        // the first idle after a loadingPage == true (a router event)
+        // will be used as indicator that the page is loaded
+        if (app.$data.loadingPage && kernel.status == 'idle') {
+            app.$data.loadingPage = false;
+            app.$data.urlHasChanged = false;
+            const event = new Event('solara.pageReady');
+            window.dispatchEvent(event);
+        }
+    });
+
+
     kernel.connectionStatusChanged.connect((s) => {
         if (unloading) {
             // we don't want to show ui changes when hitting refresh
@@ -181,9 +172,21 @@ async function solaraInit(mountId, appName) {
         }
         if (s.connectionStatus == 'connected' && !skipReconnectedCheck) {
             (async () => {
-                let ok = await widgetManager.check()
-                if (!ok) {
-                    app.$data.needsRefresh = true
+                if (app.$data.needsRefresh) {
+                    // give up
+                    return;
+                }
+                // if we are reconnected, we expected the app to be in a started
+                // state. If it is not started, we will shutdown the kernel and
+                // Recommend to refresh the page. This situation can happen if
+                // we reconnect to a different node/worker, or when the server
+                // was restarted.
+                const status = await widgetManager.appStatus()
+                if (!status.started) {
+                    app.$data.needsRefresh = true;
+                    await solara.shutdownKernel(kernel);
+                } else {
+                    await widgetManager.fetchAll();
                 }
             })();
         }
@@ -220,18 +223,30 @@ async function solaraInit(mountId, appName) {
         saveState: false
     };
 
+    // override the latexTypesetter to use katex, in case there are any libraries that
+    // make use of that.
     const rendermime = new solara.RenderMimeRegistry({
-        initialFactories: solara.extendedRendererFactories
+        initialFactories: solara.extendedRendererFactories,
+        latexTypesetter: new solara.KatexTypesetter(),
     });
 
     let widgetManager = new solara.WidgetManager(context, rendermime, settings);
     // it seems if we attach this to early, it will not be called
     app.$data.loading_text = 'Loading app';
-    const path = window.location.pathname.slice(solara.rootPath.length);
-    const widgetId = await widgetManager.run(appName, path);
-    await solaraMount(widgetManager, mountId || 'content', widgetId);
+    const path = window.location.pathname.slice(solara.rootPath.length) + window.location.search;
+    let widgetModelId = searchParams.get('modelid');
+    // if kernelid and modelid are given as query parameters, we will use them
+    // instead of running the current solara app. This allows usage such as
+    // ipypopout, which reconnects to an existing kernel and shows a particular
+    // widget.
+    if (kernelId && widgetModelId) {
+        await widgetManager.fetchAll();
+    } else {
+        widgetModelId = await widgetManager.run(appName, {path, dark: inDarkMode(), themes: vuetifyThemes});
+    }
+    await solaraMount(widgetManager, mountId || 'content', widgetModelId);
     skipReconnectedCheck = false;
-    solara.renderMathJax();
+    solara.renderKatex();
 }
 
 async function solaraMount(widgetManager, mountId, modelId) {

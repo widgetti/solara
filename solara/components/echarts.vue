@@ -93,10 +93,7 @@ module.exports = {
         document.head.appendChild(script);
       });
     },
-    getBaseUrl() {
-      if (window.solara && window.solara.rootPath !== undefined) {
-        return solara.rootPath + "/";
-      }
+    getJupyterBaseUrl() {
       // if base url is set, we use ./ for relative paths compared to the base url
       if (document.getElementsByTagName("base").length) {
         return "./";
@@ -113,10 +110,7 @@ module.exports = {
       return base;
     },
     getCdn() {
-      return (
-        (typeof solara_cdn !== "undefined" && solara_cdn) ||
-        `${this.getBaseUrl()}_solara/cdn`
-      );
+      return this.cdn || (window.solara ? window.solara.cdn : `${this.getJupyterBaseUrl()}_solara/cdn`);
     },
   },
 };

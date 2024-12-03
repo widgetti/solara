@@ -85,6 +85,10 @@ px.histogram = histogram
 
 def _make_self_describing(f: Callable[P, T]):
     # put the arguments on the function and the function into the return value
+    if hasattr(f, "__wrapped__"):
+        # on hot reload, we need to unwrap the function to not wrap it twice
+        f = f.__wrapped__
+
     @functools.wraps(f)
     def wrapper(*args: P.args, **kwargs: P.kwargs):
         fig = f(*args, **kwargs)
@@ -108,7 +112,7 @@ _patch()
 
 
 @solara.component
-def FigurePlotlyCrossFiltered(fig):
+def CrossFilteredFigurePlotly(fig):
     first_arg_name = fig._func.__code__.co_varnames[0]
     kwargs = fig._kwargs.copy()
     kwargs.update(zip(fig._func.__code__.co_varnames, fig._args))
@@ -186,11 +190,15 @@ def FigurePlotlyCrossFiltered(fig):
     return solara.FigurePlotly(new_fig, on_selection=on_selection, on_deselect=on_deselect)
 
 
+# for backwards compatibility
+FigurePlotlyCrossFiltered = CrossFilteredFigurePlotly
+
+
 def _wraps(f: Callable[P, T]):
     @functools.wraps(f)
     def wrapper(*args: P.args, **kwargs: P.kwargs):
         fig = f(*args, **kwargs)
-        return FigurePlotlyCrossFiltered(fig)
+        return CrossFilteredFigurePlotly(fig)
 
     return wrapper
 

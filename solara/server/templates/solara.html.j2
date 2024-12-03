@@ -11,43 +11,54 @@
 
     {% block header %}
 
-
     {{ pre_rendered_css | safe }}
-
-    <link href="{{root_path}}/_solara/cdn/@widgetti/solara-vuetify-app@3.0.0/dist/main.css" rel="stylesheet"></link>
-
-    <link href="{{root_path}}/static/highlight.css" rel="stylesheet">
-    <link href="{{root_path}}/static/highlight-dark.css" rel="stylesheet">
-    </link>
-    <link href="{{root_path}}/static/assets/style.css" rel="stylesheet">
-    </link>
-    <link href="{{root_path}}/static/nbconvert/index.css" rel="stylesheet">
-    </link>
-    {% if theme.variant == "light" %}
-    <link href="{{root_path}}/static/nbconvert/theme-light.css" rel="stylesheet">
-    </link>
-    {% elif theme.variant == "dark" %}
-    <link href="{{root_path}}/static/nbconvert/theme-dark.css" rel="stylesheet">
-    </link>
+    {% if vue3 == True %}
+    <link href="{{cdn}}/@widgetti/solara-vuetify3-app@5.0.2/dist/main{{ipywidget_major_version}}.css" rel="stylesheet" class="solara-template-css"></link>
+    {% else %}
+    <link href="{{cdn}}/@widgetti/solara-vuetify-app@10.0.3/dist/main{{ipywidget_major_version}}.css" rel="stylesheet" class="solara-template-css"></link>
     {% endif %}
-    <link href="{{root_path}}/static/assets/custom.css" rel="stylesheet">
-    </link>
+
+
+    {% if assets.fontawesome_enabled == True %}
+    <link rel="stylesheet" href="{{cdn}}{{assets.fontawesome_path}}" type="text/css">
+    {% endif %}
+    {{ resources.include_css("/static/highlight.css") }}
+    {{ resources.include_css("/static/highlight-dark.css") }}
+    {{ resources.include_css("/static/assets/style.css") }}
+    <style id="jupyter-theme-css" class="solara-template-css">
+    </style>
+    {{ resources.include_css("/static/assets/custom.css") }}
 
     <script id="jupyter-config-data" type="application/json">
     {
-        "baseUrl": "{{root_path}}/jupyter",
+        "baseUrl": "{{jupyter_root_path}}/",
         "kernelId": "1234"
     }
     </script>
-    <style>
+    <style class="solara-template-css">
         {% include "loader-"~theme.loader~".css" %}
     </style>
+    <!-- Include Vuetify background colours so static html from SSG renders the right general colour theme
+        before first render. We remove these after Vue takes over rendering to avoid collisions -->
+    <style id="pre-render-theme">
+    .theme--light .v-sheet {
+        background-color: #fff;
+        border-color: #fff;
+        color: rgba(0,0,0,.87)
+    }
+
+    .theme--dark .v-sheet {
+        background-color: #1e1e1e;
+        border-color: #1e1e1e;
+        color: #fff
+    }
+</style>
     {% endblock header %}
 </head>
 {% raw -%}
 <script type="x-template" id="vue-app-template" style="display: none">
-    <v-app :key="forceUpdateTrigger">
-        <v-progress-linear :style="{visibility: (kernelBusy && isMounted) ? 'visible' : 'hidden'}" indeterminate
+    <v-app :key="forceUpdateTrigger" :class="loadingPage ? 'solara-page-loading' : ''">
+        <v-progress-linear :style="{visibility: (kernelBusyLong && isMounted) ? 'visible' : 'hidden'}" indeterminate
             absolute></v-progress-linear>
         <v-alert v-if="needsRefresh || cancelAutoRefresh" type="warning" border="left"
             style="position: absolute; right: 0px; z-index: 100; left: 0px;">
@@ -56,7 +67,7 @@
         {% endraw -%}
         {# {% include "transition-domino.html" %} #}
         {% include "loader-" ~ theme.loader ~ ".html" %}
-        <v-overlay :value="(connectionStatus != 'connected') & wasConnected">
+        <v-overlay style="z-index: 100002;" :value="(connectionStatus != 'connected') & wasConnected">
             <v-progress-circular indeterminate size="128" style="text-align: center;">Server
                 disconnected.</v-progress-circular>
         </v-overlay>
@@ -125,36 +136,6 @@
             </v-sheet>
         </v-menu>
 
-        <v-menu offset-y top :close-on-content-click="false" style="z-index: 100001">
-            <!-- <template v-slot:activator="{ on }">
-                <v-btn text v-on="on" style="position: fixed; top: 8px; right: 8px; z-index: 100000">
-                    <v-icon right large style="opacity: 0.5" :color="connectionStatus != 'connected' ? 'red' : ''">mdi-account</v-icon>
-                </v-btn>
-            </template> -->
-            <v-list>
-                <v-list-item @click="stateReset()" link>
-                    <v-list-item-icon>
-                        <v-icon>mdi-close-box</v-icon>
-                    </v-list-item-icon>
-                    <v-list-item-title>Reset application
-                    </v-list-item-title>
-                </v-list-item>
-                <v-list-item v-if="theme.variant_user_selectable">
-                    <v-btn-toggle v-model="themeVariantIndex" tile group mandatory>
-                        <v-btn vaue="light" icon>
-                            <v-icon>mdi-white-balance-sunny</v-icon>
-                        </v-btn>
-                        <v-btn>
-                            <v-icon>mdi-weather-night</v-icon>
-                        </v-btn>
-                        <v-btn>
-                            <v-icon>mdi-theme-light-dark</v-icon>
-                        </v-btn>
-                    </v-btn-toggle>
-                </v-list-item>
-
-            </v-list>
-        </v-menu>
         <!-- <v-menu v-if="debug && outputMessages && outputMessages.length" offset-y top
             :close-on-content-click="false">
             <template v-slot:activator="{ on }">
@@ -191,7 +172,12 @@
 </script>
 {% endraw -%}
 
-<body>
+<body data-base-url="{{root_path}}/jupyter/">
+    {% if perform_check %}
+    <iframe src="https://solara.dev/static/public/success.html?system=solara&check=html&version={{solara_version}}" style="display: none"></iframe>
+    {% endif %}
+    {% if theme.variant == "auto" %}
+    {% endif %}
     {% if theme.variant == "light" %}
     <div id="app" class="v-application v-application--is-ltr theme--light" data-app="true">
     {% elif theme.variant == "dark" %}
@@ -201,63 +187,105 @@
         {# next div is used in ssg code to see if vue took over rendering #}
         <div id="pre-rendered-html-present" style="display: none"></div>
     </div>
-    {% if production %}
-    <script src="{{root_path}}/_solara/cdn/@widgetti/solara-vuetify-app@3.0.0/dist/solara-vuetify-app.min.js"></script>
-    <script src="{{root_path}}/_solara/cdn/mermaid@9.1.7/dist/mermaid.min.js"></script>
-    {% else %}
-    <script src="{{root_path}}/_solara/cdn/@widgetti/solara-vuetify-app@3.0.0/dist/solara-vuetify-app.js"></script>
-    <script src="{{root_path}}/_solara/cdn/mermaid@9.1.7/dist/mermaid.js"></script>
-    {% endif %}
     <script>
-        solara.rootPath = {{ root_path | tojson | safe}};
-        console.log("rootPath", solara.rootPath);
-    </script>
-
-    <script src="{{root_path}}/static/assets/custom.js"></script>
-    <script src="{{root_path}}/static/assets/theme.js"></script>
-
-    <script src="{{root_path}}/_solara/cdn/requirejs@2.3.6/require.js" crossorigin="anonymous">
-    </script>
-    <script src="{{root_path}}/static/main-vuetify.js"></script>
-    <script src="{{root_path}}/static/ansi.js"></script>
-
-    <script>
-        solara.production = {{ production | tojson | safe }};
-        const themeVariants = ['light', 'dark', 'auto']
-        solara.preRendered = {{ pre_rendered_html | safe | length | tojson }} > 0
         var theme = {{ theme | tojson | safe }}
-        if (theme.variant_user_selectable) {
-            if (localStorage.getItem('theme.variant')) {
-                theme.variant = JSON.parse(localStorage.getItem('theme.variant'))
+        function getThemeVariant() {
+            if (localStorage.getItem(':solara:theme.variant')) {
+                return JSON.parse(localStorage.getItem(':solara:theme.variant'))
             }
+            return theme.variant;
+        }
+        if (localStorage.getItem(':solara:theme.variant')) {
+            theme.variant = JSON.parse(localStorage.getItem(':solara:theme.variant'))
         }
         function prefersDarkScheme() {
             return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
         }
         function inDarkMode() {
-            if (theme.variant == 'auto') {
+            if (getThemeVariant() == 'auto') {
                 return prefersDarkScheme();
             }
             else {
-                return theme.variant == 'dark';
+                return getThemeVariant() == 'dark';
             }
         }
+        // Init theme
+        let appContainer = document.getElementById('app');
+        const searchParams = new URLSearchParams(window.location.search);
+        if(searchParams.has('modelid')) {
+            // indicates that we are not mounting the application, but a specific
+            // widget (for instance using ipypopout)
+            document.body.classList.add('jupyter-widgets-popout-container');
+        }
+        if (inDarkMode()) {
+            appContainer.classList.remove('theme--light');
+            appContainer.classList.add('theme--dark');
+        } else {
+            appContainer.classList.remove('theme--dark');
+            appContainer.classList.add('theme--light');
+        }
+    </script>
+    {% block after_pre_rendered_html %}{% endblock %}
+    {% if vue3 == True %}
+        <link href="{{cdn}}/@widgetti/solara-vuetify3-app@5.0.2/dist/fonts.css" rel="stylesheet"></link>
+        {% if production %}
+        <script src="{{cdn}}/@widgetti/solara-vuetify3-app@5.0.2/dist/solara-vuetify-app{{ipywidget_major_version}}.min.js"></script>
+        {% else %}
+        <script src="{{cdn}}/@widgetti/solara-vuetify3-app@5.0.2/dist/solara-vuetify-app{{ipywidget_major_version}}.js"></script>
+        {% endif %}
+    {% else %}
+        <link href="{{cdn}}/@widgetti/solara-vuetify-app@10.0.3/dist/fonts.css" rel="stylesheet" fetchpriority="low"></link>
+        {% if production %}
+        <script src="{{cdn}}/@widgetti/solara-vuetify-app@10.0.3/dist/solara-vuetify-app{{ipywidget_major_version}}.min.js"></script>
+        {% else %}
+        <script src="{{cdn}}/@widgetti/solara-vuetify-app@10.0.3/dist/solara-vuetify-app{{ipywidget_major_version}}.js"></script>
+        {% endif %}
+    {% endif %}
+    <script>
+        solara.rootPath = {{ root_path | tojson | safe}};
+        solara.jupyterRootPath = {{ jupyter_root_path | tojson | safe}};
+        solara.cdn = {{ cdn | tojson | safe }};
+        // the vue templates expect it to not have a trailing slash
+        solara.cdn = solara.cdn.replace(/\/$/, '');
+        // keep this for backwards compatibility
+        window.solara_cdn = solara.cdn;
+        console.log("solara config", {rootPath: solara.rootPath, jupyterRootPath: solara.jupyterRootPath, cdn: solara.cdn});
+
+        async function changeThemeCSS(theme) {
+            let css = await fetch(`${solara.rootPath}/static/assets/theme-${theme}.css`).then(r => r.text());
+            document.getElementById('jupyter-theme-css').innerHTML = css;
+        }
+        changeThemeCSS(inDarkMode() ? 'dark' : 'light');
+    </script>
+
+    {{ resources.include_js("/static/assets/custom.js") }}
+    {{ resources.include_js("/static/assets/theme.js") }}
+
+    <script src="{{cdn}}/requirejs@2.3.6/require.js" crossorigin="anonymous">
+    </script>
+    {{ resources.include_js("/static/main-vuetify.js") }}
+    {{ resources.include_js("/static/ansi.js") }}
+
+    <script>
+        solara.production = {{ production | tojson | safe }};
+        const themeVariants = ['light', 'dark', 'auto']
+        solara.preRendered = {{ pre_rendered_html | safe | length | tojson }} > 0
+        if(solara.preRendered) {
+            document.body.classList.add('solara-ssg', 'solara-pre-rendered');
+        } else {
+            document.body.classList.add('solara-no-ssg');
+        }
+
     </script>
 
     <script>
-        window.for_pyodide = false;
-        {% if for_pyodide %}
-        const solaraWorker = new Worker("./static/webworker.js");
-        window.for_pyodide = true;
+        window.solara.browser_platform = false;
+        {% if platform == "emscripten" %}
+        window.solara.browser_platform = true;
         {% endif %}
         var debug = true;
-        var app = new Vue({
-            vuetify: new Vuetify({
-                theme: {
-                    dark: inDarkMode(),
-                    themes: vuetifyThemes,
-                },
-            }),
+
+        var appComponent = {
             // if we do prerendering, keep it unmounted, and mount
             // when loading becomes false
             el: solara.preRendered ? null : '#app' ,
@@ -268,6 +296,10 @@
                     this.forceUpdateTrigger += 1;
                     original_$forceUpdate();
                 });
+                // in case we are showing a popop (e.g. using ipypopout), hide the banner
+                if(searchParams.has('modelid')) {
+                    this.showBanner = false;
+                }
             },
             mounted() {
                 document.querySelector('#app').removeAttribute("style");
@@ -275,6 +307,7 @@
                 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
                     this.$vuetify.theme.dark = inDarkMode();
                 });
+                document.getElementById('pre-render-theme').remove();
             },
             methods: {
                 stateReset() {
@@ -290,25 +323,42 @@
                     location.reload();
                 },
             },
-            computed: {
-                themeVariantIndex: {
-                    get() {
-                        return themeVariants.indexOf(theme.variant)
-                    },
-                    set(value) {
-                        theme.variant = themeVariants[value]
-                        this.$vuetify.theme.dark = inDarkMode()
-                        localStorage.setItem('theme.variant', JSON.stringify(theme.variant))
-                    }
-                }
-            },
             watch: {
+                kernelBusy: function (value) {
+                    if(this._lastBusyTimer) {
+                        clearTimeout(this._lastBusyTimer)
+                    }
+                    if(value) {
+                        this._lastBusyTimer = setTimeout(() => {
+                            this.kernelBusyLong = value;
+                        }, 300);
+                    } else {
+                        this.kernelBusyLong = value;
+                    }
+                },
                 loading: function (value) {
                     // if preRendered, the app is not mounted yet
                     // so we mount it when loading becomes false
                     if (solara.preRendered && !this.mounted) {
-                        this.isMounted = true;
-                        this.$mount("#app")
+                        function waitForAnimation(element) {
+                            return new Promise((resolve) => {
+                                element.addEventListener('animationend', resolve, { once: true });
+                            });
+                        }
+
+                        function waitForAllAnimations(elements) {
+                            const animationPromises = Array.from(elements).map(element => waitForAnimation(element));
+                            return Promise.all(animationPromises);
+                        }
+
+                        (async () => {
+                            await waitForAllAnimations(document.querySelectorAll('.solara-ssg-wait-for-animation'));
+                            console.log("animation finished");
+                            document.body.classList.remove('solara-pre-rendered');
+                            document.body.classList.add('solara-pre-rendered-finished');
+                            this.isMounted = true;
+                            this.$mount("#app")
+                        })();
                     } else {
                         this.isMounted = true;
                     }
@@ -333,6 +383,17 @@
                             this.autoRefreshCount = this.autoRefreshCount - 1;
                         }, 1000);
                     }
+                },
+                '$vuetify.theme.dark': function (value) {
+                    if ( value ) {
+                        changeThemeCSS('dark');
+                        appContainer.classList.remove('theme--light');
+                        appContainer.classList.add('theme--dark');
+                    } else {
+                        changeThemeCSS('light');
+                        appContainer.classList.remove('theme--dark');
+                        appContainer.classList.add('theme--light');
+                    }
                 }
             },
             data() {
@@ -353,17 +414,40 @@
                     autoRefreshCount: 3,
                     kernelBusy: false,
                     isMounted: false,
+                    loadingPage: false,
+                    _lastBusyTimer: null,
+                    kernelBusyLong: false,
+                    showBanner: theme.show_banner,
                     // outputMessages: [{ name: 'stderr', text: 'lala' }],
                 }
             }
-        });
+        };
+        const vue3 = Vue.version.startsWith('3');
+        if(vue3) {
+            var app = Vue.createApp(appComponent).use(vuetifyPlugin)
+                .component("jupyter-widget-mount-point", jupyterWidgetMountPoint)
+                .mount('#app');
 
+        } else {
+            Vue.component('jupyter-widget-mount-point', jupyterWidgetMountPoint);
+            Vue.use(Vuetify);
+            var app = new Vue({
+                vuetify: new Vuetify({
+                    theme: {
+                        dark: inDarkMode(),
+                        themes: vuetifyThemes,
+                    },
+                }),
+                ...appComponent,
+            });
+        }
         // Loading classic notebook extensions.
         {% if 'jupyter-vuetify/extension' in resources.nbextensions -%}
         window.enable_nbextensions = true;
         {% endif -%}
+        nbextensionHashes = {{ resources.nbextensions_hashes | tojson | safe }};
         requirejs.config({
-            baseUrl: '{{root_path}}/static/',
+            baseUrl: '{{jupyter_root_path}}',
             waitSeconds: 3000,
             map: {
                 '*': {
@@ -374,11 +458,21 @@
         'jupyter-vuetify': 'nbextensions/jupyter-vuetify/nodeps',
             {% endif -%}
                     },
-                }
+                },
+                // Add cache busting to the urlArgs to ensure latest versions of nbextensions are loaded
+                urlArgs: function (id, url) {
+                    const extensionName = id.replace("/static/nbextensions/", "").replace(".js", "");
+                    if (nbextensionHashes[extensionName] !== undefined) {
+                        // Check if the url already has a query string, if so, append the hash as an additional parameter
+                        return (url.indexOf('?') === -1 ? '?' : '&') + nbextensionHashes[extensionName];
+                    } else {
+                        return '';
+                    }
+                },
             });
         requirejs([
             {% for ext in resources.nbextensions if ext != 'jupyter-vuetify/extension' and ext != 'jupyter-vue/extension' -%}
-        "{{root_path}}/static/nbextensions/{{ ext }}.js",
+        "{{jupyter_root_path}}/nbextensions/{{ ext }}.js",
             {% endfor %}
         ]);
         (async function () {

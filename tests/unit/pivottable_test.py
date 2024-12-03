@@ -43,12 +43,12 @@ def test_df_data_pivot_table_df():
     el = solara.PivotTable(df, ["survived"], ["sex"])
     box, rc = solara.render(el, handle_error=False)
     repeat_while_false(lambda: rc._find(PivotTableWidget))
-    assert rc._find(PivotTableWidget).widget.d["values"] == [["127", "682"], ["339", "161"]]
+    assert rc.find(PivotTableWidget).widget.d["values"] == [["127", "682"], ["339", "161"]]
 
     el = solara.PivotTableCard(df, ["survived"], ["sex"])
     box, rc = solara.render(el, handle_error=False)
     repeat_while_false(lambda: rc._find(PivotTableWidget))
-    assert rc._find(PivotTableWidget).widget.d["values"] == [["127", "682"], ["339", "161"]]
+    assert rc.find(PivotTableWidget).widget.d["values"] == [["127", "682"], ["339", "161"]]
 
 
 def test_pivot_table():
@@ -69,7 +69,7 @@ def test_pivot_table():
         return main
 
     widget, rc = solara.render(Test(), handle_error=False)
-    repeat_while_false(lambda: rc._find(PivotTableWidget))
+    rc.find(PivotTableWidget).wait_for(timeout=10)
     pt = rc._find(PivotTableWidget).widget
     data = pt.d
     assert data["x"] == ["sex"]
@@ -81,7 +81,7 @@ def test_pivot_table():
     assert set_filter is not None
     set_filter(str(df["pclass"] == 2))
     # wait for the data to change
-    repeat_while_true(lambda: rc._find(PivotTableWidget).widget.d["values"] == [["127", "339"], ["682", "161"]])
+    rc.find(PivotTableWidget).assert_wait(lambda w: w.d["values"] != [["127", "339"], ["682", "161"]], timeout=10)
     data = pt.d
     assert data["values_x"] == ["106", "171"]
     assert data["values_y"] == ["158", "119"]
@@ -89,9 +89,9 @@ def test_pivot_table():
     assert data["total"] == f"{len(df[df.pclass==2]):,}"
     set_filter(None)
     # wait for the filter to be applied (data should change)
-    repeat_while_true(lambda: rc._find(PivotTableWidget).widget.d["values"] == [["12", "94"], ["146", "25"]])
+    rc.find(PivotTableWidget).assert_wait(lambda w: w.d["values"] != [["12", "94"], ["146", "25"]], timeout=10)
     pt.selected = {"x": [0, 0]}  # sex, female
-    assert filter is not None
+    repeat_while_true(lambda: filter is None)
     assert df[df[str(filter)]].sex.unique() == ["female"]
 
     pt.selected = {"y": [0, 0]}  # survived, False

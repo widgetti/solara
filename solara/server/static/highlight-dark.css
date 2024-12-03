@@ -2,7 +2,7 @@
    and then remove the overlapping first lines with highlight.css
 */
 .theme--dark.v-application .highlight .hll { background-color: #ffffcc }
-.theme--dark.v-application .highlight { background: #282C34; color: #ABB2BF }
+.theme--dark.v-application .highlight { background: #1d1f22; color: #ABB2BF }
 .theme--dark.v-application .highlight .c { color: #7F848E } /* Comment */
 .theme--dark.v-application .highlight .err { color: #ABB2BF } /* Error */
 .theme--dark.v-application .highlight .esc { color: #ABB2BF } /* Escape */

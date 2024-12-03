@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Optional, Union
 
 import reacton.ipyvuetify as v
 
@@ -8,7 +8,7 @@ from solara.util import _combine_classes
 
 @solara.component
 def Success(
-    label: str,
+    label: Optional[str] = None,
     icon: Union[bool, str, None] = True,
     dense=False,
     outlined=True,
@@ -33,13 +33,20 @@ def Success(
     if icon is True:
         icon = None
     return v.Alert(
-        type="success", text=text, outlined=outlined, dense=dense, icon=icon, children=[label, *children], class_=_combine_classes(classes), **kwargs
+        type="success",
+        text=text,
+        outlined=outlined,
+        dense=dense,
+        icon=icon,
+        children=[*([label] if label is not None else []), *children],
+        class_=_combine_classes(classes),
+        **kwargs,
     )
 
 
 @solara.component
 def Info(
-    label: str,
+    label: Optional[str] = None,
     icon: Union[bool, str, None] = True,
     dense=False,
     outlined=True,
@@ -62,12 +69,21 @@ def Info(
     """
     if icon is True:
         icon = None
-    return v.Alert(type="info", text=text, outlined=outlined, dense=dense, icon=icon, children=[label, *children], class_=_combine_classes(classes), **kwargs)
+    return v.Alert(
+        type="info",
+        text=text,
+        outlined=outlined,
+        dense=dense,
+        icon=icon,
+        children=[*([label] if label is not None else []), *children],
+        class_=_combine_classes(classes),
+        **kwargs,
+    )
 
 
 @solara.component
 def Warning(
-    label: str,
+    label: Optional[str] = None,
     icon: Union[bool, str, None] = True,
     dense=False,
     outlined=True,
@@ -91,12 +107,28 @@ def Warning(
     if icon is True:
         icon = None
     return v.Alert(
-        type="warning", text=text, outlined=outlined, dense=dense, icon=icon, children=[label, *children], class_=_combine_classes(classes), **kwargs
+        type="warning",
+        text=text,
+        outlined=outlined,
+        dense=dense,
+        icon=icon,
+        children=[*([label] if label is not None else []), *children],
+        class_=_combine_classes(classes),
+        **kwargs,
     )
 
 
 @solara.component
-def Error(label: str, icon: Union[bool, str, None] = True, dense=False, outlined=True, text=True, children=[], classes: List[str] = [], **kwargs):
+def Error(
+    label: Optional[str] = None,
+    icon: Union[bool, str, None] = True,
+    dense=False,
+    outlined=True,
+    text=True,
+    children=[],
+    classes: List[str] = [],
+    **kwargs,
+):
     """Display an error message (red color).
 
     ## Arguments
@@ -111,4 +143,13 @@ def Error(label: str, icon: Union[bool, str, None] = True, dense=False, outlined
     """
     if icon is True:
         icon = None
-    return v.Alert(type="error", text=text, outlined=outlined, dense=dense, icon=icon, children=[label, *children], class_=_combine_classes(classes), **kwargs)
+    return v.Alert(
+        type="error",
+        text=text,
+        outlined=outlined,
+        dense=dense,
+        icon=icon,
+        children=[*([label] if label is not None else []), *children],
+        class_=_combine_classes(classes),
+        **kwargs,
+    )

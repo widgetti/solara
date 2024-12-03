@@ -36,6 +36,10 @@ class CrossFilterStore:
 
         def connect():
             self.listeners.append(on_change)
+            # we need to force an extra render after the first render
+            # to make sure we have the correct filter, since others components
+            # may set a filter after we have rendered, *or* mounted
+            on_change()
 
             def cleanup():
                 self.listeners.remove(on_change)

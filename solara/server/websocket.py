@@ -2,6 +2,7 @@
 abstract base class for websocket with a sync interface.
 Async implementation have to come up with a way how to do this sync (see e.g. the starlette implementation)
 """
+
 import abc
 import json
 from typing import Union
@@ -36,9 +37,9 @@ class WebsocketWrapper(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def receive(self) -> Union[str, bytes]:
+    async def receive(self) -> Union[str, bytes]:
         pass
 
-    def receive_json(self):
-        text = self.receive()
+    async def receive_json(self):
+        text = await self.receive()
         return json.loads(text)

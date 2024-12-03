@@ -1,0 +1,31 @@
+{
+  "name": "@widgetti/solara-vuetify3-app",
+  "version": "5.0.2",
+  "description": "Solara Vuetify App",
+  "main": "dist/solara-vuetify-app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "webpack",
+    "watch": "webpack --watch --mode=development",
+    "devlink": "TARGET_DIR=`python -c \"import sys; print(sys.prefix)\"`/share/solara/cdn/@widgetti/solara-vuetify3-app@5.0.2/; mkdir -p $TARGET_DIR && rm -rf $TARGET_DIR/dist && ln -sf $PWD/dist $TARGET_DIR/dist"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@mdi/font": "^4.9.95",
+    "@widgetti/solara-widget-manager": "file:../solara-widget-manager",
+    "@widgetti/solara-widget-manager8": "file:../solara-widget-manager8",
+    "material-design-icons-iconfont": "^5.0.1",
+    "typeface-roboto": "0.0.54",
+    "vue": "^3.3.4",
+    "vuetify": "~3.3.17"
+  },
+  "devDependencies": {
+    "css-loader": "^6.9.1",
+    "file-loader": "^6.2.0",
+    "mini-css-extract-plugin": "^2.7.7",
+    "style-loader": "^3.3.4",
+    "webpack": "^5.90.0",
+    "webpack-cli": "^5.1.4"
+  }
+}

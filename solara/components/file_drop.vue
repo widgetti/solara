@@ -1,6 +1,18 @@
 <template>
   <div ref="dropzone" class="solara-file-drop" effectAllowed="move">
-    {{ (file_info && file_info.length === 1) ? file_info[0].name : label }}
+    <template v-if="file_info && file_info.length > 0">
+      <template v-if="multiple">
+        <div v-for="file in file_info">
+          {{ file.name }}
+        </div>
+      </template>
+      <template v-else>
+        {{ file_info[0].name }}
+      </template>
+    </template>
+    <template v-else>
+      {{ label }}
+    </template>
   </div>
 </template>
 
@@ -16,16 +28,17 @@ module.exports = {
       event.preventDefault();
       const items = await Promise.all([...event.dataTransfer.items]);
       const files = items.map(i => i.webkitGetAsEntry())
-      const fileHolder = files.filter(f => f.isFile)[0]
-      const file = await new Promise((rs, rj) => fileHolder.file(rs, rj))
+      const fileHolders = files.filter(f => f.isFile)
+      const nativeFilesPromises = fileHolders.map(fileHolder => new Promise((rs, rj) => fileHolder.file(rs, rj)))
+      const nativeFiles = await Promise.all(nativeFilesPromises)
 
-      this.native_file_info = [file]
+      this.native_file_info = nativeFiles
       this.file_info = this.native_file_info.map(
-          ({name, isFile, size}) => ({
-            name,
-            isFile,
-            size,
-          }));
+        ({name, size}) => ({
+          name,
+          isFile: true,
+          size,
+        }));
     });
   },
   methods: {
@@ -64,6 +77,7 @@ module.exports = {
   height: 100px;
   border: 1px dashed gray;
   margin: 8px 0;
-  padding: 8px
+  padding: 8px;
+  overflow: auto;
 }
 </style>

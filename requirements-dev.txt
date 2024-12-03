@@ -1,0 +1,5 @@
+-e .[all]
+-e ./packages/solara-server[all]
+-e ./packages/solara-enterprise[all]
+-e ./packages/pytest-ipywidgets[all]
+-e ./packages/solara-meta[all]

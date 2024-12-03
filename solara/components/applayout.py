@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List, Tuple, cast
+from typing import Callable, Dict, List, Optional, Tuple, Union, cast
 
 import reacton
 import reacton.core
@@ -30,53 +30,129 @@ def _set_sidebar_default(updater: Callable[[PortalElements], PortalElements]):
     pass
 
 
-portal_context = solara.create_context((cast(PortalElements, {}), _set_sidebar_default))
+class ElementPortal:
+    def __init__(self):
+        self.context = solara.create_context(_set_sidebar_default)
+
+    # TODO: can we generalize the use of 'portals' ? (i.e. transporting elements from one place to another)
+    def use_portal(self) -> List[Element]:
+        portal_elements, set_portal_elements = solara.use_state(cast(PortalElements, {}))
+        self.context.provide(set_portal_elements)  # type: ignore
+
+        portal_elements_flat: List[Tuple[int, Element]] = []
+        for uuid, value in portal_elements.items():
+            portal_elements_flat.extend(value)
+        portal_elements_flat.sort(key=lambda x: x[0])
+        return [e[1] for e in portal_elements_flat]
+
+    def use_portal_add(self, children: List[Element], offset: int):
+        key = solara.use_unique_key(prefix="portal-")
+        set_portal_elements = solara.use_context(self.context)
+        values: List[Tuple[int, Element]] = []
+        for i, child in enumerate(children):
+            values.append((offset + i, child))
+
+        # updates we do when children/offset changes
+        def add():
+            # we use the update function method, to avoid stale data
+            def update_dict(portal_elements):
+                portal_elements_updated = portal_elements.copy()
+                portal_elements_updated[key] = values
+                return portal_elements_updated
+
+            set_portal_elements(update_dict)
+
+        solara.use_effect(add, [values])
+
+        # cleanup we only need to do after component removal
+        def add_cleanup():
+            def cleanup():
+                def without(portal_elements):
+                    portal_elements_restored = portal_elements.copy()
+                    portal_elements_restored.pop(key, None)
+                    return portal_elements_restored
+
+                set_portal_elements(without)
+
+            return cleanup
+
+        solara.use_effect(add_cleanup, [])
 
 
-# TODO: can we generalize the use of 'portals' ? (i.e. transporting elements from one place to another)
-def use_portal() -> List[Element]:
-    portal_elements, set_portal_elements = solara.use_state(cast(PortalElements, {}))
-    portal_context.provide((portal_elements, set_portal_elements))  # type: ignore
-
-    portal_elements_flat: List[Tuple[int, Element]] = []
-    for uuid, value in portal_elements.items():
-        portal_elements_flat.extend(value)
-    portal_elements_flat.sort(key=lambda x: x[0])
-    return [e[1] for e in portal_elements_flat]
+sidebar_portal = ElementPortal()
+appbar_portal = ElementPortal()
+apptitle_portal = ElementPortal()
 
 
-def use_portal_add(children: List[Element], offset: int):
-    key = solara.use_unique_key(prefix="portal-")
-    portal_elements, set_portal_elements = solara.use_context(portal_context)
-    values: List[Tuple[int, Element]] = []
-    for i, child in enumerate(children):
-        values.append((offset + i, child))
+@solara.component
+def AppBar(children=[]):
+    """Puts its children in the app bar of the AppLayout (or any layout that supports it).
 
-    # updates we do when children/offset changes
-    def add():
-        # we use the update function method, to avoid stale data
-        def update_dict(portal_elements):
-            portal_elements_updated = portal_elements.copy()
-            portal_elements_updated[key] = values
-            return portal_elements_updated
+    This component does not need to be a direct child of the AppLayout, it can be at any level in your component tree.
 
-        set_portal_elements(update_dict)
+    If a [Tabs](/documentation/components/lab/tabs) component is used as direct child of the app bar, it will be shown under the app bar.
 
-    solara.use_effect(add, [values])
+    ## Example showing an app bar
+    ```solara
+    import solara
 
-    # cleanup we only need to do after component removal
-    def add_cleanup():
-        def cleanup():
-            def without(portal_elements):
-                portal_elements_restored = portal_elements.copy()
-                portal_elements_restored.pop(key, None)
-                return portal_elements_restored
+    @solara.component
+    def Page():
+        logged_in, set_logged_in = solara.use_state(False)
+        def toggle_login():
+            set_logged_in(not logged_in)
 
-            set_portal_elements(without)
+        with solara.AppBar():
+            icon_name = "mdi-logout" if logged_in else "mdi-login"
+            solara.Button(icon_name=icon_name , on_click=toggle_login, icon=True)
+        with solara.Column():
+            if logged_in:
+                solara.Info("You are logged in")
+            else:
+                solara.Error("You are logged out")
+    ```
+    """
+    # TODO: generalize this, this is also used in title
+    level = 0
+    rc = reacton.core.get_render_context()
+    context = rc.context
+    while context and context.parent:
+        level += 1
+        context = context.parent
+    offset = 2**level
+    appbar_portal.use_portal_add(children, offset)
 
-        return cleanup
+    return solara.Div(style="display; none")
 
-    solara.use_effect(add_cleanup, [])
+
+@solara.component
+def AppBarTitle(children=[]):
+    """Puts its children in the title section of the AppBar (or any layout that supports it).
+
+    This component does not need to be a direct child of the AppBar, it can be at any level in your component tree.
+
+    ## Example
+
+    ```solara
+    import solara
+
+    @solara.component
+    def Page():
+        with solara.AppBarTitle():
+            solara.Text("Hi there")
+            solara.Button("Click me", outlined=True, classes=["mx-2"])
+    ```
+    """
+    level = 0
+    rc = reacton.core.get_render_context()
+    context = rc.context
+    while context and context.parent:
+        level += 1
+        context = context.parent
+    offset = 2**level
+    apptitle_portal.use_portal_add(children, offset)
+
+    return solara.Div(style="display; none")
 
 
 @solara.component
@@ -110,7 +186,7 @@ def Sidebar(children=[]):
         level += 1
         context = context.parent
     offset = 2**level
-    use_portal_add(children, offset)
+    sidebar_portal.use_portal_add(children, offset)
 
     return solara.Div(style="display; none")
 
@@ -122,14 +198,17 @@ def AppLayout(
     title=None,
     navigation=True,
     toolbar_dark=True,
+    color: Optional[str] = "primary",
+    classes: List[str] = [],
+    style: Optional[Union[str, Dict[str, str]]] = None,
 ):
     """The default layout for Solara apps. It consists of an toolbar bar, a sidebar and a main content area.
 
-     * The title of the app is set using the [Title](/api/title) component.
-     * The sidebar content is set using the [Sidebar](/api/sidebar) component.
+     * The title of the app is set using the [Title](/documentation/components/page/title) component.
+     * The sidebar content is set using the [Sidebar](/documentation/components/layout/sidebar) component.
      * The content is set by the `Page` component provided by the user.
 
-    This component is usually not used directly, but rather through via the [Layout system](/docs/howto/layout).
+    This component is usually not used directly, but rather through via the [Layout system](/documentation/advanced/howto/layout).
 
     The sidebar is only added when the AppLayout has more than one child.
 
@@ -145,51 +224,78 @@ def AppLayout(
 
      * `children`: The children of the AppLayout. The first child is used as the sidebar content, the rest as the main content.
      * `sidebar_open`: Whether the sidebar is open or not.
-     * `title`: The title of the app shown in the app bar, can also be set using the [Title](/api/title) component.
+     * `title`: The title of the app shown in the app bar, can also be set using the [Title](/documentation/components/page/title) component.
      * `toolbar_dark`: Whether the toolbar should be dark or not.
      * `navigation`: Whether the navigation tabs based on routing should be shown.
-
+     * `color`: The color of the toolbar.
+     * `classes`: List of CSS classes to apply to the direct parent of the childred.
+     * `style`: CSS style to apply to the direct parent of the children. If style is None we use a default style of "height: 100%; overflow: auto;"
+        and add 12px of padding when the sidebar of titlebar is visible. This will make sure your app gets scrollbars when need.
     """
     route, routes = solara.use_route()
     paths = [solara.resolve_path(r, level=0) for r in routes]
     location = solara.use_context(solara.routing._location_context)
     embedded_mode = solara.use_context(should_use_embed)
+    fullscreen, set_fullscreen = solara.use_state(False)
     # we cannot nest AppLayouts, so we can use the context to set the embedded mode
     should_use_embed.provide(True)
     index = routes.index(route) if route else None
 
     sidebar_open, set_sidebar_open = solara.use_state_or_update(sidebar_open)
-    use_drawer = len(children) > 1
+    # remove the appbar from the children
+    children_without_portal_sources = [c for c in children if c.component != AppBar]
+    use_drawer = len(children_without_portal_sources) > 1
     children_content = children
     children_sidebar = []
     if use_drawer:
-        children_content = children[1:]
-        children_sidebar = children[:1]
-    children_sidebar = children_sidebar + use_portal()
+        child_sidebar = children_without_portal_sources.pop(0)
+        children_sidebar = [child_sidebar]
+        children_content = [c for c in children if c is not child_sidebar]
+    children_sidebar = children_sidebar + sidebar_portal.use_portal()
+    children_appbar = appbar_portal.use_portal()
     if children_sidebar:
         use_drawer = True
     title = t.use_title_get() or title
+    children_appbartitle = apptitle_portal.use_portal()
+    v_slots = []
 
-    if title is None and not children_sidebar and len(children) == 1:
-        return children[0]
-    if embedded_mode:
+    tabs_element = None
+    for child_appbar in children_appbar.copy():
+        if child_appbar.component == solara.lab.Tabs:
+            if tabs_element is not None:
+                raise ValueError("Only one Tabs component is allowed in the AppBar")
+            tabs_element = child_appbar
+            children_appbar.remove(tabs_element)
+
+    show_app_bar = (title and (len(routes) > 1 and navigation)) or bool(children_appbar) or bool(use_drawer) or bool(children_appbartitle) or bool(tabs_element)
+
+    if style is None:
+        style = {"height": "100%", "max-height": "100%", "overflow": "auto"}
+        # if style is None, we choose a default style based on whether we are seeing the appbar, etc
+        if show_app_bar or children_sidebar or len(children) != 1:
+            style["padding"] = "12px"
+
+    def set_path(index):
+        path = paths[index]
+        location.pathname = path
+
+    if (tabs_element is None) and routes and navigation and (len(routes) > 1):
+        with solara.lab.Tabs(value=index, on_value=set_path, align="center") as tabs_element:
+            for route in routes:
+                name = route.path if route.path != "/" else "Home"
+                solara.lab.Tab(name)
+        # with v.Tabs(v_model=index, on_v_model=set_path, centered=True) as tabs:
+        #     for route in routes:
+        #         name = route.path if route.path != "/" else "Home"
+        #         v.Tab(children=[name])
+    if tabs_element is not None and navigation:
+        v_slots = [{"name": "extension", "children": tabs_element}]
+    if embedded_mode and not fullscreen:
         # this version doesn't need to run fullscreen
         # also ideal in jupyter notebooks
         with v.Html(tag="div") as main:
-            if title or use_drawer:
-
-                def set_path(index):
-                    path = paths[index]
-                    location.pathname = path
-
-                v_slots = []
-                if routes and navigation and len(routes) > 1:
-                    with v.Tabs(v_model=index, on_v_model=set_path, centered=True) as tabs:
-                        for route in routes:
-                            name = route.path if route.path != "/" else "Home"
-                            v.Tab(children=[name])
-                    v_slots = [{"name": "extension", "children": tabs}]
-                with v.AppBar(color="primary" if toolbar_dark else None, dark=toolbar_dark, v_slots=v_slots):
+            if show_app_bar or use_drawer:
+                with v.AppBar(color=color, dark=toolbar_dark, v_slots=v_slots):
                     if use_drawer:
                         icon = AppIcon(sidebar_open, on_click=lambda: set_sidebar_open(not sidebar_open), v_on="x.on")
                         with v.Menu(
@@ -200,13 +306,25 @@ def AppLayout(
                             close_on_content_click=False,
                         ):
                             pass
-                            v.Html(tag="div", children=children_sidebar, style_="background-color: white; padding: 12px; min-width: 400px")
-                    if title:
-                        v.ToolbarTitle(children=[title])
+                            v.Sheet(children=children_sidebar, style_="padding: 12px; min-width: 400px")
+                    if title or children_appbartitle:
+                        v.ToolbarTitle(children=children_appbartitle or [title])
                     v.Spacer()
-            with v.Row(no_gutters=False):
+                    for i, child in enumerate(children_appbar):
+                        # if the user already provided a key, don't override it
+                        if child._key is None:
+                            solara.display(child.key(f"app-layout-appbar-user-child-{i}"))
+                        else:
+                            solara.display(child)
+                    solara.Button(icon_name="mdi-fullscreen", on_click=lambda: set_fullscreen(True), icon=True, dark=False)
+            with v.Row(no_gutters=False, class_="solara-content-main"):
                 v.Col(cols=12, children=children_content)
     else:
+        # this limits the height of the app to the height of the screen
+        # and further down we use overflow: auto to add scrollbars to the main content
+        # the navigation drawer adds it own scrollbars
+        # NOTE: while developing this we added overflow: hidden, but this does not seem
+        # to be necessary anymore
         with v.Html(tag="div", style_="height: 100vh") as main:
             with solara.HBox():
                 if use_drawer:
@@ -214,39 +332,48 @@ def AppLayout(
                         width="min-content",
                         v_model=sidebar_open,
                         on_v_model=set_sidebar_open,
-                        style_="z-index: 2; min-width: 400px; max-width: 600px",
+                        style_="min-width: 400px; max-width: 600px",
                         clipped=True,
                         app=True,
                         # disable_resize_watcher=True,
                         disable_route_watcher=True,
                         mobile_break_point="960",
+                        class_="solara-content-main",
                     ):
-                        if not title:
+                        if not show_app_bar:
                             AppIcon(sidebar_open, on_click=lambda: set_sidebar_open(not sidebar_open))
-                        v.Html(tag="div", children=children_sidebar, style_="padding: 12px;").meta(ref="sidebar-content")
-                else:
-                    AppIcon(sidebar_open, on_click=lambda: set_sidebar_open(not sidebar_open), style_="position: absolute; z-index: 2")
-            if title or routes:
-
-                def set_path(index):
-                    path = paths[index]
-                    location.pathname = path
-
-                v_slots = []
-                if routes and navigation and len(routes) > 1:
-                    with v.Tabs(v_model=index, on_v_model=set_path, centered=True) as tabs:
-                        for route in routes:
-                            name = route.path if route.path != "/" else "Home"
-                            v.Tab(children=[name])
-                    v_slots = [{"name": "extension", "children": tabs}]
-                with v.AppBar(color="primary", dark=True, app=True, clipped_left=True, hide_on_scroll=True, v_slots=v_slots):
+                        v.Html(tag="div", children=children_sidebar, style_="padding: 12px; height: 100%").meta(ref="sidebar-content")
+            if show_app_bar:
+                # if hide_on_scroll is True, and we have a little bit of scrolling, vuetify seems to act strangely
+                # when scrolling (on @mariobuikhuizen/vuetify v2.2.26-rc.0
+                with v.AppBar(color=color, dark=toolbar_dark, app=True, clipped_left=True, hide_on_scroll=False, v_slots=v_slots).key("app-layout-appbar"):
                     if use_drawer:
                         AppIcon(sidebar_open, on_click=lambda: set_sidebar_open(not sidebar_open))
-                    if title:
-                        v.ToolbarTitle(children=[title])
+                    if title or children_appbartitle:
+                        v.ToolbarTitle(children=children_appbartitle or [title])
                     v.Spacer()
-            with v.Content():
-                v.Col(cols=12, children=children_content)
+                    for i, child in enumerate(children_appbar):
+                        # if the user already provided a key, don't override it
+                        if child._key is None:
+                            solara.display(child.key(f"app-layout-appbar-user-child-{i}"))
+                        else:
+                            solara.display(child)
+                    if fullscreen:
+                        solara.Button(icon_name="mdi-fullscreen-exit", on_click=lambda: set_fullscreen(False), icon=True, dark=False)
+            # in vue2 is was v-content, in vue3 it is v-main
+            MainComponent = v.Main if solara.util.ipyvuetify_major_version == 3 else v.Content  # type: ignore
+            with MainComponent(class_="solara-content-main", style_="height: 100%;").key("app-layout-content"):
+                # make sure the scrollbar does no go under the appbar by adding overflow: auto
+                # to a child of content, because content has padding-top: 64px (set by vuetify)
+                # the padding: 12px is needed for backward compatibility with the previously used
+                # v.Col which has this by default. If we do not use this, a solara.Column will
+                # use a margin: -12px which will make a horizontal scrollbar appear
+                solara.Div(style=style, classes=classes, children=children_content)
+        if fullscreen:
+            with v.Dialog(v_model=True, children=[], fullscreen=True, hide_overlay=True, persistent=True, no_click_animation=True) as dialog:
+                v.Sheet(class_="overflow-y-auto overflow-x-auto", children=[main])
+                pass
+            return dialog
     return main
 
 
@@ -254,6 +381,16 @@ def AppLayout(
 def _AppLayoutEmbed(children=[], sidebar_open=True, title=None):
     """Forces the embed more for a AppLayout. This is used by default in Jupyter."""
     should_use_embed.provide(True)
+
+    if solara.checks.should_perform_jupyter_check():
+        children = [solara.Column(children=children + [solara.checks.JupyterCheck()])]
+
+    def once():
+        import solara.server.telemetry
+
+        solara.server.telemetry.jupyter_start()
+
+    solara.use_effect(once, [])
     return AppLayout(children=children, sidebar_open=sidebar_open, title=title)
 
 

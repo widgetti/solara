@@ -9,7 +9,7 @@ from reacton import render_fixed
 
 import solara
 from solara.datatypes import FileContentResult
-from solara.hooks.misc import use_download, use_fetch, use_json, use_thread
+from solara.hooks import use_download, use_fetch, use_json, use_thread
 
 from .common import busy_wait_compare
 
@@ -55,7 +55,7 @@ def test_use_thread_keep_previous():
             time.sleep(0.1)
             return x**2
 
-        result: solara.Result[int] = use_thread(work, dependencies=[x])
+        result: solara.Result = use_thread(work, dependencies=[x])
         return w.Label(value=f"{result.value}")
 
     label, rc = render_fixed(Test(), handle_error=False)
@@ -99,7 +99,7 @@ def test_hook_iterator():
 def test_use_thread_intrusive_cancel():
     result = None
     last_value = 0
-    seconds = 4
+    seconds = 4.0
 
     @solara.component
     def Test():
@@ -176,6 +176,8 @@ def test_hook_use_fetch():
         nonlocal result
         result = use_fetch(url)
         data = result.value
+        if result.error:
+            raise result.error
         return w.Label(value=f"{len(data) if data else '-'}")
 
     label, rc = render_fixed(FetchFile(), handle_error=False)
@@ -186,7 +188,7 @@ def test_hook_use_fetch():
 
 
 def test_hook_use_json():
-    url = "https://jherr-pokemon.s3.us-west-1.amazonaws.com/index.json"
+    url = "https://raw.githubusercontent.com/jherr/pokemon/0722479d4153b1db0d0326956b08b37f44a95a5f/index.json"
     pokemons = 799
 
     result = None

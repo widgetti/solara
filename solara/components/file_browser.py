@@ -1,7 +1,7 @@
 import os
 from os.path import isfile, join
 from pathlib import Path
-from typing import Callable, List, Optional, Union, cast
+from typing import Callable, Dict, List, Optional, Union, cast
 
 import humanize
 import ipyvuetify as vy
@@ -11,21 +11,22 @@ import solara
 from solara.components import Div
 
 
-def list_dir(path, filter=filter):
+def list_dir(path, filter: Callable[[Path], bool] = lambda x: True, directory_first: bool = False) -> List[dict]:
     def mk_item(n):
         full_path = join(path, n)
         is_file = isfile(full_path)
         return {"name": n, "is_file": is_file, "size": humanize.naturalsize(os.stat(full_path).st_size) if is_file else None}
 
     files = [mk_item(k) for k in os.listdir(path) if not k.startswith(".") if filter(Path(path) / k)]
-    sorted_files = sorted(files, key=lambda item: ("0" if item["is_file"] else "1") + item["name"].lower())
+    sorted_files = sorted(files, key=lambda item: (item["is_file"] == directory_first, item["name"].lower()))
+
     return sorted_files
 
 
 class FileListWidget(vy.VuetifyTemplate):
     template_file = (__file__, "file_list_widget.vue")
 
-    files = traitlets.List().tag(sync=True)
+    files = traitlets.List(cast(List[Dict], [])).tag(sync=True)
     clicked = traitlets.Dict(allow_none=True, default_value=None).tag(sync=True)
     double_clicked = traitlets.Dict(allow_none=True, default_value=None).tag(sync=True)
     scroll_pos = traitlets.Int(allow_none=True).tag(sync=True)
@@ -49,12 +50,13 @@ class FileListWidget(vy.VuetifyTemplate):
 
 @solara.component
 def FileBrowser(
-    directory: Union[str, Path] = None,
-    on_directory_change: Callable[[Path], None] = None,
-    on_path_select: Callable[[Optional[Path]], None] = None,
-    on_file_open: Callable[[Path], None] = None,
+    directory: Union[None, str, Path, solara.Reactive[Path]] = None,
+    on_directory_change: Optional[Callable[[Path], None]] = None,
+    on_path_select: Optional[Callable[[Optional[Path]], None]] = None,
+    on_file_open: Optional[Callable[[Path], None]] = None,
     filter: Callable[[Path], bool] = lambda x: True,
-    on_file_name: Callable[[str], None] = None,
+    directory_first: bool = False,
+    on_file_name: Optional[Callable[[str], None]] = None,
     start_directory=None,
     can_select=False,
 ):
@@ -63,13 +65,13 @@ def FileBrowser(
     There are two modes possible
 
      * `can_select=False`
-        * `on_file_open`: Triggered when **single** clicking a file or directoy.
-        * `on_path_select`: Never triggered
-        * `on_directory_change`: Triggered when clicking a directory
+       * `on_file_open`: Triggered when **single** clicking a file or directory.
+       * `on_path_select`: Never triggered
+       * `on_directory_change`: Triggered when clicking a directory
      * `can_select=True`
-        * `on_file_open`: Triggered when **double** clicking a file or directoy.
-        * `on_path_select`: Triggered when clicking a file or directoy
-        * `on_directory_change`: Triggered when double clicking a directory
+       * `on_file_open`: Triggered when **double** clicking a file or directory.
+       * `on_path_select`: Triggered when clicking a file or directory
+       * `on_directory_change`: Triggered when double clicking a directory
 
     ## Arguments
 
@@ -78,6 +80,7 @@ def FileBrowser(
      * `on_path_select`: Depends on mode, see above.
      * `on_file_open`: Depends on mode, see above.
      * `filter`: A function that takes a `Path` and returns `True` if the file/directory should be shown.
+     * `directory_first`: If `True` directories are shown before files. Default: `False`.
      * `on_file_name`: (deprecated) Use on_file_open instead.
      * `start_directory`: (deprecated) Use directory instead.
     """
@@ -85,7 +88,9 @@ def FileBrowser(
         directory = start_directory  # pragma: no cover
     if directory is None:
         directory = os.getcwd()  # pragma: no cover
-    current_dir, set_current_dir = solara.use_state_or_update(str(directory))
+    if isinstance(directory, str):
+        directory = Path(directory)
+    current_dir = solara.use_reactive(directory)
     selected, set_selected = solara.use_state(None)
     double_clicked, set_double_clicked = solara.use_state(None)
     warning, set_warning = solara.use_state(cast(Optional[str], None))
@@ -93,11 +98,11 @@ def FileBrowser(
     scroll_pos, set_scroll_pos = solara.use_state(0)
     selected, set_selected = solara.use_state(None)
 
-    def change_dir(new_dir):
+    def change_dir(new_dir: Path):
         if os.access(new_dir, os.R_OK):
-            set_current_dir(new_dir)
+            current_dir.value = new_dir
             if on_directory_change:
-                on_directory_change(Path(new_dir))
+                on_directory_change(new_dir)
             set_warning(None)
             return True
         else:
@@ -109,7 +114,7 @@ def FileBrowser(
                 on_path_select(None)
             return
         if item["name"] == "..":
-            new_dir = current_dir[: current_dir.rfind(os.path.sep)]
+            new_dir = current_dir.value.parent
             action_change_directory = (can_select and double_click) or (not can_select and not double_click)
             if action_change_directory and change_dir(new_dir):
                 if scroll_pos_stack:
@@ -122,17 +127,17 @@ def FileBrowser(
                     on_path_select(None)
             if can_select and not double_click:
                 if on_path_select:
-                    on_path_select(Path(new_dir))
+                    on_path_select(new_dir)
             return
 
-        path = os.path.join(current_dir, item["name"])
+        path = current_dir.value / item["name"]
         is_file = item["is_file"]
         if (can_select and double_click) or (not can_select and not double_click):
             if is_file:
                 if on_file_open:
-                    on_file_open(Path(path))
+                    on_file_open(path)
                 if on_file_name is not None:
-                    on_file_name(path)
+                    on_file_name(str(path))
             else:
                 if change_dir(path):
                     set_scroll_pos_stack(scroll_pos_stack + [scroll_pos])
@@ -143,7 +148,7 @@ def FileBrowser(
                 on_path_select(None)
         elif can_select and not double_click:
             if on_path_select:
-                on_path_select(Path(path))
+                on_path_select(path)
         else:  # not can_select and double_click is ignored
             raise RuntimeError("Combination should not happen")  # pragma: no cover
 
@@ -157,10 +162,11 @@ def FileBrowser(
             on_item(item, True)
         # otherwise we can ignore it, single click will handle it
 
+    files = [{"name": "..", "is_file": False}] + list_dir(current_dir.value, filter=filter, directory_first=directory_first)
     with Div(class_="solara-file-browser") as main:
-        Div(children=[current_dir])
+        Div(children=[str(current_dir.value)])
         FileListWidget.element(
-            files=[{"name": "..", "is_file": False}] + list_dir(current_dir, filter=filter),
+            files=files,
             selected=selected,
             clicked=selected,
             on_clicked=on_click,

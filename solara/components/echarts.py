@@ -20,17 +20,25 @@ class EchartsWidget(ipyvuetify.VuetifyTemplate):
     on_mouseout = traitlets.Callable(None, allow_none=True)
     # same, for performance
     on_mouseout_enabled = traitlets.Bool(False).tag(sync=True)
+    cdn = traitlets.Unicode(None, allow_none=True).tag(sync=True)
+
+    @traitlets.default("cdn")
+    def _cdn(self):
+        import solara.settings
+
+        if not solara.settings.assets.proxy:
+            return solara.settings.assets.cdn
 
     def vue_on_click(self, data):
-        if self.on_click:
+        if self.on_click is not None:
             self.on_click(data)
 
     def vue_on_mouseover(self, data):
-        if self.on_mouseover:
+        if self.on_mouseover is not None:
             self.on_mouseover(data)
 
     def vue_on_mouseout(self, data):
-        if self.on_mouseout:
+        if self.on_mouseout is not None:
             self.on_mouseout(data)
 
 

@@ -4,7 +4,11 @@ from functools import reduce
 from typing import Any, Callable, Dict, List, NoReturn
 
 import ipyvuetify as v
-import numpy as np
+
+try:
+    import numpy as np
+except ModuleNotFoundError:
+    np = None  # type: ignore
 import traitlets
 
 import solara
@@ -17,7 +21,7 @@ cardheight = "100%"
 class PivotTableWidget(v.VuetifyTemplate):
     template_file = os.path.realpath(os.path.join(os.path.dirname(__file__), "pivot_table.vue"))
     d = traitlets.Dict(default_value={"no": "data"}).tag(sync=True)
-    selected = traitlets.Dict(default_value=[]).tag(sync=True)
+    selected = traitlets.Dict(default_value={}).tag(sync=True)
     style_ = traitlets.Unicode("").tag(sync=True)
 
 
@@ -35,7 +39,7 @@ def translate_agg_to_vaex(aggregation: solara.Aggregation, filter=None):
 
 
 def df_aggregate_vaex(df, columns: List[str], aggregations: Dict[str, solara.Aggregation], filter=None):
-    aggs = {key: translate_agg_to_vaex(agg, filter) for key, agg, in aggregations.items()}
+    aggs = {key: translate_agg_to_vaex(agg, filter) for key, agg in aggregations.items()}
     return df.groupby(columns, sort=True).agg(aggs)
 
 

@@ -1,22 +1,27 @@
 import contextlib
+import hashlib
 import json
 import logging
 import os
 import sys
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, TypeVar
+from typing import Dict, List, Optional, Tuple, TypeVar, Union
 
 import ipykernel
+import ipyvue
+import ipywidgets
 import jinja2
 import requests
-
 import solara
 import solara.routing
+import solara.settings
+from solara.lab import cookies as solara_cookies
+from solara.lab import headers as solara_headers
 
-from . import app, settings, websocket
-from .app import initialize_virtual_kernel
+from . import app, jupytertools, patch, settings, websocket
 from .kernel import Kernel, deserialize_binary_message
+from .kernel_context import initialize_virtual_kernel
 
 COOKIE_KEY_SESSION_ID = "solara-session-id"
 
@@ -26,11 +31,15 @@ T = TypeVar("T")
 directory = Path(__file__).parent
 template_name = "index.html.j2"
 ipykernel_major = int(ipykernel.__version__.split(".")[0])
+ipywidgets_major = int(ipywidgets.__version__.split(".")[0])
 cache_memory = solara.cache.Memory(max_items=128)
+vue3 = ipyvue.__version__.startswith("3")
+_redirects: Dict[str, str] = {}
 
 # first look at the project directory, then the builtin solara directory
 
 
+@solara.memoize(storage=cache_memory)
 def get_jinja_env(app_name: str) -> jinja2.Environment:
     jinja_loader = jinja2.FileSystemLoader(
         [
@@ -53,6 +62,7 @@ nbextensions_ignorelist = [
     "execute_time/ExecuteTime",
     "dominocode/extension",
     "low-code-assistant/extension",
+    "domino-code-assist/extension",
     "jupyter-js/extension",
     "jupyter-js-widgets/extension",
     "jupyter_dash/main",
@@ -86,7 +96,7 @@ def wait_ready(url, timeout=10) -> None:
 
 
 def is_ready(url) -> bool:
-    """Returns wether a solara server at root url is ready.
+    """Returns whether a solara server at root url is ready.
 
     This uses the /readyz endpoint to check if the server is ready.
 
@@ -103,11 +113,18 @@ def is_ready(url) -> bool:
     return False
 
 
-async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, connection_id: str):
-    initialize_virtual_kernel(connection_id, ws)
-    context = app.contexts.get(connection_id)
+async def app_loop(
+    ws: websocket.WebsocketWrapper,
+    cookies: Dict[str, str],
+    headers,
+    session_id: str,
+    kernel_id: str,
+    page_id: str,
+    user: dict = None,
+):
+    context = initialize_virtual_kernel(session_id, kernel_id, ws)
     if context is None:
-        logging.warning("invalid context id: %r", connection_id)
+        logging.warning("invalid kernel id: %r", kernel_id)
         # to avoid very fast reconnects (we are in a thread anyway)
         time.sleep(0.5)
         return
@@ -115,35 +132,62 @@ async def app_loop(ws: websocket.WebsocketWrapper, session_id: str, connection_i
     if settings.main.tracer:
         import viztracer
 
-        output_file = f"viztracer-{connection_id}.html"
+        output_file = f"viztracer-{page_id}.html"
         run_context = viztracer.VizTracer(output_file=output_file, max_stack_depth=10)
         logger.warning(f"Running with tracer: {output_file}")
     else:
-        run_context = contextlib.nullcontext()
+        run_context = solara.util.nullcontext()
 
     kernel = context.kernel
-    with run_context:
-        while True:
-            try:
-                message = ws.receive()
-            except websocket.WebSocketDisconnect:
-                logger.debug("Disconnected")
-                return
-            t0 = time.time()
-            if isinstance(message, str):
-                msg = json.loads(message)
-            else:
-                msg = deserialize_binary_message(message)
-            t1 = time.time()
-            with context:
-                process_kernel_messages(kernel, msg)
+    try:
+        context.page_connect(page_id)
+        with run_context, context:
+            if user:
+                from solara_enterprise.auth import user as solara_user
+
+                solara_user.set(user)
+
+            solara_cookies.set(cookies)  # type: ignore
+            solara_headers.set(headers)  # type: ignore
+
+            while True:
+                if settings.main.timing:
+                    widgets_ids = set(patch.widgets)
+                try:
+                    message = await ws.receive()
+                except websocket.WebSocketDisconnect:
+                    try:
+                        context.kernel.session.websockets.remove(ws)
+                    except KeyError:
+                        pass
+                    logger.debug("Disconnected")
+                    break
+                t0 = time.time()
+                if isinstance(message, str):
+                    msg = json.loads(message)
+                else:
+                    msg = deserialize_binary_message(message)
+                t1 = time.time()
+                if not process_kernel_messages(kernel, msg):
+                    # if we shut down the kernel, we do not keep the page session alive
+                    context.close()
+                    return
                 t2 = time.time()
                 if settings.main.timing:
-                    print(f"timing: total={t2-t0:.3f}s, deserialize={t1-t0:.3f}s, kernel={t2-t1:.3f}s")  # noqa: T201
+                    widgets_ids_after = set(patch.widgets)
+                    created_widgets_count = len(widgets_ids_after - widgets_ids)
+                    close_widgets_count = len(widgets_ids - widgets_ids_after)
+                    print(  # noqa: T201
+                        f"timing: total={t2-t0:.3f}s, deserialize={t1-t0:.3f}s, kernel={t2-t1:.3f}s"
+                        f" widget: created: {created_widgets_count} closed: {close_widgets_count}"
+                    )
+    finally:
+        context.page_disconnect(page_id)
 
 
-def process_kernel_messages(kernel: Kernel, msg: Dict):
+def process_kernel_messages(kernel: Kernel, msg: Dict) -> bool:
     session = kernel.session
+    assert session is not None
     comm_manager = kernel.comm_manager
 
     def send_status(status, parent):
@@ -167,9 +211,9 @@ def process_kernel_messages(kernel: Kernel, msg: Dict):
 
     if ipykernel_major < 6:
         # the channel argument was added in 6.0
-        kernel.set_parent(None, msg["header"])
+        kernel.set_parent(None, msg)
     else:
-        kernel.set_parent(None, msg["header"], msg["channel"])
+        kernel.set_parent(None, msg, msg["channel"])
     if msg_type == "kernel_info_request":
         content = {
             "status": "ok",
@@ -182,14 +226,20 @@ def process_kernel_messages(kernel: Kernel, msg: Dict):
         }
         with busy_idle(msg["header"]):
             msg = kernel.session.send(kernel.shell_stream, "kernel_info_reply", content, msg["header"], None)
+        return True
     elif msg_type in ["comm_open", "comm_msg", "comm_close"]:
         with busy_idle(msg["header"]):
             getattr(comm_manager, msg_type)(kernel.shell_stream, None, msg)
+        return True
     elif msg_type in ["comm_info_request"]:
         content = msg["content"]
         target_name = msg.get("target_name", None)
 
-        comms = {k: dict(target_name=v.target_name) for (k, v) in comm_manager.comms.items() if v.target_name == target_name or target_name is None}
+        comms = {
+            k: dict(target_name=v.target_name)
+            for (k, v) in comm_manager.comms.items()  # type: ignore
+            if v.target_name == target_name or target_name is None  # type: ignore
+        }
         reply_content = dict(comms=comms, status="ok")
         with busy_idle(msg["header"]):
             msg = session.send(
@@ -199,50 +249,152 @@ def process_kernel_messages(kernel: Kernel, msg: Dict):
                 msg["header"],
                 None,
             )
+        return True
+    elif msg_type == "shutdown_request":
+        send_status("dead", parent=msg["header"])
+        return False
     else:
         logger.error("Unsupported msg with msg_type %r", msg_type)
+        return False
 
 
-def read_root(path: str, root_path: str = "", render_kwargs={}, use_nbextensions=True) -> Optional[str]:
+def asset_directories():
+    application = [app.directory.parent / "assets" for app in app.apps.values()]
+    extra_paths = settings.assets.extra_paths()
+    solara_assets = solara_static.parent / "assets"
+    return [*application, *extra_paths, solara_assets]
+
+
+def read_root(
+    path: str,
+    root_path: str = "",
+    jupyter_root_path: Union[str, None] = None,
+    render_kwargs={},
+    use_nbextensions=True,
+    ssg_data=None,
+) -> Optional[str]:
+    if settings.ssg.enabled and ssg_data is None:
+        # simply return the pre-rendered html
+        from solara_enterprise import ssg
+
+        content = ssg.ssg_content(path)
+        if content is not None:
+            return content
+
     default_app = app.apps["__default__"]
     routes = default_app.routes
     router = solara.routing.Router(path, routes)
     if not router.possible_match:
         return None
     if use_nbextensions:
-        nbextensions = get_nbextensions()
+        nbextensions, nbextensions_hashes = get_nbextensions()
     else:
-        nbextensions = []
+        nbextensions, nbextensions_hashes = [], {}
+
+    from markupsafe import Markup
+
+    def resolve_static_path(path: str) -> Path:
+        # this solve a similar problem as the starlette and flask endpoints
+        # maybe this can be common code for all of them.
+        if path.startswith("/static/public/"):
+            directories = [default_app.directory.parent / "public"]
+            filename = path[len("/static/public/") :]
+        elif path.startswith("/static/assets/"):
+            directories = asset_directories()
+            filename = path[len("/static/assets/") :]
+        elif path.startswith("/static/"):
+            directories = [solara_static.parent / "static"]
+            filename = path[len("/static/") :]
+        else:
+            raise ValueError(f"invalid static path: {path}")
+        for directory in directories:
+            full_path = directory / filename
+            if full_path.exists():
+                return full_path
+        raise ValueError(f"static path not found: {filename} (path={path}), looked in {directories}")
+
+    def include_css(path: str) -> Markup:
+        filepath = resolve_static_path(path)
+        content, hash = solara.util.get_file_hash(filepath)
+        url = f"{root_path}{path}?v={hash}"
+        # when < 10k we embed, also when we use a url, it can be relative, which can break the url
+        embed = len(content) < 1024 * 10 and b"url" not in content
+        # Always embed the jupyterlab theme CSS to make theme switching possible (see solara.html.j2 template)
+        # TODO: Prevent browser from caching the theme CSS files
+        if path.endswith("theme-dark.css") or path.endswith("theme-light.css"):
+            content_utf8 = content.decode("utf-8")
+            code = content_utf8
+        elif embed:
+            content_utf8 = content.decode("utf-8")
+            code = f'<style class="solara-template-css">/*\npath={path}\n*/\n{content_utf8}</style>'
+        else:
+            code = f'<link rel="stylesheet" type="text/css" href="{url}" class="solara-template-css">'
+        return Markup(code)
+
+    def include_js(path: str, module=False) -> Markup:
+        filepath = resolve_static_path(path)
+        content, hash = solara.util.get_file_hash(filepath)
+        content_utf8 = content.decode("utf-8")
+        url = f"{root_path}{path}?v={hash}"
+        # when < 10k we embed, but if we use currentScript, it can break things
+        embed = len(content) < 1024 * 10 and b"currentScript" not in content
+        if embed:
+            if module:
+                code = f'<script type="module">/*\npath={path}\n*/{content_utf8}</script>'
+            else:
+                code = f"<script>/*\npath={path}\n*/{content_utf8}</script>"
+        else:
+            if module:
+                code = f'<script type="module" src="{url}"></script>'
+            else:
+                code = f'<script src="{url}"></script>'
+        return Markup(code)
 
     resources = {
         "theme": "light",
         "nbextensions": nbextensions,
+        "nbextensions_hashes": nbextensions_hashes,
+        "include_css": include_css,
+        "include_js": include_js,
     }
     template: jinja2.Template = get_jinja_env(app_name="__default__").get_template(template_name)
     pre_rendered_html = ""
     pre_rendered_css = ""
     pre_rendered_metas = ""
     title = "Solara ☀️"
-    if settings.ssg.enabled:
-        from solara_enterprise import ssg
+    if ssg_data is not None:
+        pre_rendered_html = ssg_data["html"]
+        pre_rendered_css = "\n".join(ssg_data["styles"])
+        pre_rendered_metas = "\n    ".join(ssg_data["metas"])
+        title = ssg_data["title"]
 
-        ssg_data = ssg.ssg_data(path)
-        if ssg_data is not None:
-            pre_rendered_html = ssg_data["html"]
-            pre_rendered_css = "\n".join(ssg_data["styles"])
-            pre_rendered_metas = "\n    ".join(ssg_data["metas"])
-            title = ssg_data["title"]
+    if solara.settings.assets.proxy:
+        # solara acts as a proxy
+        cdn = f"{root_path}/_solara/cdn"
+    else:
+        cdn = solara.settings.assets.cdn
+
+    if jupyter_root_path is None:
+        jupyter_root_path = f"{root_path}/jupyter"
 
     render_settings = {
         "title": title,
         "path": path,
         "root_path": root_path,
+        "jupyter_root_path": jupyter_root_path,
         "resources": resources,
         "theme": settings.theme.dict(),
         "production": settings.main.mode == "production",
         "pre_rendered_html": pre_rendered_html,
         "pre_rendered_css": pre_rendered_css,
         "pre_rendered_metas": pre_rendered_metas,
+        "assets": settings.assets.dict(),
+        "cdn": cdn,
+        "ipywidget_major_version": ipywidgets_major,
+        "solara_version": solara.__version__,
+        "platform": settings.main.platform,
+        "vue3": vue3,
+        "perform_check": settings.main.mode != "production" and solara.checks.should_perform_solara_check(),
         **render_kwargs,
     }
     response = template.render(**render_settings)
@@ -275,38 +427,48 @@ def get_nbextensions_directories() -> List[Path]:
 
 
 @solara.memoize(storage=cache_memory)
-def get_nbextensions() -> List[str]:
+def get_nbextensions() -> Tuple[List[str], Dict[str, Optional[str]]]:
     from jupyter_core.paths import jupyter_config_path
 
-    read_config_path = [os.path.join(p, "serverconfig") for p in jupyter_config_path()]
-    read_config_path += [os.path.join(p, "nbconfig") for p in jupyter_config_path()]
-    # import inline since we don't want this dep for pyiodide
-    from jupyter_server.services.config import ConfigManager
+    paths = [Path(p) / "nbconfig" for p in jupyter_config_path()]
 
-    config_manager = ConfigManager(read_config_path=read_config_path)
-    notebook_config = config_manager.get("notebook")
-    # except for the widget extension itself, since Voilà has its own
-    load_extensions = notebook_config.get("load_extensions", {})
-    if "jupyter-js-widgets/extension" in load_extensions:
-        load_extensions["jupyter-js-widgets/extension"] = False
-    if "voila/extension" in load_extensions:
-        load_extensions["voila/extension"] = False
-    if "voila/extension" in load_extensions:
-        load_extensions["voila/extension"] = False
-    directories = get_nbextensions_directories()
+    load_extensions = jupytertools.get_config(paths, "notebook")["load_extensions"]
 
     def exists(name):
-        for directory in directories:
-            if (directory / (name + ".js")).exists():
-                return True
-        logger.error(f"nbextension {name} not found")
+        for directory in nbextensions_directories:
+            try:
+                file_path = directory / (name + ".js")
+                if file_path.exists():
+                    return True
+            except PermissionError:
+                logger.warning(f"Caught PermissionError while checking for existence of nbextension {name!r} at path: {file_path}. This path will be ignored.")
+        logger.info(f"nbextension {name} not found")
         return False
 
-    nbextensions = [name for name, enabled in load_extensions.items() if enabled and (name not in nbextensions_ignorelist) and exists(name)]
-    return nbextensions
+    def hash_extension(name):
+        if sys.version_info[:2] < (3, 9):
+            # usedforsecurity is only available in Python 3.9+
+            h = hashlib.new("md5")
+        else:
+            h = hashlib.new("md5", usedforsecurity=False)  # type: ignore
+
+        for directory in nbextensions_directories:
+            try:
+                file_path = directory / (name + ".js")
+                if file_path.exists():
+                    for file in directory.glob("**/*.*"):
+                        if file.is_file():  # Otherwise directories with a dot in the name are included
+                            data = file.read_bytes()
+                            h.update(data)
+            except PermissionError:
+                logger.warning(f"Caught PermissionError while checking for existence of nbextension {name!r} at path: {file_path}. This path will be ignored.")
+
+        return h.hexdigest()
+
+    nbextensions: List[str] = [name for name, enabled in load_extensions.items() if enabled and (name not in nbextensions_ignorelist) and exists(name)]
+    nbextensions_hashes = {name: hash_extension(name) for name in nbextensions}
+    return nbextensions, nbextensions_hashes
 
 
-if "pyodide" not in sys.modules:
-    nbextensions_directories = get_nbextensions_directories()
-    nbconvert_static = find_prefixed_directory("/share/jupyter/nbconvert/templates/lab/static")
-    solara_static = Path(__file__).parent / "static"
+nbextensions_directories = get_nbextensions_directories()
+solara_static = Path(__file__).parent / "static"

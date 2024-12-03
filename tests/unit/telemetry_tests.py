@@ -8,7 +8,6 @@ import solara.server.telemetry
 
 
 def test_telemetry_basic(mocker):
-
     post: unittest.mock.MagicMock = mocker.spy(requests, "post")
     solara.server.telemetry.track("test_event", {"test_prop": "test_value"})
     post.assert_called_once()

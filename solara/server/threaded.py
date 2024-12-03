@@ -2,13 +2,24 @@ import logging
 import threading
 import time
 from typing import Optional
+import socket
 
 logger = logging.getLogger("solara.server.threaded")
 
 
+def get_free_port():
+    sock = socket.socket()
+    sock.bind(("", 0))
+    port = sock.getsockname()[1]
+    sock.close()
+    return port
+
+
 class ServerBase(threading.Thread):
+    name = "not set"
+
     def __init__(self, port: int, host: str = "localhost", **kwargs):
-        self.port = port
+        self.port = get_free_port() if port == 0 else port
         self.host = host
         self.base_url = f"http://{self.host}:{self.port}"
 
@@ -16,8 +27,7 @@ class ServerBase(threading.Thread):
         self.started = threading.Event()
         self.stopped = threading.Event()
         self.error: Optional[BaseException] = None
-        super().__init__(name="test-server-thread")
-        self.setDaemon(True)
+        super().__init__(name="test-server-thread", daemon=True)
 
     def run(self):
         try:
@@ -36,14 +46,14 @@ class ServerBase(threading.Thread):
         if self.error:
             raise self.error
 
-    def wait_until_serving(self):
-        for n in range(30):
+    def wait_until_serving(self, timeout: float = 10):
+        start = time.time()
+        while time.time() < start + timeout:
             if self.has_started():
                 time.sleep(0.1)  # give some time to really start
                 return
             time.sleep(0.05)
-        else:
-            raise RuntimeError(f"Server at {self.base_url} does not seem to be running")
+        raise RuntimeError(f"Server at {self.base_url} does not seem to be running")
 
     def serve(self):
         raise NotImplementedError
@@ -54,6 +64,7 @@ class ServerBase(threading.Thread):
             self.serve()
         except:  # noqa: E722
             logger.exception("Oops, server stopped unexpectedly")
+            raise
         finally:
             self.stopped.set()
 

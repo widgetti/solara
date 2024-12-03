@@ -11,7 +11,7 @@ def check(name):
         return
     warned[name] = True
     print(  # noqa: T201
-        f"[bold yellow]Using the enterprise {name} feature requires a license, unless used for non-commerical use."
+        f"[bold yellow]Using the enterprise {name} feature requires a license, unless used for non-commerical use. "
         "Please contact us at contact@solara.dev to get a license.",
         file=sys.stderr,
     )

@@ -1,6 +1,7 @@
 import hashlib
 import inspect
 import logging
+import sys
 from typing import (
     Any,
     Callable,
@@ -14,12 +15,18 @@ from typing import (
     overload,
 )
 
-import cachetools
-import typing_extensions
+try:
+    import cachetools
+
+    has_cachetools = True
+except ModuleNotFoundError:
+    has_cachetools = False
 
 import solara
 import solara.settings
 import solara.util
+import typing_extensions
+from reacton.utils import equals
 
 logger = logging.getLogger("solara.cache")
 
@@ -38,9 +45,15 @@ P = typing_extensions.ParamSpec("P")
 Storage = MutableMapping[K, V]
 
 
-class Memory(cachetools.LRUCache):
-    def __init__(self, max_items=solara.settings.cache.memory_max_items):
-        super().__init__(maxsize=max_items)
+if has_cachetools:
+
+    class Memory(cachetools.LRUCache):
+        def __init__(self, max_items=solara.settings.cache.memory_max_items):
+            super().__init__(maxsize=max_items)
+else:
+
+    class Memory(dict):  # type: ignore
+        pass
 
 
 def _default_key(*args, **kwargs):
@@ -48,35 +61,6 @@ def _default_key(*args, **kwargs):
     for key, value in kwargs.items():
         kwargs_tuple += (key, value)
     return (args, kwargs_tuple)
-
-
-# TODO: use reacton.utils.equals
-def equals(a, b):
-    try:
-        return bool(a == b)
-    except Exception:
-        pass
-    if a is b:
-        return True
-    if type(a) != type(b):  # is this always true? after a == b failed?
-        return False
-    if isinstance(a, dict) and isinstance(b, dict):
-        if len(a) != len(b):
-            return False
-        for key in a:
-            if key not in b:
-                return False
-            if not equals(a[key], b[key]):
-                return False
-        return True
-    elif isinstance(a, (list, tuple)) and isinstance(b, (list, tuple)):
-        if len(a) != len(b):
-            return False
-        for i in range(len(a)):
-            if not equals(a[i], b[i]):
-                return False
-        return True
-    return False
 
 
 class MemoizedFunction(Generic[P, R]):
@@ -87,7 +71,12 @@ class MemoizedFunction(Generic[P, R]):
             nonlocals = inspect.getclosurevars(f).nonlocals
             if nonlocals:
                 raise ValueError(f"Memoized functions cannot depend on nonlocal variables, it now depends on {nonlocals}")
-        codehash = hashlib.md5(f.__code__.co_code).hexdigest()
+        if sys.version_info[:2] < (3, 9):
+            # usedforsecurity is only available in Python 3.9+
+            codehash = hashlib.md5(f.__code__.co_code).hexdigest()
+        else:
+            codehash = hashlib.md5(f.__code__.co_code, usedforsecurity=False).hexdigest()  # type: ignore
+
         self.function_key = (f.__qualname__, codehash)
         current_globals = dict(inspect.getclosurevars(f).globals)
         _global_values_used.setdefault(self.function_key, current_globals)
@@ -156,8 +145,9 @@ class MemoizedFunction(Generic[P, R]):
                 self.storage[key] = new_value
                 return new_value
             else:
-                # we don't use the return value if value is _DOES_NOT_EXIST
-                return None
+                # although we don't use the return value directly, it's still used on the next time result_thread is
+                # returned.
+                return value
 
         result_thread: solara.Result[R] = solara.use_thread(do_work, dependencies=[key], intrusive_cancel=self.intrusive_cancel)
         if value is _DOES_NOT_EXIST:
@@ -174,8 +164,7 @@ def memoize(
     key: None = None,
     storage: Optional[Storage] = None,
     allow_nonlocals=False,
-) -> Callable[[Callable[P, R]], MemoizedFunction[P, R]]:
-    ...
+) -> Callable[[Callable[P, R]], MemoizedFunction[P, R]]: ...
 
 
 @overload
@@ -184,8 +173,7 @@ def memoize(
     key: Callable[P, R] = ...,
     storage: Optional[Storage] = None,
     allow_nonlocals=False,
-) -> Callable[[Callable[P, R]], MemoizedFunction[P, R]]:
-    ...
+) -> Callable[[Callable[P, R]], MemoizedFunction[P, R]]: ...
 
 
 @overload
@@ -194,8 +182,7 @@ def memoize(
     key: None = None,
     storage: None = None,
     allow_nonlocals=False,
-) -> MemoizedFunction[P, R]:
-    ...
+) -> MemoizedFunction[P, R]: ...
 
 
 def memoize(
@@ -243,7 +230,7 @@ def memoize(
     memory content.
 
     The storage can be any object that implements the MutableMapping interface, for instance a dict or
-    a cachetools.LRUCache. Or a new instance of `solara.cache.Memory`, see [caching](/docs/reference/caching)
+    a cachetools.LRUCache. Or a new instance of `solara.cache.Memory`, see [caching](/documentation/advanced/reference/caching)
     for cache storage options.
 
     The return value of the decorator behaves like the original function, but also has a few attributes:
@@ -255,7 +242,7 @@ def memoize(
         If the value is already cached, the function will not be executed in a thread.
 
 
-    See also the [reference on caching](/docs/reference/caching) for more caching details.
+    See also the [reference on caching](/documentation/advanced/reference/caching) for more caching details.
 
     """
 

@@ -1,34 +1,96 @@
-import datetime
 import json
 import logging
 import pdb
 import queue
+import re
 import struct
-from typing import Set
+import warnings
+from binascii import b2a_base64
+from datetime import datetime
+from typing import Set, Union
 
 import ipykernel
 import ipykernel.kernelbase
 import jupyter_client.session as session
+from dateutil.tz import tzlocal  # type: ignore
 from ipykernel.comm import CommManager
 from zmq.eventloop.zmqstream import ZMQStream
 
 import solara
+from solara.server.shell import SolaraInteractiveShell
 
 from . import settings, websocket
 
 logger = logging.getLogger("solara.server.kernel")
+ipykernel_major = int(ipykernel.__version__.split(".")[0])
+
+jsonmodule = json
 
 
-ipykernel_version = tuple(map(int, ipykernel.__version__.split(".")))
+# from jupyter_client/jsonutil.py
+def _ensure_tzinfo(dt: datetime) -> datetime:
+    """Ensure a datetime object has tzinfo
+    If no tzinfo is present, add tzlocal
+    """
+    if not dt.tzinfo:
+        # No more naïve datetime objects!
+        warnings.warn(
+            "Interpreting naive datetime as local %s. Please add timezone info to timestamps." % dt,
+            DeprecationWarning,
+            stacklevel=4,
+        )
+        dt = dt.replace(tzinfo=tzlocal())
+    return dt
+
+
+def json_default(obj):
+    """default function for packing objects in JSON."""
+    if isinstance(obj, datetime):
+        obj = _ensure_tzinfo(obj)
+        return obj.isoformat().replace("+00:00", "Z")
+    elif isinstance(obj, bytes):
+        return b2a_base64(obj).decode("ascii")
+    if type(obj).__module__ == "numpy":
+        import numpy as np
+
+        if isinstance(obj, np.number):
+            return repr(obj.item())
+        else:
+            raise TypeError("%r is not JSON serializable" % obj)
+    else:
+        raise TypeError("%r is not JSON serializable" % obj)
+
+
+def json_dumps(data):
+    try:
+        return jsonmodule.dumps(data)
+    except TypeError:
+        logger.warning("Invalid JSON, will try a with a more forgiving json encoder")
+    return jsonmodule.dumps(
+        data,
+        default=json_default,
+        ensure_ascii=False,
+        allow_nan=False,
+    )
+
+
+ipykernel_version = tuple(map(int, re.split(r"\D+", ipykernel.__version__)[:3]))
 if ipykernel_version >= (6, 18, 0):
     import comm.base_comm
 
     class Comm(comm.base_comm.BaseComm):
+        kernel: Union[ipykernel.kernelbase.Kernel, None]
+
         def __init__(self, **kwargs) -> None:
-            self.kernel = ipykernel.kernelbase.Kernel.instance()
+            if ipykernel.kernelbase.Kernel.initialized():
+                self.kernel = ipykernel.kernelbase.Kernel.instance()
+            else:
+                self.kernel = None
             super().__init__(**kwargs)
 
         def publish_msg(self, msg_type, data=None, metadata=None, buffers=None, **keys):
+            if self.kernel is None or self.kernel.session is None:
+                return
             data = {} if data is None else data
             metadata = {} if metadata is None else metadata
             content = dict(data=data, comm_id=self.comm_id, **keys)
@@ -45,13 +107,18 @@ if ipykernel_version >= (6, 18, 0):
     comm.create_comm = Comm
 
     def get_comm_manager():
-        from .app import get_current_context
+        from .kernel_context import get_current_context, has_current_context
 
-        return get_current_context().kernel.comm_manager
+        if has_current_context():
+            return get_current_context().kernel.comm_manager
+        else:
+            return global_comm_manager
 
+    global_comm_manager = comm.get_comm_manager()
     comm.get_comm_manager = get_comm_manager
+
 # from notebook.base.zmqhandlers import serialize_binary_message
-# this saves us a depdendency on notebook/jupyter_server when e.g.
+# this saves us a dependency on notebook/jupyter_server when e.g.
 # running on pyodide
 
 
@@ -67,7 +134,7 @@ def _fix_msg(msg):
         # date is already a string if it's copied from the header that is not turned into a datetime
         # maybe we should do that in server.py
         date = msg["parent_header"]["date"]
-        if isinstance(date, datetime.datetime):
+        if isinstance(date, datetime):
             msg["parent_header"]["date"] = date.isoformat().replace("+00:00", "Z")
 
 
@@ -90,7 +157,7 @@ def serialize_binary_message(msg):
     # don't modify msg or buffer list in-place
     msg = msg.copy()
     buffers = list(msg.pop("buffers"))
-    bmsg = json.dumps(msg).encode("utf8")
+    bmsg = json_dumps(msg).encode("utf8")
     buffers.insert(0, bmsg)
     nbufs = len(buffers)
     offsets = [4 * (nbufs + 1)]
@@ -129,7 +196,7 @@ def deserialize_binary_message(bmsg):
 SESSION_KEY = b"solara"
 
 
-class WebsocketStream(object):
+class WebsocketStream:
     def __init__(self, session, channel: str):
         self.session = session
         self.channel = channel
@@ -150,25 +217,57 @@ def send_websockets(websockets: Set[websocket.WebsocketWrapper], binary_msg):
             ws.send(binary_msg)
         except:  # noqa
             # in case of any issue, we simply remove it from the list
-            websockets.remove(ws)
+            try:
+                # websocket can be modified by another thread
+                websockets.remove(ws)
+            except KeyError:
+                pass  # already removed
 
 
 class SessionWebsocket(session.Session):
     def __init__(self, *args, **kwargs):
-        super(SessionWebsocket, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.websockets: Set[websocket.WebsocketWrapper] = set()  # map from .. msg id to websocket?
 
-    def send(self, stream, msg_or_type, content=None, parent=None, ident=None, buffers=None, track=False, header=None, metadata=None):
+    def close(self):
+        for ws in list(self.websockets):
+            try:
+                ws.close()
+            except:  # noqa
+                pass
+
+    def send(
+        self,
+        stream,
+        msg_or_type,
+        content=None,
+        parent=None,
+        ident=None,
+        buffers=None,
+        track=False,
+        header=None,
+        metadata=None,
+    ):
         try:
-            msg = self.msg(msg_or_type, content=content, parent=parent, header=header, metadata=metadata)
+            if isinstance(msg_or_type, dict):
+                msg = msg_or_type
+            else:
+                msg = self.msg(
+                    msg_or_type,
+                    content=content,
+                    parent=parent,
+                    header=header,
+                    metadata=metadata,
+                )
             _fix_msg(msg)
             msg["channel"] = stream.channel
+            # not using pdb guard for performance reasons
             try:
                 if buffers:
                     msg["buffers"] = [memoryview(k).cast("b") for k in buffers]
                     wire_message = serialize_binary_message(msg)
                 else:
-                    wire_message = json.dumps(msg)
+                    wire_message = json_dumps(msg)
             except Exception:
                 logger.exception("Could not serialize message: %r", msg)
                 if settings.main.use_pdb:
@@ -180,12 +279,15 @@ class SessionWebsocket(session.Session):
 
 
 class Kernel(ipykernel.kernelbase.Kernel):
+    session: SessionWebsocket  # type: ignore
+    # Ideally we have `session = Instance(Session, allow_none=True)`, but MyPy does not like it
+
     implementation = "solara"
     implementation_version = solara.__version__
     banner = "solara"
 
     def __init__(self):
-        super(Kernel, self).__init__()
+        super().__init__()
         self.session = SessionWebsocket(parent=self, key=SESSION_KEY)
         self.msg_queue = queue.Queue()  # type: ignore
         self.stream = self.iopub_socket = WebsocketStream(self.session, "iopub")
@@ -203,12 +305,14 @@ class Kernel(ipykernel.kernelbase.Kernel):
                 ipywidgets.widgets.widget.Widget.comm.klass = Comm
         else:
             self.comm_manager = CommManager(parent=self, kernel=self)
-        self.shell = None
         self.log = logging.getLogger("fake")
 
         comm_msg_types = ["comm_open", "comm_msg", "comm_close"]
         for msg_type in comm_msg_types:
             self.shell_handlers[msg_type] = getattr(self.comm_manager, msg_type)
+        self.shell = SolaraInteractiveShell()
+        self.shell.display_pub.session = self.session
+        self.shell.display_pub.pub_socket = self.iopub_socket
 
     async def _flush_control_queue(self):
         pass
@@ -221,3 +325,15 @@ class Kernel(ipykernel.kernelbase.Kernel):
 
     def post_handler_hook(self, *args):
         pass
+
+    def set_parent(self, ident, parent, channel="shell"):
+        """Overridden from parent to tell the display hook and output streams
+        about the parent message.
+        """
+        if ipykernel_major < 6:
+            # the channel argument was added in 6.0
+            super().set_parent(ident, parent)
+        else:
+            super().set_parent(ident, parent, channel)
+        if channel == "shell":
+            self.shell.set_parent(parent)

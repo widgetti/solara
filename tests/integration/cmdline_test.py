@@ -18,10 +18,11 @@ def test_run_widget(page_session: playwright.sync_api.Page):
     host = "localhost"
     try:
         solara.server.server.wait_ready(f"http://{host}:{port}", timeout=15)
+        page_session.wait_for_timeout(2000)  # on windows, the server is not ready yet?
         page_session.goto(f"http://localhost:{port}")
-        page_session.locator("text=Clicked 0 times").click(timeout=5000)
-        page_session.locator("text=Clicked 1 times").click(timeout=5000)
-        page_session.locator("text=Clicked 2 times").wait_for(timeout=5000)
+        page_session.locator("text=Clicked 0 times").click()
+        page_session.locator("text=Clicked 1 times").click()
+        page_session.locator("text=Clicked 2 times").wait_for()
         popen.kill()
     except Exception as e:
         try:

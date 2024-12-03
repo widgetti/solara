@@ -1,10 +1,12 @@
+import concurrent.futures.thread
 import logging
-import multiprocessing.pool
 import threading
 import time
 import typing
+import urllib
+import weakref
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import solara
 from rich import print as rprint
@@ -24,10 +26,11 @@ class Playwright(threading.local):
     browser: Optional["playwright.sync_api.Browser"] = None
     sync_playwright: Optional["playwright.sync_api.Playwright"] = None
     context_manager: Optional["playwright.sync_api._context_manager.PlaywrightContextManager"] = None
+    page: Optional["playwright.sync_api.Page"] = None
 
 
 pw = Playwright()
-playwrights: List[Playwright] = []
+_used: List[Tuple["playwright.sync_api.Browser", "playwright.sync_api._context_manager.PlaywrightContextManager"]] = []
 
 
 class SSGData(TypedDict):
@@ -42,11 +45,46 @@ def _get_playwright():
         return pw
     from playwright.sync_api import sync_playwright
 
+    pw.number = 42
     pw.context_manager = sync_playwright()
     pw.sync_playwright = pw.context_manager.start()
 
     pw.browser = pw.sync_playwright.chromium.launch(headless=not settings.ssg.headed)
+    pw.page = pw.browser.new_page()
+    _used.append((pw.browser, pw.context_manager))
     return pw
+
+
+def _worker_with_cleanup(*args, **kwargs):
+    try:
+        concurrent.futures.thread._worker(*args, **kwargs)
+    finally:
+        pw = _get_playwright()
+        pw.browser.close()
+        pw.context_manager.__exit__(None, None, None)
+
+
+class CleanupThreadPoolExecutor(concurrent.futures.ThreadPoolExecutor):
+    def _adjust_thread_count(self):
+        # copy of the original code with _worker replaced
+        # if idle threads are available, don't spin new threads
+        if self._idle_semaphore.acquire(timeout=0):
+            return
+
+        # When the executor gets lost, the weakref callback will wake up
+        # the worker threads.
+        def weakref_cb(_, q=self._work_queue):
+            q.put(None)
+
+        num_threads = len(self._threads)
+        if num_threads < self._max_workers:
+            thread_name = "%s_%d" % (self._thread_name_prefix or self, num_threads)
+            t = threading.Thread(
+                name=thread_name, target=_worker_with_cleanup, args=(weakref.ref(self, weakref_cb), self._work_queue, self._initializer, self._initargs)
+            )
+            t.start()
+            self._threads.add(t)  # type: ignore
+            concurrent.futures.thread._threads_queues[t] = self._work_queue  # type: ignore
 
 
 def ssg_crawl(base_url: str):
@@ -65,30 +103,26 @@ def ssg_crawl(base_url: str):
     # although in theory we should be able to run this with multiple threads
     # there are issues with uvloop:
     #  e.g.: "Racing with another loop to spawn a process."
-    thread_pool = multiprocessing.pool.ThreadPool(1)
+    thread_pool = CleanupThreadPoolExecutor(max_workers=1)
 
     results = []
     for route in routes:
-        results.append(thread_pool.apply_async(ssg_crawl_route, [f"{base_url}/", route, build_path, thread_pool]))
+        results.append(thread_pool.submit(ssg_crawl_route, f"{base_url}/", route, build_path, thread_pool))
 
     def wait(async_result):
-        results = async_result.get()
+        results = async_result.result()
         for result in results:
             wait(result)
 
     for result in results:
         wait(result)
-    thread_pool.terminate()
-    for pw in playwrights:
-        assert pw.browser is not None
-        assert pw.context_manager is not None
-        pw.browser.close()
-        pw.context_manager.stop()
+
+    thread_pool.shutdown()
 
     rprint("Done building SSG")
 
 
-def ssg_crawl_route(base_url: str, route: solara.Route, build_path: Path, thread_pool: multiprocessing.pool.ThreadPool):
+def ssg_crawl_route(base_url: str, route: solara.Route, build_path: Path, thread_pool: CleanupThreadPoolExecutor):
     # if route
     url = base_url + (route.path if route.path != "/" else "")
     if not route.children:
@@ -97,7 +131,7 @@ def ssg_crawl_route(base_url: str, route: solara.Route, build_path: Path, thread
         path = build_path / ("index.html" if route.path == "/" else route.path + ".html")
         stale = False
         pw = _get_playwright()
-        browser = pw.browser
+        page = pw.page
         if path.exists():
             if route.file is None:
                 rprint(f"File corresponding to {url} is not found (route: {route})")
@@ -108,39 +142,46 @@ def ssg_crawl_route(base_url: str, route: solara.Route, build_path: Path, thread
                     rprint(f"Path {path} is stale: mtime {path} is older than {route.file} mtime {route.file.stat().st_mtime}")
         if not path.exists() or stale:
             rprint(f"Will generate {path}")
-            page = browser.new_page()
             response = page.goto(url, wait_until="networkidle")
             if response.status != 200:
                 raise Exception(f"Failed to load {url} with status {response.status}")
             # TODO: if we don't want to detached, we get stack trace showing errors in solara
             # make sure the html is loaded
-            page.locator("#app").wait_for()
-            # make sure vue took over
-            page.locator("#pre-rendered-html-present").wait_for(state="detached")
-            # and wait for the
-            page.locator("text=Loading app").wait_for(state="detached")
-            page.locator("#kernel-busy-indicator").wait_for(state="hidden")
-            # page.wait_
-            time.sleep(0.5)
-            html = page.content()
+            try:
+                page.locator("#app").wait_for()
+                # make sure vue took over
+                page.locator("#pre-rendered-html-present").wait_for(state="detached")
+                # and wait for the
+                page.locator("text=Loading app").wait_for(state="detached")
+                page.locator("#kernel-busy-indicator").wait_for(state="hidden")
+                # page.wait_
+                time.sleep(0.5)
+                raw_html = page.content()
+            except Exception:
+                logger.exception("Failure retrieving content for url: %s", url)
+                raise
+            request_path = urllib.parse.urlparse(url).path
+
+            import solara.server.server
+
+            # the html from playwright is not what we want, pass it through the jinja template again
+            html = solara.server.server.read_root(request_path, ssg_data=_ssg_data(raw_html))
+            if html is None:
+                raise Exception(f"Failed to render {url}")
             path.write_text(html, encoding="utf-8")
             rprint(f"Wrote to {path}")
-            page.close()
+            page.goto("about:blank")
         else:
             rprint(f"Skipping existing render: {path}")
     results = []
     for child in route.children:
-        result = thread_pool.apply_async(ssg_crawl_route, [url + "/", child, build_path / Path(route.path), thread_pool])
+        result = thread_pool.submit(ssg_crawl_route, url + "/", child, build_path / Path(route.path), thread_pool)
         results.append(result)
     return results
 
 
-def ssg_data(path: str) -> Optional[SSGData]:
+def ssg_content(path: str) -> Optional[str]:
     license.check("SSG")
-    html = ""
-    # pre_rendered_css = ""
-    styles = []
-    title = "Solara ☀️"
     # still not sure why we sometimes end with a double slash
     if path.endswith("//"):
         path = path[:-2]
@@ -159,38 +200,50 @@ def ssg_data(path: str) -> Optional[SSGData]:
             html_path = html_path.with_suffix(".html")
         if html_path.exists() and html_path.is_file():
             logger.info("Using pre-rendered html at %r", html_path)
-
-            from bs4 import BeautifulSoup, Tag
-
-            soup = BeautifulSoup(html_path.read_text("utf8"), "html.parser")
-            node = soup.find(id="app")
-            # TODO: add classes...
-            if node and isinstance(node, Tag):
-                # only render children
-                html = "".join(str(x) for x in node.contents)
-            title_tag = soup.find("title")
-            if title_tag:
-                title = title_tag.text
-
-            # include all meta tags
-            rendered_metas = soup.find_all("meta")
-            metas = []
-            for meta in rendered_metas:
-                # but only the ones added by solara
-                if meta.attrs.get("data-solara-head-key"):
-                    metas.append(str(meta))
-
-            # include all styles
-            rendered_styles = soup.find_all("style")
-            for style in rendered_styles:
-                style_html = str(style)
-                # in case we want to skip the mathjax css
-                # if "MJXZERO" in style_html:
-                #     continue
-                # pre_rendered_css += style_html
-                styles.append(style_html)
-                logger.debug("Include style (size is %r mb):\n\t%r", len(style_html) / 1024**2, style_html[:200])
-            return SSGData(title=title, html=html, styles=styles, metas=metas)
+            return html_path.read_text("utf8")
         else:
             logger.error("Count not find html at %r", html_path)
     return None
+
+
+def _ssg_data(html: str) -> Optional[SSGData]:
+    license.check("SSG")
+    from bs4 import BeautifulSoup, Tag
+
+    # pre_rendered_css = ""
+    styles = []
+    title = "Solara ☀️"
+
+    soup = BeautifulSoup(html, "html.parser")
+    node = soup.find(id="app")
+    # TODO: add classes...
+    if node and isinstance(node, Tag):
+        # only render children
+        html = "".join(str(x) for x in node.contents)
+    title_tag = soup.find("title")
+    if title_tag:
+        title = title_tag.text
+
+    # include all meta tags
+    rendered_metas = soup.find_all("meta")
+    metas = []
+    for meta in rendered_metas:
+        # but only the ones added by solara
+        if meta.attrs.get("data-solara-head-key"):
+            metas.append(str(meta))
+
+    # include all styles
+    rendered_styles = soup.find_all("style")
+    for style in rendered_styles:
+        style_html = str(style)
+        # skip css that was already in the template so we don't include it multiple times
+        # or such that we do not include the CSS from the theme as ssg build time
+        if 'class="solara-template-css"' in style_html:
+            continue
+        # in case we want to skip the mathjax css
+        # if "MJXZERO" in style_html:
+        #     continue
+        # pre_rendered_css += style_html
+        styles.append(style_html)
+        logger.debug("Include style (size is %r mb):\n\t%r", len(style_html) / 1024**2, style_html[:200])
+    return SSGData(title=title, html=html, styles=styles, metas=metas)

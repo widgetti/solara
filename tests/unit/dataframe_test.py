@@ -1,8 +1,9 @@
 import bqplot
 import ipyvuetify as vw
 import ipywidgets
-import solara
 import vaex.datasets
+
+import solara
 from solara.components.dataframe import (
     DropdownCard,
     FilterCard,
@@ -123,7 +124,7 @@ def test_summary():
         return main
 
     widget, rc = solara.render(Test(), handle_error=False)
-    html = rc._find(vw.Html).widget
+    html = rc._find(vw.Html)[1].widget
     assert html.children[0] == "1,309"
     assert set_filter is not None
     set_filter(df.sex == "female")

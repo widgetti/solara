@@ -1,3 +1,9 @@
+html {
+  /* override vuetify's css reset ress.css */
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
 .jupyter-widgets code {
     /* background-color: unset; */
     /* padding: 10px; */
@@ -17,6 +23,12 @@ code::before {
     font-weight: 400 !important;
     box-shadow: unset !important;
 }
+
+.v-application--wrap .v-application--wrap {
+  /* disable min-height: 100vh set by vuetify for nested apps */
+  min-height: unset;
+}
+
 
 div.highlight pre code {
     /* box-shadow: 0 2px 1px -1px rgb(0 0 0 / 20%), 0 1px 1px 0 rgb(0 0 0 / 14%), 0 1px 3px 0 rgb(0 0 0 / 12%); */
@@ -64,7 +76,8 @@ div.solara-markdown-output {
 
 
 div.highlight {
-    background-color: #eee;
+    border: 1px solid var(--color-border-appbar);
+    background-color: #fafafa;
     padding: 30px;
     border-radius: 20px;
     margin-top: 15px;
@@ -79,4 +92,1590 @@ div.highlight {
 
 .solara-markdown pre {
     background-color: unset !important
+}
+
+.jp-OutputArea-prompt {
+    display: none;
+}
+
+/* See https://github.com/jupyter-widgets/ipywidgets/issues/3692
+  TODO: this fixes the cursor in Solara, but not in the notebook
+*/
+.solara-image {
+    cursor: unset !important;
+}
+
+@keyframes solara-fade-in {
+    0% {
+        opacity: 0.2;
+    }
+
+    100% {
+        opacity: 1.0;
+    }
+}
+
+.solara-page-loading .solara-content-main {
+    opacity: 0.2;
+}
+
+.solara-content-main {
+    animation: solara-fade-in 0.5s ease;
+}
+
+.solara-autorouter-content {
+    height: 100%;
+    max-width: 100%;
+}
+
+/* originally from index.css */
+
+.p-Widget, /* </DEPRECATED> */
+.lm-Widget {
+  position: relative;
+  overflow: hidden;
+  cursor: default;
+}
+
+/* Originally from nbconvert, required for accordion widget to work correctly */
+.p-Widget.p-mod-hidden, /* </DEPRECATED> */
+.lm-Widget.lm-mod-hidden {
+  display: none !important;
+}
+
+.lm-AccordionPanel[data-orientation='horizontal'] > .lm-AccordionPanel-title {
+  /* Title is rotated for horizontal accordion panel using CSS */
+  display: block;
+  transform-origin: top left;
+  transform: rotate(-90deg) translate(-100%);
+}
+
+/* change font settings for ipywidgets */
+.jupyter-widgets {
+  font-weight:400;
+  letter-spacing:0;
+  text-transform:none;
+  font-family: var(--jp-ui-font-family);
+}
+
+
+:root {
+  --jp-warn-color0: var(--md-orange-700);
+}
+
+p {
+  margin-top: unset;
+  margin-bottom: unset;
+}
+
+small {
+  font-size: unset;
+}
+
+strong {
+  font-weight: unset;
+}
+
+/* Override Blueprint's _typography.scss styles */
+a {
+  text-decoration: unset;
+  color: unset;
+}
+
+a:hover {
+  text-decoration: unset;
+  color: unset;
+}
+
+/* Override Blueprint's _accessibility.scss styles */
+:focus {
+  outline: unset;
+  outline-offset: unset;
+  -moz-outline-radius: unset;
+}
+
+
+/** manually stripped down version of the nbconvert css
+  * only contains css for the mime renderer and output area
+  * and things I (MB) wasn't sure about.
+**/
+/**
+ * google-material-color v1.2.6
+ * https://github.com/danlevan/google-material-color
+ */
+:root {
+  --md-red-50: #ffebee;
+  --md-red-100: #ffcdd2;
+  --md-red-200: #ef9a9a;
+  --md-red-300: #e57373;
+  --md-red-400: #ef5350;
+  --md-red-500: #f44336;
+  --md-red-600: #e53935;
+  --md-red-700: #d32f2f;
+  --md-red-800: #c62828;
+  --md-red-900: #b71c1c;
+  --md-red-A100: #ff8a80;
+  --md-red-A200: #ff5252;
+  --md-red-A400: #ff1744;
+  --md-red-A700: #d50000;
+
+  --md-pink-50: #fce4ec;
+  --md-pink-100: #f8bbd0;
+  --md-pink-200: #f48fb1;
+  --md-pink-300: #f06292;
+  --md-pink-400: #ec407a;
+  --md-pink-500: #e91e63;
+  --md-pink-600: #d81b60;
+  --md-pink-700: #c2185b;
+  --md-pink-800: #ad1457;
+  --md-pink-900: #880e4f;
+  --md-pink-A100: #ff80ab;
+  --md-pink-A200: #ff4081;
+  --md-pink-A400: #f50057;
+  --md-pink-A700: #c51162;
+
+  --md-purple-50: #f3e5f5;
+  --md-purple-100: #e1bee7;
+  --md-purple-200: #ce93d8;
+  --md-purple-300: #ba68c8;
+  --md-purple-400: #ab47bc;
+  --md-purple-500: #9c27b0;
+  --md-purple-600: #8e24aa;
+  --md-purple-700: #7b1fa2;
+  --md-purple-800: #6a1b9a;
+  --md-purple-900: #4a148c;
+  --md-purple-A100: #ea80fc;
+  --md-purple-A200: #e040fb;
+  --md-purple-A400: #d500f9;
+  --md-purple-A700: #aa00ff;
+
+  --md-deep-purple-50: #ede7f6;
+  --md-deep-purple-100: #d1c4e9;
+  --md-deep-purple-200: #b39ddb;
+  --md-deep-purple-300: #9575cd;
+  --md-deep-purple-400: #7e57c2;
+  --md-deep-purple-500: #673ab7;
+  --md-deep-purple-600: #5e35b1;
+  --md-deep-purple-700: #512da8;
+  --md-deep-purple-800: #4527a0;
+  --md-deep-purple-900: #311b92;
+  --md-deep-purple-A100: #b388ff;
+  --md-deep-purple-A200: #7c4dff;
+  --md-deep-purple-A400: #651fff;
+  --md-deep-purple-A700: #6200ea;
+
+  --md-indigo-50: #e8eaf6;
+  --md-indigo-100: #c5cae9;
+  --md-indigo-200: #9fa8da;
+  --md-indigo-300: #7986cb;
+  --md-indigo-400: #5c6bc0;
+  --md-indigo-500: #3f51b5;
+  --md-indigo-600: #3949ab;
+  --md-indigo-700: #303f9f;
+  --md-indigo-800: #283593;
+  --md-indigo-900: #1a237e;
+  --md-indigo-A100: #8c9eff;
+  --md-indigo-A200: #536dfe;
+  --md-indigo-A400: #3d5afe;
+  --md-indigo-A700: #304ffe;
+
+  --md-blue-50: #e3f2fd;
+  --md-blue-100: #bbdefb;
+  --md-blue-200: #90caf9;
+  --md-blue-300: #64b5f6;
+  --md-blue-400: #42a5f5;
+  --md-blue-500: #2196f3;
+  --md-blue-600: #1e88e5;
+  --md-blue-700: #1976d2;
+  --md-blue-800: #1565c0;
+  --md-blue-900: #0d47a1;
+  --md-blue-A100: #82b1ff;
+  --md-blue-A200: #448aff;
+  --md-blue-A400: #2979ff;
+  --md-blue-A700: #2962ff;
+
+  --md-light-blue-50: #e1f5fe;
+  --md-light-blue-100: #b3e5fc;
+  --md-light-blue-200: #81d4fa;
+  --md-light-blue-300: #4fc3f7;
+  --md-light-blue-400: #29b6f6;
+  --md-light-blue-500: #03a9f4;
+  --md-light-blue-600: #039be5;
+  --md-light-blue-700: #0288d1;
+  --md-light-blue-800: #0277bd;
+  --md-light-blue-900: #01579b;
+  --md-light-blue-A100: #80d8ff;
+  --md-light-blue-A200: #40c4ff;
+  --md-light-blue-A400: #00b0ff;
+  --md-light-blue-A700: #0091ea;
+
+  --md-cyan-50: #e0f7fa;
+  --md-cyan-100: #b2ebf2;
+  --md-cyan-200: #80deea;
+  --md-cyan-300: #4dd0e1;
+  --md-cyan-400: #26c6da;
+  --md-cyan-500: #00bcd4;
+  --md-cyan-600: #00acc1;
+  --md-cyan-700: #0097a7;
+  --md-cyan-800: #00838f;
+  --md-cyan-900: #006064;
+  --md-cyan-A100: #84ffff;
+  --md-cyan-A200: #18ffff;
+  --md-cyan-A400: #00e5ff;
+  --md-cyan-A700: #00b8d4;
+
+  --md-teal-50: #e0f2f1;
+  --md-teal-100: #b2dfdb;
+  --md-teal-200: #80cbc4;
+  --md-teal-300: #4db6ac;
+  --md-teal-400: #26a69a;
+  --md-teal-500: #009688;
+  --md-teal-600: #00897b;
+  --md-teal-700: #00796b;
+  --md-teal-800: #00695c;
+  --md-teal-900: #004d40;
+  --md-teal-A100: #a7ffeb;
+  --md-teal-A200: #64ffda;
+  --md-teal-A400: #1de9b6;
+  --md-teal-A700: #00bfa5;
+
+  --md-green-50: #e8f5e9;
+  --md-green-100: #c8e6c9;
+  --md-green-200: #a5d6a7;
+  --md-green-300: #81c784;
+  --md-green-400: #66bb6a;
+  --md-green-500: #4caf50;
+  --md-green-600: #43a047;
+  --md-green-700: #388e3c;
+  --md-green-800: #2e7d32;
+  --md-green-900: #1b5e20;
+  --md-green-A100: #b9f6ca;
+  --md-green-A200: #69f0ae;
+  --md-green-A400: #00e676;
+  --md-green-A700: #00c853;
+
+  --md-light-green-50: #f1f8e9;
+  --md-light-green-100: #dcedc8;
+  --md-light-green-200: #c5e1a5;
+  --md-light-green-300: #aed581;
+  --md-light-green-400: #9ccc65;
+  --md-light-green-500: #8bc34a;
+  --md-light-green-600: #7cb342;
+  --md-light-green-700: #689f38;
+  --md-light-green-800: #558b2f;
+  --md-light-green-900: #33691e;
+  --md-light-green-A100: #ccff90;
+  --md-light-green-A200: #b2ff59;
+  --md-light-green-A400: #76ff03;
+  --md-light-green-A700: #64dd17;
+
+  --md-lime-50: #f9fbe7;
+  --md-lime-100: #f0f4c3;
+  --md-lime-200: #e6ee9c;
+  --md-lime-300: #dce775;
+  --md-lime-400: #d4e157;
+  --md-lime-500: #cddc39;
+  --md-lime-600: #c0ca33;
+  --md-lime-700: #afb42b;
+  --md-lime-800: #9e9d24;
+  --md-lime-900: #827717;
+  --md-lime-A100: #f4ff81;
+  --md-lime-A200: #eeff41;
+  --md-lime-A400: #c6ff00;
+  --md-lime-A700: #aeea00;
+
+  --md-yellow-50: #fffde7;
+  --md-yellow-100: #fff9c4;
+  --md-yellow-200: #fff59d;
+  --md-yellow-300: #fff176;
+  --md-yellow-400: #ffee58;
+  --md-yellow-500: #ffeb3b;
+  --md-yellow-600: #fdd835;
+  --md-yellow-700: #fbc02d;
+  --md-yellow-800: #f9a825;
+  --md-yellow-900: #f57f17;
+  --md-yellow-A100: #ffff8d;
+  --md-yellow-A200: #ffff00;
+  --md-yellow-A400: #ffea00;
+  --md-yellow-A700: #ffd600;
+
+  --md-amber-50: #fff8e1;
+  --md-amber-100: #ffecb3;
+  --md-amber-200: #ffe082;
+  --md-amber-300: #ffd54f;
+  --md-amber-400: #ffca28;
+  --md-amber-500: #ffc107;
+  --md-amber-600: #ffb300;
+  --md-amber-700: #ffa000;
+  --md-amber-800: #ff8f00;
+  --md-amber-900: #ff6f00;
+  --md-amber-A100: #ffe57f;
+  --md-amber-A200: #ffd740;
+  --md-amber-A400: #ffc400;
+  --md-amber-A700: #ffab00;
+
+  --md-orange-50: #fff3e0;
+  --md-orange-100: #ffe0b2;
+  --md-orange-200: #ffcc80;
+  --md-orange-300: #ffb74d;
+  --md-orange-400: #ffa726;
+  --md-orange-500: #ff9800;
+  --md-orange-600: #fb8c00;
+  --md-orange-700: #f57c00;
+  --md-orange-800: #ef6c00;
+  --md-orange-900: #e65100;
+  --md-orange-A100: #ffd180;
+  --md-orange-A200: #ffab40;
+  --md-orange-A400: #ff9100;
+  --md-orange-A700: #ff6d00;
+
+  --md-deep-orange-50: #fbe9e7;
+  --md-deep-orange-100: #ffccbc;
+  --md-deep-orange-200: #ffab91;
+  --md-deep-orange-300: #ff8a65;
+  --md-deep-orange-400: #ff7043;
+  --md-deep-orange-500: #ff5722;
+  --md-deep-orange-600: #f4511e;
+  --md-deep-orange-700: #e64a19;
+  --md-deep-orange-800: #d84315;
+  --md-deep-orange-900: #bf360c;
+  --md-deep-orange-A100: #ff9e80;
+  --md-deep-orange-A200: #ff6e40;
+  --md-deep-orange-A400: #ff3d00;
+  --md-deep-orange-A700: #dd2c00;
+
+  --md-brown-50: #efebe9;
+  --md-brown-100: #d7ccc8;
+  --md-brown-200: #bcaaa4;
+  --md-brown-300: #a1887f;
+  --md-brown-400: #8d6e63;
+  --md-brown-500: #795548;
+  --md-brown-600: #6d4c41;
+  --md-brown-700: #5d4037;
+  --md-brown-800: #4e342e;
+  --md-brown-900: #3e2723;
+
+  --md-grey-50: #fafafa;
+  --md-grey-100: #f5f5f5;
+  --md-grey-200: #eeeeee;
+  --md-grey-300: #e0e0e0;
+  --md-grey-400: #bdbdbd;
+  --md-grey-500: #9e9e9e;
+  --md-grey-600: #757575;
+  --md-grey-700: #616161;
+  --md-grey-800: #424242;
+  --md-grey-900: #212121;
+
+  --md-blue-grey-50: #eceff1;
+  --md-blue-grey-100: #cfd8dc;
+  --md-blue-grey-200: #b0bec5;
+  --md-blue-grey-300: #90a4ae;
+  --md-blue-grey-400: #78909c;
+  --md-blue-grey-500: #607d8b;
+  --md-blue-grey-600: #546e7a;
+  --md-blue-grey-700: #455a64;
+  --md-blue-grey-800: #37474f;
+  --md-blue-grey-900: #263238;
+}
+
+:root {
+  /* This is the padding value to fill the gaps between lines containing spans with background color. */
+  --jp-private-code-span-padding: calc(
+    (var(--jp-code-line-height) - 1) * var(--jp-code-font-size) / 2
+  );
+}
+
+.jp-RenderedText {
+  text-align: left;
+  padding-left: var(--jp-code-padding);
+  line-height: var(--jp-code-line-height);
+  font-family: var(--jp-code-font-family);
+}
+
+.jp-RenderedText pre,
+.jp-RenderedJavaScript pre,
+.jp-RenderedHTMLCommon pre {
+  color: var(--jp-content-font-color1);
+  font-size: var(--jp-code-font-size);
+  border: none;
+  margin: 0px;
+  padding: 0px;
+}
+
+.jp-RenderedText pre a:link {
+  text-decoration: none;
+  color: var(--jp-content-link-color);
+}
+.jp-RenderedText pre a:hover {
+  text-decoration: underline;
+  color: var(--jp-content-link-color);
+}
+.jp-RenderedText pre a:visited {
+  text-decoration: none;
+  color: var(--jp-content-link-color);
+}
+
+/* console foregrounds and backgrounds */
+.jp-RenderedText pre .ansi-black-fg {
+  color: #3e424d;
+}
+.jp-RenderedText pre .ansi-red-fg {
+  color: #e75c58;
+}
+.jp-RenderedText pre .ansi-green-fg {
+  color: #00a250;
+}
+.jp-RenderedText pre .ansi-yellow-fg {
+  color: #ddb62b;
+}
+.jp-RenderedText pre .ansi-blue-fg {
+  color: #208ffb;
+}
+.jp-RenderedText pre .ansi-magenta-fg {
+  color: #d160c4;
+}
+.jp-RenderedText pre .ansi-cyan-fg {
+  color: #60c6c8;
+}
+.jp-RenderedText pre .ansi-white-fg {
+  color: #c5c1b4;
+}
+
+.jp-RenderedText pre .ansi-black-bg {
+  background-color: #3e424d;
+  padding: var(--jp-private-code-span-padding) 0;
+}
+.jp-RenderedText pre .ansi-red-bg {
+  background-color: #e75c58;
+  padding: var(--jp-private-code-span-padding) 0;
+}
+.jp-RenderedText pre .ansi-green-bg {
+  background-color: #00a250;
+  padding: var(--jp-private-code-span-padding) 0;
+}
+.jp-RenderedText pre .ansi-yellow-bg {
+  background-color: #ddb62b;
+  padding: var(--jp-private-code-span-padding) 0;
+}
+.jp-RenderedText pre .ansi-blue-bg {
+  background-color: #208ffb;
+  padding: var(--jp-private-code-span-padding) 0;
+}
+.jp-RenderedText pre .ansi-magenta-bg {
+  background-color: #d160c4;
+  padding: var(--jp-private-code-span-padding) 0;
+}
+.jp-RenderedText pre .ansi-cyan-bg {
+  background-color: #60c6c8;
+  padding: var(--jp-private-code-span-padding) 0;
+}
+.jp-RenderedText pre .ansi-white-bg {
+  background-color: #c5c1b4;
+  padding: var(--jp-private-code-span-padding) 0;
+}
+
+.jp-RenderedText pre .ansi-black-intense-fg {
+  color: #282c36;
+}
+.jp-RenderedText pre .ansi-red-intense-fg {
+  color: #b22b31;
+}
+.jp-RenderedText pre .ansi-green-intense-fg {
+  color: #007427;
+}
+.jp-RenderedText pre .ansi-yellow-intense-fg {
+  color: #b27d12;
+}
+.jp-RenderedText pre .ansi-blue-intense-fg {
+  color: #0065ca;
+}
+.jp-RenderedText pre .ansi-magenta-intense-fg {
+  color: #a03196;
+}
+.jp-RenderedText pre .ansi-cyan-intense-fg {
+  color: #258f8f;
+}
+.jp-RenderedText pre .ansi-white-intense-fg {
+  color: #a1a6b2;
+}
+
+.jp-RenderedText pre .ansi-black-intense-bg {
+  background-color: #282c36;
+  padding: var(--jp-private-code-span-padding) 0;
+}
+.jp-RenderedText pre .ansi-red-intense-bg {
+  background-color: #b22b31;
+  padding: var(--jp-private-code-span-padding) 0;
+}
+.jp-RenderedText pre .ansi-green-intense-bg {
+  background-color: #007427;
+  padding: var(--jp-private-code-span-padding) 0;
+}
+.jp-RenderedText pre .ansi-yellow-intense-bg {
+  background-color: #b27d12;
+  padding: var(--jp-private-code-span-padding) 0;
+}
+.jp-RenderedText pre .ansi-blue-intense-bg {
+  background-color: #0065ca;
+  padding: var(--jp-private-code-span-padding) 0;
+}
+.jp-RenderedText pre .ansi-magenta-intense-bg {
+  background-color: #a03196;
+  padding: var(--jp-private-code-span-padding) 0;
+}
+.jp-RenderedText pre .ansi-cyan-intense-bg {
+  background-color: #258f8f;
+  padding: var(--jp-private-code-span-padding) 0;
+}
+.jp-RenderedText pre .ansi-white-intense-bg {
+  background-color: #a1a6b2;
+  padding: var(--jp-private-code-span-padding) 0;
+}
+
+.jp-RenderedText pre .ansi-default-inverse-fg {
+  color: var(--jp-ui-inverse-font-color0);
+}
+.jp-RenderedText pre .ansi-default-inverse-bg {
+  background-color: var(--jp-inverse-layout-color0);
+  padding: var(--jp-private-code-span-padding) 0;
+}
+
+.jp-RenderedText pre .ansi-bold {
+  font-weight: bold;
+}
+.jp-RenderedText pre .ansi-underline {
+  text-decoration: underline;
+}
+
+.jp-RenderedText[data-mime-type='application/vnd.jupyter.stderr'] {
+  background: var(--jp-rendermime-error-background);
+  padding-top: var(--jp-code-padding);
+}
+
+/*-----------------------------------------------------------------------------
+| RenderedLatex
+|----------------------------------------------------------------------------*/
+
+.jp-RenderedLatex {
+  color: var(--jp-content-font-color1);
+  font-size: var(--jp-content-font-size1);
+  line-height: var(--jp-content-line-height);
+}
+
+/* Left-justify outputs.*/
+.jp-OutputArea-output.jp-RenderedLatex {
+  padding: var(--jp-code-padding);
+  text-align: left;
+}
+
+/*-----------------------------------------------------------------------------
+| RenderedHTML
+|----------------------------------------------------------------------------*/
+
+.jp-RenderedHTMLCommon {
+  color: var(--jp-content-font-color1);
+  font-family: var(--jp-content-font-family);
+  font-size: var(--jp-content-font-size1);
+  line-height: var(--jp-content-line-height);
+  /* Give a bit more R padding on Markdown text to keep line lengths reasonable */
+  padding-right: 20px;
+}
+
+.jp-RenderedHTMLCommon em {
+  font-style: italic;
+}
+
+.jp-RenderedHTMLCommon strong {
+  font-weight: bold;
+}
+
+.jp-RenderedHTMLCommon u {
+  text-decoration: underline;
+}
+
+.jp-RenderedHTMLCommon a:link {
+  text-decoration: none;
+  color: var(--jp-content-link-color);
+}
+
+.jp-RenderedHTMLCommon a:hover {
+  text-decoration: underline;
+  color: var(--jp-content-link-color);
+}
+
+.jp-RenderedHTMLCommon a:visited {
+  text-decoration: none;
+  color: var(--jp-content-link-color);
+}
+
+/* Headings */
+
+.jp-RenderedHTMLCommon h1,
+.jp-RenderedHTMLCommon h2,
+.jp-RenderedHTMLCommon h3,
+.jp-RenderedHTMLCommon h4,
+.jp-RenderedHTMLCommon h5,
+.jp-RenderedHTMLCommon h6 {
+  line-height: var(--jp-content-heading-line-height);
+  font-weight: var(--jp-content-heading-font-weight);
+  font-style: normal;
+  margin: var(--jp-content-heading-margin-top) 0
+    var(--jp-content-heading-margin-bottom) 0;
+}
+
+.jp-RenderedHTMLCommon h1:first-child,
+.jp-RenderedHTMLCommon h2:first-child,
+.jp-RenderedHTMLCommon h3:first-child,
+.jp-RenderedHTMLCommon h4:first-child,
+.jp-RenderedHTMLCommon h5:first-child,
+.jp-RenderedHTMLCommon h6:first-child {
+  margin-top: calc(0.5 * var(--jp-content-heading-margin-top));
+}
+
+.jp-RenderedHTMLCommon h1:last-child,
+.jp-RenderedHTMLCommon h2:last-child,
+.jp-RenderedHTMLCommon h3:last-child,
+.jp-RenderedHTMLCommon h4:last-child,
+.jp-RenderedHTMLCommon h5:last-child,
+.jp-RenderedHTMLCommon h6:last-child {
+  margin-bottom: calc(0.5 * var(--jp-content-heading-margin-bottom));
+}
+
+.jp-RenderedHTMLCommon h1 {
+  font-size: var(--jp-content-font-size5);
+}
+
+.jp-RenderedHTMLCommon h2 {
+  font-size: var(--jp-content-font-size4);
+}
+
+.jp-RenderedHTMLCommon h3 {
+  font-size: var(--jp-content-font-size3);
+}
+
+.jp-RenderedHTMLCommon h4 {
+  font-size: var(--jp-content-font-size2);
+}
+
+.jp-RenderedHTMLCommon h5 {
+  font-size: var(--jp-content-font-size1);
+}
+
+.jp-RenderedHTMLCommon h6 {
+  font-size: var(--jp-content-font-size0);
+}
+
+/* Lists */
+
+.jp-RenderedHTMLCommon ul:not(.list-inline),
+.jp-RenderedHTMLCommon ol:not(.list-inline) {
+  padding-left: 2em;
+}
+
+.jp-RenderedHTMLCommon ul {
+  list-style: disc;
+}
+
+.jp-RenderedHTMLCommon ul ul {
+  list-style: square;
+}
+
+.jp-RenderedHTMLCommon ul ul ul {
+  list-style: circle;
+}
+
+.jp-RenderedHTMLCommon ol {
+  list-style: decimal;
+}
+
+.jp-RenderedHTMLCommon ol ol {
+  list-style: upper-alpha;
+}
+
+.jp-RenderedHTMLCommon ol ol ol {
+  list-style: lower-alpha;
+}
+
+.jp-RenderedHTMLCommon ol ol ol ol {
+  list-style: lower-roman;
+}
+
+.jp-RenderedHTMLCommon ol ol ol ol ol {
+  list-style: decimal;
+}
+
+.jp-RenderedHTMLCommon ol,
+.jp-RenderedHTMLCommon ul {
+  margin-bottom: 1em;
+}
+
+.jp-RenderedHTMLCommon ul ul,
+.jp-RenderedHTMLCommon ul ol,
+.jp-RenderedHTMLCommon ol ul,
+.jp-RenderedHTMLCommon ol ol {
+  margin-bottom: 0em;
+}
+
+.jp-RenderedHTMLCommon hr {
+  color: var(--jp-border-color2);
+  background-color: var(--jp-border-color1);
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+.jp-RenderedHTMLCommon > pre {
+  margin: 1.5em 2em;
+}
+
+.jp-RenderedHTMLCommon pre,
+.jp-RenderedHTMLCommon code {
+  border: 0;
+  background-color: var(--jp-layout-color0);
+  color: var(--jp-content-font-color1);
+  font-family: var(--jp-code-font-family);
+  font-size: inherit;
+  line-height: var(--jp-code-line-height);
+  padding: 0;
+  white-space: pre-wrap;
+}
+
+.jp-RenderedHTMLCommon :not(pre) > code {
+  background-color: var(--jp-layout-color2);
+  padding: 1px 5px;
+}
+
+/* Tables */
+
+.jp-RenderedHTMLCommon table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  border: none;
+  color: var(--jp-ui-font-color1);
+  font-size: var(--jp-ui-font-size1);
+  table-layout: fixed;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.jp-RenderedHTMLCommon thead {
+  border-bottom: var(--jp-border-width) solid var(--jp-border-color1);
+  vertical-align: bottom;
+}
+
+.jp-RenderedHTMLCommon td,
+.jp-RenderedHTMLCommon th,
+.jp-RenderedHTMLCommon tr {
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+
+.jp-RenderedMarkdown.jp-RenderedHTMLCommon td,
+.jp-RenderedMarkdown.jp-RenderedHTMLCommon th {
+  max-width: none;
+}
+
+:not(.jp-RenderedMarkdown).jp-RenderedHTMLCommon td,
+:not(.jp-RenderedMarkdown).jp-RenderedHTMLCommon th,
+:not(.jp-RenderedMarkdown).jp-RenderedHTMLCommon tr {
+  text-align: right;
+}
+
+.jp-RenderedHTMLCommon th {
+  font-weight: bold;
+}
+
+.jp-RenderedHTMLCommon tbody tr:nth-child(odd) {
+  background: var(--jp-layout-color0);
+}
+
+.jp-RenderedHTMLCommon tbody tr:nth-child(even) {
+  background: var(--jp-rendermime-table-row-background);
+}
+
+.jp-RenderedHTMLCommon tbody tr:hover {
+  background: var(--jp-rendermime-table-row-hover-background);
+}
+
+.jp-RenderedHTMLCommon table {
+  margin-bottom: 1em;
+}
+
+.jp-RenderedHTMLCommon p {
+  text-align: left;
+  margin: 0px;
+}
+
+.jp-RenderedHTMLCommon p {
+  margin-bottom: 1em;
+}
+
+.jp-RenderedHTMLCommon img {
+  -moz-force-broken-image-icon: 1;
+}
+
+/* Restrict to direct children as other images could be nested in other content. */
+.jp-RenderedHTMLCommon > img {
+  display: block;
+  margin-left: 0;
+  margin-right: 0;
+  margin-bottom: 1em;
+}
+
+/* Change color behind transparent images if they need it... */
+[data-jp-theme-light='false'] .jp-RenderedImage img.jp-needs-light-background {
+  background-color: var(--jp-inverse-layout-color1);
+}
+[data-jp-theme-light='true'] .jp-RenderedImage img.jp-needs-dark-background {
+  background-color: var(--jp-inverse-layout-color1);
+}
+/* ...or leave it untouched if they don't */
+[data-jp-theme-light='false'] .jp-RenderedImage img.jp-needs-dark-background {
+}
+[data-jp-theme-light='true'] .jp-RenderedImage img.jp-needs-light-background {
+}
+
+.jp-RenderedHTMLCommon img,
+.jp-RenderedImage img,
+.jp-RenderedHTMLCommon svg,
+.jp-RenderedSVG svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.jp-RenderedHTMLCommon img.jp-mod-unconfined,
+.jp-RenderedImage img.jp-mod-unconfined,
+.jp-RenderedHTMLCommon svg.jp-mod-unconfined,
+.jp-RenderedSVG svg.jp-mod-unconfined {
+  max-width: none;
+}
+
+.jp-RenderedHTMLCommon .alert {
+  padding: var(--jp-notebook-padding);
+  border: var(--jp-border-width) solid transparent;
+  border-radius: var(--jp-border-radius);
+  margin-bottom: 1em;
+}
+
+.jp-RenderedHTMLCommon .alert-info {
+  color: var(--jp-info-color0);
+  background-color: var(--jp-info-color3);
+  border-color: var(--jp-info-color2);
+}
+.jp-RenderedHTMLCommon .alert-info hr {
+  border-color: var(--jp-info-color3);
+}
+.jp-RenderedHTMLCommon .alert-info > p:last-child,
+.jp-RenderedHTMLCommon .alert-info > ul:last-child {
+  margin-bottom: 0;
+}
+
+.jp-RenderedHTMLCommon .alert-warning {
+  color: var(--jp-warn-color0);
+  background-color: var(--jp-warn-color3);
+  border-color: var(--jp-warn-color2);
+}
+.jp-RenderedHTMLCommon .alert-warning hr {
+  border-color: var(--jp-warn-color3);
+}
+.jp-RenderedHTMLCommon .alert-warning > p:last-child,
+.jp-RenderedHTMLCommon .alert-warning > ul:last-child {
+  margin-bottom: 0;
+}
+
+.jp-RenderedHTMLCommon .alert-success {
+  color: var(--jp-success-color0);
+  background-color: var(--jp-success-color3);
+  border-color: var(--jp-success-color2);
+}
+.jp-RenderedHTMLCommon .alert-success hr {
+  border-color: var(--jp-success-color3);
+}
+.jp-RenderedHTMLCommon .alert-success > p:last-child,
+.jp-RenderedHTMLCommon .alert-success > ul:last-child {
+  margin-bottom: 0;
+}
+
+.jp-RenderedHTMLCommon .alert-danger {
+  color: var(--jp-error-color0);
+  background-color: var(--jp-error-color3);
+  border-color: var(--jp-error-color2);
+}
+.jp-RenderedHTMLCommon .alert-danger hr {
+  border-color: var(--jp-error-color3);
+}
+.jp-RenderedHTMLCommon .alert-danger > p:last-child,
+.jp-RenderedHTMLCommon .alert-danger > ul:last-child {
+  margin-bottom: 0;
+}
+
+.jp-RenderedHTMLCommon blockquote {
+  margin: 1em 2em;
+  padding: 0 1em;
+  border-left: 5px solid var(--jp-border-color2);
+}
+
+a.jp-InternalAnchorLink {
+  visibility: hidden;
+  margin-left: 8px;
+  color: var(--md-blue-800);
+}
+
+h1:hover .jp-InternalAnchorLink,
+h2:hover .jp-InternalAnchorLink,
+h3:hover .jp-InternalAnchorLink,
+h4:hover .jp-InternalAnchorLink,
+h5:hover .jp-InternalAnchorLink,
+h6:hover .jp-InternalAnchorLink {
+  visibility: visible;
+}
+
+.jp-RenderedHTMLCommon kbd {
+  background-color: var(--jp-rendermime-table-row-background);
+  border: 1px solid var(--jp-border-color0);
+  border-bottom-color: var(--jp-border-color2);
+  border-radius: 3px;
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+  display: inline-block;
+  font-size: var(--jp-ui-font-size0);
+  line-height: 1em;
+  padding: 0.2em 0.5em;
+}
+
+/* Most direct children of .jp-RenderedHTMLCommon have a margin-bottom of 1.0.
+ * At the bottom of cells this is a bit too much as there is also spacing
+ * between cells. Going all the way to 0 gets too tight between markdown and
+ * code cells.
+ */
+.jp-RenderedHTMLCommon > *:last-child {
+  margin-bottom: 0.5em;
+}
+
+/*-----------------------------------------------------------------------------
+| Copyright (c) Jupyter Development Team.
+| Distributed under the terms of the Modified BSD License.
+|----------------------------------------------------------------------------*/
+
+.jp-MimeDocument {
+  outline: none;
+}
+
+
+/*-----------------------------------------------------------------------------
+| Copyright (c) Jupyter Development Team.
+| Distributed under the terms of the Modified BSD License.
+|----------------------------------------------------------------------------*/
+
+/*-----------------------------------------------------------------------------
+| Private CSS variables
+|----------------------------------------------------------------------------*/
+
+:root {
+}
+
+/*-----------------------------------------------------------------------------
+| Main OutputArea
+| OutputArea has a list of Outputs
+|----------------------------------------------------------------------------*/
+
+.jp-OutputArea {
+  overflow-y: auto;
+}
+
+.jp-OutputArea-child {
+  display: flex;
+  flex-direction: row;
+}
+
+body[data-format='mobile'] .jp-OutputArea-child {
+  flex-direction: column;
+}
+
+.jp-OutputPrompt {
+  flex: 0 0 var(--jp-cell-prompt-width);
+  color: var(--jp-cell-outprompt-font-color);
+  font-family: var(--jp-cell-prompt-font-family);
+  padding: var(--jp-code-padding);
+  letter-spacing: var(--jp-cell-prompt-letter-spacing);
+  line-height: var(--jp-code-line-height);
+  font-size: var(--jp-code-font-size);
+  border: var(--jp-border-width) solid transparent;
+  opacity: var(--jp-cell-prompt-opacity);
+  /* Right align prompt text, don't wrap to handle large prompt numbers */
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* Disable text selection */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+body[data-format='mobile'] .jp-OutputPrompt {
+  flex: 0 0 auto;
+  text-align: left;
+}
+
+.jp-OutputArea-output {
+  height: auto;
+  overflow: auto;
+  user-select: text;
+  -moz-user-select: text;
+  -webkit-user-select: text;
+  -ms-user-select: text;
+}
+
+.jp-OutputArea-child .jp-OutputArea-output {
+  flex-grow: 1;
+  flex-shrink: 1;
+}
+
+body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
+  margin-left: var(--jp-notebook-padding);
+}
+
+/**
+ * Isolated output.
+ */
+.jp-OutputArea-output.jp-mod-isolated {
+  width: 100%;
+  display: block;
+}
+
+/*
+When drag events occur, `p-mod-override-cursor` is added to the body.
+Because iframes steal all cursor events, the following two rules are necessary
+to suppress pointer events while resize drags are occurring. There may be a
+better solution to this problem.
+*/
+body.lm-mod-override-cursor .jp-OutputArea-output.jp-mod-isolated {
+  position: relative;
+}
+
+body.lm-mod-override-cursor .jp-OutputArea-output.jp-mod-isolated:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: transparent;
+}
+
+/* pre */
+
+.jp-OutputArea-output pre {
+  border: none;
+  margin: 0px;
+  padding: 0px;
+  overflow-x: auto;
+  overflow-y: auto;
+  word-break: break-all;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+/* tables */
+
+.jp-OutputArea-output.jp-RenderedHTMLCommon table {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+/* description lists */
+
+.jp-OutputArea-output dl,
+.jp-OutputArea-output dt,
+.jp-OutputArea-output dd {
+  display: block;
+}
+
+.jp-OutputArea-output dl {
+  width: 100%;
+  overflow: hidden;
+  padding: 0;
+  margin: 0;
+}
+
+.jp-OutputArea-output dt {
+  font-weight: bold;
+  float: left;
+  width: 20%;
+  padding: 0;
+  margin: 0;
+}
+
+.jp-OutputArea-output dd {
+  float: left;
+  width: 80%;
+  padding: 0;
+  margin: 0;
+}
+
+.jp-TrimmedOutputs a {
+  margin: 10px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* Hide the gutter in case of
+ *  - nested output areas (e.g. in the case of output widgets)
+ *  - mirrored output areas
+ */
+.jp-OutputArea .jp-OutputArea .jp-OutputArea-prompt {
+  display: none;
+}
+
+/* Hide empty lines in the output area, for instance due to cleared widgets */
+.jp-OutputArea-prompt:empty {
+  padding: 0;
+  border: 0;
+}
+
+/*-----------------------------------------------------------------------------
+| executeResult is added to any Output-result for the display of the object
+| returned by a cell
+|----------------------------------------------------------------------------*/
+
+.jp-OutputArea-output.jp-OutputArea-executeResult {
+  margin-left: 0px;
+  flex: 1 1 auto;
+}
+
+/* Text output with the Out[] prompt needs a top padding to match the
+ * alignment of the Out[] prompt itself.
+ */
+.jp-OutputArea-executeResult .jp-RenderedText.jp-OutputArea-output {
+  padding-top: var(--jp-code-padding);
+  border-top: var(--jp-border-width) solid transparent;
+}
+
+/*-----------------------------------------------------------------------------
+| The Stdin output
+|----------------------------------------------------------------------------*/
+
+.jp-Stdin-prompt {
+  color: var(--jp-content-font-color0);
+  padding-right: var(--jp-code-padding);
+  vertical-align: baseline;
+  flex: 0 0 auto;
+}
+
+.jp-Stdin-input {
+  font-family: var(--jp-code-font-family);
+  font-size: inherit;
+  color: inherit;
+  background-color: inherit;
+  width: 42%;
+  min-width: 200px;
+  /* make sure input baseline aligns with prompt */
+  vertical-align: baseline;
+  /* padding + margin = 0.5em between prompt and cursor */
+  padding: 0em 0.25em;
+  margin: 0em 0.25em;
+  flex: 0 0 70%;
+}
+
+.jp-Stdin-input::placeholder {
+  opacity: 0;
+}
+
+.jp-Stdin-input:focus {
+  box-shadow: none;
+}
+
+.jp-Stdin-input:focus::placeholder {
+  opacity: 1;
+}
+
+/*-----------------------------------------------------------------------------
+| Output Area View
+|----------------------------------------------------------------------------*/
+
+.jp-LinkedOutputView .jp-OutputArea {
+  height: 100%;
+  display: block;
+}
+
+.jp-LinkedOutputView .jp-OutputArea-output:only-child {
+  height: 100%;
+}
+
+/*-----------------------------------------------------------------------------
+| Copyright (c) Jupyter Development Team.
+| Distributed under the terms of the Modified BSD License.
+|----------------------------------------------------------------------------*/
+
+/*-----------------------------------------------------------------------------
+| Private CSS variables
+|----------------------------------------------------------------------------*/
+
+:root {
+  --jp-private-cell-scrolling-output-offset: 5px;
+}
+
+/*-----------------------------------------------------------------------------
+| Cell
+|----------------------------------------------------------------------------*/
+
+.jp-Cell {
+  padding: var(--jp-cell-padding);
+  margin: 0px;
+  border: none;
+  outline: none;
+  background: transparent;
+}
+
+/*-----------------------------------------------------------------------------
+| Common input/output
+|----------------------------------------------------------------------------*/
+
+.jp-Cell-inputWrapper,
+.jp-Cell-outputWrapper {
+  display: flex;
+  flex-direction: row;
+  padding: 0px;
+  margin: 0px;
+  /* Added to reveal the box-shadow on the input and output collapsers. */
+  overflow: visible;
+}
+
+/* Only input/output areas inside cells */
+.jp-Cell-inputArea,
+.jp-Cell-outputArea {
+  flex: 1 1 auto;
+}
+
+
+/*-----------------------------------------------------------------------------
+| Output
+|----------------------------------------------------------------------------*/
+
+/* Put a space between input and output when there IS output */
+.jp-Cell:not(.jp-mod-noOutputs) .jp-Cell-outputWrapper {
+  margin-top: 5px;
+}
+
+.jp-CodeCell.jp-mod-outputsScrolled .jp-Cell-outputArea {
+  overflow-y: auto;
+  max-height: 24em;
+  margin-left: var(--jp-private-cell-scrolling-output-offset);
+}
+
+.jp-CodeCell.jp-mod-outputsScrolled .jp-Cell-outputArea::after {
+  content: ' ';
+  box-shadow: inset 0 0 6px 2px rgb(0 0 0 / 30%);
+  width: 100%;
+  height: 100%;
+  position: sticky;
+  bottom: 0;
+  top: 0;
+  margin-top: -50%;
+  float: left;
+  display: block;
+  pointer-events: none;
+}
+
+.jp-CodeCell.jp-mod-outputsScrolled .jp-OutputArea-child {
+  padding-top: 6px;
+}
+
+.jp-CodeCell.jp-mod-outputsScrolled .jp-OutputArea-prompt {
+  flex: 0 0
+    calc(
+      var(--jp-cell-prompt-width) -
+        var(--jp-private-cell-scrolling-output-offset)
+    );
+}
+
+/*-----------------------------------------------------------------------------
+| CodeCell
+|----------------------------------------------------------------------------*/
+
+/*-----------------------------------------------------------------------------
+| MarkdownCell
+|----------------------------------------------------------------------------*/
+
+.jp-MarkdownOutput {
+  flex: 1 1 auto;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-left: var(--jp-code-padding);
+}
+
+.jp-MarkdownOutput.jp-RenderedHTMLCommon {
+  overflow: auto;
+}
+
+/* collapseHeadingButton (show always if hiddenCellsButton is _not_ shown) */
+.jp-collapseHeadingButton {
+  display: none;
+  min-height: var(--jp-cell-collapser-min-height);
+  font-size: var(--jp-code-font-size);
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: transparent;
+  background-size: 25px;
+  background-repeat: no-repeat;
+  background-position-x: center;
+  background-position-y: top;
+  background-image: var(--jp-icon-caret-down);
+  border: none;
+  cursor: pointer;
+}
+
+.jp-collapseHeadingButton:hover {
+  background-color: var(--jp-layout-color2);
+}
+
+.jp-collapseHeadingButton.jp-mod-collapsed {
+  background-image: var(--jp-icon-caret-right);
+}
+
+:is(.jp-MarkdownCell:hover, .jp-mod-active) .jp-collapseHeadingButton {
+  display: flex;
+}
+
+/*
+ set the container font size to match that of content
+ so that the nested collapse buttons have the right size
+*/
+.jp-MarkdownCell .jp-InputPrompt {
+  font-size: var(--jp-content-font-size1);
+}
+
+/*
+  Align collapseHeadingButton with cell top header
+  The font sizes are identical to the ones in packages/rendermime/style/base.css
+*/
+.jp-mod-rendered .jp-collapseHeadingButton[data-heading-level='1'] {
+  font-size: var(--jp-content-font-size5);
+  background-position-y: calc(0.3 * var(--jp-content-font-size5));
+}
+
+.jp-mod-rendered .jp-collapseHeadingButton[data-heading-level='2'] {
+  font-size: var(--jp-content-font-size4);
+  background-position-y: calc(0.3 * var(--jp-content-font-size4));
+}
+
+.jp-mod-rendered .jp-collapseHeadingButton[data-heading-level='3'] {
+  font-size: var(--jp-content-font-size3);
+  background-position-y: calc(0.3 * var(--jp-content-font-size3));
+}
+
+.jp-mod-rendered .jp-collapseHeadingButton[data-heading-level='4'] {
+  font-size: var(--jp-content-font-size2);
+  background-position-y: calc(0.3 * var(--jp-content-font-size2));
+}
+
+.jp-mod-rendered .jp-collapseHeadingButton[data-heading-level='5'] {
+  font-size: var(--jp-content-font-size1);
+  background-position-y: top;
+}
+
+.jp-mod-rendered .jp-collapseHeadingButton[data-heading-level='6'] {
+  font-size: var(--jp-content-font-size0);
+  background-position-y: top;
+}
+
+.jp-showHiddenCellsButton {
+  margin-left: calc(var(--jp-cell-prompt-width) + 2 * var(--jp-code-padding));
+  margin-top: var(--jp-code-padding);
+  border: 1px solid var(--jp-border-color2);
+  background-color: var(--jp-border-color3) !important;
+  color: var(--jp-content-font-color0) !important;
+}
+
+.jp-showHiddenCellsButton:hover {
+  background-color: var(--jp-border-color2) !important;
+}
+
+/*-----------------------------------------------------------------------------
+| Copyright (c) Jupyter Development Team.
+| Distributed under the terms of the Modified BSD License.
+|----------------------------------------------------------------------------*/
+
+
+/*-----------------------------------------------------------------------------
+| Presentation Mode (.jp-mod-presentationMode)
+|----------------------------------------------------------------------------*/
+
+.jp-mod-presentationMode .jp-Notebook {
+  --jp-content-font-size1: var(--jp-content-presentation-font-size1);
+  --jp-code-font-size: var(--jp-code-presentation-font-size);
+}
+
+.jp-mod-presentationMode .jp-Notebook .jp-Cell .jp-InputPrompt,
+.jp-mod-presentationMode .jp-Notebook .jp-Cell .jp-OutputPrompt {
+  flex: 0 0 110px;
+}
+
+/*-----------------------------------------------------------------------------
+| Side-by-side Mode (.jp-mod-sideBySide)
+|----------------------------------------------------------------------------*/
+:root {
+  --jp-side-by-side-output-size: 1fr;
+  --jp-side-by-side-resized-cell: var(--jp-side-by-side-output-size);
+}
+
+.jp-mod-sideBySide.jp-Notebook .jp-Notebook-cell {
+  margin-top: 3em;
+  margin-bottom: 3em;
+  margin-left: 5%;
+  margin-right: 5%;
+}
+
+.jp-mod-sideBySide.jp-Notebook .jp-CodeCell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) min-content minmax(
+      0,
+      var(--jp-side-by-side-output-size)
+    );
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'header header header'
+    'input handle output'
+    'footer footer footer';
+}
+
+.jp-mod-sideBySide.jp-Notebook .jp-CodeCell.jp-mod-resizedCell {
+  grid-template-columns: minmax(0, 1fr) min-content minmax(
+      0,
+      var(--jp-side-by-side-resized-cell)
+    );
+}
+
+.jp-mod-sideBySide.jp-Notebook .jp-CodeCell .jp-CellHeader {
+  grid-area: header;
+}
+
+.jp-mod-sideBySide.jp-Notebook .jp-CodeCell .jp-Cell-inputWrapper {
+  grid-area: input;
+}
+
+.jp-mod-sideBySide.jp-Notebook .jp-CodeCell .jp-Cell-outputWrapper {
+  /* overwrite the default margin (no vertical separation needed in side by side move */
+  margin-top: 0;
+  grid-area: output;
+}
+
+.jp-mod-sideBySide.jp-Notebook .jp-CodeCell .jp-CellFooter {
+  grid-area: footer;
+}
+
+.jp-mod-sideBySide.jp-Notebook .jp-CodeCell .jp-CellResizeHandle {
+  grid-area: handle;
+  user-select: none;
+  display: block;
+  height: 100%;
+  cursor: ew-resize;
+  padding: 0 var(--jp-cell-padding);
+}
+
+.jp-mod-sideBySide.jp-Notebook .jp-CodeCell .jp-CellResizeHandle::after {
+  content: '';
+  display: block;
+  background: var(--jp-border-color2);
+  height: 100%;
+  width: 5px;
+}
+
+.jp-mod-sideBySide.jp-Notebook
+  .jp-CodeCell.jp-mod-resizedCell
+  .jp-CellResizeHandle::after {
+  background: var(--jp-border-color0);
+}
+
+.jp-CellResizeHandle {
+  display: none;
+}
+
+/*-----------------------------------------------------------------------------
+| Placeholder
+|----------------------------------------------------------------------------*/
+
+.jp-Cell-Placeholder {
+  padding-left: 55px;
+}
+
+.jp-Cell-Placeholder-wrapper {
+  background: #fff;
+  border: 1px solid;
+  border-color: #e5e6e9 #dfe0e4 #d0d1d5;
+  border-radius: 4px;
+  -webkit-border-radius: 4px;
+  margin: 10px 15px;
+}
+
+.jp-Cell-Placeholder-wrapper-inner {
+  padding: 15px;
+  position: relative;
+}
+
+.jp-Cell-Placeholder-wrapper-body {
+  background-repeat: repeat;
+  background-size: 50% auto;
+}
+
+.jp-Cell-Placeholder-wrapper-body div {
+  background: #f6f7f8;
+  background-image: -webkit-linear-gradient(
+    left,
+    #f6f7f8 0%,
+    #edeef1 20%,
+    #f6f7f8 40%,
+    #f6f7f8 100%
+  );
+  background-repeat: no-repeat;
+  background-size: 800px 104px;
+  height: 104px;
+  position: relative;
+}
+
+.jp-Cell-Placeholder-wrapper-body div {
+  position: absolute;
+  right: 15px;
+  left: 15px;
+  top: 15px;
+}
+
+div.jp-Cell-Placeholder-h1 {
+  top: 20px;
+  height: 20px;
+  left: 15px;
+  width: 150px;
+}
+
+div.jp-Cell-Placeholder-h2 {
+  left: 15px;
+  top: 50px;
+  height: 10px;
+  width: 100px;
+}
+
+div.jp-Cell-Placeholder-content-1,
+div.jp-Cell-Placeholder-content-2,
+div.jp-Cell-Placeholder-content-3 {
+  left: 15px;
+  right: 15px;
+  height: 10px;
+}
+
+div.jp-Cell-Placeholder-content-1 {
+  top: 100px;
+}
+
+div.jp-Cell-Placeholder-content-2 {
+  top: 120px;
+}
+
+div.jp-Cell-Placeholder-content-3 {
+  top: 140px;
 }

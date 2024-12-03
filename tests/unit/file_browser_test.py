@@ -46,7 +46,7 @@ def test_file_browser_callback_no_select():
     assert list.clicked is not None
     assert list.clicked["name"] == "conftest.py"
 
-    list.clicked = None
+    list.clicked = None  # type: ignore
     on_file_open.assert_called_once()
     on_path_select.assert_not_called()
 
@@ -179,7 +179,7 @@ def test_file_browser_filter():
     list: solara.components.file_browser.FileListWidget = div.children[1]
     items = list.files
     names = {k["name"] for k in items}
-    assert names == {"unit", "integration", ".."}
+    assert names == {"unit", "ui", "docs", "integration", "pyinstaller", ".."}
 
 
 def test_file_browser_test_change_directory():
@@ -188,3 +188,35 @@ def test_file_browser_test_change_directory():
     assert "file_browser_test.py" in list
     rc.render(solara.FileBrowser(HERE.parent.parent))
     assert "file_browser_test.py" not in list
+
+
+def test_file_browser_control_directory():
+    import solara
+
+    def directory_filter(path: Path) -> bool:
+        return path.is_dir() and not path.name.startswith("_")
+
+    BASE_PATH = HERE.parent.parent
+
+    @solara.component
+    def Page():
+        def set_directory(path: Path) -> None:
+            directory.value = path if str(path).startswith(str(BASE_PATH)) else BASE_PATH
+
+        directory = solara.use_reactive(BASE_PATH, set_directory)
+        solara.FileBrowser(directory, filter=directory_filter)
+
+    _, rc = solara.render(Page(), handle_error=False)
+    file_list = rc.find(solara.components.file_browser.FileListWidget).widget
+    mock = unittest.mock.MagicMock()
+    file_list.observe(mock, "files")
+    items = file_list.files
+    names = {k["name"] for k in items}
+    assert names == {"unit", "ui", "docs", "integration", "pyinstaller", ".."}
+    file_list.test_click("..")
+    assert mock.call_count == 0
+    file_list.test_click("integration")
+    items = file_list.files
+    names = {k["name"] for k in items}
+    assert names != {"unit", "ui", "docs", "integration", "pyinstaller", ".."}
+    assert mock.call_count == 1

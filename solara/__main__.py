@@ -17,6 +17,9 @@ from uvicorn.main import LEVEL_CHOICES, LOOP_CHOICES
 
 import solara
 from solara.server import settings
+import solara.server.threaded
+
+from .server import telemetry
 
 try:
     from solara_enterprise.ssg import ssg_crawl
@@ -27,9 +30,6 @@ except ImportError:
 
 
 HERE = Path(__file__).parent
-HOST_DEFAULT = os.environ.get("HOST", "localhost")
-if "arm64-apple-darwin" in HOST_DEFAULT:  # conda activate script
-    HOST_DEFAULT = "localhost"
 
 LOGGING_CONFIG: dict = {
     "version": 1,
@@ -71,10 +71,23 @@ LOGGING_CONFIG: dict = {
 }
 
 
+def _check_version():
+    import requests
+
+    try:
+        response = requests.get("https://pypi.org/pypi/solara/json")
+        latest_version = response.json()["info"]["version"]
+    except:  # noqa: E722
+        return
+    if latest_version != solara.__version__:
+        print(f"New version of Solara available: {latest_version}. You have {solara.__version__}. Please upgrade using:")  # noqa: T201
+        print(f'\t$ pip install "solara=={latest_version}"')  # noqa: T201
+
+
 def find_all_packages_paths():
     paths = []
     # sitepackages = set([os.path.dirname(k) for k in site.getsitepackages()])
-    sitepackages = set([k for k in site.getsitepackages()])
+    sitepackages = {k for k in site.getsitepackages()}
     paths.extend(list(sitepackages))
     for name, module in sys.modules.items():
         if hasattr(module, "__path__"):
@@ -106,43 +119,56 @@ def cli():
     pass
 
 
+production_default = False
+if "SOLARA_MODE" in os.environ:
+    # settings.main.mode by default is set to production,
+    # which is a good default for when you embed in a flask
+    # app for instance, but not for the CLI, which app developers
+    # usually run.
+    production_default = settings.main.mode == "production"
+    # Note that in the CLI we do set this value to "development"
+    # or "production" based on the --production flag
+
+
 @cli.command()
-@click.option("--port", default=int(os.environ.get("PORT", 8765)))
-@click.option("--host", default=HOST_DEFAULT)
 @click.option(
-    "--dev/--no-dev",
-    default=False,
-    help="""Tell Solara to work in production(default) or development mode.
-When in dev mode Solara will:
-  Auto reload server when the server code changes
-  Prefer non-minized js/css assets for easier debugging.
-""",
+    "--port",
+    default=int(os.environ.get("PORT", 8765)),
+    help="Port to run the server on, 0 for a random free port, default to $PORT or 8765.",
 )
+@click.option(
+    "--host",
+    default=settings.main.host,
+    help="Host to listen on. Defaults to the $HOST environment or $SOLARA_HOST when available or localhost when not given.",
+)
+@click.option("--dev/--no-dev", default=None, help="Deprecated: use --auto-restart/-a", hidden=True)
+@click.option("--production", is_flag=True, default=production_default, help="Run in production mode: https://solara.dev/docs/understanding/solara-server")
+@click.option("--reload", is_flag=True, default=None, help="Deprecated: use --auto-restart/-a", hidden=True)
+@click.option("-a", "--auto-restart", is_flag=True, default=False, help="Enable auto-restarting of server when the solara server code changes.")
 @click.option("--tracer/--no-tracer", default=False)
 @click.option("--timing/--no-timing", default=False)
 @click.option("--open/--no-open", default=True)
-@click.option("--reload", is_flag=True, default=False, help="Enable auto-reload.")
 @click.option(
-    "--reload-dir",
-    "reload_dirs",
+    "--restart-dir",
+    "restart_dirs",
     multiple=True,
-    help="Set reload directories explicitly, instead of using the current working" " directory.",
+    help="Set restart directories explicitly, instead of using the current working" " directory.",
     type=click.Path(exists=True),
 )
 @click.option(
-    "--reload-exclude",
-    "reload_excludes",
+    "--restart-exclude",
+    "restart_excludes",
     multiple=True,
     help="Set glob patterns to exclude while watching for files. Includes "
     "'.*, .py[cod], .sw.*, ~*' by default; these defaults can be overridden "
-    "with `--reload-include`. This option has no effect unless watchgod is "
+    "with `--restart-include`. This option has no effect unless watchgod is "
     "installed.",
 )
 @click.option(
     "--workers",
     default=None,
     type=int,
-    help="Number of worker processes. Defaults to the $WEB_CONCURRENCY environment" " variable if available, or 1. Not valid with --reload.",
+    help="Number of worker processes. Defaults to the $WEB_CONCURRENCY environment" " variable if available, or 1. Not valid with --auto-restart/-a.",
 )
 @click.option(
     "--env-file",
@@ -193,14 +219,20 @@ When in dev mode Solara will:
 @click.option(
     "--theme-variant",
     type=settings.ThemeVariant,
-    default=settings.ThemeVariant.light.name,
+    default=settings.theme.variant.name,
     help=f"Use light or dark variant, or auto detect (auto). [default: {settings.theme.variant.name}",
+)
+@click.option(
+    "--dark",
+    type=bool,
+    default=settings.theme.variant == settings.ThemeVariant.dark,
+    help="Use dark theme. Shorthand for --theme-variant=dark",
 )
 @click.option(
     "--theme-variant-user-selectable/--no-theme-variant-user-selectable",
     type=bool,
-    default=settings.theme.variant_user_selectable,
-    help=f"Can the user select the theme variant from the UI. [default: {settings.theme.variant_user_selectable}",
+    hidden=True,
+    help="Deprecated.",
 )
 @click.option("--pdb/--no-pdb", "use_pdb", default=False, help="Enter debugger on error")
 @click.argument("app")
@@ -217,17 +249,37 @@ When in dev mode Solara will:
     default=settings.ssg.enabled,
     help="(pre) Render static pages.",
 )
+@click.option(
+    "--search/--no-search",
+    is_flag=True,
+    default=settings.search.enabled,
+    help="Enable search (requires ssg generated pages).",
+)
+@click.option(
+    "--check-version/--no-check-version",
+    is_flag=True,
+    default=True,
+    help="Check installed version again pypi version.",
+)
+@click.option(
+    "--qt",
+    is_flag=True,
+    default=False,
+    help="Instead of opening a browser, open a Qt window. Will also stop the server when the window is closed. (experimental)",
+)
 def run(
     app,
     host,
     port,
     open,
+    auto_restart: bool,
     reload: bool,
-    reload_dirs: typing.Optional[typing.List[str]],
+    restart_dirs: typing.Optional[typing.List[str]],
+    restart_excludes: typing.List[str],
     dev: bool,
+    production: bool,
     tracer: bool,
     timing: bool,
-    reload_excludes: typing.List[str],
     loop: str,
     workers: int,
     env_file: str,
@@ -239,30 +291,74 @@ def run(
     use_pdb: bool,
     theme_loader: str,
     theme_variant: settings.ThemeVariant,
+    dark: bool,
     theme_variant_user_selectable: bool,
     ssg: bool,
+    search: bool,
+    check_version: bool = True,
+    qt=False,
 ):
+    """Run a Solara app."""
+    if dev is not None:
+        print("solara: --dev is deprecated, use --auto-restart/-a instead", file=sys.stderr)  # noqa: T201
+        auto_restart = dev
+    if reload is not None:
+        print("solara: --reload is deprecated, use --auto-restart/-a instead", file=sys.stderr)  # noqa: T201
+        auto_restart = reload
+    if check_version:
+        _check_version()
+
+    # uvicorn calls it reload, we call it auto restart
+    reload = auto_restart
+    del auto_restart
     settings.ssg.enabled = ssg
-    reload_dirs = reload_dirs if reload_dirs else None
+    settings.search.enabled = search
+    reload_dirs = restart_dirs if restart_dirs else None
+    if port == 0:
+        port = solara.server.threaded.get_free_port()
+    del restart_dirs
     url = f"http://{host}:{port}"
 
     failed = False
-    if dev:
+    if reload:
+        telemetry._auto_restart_enabled = True
         solara_root = Path(solara.__file__).parent
 
         reload_dirs = list(reload_dirs if reload_dirs else [])
 
-        # we restart the server when solara or react changes, in priciple we should do
+        # we restart the server when solara or react changes, in principle we should do
         # that for all dependencies of the server, but these are changing most often
         # during development
         # We exclude the website, that will be handled by solara/server/reload.py
         reload_dirs = [str(solara_root), str(Path(solara.__file__).parent)]
-        reload_excludes = reload_excludes if reload_excludes else []
+        try:
+            import solara_enterprise
+
+            reload_dirs.append(str(Path(solara_enterprise.__file__).parent))
+            del solara_enterprise
+        except ImportError:
+            pass
+        reload_excludes = restart_excludes if restart_excludes else []
+        del restart_excludes
         reload_excludes = [str(solara_root / "website"), str(solara_root / "template")]
+        app_path = Path(app)
+        if app_path.exists():
+            # if app is not a child of the current working directory
+            # uvicorn crashes
+            if not str(app_path.resolve()).startswith(str(Path.cwd().resolve())):
+                reload_excludes.append(str(app_path.resolve()))
+        del app_path
         del solara_root
         reload = True
-        settings.main.mode = "development"
+        # avoid sending many restarts
+        settings.telemetry.mixpanel_enable = False
+    else:
+        del restart_excludes
 
+    if production:
+        settings.main.mode = "production"
+    else:
+        settings.main.mode = "development"
     server = None
 
     # TODO: we might want to support this, but it needs to be started from the main thread
@@ -282,10 +378,18 @@ def run(
         while not failed and (server is None or not server.started):
             time.sleep(0.1)
         if not failed:
-            webbrowser.open(url)
+            if qt:
+                from .server.qt import run_qt
 
-    if open:
+                run_qt(url)
+            else:
+                webbrowser.open(url)
+
+    # with qt, we open the browser in the main thread (qt wants that)
+    # otherwise, we open the browser in a separate thread
+    if open and not qt:
         threading.Thread(target=open_browser, daemon=True).start()
+
     rich.print(f"Solara server is starting at {url}")
 
     if log_level is not None:
@@ -306,11 +410,16 @@ def run(
     kwargs["loop"] = loop
     settings.main.use_pdb = use_pdb
     settings.theme.loader = theme_loader
+    if dark:
+        theme_variant = settings.ThemeVariant.dark
     settings.theme.variant = theme_variant
-    settings.theme.variant_user_selectable = theme_variant_user_selectable
     settings.main.tracer = tracer
     settings.main.timing = timing
-    for item in "theme_variant_user_selectable theme_variant theme_loader use_pdb server open_browser open url failed dev tracer timing ssg".split():
+    items = (
+        "theme_variant_user_selectable dark theme_variant theme_loader use_pdb server open_browser open url failed dev tracer"
+        " timing ssg search check_version production qt".split()
+    )
+    for item in items:
         del kwargs[item]
 
     def start_server():
@@ -327,7 +436,11 @@ def run(
                 from uvicorn.supervisors import ChangeReload
 
                 ChangeReload(
-                    config, target=run_with_settings(server, main=settings.main.dict(), theme=settings.theme.dict(), ssg=settings.ssg.dict()), sockets=[sock]
+                    config,
+                    target=run_with_settings(
+                        server, main=settings.main.dict(), theme=settings.theme.dict(), ssg=settings.ssg.dict(), search=settings.search.dict()
+                    ),
+                    sockets=[sock],
                 ).run()
             else:
                 server.run()
@@ -343,26 +456,35 @@ def run(
             base_url = f"http://{server.config.host}:{server.config.port}"
             rprint("Running Static Site Generator pre-render background task")
             ssg_crawl(base_url)
+            if settings.search.enabled:
+                from solara_enterprise.search.index import build_index
+
+                build_index("")
 
     # in dev mode we run the ssg in the child process (see run_with_settings)
     if not dev and settings.ssg.enabled:
         threading.Thread(target=ssg_run, daemon=True).start()
 
-    start_server()
+    # if we don't have to wait for SSG, we can build the index right away
+    if not settings.ssg.enabled and settings.search.enabled:
+        from solara_enterprise.search.index import build_index
+
+        build_index("")
 
     # TODO: if we want to use webview, it should be sth like this
-    # server_thread = threading.Thread(target=start_server)
-    # server_thread.start()
-    # if open:
-    #     # open_webview()
-    #     open_browser()
+    if qt:
+        server_thread = threading.Thread(target=start_server, daemon=True)
+        server_thread.start()
+        open_browser()
+    else:
+        start_server()
     # server_thread.join()
 
 
 @cli.command()
 @click.argument("app")
 @click.option("--port", default=int(os.environ.get("PORT", 8765)))
-@click.option("--host", default=HOST_DEFAULT)
+@click.option("--host", default=settings.main.host)
 @click.option(
     "--headed/--no-headed",
     is_flag=True,
@@ -370,8 +492,10 @@ def run(
     help="Show browser window if true.",
 )
 def ssg(app: str, port: int, host: str, headed: bool):
+    """Static site generation"""
     settings.ssg.headed = headed
     settings.ssg.enabled = True
+    settings.main.mode = "production"  # always override this
     os.environ["SOLARA_APP"] = app
     from solara.server.starlette import ServerStarlette
 
@@ -384,14 +508,35 @@ def ssg(app: str, port: int, host: str, headed: bool):
     ssg_crawl(base_url)
 
 
-class run_with_settings:
-    """This cross a process boundry, and takes the serialized settings with it"""
+@cli.command()
+def deploy():
+    rprint("...")
+    import time
 
-    def __init__(self, server: uvicorn.Server, main: typing.Dict, theme: typing.Dict, ssg: typing.Dict):
+    time.sleep(1)
+    rprint("Want your app to run instantly on awesomeapp-mystartup-gh.solara.run?")
+    rprint("\tCheck out https://solara.dev/documentation/getting_started/deploying/cloud-hosted")
+
+
+@cli.command()
+@click.argument("app")
+def search(app: str):
+    """Build search index based on ssg output"""
+    os.environ["SOLARA_APP"] = app
+    from solara_enterprise.search.index import build_index
+
+    build_index("")
+
+
+class run_with_settings:
+    """This cross a process boundary, and takes the serialized settings with it"""
+
+    def __init__(self, server: uvicorn.Server, main: typing.Dict, theme: typing.Dict, ssg: typing.Dict, search: typing.Dict):
         self.server = server
         self.main = main
         self.theme = theme
         self.ssg = ssg
+        self.search = search
 
     def __call__(self, *args, **kwargs):
         # this is now in the new process, where we need to re-apply the settings
@@ -405,10 +550,15 @@ class run_with_settings:
                 base_url = f"http://{self.server.config.host}:{self.server.config.port}"
                 rprint("Running Static Site Generator pre-render background task")
                 ssg_crawl(base_url)
+                if settings.search.enabled:
+                    from solara_enterprise.search.index import build_index
+
+                    build_index("")
 
         settings.main = settings.MainSettings(**self.main)
         settings.theme = settings.ThemeSettings(**self.theme)
         settings.ssg = settings.SSG(**self.ssg)
+        settings.search = settings.Search(**self.search)
         if settings.ssg.enabled:
             threading.Thread(target=ssg_run, daemon=True).start()
         try:
@@ -421,6 +571,7 @@ class run_with_settings:
 @cli.command()
 @click.option("--port", default=int(os.environ.get("PORT", 8000)))
 def staticserve(port):
+    """Experimental static serving"""
     import http.server
     import os
     from functools import partial
@@ -446,9 +597,9 @@ def staticbuild():
     target_dir = Path("staticbuild")
     target_dir.mkdir(exist_ok=True)
 
-    from .server import cdn_helper
+    from .server import settings
 
-    copytree(cdn_helper.default_cache_dir, target_dir / "_solara/cdn/")
+    copytree(settings.assets.proxy_cache_dir, target_dir / "_solara/cdn/")
 
     static_dir_target = target_dir / "static"
     static_dir_target.mkdir(exist_ok=True)
@@ -470,7 +621,7 @@ def staticbuild():
     include_nbextensions = True
     if include_nbextensions:
         directories = solara.server.server.get_nbextensions_directories()
-        nbextensions = solara.server.server.get_nbextensions()
+        nbextensions, ignore = solara.server.server.get_nbextensions()
         for name in nbextensions:
             for directory in directories:
                 if (directory / (name + ".js")).exists():
@@ -486,12 +637,6 @@ def staticbuild():
     for path in [Path(f"dist/solara-{version}-py2.py3-none-any.whl")]:
         shutil.copy(path, target_dir_wheels)
 
-    target_dir_nbconvert_static = target_dir / "static/nbconvert"
-    target_dir_nbconvert_static.mkdir(exist_ok=True, parents=True)
-    nbconvert = Path(solara.server.server.nbconvert_static)
-    for path in list(nbconvert.glob("*.js")) + list(nbconvert.glob("*.css")):
-        shutil.copy(path, target_dir_nbconvert_static)
-
     target_dir_static_dist = target_dir / "static/dist"
     target_dir_static_dist.mkdir(exist_ok=True)
     voila = server_path / "dist"
@@ -505,6 +650,7 @@ def staticbuild():
 
 @click.group()
 def create():
+    """Quickly create a solara script or project."""
     pass
 
 
@@ -516,6 +662,7 @@ def create():
     required=False,
 )
 def button(target: typing.Optional[Path]):
+    """Create a button with a click counter."""
     write_script("button", target)
 
 
@@ -527,11 +674,12 @@ def button(target: typing.Optional[Path]):
     required=False,
 )
 def markdown(target: typing.Optional[Path] = None):
+    """Create a markdown editor."""
     write_script("markdown", target)
 
 
 def write_script(name: str, target: typing.Optional[Path]):
-    code = (HERE / "template" / f"{name}.py").read_text()
+    code = (HERE / "template" / f"{name}.py").read_text(encoding="utf-8")
     if target is None:
         target = Path("sol.py")
     else:
@@ -542,7 +690,7 @@ def write_script(name: str, target: typing.Optional[Path]):
     rprint(f"Run as:\n\t $ solara run {target.resolve()}")
 
 
-# recursivly copy a directory and allow for existing directories
+# recursively copy a directory and allow for existing directories
 def copytree(src: Path, dst: Path, copy_function=shutil.copy2, ignore: typing.Callable[[Path], bool] = lambda x: False, rename=lambda x: x):
     print(src, " -> ", dst)  # noqa
     if not src.exists():
@@ -566,6 +714,7 @@ def copytree(src: Path, dst: Path, copy_function=shutil.copy2, ignore: typing.Ca
     required=False,
 )
 def portal(target: Path):
+    """Create a full Python project template for a data portal"""
     target = Path(target)
     name = target.name
     package_name = name.replace("-", "_")
@@ -600,7 +749,11 @@ cli.add_command(ssg)
 
 
 def main():
-    cli()
+    args = sys.argv
+    # skip everything after -- if it exists
+    if "--" in args:
+        args = args[: args.index("--")]
+    cli(args[1:])
 
 
 if __name__ == "__main__":

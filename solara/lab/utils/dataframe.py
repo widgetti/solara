@@ -1,8 +1,51 @@
-import numpy as np
+from typing import List
+
+
+def get_pandas_major():
+    import pandas as pd
+
+    return int(pd.__version__[0])
 
 
 def df_type(df):
     return df.__class__.__module__.split(".")[0]
+
+
+def df_len(df) -> int:
+    """Return the number of rows in a dataframe."""
+    return len(df)
+
+
+def df_columns(df) -> List[str]:
+    """Return a list of column names from a dataframe."""
+    if df_type(df) == "vaex":
+        return df.get_column_names()
+    elif df_type(df) == "pandas":
+        return df.columns.tolist()
+    elif df_type(df) == "polars":
+        return df.columns
+    else:
+        raise TypeError(f"{type(df)} not supported")
+
+
+def df_slice(df, start: int, stop: int):
+    """Return a subset of rows from a dataframe."""
+    if df_type(df) == "pandas":
+        return df.iloc[start:stop]
+    else:
+        return df[start:stop]
+
+
+def df_records(df) -> List[dict]:
+    """A list of records from a dataframe."""
+    if df_type(df) == "pandas":
+        return df.to_dict("records")
+    elif df_type(df) == "polars":
+        return df.to_dicts()
+    elif df_type(df) == "vaex":
+        return df.to_records()
+    else:
+        raise TypeError(f"{type(df)} not supported")
 
 
 def df_unique(df, column, limit=None):
@@ -23,7 +66,10 @@ def df_value_count(df, column, limit=None):
     if df_type(df) == "pandas":
         dfv = df[column].value_counts(dropna=False).to_frame()
         dfv = dfv.reset_index()
-        dfv = dfv.rename({"index": "value", column: "count"}, axis=1)
+        if get_pandas_major() >= 2:
+            dfv = dfv.rename({column: "value"}, axis=1)
+        else:
+            dfv = dfv.rename({"index": "value", column: "count"}, axis=1)
         return dfv[:limit]
     else:
         raise TypeError(f"{type(df)} not supported")
@@ -75,6 +121,8 @@ def df_py_types(df):
     If a type is not supported, the internal type is returned.
 
     """
+    import numpy as np
+
     if df_type(df) == "vaex":
         schema = df.schema()
         py_types = [int, float, str, bool]

@@ -6,13 +6,14 @@ import ipywidgets as widgets
 import solara
 import solara.autorouting
 import solara.template.portal.solara_portal.pages
-import solara.website.pages.api.button
-import solara.website.pages.docs
-import solara.website.pages.examples
+import solara.website.pages.documentation
+import solara.website.pages.documentation.components.input.button
+import solara.website.pages.documentation.getting_started
 import solara.widgets
 from solara.components.title import TitleWidget
+from solara.server.app import AppScript
 
-HERE = Path(__file__)
+HERE = Path(__file__).parent
 
 
 def test_count_arguments():
@@ -88,8 +89,7 @@ def test_routes_portal():
 
 
 def test_routes_examples_api_button():
-
-    routes = solara.autorouting.generate_routes(solara.website.pages.api.button)
+    routes = solara.autorouting.generate_routes(solara.website.pages.documentation.components.input.button)
 
     assert len(routes) == 1
     assert routes[0].path == "/"
@@ -102,13 +102,12 @@ def test_routes_examples_api_button():
     assert not rc._find(v.NavigationDrawer)
 
 
-def test_routes_examples_docs():
+def test_routes_examples_getting_started():
+    routes = solara.autorouting.generate_routes(solara.website.pages.documentation.getting_started)
 
-    routes = solara.autorouting.generate_routes(solara.website.pages.docs)
-
-    assert len(routes) == 11
+    assert len(routes) == 8
     assert routes[0].path == "/"
-    assert routes[0].label == "Introduction"
+    assert routes[0].label == "Quickstart"
 
     main_object = solara.autorouting.RenderPage()
     solara_context = solara.RoutingProvider(children=[main_object], routes=routes, pathname="/")
@@ -135,8 +134,8 @@ def test_routes_examples_docs():
 
 
 def test_routes_directory():
-    routes = solara.autorouting.generate_routes_directory(HERE.parent / "solara_test_apps" / "multipage")
-    assert len(routes) == 7
+    routes = solara.autorouting.generate_routes_directory(HERE / "solara_test_apps" / "multipage")
+    assert len(routes) == 8
     assert routes[0].path == "/"
     assert routes[0].label == "Home"
 
@@ -154,11 +153,18 @@ def test_routes_directory():
     assert routes[4].path == "and-notebooks"
     assert routes[4].label == "And Notebooks"
 
-    assert routes[5].path == "single-file-directory"
-    assert routes[5].label == "Single File Directory"
+    assert routes[5].path == "custom-routes"
+    assert routes[5].label == "Custom Routes"
+    assert routes[5].children[0].path == "/"
+    assert routes[5].children[0].label == "Hi1"
+    assert routes[5].children[1].path == "page2"
+    assert routes[5].children[1].label == "Hi2"
 
-    assert routes[6].path == "some-other-python-script"
-    assert routes[6].label == "Some Other Python Script"
+    assert routes[6].path == "single-file-directory"
+    assert routes[6].label == "Single File Directory"
+
+    assert routes[7].path == "some-other-python-script"
+    assert routes[7].label == "Some Other Python Script"
 
     main_object = solara.autorouting.RenderPage()
     solara_context = solara.RoutingProvider(children=[main_object], routes=routes, pathname="/")
@@ -172,6 +178,11 @@ def test_routes_directory():
     title = rc._find(TitleWidget).widget
     assert "My Fruit" == title.title
 
+    nav.location = "my-fruit/kiwi"
+    title = rc._find(TitleWidget).widget
+    assert "My Fruit" == title.title
+    template = rc.find(v.Btn).widget.children[0] == "You chose kiwi"
+
     nav.location = "/some-markdown"
     title = rc._find(TitleWidget).widget
     assert "Some Markdown" == title.title
@@ -180,13 +191,16 @@ def test_routes_directory():
 
     nav.location = "/some-other-python-script"
     alert = rc._find(v.Alert).widget
-    assert "does not have a" in alert.children[0]
+    assert "No object with name Page found" in alert.children[0]
 
     nav.location = "/a-directory"
     title = rc._find(TitleWidget).widget
     assert "Another Markdown" == title.title
     alert = rc._find(v.Alert).widget
     assert "Footer" == alert.children[0]
+
+    nav.location = "/a-directory/not-an-app"
+    rc.find(v.Btn, children=["Reset to initial layout"]).assert_single()
 
     nav.location = "/and-notebooks"
     assert rc._find(v.Slider, label="Language")
@@ -203,10 +217,20 @@ def test_routes_directory():
     nav.location = "/a-directory/wrong-path"
     assert "Page not found" in rc._find(v.Alert).widget.children[0]
 
+    # custom routes in a single file
+
+    nav.location = "/custom-routes"
+    button = rc._find(v.Btn, children=["hi1"]).widget
+    assert button.children[0] == "hi1"
+
+    nav.location = "/custom-routes/page2"
+    button = rc._find(v.Btn, children=["hi2"]).widget
+    assert button.children[0] == "hi2"
+
 
 def test_routes_regular_widgets():
     # routes = solara.autorouting.generate_routes_directory(HERE.parent / "solara_test_apps" / "multipage")
-    routes = solara.autorouting.generate_routes_directory(HERE.parent / "solara_test_apps" / "multipage-widgets")
+    routes = solara.autorouting.generate_routes_directory(HERE / "solara_test_apps" / "multipage-widgets")
 
     main_object = solara.autorouting.RenderPage()
     solara_context = solara.RoutingProvider(children=[main_object], routes=routes, pathname="/")
@@ -238,3 +262,47 @@ def test_routes_regular_widgets():
     assert rc.find(widgets.Button).widget.description == "Viewed 1 times"
     nav.location = "/volume"
     assert rc.find(v.Slider).widget.v_model == 5
+
+
+def test_single_file_routes_as_file(kernel_context, no_kernel_context):
+    name = str(HERE / "solara_test_apps" / "single_file_routes.py")
+    app = AppScript(name)
+    assert len(app.routes) == 2
+    assert app.routes[0].path == "/"
+    assert app.routes[0].layout is not None
+    assert app.routes[1].path == "page2"
+    assert app.routes[1].layout is None
+    try:
+        with kernel_context:
+            el = app.run()
+            root = solara.RoutingProvider(children=[el], routes=app.routes, pathname="/")
+            _box, rc = solara.render(root, handle_error=False)
+            rc.find(children=["Page 1"]).assert_single()
+            rc.find(children=["Custom layout"]).assert_single()
+            rc.render(solara.RoutingProvider(children=[el], routes=app.routes, pathname="/page2").key("2"))
+            rc.find(children=["Custom layout"]).assert_single()
+            rc.find(children=["Page 2"]).assert_single()
+    finally:
+        app.close()
+
+
+def test_single_file_routes_as_module(kernel_context, no_kernel_context, extra_include_path):
+    with extra_include_path(HERE / "solara_test_apps"):
+        app = AppScript("single_file_routes")
+        assert len(app.routes) == 2
+        assert app.routes[0].path == "/"
+        assert app.routes[0].layout is not None
+        assert app.routes[1].path == "page2"
+        assert app.routes[1].layout is None
+        try:
+            with kernel_context:
+                el = app.run()
+                root = solara.RoutingProvider(children=[el], routes=app.routes, pathname="/")
+                _box, rc = solara.render(root, handle_error=False)
+                rc.find(children=["Page 1"]).assert_single()
+                rc.find(children=["Custom layout"]).assert_single()
+                rc.render(solara.RoutingProvider(children=[el], routes=app.routes, pathname="/page2").key("2"))
+                rc.find(children=["Custom layout"]).assert_single()
+                rc.find(children=["Page 2"]).assert_single()
+        finally:
+            app.close()

@@ -1,18 +1,29 @@
 import os
 from typing import Optional
 
-import pydantic
-from pydantic import Field
+import solara.util
 
+from .minisettings import BaseSettings, Field
 from .util import get_solara_home
+
+try:
+    import dotenv
+except ImportError:
+    pass
+else:
+    dotenv.load_dotenv()
+
 
 home = get_solara_home()
 if not home.exists():
-    home.mkdir(parents=True, exist_ok=True)
+    try:
+        home.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        pass  # can fail in for instance docker when $HOME is not set/writable
 
 
-class Cache(pydantic.BaseSettings):
-    type: str = pydantic.Field("memory", env="SOLARA_CACHE", title="Type of cache, e.g. 'memory', 'disk', 'redis', or a multilevel cache, e.g. 'memory,disk'")
+class Cache(BaseSettings):
+    type: str = Field("memory", env="SOLARA_CACHE", title="Type of cache, e.g. 'memory', 'disk', 'redis', or a multilevel cache, e.g. 'memory,disk'")
     disk_max_size: str = Field("10GB", title="Maximum size for'disk' cache , e.g. 10GB, 500MB")
     memory_max_size: str = Field("1GB", title="Maximum size for 'memory-size' cache, e.g. 10GB, 500MB")
     memory_max_items: int = Field(128, title="Maximum number of items for 'memory' cache")
@@ -27,4 +38,32 @@ class Cache(pydantic.BaseSettings):
         env_file = ".env"
 
 
+# in colab or vscode there is not solara cdn proxy available
+_should_use_proxy = not (solara.util.is_running_in_colab() or solara.util.is_running_in_vscode() or solara.util.is_running_in_voila())
+
+
+class Assets(BaseSettings):
+    cdn: str = "https://cdn.jsdelivr.net/npm/"
+    proxy: bool = _should_use_proxy
+
+    class Config:
+        env_prefix = "solara_assets_"
+        case_sensitive = False
+        env_file = ".env"
+
+
+class MainSettings(BaseSettings):
+    check_hooks: str = "warn"
+
+    class Config:
+        env_prefix = "solara_"
+        case_sensitive = False
+        env_file = ".env"
+
+
+assets: Assets = Assets()
 cache: Cache = Cache()
+main = MainSettings()
+
+if main.check_hooks not in ["off", "warn", "raise"]:
+    raise ValueError(f"Invalid value for check_hooks: {main.check_hooks}, expected one of ['off', 'warn', 'raise']")

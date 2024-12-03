@@ -9,18 +9,25 @@
 
 import {
   WidgetManager as JupyterLabManager,
-  WidgetRenderer
-} from '@jupyter-widgets/jupyterlab-manager';
+} from '@jupyter-widgets/jupyterlab-manager/lib/manager';
 
-import { output } from '@jupyter-widgets/jupyterlab-manager';
+import {
+  WidgetRenderer
+} from '@jupyter-widgets/jupyterlab-manager/lib/renderer';
+
+
+import * as output from '@jupyter-widgets/jupyterlab-manager/lib/output';
 
 import * as base from '@jupyter-widgets/base';
 import * as controls from '@jupyter-widgets/controls';
+// there two imports came 'for free' with webpack 4, from the jupyter-lab-manager plugin
+// it seems webpack 5 is better at tree-shaking, so we didn't need to import them explicitly before
+import '@jupyter-widgets/base/css/index.css';
+import '@jupyter-widgets/controls/css/widgets-base.css';
+// Voila imports the following css file, not sure why
+// import '@jupyter-widgets/controls/css/widgets.built.css';
 
-import * as Application from '@jupyterlab/application';
-import * as AppUtils from '@jupyterlab/apputils';
 import * as CoreUtils from '@jupyterlab/coreutils';
-import * as DocRegistry from '@jupyterlab/docregistry';
 import * as OutputArea from '@jupyterlab/outputarea';
 
 import { DocumentRegistry } from '@jupyterlab/docregistry';
@@ -71,11 +78,15 @@ export class WidgetManager extends JupyterLabManager {
     );
     this._registerWidgets();
     this._loader = requireLoader;
-    const commId = base.uuid();
     const kernel = context.sessionContext?.session?.kernel;
+    this.connectControlComm();
     if (!kernel) {
       throw new Error('No current kernel');
     }
+  }
+  async connectControlComm() {
+    const commId = base.uuid();
+    const kernel = this.context.sessionContext?.session?.kernel;
     this.controlComm = kernel.createComm('solara.control', commId);
     this.controlCommHandler = {
       onMsg: (msg) => {
@@ -98,37 +109,48 @@ export class WidgetManager extends JupyterLabManager {
     };
     this.controlComm.open({}, {}, [])
   }
-  async check() {
+  async appStatus() {
     // checks if app is still valid (e.g. server restarted and lost the widget state)
-    const okPromise = new Promise((resolve, reject) => {
-      this.controlCommHandler = {
-        onMsg: (msg) => {
+    // if we are connected to the same kernel, we'll get a reply instantly
+    // however, if we are connected to a new kernel, we rely on the timeout
+    // so every time we create a new comm.
+
+    const kernel = this.context.sessionContext?.session?.kernel;
+    const commId = base.uuid();
+    const controlComm = kernel.createComm('solara.control', commId);
+    controlComm.open({}, {}, [])
+    try {
+      return await new Promise((resolve, reject) => {
+        controlComm.onMsg = (msg) => {
           const data = msg['content']['data'];
-          if (data.method === 'finished') {
-            resolve(data.ok);
+          if (data.method === 'app-status') {
+            resolve({ started: data.started });
           }
           else {
-            reject(data.error);
+            reject({ ok: false, message: "unexpected message" });
           }
-        },
-        onClose: () => {
-          console.error("closed solara control comm")
-          reject()
         }
-      };
-      setTimeout(() => {
-        reject('timeout');
-      }, CONTROL_COMM_TIMEOUT);
-    });
-    this.controlComm.send({ method: 'check' });
-    try {
-      return await okPromise;
+        controlComm.onClose = () => {
+          console.error("closed solara control comm")
+          reject({ ok: false, message: "closed solara control comm" });
+        }
+        setTimeout(() => {
+          reject('timeout');
+        }, CONTROL_COMM_TIMEOUT);
+        controlComm.send({ method: 'app-status' });
+      });
     } catch (e) {
-      return false;
+      return { ok: false, message: e };
     }
   }
 
-  async run(appName: string, path: string) {
+  async fetchAll() {
+    // fetch all widgets
+    await this._loadFromKernel();
+  }
+
+  async run(appName: string, args: any) {
+    let { path } = args;
     // used for routing
     // should be similar to what we do in navigator.vue
     if (typeof path === 'undefined') {
@@ -152,7 +174,7 @@ export class WidgetManager extends JupyterLabManager {
         }
       };
     });
-    this.controlComm.send({ method: 'run', path, appName: appName || null });
+    this.controlComm.send({ method: 'run', args: { ...args, appName: appName || null } });
     const widget_id = await widget_id_promise;
     return widget_id;
   }
@@ -230,10 +252,7 @@ export class WidgetManager extends JupyterLabManager {
       window.define('@jupyter-widgets/controls', controls);
       window.define('@jupyter-widgets/output', output);
 
-      window.define('@jupyterlab/application', Application);
-      window.define('@jupyterlab/apputils', AppUtils);
       window.define('@jupyterlab/coreutils', CoreUtils);
-      window.define('@jupyterlab/docregistry', DocRegistry);
       window.define('@jupyterlab/outputarea', OutputArea);
 
       window.define('@phosphor/widgets', LuminoWidget);

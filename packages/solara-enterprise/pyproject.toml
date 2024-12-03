@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling==1.22.2"]
 build-backend = "hatchling.build"
 
 [project]
@@ -11,12 +11,30 @@ license = {file = "LICENSE"}
 classifiers = ["License :: Free for non-commercial use"]
 dynamic = ["version", "description"]
 dependencies = [
-    "solara==1.2.1",
+    "solara-ui==1.41.0",
+    "solara-server==1.41.0",
 ]
 
+[project.optional-dependencies]
 ssg = [
     "beautifulsoup4",
     "playwright; python_version > '3.6'",
+]
+
+cache = [
+    "diskcache",
+]
+
+auth = [
+    "authlib",
+    "itsdangerous",
+    "httpx",
+]
+
+all = [
+    "solara-enterprise[ssg]",
+    "solara-enterprise[auth]",
+    "solara-enterprise[cache]",
 ]
 
 [project.urls]

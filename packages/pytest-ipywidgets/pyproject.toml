@@ -1,0 +1,68 @@
+[build-system]
+requires = ["hatchling==1.22.2"]
+build-backend = "hatchling.build"
+
+
+[project]
+name = "pytest-ipywidgets"
+readme = "README.md"
+authors = [{name = "Maarten A. Breddels", email = "maartenbreddels@gmail.com"}]
+license = {file = "LICENSE"}
+classifiers = ["License :: OSI Approved :: MIT License"]
+dynamic = ["description"]
+version = "1.41.0"
+dependencies = [
+    "solara-ui==1.41.0",
+    "solara-server[starlette]==1.41.0",
+    "pytest",
+    "playwright; python_version > '3.6'",
+    "pytest-playwright; python_version > '3.6'",
+    "pillow",
+    "pixelmatch",
+]
+
+[project.urls]
+Home = "https://github.com/widgetti/solara/tree/master/packages/pytest-ipywidgets"
+Documentation = "https://solara.dev"
+
+[project.optional-dependencies]
+all = [
+    "pytest-ipywidgets[voila]",
+    "pytest-ipywidgets[jupyterlab]",
+    "pytest-ipywidgets[notebook]",
+]
+
+# currently empty, but in the future we want to make the core package not depend
+# on solara, but now we can have the docs future compatible.
+solara = [
+]
+
+voila = [
+    "voila",
+]
+
+jupyterlab = [
+    "jupyterlab<4",
+]
+
+notebook = [
+    "notebook<7",
+]
+
+ipywidgets7 = [
+    "voila~=0.3.0",
+    "lxml<5.2"
+]
+
+ipywidgets8 = [
+    "voila>=0.4"
+]
+
+[project.entry-points.pytest11]
+solara = "solara.test.pytest_plugin"
+
+[tool.hatch.build.targets.wheel]
+include = ["LICENSE"]
+
+[tool.hatch.build.targets.sdist]
+include = ["LICENSE"]

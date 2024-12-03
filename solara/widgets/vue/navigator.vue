@@ -1,4 +1,6 @@
-<template><span></span></template>
+<template>
+  <span></span>
+</template>
 ​
 <script>
 modules.export = {
@@ -12,44 +14,38 @@ modules.export = {
     }
     window.solara.router.push = (href) => {
       console.log("external router push", href);
-      // take of the anchor
-      if (href.indexOf("#") !== -1) {
-        href = href.slice(0, href.indexOf("#"));
-      }
-      this.location = href;
+      const url = new URL(href, window.location.origin + solara.rootPath);
+      this.location = url.pathname + url.search;
+      this.hash = url.hash;
     };
     let location = window.location.pathname.slice(solara.rootPath.length);
-    // take of the anchor
-    if (location.indexOf("#") !== -1) {
-      location = location.slice(0, location.indexOf("#"));
-    }
-    this.location = location;
+    this.location = location + window.location.search;
+    this.hash = window.location.hash;
     window.addEventListener("popstate", this.onPopState);
     window.addEventListener("scroll", this.onScroll);
+    window.addEventListener("hashchange", this.onHashChange);
+    window.addEventListener("solara.pageReady", this.onPageLoad);
   },
   destroyed() {
     window.removeEventListener("popstate", this.onPopState);
     window.removeEventListener("scroll", this.onScroll);
+    window.removeEventListener("hashchange", this.onHashChange);
+    window.removeEventListener("solara.pageReady", this.onPageLoad);
   },
   methods: {
     onScroll() {
       window.history.replaceState(
         { top: document.documentElement.scrollTop },
         null,
-        solara.rootPath + this.location
+        window.location.href
       );
     },
     onPopState(event) {
-      console.log("pop state!", event.state, window.location.pathname);
       if (!window.location.pathname.startsWith(solara.rootPath)) {
         throw `window.location.pathname = ${window.location.pathname}, but it should start with the solara.rootPath = ${solara.rootPath}`;
       }
       let newLocation = window.location.pathname.slice(solara.rootPath.length);
-      // the router/server shouldn't care about the hash, that's for the frontend
-      if (newLocation.indexOf("#") !== -1) {
-        newLocation = newLocation.slice(0, newLocation.indexOf("#"));
-      }
-      this.location = newLocation;
+      this.location = newLocation + window.location.search;
       if (event.state) {
         const top = event.state.top;
         /*
@@ -61,17 +57,51 @@ modules.export = {
         */
       }
     },
+    onHashChange(event) {
+      if (!window.location.pathname.startsWith(solara.rootPath)) {
+        throw `window.location.pathname = ${window.location.pathname}, but it should start with the solara.rootPath = ${solara.rootPath}`;
+      }
+      this.hash = window.location.hash;
+    },
+    onPageLoad(event) {
+      if (!window.location.pathname.startsWith(solara.rootPath)) {
+        throw `window.location.pathname = ${window.location.pathname}, but it should start with the solara.rootPath = ${solara.rootPath}`;
+      }
+      // If we've navigated to a hash with the same name on a different page the watch on hash won't trigger
+      if (this.hash && this.hash === window.location.hash) {
+        this.navigateToHash(this.hash);
+      }
+      this.hash = window.location.hash;
+    },
+    makeFullRelativeUrl() {
+      const url = new URL(this.location, window.location.origin + solara.rootPath);
+      return url.pathname + this.hash + url.search;
+    },
+    navigateToHash(hash) {
+      const targetEl = document.getElementById(hash.slice(1));
+      if (targetEl) {
+        targetEl.scrollIntoView();
+      }
+    },
   },
   watch: {
     location(value) {
       console.log("changed", this.location, value);
+      const newUrl = new URL(value, window.location);
+      if(newUrl.origin != window.location.origin) {
+        // external navigation
+        window.location = newUrl;
+        return
+      }
+      const pathnameNew = newUrl.pathname
+      const pathnameOld = window.location.pathname
       // if we use the back navigation, this watch will trigger,
       // but we don't want to push the history
       // otherwise we cannot go forward
       if (!window.location.pathname.startsWith(solara.rootPath)) {
         throw `window.location.pathname = ${window.location.pathname}, but it should start with the solara.rootPath = ${solara.rootPath}`;
       }
-      const oldLocation = window.location.pathname.slice(solara.rootPath.length);
+      const oldLocation = window.location.pathname.slice(solara.rootPath.length) + window.location.search;
       console.log(
         "location changed",
         oldLocation,
@@ -79,12 +109,26 @@ modules.export = {
         document.documentElement.scrollTop
       );
       if (oldLocation != this.location) {
-        window.history.pushState({ top: 0 }, null, solara.rootPath + this.location);
-        window.scrollTo(0, 0);
+        window.history.pushState({ top: 0 }, null, this.makeFullRelativeUrl());
+        if (pathnameNew != pathnameOld) {
+          // we scroll to the top only when we change page, not when we change
+          // the search string
+          window.scrollTo(0, 0);
+        }
         const event = new Event('solara.router');
         window.dispatchEvent(event);
       }
     },
+    hash(value) {
+      if (value) {
+        this.navigateToHash(value);
+      }
+    },
+  },
+  data() {
+    return {
+      hash: "",
+    };
   },
 };
 </script>

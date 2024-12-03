@@ -1,32 +1,23 @@
-import contextlib
 import dataclasses
-import functools
-import inspect
 import io
 import json
 import logging
 import os
-import sys
 
 # import tempfile
 import threading
 import time
 import urllib.request
 import uuid
-from typing import IO, Any, Callable, Iterator, Optional, Tuple, TypeVar, Union, cast
-
-import reacton
+from typing import IO, Any, Callable, Tuple, TypeVar, Union, cast
 
 import solara
-from solara.datatypes import FileContentResult, Result, ResultState
-
-SOLARA_ALLOW_OTHER_TRACER = os.environ.get("SOLARA_ALLOW_OTHER_TRACER", False) in (True, "True", "true", "1")
+from solara.datatypes import FileContentResult, Result
 
 logger = logging.getLogger("react-ipywidgets.extra.hooks")
 chunk_size_default = 1024**2
 
 __all__ = [
-    "use_thread",
     "use_download",
     "use_fetch",
     "use_json_load",
@@ -36,29 +27,12 @@ __all__ = [
     "use_unique_key",
     "use_state_or_update",
     "use_previous",
+    "use_trait_observe",
 ]
 T = TypeVar("T")
 U = TypeVar("U")
 
 MaybeResult = Union[T, Result[T]]
-
-
-# not available in python 3.6
-class nullcontext(contextlib.AbstractContextManager):
-    def __init__(self, enter_result=None):
-        self.enter_result = enter_result
-
-    def __enter__(self):
-        return self.enter_result
-
-    def __exit__(self, *excinfo):
-        pass
-
-
-# inherit from BaseException so less change of being caught
-# in an except
-class CancelledError(BaseException):
-    pass
 
 
 def use_retry(*actions: Callable[[], Any]):
@@ -72,155 +46,11 @@ def use_retry(*actions: Callable[[], Any]):
     return counter, retry
 
 
-def use_thread(
-    callback=Union[
-        Callable[[threading.Event], T],
-        Iterator[Callable[[threading.Event], T]],
-        Callable[[], T],
-        Iterator[Callable[[], T]],
-    ],
-    dependencies=[],
-    intrusive_cancel=True,
-) -> Result[T]:
-    def make_event(*_ignore_dependencies):
-        return threading.Event()
-
-    def make_lock():
-        return threading.Lock()
-
-    lock: threading.Lock = solara.use_memo(make_lock, [])
-    updater = use_force_update()
-    result_state, set_result_state = solara.use_state(ResultState.INITIAL)
-    error = solara.use_ref(cast(Optional[Exception], None))
-    result = solara.use_ref(cast(Optional[T], None))
-    running_thread = solara.use_ref(cast(Optional[threading.Thread], None))
-    counter, retry = use_retry()
-    cancel: threading.Event = solara.use_memo(make_event, [*dependencies, counter])
-
-    @contextlib.contextmanager
-    def cancel_guard():
-        if not intrusive_cancel:
-            yield
-            return
-
-        def tracefunc(frame, event, arg):
-            # this gets called at least for every line executed
-            if cancel.is_set():
-                rc = reacton.core._get_render_context(required=False)
-                # we do not want to cancel the rendering cycle
-                if rc is None or not rc._is_rendering:
-                    # this will bubble up
-                    raise CancelledError()
-            if prev and SOLARA_ALLOW_OTHER_TRACER:
-                prev(frame, event, arg)
-            # keep tracing:
-            return tracefunc
-
-        # see https://docs.python.org/3/library/sys.html#sys.settrace
-        # it is for the calling thread only
-        # not every Python implementation has it
-        prev = None
-        if hasattr(sys, "gettrace"):
-            prev = sys.gettrace()
-        if hasattr(sys, "settrace"):
-            sys.settrace(tracefunc)
-        try:
-            yield
-        finally:
-            if hasattr(sys, "settrace"):
-                sys.settrace(prev)
-
-    def run():
-        set_result_state(ResultState.STARTING)
-
-        def runner():
-            wait_for_thread = None
-            with lock:
-                # if there is a current thread already, we'll need
-                # to wait for it. copy the ref, and set ourselves
-                # as the current one
-                if running_thread.current:
-                    wait_for_thread = running_thread.current
-                running_thread.current = threading.current_thread()
-            if wait_for_thread is not None:
-                set_result_state(ResultState.WAITING)
-                # don't start before the previous is stopped
-                try:
-                    wait_for_thread.join()
-                except:  # noqa
-                    pass
-                if threading.current_thread() != running_thread.current:
-                    # in case a new thread was started that also was waiting for the previous
-                    # thread to st stop, we can finish this
-                    return
-            # we previously set current to None, but if we do not do that, we can still render the old value
-            # while we can still show a loading indicator using the .state
-            # result.current = None
-            set_result_state(ResultState.RUNNING)
-
-            sig = inspect.signature(callback)
-            if sig.parameters:
-                f = functools.partial(callback, cancel)
-            else:
-                f = callback
-            try:
-                try:
-                    # we only use the cancel_guard context manager around
-                    # the function calls to f. We don't want to guard around
-                    # a call to react, since that might slow down rendering
-                    # during rendering
-                    with cancel_guard():
-                        value = f()
-                    if inspect.isgenerator(value):
-                        while True:
-                            try:
-                                with cancel_guard():
-                                    result.current = next(value)
-                                    error.current = None
-                            except StopIteration:
-                                break
-                            # assigning to the ref doesn't trigger a rerender, so do it manually
-                            updater()
-                        if threading.current_thread() == running_thread.current:
-                            set_result_state(ResultState.FINISHED)
-                    else:
-                        result.current = value
-                        error.current = None
-                        if threading.current_thread() == running_thread.current:
-                            set_result_state(ResultState.FINISHED)
-                except Exception as e:
-                    error.current = e
-                    if threading.current_thread() == running_thread.current:
-                        logger.exception(e)
-                        set_result_state(ResultState.ERROR)
-                    return
-                except CancelledError:
-                    pass
-                    # this means this thread is cancelled not be request, but because
-                    # a new thread is running, we can ignore this
-            finally:
-                if threading.current_thread() == running_thread.current:
-                    running_thread.current = None
-                    logger.info("thread done!")
-                    if cancel.is_set():
-                        set_result_state(ResultState.CANCELLED)
-
-        logger.info("starting thread: %r", runner)
-        thread = threading.Thread(target=runner, daemon=True)
-        thread.start()
-
-        def cleanup():
-            cancel.set()  # cleanup for use effect
-
-        return cleanup
-
-    solara.use_side_effect(run, dependencies + [counter])
-    return Result[T](value=result.current, error=error.current, state=result_state, cancel=cancel.set, _retry=retry)
-
-
 def use_download(
     f: MaybeResult[Union[str, os.PathLike, IO]], url, expected_size=None, delay=None, return_content=False, chunk_size=chunk_size_default
 ) -> Result:
+    from .use_thread import use_thread
+
     if not isinstance(f, Result):
         f = Result(value=f)
     assert isinstance(f, Result)
@@ -243,7 +73,7 @@ def use_download(
 
         context: Any = None
         if file_object:
-            context = nullcontext()
+            context = solara.util.nullcontext()
             output_file = cast(IO, f.value)
         else:
             # f = cast(Result[Union[str, os.PathLike]], f)
@@ -280,7 +110,7 @@ def use_download(
 
 
 def use_fetch(url, chunk_size=chunk_size_default):
-    # re-use the same file like object
+    # reuse the same file like object
     f = solara.use_memo(io.BytesIO, [url])
     result = use_download(f, url, return_content=True, chunk_size=chunk_size)
     return dataclasses.replace(result, value=f.getvalue() if result.progress == 1 else None)
@@ -298,6 +128,8 @@ def ensure_result(input: MaybeResult[T]) -> Result[T]:
 
 
 def make_use_thread(f: Callable[[T], U]):
+    from .use_thread import use_thread
+
     def use_result(input: MaybeResult[T]) -> Result[U]:
         input_result = ensure_result(input)
 
@@ -401,3 +233,31 @@ def use_previous(value: T, condition=True) -> T:
 
     solara.use_effect(assign, [value])
     return ref.current
+
+
+def use_trait_observe(has_trait_object, name):
+    """Observe a trait on an object, and return its value.
+
+    This is useful when you want your component to be in sync with a trait
+    of a widget or [HasTraits object](https://traitlets.readthedocs.io/en/stable/).
+
+    When the trait changes, your component will be re-rendered.
+
+    See [use_dark_effective](/api/use_dark_effective) for an example.
+    """
+    counter = solara.use_reactive(0)
+    counter.get()  # make the main component depend on this counter
+
+    def connect():
+        def update(change):
+            counter.value += 1
+
+        has_trait_object.observe(update, name)
+
+        def cleanup():
+            has_trait_object.unobserve(update, name)
+
+        return cleanup
+
+    solara.use_effect(connect, [has_trait_object, name])
+    return getattr(has_trait_object, name)
