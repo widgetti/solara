@@ -1255,15 +1255,31 @@ def test_pydantic_basic():
     assert Ref(person.fields.height).get() == 2.0
 
 
-def test_mutate_initial_value():
+@pytest.fixture
+def mutation_detection():
+    current = solara.settings.storage.mutation_detection
+    solara.settings.storage.mutation_detection = True
+    try:
+        yield
+    finally:
+        solara.settings.storage.mutation_detection = current
+
+
+def test_mutate_initial_value(no_kernel_context, mutation_detection):
     initial_values: List[int] = [1, 2, 3]
     reactive = Reactive[List[int]](solara.toestand.mutation_detection_storage(initial_values))
     assert reactive.value == initial_values
     # breakpoint()
     initial_values.append(4)
-    # assert reactive.value != initial_values
-    with pytest.raises(ValueError):
-        toestand.check_mutations()
+    with pytest.raises(ValueError, match="Reactive variable was initialized"):
+        reactive.value = [3, 2, 1]
+    kernel_shared = kernel.Kernel()
+    context = kernel_context.VirtualKernelContext(id="toestand-1", kernel=kernel_shared, session_id="session-1")
+    assert kernel_context.current_context[kernel_context.get_current_thread_key()] is None
+    with pytest.raises(ValueError, match="Reactive variable was initialized"):
+        with context:
+            # reading the initial values should also trigger the error
+            _ = reactive.value
 
 
 def test_mutate_value_public_value():

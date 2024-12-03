@@ -22,7 +22,6 @@ from typing import (
     TypeVar,
     Union,
     cast,
-    List,
     overload,
 )
 
@@ -276,45 +275,8 @@ class KernelStore(ValueBase[S], ABC):
     def initial_value(self) -> S:
         pass
 
-
-@dataclasses.dataclass
-class ShouldNotMutate:
-    value: Any
-    original: Any
-    traceback: Optional[inspect.Traceback]
-
-
-should_not_mutate: List[ShouldNotMutate] = []
-
-
-def _track_initial_mutation(value):
-    frame = _find_outside_solara_frame()
-    if frame is not None:
-        frame_info = inspect.getframeinfo(frame)
-    else:
-        frame_info = None
-
-    if value is not None:
-        v = ShouldNotMutate(value, copy.deepcopy(value), frame_info)
-        should_not_mutate.append(v)
-
-
-def check_mutations():
-    for v in should_not_mutate:
-        if v.value != v.original:
-            tb = v.traceback
-            if tb:
-                if tb.code_context:
-                    code = tb.code_context[0].strip()
-                else:
-                    code = "No code context available"
-                msg = (
-                    f"Reactive variable initialized at {tb.filename}:{tb.lineno} was initialized with a value of {v.original!r}, but was mutated to {v.value!r}.\n"
-                    f"{code}"
-                )
-            else:
-                msg = f"Reactive variable was initialized with a value of {v.original!r}, but was mutated to {v.value!r} (unable to report the location in the source code)."
-            raise ValueError(msg)
+    def _check_mutation(self):
+        pass
 
 
 def _find_outside_solara_frame() -> Optional[FrameType]:
@@ -324,7 +286,8 @@ def _find_outside_solara_frame() -> Optional[FrameType]:
 
     while current_frame is not None:
         module = inspect.getmodule(current_frame)
-        if module is None or not module.__name__.startswith("solara"):
+        # If we use SomeClass[K](...) we go via the typing module, so we need to skip that as well
+        if module is None or not (module.__name__.startswith("solara") or module.__name__.startswith("typing")):
             module_frame = current_frame
             break
         current_frame = current_frame.f_back
@@ -334,10 +297,42 @@ def _find_outside_solara_frame() -> Optional[FrameType]:
 
 class KernelStoreValue(KernelStore[S]):
     default_value: S
+    _traceback: Optional[inspect.Traceback]
+    _default_value_copy: Optional[S]
 
-    def __init__(self, default_value: S, key=None, equals: Equals = equals):
+    def __init__(self, default_value: S, key=None, equals: Equals = equals, unwrap=lambda x: x):
         self.default_value = default_value
-        _track_initial_mutation(default_value)
+        self._unwrap = unwrap
+        self.equals = equals
+        self._mutation_detection = solara.settings.storage.mutation_detection
+        if self._mutation_detection:
+            frame = _find_outside_solara_frame()
+            if frame is not None:
+                self._traceback = inspect.getframeinfo(frame)
+            else:
+                self._traceback = None
+            self._default_value_copy = copy.deepcopy(default_value)
+            if not self.equals(self._unwrap(self.default_value), self._unwrap(self._default_value_copy)):
+                msg = """The equals function for this reactive value returned False when comparing a deepcopy to itself.
+
+This reactive variable will not be able to detect mutations correctly, and is therefore disabled.
+
+To avoid this warning, and to ensure that mutation detection works correctly, please provide a better equals function to the reactive variable.
+A good choice for dataframes and numpy arrays might be solara.util.equals_pickle, which will also attempt to compare the pickled values of the objects.
+
+Example:
+df = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
+reactive_df = solara.reactive(df, equals=solara.util.equals_pickle)
+"""
+                tb = self._traceback
+                if tb:
+                    if tb.code_context:
+                        code = tb.code_context[0]
+                    else:
+                        code = "<No code context available>"
+                    msg += "This warning was triggered from:\n" f"{tb.filename}:{tb.lineno}\n" f"{code}"
+                warnings.warn(msg)
+                self._mutation_detection = False
         cls = type(default_value)
         if key is None:
             with KernelStoreValue.scope_lock:
@@ -347,7 +342,25 @@ class KernelStoreValue(KernelStore[S]):
         super().__init__(key=key, equals=equals)
 
     def initial_value(self) -> S:
+        self._check_mutation()
         return self.default_value
+
+    def _check_mutation(self):
+        if not self._mutation_detection:
+            return
+        initial = self._unwrap(self._default_value_copy)
+        current = self._unwrap(self.default_value)
+        if not self.equals(initial, current):
+            tb = self._traceback
+            if tb:
+                if tb.code_context:
+                    code = tb.code_context[0].strip()
+                else:
+                    code = "No code context available"
+                msg = f"Reactive variable was initialized at {tb.filename}:{tb.lineno} with {initial!r}, but was mutated to {current!r}.\n" f"{code}"
+            else:
+                msg = f"Reactive variable was initialized with a value of {initial!r}, but was mutated to {current!r} (unable to report the location in the source code)."
+            raise ValueError(msg)
 
 
 def _create_key_callable(f: Callable[[], S]):
@@ -380,7 +393,9 @@ def mutation_detection_storage(default_value: S, key=None, equals=None) -> Value
     from ._stores import MutateDetectorStore, StoreValue
 
     kernel_store = KernelStoreValue[StoreValue[S]](
-        StoreValue[S](private=default_value, public=None, get_traceback=None, set_value=None, set_traceback=None), key=key
+        StoreValue[S](private=default_value, public=None, get_traceback=None, set_value=None, set_traceback=None),
+        key=key,
+        unwrap=lambda x: x.private,
     )
     return MutateDetectorStore[S](kernel_store, equals=equals or default_equals)
 

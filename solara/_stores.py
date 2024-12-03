@@ -3,7 +3,7 @@ import dataclasses
 import inspect
 from typing import Callable, ContextManager, Generic, Optional
 import warnings
-from .toestand import ValueBase, S, _find_outside_solara_frame
+from .toestand import ValueBase, KernelStore, S, _find_outside_solara_frame
 import solara.util
 
 
@@ -17,7 +17,7 @@ class StoreValue(Generic[S]):
 
 
 class MutateDetectorStore(ValueBase[S]):
-    def __init__(self, store: ValueBase[StoreValue[S]], equals=solara.util.equals):
+    def __init__(self, store: KernelStore[StoreValue[S]], equals=solara.util.equals):
         self._storage = store
         self._enabled = True
         super().__init__(equals=equals)
@@ -43,6 +43,7 @@ class MutateDetectorStore(ValueBase[S]):
         return store_value.public
 
     def set(self, value: S):
+        self.check_mutations()
         self._ensure_public_exists()
         private = copy.deepcopy(value)
         self._check_equals(private, value)
@@ -55,6 +56,7 @@ class MutateDetectorStore(ValueBase[S]):
         self._storage.set(store_value)
 
     def check_mutations(self):
+        self._storage._check_mutation()
         if not self._enabled:
             return
         store_value = self._storage.peek()
