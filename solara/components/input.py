@@ -217,7 +217,7 @@ def InputFloat(
     * `clearable`: Whether the input can be cleared.
     * `classes`: List of CSS classes to apply to the input.
     * `style`: CSS style to apply to the input.
-    * `autofocus`: Determines if a component is to be autofocused or not (Default is False). Autofocus will occur during page load and only one component per page should have autofocus active.
+    * `autofocus`: Determines if a component is to be autofocused or not (Default is False). Autofocus will occur either during page load, or when the component becomes visible (for example, dialog being opened). Only one component per page should have autofocus on each such event.
 
     """
 
@@ -323,7 +323,7 @@ def InputInt(
     * `clearable`: Whether the input can be cleared.
     * `classes`: List of CSS classes to apply to the input.
     * `style`: CSS style to apply to the input.
-    * `autofocus`: Determines if a component is to be autofocused or not (Default is False). Autofocus will occur during page load and only one component per page should have autofocus active.
+    * `autofocus`: Determines if a component is to be autofocused or not (Default is False). Autofocus will occur either during page load, or when the component becomes visible (for example, dialog being opened). Only one component per page should have autofocus on each such event.
     """
 
     def str_to_int(value: Optional[str]):
@@ -415,7 +415,7 @@ def _InputNumeric(
     * `continuous_update`: Whether to call the `on_value` callback on every change or only when the input loses focus or the enter key is pressed.
     * `classes`: List of CSS classes to apply to the input.
     * `style`: CSS style to apply to the input.
-    * `autofocus`: Determines if a component is to be autofocused or not (Default is False). Autofocus will occur during page load and only one component per page should have autofocus active.
+    * `autofocus`: Determines if a component is to be autofocused or not (Default is False). Autofocus will occur either during page load, or when the component becomes visible (for example, dialog being opened). Only one component per page should have autofocus on each such event.
     """
     style_flat = solara.util._flatten_style(style)
     classes_flat = solara.util._combine_classes(classes)
