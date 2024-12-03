@@ -69,5 +69,4 @@ def Page():
         solara.Markdown(f"**Mouseout data**: {mouseout_data}")
 
 
-
 __doc__ += apidoc(solara.FigureEcharts.f)  # type: ignore
