@@ -51,7 +51,7 @@ filelock==3.16.1
 Flask==3.1.0
 flask-sock==0.7.0
 folium==0.18.0
-fonttools==4.55.0
+fonttools==4.55.1
 fqdn==1.5.1
 frozendict==2.4.6
 fsspec==2024.10.0
@@ -126,7 +126,7 @@ nodeenv==1.9.1
 notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.26.4
-openai==1.55.3
+openai==1.56.0
 overrides==7.7.0
 packaging==24.2
 pandas==2.2.3
@@ -182,7 +182,7 @@ rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
 rich==13.9.4
 rich-click==1.8.5
-rpds-py==0.21.0
+rpds-py==0.22.0
 ruff==0.8.1
 Send2Trash==1.8.3
 simple-websocket==1.1.0
