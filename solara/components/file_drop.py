@@ -112,7 +112,7 @@ def FileDrop(
         the file contents will be loaded into memory via the `.data` attribute of file object(s).
 
     ## Load into Pandas
-    To load the data into a Pandas DF, set `lazy=False` and use `file['data']` (be careful of memory)<br>
+    To load the data into a Pandas DF, set `lazy=False` and use `file['file_obj']` (be careful of memory)<br>
     You can run this directly in your Jupyter notebook
 
     ```python
