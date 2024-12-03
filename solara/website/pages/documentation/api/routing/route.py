@@ -26,5 +26,4 @@ def Page():
                     solara.Info(f"Go to solara.Route(path={route.path!r})")
 
 
-
 __doc__ += apidoc(solara.Route, full=True)  # type: ignore
