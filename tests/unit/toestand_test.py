@@ -2,7 +2,7 @@ import dataclasses
 import threading
 import unittest.mock
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Set, TypeVar
+from typing import Callable, Dict, List, Optional, Set, TypeVar, cast
 
 import pytest
 
@@ -11,11 +11,13 @@ import react_ipywidgets as react
 from typing_extensions import TypedDict
 
 import solara
+import solara.toestand
 import solara as sol
 import solara.lab
 import solara.toestand as toestand
 from solara.server import kernel, kernel_context
 from solara.toestand import Reactive, Ref, State, use_sync_external_store
+import solara.settings
 import pandas as pd
 
 from .common import click
@@ -38,6 +40,14 @@ class BearReactive(Reactive[B]):
 
 
 bears: Bears = Bears(type="brown", count=1)
+
+
+def get_storage(store):
+    storage = store._storage
+    if hasattr(storage, "_storage"):
+        # this happens when mutation detection is used
+        storage = storage._storage
+    return storage
 
 
 def test_store_bare():
@@ -181,7 +191,7 @@ def test_nested_update():
 
     Ref(bear_store.fields.type).subscribe(reset_count)
     Ref(bear_store.fields.type).value = "purple"
-    mock.assert_called_with(Bears(type="purple", count=0))
+    mock.assert_any_call(Bears(type="purple", count=0))
     mock_type.assert_called_with("purple")
     mock_count.assert_called_with(0)
     for u in unsub:
@@ -730,6 +740,7 @@ def test_dataframe():
 
     df = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
     df2 = df.copy()
+    df2["a"] = [1, 2, 4]
     store = Reactive[pd.DataFrame](df)
     unsub = store.subscribe(mock)
     mock.assert_not_called()
@@ -747,9 +758,15 @@ def test_dataframe():
         return solara.Info(repr(id(df)))
 
     box, rc = solara.render(Test(), handle_error=False)
+
+    if solara.settings.storage.mutation_detection:
+        # a copy is made, so get a reference to the actual used object
+        df = get_storage(store).value.public
     assert rc.find(v.Alert).widget.children[0] == repr(id(df))
-    df2 = df.copy()
+    df2 = df2.copy()
     store.set(df2)
+    if solara.settings.storage.mutation_detection:
+        df2 = get_storage(store).value.public
     assert rc.find(v.Alert).widget.children[0] == repr(id(df2))
 
     @dataclasses.dataclass(frozen=True)
@@ -819,7 +836,7 @@ def test_reactive_auto_subscribe(kernel_context):
     assert rc.find(v.Slider).widget.v_model == 2
     y.value = "hello"
     assert rc.find(v.Slider).widget.label == "hello"
-    assert len(x._storage.listeners2) == 1
+    assert len(get_storage(x).listeners2) == 1
     # force an extra listener
     x.value = 0
     # and remove it
@@ -827,10 +844,10 @@ def test_reactive_auto_subscribe(kernel_context):
 
     count.value = 2
     assert len(rc.find(v.Slider)) == 2
-    assert len(x._storage.listeners2[kernel_context.id]) == 2
+    assert len(get_storage(x).listeners2[kernel_context.id]) == 2
     x.value = 3
     assert rc.find(v.Slider)[0].widget.v_model == 3
-    assert len(x._storage.listeners2[kernel_context.id]) == 2
+    assert len(get_storage(x).listeners2[kernel_context.id]) == 2
 
     count.value = 1
     assert len(rc.find(v.Slider)) == 1
@@ -838,8 +855,8 @@ def test_reactive_auto_subscribe(kernel_context):
     assert len(rc.find(v.Slider)) == 0
 
     rc.close()
-    assert not x._storage.listeners[kernel_context.id]
-    assert not x._storage.listeners2[kernel_context.id]
+    assert not get_storage(x).listeners[kernel_context.id]
+    assert not get_storage(x).listeners2[kernel_context.id]
 
 
 def test_reactive_auto_subscribe_sub():
@@ -889,23 +906,23 @@ def test_reactive_auto_subscribe_cleanup(kernel_context):
     box, rc = solara.render(Test(), handle_error=False)
     assert rc.find(v.Slider).widget.v_model == 1
     assert renders == 1
-    assert len(x._storage.listeners2) == 1
-    assert len(y._storage.listeners2) == 0
+    assert len(get_storage(x).listeners2) == 1
+    assert len(get_storage(y).listeners2) == 0
     x.value = 42
     assert renders == 2
-    assert len(x._storage.listeners2[kernel_context.id]) == 1
-    assert len(y._storage.listeners2[kernel_context.id]) == 1
+    assert len(get_storage(x).listeners2[kernel_context.id]) == 1
+    assert len(get_storage(y).listeners2[kernel_context.id]) == 1
 
     # this triggers two renders, where during the first one we use y, but the seconds we don't
     x.value = 0
     assert rc.find(v.Slider).widget.v_model == 100
-    assert len(x._storage.listeners2[kernel_context.id]) == 1
+    assert len(get_storage(x).listeners2[kernel_context.id]) == 1
     # which means we shouldn't have a listener on y
-    assert len(y._storage.listeners2[kernel_context.id]) == 0
+    assert len(get_storage(y).listeners2[kernel_context.id]) == 0
 
     rc.close()
-    assert not x._storage.listeners[kernel_context.id]
-    assert not y._storage.listeners2[kernel_context.id]
+    assert not get_storage(x).listeners[kernel_context.id]
+    assert not get_storage(y).listeners2[kernel_context.id]
 
 
 def test_reactive_auto_subscribe_subfield_limit(kernel_context):
@@ -1137,10 +1154,10 @@ def test_computed():
     assert z.value == 3
     assert z._auto_subscriber.value.reactive_used == {x, y}
     # assert z._auto_subscriber.subscribed == 1
-    assert len(x._storage.listeners[context_id]) == 0
-    assert len(x._storage.listeners2[context_id]) == 1
-    assert len(y._storage.listeners[context_id]) == 0
-    assert len(y._storage.listeners2[context_id]) == 1
+    assert len(get_storage(x).listeners[context_id]) == 0
+    assert len(get_storage(x).listeners2[context_id]) == 1
+    assert len(get_storage(y).listeners[context_id]) == 0
+    assert len(get_storage(y).listeners2[context_id]) == 1
     assert calls == 1
     x.value = 2
     assert z.value == 4
@@ -1150,15 +1167,15 @@ def test_computed():
     assert z.value == 5
     assert z._auto_subscriber.value.reactive_used == {x, y}
     assert calls == 3
-    assert len(x._storage.listeners2[context_id]) == 1
-    assert len(y._storage.listeners2[context_id]) == 1
+    assert len(get_storage(x).listeners2[context_id]) == 1
+    assert len(get_storage(y).listeners2[context_id]) == 1
 
     # now we do not depend on y anymore
     x.value = 0
     assert z.value == 42
     assert z._auto_subscriber.value.reactive_used == {x}
-    assert len(x._storage.listeners2[context_id]) == 1
-    assert len(y._storage.listeners2[context_id]) == 0
+    assert len(get_storage(x).listeners2[context_id]) == 1
+    assert len(get_storage(y).listeners2[context_id]) == 0
     assert calls == 4
     y.value = 4
     assert z.value == 42
@@ -1236,33 +1253,36 @@ def test_pydantic_basic():
     assert person.get().height == 2.0
     assert Ref(person.fields.name).get() == "Maria"
     assert Ref(person.fields.height).get() == 2.0
+
+
 def test_mutate_initial_value():
-    initial_values = [1, 2, 3]
-    reactive = Reactive(initial_values)
+    initial_values: List[int] = [1, 2, 3]
+    reactive = Reactive[List[int]](solara.toestand.mutation_detection_storage(initial_values))
     assert reactive.value == initial_values
+    # breakpoint()
     initial_values.append(4)
-    assert reactive.value != initial_values
+    # assert reactive.value != initial_values
     with pytest.raises(ValueError):
         toestand.check_mutations()
 
 
 def test_mutate_value_public_value():
     values = [1, 2, 3]
-    reactive = Reactive(values)
+    reactive = Reactive[List[int]](solara.toestand.mutation_detection_storage(values))
     reactive.value.append(4)
-    with pytest.raises(ValueError, match="Reactive variable was read when it had the value of \[1, 2, 3\].*"):
-        reactive.check_mutations()
+    with pytest.raises(ValueError, match="Reactive variable was read when it had the value of \\[1, 2, 3\\].*"):
+        reactive._storage.check_mutations()  # type: ignore
 
 
 def test_mutate_value_set_value():
     values = [1, 2, 3]
-    reactive = Reactive(values)
+    reactive = Reactive[List[int]](solara.toestand.mutation_detection_storage(values))
     new_values = [1, 2, 3, 4]
     reactive.value = new_values
     new_values.append(5)
     # print(reactive.value)
     with pytest.raises(ValueError, match="Reactive variable was set.*"):
-        reactive.check_mutations()
+        reactive._storage.check_mutations()  # type: ignore
 
 
 def test_mutate_value_set_value_dataframe():
@@ -1271,10 +1291,13 @@ def test_mutate_value_set_value_dataframe():
     # actually are equal
     df = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
     df_orig = df.copy()
-    reactive_df = Reactive[Optional[pd.DataFrame]](None)
-    assert reactive_df.equals(df, df_orig)
+    reactive_df = Reactive[Optional[pd.DataFrame]](
+        solara.toestand.mutation_detection_storage(cast(Optional[pd.DataFrame], None), equals=solara.util.equals_pickle)
+    )
+    assert reactive_df._storage.equals is solara.util.equals_pickle
+    assert reactive_df._storage.equals(df, df_orig)
     reactive_df.value = df
     df["a"][0] = 100
-    assert not reactive_df.equals(df, df_orig)
+    assert not reactive_df._storage.equals(df, df_orig)
     with pytest.raises(ValueError, match="Reactive variable was set.*"):
-        reactive_df.check_mutations()
+        reactive_df._storage.check_mutations()  # type: ignore

@@ -1,13 +1,14 @@
 from typing import TypeVar
 
-from solara.toestand import Reactive
+from solara.toestand import Reactive, Equals
+import solara.util
 
 __all__ = ["reactive", "Reactive"]
 
 T = TypeVar("T")
 
 
-def reactive(value: T) -> Reactive[T]:
+def reactive(value: T, equals: Equals = solara.util.equals) -> Reactive[T]:
     """Creates a new Reactive object with the given initial value.
 
     Reactive objects are mostly used to manage global or application-wide state in
@@ -35,6 +36,11 @@ def reactive(value: T) -> Reactive[T]:
 
     Args:
         value (T): The initial value of the reactive variable.
+        equals: A function that return True if two values are considered equal, and False otherwise.
+            The default function is `solara.util.equals`, which performs a deep comparison of the two values
+            and is more forgiving than the default `==` operator.
+            You can provide a custom function if you need to define a different notion of equality.
+
 
     Returns:
         Reactive[T]: A new Reactive object with the specified initial value.
@@ -90,4 +96,4 @@ def reactive(value: T) -> Reactive[T]:
     Whenever the counter value changes, `CounterDisplay` automatically updates to display the new value.
 
     """
-    return Reactive(value)
+    return Reactive(value, equals=equals)
