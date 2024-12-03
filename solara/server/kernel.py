@@ -2,6 +2,7 @@ import json
 import logging
 import pdb
 import queue
+import re
 import struct
 import warnings
 from binascii import b2a_base64
@@ -73,7 +74,7 @@ def json_dumps(data):
     )
 
 
-ipykernel_version = tuple(map(int, ipykernel.__version__.split(".")))
+ipykernel_version = tuple(map(int, re.split(r"\D+", ipykernel.__version__)[:3]))
 if ipykernel_version >= (6, 18, 0):
     import comm.base_comm
 
