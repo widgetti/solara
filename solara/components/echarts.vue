@@ -39,9 +39,7 @@ module.exports = {
   methods: {
     create() {
       this.chart = this.echarts.init(this.$refs.echarts);
-      console.log(this.maps);
       Object.keys(this.maps).forEach((mapName) => {
-        console.log(mapName);
         this.echarts.registerMap(mapName, this.maps[mapName]);
       });
 
