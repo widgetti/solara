@@ -31,7 +31,7 @@ except RuntimeError:
     has_threads = False
 
 
-from reacton.utils import equals as equals
+from reacton.utils import equals as equals_extra
 
 
 def equals_pickle(a, b):
@@ -41,7 +41,7 @@ def equals_pickle(a, b):
     the data, not the object identity.
 
     """
-    if equals(a, b):
+    if equals_extra(a, b):
         return True
     import pickle
 

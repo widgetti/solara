@@ -17,7 +17,7 @@ class StoreValue(Generic[S]):
 
 
 class MutateDetectorStore(ValueBase[S]):
-    def __init__(self, store: KernelStore[StoreValue[S]], equals=solara.util.equals):
+    def __init__(self, store: KernelStore[StoreValue[S]], equals=solara.util.equals_extra):
         self._storage = store
         self._enabled = True
         super().__init__(equals=equals)
@@ -27,7 +27,6 @@ class MutateDetectorStore(ValueBase[S]):
         return self._storage.lock
 
     def get(self) -> S:
-        print("check!")
         self.check_mutations()
         self._ensure_public_exists()
         value = self._storage.get()

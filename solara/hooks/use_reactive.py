@@ -1,7 +1,6 @@
-from typing import Callable, Optional, TypeVar, Union
+from typing import Any, Callable, Optional, TypeVar, Union
 
 import solara
-from solara.toestand import Equals
 
 T = TypeVar("T")
 
@@ -9,7 +8,7 @@ T = TypeVar("T")
 def use_reactive(
     value: Union[T, solara.Reactive[T]],
     on_change: Optional[Callable[[T], None]] = None,
-    equals: Equals = solara.util.equals,
+    equals: Callable[[Any, Any], bool] = solara.util.equals_extra,
 ) -> solara.Reactive[T]:
     """Creates a reactive variable with the a local component scope.
 
@@ -46,7 +45,7 @@ def use_reactive(
      * on_change (Optional[Callable[[T], None]]): An optional callback function
             that will be called when the reactive variable's value changes.
 
-     * equals: A function that return True if two values are considered equal, and False otherwise.
+     * equals: A function that returns True if two values are considered equal, and False otherwise.
             The default function is `solara.util.equals`, which performs a deep comparison of the two values
             and is more forgiving than the default `==` operator.
             You can provide a custom function if you need to define a different notion of equality.

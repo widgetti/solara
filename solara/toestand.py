@@ -27,7 +27,7 @@ from typing import (
 
 import react_ipywidgets as react
 import reacton.core
-from reacton.utils import equals
+from solara.util import equals_extra
 
 import solara
 import solara.settings
@@ -47,8 +47,6 @@ class ThreadLocal(threading.local):
 
 thread_local = ThreadLocal()
 
-Equals = Callable[[Any, Any], bool]
-
 
 # these hooks should go into react-ipywidgets
 def use_sync_external_store(subscribe: Callable[[Callable[[], None]], Callable[[], None]], get_snapshot: Callable[[], Any]):
@@ -67,7 +65,7 @@ def use_sync_external_store(subscribe: Callable[[Callable[[], None]], Callable[[
 
     def on_store_change(_ignore_new_state=None):
         new_state = get_snapshot()
-        if not equals(new_state, prev_state.current):
+        if not equals_extra(new_state, prev_state.current):
             prev_state.current = new_state
             force_update()
 
@@ -93,7 +91,7 @@ def merge_state(d1: S, **kwargs) -> S:
 
 
 class ValueBase(Generic[T]):
-    def __init__(self, merge: Callable = merge_state, equals=equals):
+    def __init__(self, merge: Callable = merge_state, equals=equals_extra):
         self.merge = merge
         self.equals = equals
         self.listeners: Dict[str, Set[Tuple[Callable[[T], None], Optional[ContextManager]]]] = defaultdict(set)
@@ -206,7 +204,7 @@ class KernelStore(ValueBase[S], ABC):
     _type_counter: Dict[Any, int] = defaultdict(int)
     scope_lock = threading.RLock()
 
-    def __init__(self, key=None, equals: Equals = equals):
+    def __init__(self, key=None, equals: Callable[[Any, Any], bool] = equals_extra):
         super().__init__(equals=equals)
         self.storage_key = key
         self._global_dict = {}
@@ -300,7 +298,7 @@ class KernelStoreValue(KernelStore[S]):
     _traceback: Optional[inspect.Traceback]
     _default_value_copy: Optional[S]
 
-    def __init__(self, default_value: S, key=None, equals: Equals = equals, unwrap=lambda x: x):
+    def __init__(self, default_value: S, key=None, equals: Callable[[Any, Any], bool] = equals_extra, unwrap=lambda x: x):
         self.default_value = default_value
         self._unwrap = unwrap
         self.equals = equals
@@ -379,7 +377,7 @@ def _create_key_callable(f: Callable[[], S]):
 
 
 class KernelStoreFactory(KernelStore[S]):
-    def __init__(self, factory: Callable[[], S], key=None, equals: Equals = equals):
+    def __init__(self, factory: Callable[[], S], key=None, equals: Callable[[Any, Any], bool] = equals_extra):
         self.factory = factory
         key = key or _create_key_callable(factory)
         super().__init__(key=key, equals=equals)
@@ -406,9 +404,7 @@ def default_storage(default_value: S, key=None, equals=None) -> ValueBase[S]:
     if solara.settings.storage.mutation_detection is True:
         return mutation_detection_storage(default_value, key=key, equals=equals)
     else:
-        from solara.util import equals as default_equals
-
-        return KernelStoreValue[S](default_value, key=key, equals=equals or default_equals)
+        return KernelStoreValue[S](default_value, key=key, equals=equals or equals_extra)
 
 
 def _call_storage_factory(default_value: S, key=None, equals=None) -> ValueBase[S]:
@@ -610,7 +606,7 @@ def computed(
 
 
 class ReactiveField(Reactive[T]):
-    def __init__(self, field: "FieldBase", equals: Equals = equals):
+    def __init__(self, field: "FieldBase", equals: Callable[[Any, Any], bool] = equals_extra):
         # super().__init__()  # type: ignore
         # We skip the Reactive constructor, because we do not need it, but we do
         # want to be an instanceof for use in use_reactive

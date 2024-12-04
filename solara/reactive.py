@@ -1,6 +1,6 @@
-from typing import TypeVar
+from typing import Any, Callable, TypeVar
 
-from solara.toestand import Reactive, Equals
+from solara.toestand import Reactive
 import solara.util
 
 __all__ = ["reactive", "Reactive"]
@@ -8,7 +8,7 @@ __all__ = ["reactive", "Reactive"]
 T = TypeVar("T")
 
 
-def reactive(value: T, equals: Equals = solara.util.equals) -> Reactive[T]:
+def reactive(value: T, equals: Callable[[Any, Any], bool] = solara.util.equals_extra) -> Reactive[T]:
     """Creates a new Reactive object with the given initial value.
 
     Reactive objects are mostly used to manage global or application-wide state in
@@ -36,7 +36,7 @@ def reactive(value: T, equals: Equals = solara.util.equals) -> Reactive[T]:
 
     Args:
         value (T): The initial value of the reactive variable.
-        equals: A function that return True if two values are considered equal, and False otherwise.
+        equals: A function that returns True if two values are considered equal, and False otherwise.
             The default function is `solara.util.equals`, which performs a deep comparison of the two values
             and is more forgiving than the default `==` operator.
             You can provide a custom function if you need to define a different notion of equality.
