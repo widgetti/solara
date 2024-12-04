@@ -2,6 +2,7 @@ import contextlib
 import dataclasses
 import inspect
 import logging
+import os
 import sys
 import threading
 from types import FrameType
@@ -277,15 +278,36 @@ class KernelStore(ValueBase[S], ABC):
         pass
 
 
+def _is_internal_module(file_name: str):
+    file_name_parts = file_name.split(os.sep)
+    if len(file_name_parts) < 2:
+        return False
+    return (
+        file_name_parts[-2:] == ["solara", "toestand.py"]
+        or file_name_parts[-2:] == ["solara", "reactive.py"]
+        or file_name_parts[-2:] == ["solara", "use_reactive.py"]
+        or file_name_parts[-2:] == ["reacton", "core.py"]
+        # If we use SomeClass[K](...) we go via the typing module, so we need to skip that as well
+        or (file_name_parts[-2].startswith("python") and file_name_parts[-1] == "typing.py")
+    )
+
+
 def _find_outside_solara_frame() -> Optional[FrameType]:
     # the module where the call stack origined from
-    current_frame = inspect.currentframe()
+    current_frame: Optional[FrameType] = None
     module_frame = None
 
+    # _getframe is not guaranteed to exist in all Python implementations,
+    # but is much faster than the inspect module
+    if hasattr(sys, "_getframe"):
+        current_frame = sys._getframe(1)
+    else:
+        current_frame = inspect.currentframe()
+
     while current_frame is not None:
-        module = inspect.getmodule(current_frame)
-        # If we use SomeClass[K](...) we go via the typing module, so we need to skip that as well
-        if module is None or not (module.__name__.startswith("solara") or module.__name__.startswith("typing")):
+        file_name = current_frame.f_code.co_filename
+        # Skip most common cases, i.e. toestand.py, reactive.py, use_reactive.py, Reacton's core.py, and the typing module
+        if not _is_internal_module(file_name):
             module_frame = current_frame
             break
         current_frame = current_frame.f_back
@@ -302,7 +324,7 @@ class KernelStoreValue(KernelStore[S]):
         self.default_value = default_value
         self._unwrap = unwrap
         self.equals = equals
-        self._mutation_detection = solara.settings.storage.mutation_detection
+        self._mutation_detection = True  # solara.settings.storage.mutation_detection
         if self._mutation_detection:
             frame = _find_outside_solara_frame()
             if frame is not None:
