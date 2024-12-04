@@ -61,9 +61,23 @@ class MainSettings(BaseSettings):
         env_file = ".env"
 
 
+class Storage(BaseSettings):
+    mutation_detection: Optional[bool] = None  # True/False, or None to auto determine
+    factory: str = "solara.toestand.default_storage"
+
+    def get_factory(self):
+        return solara.util.import_item(self.factory)
+
+    class Config:
+        env_prefix = "solara_storage_"
+        case_sensitive = False
+        env_file = ".env"
+
+
 assets: Assets = Assets()
 cache: Cache = Cache()
 main = MainSettings()
+storage = Storage()
 
 if main.check_hooks not in ["off", "warn", "raise"]:
     raise ValueError(f"Invalid value for check_hooks: {main.check_hooks}, expected one of ['off', 'warn', 'raise']")

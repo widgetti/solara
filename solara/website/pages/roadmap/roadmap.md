@@ -11,6 +11,9 @@ Exciting news! We aim to release Solara 2.0 by the end of the year. For the 2.0 
 
 - Elimination of common mistakes, such as detecting state mutations and avoiding misuse of hooks (e.g., using hooks in loops).
 
+    State mutation detection will be the default for Solara 2.0, but can be enabled in Solara > 1.41.0 by setting the environment variable `SOLARA_STORAGE_MUTATION_DETECTION=1`.
+
+
 - [See more details in the 2.0 milestone on GitHub.](https://github.com/widgetti/solara/milestone/1)
 
 

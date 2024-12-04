@@ -1,9 +1,13 @@
 import contextlib
 import dataclasses
+import inspect
 import logging
+import os
 import sys
 import threading
+from types import FrameType
 import warnings
+import copy
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from operator import getitem
@@ -24,9 +28,10 @@ from typing import (
 
 import react_ipywidgets as react
 import reacton.core
-from reacton.utils import equals
+from solara.util import equals_extra
 
 import solara
+import solara.settings
 from solara import _using_solara_server
 
 T = TypeVar("T")
@@ -61,7 +66,7 @@ def use_sync_external_store(subscribe: Callable[[Callable[[], None]], Callable[[
 
     def on_store_change(_ignore_new_state=None):
         new_state = get_snapshot()
-        if not equals(new_state, prev_state.current):
+        if not equals_extra(new_state, prev_state.current):
             prev_state.current = new_state
             force_update()
 
@@ -87,8 +92,9 @@ def merge_state(d1: S, **kwargs) -> S:
 
 
 class ValueBase(Generic[T]):
-    def __init__(self, merge: Callable = merge_state):
+    def __init__(self, merge: Callable = merge_state, equals=equals_extra):
         self.merge = merge
+        self.equals = equals
         self.listeners: Dict[str, Set[Tuple[Callable[[T], None], Optional[ContextManager]]]] = defaultdict(set)
         self.listeners2: Dict[str, Set[Tuple[Callable[[T, T], None], Optional[ContextManager]]]] = defaultdict(set)
 
@@ -199,8 +205,8 @@ class KernelStore(ValueBase[S], ABC):
     _type_counter: Dict[Any, int] = defaultdict(int)
     scope_lock = threading.RLock()
 
-    def __init__(self, key=None):
-        super().__init__()
+    def __init__(self, key=None, equals: Callable[[Any, Any], bool] = equals_extra):
+        super().__init__(equals=equals)
         self.storage_key = key
         self._global_dict = {}
         # since a set can trigger events, which can trigger new updates, we need a recursive lock
@@ -250,7 +256,7 @@ class KernelStore(ValueBase[S], ABC):
     def set(self, value: S):
         scope_dict, scope_id = self._get_dict()
         old = self.get()
-        if equals(old, value):
+        if self.equals(old, value):
             return
         scope_dict[self.storage_key] = value
 
@@ -268,22 +274,113 @@ class KernelStore(ValueBase[S], ABC):
     def initial_value(self) -> S:
         pass
 
+    def _check_mutation(self):
+        pass
+
+
+def _is_internal_module(file_name: str):
+    file_name_parts = file_name.split(os.sep)
+    if len(file_name_parts) < 2:
+        return False
+    return (
+        file_name_parts[-2:] == ["solara", "toestand.py"]
+        or file_name_parts[-2:] == ["solara", "reactive.py"]
+        or file_name_parts[-2:] == ["solara", "use_reactive.py"]
+        or file_name_parts[-2:] == ["reacton", "core.py"]
+        # If we use SomeClass[K](...) we go via the typing module, so we need to skip that as well
+        or (file_name_parts[-2].startswith("python") and file_name_parts[-1] == "typing.py")
+    )
+
+
+def _find_outside_solara_frame() -> Optional[FrameType]:
+    # the module where the call stack origined from
+    current_frame: Optional[FrameType] = None
+    module_frame = None
+
+    # _getframe is not guaranteed to exist in all Python implementations,
+    # but is much faster than the inspect module
+    if hasattr(sys, "_getframe"):
+        current_frame = sys._getframe(1)
+    else:
+        current_frame = inspect.currentframe()
+
+    while current_frame is not None:
+        file_name = current_frame.f_code.co_filename
+        # Skip most common cases, i.e. toestand.py, reactive.py, use_reactive.py, Reacton's core.py, and the typing module
+        if not _is_internal_module(file_name):
+            module_frame = current_frame
+            break
+        current_frame = current_frame.f_back
+
+    return module_frame
+
 
 class KernelStoreValue(KernelStore[S]):
     default_value: S
+    _traceback: Optional[inspect.Traceback]
+    _default_value_copy: Optional[S]
 
-    def __init__(self, default_value: S, key=None):
+    def __init__(self, default_value: S, key=None, equals: Callable[[Any, Any], bool] = equals_extra, unwrap=lambda x: x):
         self.default_value = default_value
+        self._unwrap = unwrap
+        self.equals = equals
+        self._mutation_detection = solara.settings.storage.mutation_detection
+        if self._mutation_detection:
+            frame = _find_outside_solara_frame()
+            if frame is not None:
+                self._traceback = inspect.getframeinfo(frame)
+            else:
+                self._traceback = None
+            self._default_value_copy = copy.deepcopy(default_value)
+            if not self.equals(self._unwrap(self.default_value), self._unwrap(self._default_value_copy)):
+                msg = """The equals function for this reactive value returned False when comparing a deepcopy to itself.
+
+This reactive variable will not be able to detect mutations correctly, and is therefore disabled.
+
+To avoid this warning, and to ensure that mutation detection works correctly, please provide a better equals function to the reactive variable.
+A good choice for dataframes and numpy arrays might be solara.util.equals_pickle, which will also attempt to compare the pickled values of the objects.
+
+Example:
+df = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
+reactive_df = solara.reactive(df, equals=solara.util.equals_pickle)
+"""
+                tb = self._traceback
+                if tb:
+                    if tb.code_context:
+                        code = tb.code_context[0]
+                    else:
+                        code = "<No code context available>"
+                    msg += "This warning was triggered from:\n" f"{tb.filename}:{tb.lineno}\n" f"{code}"
+                warnings.warn(msg)
+                self._mutation_detection = False
         cls = type(default_value)
         if key is None:
             with KernelStoreValue.scope_lock:
                 index = self._type_counter[cls]
                 self._type_counter[cls] += 1
             key = cls.__module__ + ":" + cls.__name__ + ":" + str(index)
-        super().__init__(key=key)
+        super().__init__(key=key, equals=equals)
 
     def initial_value(self) -> S:
+        self._check_mutation()
         return self.default_value
+
+    def _check_mutation(self):
+        if not self._mutation_detection:
+            return
+        initial = self._unwrap(self._default_value_copy)
+        current = self._unwrap(self.default_value)
+        if not self.equals(initial, current):
+            tb = self._traceback
+            if tb:
+                if tb.code_context:
+                    code = tb.code_context[0].strip()
+                else:
+                    code = "No code context available"
+                msg = f"Reactive variable was initialized at {tb.filename}:{tb.lineno} with {initial!r}, but was mutated to {current!r}.\n" f"{code}"
+            else:
+                msg = f"Reactive variable was initialized with a value of {initial!r}, but was mutated to {current!r} (unable to report the location in the source code)."
+            raise ValueError(msg)
 
 
 def _create_key_callable(f: Callable[[], S]):
@@ -302,22 +399,48 @@ def _create_key_callable(f: Callable[[], S]):
 
 
 class KernelStoreFactory(KernelStore[S]):
-    def __init__(self, factory: Callable[[], S], key=None):
+    def __init__(self, factory: Callable[[], S], key=None, equals: Callable[[Any, Any], bool] = equals_extra):
         self.factory = factory
         key = key or _create_key_callable(factory)
-        super().__init__(key=key)
+        super().__init__(key=key, equals=equals)
 
     def initial_value(self) -> S:
         return self.factory()
 
 
+def mutation_detection_storage(default_value: S, key=None, equals=None) -> ValueBase[S]:
+    from solara.util import equals_pickle as default_equals
+    from ._stores import MutateDetectorStore, StoreValue, _PublicValueNotSet
+
+    kernel_store = KernelStoreValue[StoreValue[S]](
+        StoreValue[S](private=default_value, public=_PublicValueNotSet(), get_traceback=None, set_value=None, set_traceback=None),
+        key=key,
+        unwrap=lambda x: x.private,
+    )
+    return MutateDetectorStore[S](kernel_store, equals=equals or default_equals)
+
+
+def default_storage(default_value: S, key=None, equals=None) -> ValueBase[S]:
+    # in solara v2 we will also do this when mutation_detection is None
+    # and we do not run on production mode
+    if solara.settings.storage.mutation_detection is True:
+        return mutation_detection_storage(default_value, key=key, equals=equals)
+    else:
+        return KernelStoreValue[S](default_value, key=key, equals=equals or equals_extra)
+
+
+def _call_storage_factory(default_value: S, key=None, equals=None) -> ValueBase[S]:
+    factory = solara.settings.storage.get_factory()
+    return factory(default_value, key=key, equals=equals)
+
+
 class Reactive(ValueBase[S]):
     _storage: ValueBase[S]
 
-    def __init__(self, default_value: Union[S, ValueBase[S]], key=None):
+    def __init__(self, default_value: Union[S, ValueBase[S]], key=None, equals=None):
         super().__init__()
         if not isinstance(default_value, ValueBase):
-            self._storage = KernelStoreValue(default_value, key=key)
+            self._storage = _call_storage_factory(default_value, key=key, equals=equals)
         else:
             self._storage = default_value
         self.__post__init__()
@@ -505,11 +628,11 @@ def computed(
 
 
 class ReactiveField(Reactive[T]):
-    def __init__(self, field: "FieldBase"):
+    def __init__(self, field: "FieldBase", equals: Callable[[Any, Any], bool] = equals_extra):
         # super().__init__()  # type: ignore
         # We skip the Reactive constructor, because we do not need it, but we do
         # want to be an instanceof for use in use_reactive
-        ValueBase.__init__(self)
+        ValueBase.__init__(self, equals=equals)
         self._field = field
         field = field
         while not isinstance(field, ValueBase):
@@ -536,7 +659,7 @@ class ReactiveField(Reactive[T]):
             except KeyError:
                 return  # same
             old_value = self._field.get(old)
-            if not equals(new_value, old_value):
+            if not self.equals(new_value, old_value):
                 listener(new_value)
 
         return self._root.subscribe_change(on_change, scope=scope)
@@ -550,7 +673,7 @@ class ReactiveField(Reactive[T]):
             except KeyError:
                 return  # see subscribe
             old_value = self._field.get(old)
-            if not equals(new_value, old_value):
+            if not self.equals(new_value, old_value):
                 listener(new_value, old_value)
 
         return self._root.subscribe_change(on_change, scope=scope)
