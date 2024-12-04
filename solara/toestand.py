@@ -324,7 +324,7 @@ class KernelStoreValue(KernelStore[S]):
         self.default_value = default_value
         self._unwrap = unwrap
         self.equals = equals
-        self._mutation_detection = True  # solara.settings.storage.mutation_detection
+        self._mutation_detection = solara.settings.storage.mutation_detection
         if self._mutation_detection:
             frame = _find_outside_solara_frame()
             if frame is not None:
@@ -410,10 +410,10 @@ class KernelStoreFactory(KernelStore[S]):
 
 def mutation_detection_storage(default_value: S, key=None, equals=None) -> ValueBase[S]:
     from solara.util import equals_pickle as default_equals
-    from ._stores import MutateDetectorStore, StoreValue
+    from ._stores import MutateDetectorStore, StoreValue, _PublicValueNotSet
 
     kernel_store = KernelStoreValue[StoreValue[S]](
-        StoreValue[S](private=default_value, public=None, get_traceback=None, set_value=None, set_traceback=None),
+        StoreValue[S](private=default_value, public=_PublicValueNotSet(), get_traceback=None, set_value=None, set_traceback=None),
         key=key,
         unwrap=lambda x: x.private,
     )

@@ -1,16 +1,20 @@
 import copy
 import dataclasses
 import inspect
-from typing import Callable, ContextManager, Generic, Optional
+from typing import Callable, ContextManager, Generic, Optional, Union, cast
 import warnings
 from .toestand import ValueBase, KernelStore, S, _find_outside_solara_frame
 import solara.util
 
 
+class _PublicValueNotSet:
+    pass
+
+
 @dataclasses.dataclass
 class StoreValue(Generic[S]):
     private: S  # the internal private value, should never be mutated
-    public: Optional[S]  # this is the value that is exposed in .get(), it is a deep copy of private
+    public: Union[S, _PublicValueNotSet]  # this is the value that is exposed in .get(), it is a deep copy of private
     get_traceback: Optional[inspect.Traceback]
     set_value: Optional[S]  # the value that was set using .set(..), we deepcopy this to set private
     set_traceback: Optional[inspect.Traceback]
@@ -30,16 +34,18 @@ class MutateDetectorStore(ValueBase[S]):
         self.check_mutations()
         self._ensure_public_exists()
         value = self._storage.get()
-        assert value.public is not None
-        return value.public
+        # value.public is of type Optional[S], so it's tempting to check for None here,
+        # but S could include None as a valid value, so best we can do is cast
+        public_value = cast(S, value.public)
+        return public_value
 
     def peek(self) -> S:
         """Return the value without automatically subscribing to listeners."""
         self.check_mutations()
         store_value = self._storage.peek()
         self._ensure_public_exists()
-        assert store_value.public is not None
-        return store_value.public
+        public_value = cast(S, store_value.public)
+        return public_value
 
     def set(self, value: S):
         self.check_mutations()
@@ -51,7 +57,7 @@ class MutateDetectorStore(ValueBase[S]):
             frame_info = inspect.getframeinfo(frame)
         else:
             frame_info = None
-        store_value = StoreValue(private=private, public=None, get_traceback=None, set_value=value, set_traceback=frame_info)
+        store_value = StoreValue(private=private, public=_PublicValueNotSet(), get_traceback=None, set_value=value, set_traceback=frame_info)
         self._storage.set(store_value)
 
     def check_mutations(self):
@@ -59,7 +65,7 @@ class MutateDetectorStore(ValueBase[S]):
         if not self._enabled:
             return
         store_value = self._storage.peek()
-        if store_value.public is not None and not self.equals(store_value.public, store_value.private):
+        if not isinstance(store_value.public, _PublicValueNotSet) and not self.equals(store_value.public, store_value.private):
             tb = store_value.get_traceback
             # TODO: make the error message as elaborate as below
             msg = (
@@ -109,9 +115,9 @@ Good (if you want to keep mutating your own list):
 
     def _ensure_public_exists(self):
         store_value = self._storage.peek()
-        if store_value.public is None:
+        if isinstance(store_value.public, _PublicValueNotSet):
             with self.lock:
-                if store_value.public is None:
+                if isinstance(store_value.public, _PublicValueNotSet):
                     frame = _find_outside_solara_frame()
                     if frame is not None:
                         frame_info = inspect.getframeinfo(frame)
