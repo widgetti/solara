@@ -11,8 +11,8 @@ license = {file = "LICENSE"}
 classifiers = ["License :: Free for non-commercial use"]
 dynamic = ["version", "description"]
 dependencies = [
-    "solara-ui==1.41.0",
-    "solara-server==1.41.0",
+    "solara-ui==1.42.0",
+    "solara-server==1.42.0",
 ]
 
 [project.optional-dependencies]
