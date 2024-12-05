@@ -1,6 +1,6 @@
 # Solara Changelog
 
-## Version 1.41.0
+## Version 1.42.0
    * Feature: Mutation detection is now available under the `SOLARA_STORAGE_MUTATION_DETECTION` environmental variable. [#595](https://github.com/widgetti/solara/pull/595).
    * Feature: Autofocusing text inputs is now supported. [#788](https://github.com/widgetti/solara/pull/788).
    * Feature: Custom colours are now supported for the Solara loading spinner. [#858](https://github.com/widgetti/solara/pull/858)
@@ -8,6 +8,14 @@
    * Bug Fix: Some version checks would prevent Solara from starting. [#904](https://github.com/widgetti/solara/pull/904).
    * Bug Fix: Solara apps running in qt mode (`--qt`) should now always work correctly. [#856](https://github.com/widgetti/solara/pull/856).
    * Bug Fix: Hot reloading of files outside working directory would crash app. [069a205](https://github.com/widgetti/solara/commit/069a205c88a8cbcb0b0ca23f4d56889c8ad6134a) and [#869](https://github.com/widgetti/solara/pull/869).
+
+## Version 1.41.0
+   * Feature: Support automatic resizing of Altair (Vega-Lite) figures. [#833](https://github.com/widgetti/solara/pull/833).
+   * Feature (Experimental): Support running Solara applications as standalone QT apps. [#835](https://github.com/widgetti/solara/pull/835).
+   * Feature: Add option to hide "This website runs on Solara"-banner. [#836](https://github.com/widgetti/solara/pull/836).
+   * Feature: Support navigating to hashes. [#814](https://github.com/widgetti/solara/pull/814).
+   * Bug Fix: Chunks and assets in nbextensions would fail to load. [9efe26c](https://github.com/widgetti/solara/commit/9efe26cbe00210163a6e8ef251ebfe50ca87fce2).
+   * Bug Fix: Vue widget decorator now always uses absolute paths. [#826](https://github.com/widgetti/solara/pull/826).
 
 ## Version 1.40.0
    * Feature: In Jupyter Notebook and Lab, Solara (server) now renders the [ipypopout](https://github.com/widgetti/ipypopout) window instead of Voila [#805](render ipypopout content in jupyter notebook and lab)
