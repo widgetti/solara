@@ -9,7 +9,7 @@ on:
   pull_request:
   workflow_dispatch:
   schedule:
-    - cron: '0 6 * * *'  # at 06:00 UTC every day
+    - cron: "0 6 * * *" # at 06:00 UTC every day
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -112,7 +112,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.12"]  # 3.9 is the lowest version pre-commit supports
+        python-version: ["3.9", "3.12"] # 3.9 is the lowest version pre-commit supports
     env:
       LOCK_FILE_LOCATION: .ci-package-locks/code-quality/python${{ matrix.python-version }}.txt
       DIFF_FILE_LOCATION: diff-code-quality-python${{ matrix.python-version }}.txt
@@ -200,15 +200,13 @@ jobs:
         run: ls -R dist
 
       - name: Install solara-ui
-        run:
-          pip install dist/*.whl
+        run: pip install dist/*.whl
 
       - name: Test import
         run: python -c "import solara"
 
       - name: Install solara-server
-        run:
-          pip install `echo packages/solara-server/dist/*.whl`[starlette]
+        run: pip install `echo packages/solara-server/dist/*.whl`[starlette]
 
       - name: Run solara create
         run: solara create button test.py
@@ -227,8 +225,7 @@ jobs:
         run: python -c "import solara_enterprise"
 
       - name: Install solara-meta
-        run:
-          pip install packages/solara-meta/dist/*.whl
+        run: pip install packages/solara-meta/dist/*.whl
 
   pyinstaller-test:
     needs: [build]
@@ -661,7 +658,8 @@ jobs:
           include-hidden-files: true
 
   update-ci-package-locks:
-    needs: [build, code-quality, integration-test, integration-test-vue3, unit-test]
+    needs:
+      [build, code-quality, integration-test, integration-test-vue3, unit-test]
     runs-on: ubuntu-latest
 
     steps:
@@ -695,10 +693,18 @@ jobs:
           git push
 
   release:
-    needs: [build, code-quality, test-install, integration-test, integration-test-vue3, unit-test]
+    needs:
+      [
+        build,
+        code-quality,
+        test-install,
+        integration-test,
+        integration-test-vue3,
+        unit-test,
+      ]
     runs-on: ubuntu-latest
     permissions:
-      id-token: write  # this permission is mandatory for trusted publishing
+      id-token: write # this permission is mandatory for trusted publishing
 
     steps:
       - uses: actions/checkout@v4
