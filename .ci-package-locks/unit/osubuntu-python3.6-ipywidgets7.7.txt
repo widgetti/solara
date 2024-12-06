@@ -150,7 +150,7 @@ rich-click==1.2.1
 Send2Trash==1.8.3
 simple-websocket==1.1.0
 simplejson==3.19.3
-six==1.16.0
+six==1.17.0
 sniffio==1.2.0
 soupsieve==2.3.2.post1
 starlette==0.19.1
