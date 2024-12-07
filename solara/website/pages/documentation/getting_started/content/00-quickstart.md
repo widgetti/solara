@@ -94,7 +94,7 @@ Or the more modern Jupyter lab:
 You can also run the script as a standalone app. This requires the extra packages `qtpy` and `PySide6` (or `PyQt6`) to be installed.
 
 ```bash
-$ pip install pip install qtpy PySide6
+$ pip install qtpy PySide6
 ```
 
 Run from the command line in the same directory where you put your file (`sol.py`):
