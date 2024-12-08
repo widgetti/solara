@@ -70,18 +70,19 @@ LOGGING_CONFIG: dict = {
     },
 }
 
+latest_version = None
+
 
 def _check_version():
     import requests
+
+    global latest_version
 
     try:
         response = requests.get("https://pypi.org/pypi/solara/json")
         latest_version = response.json()["info"]["version"]
     except:  # noqa: E722
         return
-    if latest_version != solara.__version__:
-        print(f"New version of Solara available: {latest_version}. You have {solara.__version__}. Please upgrade using:")  # noqa: T201
-        print(f'\t$ pip install "solara=={latest_version}"')  # noqa: T201
 
 
 def find_all_packages_paths():
@@ -378,6 +379,9 @@ def run(
         while not failed and (server is None or not server.started):
             time.sleep(0.1)
         if not failed:
+            if latest_version is not None and latest_version != solara.__version__:
+                print(f"New version of Solara available: {latest_version}. You have {solara.__version__}. Please upgrade using:")  # noqa: T201
+                print(f'\t$ pip install "solara=={latest_version}"')  # noqa: T201
             if qt:
                 from .server.qt import run_qt
 
