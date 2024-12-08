@@ -163,6 +163,15 @@ if is_mac_os_conda or is_wsl_windows:
     HOST_DEFAULT = "localhost"
 
 
+class Server(BaseSettings):
+    ignore_nbextensions: List[str] = []
+
+    class Config:
+        env_prefix = "solara_server_"
+        case_sensitive = False
+        env_file = ".env"
+
+
 class MainSettings(BaseSettings):
     use_pdb: bool = False
     mode: str = "production"
@@ -181,6 +190,7 @@ class MainSettings(BaseSettings):
 
 
 main = MainSettings()
+server = Server()
 theme = ThemeSettings()
 telemetry = Telemetry()
 ssg = SSG()
