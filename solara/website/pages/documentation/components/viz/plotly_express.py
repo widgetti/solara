@@ -34,8 +34,6 @@ def Page():
     fig = px.histogram(df, "species")
     fig.update_layout(dragmode="select", selectdirection="h")
 
- 
     spx.scatter(df, x="sepal_width", y="sepal_length", color="species")
     spx.scatter_3d(df, x="sepal_width", y="sepal_length", z="petal_width")
     spx.CrossFilteredFigurePlotly(fig)
-    

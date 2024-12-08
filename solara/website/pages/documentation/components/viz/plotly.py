@@ -18,7 +18,6 @@ df = px.data.iris()
 
 @solara.component
 def Page():
-  
     selection_data, set_selection_data = solara.use_reactive(None)
     click_data, set_click_data = solara.use_reactive(None)
     hover_data, set_hover_data = solara.use_reactive(None)
