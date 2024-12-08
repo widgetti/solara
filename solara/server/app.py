@@ -9,7 +9,7 @@ import traceback
 import warnings
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Callable, Dict, List, Optional, cast
 
 import ipywidgets as widgets
 import reacton
@@ -52,6 +52,7 @@ class AppScript:
         if reload.reloader.on_change:
             raise RuntimeError("Previous reloader still had a on_change attached, no cleanup?")
         reload.reloader.on_change = self.on_file_change
+        self._on_app_close_callbacks: List[Callable[[], None]] = []
 
         self.app_name = default_app_name
         if ":" in self.fullname:
@@ -69,6 +70,7 @@ class AppScript:
         if context is not None:
             raise RuntimeError(f"We should not have an existing Solara app context when running an app for the first time: {context}")
         dummy_kernel_context = kernel_context.create_dummy_context()
+
         with dummy_kernel_context:
             app = self._execute()
 
@@ -84,6 +86,11 @@ class AppScript:
                 package_root_path = Path(mod.__file__).parent
                 reload.reloader.root_path = package_root_path
         dummy_kernel_context.close()
+
+        for app_start_callback, *_ in solara.lifecycle._on_app_start_callbacks:
+            cleanup = app_start_callback()
+            if cleanup:
+                self._on_app_close_callbacks.append(cleanup)
 
     def _execute(self):
         logger.info("Executing %s", self.name)
@@ -217,9 +224,16 @@ class AppScript:
         if reload.reloader.requires_reload or self._first_execute_app is None:
             with thread_lock:
                 if reload.reloader.requires_reload or self._first_execute_app is None:
+                    required_reload = reload.reloader.requires_reload
                     self._first_execute_app = None
                     self._first_execute_app = self._execute()
                     print("Re-executed app", self.name)  # noqa
+                    if required_reload:
+                        # run after execute, which filled in the new _app_start callbacks
+                        for app_start_callback, *_ in solara.lifecycle._on_app_start_callbacks:
+                            cleanup = app_start_callback()
+                            if cleanup:
+                                self._on_app_close_callbacks.append(cleanup)
                     # We now ran the app again, might contain new imports
                     patch.patch_heavy_imports()
 
@@ -243,6 +257,9 @@ class AppScript:
         # if multiple files change in a short time, we want to do this
         # not concurrently. Even better would be to do a debounce?
         with thread_lock:
+            for cleanup in reversed(self._on_app_close_callbacks):
+                cleanup()
+            self._on_app_close_callbacks.clear()
             # TODO: clearing the type_counter is a bit of a hack
             # and we should introduce reload 'hooks', so there is
             # less interdependency between modules
@@ -274,6 +291,31 @@ class AppScript:
                 if will_reload:
                     logger.info("reload: Removing on_kernel_start callback: %s (since it will be added when reloaded)", callback)
                     cleanup()
+
+            try:
+                for ac in solara.lifecycle._on_app_start_callbacks:
+                    callback, path, module, cleanup = ac
+                    will_reload = False
+                    if module is not None:
+                        module_name = module.__name__
+                        if module_name in reload.reloader.get_reload_module_names():
+                            will_reload = True
+                    elif path is not None:
+                        if str(path.resolve()).startswith(str(self.directory)):
+                            will_reload = True
+                        else:
+                            logger.warning(
+                                "script %s is not in the same directory as the app %s but is using on_app_start, "
+                                "this might lead to multiple entries, and might indicate a bug.",
+                                path,
+                                self.directory,
+                            )
+
+                    if will_reload:
+                        logger.info("reload: Removing on_app_start callback: %s (since it will be added when reloaded)", callback)
+                        cleanup()
+            except Exception as e:
+                logger.exception("Error while removing on_app_start callbacks: %s", e)
 
             context_values = list(kernel_context.contexts.values())
             # save states into the context so the hot reload will
