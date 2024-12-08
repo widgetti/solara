@@ -18,11 +18,11 @@ df = px.data.iris()
 
 @solara.component
 def Page():
-    selection_data, set_selection_data = solara.use_state(None)
-    click_data, set_click_data = solara.use_state(None)
-    hover_data, set_hover_data = solara.use_state(None)
-    unhover_data, set_unhover_data = solara.use_state(None)
-    deselect_data, set_deselect_data = solara.use_state(None)
+    selection_data, set_selection_data = solara.use_reactive(None)
+    click_data, set_click_data = solara.use_reactive(None)
+    hover_data, set_hover_data = solara.use_reactive(None)
+    unhover_data, set_unhover_data = solara.use_reactive(None)
+    deselect_data, set_deselect_data = solara.use_reactivee(None)
     fig = px.scatter(df, x="sepal_width", y="sepal_length", color="species")
     solara.FigurePlotly(
         fig, on_selection=set_selection_data, on_click=set_click_data, on_hover=set_hover_data, on_unhover=set_unhover_data, on_deselect=set_deselect_data
