@@ -111,6 +111,26 @@ def FileDrop(
      * `lazy`: Whether to load the file contents into memory or not. If `False`,
         the file contents will be loaded into memory via the `.data` attribute of file object(s).
 
+    ## Load into Pandas
+    To load the data into a Pandas DF, set `lazy=False` and use `file['file_obj']` (be careful of memory)<br>
+    You can run this directly in your Jupyter notebook
+
+    ```python
+    import io
+    import pandas as pd
+    import solara
+
+    @solara.component
+    def Page():
+        def load_file_df(file):
+            df = pd.read_csv(file["file_obj"])
+            print("Loaded dataframe:")
+            print(df)
+
+        solara.FileDrop(label="Drop file to see dataframe!", on_file=load_file_df)
+
+    ```
+
     """
 
     return _FileDrop(label=label, on_total_progress=on_total_progress, on_file=on_file, lazy=lazy, multiple=False)

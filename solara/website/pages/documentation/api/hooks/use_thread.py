@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Optional, cast
 
 import solara
-from solara.alias import rv, rw
+from solara.alias import rw
 
 HERE = Path(__file__).parent
 title = "use_thread"
@@ -29,16 +29,14 @@ def Page():
     # work will be cancelled/restarted every time the dependency changes
     result: solara.Result[bool] = solara.use_thread(work, dependencies=[number])
 
-    with solara.VBox() as main:
-        rw.IntText(value=number, on_value=set_number)
-        if result.state == solara.ResultState.FINISHED:
-            if result.value:
-                solara.Success(f"{number} is a prime!")
-            else:
-                solara.Error(f"{number} is not a prime, it can be divided by {proof} ")
-        elif result.state == solara.ResultState.ERROR:
-            solara.Error(f"Error occurred: {result.error}")
+    rw.IntText(value=number, on_value=set_number)
+    if result.state == solara.ResultState.FINISHED:
+        if result.value:
+            solara.Success(f"{number} is a prime!")
         else:
-            solara.Info(f"Running... (status = {result.state})")
-            rv.ProgressLinear(indeterminate=True)
-    return main
+            solara.Error(f"{number} is not a prime, it can be divided by {proof} ")
+    elif result.state == solara.ResultState.ERROR:
+        solara.Error(f"Error occurred: {result.error}")
+    else:
+        solara.Info(f"Running... (status = {result.state})")
+        solara.v.ProgressLinear(indeterminate=True)

@@ -58,6 +58,7 @@ def Page():
     mouseover_data, set_mouseover_data = solara.use_state(None)
     mouseout_data, set_mouseout_data = solara.use_state(None)
 
+
     with solara.Card("Echarts"):
         with solara.ToggleButtonsSingle("bars", on_value=set_option):
             solara.Button("bars")
@@ -67,6 +68,7 @@ def Page():
         solara.Markdown(f"**Click data**: {click_data}")
         solara.Markdown(f"**Mouseover data**: {mouseover_data}")
         solara.Markdown(f"**Mouseout data**: {mouseout_data}")
+
 
 
 __doc__ += apidoc(solara.FigureEcharts.f)  # type: ignore

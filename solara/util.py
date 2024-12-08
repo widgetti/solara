@@ -31,6 +31,28 @@ except RuntimeError:
     has_threads = False
 
 
+from reacton.utils import equals as equals_extra
+
+
+def equals_pickle(a, b):
+    """Compare two values for equality.
+
+    Avoid false negative, e.g. when comparing dataframes, we want to compare
+    the data, not the object identity.
+
+    """
+    if equals_extra(a, b):
+        return True
+    import pickle
+
+    try:
+        if pickle.dumps(a) == pickle.dumps(b):
+            return True
+    except Exception:
+        pass
+    return False
+
+
 def github_url(file):
     rel_path = os.path.relpath(file, Path(solara.__file__).parent.parent)
     github_url = solara.github_url + f"/blob/{solara.git_branch}/" + rel_path
