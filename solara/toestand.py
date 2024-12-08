@@ -98,6 +98,28 @@ class ValueBase(Generic[T]):
         self.listeners: Dict[str, Set[Tuple[Callable[[T], None], Optional[ContextManager]]]] = defaultdict(set)
         self.listeners2: Dict[str, Set[Tuple[Callable[[T, T], None], Optional[ContextManager]]]] = defaultdict(set)
 
+    # make sure all boolean operations give type errors
+    def __bool__(self):
+        raise TypeError("Reactive vars are not allowed in boolean expressions, did you want to use .value?")
+
+    def __eq__(self, other):
+        raise TypeError("Reactive vars are not allowed in boolean expressions, did you want to use .value?")
+
+    def __ne__(self, other):
+        raise TypeError("Reactive vars are not allowed in boolean expressions, did you want to use .value?")
+
+    def __lt__(self, other):
+        raise TypeError("Reactive vars are not allowed in boolean expressions, did you want to use .value?")
+
+    def __le__(self, other):
+        raise TypeError("Reactive vars are not allowed in boolean expressions, did you want to use .value?")
+
+    def __gt__(self, other):
+        raise TypeError("Reactive vars are not allowed in boolean expressions, did you want to use .value?")
+
+    def __ge__(self, other):
+        raise TypeError("Reactive vars are not allowed in boolean expressions, did you want to use .value?")
+
     @property
     def lock(self):
         raise NotImplementedError
