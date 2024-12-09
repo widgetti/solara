@@ -139,7 +139,7 @@ platformdirs==4.3.6
 playwright==1.49.0
 plotly==5.24.1
 pluggy==1.5.0
-polars==1.16.0
+polars==1.17.0
 pre_commit==4.0.1
 progressbar2==4.5.0
 prometheus_client==0.21.1
