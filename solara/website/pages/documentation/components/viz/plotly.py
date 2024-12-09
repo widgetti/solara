@@ -18,14 +18,15 @@ df = px.data.iris()
 
 @solara.component
 def Page():
-
-    state = solara.use_reactive({
-        "selection_data": None,
-        "click_data": None,
-        "hover_data": None,
-        "unhover_data": None,
-        "deselect_data": None,
-    })
+    state = solara.use_reactive(
+        {
+            "selection_data": None,
+            "click_data": None,
+            "hover_data": None,
+            "unhover_data": None,
+            "deselect_data": None,
+        }
+    )
 
     fig = px.scatter(df, x="sepal_width", y="sepal_length", color="species")
     solara.FigurePlotly(
