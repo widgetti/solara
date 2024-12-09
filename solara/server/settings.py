@@ -132,6 +132,7 @@ OAUTH_TEST_CLIENT_IDs = [AUTH0_TEST_CLIENT_ID, FIEF_TEST_CLIENT_ID]
 
 class Session(BaseSettings):
     secret_key: str = SESSION_SECRET_KEY_DEFAULT
+    http_only: bool = False
     https_only: Optional[bool] = None
     same_site: str = "lax"
 
