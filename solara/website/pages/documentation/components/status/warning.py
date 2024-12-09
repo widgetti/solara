@@ -17,13 +17,15 @@ from solara.website.utils import apidoc
 
 @solara.component
 def Page():
-    state = solara.use_reactive({
-        "icon": True,
-        "dense": False,
-        "outlined": True,
-        "text": True,
-    })
-    
+    state = solara.use_reactive(
+        {
+            "icon": True,
+            "dense": False,
+            "outlined": True,
+            "text": True,
+        }
+    )
+
     with solara.GridFixed(4):
         solara.Checkbox(label="Use icon", value=state["icon"], on_value=lambda val: state.value.update({"icon": val}))
         solara.Checkbox(label="Show dense", value=state["dense"], on_value=lambda val: state.value.update({"dense": val}))
@@ -37,7 +39,6 @@ def Page():
         outlined=state.value.update["outlined"],
         icon=state.value.update["icon"],
     )
-
 
 
 __doc__ += apidoc(solara.Warning.f)  # type: ignore
