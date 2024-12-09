@@ -30,11 +30,11 @@ def Page():
     fig = px.scatter(df, x="sepal_width", y="sepal_length", color="species")
     solara.FigurePlotly(
         fig, 
-        on_selection=lambda data: state.update({"selection_data": data}),
-        on_click=lambda data: state.update({"click_data": data}),
-        on_hover=lambda data: state.update({"hover_data": data}),
-        on_unhover=lambda data: state.update({"unhover_data": data}),
-        on_deselect=lambda data: state.update({"deselect_data": data}),
+        on_selection=lambda data: state.value.update({"selection_data": data}),
+        on_click=lambda data: state.value.update({"click_data": data}),
+        on_hover=lambda data: state.value.update({"hover_data": data}),
+        on_unhover=lambda data: state.value.update({"unhover_data": data}),
+        on_deselect=lambda data: state.value.update({"deselect_data": data}),
     )
 
     solara.Markdown(
@@ -42,27 +42,27 @@ def Page():
 # Events data
 ## selection
 ```
-{solara.Text(f"Selection Data: {state['selection_data']}")}
+{state.value['selection_data']}
 ```
 
 ## click
 ```
-{solara.Text(f"Click Data: {state['click_data']}")}
+{state.value['click_data']}
 ```
 
 ## hover
 ```
-{solara.Text(f"Hover Data: {state['hover_data']}")}
+{state.value['hover_data']}
 ```
 
 ## unhover
 ```
-{solara.Text(f"Unhover Data: {state['unhover_data']}")}
+{state.value['unhover_data']}
 ```
 
 ## deselect
 ```
-{solara.Text(f"Deselect Data: {state['deselect_data']}")}
+{state.value['deselect_data']}
 ```
 
 
