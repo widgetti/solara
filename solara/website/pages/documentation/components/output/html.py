@@ -13,9 +13,7 @@ def Page():
     <li>Item 2
 </ul>
 """
-    with solara.VBox() as main:
-        solara.HTML(tag="div", unsafe_innerHTML=html)
-    return main
+    solara.HTML(tag="div", unsafe_innerHTML=html)
 
 
 __doc__ += apidoc(solara.HTML.f)  # type: ignore
