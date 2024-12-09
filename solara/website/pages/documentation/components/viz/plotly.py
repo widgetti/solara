@@ -30,7 +30,7 @@ def Page():
 
     fig = px.scatter(df, x="sepal_width", y="sepal_length", color="species")
     solara.FigurePlotly(
-        fig, 
+        fig,
         on_selection=lambda data: state.value.update({"selection_data": data}),
         on_click=lambda data: state.value.update({"click_data": data}),
         on_hover=lambda data: state.value.update({"hover_data": data}),
