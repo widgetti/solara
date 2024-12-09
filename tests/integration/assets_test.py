@@ -67,8 +67,9 @@ def test_assets_extra(solara_server):
 def test_api_style(page_session: playwright.sync_api.Page, solara_server, solara_app):
     # this test is added because the include css macro in the jinja template may embed the
     # css, which also requires respecting the extra assets directories
-    with solara_app("solara.website.pages.documentation.components.input.button"), extra_assets(
-        [str(HERE / "assets" / "assets1"), str(HERE / "assets" / "assets2")]
+    with (
+        solara_app("solara.website.pages.documentation.components.input.button"),
+        extra_assets([str(HERE / "assets" / "assets1"), str(HERE / "assets" / "assets2")]),
     ):
         page_session.goto(solara_server.base_url)
         button = page_session.locator("text=Clicked 0 times")
