@@ -92,6 +92,7 @@ class VirtualKernelContext:
                 f()
             self._on_close_callbacks.clear()
             self.__post_init__()
+
     lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
 
     def display(self, *args):
@@ -230,6 +231,7 @@ class VirtualKernelContext:
                 self._last_kernel_cull_task.cancel()
 
             logger.info("Scheduling kernel cull for virtual kernel %s", self.id)
+
             async def create_task():
                 task = asyncio.create_task(kernel_cull())
                 # create a reference to the task so we can cancel it later
