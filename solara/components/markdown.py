@@ -9,6 +9,7 @@ from typing import Any, Callable, Dict, List, Optional, Union, cast
 import typing
 
 import ipyvuetify as v
+
 try:
     import pymdownx.emoji
     import pymdownx.highlight
@@ -276,6 +277,7 @@ def formatter(unsafe_solara_execute: bool, cleanups: List[Callable[[], None]]):
         except Exception as e:
             logger.exception("Error while highlighting code")
             raise e
+
     return wrapper
 
 
