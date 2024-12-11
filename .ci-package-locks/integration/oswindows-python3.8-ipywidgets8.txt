@@ -36,7 +36,7 @@ coverage==7.6.1
 cryptography==44.0.0
 cycler==0.12.1
 dask==2023.5.0
-debugpy==1.8.9
+debugpy==1.8.10
 decorator==5.1.1
 defusedxml==0.7.1
 distlib==0.3.9
@@ -49,7 +49,7 @@ filelock==3.16.1
 Flask==3.0.3
 flask-sock==0.7.0
 folium==0.18.0
-fonttools==4.55.2
+fonttools==4.55.3
 fqdn==1.5.1
 frozendict==2.4.6
 fsspec==2024.10.0
@@ -114,7 +114,7 @@ mistune==3.0.2
 mkdocs-pycafe==0.3.0
 mypy==1.13.0
 mypy-extensions==1.0.0
-narwhals==1.16.0
+narwhals==1.17.0
 nbclassic==1.1.0
 nbclient==0.10.1
 nbconvert==7.16.4
@@ -124,7 +124,7 @@ nodeenv==1.9.1
 notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.24.4
-openai==1.57.1
+openai==1.57.2
 overrides==7.7.0
 packaging==24.2
 pandas==2.0.3
