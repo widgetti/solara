@@ -65,11 +65,17 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
 
     def send_text(self, data: str) -> None:
         with self.lock:
-            self.ws.send(data)
+            try:
+                self.ws.send(data)
+            except simple_websocket.ws.ConnectionClosed:
+                raise websocket.WebSocketDisconnect()
 
     def send_bytes(self, data: bytes) -> None:
         with self.lock:
-            self.ws.send(data)
+            try:
+                self.ws.send(data)
+            except simple_websocket.ws.ConnectionClosed:
+                raise websocket.WebSocketDisconnect()
 
     async def receive(self):
         from anyio import to_thread
