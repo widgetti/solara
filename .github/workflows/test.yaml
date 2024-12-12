@@ -510,7 +510,7 @@ jobs:
           pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
           pip install "jupyterlab<4" "playwright==1.41.2" "pydantic<2" "ipywidgets~=${{ matrix.ipywidgets }}"
           pip install jupyter_core jupyter-packaging
-          pip install --pre ipyvue ipyvuetify
+          pip install --pre "ipyvue>=3" "ipyvuetify>=3"
           pip freeze --exclude solara --exclude solara-ui --exclude solara-server --exclude pytest-ipywidgets --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
           git diff | tee ${{ env.DIFF_FILE_LOCATION }}
           [ -s ${{ env.DIFF_FILE_LOCATION }} ] && echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT" || echo "No dependencies changed"
