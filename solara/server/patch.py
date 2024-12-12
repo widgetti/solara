@@ -15,6 +15,8 @@ import ipywidgets
 import ipywidgets.widgets.widget_output
 from IPython.core.interactiveshell import InteractiveShell
 
+import solara.util
+
 from . import app, kernel_context, reload, settings
 from .utils import pdb_guard
 
@@ -249,7 +251,8 @@ def auto_watch_get_template(get_template):
 
     def wrapper(abs_path):
         template = get_template(abs_path)
-        reload.reloader.watcher.add_file(abs_path)
+        with kernel_context.without_context():
+            reload.reloader.watcher.add_file(abs_path)
         return template
 
     return wrapper
@@ -272,10 +275,13 @@ def WidgetContextAwareThread__init__(self, *args, **kwargs):
         ThreadDebugInfo.created += 1
 
     self.current_context = None
-    try:
-        self.current_context = kernel_context.get_current_context()
-    except RuntimeError:
-        logger.debug(f"No context for thread {self}")
+    # if we do this for the dummy threads, we got into a recursion
+    # since threading.current_thread will call the _DummyThread constructor
+    if not ("name" in kwargs and "Dummy-" in kwargs["name"]):
+        try:
+            self.current_context = kernel_context.get_current_context()
+        except RuntimeError:
+            logger.debug(f"No context for thread {self._name}")
 
 
 def WidgetContextAwareThread__bootstrap(self):
@@ -291,6 +297,7 @@ def WidgetContextAwareThread__bootstrap(self):
 
 def _WidgetContextAwareThread__bootstrap(self):
     if not hasattr(self, "current_context"):
+        # this happens when a thread was running before we patched
         return Thread__bootstrap(self)
     if self.current_context:
         # we need to call this manually, because set_context_for_thread
@@ -299,15 +306,20 @@ def _WidgetContextAwareThread__bootstrap(self):
         if kernel_context.async_context_id is not None:
             kernel_context.async_context_id.set(self.current_context.id)
         kernel_context.set_context_for_thread(self.current_context, self)
-
         shell = self.current_context.kernel.shell
-        shell.display_pub.register_hook(shell.display_in_reacton_hook)
+        display_pub = shell.display_pub
+        display_in_reacton_hook = shell.display_in_reacton_hook
+        display_pub.register_hook(display_in_reacton_hook)
     try:
-        with pdb_guard():
+        context = self.current_context or solara.util.nullcontext()
+        with pdb_guard(), context:
             Thread__bootstrap(self)
     finally:
-        if self.current_context:
-            shell.display_pub.unregister_hook(shell.display_in_reacton_hook)
+        current_context = self.current_context
+        self.current_context = None
+        kernel_context.clear_context_for_thread(self)
+        if current_context:
+            display_pub.unregister_hook(display_in_reacton_hook)
 
 
 _patched = False
@@ -352,6 +364,58 @@ def patch_ipyreact():
 
     # make this a no-op, we'll create the widget when needed
     ipyreact.importmap._update_import_map = lambda: None
+
+
+def patch_ipyvue_performance():
+    import functools
+    from collections.abc import Iterable
+
+    @functools.lru_cache(None)  # type: ignore
+    def class_traits(cls, **metadata):
+        # we cache it for performance reasons
+        return cls.class_traits(**metadata)
+
+    @functools.lru_cache(None)  # type: ignore
+    def to_jsons_meta(cls):
+        traits = class_traits(cls)
+        callables = {}
+        for name, trait in traits.items():
+            to_json = trait.metadata.get("to_json")
+            if to_json:
+                callables[name] = to_json
+        return callables
+
+    def get_state_fast(self, key=None, drop_defaults=False):
+        cls = type(self)
+        traits = class_traits(cls, sync=True)  # type: ignore
+        if key is None:
+            keys = list(traits)
+        elif isinstance(key, str):
+            keys = [key]
+        elif isinstance(key, Iterable):
+            keys = list(key)
+        else:
+            raise ValueError("key must be a string, an iterable of keys, or None")
+        state = {}
+        to_jsons = to_jsons_meta(cls)  # type: ignore
+        assert drop_defaults is False
+        trait_values = self._trait_values
+        for k in keys:
+            if k not in trait_values:
+                value = getattr(self, k)
+            else:
+                value = trait_values[k]
+            if k in to_jsons:
+                wire_value = to_jsons[k](value, self)
+            else:
+                # should we call _trait_to_json?
+                wire_value = value
+            state[k] = wire_value
+        return state
+
+    import ipyvue
+
+    ipyvue.VueWidget.get_state = get_state_fast
 
 
 def once(f):
@@ -474,6 +538,12 @@ def patch():
 
             matplotlib.rcParams["backend"] = os.environ.get("MPLBACKEND")
 
+    if settings.main.experimental_performance:
+        # this might be a bit too much
+        # import traitlets
+        # traitlets.TraitType._validate = lambda self, trait, value: value
+
+        patch_ipyvue_performance()
     # the ipyvue.Template module cannot be accessed like ipyvue.Template
     # because the import in ipvue overrides it
     template_mod = sys.modules["ipyvue.Template"]

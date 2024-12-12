@@ -32,6 +32,7 @@ def LiveUpdatingComponent(counter):
     """Component which will be redrawn whenever the counter value changes."""
     fig, ax = plt.subplots()
     ax.plot(np.arange(10), np.random.random(10))
+    plt.close(fig)
     solara.FigureMatplotlib(fig)
 
 
