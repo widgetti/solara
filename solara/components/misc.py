@@ -136,7 +136,7 @@ def HTML(tag="div", unsafe_innerHTML=None, style: str = None, classes: List[str]
 
 @solara.component
 def VBox(children=[], grow=True, align_items="stretch", classes: List[str] = []):
-    """Deprecated. Use `Row` instead."""
+    """Deprecated. Use `Column` instead."""
     style = f"flex-direction: column; align-items: {align_items};"
     if grow:
         style += "flex-grow: 1;"
@@ -146,7 +146,7 @@ def VBox(children=[], grow=True, align_items="stretch", classes: List[str] = [])
 
 @solara.component
 def HBox(children=[], grow=True, align_items="stretch", classes: List[str] = []):
-    """Deprecated. Use `Column` instead."""
+    """Deprecated. Use `Row` instead."""
     style = f"flex-direction: row; align-items: {align_items}; "
     if grow:
         style += "flex-grow: 1;"
