@@ -93,8 +93,6 @@ class VirtualKernelContext:
             self._on_close_callbacks.clear()
             self.__post_init__()
 
-    lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
-
     def display(self, *args):
         print(args)  # noqa
 
