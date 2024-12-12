@@ -1,4 +1,3 @@
-import functools
 import hashlib
 import html
 import logging
@@ -273,7 +272,9 @@ def _highlight(src, language, class_name=None, options=None, md=None, unsafe_sol
 def formatter(unsafe_solara_execute: bool, cleanups: List[Callable[[], None]]):
     def wrapper(*args, **kwargs):
         try:
-            return _highlight(*args, unsafe_solara_execute=unsafe_solara_execute, cleanups=cleanups, **kwargs)
+            kwargs["unsafe_solara_execute"] = unsafe_solara_execute
+            kwargs["cleanups"] = cleanups
+            return _highlight(*args, **kwargs)
         except Exception as e:
             logger.exception("Error while highlighting code")
             raise e

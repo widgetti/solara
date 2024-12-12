@@ -42,16 +42,22 @@ def _scoped_test_memleak(
         context = weakref.ref(list(solara.server.kernel_context.contexts.values())[0])
         # we should not have created a new context
         assert len(solara.server.kernel_context.contexts) == 1
-        kernel = weakref.ref(context().kernel)
-        shell = weakref.ref(kernel().shell)
-        session = weakref.ref(kernel().session)
+        ctx = context()
+        assert ctx is not None
+        kernel = weakref.ref(ctx.kernel)
+        krn = kernel()
+        assert krn is not None
+        shell = weakref.ref(krn.shell)
+        session = weakref.ref(krn.session)
+        last_cull_task = ctx._last_kernel_cull_task
         page_session.goto("about:blank")
-        if context()._last_kernel_cull_task:
-            if not context()._last_kernel_cull_task.done():
-                event = threading.Event()
-                context()._last_kernel_cull_task.add_done_callback(lambda _: event.set())
-                assert event.wait()
-        assert context().closed_event.wait(10)
+        if last_cull_task is not None and not last_cull_task.done():
+            event = threading.Event()
+            last_cull_task.add_done_callback(lambda _: event.set())
+            assert event.wait()
+        closed_event = ctx.closed_event
+        assert closed_event.wait(10)
+        del ctx, krn, last_cull_task, closed_event
         if shell():
             del shell().__dict__
     return context, kernel, shell, session
