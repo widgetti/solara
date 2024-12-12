@@ -37,7 +37,7 @@ def _scoped_test_memleak(
 ):
     with solara_app("solara.website.pages"):
         page_session.goto(solara_server.base_url)
-        page_session.locator("text=Examples").first.wait_for()
+        page_session.locator("text=Documentation").first.wait_for()
         assert len(solara.server.kernel_context.contexts) == 1
         context = weakref.ref(list(solara.server.kernel_context.contexts.values())[0])
         # we should not have created a new context
