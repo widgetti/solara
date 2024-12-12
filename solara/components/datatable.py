@@ -17,7 +17,7 @@ from .. import CellAction, ColumnAction
 
 
 def _ensure_dict(d):
-    if dataclasses.is_dataclass(d):
+    if dataclasses.is_dataclass(d) and not isinstance(d, type):  # is_dataclass also returns True for dataclass type, rather than instance
         return dataclasses.asdict(d)
     return d
 

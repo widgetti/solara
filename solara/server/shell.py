@@ -58,9 +58,12 @@ class SolaraDisplayPublisher(DisplayPublisher):
         self,
         data,
         metadata=None,
+        source=None,
+        *,  # Enforce keyword-only arguments to match DisplayPublisher.publish
         transient=None,
         update=False,
-    ):
+        **kwargs,  # Make sure we're compatible with DisplayPublisher.publish
+    ) -> None:
         """Publish a display-data message
 
         Parameters

@@ -1,3 +1,4 @@
+import sys
 import abc
 import asyncio
 import dataclasses
@@ -26,6 +27,12 @@ import solara.util
 from solara.toestand import Singleton
 
 from .toestand import Ref as ref
+
+if sys.version_info >= (3, 8):
+    from typing import Literal
+else:
+    from typing_extensions import Literal
+
 
 R = TypeVar("R")
 T = TypeVar("T")
@@ -686,24 +693,27 @@ def task(
         return wrapper(f)
 
 
+# Quotes around Task[...] are needed in Python <= 3.9, since ParamSpec doesn't properly support non-type arguments
+# i.e. [] is taken as a value instead of a type
+# See https://github.com/python/typing_extensions/issues/126 and related issues
 @overload
 def use_task(
     f: None = None,
     *,
-    dependencies: None = ...,
+    dependencies: Literal[None] = ...,
     raise_error=...,
     prefer_threaded=...,
-) -> Callable[[Callable[P, R]], Task[P, R]]: ...
+) -> Callable[[Callable[[], R]], "Task[[], R]"]: ...
 
 
 @overload
 def use_task(
-    f: Callable[P, R],
+    f: Callable[[], R],
     *,
-    dependencies: None = ...,
+    dependencies: Literal[None] = ...,
     raise_error=...,
     prefer_threaded=...,
-) -> Task[P, R]: ...
+) -> "Task[[], R]": ...
 
 
 @overload
@@ -727,12 +737,12 @@ def use_task(
 
 
 def use_task(
-    f: Union[None, Callable[P, R]] = None,
+    f: Union[None, Callable[[], R]] = None,
     *,
     dependencies: Union[None, List] = [],
     raise_error=True,
     prefer_threaded=True,
-) -> Union[Callable[[Callable[P, R]], Task[P, R]], Task[P, R]]:
+) -> Union[Callable[[Callable[[], R]], "Task[[], R]"], "Task[[], R]"]:
     """A hook that runs a function or coroutine function as a task and returns the result.
 
     Allows you to run code in the background, with the UI available to the user. This is useful for long running tasks,
@@ -811,7 +821,7 @@ def use_task(
     """
 
     def wrapper(f):
-        def create_task() -> Task[P, R]:
+        def create_task() -> "Task[[], R]":
             return task(f, prefer_threaded=prefer_threaded)
 
         task_instance = solara.use_memo(create_task, dependencies=[])
