@@ -215,8 +215,20 @@ def send_websockets(websockets: Set[websocket.WebsocketWrapper], binary_msg):
     for ws in list(websockets):
         try:
             ws.send(binary_msg)
-        except:  # noqa
-            # in case of any issue, we simply remove it from the list
+        except websocket.WebSocketDisconnect:
+            # ignore the exception, we tried to send while websocket closed
+            # just remove it from the websocket set
+            try:
+                # websocket can be modified by another thread
+                websockets.remove(ws)
+            except KeyError:
+                pass  # already removed
+        except Exception as e:  # noqa
+            logger.exception("Error sending message: %s, closing websocket", e)
+            try:
+                ws.close()
+            except Exception as e:  # noqa
+                logger.exception("Error closing websocket: %s", e)
             try:
                 # websocket can be modified by another thread
                 websockets.remove(ws)

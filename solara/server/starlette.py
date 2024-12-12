@@ -15,6 +15,7 @@ import anyio
 import starlette.websockets
 import uvicorn.server
 import websockets.legacy.http
+import websockets.exceptions
 
 from solara.server.utils import path_is_child_of
 
@@ -121,9 +122,31 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
             while len(self.to_send) > 0:
                 first = self.to_send.pop(0)
                 if isinstance(first, bytes):
-                    await self.ws.send_bytes(first)
+                    await self._send_bytes_exc(first)
                 else:
-                    await self.ws.send_text(first)
+                    await self._send_text_exc(first)
+
+    async def _send_bytes_exc(self, data: bytes):
+        # make sures we catch the starlette/websockets specific exception
+        # and re-raise it as a websocket.WebSocketDisconnect
+        try:
+            await self.ws.send_bytes(data)
+        except websockets.exceptions.ConnectionClosed as e:
+            raise websocket.WebSocketDisconnect() from e
+        except RuntimeError as e:
+            # starlette throws a RuntimeError once you call send after the connection is closed
+            raise websocket.WebSocketDisconnect() from e
+
+    async def _send_text_exc(self, data: str):
+        # make sures we catch the starlette/websockets specific exception
+        # and re-raise it as a websocket.WebSocketDisconnect
+        try:
+            await self.ws.send_text(data)
+        except websockets.exceptions.ConnectionClosed as e:
+            raise websocket.WebSocketDisconnect() from e
+        except RuntimeError as e:
+            # starlette throws a RuntimeError once you call send after the connection is closed
+            raise websocket.WebSocketDisconnect() from e
 
     def close(self):
         if self.portal is None:
@@ -133,25 +156,25 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
 
     def send_text(self, data: str) -> None:
         if self.portal is None:
-            task = self.event_loop.create_task(self.ws.send_text(data))
+            task = self.event_loop.create_task(self._send_text_exc(data))
             self.tasks.add(task)
             task.add_done_callback(self.tasks.discard)
         else:
             if settings.main.experimental_performance:
                 self.to_send.append(data)
             else:
-                self.portal.call(self.ws.send_bytes, data)  # type: ignore
+                self.portal.call(self._send_bytes_exc, data)  # type: ignore
 
     def send_bytes(self, data: bytes) -> None:
         if self.portal is None:
-            task = self.event_loop.create_task(self.ws.send_bytes(data))
+            task = self.event_loop.create_task(self._send_bytes_exc(data))
             self.tasks.add(task)
             task.add_done_callback(self.tasks.discard)
         else:
             if settings.main.experimental_performance:
                 self.to_send.append(data)
             else:
-                self.portal.call(self.ws.send_bytes, data)  # type: ignore
+                self.portal.call(self._send_bytes_exc, data)  # type: ignore
 
     async def receive(self):
         if self.portal is None:
