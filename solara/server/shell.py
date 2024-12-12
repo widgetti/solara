@@ -188,8 +188,9 @@ class SolaraInteractiveShell(InteractiveShell):
         super().__init__(*args, **kwargs)
         atexit.unregister(self.atexit_operations)
 
-        magic = self.magics_manager.registry["ScriptMagics"]
-        atexit.unregister(magic.kill_bg_processes)
+        if self.magics_manager:
+            magic = self.magics_manager.registry["ScriptMagics"]
+            atexit.unregister(magic.kill_bg_processes)
 
     def set_parent(self, parent):
         """Tell the children about the parent message."""
