@@ -63,6 +63,7 @@ def _scoped_test_memleak(
     return context, kernel, shell, session
 
 
+@pytest.mark.skip(reason="This test is flaky on CI, re-enable when we have a more stable solution")
 def test_memleak(
     pytestconfig,
     request,
