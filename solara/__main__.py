@@ -21,6 +21,8 @@ import solara.server.threaded
 
 from .server import telemetry
 
+print_mutex = threading.Lock()
+
 try:
     from solara_enterprise.ssg import ssg_crawl
 except ImportError:
@@ -75,13 +77,15 @@ def _check_version():
     import requests
 
     try:
-        response = requests.get("https://pypi.org/pypi/solara/json")
+        response = requests.get("https://pypi.org/pypi/solara/json", timeout=0.5)
         latest_version = response.json()["info"]["version"]
     except:  # noqa: E722
+        # in case of a firewall, or timeout, we just abort
         return
     if latest_version != solara.__version__:
-        print(f"New version of Solara available: {latest_version}. You have {solara.__version__}. Please upgrade using:")  # noqa: T201
-        print(f'\t$ pip install "solara=={latest_version}"')  # noqa: T201
+        with print_mutex:
+            print(f"New version of Solara available: {latest_version}. You have {solara.__version__}. Please upgrade using:")  # noqa: T201
+            print(f'\t$ pip install "solara=={latest_version}"')  # noqa: T201
 
 
 def find_all_packages_paths():
@@ -306,7 +310,7 @@ def run(
         print("solara: --reload is deprecated, use --auto-restart/-a instead", file=sys.stderr)  # noqa: T201
         auto_restart = reload
     if check_version:
-        _check_version()
+        threading.Thread(target=_check_version, daemon=True).run()
 
     # uvicorn calls it reload, we call it auto restart
     reload = auto_restart
@@ -390,7 +394,8 @@ def run(
     if open and not qt:
         threading.Thread(target=open_browser, daemon=True).start()
 
-    rich.print(f"Solara server is starting at {url}")
+    with print_mutex:
+        rich.print(f"Solara server is starting at {url}")
 
     if log_level is not None:
         LOGGING_CONFIG["loggers"]["solara"]["level"] = log_level.upper()
