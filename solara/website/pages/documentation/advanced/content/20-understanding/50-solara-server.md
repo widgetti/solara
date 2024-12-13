@@ -51,6 +51,7 @@ browser pages. This can be used to store state that outlives a page refresh.
 We recommend storing the state in an external database, especially in the case of multiple workers/nodes. If you want to store state associated to a session in-memory, make sure to set up sticky sessions.
 
 
+The `solara-session-id` cookie is accessible in the browser using JavaScript. If you deem this a security risk, you can disable the cookie by setting the `SOLARA_SESSION_HTTP_ONLY` environment variable to `True`.
 
 
 ## Readiness check

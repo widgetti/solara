@@ -463,6 +463,7 @@ See also https://solara.dev/documentation/getting_started/deploying/self-hosted
     session_id = request.cookies.get(server.COOKIE_KEY_SESSION_ID) or str(uuid4())
     samesite = "lax"
     secure = False
+    httponly = settings.session.http_only
     # we want samesite, so we can set a cookie when embedded in an iframe, such as on huggingface
     # however, samesite=none requires Secure https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite
     # when hosted on the localhost domain we can always set the Secure flag
@@ -488,6 +489,7 @@ Also check out the following Solara documentation:
         expires="Fri, 01 Jan 2038 00:00:00 GMT",
         samesite=samesite,  # type: ignore
         secure=secure,  # type: ignore
+        httponly=httponly,  # type: ignore
     )  # type: ignore
     return response
 
