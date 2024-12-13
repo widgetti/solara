@@ -5,8 +5,8 @@ description: Solara is compatible with many different hosting solutions, such as
 # Self hosted deployment
 
  * [Flask](#flask)
- * [Starlette](#flask)
- * [FastAPI](#flask)
+ * [Starlette](#starlette)
+ * [FastAPI](#fastapi)
  * [Voila](#voila)
  * [Panel](#panel)
  * [Nginx](#nginx)
