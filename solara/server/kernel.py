@@ -54,7 +54,7 @@ def json_default(obj):
         import numpy as np
 
         if isinstance(obj, np.number):
-            return repr(obj.item())
+            return obj.item()
         else:
             raise TypeError("%r is not JSON serializable" % obj)
     else:
