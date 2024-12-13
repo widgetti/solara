@@ -267,6 +267,7 @@ def test_routes_regular_widgets():
 def test_single_file_routes_as_file(kernel_context, no_kernel_context):
     name = str(HERE / "solara_test_apps" / "single_file_routes.py")
     app = AppScript(name)
+    app.init()
     assert len(app.routes) == 2
     assert app.routes[0].path == "/"
     assert app.routes[0].layout is not None
@@ -289,6 +290,7 @@ def test_single_file_routes_as_file(kernel_context, no_kernel_context):
 def test_single_file_routes_as_module(kernel_context, no_kernel_context, extra_include_path):
     with extra_include_path(HERE / "solara_test_apps"):
         app = AppScript("single_file_routes")
+        app.init()
         assert len(app.routes) == 2
         assert app.routes[0].path == "/"
         assert app.routes[0].layout is not None

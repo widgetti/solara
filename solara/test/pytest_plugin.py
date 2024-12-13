@@ -150,6 +150,7 @@ def solara_app(solara_server):
             solara.server.app.apps["__default__"].close()
         if isinstance(app, str):
             app = solara.server.app.AppScript(app)
+            app.init()
         used_app = app
         solara.server.app.apps["__default__"] = app
         try:

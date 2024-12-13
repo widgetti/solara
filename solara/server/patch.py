@@ -1,4 +1,3 @@
-import functools
 import logging
 import os
 import pdb
@@ -14,6 +13,8 @@ import IPython.display
 import ipywidgets
 import ipywidgets.widgets.widget_output
 from IPython.core.interactiveshell import InteractiveShell
+
+import solara
 
 from . import app, kernel_context, reload, settings
 from .utils import pdb_guard
@@ -354,24 +355,7 @@ def patch_ipyreact():
     ipyreact.importmap._update_import_map = lambda: None
 
 
-def once(f):
-    called = False
-    return_value = None
-
-    @functools.wraps(f)
-    def wrapper():
-        nonlocal called
-        nonlocal return_value
-        if called:
-            return return_value
-        called = True
-        return_value = f()
-        return return_value
-
-    return wrapper
-
-
-@once
+@solara.util.once
 def patch_matplotlib():
     import matplotlib
     import matplotlib._pylab_helpers

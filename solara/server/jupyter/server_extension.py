@@ -14,6 +14,7 @@ def _load_jupyter_server_extension(server_app):
     import solara.server.app
 
     solara.server.app.apps["__default__"] = solara.server.app.AppScript("solara.server.jupyter.solara:Page")
+    solara.server.app.apps["__default__"].init()
 
     web_app = server_app.web_app
 

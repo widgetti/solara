@@ -572,6 +572,7 @@ class StaticCdn(StaticFilesOptionalAuth):
 
 
 def on_startup():
+    appmod.ensure_apps_initialized()
     # TODO: configure and set max number of threads
     # see https://github.com/encode/starlette/issues/1724
     telemetry.server_start()

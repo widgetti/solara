@@ -282,6 +282,7 @@ def read_root(
             return content
 
     default_app = app.apps["__default__"]
+    default_app.check()
     routes = default_app.routes
     router = solara.routing.Router(path, routes)
     if not router.possible_match:

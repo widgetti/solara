@@ -24,6 +24,7 @@ def test_script_reload_component(tmpdir, kernel_context, extra_include_path, no_
             app = AppScript(f"{target.stem}")
         else:
             app = AppScript(f"{target}")
+        app.init()
         try:
             app.run()
             callback = app.routes[0].module.test_callback  # type: ignore
