@@ -78,7 +78,16 @@ $ curl http://localhost:8765/resourcez\?verbose
 
 The JSON format may be subject to change.
 
+## Ignoring notebook extensions
 
+Not all (classic) jupyter notebook extensions are compatible with Solara, and there is not way to distinguish between notebook extensions that are needed for widgets and those that are not.
+To ignore notebook extensions, you can set the `SOLARA_SERVER_IGNORE_NBEXTENSIONS` environment variable. This is a comma separated list of notebook extensions to ignore. For example, to ignore the `dash/main` and `foo/bar` extensions, you can run:
+
+```bash
+$ SOLARA_SERVER_IGNORE_NBEXTENSIONS="dash/main,foo/bar" solara run nogit/sol.py -a
+```
+
+Note that these error are not fatal, and the Solara app will still run.
 
 ## Production mode
 
