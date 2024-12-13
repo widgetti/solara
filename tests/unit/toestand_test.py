@@ -1193,6 +1193,7 @@ def test_computed_reload(no_kernel_context):
     # the reactive variable id's
     solara.toestand.KernelStore._type_counter.clear()
     app = AppScript(name)
+    app.init()
     try:
         assert len(app.routes) == 1
         route = app.routes[0]

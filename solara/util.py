@@ -1,5 +1,6 @@
 import base64
 import contextlib
+import functools
 import gzip
 import hashlib
 import json
@@ -328,3 +329,20 @@ def is_running_in_vscode():
 
 def is_running_in_voila():
     return os.environ.get("SERVER_SOFTWARE", "").startswith("voila")
+
+
+def once(f):
+    called = False
+    return_value = None
+
+    @functools.wraps(f)
+    def wrapper():
+        nonlocal called
+        nonlocal return_value
+        if called:
+            return return_value
+        called = True
+        return_value = f()
+        return return_value
+
+    return wrapper
