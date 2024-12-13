@@ -131,9 +131,7 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
         # and re-raise it as a websocket.WebSocketDisconnect
         try:
             await self.ws.send_bytes(data)
-        except websockets.exceptions.ConnectionClosed as e:
-            raise websocket.WebSocketDisconnect() from e
-        except RuntimeError as e:
+        except (websockets.exceptions.ConnectionClosed, starlette.websockets.WebSocketDisconnect, RuntimeError) as e:
             # starlette throws a RuntimeError once you call send after the connection is closed
             raise websocket.WebSocketDisconnect() from e
 
@@ -142,9 +140,7 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
         # and re-raise it as a websocket.WebSocketDisconnect
         try:
             await self.ws.send_text(data)
-        except websockets.exceptions.ConnectionClosed as e:
-            raise websocket.WebSocketDisconnect() from e
-        except RuntimeError as e:
+        except (websockets.exceptions.ConnectionClosed, starlette.websockets.WebSocketDisconnect, RuntimeError) as e:
             # starlette throws a RuntimeError once you call send after the connection is closed
             raise websocket.WebSocketDisconnect() from e
 
