@@ -15,6 +15,8 @@ Exciting news! We aim to release Solara 2.0 by the end of the year. For the 2.0 
 
     Using reactive variables in boolean comparisons will raise an error in Solara 2.0, but this can be used in Solara > 1.42.0 by setting the environment variable `SOLARA_ALLOW_REACTIVE_BOOLEAN=0`.
 
+    In Solara 2.0, `reacton.Fragment` will be used as the default container of any unwrapped sibling elements. This behaviour can be enabled in Solara > 1.42.0 by setting the environmental variable `SOLARA_DEFAULT_CONTAINER="Fragment"`.
+
 - [See more details in the 2.0 milestone on GitHub.](https://github.com/widgetti/solara/milestone/1)
 
 
