@@ -576,6 +576,12 @@ def on_startup():
 
 
 def on_shutdown():
+    # shutdown all kernels
+    for context in list(kernel_context.contexts.values()):
+        try:
+            context.close()
+        except:  # noqa
+            logger.exception("error closing kernel on shutdown")
     telemetry.server_stop()
 
 
