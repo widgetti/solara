@@ -632,7 +632,18 @@ jobs:
         if: ( github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true' ) && matrix.os != 'windows'
         uses: shogo82148/actions-setup-redis@v1.35.1
 
-      - name: test
+      - name: Run unit tests
+        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true'
+        run: |
+          # otherwise Python's inspect cannot find the source code
+          mv solara _solara
+          pytest tests/unit --doctest-modules --timeout=60
+
+      - name: Run unit tests as if we are running solara 2.0
+        env:
+          SOLARA_ALLOW_REACTIVE_BOOLEAN: 0
+          # TODO: does not work yet
+          # SOLARA_STORAGE_MUTATION_DETECTION: 1
         if: github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true'
         run: |
           # otherwise Python's inspect cannot find the source code
