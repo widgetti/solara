@@ -159,7 +159,7 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
             if settings.main.experimental_performance:
                 self.to_send.append(data)
             else:
-                self.portal.call(self._send_bytes_exc, data)  # type: ignore
+                self.portal.call(self._send_text_exc, data)  # type: ignore
 
     def send_bytes(self, data: bytes) -> None:
         if self.portal is None:
