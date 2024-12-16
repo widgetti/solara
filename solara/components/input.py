@@ -357,6 +357,7 @@ def _use_input_type(
     parse: Callable[[Optional[str]], T],
     stringify: Callable[[Optional[T]], str],
     on_value: Union[None, Callable[[Optional[T]], None], Callable[[T], None]] = None,
+    extra_dependencies=[],
 ):
     reactive_value = solara.use_reactive(input_value, on_value)  # type: ignore
     del input_value, on_value
@@ -373,6 +374,10 @@ def _use_input_type(
         error_message = str(e.args[0])
 
     def sync_back_input_value():
+        # Make sure we update string_value when the effect is rerun,
+        # Since the parsing & stringigying functions might have changed
+        set_string_value(stringify(reactive_value.value) if reactive_value.value is not None else None)
+
         def on_external_value_change(new_value: Optional[T]):
             new_string_value = stringify(new_value)
             try:
@@ -386,7 +391,7 @@ def _use_input_type(
 
         return reactive_value.subscribe(on_external_value_change)
 
-    solara.use_effect(sync_back_input_value, [reactive_value])
+    solara.use_effect(sync_back_input_value, [reactive_value, *extra_dependencies])
 
     return string_value, error_message, set_string_value
 
@@ -425,6 +430,7 @@ def _InputNumeric(
         str_to_numeric,
         str,
         on_value,
+        extra_dependencies=[str_to_numeric],
     )
 
     def on_v_model(value):

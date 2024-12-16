@@ -98,7 +98,9 @@ def InputTime(
 
     style_flat = solara.util._flatten_style(style)
 
-    internal_value, error_message, set_value_cast = _use_input_type(value_reactive, set_time_typed_cast, time_to_str)
+    internal_value, error_message, set_value_cast = _use_input_type(
+        value_reactive, set_time_typed_cast, time_to_str, extra_dependencies=[time_format_display, optional]
+    )
 
     if error_message:
         label += f" ({error_message})"

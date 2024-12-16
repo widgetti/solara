@@ -130,7 +130,9 @@ def InputDate(
 
     style_flat = solara.util._flatten_style(style)
 
-    internal_value, error_message, set_value_cast = _use_input_type(value_reactive, set_date_typed_cast, date_to_str)
+    internal_value, error_message, set_value_cast = _use_input_type(
+        value_reactive, set_date_typed_cast, date_to_str, extra_dependencies=[date_format, optional]
+    )
 
     if error_message:
         label += f" ({error_message})"
