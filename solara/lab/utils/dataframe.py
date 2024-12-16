@@ -27,6 +27,7 @@ def df_columns(df) -> List[str]:
     else:
         raise TypeError(f"{type(df)} not supported")
 
+
 def df_row_names(df) -> List[Union[int, str]]:
     """Return a list of row names from a dataframe."""
     if df_type(df) == "vaex" or df_type(df) == "polars":
@@ -35,6 +36,7 @@ def df_row_names(df) -> List[Union[int, str]]:
         return df.index.tolist()
     else:
         raise TypeError(f"{type(df)} not supported")
+
 
 def df_slice(df, start: int, stop: int):
     """Return a subset of rows from a dataframe."""
