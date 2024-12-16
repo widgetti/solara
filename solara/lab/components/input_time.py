@@ -1,33 +1,10 @@
 import datetime as dt
-from typing import Callable, Dict, List, Optional, Union, cast
-
-import ipyvue
-import reacton
+from typing import Callable, Dict, List, Optional, Union
 
 import solara
 import solara.lab
+from solara.lab.components.input_date import use_close_menu
 from solara.components.input import _use_input_type
-
-
-def use_close_menu(el: reacton.core.Element, is_open: solara.Reactive[bool]):
-    is_open_ref = solara.use_ref(is_open)
-    is_open_ref.current = is_open
-
-    def monitor_events():
-        def close_menu(*ignore_args):
-            is_open_ref.current.set(False)
-
-        widget = cast(ipyvue.VueWidget, solara.get_widget(el))
-        widget.on_event("keyup.enter", close_menu)
-        widget.on_event("keydown.tab", close_menu)
-
-        def cleanup():
-            widget.on_event("keyup.enter", close_menu, remove=True)
-            widget.on_event("keydown.tab", close_menu, remove=True)
-
-        return cleanup
-
-    solara.use_effect(monitor_events, [])
 
 
 @solara.component
@@ -39,6 +16,8 @@ def InputTime(
     open_value: Union[solara.Reactive[bool], bool] = False,
     on_open_value: Optional[Callable[[bool], None]] = None,
     optional: bool = False,
+    twelve_hour_clock: bool = False,
+    use_seconds: bool = False,
     allowed_minutes: Optional[List[int]] = None,
     style: Optional[Union[str, Dict[str, str]]] = None,
     classes: Optional[List[str]] = None,
@@ -58,7 +37,7 @@ def InputTime(
     def Page():
         time = solara.use_reactive(dt.time(12, 0))
 
-        solara.lab.TimePickerWithSeconds(time, allowed_minutes=[0, 15, 30, 45])
+        solara.lab.InputTime(time, allowed_minutes=[0, 15, 30, 45])
         solara.Text(str(time.value))
     ```
 
@@ -72,11 +51,16 @@ def InputTime(
     Intended to be used in conjunction with a custom set of controls to close the timepicker.
     * on_open_value: a callback function for when open_value changes. Also receives the new value as an argument.
     * optional: Determines whether to show an error when value is `None`. If `True`, no error is shown.
+    * twelve_hour_clock: If `True`, the timepicker will display in 12-hour format. If `False`, the timepicker will display in 24-hour format.
+    * use_seconds: If `True`, the timepicker will allow input of seconds.
     * allowed_minutes: List of allowed minutes for the timepicker. Restricts the input to specific minute intervals.
     * style: CSS style to apply to the text field. Either a string or a dictionary of CSS properties (i.e. `{"property": "value"}`).
     * classes: List of CSS classes to apply to the text field.
     """
-    time_format = "%H:%M:%S"
+    time_format_internal = f"%H:%M{':%S' if use_seconds else ''}"
+    time_format_display = f"%H:%M{':%S' if use_seconds else ''}"
+    if twelve_hour_clock:
+        time_format_display = f"%I:%M{':%S' if use_seconds else ''} %p"
     value_reactive = solara.use_reactive(value, on_value)  # type: ignore
     del value, on_value
     timepicker_is_open = solara.use_reactive(open_value, on_open_value)  # type: ignore
@@ -85,10 +69,10 @@ def InputTime(
     def set_time_typed_cast(value: Optional[str]):
         if value:
             try:
-                time_value = dt.datetime.strptime(value, time_format).time()
+                time_value = dt.datetime.strptime(value, time_format_display).time()
                 return time_value
             except ValueError:
-                raise ValueError(f"Time {value} does not match format {time_format.replace('%', '')}")
+                raise ValueError(f"Time {value} does not match format {time_format_display.replace('%', '')}")
         elif optional:
             return None
         else:
@@ -96,20 +80,19 @@ def InputTime(
 
     def time_to_str(time: Optional[dt.time]) -> str:
         if time is not None:
-            return time.strftime(time_format)
+            return time.strftime(time_format_display)
         return ""
 
     def set_time_cast(new_value: Optional[str]):
         if new_value:
-            time_value = dt.datetime.strptime(new_value, time_format).time()
-            timepicker_is_open.set(False)
+            time_value = dt.datetime.strptime(new_value, time_format_internal).time()
             value_reactive.value = time_value
 
     def standard_strfy(time: Optional[dt.time]):
         if time is None:
             return None
         else:
-            return time.strftime(time_format)
+            return time.strftime(time_format_internal)
 
     time_standard_str = standard_strfy(value_reactive.value)
 
@@ -138,11 +121,12 @@ def InputTime(
         use_activator_width=False,
     ):
         with solara.v.TimePicker(
+            ampm_in_title=twelve_hour_clock,
             v_model=time_standard_str,
             on_v_model=set_time_cast,
-            format=time_format,
+            format="24hr" if not twelve_hour_clock else "ampm",
             allowed_minutes=allowed_minutes,
-            use_seconds=True,
+            use_seconds=use_seconds,
             style_="width: 100%;",
         ):
             if len(children) > 0:

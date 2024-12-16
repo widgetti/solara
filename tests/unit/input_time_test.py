@@ -125,26 +125,26 @@ def test_input_time_invalid_format():
 
         value, set_value = solara.use_state(now)
 
-        InputTime(value=value, on_value=update_value, label="label", time_format="%I:%M %p")
+        InputTime(value=value, on_value=update_value, label="label", twelve_hour_clock=True)
 
     el = Test()
     box, rc = solara.render(el, handle_error=False)
     input = rc.find(vw.TextField)
     input.widget.observe(on_v_model, "v_model")
 
-    input.widget.v_model = "2:30 PM"
+    input.widget.v_model = "1:30 PM"
     assert on_value.call_count == 1
     assert on_v_model.call_count == 1
     assert on_value.call_args is not None
-    assert on_value.call_args[0][0] == dt.time(14, 30)
+    assert on_value.call_args[0][0] == dt.time(13, 30)
     assert not input.widget.error
 
     input.widget.v_model = "25:00 PM"
     assert on_value.call_count == 1
     assert on_v_model.call_count == 2  # This is still called to reflect change
-    assert on_value.call_args[0][0] == dt.time(14, 30)  # Value remains unchanged due to invalid input
+    assert on_value.call_args[0][0] == dt.time(13, 30)  # Value remains unchanged due to invalid input
     assert input.widget.error
-    assert input.widget.label == "label (Time 25:00 PM does not match format %I:%M %p)"
+    assert input.widget.label == "label (Time 25:00 PM does not match format I:M p)"
 
 
 def test_input_time_on_open_value():
@@ -152,16 +152,16 @@ def test_input_time_on_open_value():
     on_value = MagicMock()
     el = InputTime(value=now, label="label", on_value=on_value, on_open_value=on_open_value)
     box, rc = solara.render(el, handle_error=False)
-    menu = rc.find(vw.Menu)
+    menu = rc.find(vw.VuetifyTemplate)
     assert menu is not None
 
     # Simulate opening the time picker
-    menu.widget.v_model = True
+    menu.widget.show_menu = True
     assert on_open_value.call_count == 1
     assert on_open_value.call_args[0][0] is True
 
     # Simulate closing the time picker
-    menu.widget.v_model = False
+    menu.widget.show_menu = False
     assert on_open_value.call_count == 2
     assert on_open_value.call_args[0][0] is False
 
@@ -194,4 +194,4 @@ def test_input_time_boundary_values():
     assert on_v_model.call_count == 3  # This is still called to reflect change
     assert on_value.call_args[0][0] == dt.time(23, 59)  # Value remains unchanged due to invalid input
     assert input.widget.error
-    assert input.widget.label == "label (Time 24:00 does not match format %H:%M)"
+    assert input.widget.label == "label (Time 24:00 does not match format H:M)"
