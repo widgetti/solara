@@ -115,7 +115,7 @@ mistune==3.0.2
 mkdocs-pycafe==0.3.0
 mypy==1.13.0
 mypy-extensions==1.0.0
-narwhals==1.18.3
+narwhals==1.18.4
 nbclassic==1.1.0
 nbclient==0.10.1
 nbconvert==7.16.4
