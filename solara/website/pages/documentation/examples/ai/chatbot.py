@@ -7,7 +7,7 @@ A way to create a chatbot using OpenAI's GPT-4 API, utilizing their new API, and
 import os
 from typing import List, cast
 
-from openai import OpenAI
+from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletionMessageParam
 from typing_extensions import TypedDict
 
@@ -22,11 +22,26 @@ class MessageDict(TypedDict):
 
 messages: solara.Reactive[List[MessageDict]] = solara.reactive([])
 
-if os.getenv("OPENAI_API_KEY") is None and "OPENAI_API_KEY" not in os.environ:
-    openai = None
-else:
-    openai = OpenAI()
-    openai.api_key = os.getenv("OPENAI_API_KEY")  # type: ignore
+try:
+    import pycafe
+
+    OPENAI_API_KEY = pycafe.get_secret(
+        "OPENAI_API_KEY",
+        """We need an OpenAI API key to generate text.
+
+Go to [OpenAI](https://platform.openai.com/account/api-keys) to get one.
+
+Or read [this](https://www.rebelmouse.com/openai-account-set-up) article for
+more information.
+
+Or read more [about secrets on PyCafe](/docs/secrets)
+
+""",
+    )
+except ModuleNotFoundError:
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+openai = AsyncOpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
 
 def no_api_key_message():
@@ -39,7 +54,7 @@ def no_api_key_message():
 
 
 @solara.lab.task
-def promt_ai(message: str):
+async def promt_ai(message: str):
     if openai is None:
         no_api_key_message()
         return
@@ -49,7 +64,7 @@ def promt_ai(message: str):
         {"role": "user", "content": message},
     ]
     # The part below can be replaced with a call to your own
-    response = openai.chat.completions.create(
+    response = await openai.chat.completions.create(
         model="gpt-4-1106-preview",
         # our MessageDict is compatible with the OpenAI types
         messages=cast(List[ChatCompletionMessageParam], messages.value),
@@ -59,7 +74,7 @@ def promt_ai(message: str):
     # while the AI is thinking
     messages.value = [*messages.value, {"role": "assistant", "content": ""}]
     # and update it with the response
-    for chunk in response:
+    async for chunk in response:
         if chunk.choices[0].finish_reason == "stop":  # type: ignore
             return
         # replace the last message element with the appended content
