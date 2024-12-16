@@ -148,7 +148,7 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
         if self.portal is None:
             asyncio.ensure_future(self.ws.close())
         else:
-            self.portal.call(self.ws.close)  # type: ignore
+            self.portal.call(self.ws.close)
 
     def send_text(self, data: str) -> None:
         if self.portal is None:
@@ -159,7 +159,7 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
             if settings.main.experimental_performance:
                 self.to_send.append(data)
             else:
-                self.portal.call(self._send_text_exc, data)  # type: ignore
+                self.portal.call(self._send_bytes_exc, data)
 
     def send_bytes(self, data: bytes) -> None:
         if self.portal is None:
@@ -170,7 +170,7 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
             if settings.main.experimental_performance:
                 self.to_send.append(data)
             else:
-                self.portal.call(self._send_bytes_exc, data)  # type: ignore
+                self.portal.call(self._send_bytes_exc, data)
 
     async def receive(self):
         if self.portal is None:
@@ -178,9 +178,9 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
         else:
             if hasattr(self.portal, "start_task_soon"):
                 # version 3+
-                fut = self.portal.start_task_soon(self.ws.receive)  # type: ignore
+                fut = self.portal.start_task_soon(self.ws.receive)
             else:
-                fut = self.portal.spawn_task(self.ws.receive)  # type: ignore
+                fut = self.portal.spawn_task(self.ws.receive)
 
             message = await asyncio.wrap_future(fut)
         if "text" in message:
