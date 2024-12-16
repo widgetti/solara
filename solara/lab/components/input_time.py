@@ -27,7 +27,7 @@ def InputTime(
 
     ## Basic Example
 
-    ```solara
+    ```solara {pycafe-link}
     import solara
     import solara.lab
     import datetime as dt
