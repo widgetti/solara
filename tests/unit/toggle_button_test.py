@@ -14,7 +14,7 @@ def test_toggle_buttons_single():
             solara.Button("Mies", value="mies")
             solara.Button("Nobody", value=None)
 
-    group, rc = solara.render_fixed(Test())
+    group, rc = solara.render_fixed(Test(), handle_error=False)
     assert group.v_model == 1
     group.v_model = 2
     assert value.value == "mies"

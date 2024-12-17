@@ -9,6 +9,7 @@ import solara.tasks
 from solara.server import kernel, kernel_context
 from solara.tasks import TaskState, use_task
 from solara.toestand import Computed
+from .toestand_test import get_storage
 
 
 @solara.tasks.task
@@ -73,8 +74,8 @@ def SquareButton(value, on_render=lambda: None):
 
 
 def test_task_key():
-    assert "something" in something._result._storage.storage_key  # type: ignore
-    assert "something" in something._instance._storage.storage_key  # type: ignore
+    assert "something" in get_storage(something._result).storage_key  # type: ignore
+    assert "something" in get_storage(something._instance).storage_key  # type: ignore
 
 
 def test_task_basic():
@@ -387,32 +388,32 @@ def test_task_and_computed(no_kernel_context):
 
     with context1:
         r1 = square._result
-        assert len(square._result._storage.listeners2["t1"]) == 0
+        assert len(get_storage(square._result).listeners2["t1"]) == 0
         square(5)
         assert square._last_finished_event  # type: ignore
         square._last_finished_event.wait()  # type: ignore
         # accessing will add it to the listeners
-        assert len(square._result._storage.listeners2["t1"]) == 0
+        assert len(get_storage(square._result).listeners2["t1"]) == 0
         assert square_minus_one.value == 24
         assert called == 1
-        assert len(square._result._storage.listeners2["t1"]) == 1
+        assert len(get_storage(square._result).listeners2["t1"]) == 1
         # assert square_minus_one._auto_subscriber.value.reactive_used == {square.value}
 
     with context2:
         r2 = square._result
-        assert len(square._result._storage.listeners2["t2"]) == 0
+        assert len(get_storage(square._result).listeners2["t2"]) == 0
         square(6)
         assert square._last_finished_event  # type: ignore
         square._last_finished_event.wait()  # type: ignore
-        assert len(square._result._storage.listeners2["t2"]) == 0
+        assert len(get_storage(square._result).listeners2["t2"]) == 0
         assert square_minus_one.value == 35
         assert called == 2
-        assert len(square._result._storage.listeners2["t2"]) == 1
+        assert len(get_storage(square._result).listeners2["t2"]) == 1
         # square_minus_one._auto_subscriber.value.reactive_used == {square.value}
 
     with context1:
         assert r1 is square._result
-        # assert len(square.result._storage.listeners2["t1"]) == 1
+        # assert len(square.result.listeners2["t1"]) == 1
         square._last_finished_event = None  # type: ignore
         square_minus_one._auto_subscriber.value.reactive_used == {square.value}
         assert square_minus_one.value == 24
