@@ -141,6 +141,13 @@ class VirtualKernelContext:
             if self.id in contexts:
                 del contexts[self.id]
             del current_context[get_current_thread_key()]
+            # We saw in memleak_test that there are sometimes other entries in current_context
+            # In which _DummyThread's reference this context, so we remove those references too
+            # TODO: Think about what to do with those Threads
+            _contexts = current_context.copy()
+            for key, _ctx in _contexts.items():
+                if _ctx is self:
+                    del current_context[key]
             self.closed_event.set()
 
     def _state_reset(self):
@@ -290,7 +297,8 @@ class VirtualKernelContext:
         logger.info("page status: %s", self.page_status)
         with self.lock:
             if self.closed_event.is_set():
-                raise RuntimeError("Cannot connect a page to a closed kernel")
+                logger.info("Kernel %s was already closed when page %s attempted to close", self.id, page_id)
+                return
             if self.page_status[page_id] == PageStatus.CLOSED:
                 logger.info("Page %s already closed for kernel %s", page_id, self.id)
                 return

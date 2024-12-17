@@ -63,7 +63,6 @@ def _scoped_test_memleak(
     return context, kernel, shell, session
 
 
-@pytest.mark.skip(reason="This test is flaky on CI, re-enable when we have a more stable solution")
 def test_memleak(
     pytestconfig,
     request,
@@ -76,6 +75,8 @@ def test_memleak(
 ):
     # for unknown reasons, del does not work in CI
     context_ref, kernel_ref, shell_ref, session_ref = _scoped_test_memleak(page_session, solara_server, solara_app, extra_include_path)
+    # Clears playwright traces, which otherwise hold references to coroutines executed in _scoped_test_memleak
+    page_session.context.tracing.stop()
 
     for i in range(200):
         time.sleep(0.1)
@@ -84,11 +85,15 @@ def test_memleak(
         if context_ref() is None and kernel_ref() is None and shell_ref() is None and session_ref() is None:
             break
     else:
+        import sys
+
+        # Otherwise we also see references to NoneType objects
+        refs_to_show = [ref() for ref in [context_ref, kernel_ref, shell_ref, session_ref] if ref() is not None]
         name = solara_server.__class__.__name__
-        output_path = Path(pytestconfig.getoption("--output")) / f"mem-leak-{name}.pdf"
+        output_path = Path(pytestconfig.getoption("--output")) / f"mem-leak-{name}-python-{sys.version_info}.pdf"
         output_path.parent.mkdir(parents=True, exist_ok=True)
         print("output to", output_path, output_path.resolve())  # noqa
-        objgraph.show_backrefs([context_ref(), kernel_ref(), shell_ref(), session_ref()], filename=str(output_path), max_depth=15, too_many=15)
+        objgraph.show_backrefs(refs_to_show, filename=str(output_path), max_depth=15)
 
     assert context_ref() is None
     assert kernel_ref() is None
