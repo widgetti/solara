@@ -441,10 +441,10 @@ class KernelStoreFactory(KernelStore[S]):
 
 def mutation_detection_storage(default_value: S, key=None, equals=None) -> ValueBase[S]:
     from solara.util import equals_pickle as default_equals
-    from ._stores import MutateDetectorStore, StoreValue, _PublicValueNotSet
+    from ._stores import MutateDetectorStore, StoreValue, _PublicValueNotSet, _SetValueNotSet
 
     kernel_store = KernelStoreValue[StoreValue[S]](
-        StoreValue[S](private=default_value, public=_PublicValueNotSet(), get_traceback=None, set_value=None, set_traceback=None),
+        StoreValue[S](private=default_value, public=_PublicValueNotSet(), get_traceback=None, set_value=_SetValueNotSet(), set_traceback=None),
         key=key,
         unwrap=lambda x: x.private,
     )

@@ -11,12 +11,16 @@ class _PublicValueNotSet:
     pass
 
 
+class _SetValueNotSet:
+    pass
+
+
 @dataclasses.dataclass
 class StoreValue(Generic[S]):
     private: S  # the internal private value, should never be mutated
     public: Union[S, _PublicValueNotSet]  # this is the value that is exposed in .get(), it is a deep copy of private
     get_traceback: Optional[inspect.Traceback]
-    set_value: Optional[S]  # the value that was set using .set(..), we deepcopy this to set private
+    set_value: Union[S, _SetValueNotSet]  # the value that was set using .set(..), we deepcopy this to set private
     set_traceback: Optional[inspect.Traceback]
 
 
@@ -79,7 +83,7 @@ class MutateDetectorStore(ValueBase[S]):
                     code = "<No code context available>"
                 msg += f"The last value was read in the following code:\n" f"{tb.filename}:{tb.lineno}\n" f"{code}"
             raise ValueError(msg)
-        elif store_value.set_value is not None and not self.equals(store_value.set_value, store_value.private):
+        elif not isinstance(store_value.set_value, _SetValueNotSet) and not self.equals(store_value.set_value, store_value.private):
             tb = store_value.set_traceback
             msg = f"""Reactive variable was set with a value of {store_value.private!r}, but was later mutated mutated to {store_value.set_value!r}.
 
@@ -161,11 +165,11 @@ reactive_df = solara.reactive(df, equals=solara.util.equals_pickle)
     def subscribe(self, listener: Callable[[S], None], scope: Optional[ContextManager] = None):
         def listener_wrapper(new: StoreValue[S], previous: StoreValue[S]):
             self._ensure_public_exists()
-            assert new.public is not None
-            assert previous.public is not None
-            previous_value = previous.set_value if previous.set_value is not None else previous.private
+            assert not isinstance(new.public, _PublicValueNotSet)
+            assert not isinstance(previous.public, _PublicValueNotSet)
+            previous_value = previous.set_value if not isinstance(previous.set_value, _SetValueNotSet) else previous.private
             new_value = new.set_value
-            assert new_value is not None
+            assert not isinstance(new_value, _SetValueNotSet)
             if not self.equals(new_value, previous_value):
                 listener(new_value)
 
@@ -174,11 +178,11 @@ reactive_df = solara.reactive(df, equals=solara.util.equals_pickle)
     def subscribe_change(self, listener: Callable[[S, S], None], scope: Optional[ContextManager] = None):
         def listener_wrapper(new: StoreValue[S], previous: StoreValue[S]):
             self._ensure_public_exists()
-            assert new.public is not None
-            assert previous.public is not None
-            previous_value = previous.set_value if previous.set_value is not None else previous.private
+            assert not isinstance(new.public, _PublicValueNotSet)
+            assert not isinstance(previous.public, _PublicValueNotSet)
+            previous_value = previous.set_value if not isinstance(previous.set_value, _SetValueNotSet) else previous.private
             new_value = new.set_value
-            assert new_value is not None
+            assert not isinstance(new_value, _SetValueNotSet)
             if not self.equals(new_value, previous_value):
                 listener(new_value, previous_value)
 
