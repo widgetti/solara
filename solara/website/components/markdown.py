@@ -1,4 +1,4 @@
-from typing import Dict, List, Union
+from typing import Callable, Dict, List, Union, cast
 
 import yaml
 import markdown
@@ -12,6 +12,7 @@ from solara.components.markdown import formatter, _no_deep_copy_emojione
 # We want to separate metadata from the markdown files before rendering them, which solara.Markdown doesn't support
 @solara.component
 def MarkdownWithMetadata(content: str, unsafe_solara_execute=True):
+    cleanups = solara.use_ref(cast(List[Callable[[], None]], []))
     if "---" in content:
         pre_content, raw_metadata, post_content = content.split("---")
         metadata: Dict[str, Union[str, List[str]]] = yaml.safe_load(raw_metadata)
@@ -56,13 +57,17 @@ def MarkdownWithMetadata(content: str, unsafe_solara_execute=True):
                             "name": "solara",
                             "class": "",
                             "validator": mkdocs_pycafe.validator,
-                            "format": mkdocs_pycafe.formatter(type="solara", next_formatter=formatter(unsafe_solara_execute), inside_last_div=False),
+                            "format": mkdocs_pycafe.formatter(
+                                type="solara", next_formatter=formatter(unsafe_solara_execute, cleanups.current), inside_last_div=False
+                            ),
                         },
                         {
                             "name": "python",
                             "class": "highlight",
                             "validator": mkdocs_pycafe.validator,
-                            "format": mkdocs_pycafe.formatter(type="solara", next_formatter=formatter(unsafe_solara_execute), inside_last_div=False),
+                            "format": mkdocs_pycafe.formatter(
+                                type="solara", next_formatter=formatter(unsafe_solara_execute, cleanups.current), inside_last_div=False
+                            ),
                         },
                     ],
                 },
@@ -70,6 +75,15 @@ def MarkdownWithMetadata(content: str, unsafe_solara_execute=True):
         )
 
     md_parser = solara.use_memo(make_markdown_object, dependencies=[unsafe_solara_execute])
+
+    def cleanup_wrapper():
+        def cleanup():
+            for cleanup in cleanups.current:
+                cleanup()
+
+        return cleanup
+
+    solara.use_effect(cleanup_wrapper, [])
 
     with solara.v.Html(
         tag="div",

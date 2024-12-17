@@ -15,6 +15,7 @@ import ipywidgets.widgets.widget_output
 from IPython.core.interactiveshell import InteractiveShell
 
 import solara
+import solara.util
 
 from . import app, kernel_context, reload, settings
 from .utils import pdb_guard
@@ -251,7 +252,8 @@ def auto_watch_get_template(get_template):
 
     def wrapper(abs_path):
         template = get_template(abs_path)
-        reload.reloader.watcher.add_file(abs_path)
+        with kernel_context.without_context():
+            reload.reloader.watcher.add_file(abs_path)
         return template
 
     return wrapper
@@ -274,10 +276,13 @@ def WidgetContextAwareThread__init__(self, *args, **kwargs):
         ThreadDebugInfo.created += 1
 
     self.current_context = None
-    try:
-        self.current_context = kernel_context.get_current_context()
-    except RuntimeError:
-        logger.debug(f"No context for thread {self}")
+    # if we do this for the dummy threads, we got into a recursion
+    # since threading.current_thread will call the _DummyThread constructor
+    if not ("name" in kwargs and "Dummy-" in kwargs["name"]):
+        try:
+            self.current_context = kernel_context.get_current_context()
+        except RuntimeError:
+            logger.debug(f"No context for thread {self._name}")
 
 
 def WidgetContextAwareThread__bootstrap(self):
@@ -293,6 +298,7 @@ def WidgetContextAwareThread__bootstrap(self):
 
 def _WidgetContextAwareThread__bootstrap(self):
     if not hasattr(self, "current_context"):
+        # this happens when a thread was running before we patched
         return Thread__bootstrap(self)
     if self.current_context:
         # we need to call this manually, because set_context_for_thread
@@ -301,15 +307,20 @@ def _WidgetContextAwareThread__bootstrap(self):
         if kernel_context.async_context_id is not None:
             kernel_context.async_context_id.set(self.current_context.id)
         kernel_context.set_context_for_thread(self.current_context, self)
-
         shell = self.current_context.kernel.shell
-        shell.display_pub.register_hook(shell.display_in_reacton_hook)
+        display_pub = shell.display_pub
+        display_in_reacton_hook = shell.display_in_reacton_hook
+        display_pub.register_hook(display_in_reacton_hook)
     try:
-        with pdb_guard():
+        context = self.current_context or solara.util.nullcontext()
+        with pdb_guard(), context:
             Thread__bootstrap(self)
     finally:
-        if self.current_context:
-            shell.display_pub.unregister_hook(shell.display_in_reacton_hook)
+        current_context = self.current_context
+        self.current_context = None
+        kernel_context.clear_context_for_thread(self)
+        if current_context:
+            display_pub.unregister_hook(display_in_reacton_hook)
 
 
 _patched = False
