@@ -55,6 +55,8 @@ class Assets(BaseSettings):
 class MainSettings(BaseSettings):
     check_hooks: str = "warn"
     allow_reactive_boolean: bool = True
+    # TODO: also change default_container in solara/components/__init__.py
+    default_container: Optional[str] = "Column"
 
     class Config:
         env_prefix = "solara_"

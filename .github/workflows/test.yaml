@@ -644,6 +644,7 @@ jobs:
       - name: Run unit tests as if we are running solara 2.0
         env:
           SOLARA_ALLOW_REACTIVE_BOOLEAN: 0
+          SOLARA_DEFAULT_CONTAINER: "Fragment"
           # TODO: does not work yet
           # SOLARA_STORAGE_MUTATION_DETECTION: 1
         if: github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true'
