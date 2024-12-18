@@ -801,3 +801,10 @@ jobs:
 
       - name: remove assets
         run: rm -rf packages/solara-assets/dist
+
+  check_pycafe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          diff solara/website/pages/documentation/examples/ai/chatbot.py <(curl -s https://py.cafe/files/solara/chatbot/app.py)
