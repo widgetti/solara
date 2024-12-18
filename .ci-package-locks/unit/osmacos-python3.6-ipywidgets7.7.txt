@@ -48,6 +48,7 @@ folium==0.13.0
 frozendict==2.4.6
 fsspec==2022.1.0
 future==1.0.0
+graphviz==0.19.1
 h11==0.12.0
 h5py==3.1.0
 httpcore==0.14.7
@@ -104,6 +105,7 @@ nest-asyncio==1.6.0
 nodeenv==1.6.0
 notebook==6.4.10
 numpy==1.19.5
+objgraph==3.5.0
 openai==0.8.0
 packaging==21.3
 pandas==1.1.5
