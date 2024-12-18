@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 
 
 def get_pandas_major():
@@ -24,6 +24,16 @@ def df_columns(df) -> List[str]:
         return df.columns.tolist()
     elif df_type(df) == "polars":
         return df.columns
+    else:
+        raise TypeError(f"{type(df)} not supported")
+
+
+def df_row_names(df) -> List[Union[int, str]]:
+    """Return a list of row names from a dataframe."""
+    if df_type(df) == "vaex" or df_type(df) == "polars":
+        return list(range(df_len(df)))
+    elif df_type(df) == "pandas":
+        return df.index.tolist()
     else:
         raise TypeError(f"{type(df)} not supported")
 
