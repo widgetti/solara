@@ -43,7 +43,7 @@ def ChatBox(
 
 @solara.component
 def ChatInput(
-    send_callback: Optional[Callable] = None,
+    send_callback: Optional[Callable[[str], None]] = None,
     disabled: bool = False,
     style: Optional[Union[str, Dict[str, str]]] = None,
     input_text_style: Optional[Union[str, Dict[str, str]]] = None,
@@ -55,7 +55,7 @@ def ChatInput(
 
     # Arguments
 
-    * `send_callback`: A callback function for when the user presses enter or clicks the send button.
+    * `send_callback`: A callback function for when the user presses enter or clicks the send button taking the message as an argument.
     * `disabled`: Whether the input should be disabled. Useful for disabling sending further messages while a chatbot is replying,
         among other things.
     * `style`: CSS styles to apply to the `solara.Row` containing the input field and submit button. Either a string or a dictionary.
@@ -98,7 +98,7 @@ def ChatInput(
 
 @solara.component
 def ChatMessage(
-    children: Union[List[solara.Element], str],
+    children: Union[List[solara.Element], str] = [],
     user: bool = False,
     avatar: Union[solara.Element, str, Literal[False], None] = None,
     name: Optional[str] = None,
