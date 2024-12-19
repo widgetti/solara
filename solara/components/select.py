@@ -174,7 +174,7 @@ def SelectMultiple(
             items=all_values,
             label=label,
             multiple=True,
-            dense=False,
+            dense=dense,
             disabled=disabled,
             class_=class_,
             style_=style_flat,
