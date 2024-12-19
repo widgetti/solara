@@ -1,5 +1,22 @@
 # Solara Changelog
 
+## Version 1.43.0
+   * Feature: Time picker component. [#654](https://github.com/widgetti/solara/pull/654).
+   * Feature: Make the default container of sibling components configurable. By default the setting remains the same (using `solara.Column`), but will default to `reacton.Fragment` in Solara 2.0 (see [the roadmap](/roadmap)). Can be changed by setting the `SOLARA_DEFAULT_CONTAINER` environmental variable to the name of a component (e.g. `"Column"`). [#928](https://github.com/widgetti/solara/pull/928).
+   * Feature: Do not allow reactive to be used in boolean comparisons. This feature is turned off by default, and can be enabled by setting the `SOLARA_ALLOW_REACTIVE_BOOLEAN=1` environmental variable. This feature will be enabled by default starting in Solara 2.0, see [the roadmap](/roadmap). [#846](https://github.com/widgetti/solara/pull/846).
+   * Feature: Use index for row names of pandas dataframes. [#613](https://github.com/widgetti/solara/pull/613).
+   * Feature: Support setting `http_only` for Solara session cookie. [#876](https://github.com/widgetti/solara/pull/876).
+   * Feature: Allow disabling notebook extensions. [#842](https://github.com/widgetti/solara/pull/842).
+   * Feature: `custom_exceptions` is now defined in `FakeIPython`. [#839](https://github.com/widgetti/solara/pull/839).
+   * Bug Fix: `InputDate` would not accept values if format was changed. [#933](https://github.com/widgetti/solara/pull/933).
+   * Bug Fix: Close kernels when ASGI/Starlette server is shut down. [#930](https://github.com/widgetti/solara/pull/930).
+   * Bug Fix: Avoid and test for the existence of memory leaks. [#377](https://github.com/widgetti/solara/pull/377).
+   * Bug Fix: `send_text` sent bytes instead of string. [637a77f](https://github.com/widgetti/solara/commit/637a77f2539ee68555cf998313aee62cde802579).
+   * Bug Fix: Avoid solara run hanging because of PyPI version request. [#855](https://github.com/widgetti/solara/pull/855).
+   * Bug Fix: Catch exceptions raised by startlette on websocket send failure. [7e50ee7](https://github.com/widgetti/solara/commit/7e50ee7edb7a36644b02d9d80ae91e1ac292975e).
+   * Bug Fix: Numpy scalars were erroneously converted to a string instead of a number. [cffccca](https://github.com/widgetti/solara/commit/cffccca500c36e21357323168b73ddd716071885).
+   * Bug Fix: Failing websocket.send calls would suppress all errors. [51cbfa9](https://github.com/widgetti/solara/commit/51cbfa970d42e5ff2c2b25de268e951677013467).
+
 ## Version 1.42.0
    * Feature: Mutation detection is now available under the `SOLARA_STORAGE_MUTATION_DETECTION` environmental variable. [#595](https://github.com/widgetti/solara/pull/595).
    * Feature: Autofocusing text inputs is now supported. [#788](https://github.com/widgetti/solara/pull/788).
