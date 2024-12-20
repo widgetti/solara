@@ -108,4 +108,6 @@ def Page():
         if promt_ai.pending:
             solara.Text("I'm thinking...", style={"font-size": "1rem", "padding-left": "20px"})
             solara.ProgressLinear()
-        solara.lab.ChatInput(send_callback=promt_ai, disabled=promt_ai.pending)
+        # if we don't call .key(..) with a unique key, the ChatInput component will be re-created
+        # and we'll lose what we typed.
+        solara.lab.ChatInput(send_callback=promt_ai, disabled_send=promt_ai.pending, autofocus=True).key("input")
