@@ -5,6 +5,7 @@ title = "Examples"
 
 pycafe_projects = [
     "chatbot",
+    "tokenizer",
 ]
 
 
