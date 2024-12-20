@@ -304,6 +304,7 @@ class TaskThreaded(Task[P, R]):
         self.__qualname__ = function.__qualname__
         self.function = function
         self.lock = threading.Lock()
+        self._local = threading.local()
 
     def cancel(self) -> None:
         if self._cancel:
@@ -343,12 +344,16 @@ class TaskThreaded(Task[P, R]):
         current_thread.start()
 
     def is_current(self):
+        cancel_event = getattr(self._local, "cancel_event", None)
+        if cancel_event is not None and cancel_event.is_set():
+            return False
         return self._current_thread == threading.current_thread()
 
     def _run(self, _last_finished_event, previous_thread: Optional[threading.Thread], cancel_event, args, kwargs) -> None:
         # use_thread has this as default, which can make code run 10x slower
         intrusive_cancel = False
         wait_on_previous = False
+        self._local.cancel_event = cancel_event
 
         def runner():
             if wait_on_previous:
@@ -405,7 +410,7 @@ class TaskThreaded(Task[P, R]):
                     # this means this thread is cancelled not be request, but because
                     # a new thread is running, we can ignore this
             finally:
-                if self.is_current():
+                if self._current_thread == threading.current_thread():
                     self.running_thread = None
                     logger.info("thread done!")
                     if cancel_event.is_set():
