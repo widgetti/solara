@@ -52,7 +52,7 @@ folium==0.18.0
 fonttools==4.55.3
 fqdn==1.5.1
 frozendict==2.4.6
-fsspec==2024.10.0
+fsspec==2024.12.0
 future==1.0.0
 greenlet==3.0.3
 h11==0.14.0
@@ -114,7 +114,7 @@ mistune==3.0.2
 mkdocs-pycafe==0.3.0
 mypy==1.13.0
 mypy-extensions==1.0.0
-narwhals==1.18.4
+narwhals==1.19.0
 nbclassic==1.1.0
 nbclient==0.10.1
 nbconvert==7.16.4
@@ -145,7 +145,7 @@ pre-commit==3.5.0
 progressbar2==4.5.0
 prometheus_client==0.21.1
 prompt_toolkit==3.0.48
-psutil==6.1.0
+psutil==6.1.1
 psygnal==0.11.1
 pure_eval==0.2.3
 pyarrow==17.0.0
@@ -182,7 +182,7 @@ rfc3986-validator==0.1.1
 rich==13.9.4
 rich-click==1.8.5
 rpds-py==0.20.1
-ruff==0.8.3
+ruff==0.8.4
 Send2Trash==1.8.3
 simple-websocket==1.1.0
 simplejson==3.19.3
