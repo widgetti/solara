@@ -96,7 +96,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: solara-builds-${{ github.run_number }}
+          name: solara-builds
           path: |
             dist
             packages/solara-assets/dist
@@ -194,7 +194,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: solara-builds-${{ github.run_number }}
+          name: solara-builds
 
       - name: Debug
         run: ls -R dist
@@ -251,7 +251,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: solara-builds-${{ github.run_number }}
+          name: solara-builds
 
       - name: Link solara app package
         if: matrix.os != 'windows'
@@ -369,7 +369,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: solara-builds-${{ github.run_number }}
+          name: solara-builds
 
       - name: Link solara app package
         if: matrix.os != 'windows'
@@ -483,7 +483,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: solara-builds-${{ github.run_number }}
+          name: solara-builds
 
       - name: Link solara app package
         run: |
@@ -594,7 +594,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: solara-builds-${{ github.run_number }}
+          name: solara-builds
 
       - name: Prepare
         id: prepare
@@ -729,7 +729,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: solara-builds-${{ github.run_number }}
+          name: solara-builds
 
       - name: Install build tools
         run: pip install hatch
