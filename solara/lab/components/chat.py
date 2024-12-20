@@ -46,6 +46,7 @@ def ChatInput(
     send_callback: Optional[Callable[[str], None]] = None,
     disabled: bool = False,
     style: Optional[Union[str, Dict[str, str]]] = None,
+    autofocus: bool = False,
     input_text_style: Optional[Union[str, Dict[str, str]]] = None,
     classes: List[str] = [],
     input_text_classes: List[str] = [],
@@ -59,6 +60,7 @@ def ChatInput(
     * `disabled`: Whether the input should be disabled. Useful for disabling sending further messages while a chatbot is replying,
         among other things.
     * `style`: CSS styles to apply to the `solara.Row` containing the input field and submit button. Either a string or a dictionary.
+    * `autofocus`: Determines if a component is to be autofocused or not (Default is False). Autofocus will occur during page load and only one component per page can have autofocus active.
     * `input_text_style`: CSS styles to apply to the `InputText` part of the component. Either a string or a dictionary.
     * `classes`: A list of CSS classes to apply to the component. Also applied to the container.
     * `input_text_classes`: A list of CSS classes to apply to the `InputText` part of the component.
@@ -84,6 +86,7 @@ def ChatInput(
             rounded=True,
             filled=True,
             hide_details=True,
+            autofocus=autofocus,
             style_="flex-grow: 1;" + input_text_style_flat,
             disabled=disabled,
             class_=" ".join(input_text_classes),
