@@ -32,6 +32,7 @@ from solara.util import equals_extra
 
 import solara
 import solara.settings
+import solara.server.settings
 from solara import _using_solara_server
 
 T = TypeVar("T")
@@ -355,7 +356,9 @@ class KernelStoreValue(KernelStore[S]):
         self.default_value = default_value
         self._unwrap = unwrap
         self.equals = equals
-        self._mutation_detection = solara.settings.storage.mutation_detection
+        self._mutation_detection = solara.settings.storage.mutation_detection is True or (
+            solara.settings.storage.mutation_detection is None and not solara.server.settings.main.mode == "production"
+        )
         if self._mutation_detection:
             frame = _find_outside_solara_frame()
             if frame is not None:
@@ -452,9 +455,11 @@ def mutation_detection_storage(default_value: S, key=None, equals=None) -> Value
 
 
 def default_storage(default_value: S, key=None, equals=None) -> ValueBase[S]:
-    # in solara v2 we will also do this when mutation_detection is None
-    # and we do not run on production mode
-    if solara.settings.storage.mutation_detection is True:
+    # We use mutation detection if it is explicitly enabled, or if it is not explicitly disabled and
+    # We aren't running in production mode
+    if solara.settings.storage.mutation_detection is True or (
+        solara.settings.storage.mutation_detection is None and not solara.server.settings.main.mode == "production"
+    ):
         return mutation_detection_storage(default_value, key=key, equals=equals)
     else:
         return KernelStoreValue[S](default_value, key=key, equals=equals or equals_extra)
