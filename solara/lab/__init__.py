@@ -18,8 +18,9 @@ from .components import (
 )
 from .utils import cookies, headers
 from ..lifecycle import on_kernel_start
-from ..tasks import task, use_task, Task, TaskResult
+from ..tasks import task as _task, use_task as _use_task, Task as _Task, TaskResult as _TaskResult
 from ..toestand import computed
+from ..util import deprecated
 
 
 __all__ = [
@@ -47,6 +48,26 @@ __all__ = [
     "TaskResult",
     "computed",
 ]
+
+
+@deprecated("solara.lab.task has been moved out of the lab namespace, use solara.task instead")
+def task(*args, **kwargs):
+    _task(*args, **kwargs)
+
+
+@deprecated("solara.lab.use_task has been moved out of the lab namespace, use solara.use_task instead")
+def use_task(*args, **kwargs):
+    return _use_task(*args, **kwargs)
+
+
+@deprecated("solara.lab.Task has been moved out of the lab namespace, use solara.Task instead")
+class Task(_Task):
+    pass
+
+
+@deprecated("solara.lab.TaskResult has been moved out of the lab namespace, use solara.TaskResult instead")
+class TaskResult(_TaskResult):
+    pass
 
 
 def __getattr__(name):

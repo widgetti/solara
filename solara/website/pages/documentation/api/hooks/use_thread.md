@@ -1,4 +1,6 @@
-# use_thread
+# use_thread (deprecated)
+
+### use_thread is deprecated, use [use_task](/documentation/api/hooks/use_task) or [Task](/documentation/api/utilities/task) instead
 
 ```python
 def use_thread(
