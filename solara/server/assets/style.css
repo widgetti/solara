@@ -143,6 +143,14 @@ div.highlight {
   display: none !important;
 }
 
+.widget-box, /* </DEPRECATED> */
+.jupyter-widget-box {
+  box-sizing: border-box;
+  display: flex;
+  margin: 0;
+  overflow: auto;
+}
+
 .lm-AccordionPanel[data-orientation='horizontal'] > .lm-AccordionPanel-title {
   /* Title is rotated for horizontal accordion panel using CSS */
   display: block;
