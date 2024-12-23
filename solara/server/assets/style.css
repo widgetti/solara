@@ -156,6 +156,8 @@ div.highlight {
   letter-spacing:0;
   text-transform:none;
   font-family: var(--jp-ui-font-family);
+  /* Remove default margin, this was a common unexpected (and often difficult to change) visual behaviour */
+  margin: 0;
 }
 
 
