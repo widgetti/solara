@@ -73,5 +73,4 @@ else:
     logger = logging.getLogger("solara.components")
     logger.warning(f"Default container {main.default_container} not found in solara.components. Defaulting to Column.")
 
-# TODO: When Solara 2.0 releases Column should be replaced with Fragment
-reacton.core._default_container = _container or Column  # noqa: F405
+reacton.core._default_container = _container or Fragment  # noqa: F405
