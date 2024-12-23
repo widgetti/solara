@@ -17,25 +17,24 @@ from solara.website.utils import apidoc
 
 @solara.component
 def Page():
-    state = solara.use_reactive({
-        "icon": True,
-        "dense": False,
-        "outlined": True,
-        "text": True,
-    })
+    icon = solara.use_reactive(True)
+    dense = solara.use_reactive(False)
+    outlined = solara.use_reactive(True)
+    text = solara.use_reactive(True)
     
     with solara.GridFixed(4):
-        solara.Checkbox(label="Use icon", value=state.value["icon"], on_value=lambda val: state.value.update({"icon": val}))
-        solara.Checkbox(label="Show dense", value=state.value["dense"], on_value=lambda val: state.value.update({"dense": val}))
-        solara.Checkbox(label="Show as text", value=state.value["text"], on_value=lambda val: state.value.update({"text": val}))
-        solara.Checkbox(label="Show outlined", value=state.value["outlined"], on_value=lambda val: state.value.update({"outlined": val}))
+       
+        solara.Checkbox(label="Use icon", value=icon)
+        solara.Checkbox(label="Show dense", value=dense)
+        solara.Checkbox(label="Show as text", value=text)
+        solara.Checkbox(label="Show outlined", value=outlined)
     
     solara.Warning(
-        f"This is solara.Warning(label='...', text={state.value['text']}, dense={state.value['dense']}, outlined={state.value['outlined']}, icon={state.value['icon']})",
-        text=state.value["text"],
-        dense=state.value["dense"],
-        outlined=state.value["outlined"],
-        icon=state.value["icon"],
+        f"This is solara.Warning(label='...', text={text}, dense={dense}, outlined={outlined}, icon={icon})",
+        text=text,
+        dense=dense,
+        outlined=outlined,
+        icon=icon,
     )
 
 
