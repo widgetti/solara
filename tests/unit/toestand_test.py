@@ -852,13 +852,13 @@ def test_dataframe():
 
     box, rc = solara.render(Test(), handle_error=False)
 
-    if solara.settings.storage.mutation_detection:
+    if solara.settings.storage.mutation_detection is not False:
         # a copy is made, so get a reference to the actual used object
         df = get_storage(store).value.public
     assert rc.find(v.Alert).widget.children[0] == repr(id(df))
     df2 = df2.copy()
     store.set(df2)
-    if solara.settings.storage.mutation_detection:
+    if solara.settings.storage.mutation_detection is not False:
         df2 = get_storage(store).value.public
     assert rc.find(v.Alert).widget.children[0] == repr(id(df2))
 
