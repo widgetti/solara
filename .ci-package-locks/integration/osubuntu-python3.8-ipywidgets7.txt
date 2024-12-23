@@ -26,7 +26,7 @@ certifi==2024.12.14
 cffi==1.17.1
 cfgv==3.4.0
 charset-normalizer==3.4.0
-click==8.1.7
+click==8.1.8
 cloudpickle==3.1.0
 codespell==2.3.0
 comm==0.2.2
@@ -81,7 +81,7 @@ ipywidgets==7.8.5
 isoduration==20.11.0
 itsdangerous==2.2.0
 jedi==0.19.2
-Jinja2==3.1.4
+Jinja2==3.1.5
 jiter==0.8.2
 json5==0.10.0
 jsonpointer==3.0.0
@@ -111,7 +111,7 @@ mdit-py-plugins==0.4.2
 mdurl==0.1.2
 mistune==0.8.4
 mkdocs-pycafe==0.3.0
-mypy==1.13.0
+mypy==1.14.0
 mypy-extensions==1.0.0
 narwhals==1.19.0
 nbclassic==1.1.0
@@ -203,7 +203,7 @@ traitlets==5.14.3
 traittypes==0.2.1
 types-Markdown==3.7.0.20241204
 types-python-dateutil==2.9.0.20241206
-types-PyYAML==6.0.12.20240917
+types-PyYAML==6.0.12.20241221
 types-requests==2.32.0.20241016
 typing_extensions==4.12.2
 tzdata==2024.2
