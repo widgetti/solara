@@ -158,6 +158,11 @@ div.highlight {
   font-family: var(--jp-ui-font-family);
 }
 
+.jupyter-widgets.solara-image {
+  /* Remove default margin from the ipywidgets image, it caused unexpected (and often difficult to change) visual behaviour */
+  margin: 0;
+}
+
 
 :root {
   --jp-warn-color0: var(--md-orange-700);
