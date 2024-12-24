@@ -113,6 +113,7 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
         # we store a strong reference
         self.tasks: Set[asyncio.Task] = set()
         self.event_loop = asyncio.get_event_loop()
+        self._thread_id = threading.get_ident()
         if settings.main.experimental_performance:
             self.task = asyncio.ensure_future(self.process_messages_task())
 
@@ -164,7 +165,19 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
             if settings.main.experimental_performance:
                 self.to_send.append(data)
             else:
-                self.portal.call(self._send_text_exc, data)
+                if self._thread_id == threading.get_ident():
+                    warnings.warn("""You are triggering a websocket send from the event loop thread.
+Support for this is experimental, and to avoid this message, make sure you trigger updates
+that trigger this from a different thread, e.g.:
+
+from anyio import to_thread
+await to_thread.run_sync(my_update)
+""")
+                    task = self.event_loop.create_task(self._send_text_exc(data))
+                    self.tasks.add(task)
+                    task.add_done_callback(self.tasks.discard)
+                else:
+                    self.portal.call(self._send_text_exc, data)
 
     def send_bytes(self, data: bytes) -> None:
         if self.portal is None:
@@ -175,6 +188,18 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
             if settings.main.experimental_performance:
                 self.to_send.append(data)
             else:
+                if self._thread_id == threading.get_ident():
+                    warnings.warn("""You are triggering a websocket send from the event loop thread.
+Support for this is experimental, and to avoid this message, make sure you trigger updates
+that trigger this from a different thread, e.g.:
+
+from anyio import to_thread
+await to_thread.run_sync(my_update)
+""")
+                    task = self.event_loop.create_task(self._send_bytes_exc(data))
+                    self.tasks.add(task)
+                    task.add_done_callback(self.tasks.discard)
+
                 self.portal.call(self._send_bytes_exc, data)
 
     async def receive(self):
