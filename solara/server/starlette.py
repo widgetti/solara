@@ -133,7 +133,10 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
             await self.ws.send_bytes(data)
         except (websockets.exceptions.ConnectionClosed, starlette.websockets.WebSocketDisconnect, RuntimeError) as e:
             # starlette throws a RuntimeError once you call send after the connection is closed
-            raise websocket.WebSocketDisconnect() from e
+            if isinstance(e, RuntimeError) and "close message" in repr(e):
+                raise websocket.WebSocketDisconnect() from e
+            else:
+                raise
 
     async def _send_text_exc(self, data: str):
         # make sures we catch the starlette/websockets specific exception
@@ -141,8 +144,10 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
         try:
             await self.ws.send_text(data)
         except (websockets.exceptions.ConnectionClosed, starlette.websockets.WebSocketDisconnect, RuntimeError) as e:
-            # starlette throws a RuntimeError once you call send after the connection is closed
-            raise websocket.WebSocketDisconnect() from e
+            if isinstance(e, RuntimeError) and "close message" in repr(e):
+                raise websocket.WebSocketDisconnect() from e
+            else:
+                raise
 
     def close(self):
         if self.portal is None:
