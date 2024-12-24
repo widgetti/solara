@@ -45,7 +45,10 @@ def ChatBox(
 def ChatInput(
     send_callback: Optional[Callable[[str], None]] = None,
     disabled: bool = False,
+    disabled_input: bool = False,
+    disabled_send: bool = False,
     style: Optional[Union[str, Dict[str, str]]] = None,
+    autofocus: bool = False,
     input_text_style: Optional[Union[str, Dict[str, str]]] = None,
     classes: List[str] = [],
     input_text_classes: List[str] = [],
@@ -56,9 +59,11 @@ def ChatInput(
     # Arguments
 
     * `send_callback`: A callback function for when the user presses enter or clicks the send button taking the message as an argument.
-    * `disabled`: Whether the input should be disabled. Useful for disabling sending further messages while a chatbot is replying,
-        among other things.
+    * `disabled`: disable both input and send.
+    * `disabled_input`: Whether the input should be disabled. Useful for disabling messages while a chatbot is replying.
+    * `disabled_send`: Whether the send button should be disabled. Useful for disabling sending further messages while a chatbot is replying.
     * `style`: CSS styles to apply to the `solara.Row` containing the input field and submit button. Either a string or a dictionary.
+    * `autofocus`: Determines if a component is to be autofocused or not (Default is False). Autofocus will occur during page load and only one component per page can have autofocus active.
     * `input_text_style`: CSS styles to apply to the `InputText` part of the component. Either a string or a dictionary.
     * `classes`: A list of CSS classes to apply to the component. Also applied to the container.
     * `input_text_classes`: A list of CSS classes to apply to the `InputText` part of the component.
@@ -84,14 +89,15 @@ def ChatInput(
             rounded=True,
             filled=True,
             hide_details=True,
+            autofocus=autofocus,
             style_="flex-grow: 1;" + input_text_style_flat,
-            disabled=disabled,
+            disabled=disabled or disabled_input,
             class_=" ".join(input_text_classes),
         )
 
         use_change(message_input, send, update_events=["keyup.enter"])
 
-        button = solara.v.Btn(color="primary", icon=True, children=[solara.v.Icon(children=["mdi-send"])], disabled=message == "")
+        button = solara.v.Btn(color="primary", icon=True, children=[solara.v.Icon(children=["mdi-send"])], disabled=message == "" or disabled or disabled_send)
 
         use_change(button, send, update_events=["click"])
 
