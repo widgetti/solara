@@ -1,6 +1,7 @@
 from typing import Any, Callable, Optional, TypeVar, Union
 
 import solara
+import solara.settings
 
 T = TypeVar("T")
 
@@ -105,7 +106,21 @@ def use_reactive(
 
     def create():
         if not isinstance(value, solara.Reactive):
-            return solara.reactive(value)
+            from solara._stores import SharedStore, MutateDetectorStore, StoreValue, _PublicValueNotSet, _SetValueNotSet
+            from solara.toestand import ValueBase
+
+            store: ValueBase[T]
+
+            if solara.settings.storage.mutation_detection is True:
+                shared_store = SharedStore[StoreValue[T]](
+                    StoreValue[T](private=value, public=_PublicValueNotSet(), get_traceback=None, set_value=_SetValueNotSet(), set_traceback=None),
+                    unwrap=lambda x: x.private,
+                )
+                store = MutateDetectorStore[T](shared_store, equals=equals)
+            else:
+                store = SharedStore(value, equals=equals)
+
+            return solara.Reactive(store)
 
     reactive_value = solara.use_memo(create, dependencies=[])
     if isinstance(value, solara.Reactive):

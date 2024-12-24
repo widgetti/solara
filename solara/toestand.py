@@ -225,6 +225,9 @@ class ValueBase(Generic[T]):
 
         return cast(Callable[[TS], None], setter)
 
+    def _check_mutation(self):
+        pass
+
 
 # the default store for now, stores in a global dict, or when in a solara
 # context, in the solara user context
@@ -316,7 +319,8 @@ def _is_internal_module(file_name: str):
     return (
         file_name_parts[-2:] == ["solara", "toestand.py"]
         or file_name_parts[-2:] == ["solara", "reactive.py"]
-        or file_name_parts[-2:] == ["solara", "use_reactive.py"]
+        or file_name_parts[-2:] == ["solara", "_stores.py"]
+        or file_name_parts[-3:] == ["solara", "hooks", "use_reactive.py"]
         or file_name_parts[-2:] == ["reacton", "core.py"]
         # If we use SomeClass[K](...) we go via the typing module, so we need to skip that as well
         or (file_name_parts[-2].startswith("python") and file_name_parts[-1] == "typing.py")
