@@ -1,10 +1,16 @@
 import copy
 import dataclasses
 import inspect
-from typing import Callable, ContextManager, Generic, Optional, Union, cast
+import sys
+import threading
+from typing import Callable, ContextManager, Generic, Optional, Union, cast, Any
 import warnings
-from .toestand import ValueBase, KernelStore, S, _find_outside_solara_frame
+
+
+from .toestand import ValueBase, S, _find_outside_solara_frame, _DEBUG
+
 import solara.util
+import solara.settings
 
 
 class _PublicValueNotSet:
@@ -25,7 +31,7 @@ class StoreValue(Generic[S]):
 
 
 class MutateDetectorStore(ValueBase[S]):
-    def __init__(self, store: KernelStore[StoreValue[S]], equals=solara.util.equals_extra):
+    def __init__(self, store: ValueBase[StoreValue[S]], equals=solara.util.equals_extra):
         self._storage = store
         self._enabled = True
         super().__init__(equals=equals)
@@ -187,3 +193,105 @@ reactive_df = solara.reactive(df, equals=solara.util.equals_pickle)
                 listener(new_value, previous_value)
 
         return self._storage.subscribe_change(listener_wrapper, scope=scope)
+
+
+class SharedStore(ValueBase[S]):
+    """Stores a single value, not kernel scoped."""
+
+    _traceback: Optional[inspect.Traceback]
+    _original_ref: Optional[S]
+    _original_ref_copy: Optional[S]
+
+    def __init__(self, value: S, equals: Callable[[Any, Any], bool] = solara.util.equals_extra, unwrap=lambda x: x):
+        # since a set can trigger events, which can trigger new updates, we need a recursive lock
+        self._lock = threading.RLock()
+        self.local = threading.local()
+        self.equals = equals
+
+        self._value = value
+        self._original_ref = None
+        self._original_ref_copy = None
+        self._unwrap = unwrap
+        self._mutation_detection = solara.settings.storage.mutation_detection
+        if self._mutation_detection:
+            frame = _find_outside_solara_frame()
+            if frame is not None:
+                self._traceback = inspect.getframeinfo(frame)
+            else:
+                self._traceback = None
+            self._original_ref = value
+            self._original_ref_copy = copy.deepcopy(self._original_ref)
+            if not self.equals(self._unwrap(self._original_ref), self._unwrap(self._original_ref_copy)):
+                msg = """The equals function for this reactive value returned False when comparing a deepcopy to itself.
+
+This reactive variable will not be able to detect mutations correctly, and is therefore disabled.
+
+To avoid this warning, and to ensure that mutation detection works correctly, please provide a better equals function to the reactive variable.
+A good choice for dataframes and numpy arrays might be solara.util.equals_pickle, which will also attempt to compare the pickled values of the objects.
+
+Example:
+df = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
+reactive_df = solara.reactive(df, equals=solara.util.equals_pickle)
+"""
+                tb = self._traceback
+                if tb:
+                    if tb.code_context:
+                        code = tb.code_context[0]
+                    else:
+                        code = "<No code context available>"
+                    msg += "This warning was triggered from:\n" f"{tb.filename}:{tb.lineno}\n" f"{code}"
+                warnings.warn(msg)
+                self._mutation_detection = False
+        super().__init__(equals=equals)
+
+    def _check_mutation(self):
+        if not self._mutation_detection:
+            return
+        current = self._unwrap(self._original_ref)
+        initial = self._unwrap(self._original_ref_copy)
+        if not self.equals(initial, current):
+            tb = self._traceback
+            if tb:
+                if tb.code_context:
+                    code = tb.code_context[0].strip()
+                else:
+                    code = "No code context available"
+                msg = f"Reactive variable was initialized at {tb.filename}:{tb.lineno} with {initial!r}, but was mutated to {current!r}.\n" f"{code}"
+            else:
+                msg = f"Reactive variable was initialized with a value of {initial!r}, but was mutated to {current!r} (unable to report the location in the source code)."
+            raise ValueError(msg)
+
+    @property
+    def lock(self):
+        return self._lock
+
+    def peek(self):
+        self._check_mutation()
+        return self._value
+
+    def get(self):
+        self._check_mutation()
+        return self._value
+
+    def clear(self):
+        pass
+
+    def _get_scope_key(self):
+        return "GLOBAL"
+
+    def set(self, value: S):
+        self._check_mutation()
+        old = self.get()
+        if self.equals(old, value):
+            return
+        self._value = value
+
+        if _DEBUG:
+            import traceback
+
+            traceback.print_stack(limit=17, file=sys.stdout)
+
+            print("change old", old)  # noqa
+            print("change new", value)  # noqa
+
+        self.fire(value, old)

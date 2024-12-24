@@ -173,6 +173,47 @@ def test_scopes(no_kernel_context):
     for u in unsub:
         u()
 
+    # make sure the use_reactive can be used outside of a kernel context
+    reactives = [None, None]
+    index = 0
+
+    @solara.component
+    def Page():
+        reactive = solara.use_reactive(0)
+        if reactives[index] is None:
+            reactives[index] = reactive  # type: ignore
+        solara.Info(str(reactive.value))
+
+    with context1:
+        _, rc1 = react.render(Page(), handle_error=False)
+        assert rc1.find(v.Alert).widget.children[0] == "0"
+        assert reactives[0] is not None
+
+    with context2:
+        index = 1
+        _, rc2 = react.render(Page(), handle_error=False)
+        assert rc2.find(v.Alert).widget.children[0] == "0"
+        assert reactives[1] is not None
+
+    reactives[0].value = 1
+    assert rc1.find(v.Alert).widget.children[0] == "1"
+    assert rc2.find(v.Alert).widget.children[0] == "0"
+
+    reactives[1].value = 2
+    assert rc1.find(v.Alert).widget.children[0] == "1"
+    assert rc2.find(v.Alert).widget.children[0] == "2"
+
+    assert reactives[0].value == 1
+    assert reactives[1].value == 2
+    with context1:
+        assert reactives[0].value == 1
+        assert reactives[1].value == 2
+
+    with context1:
+        rc1.close()
+    with context2:
+        rc2.close()
+
 
 def test_nested_update():
     # this effectively test the RLock vs Lock
@@ -1270,7 +1311,6 @@ def test_mutate_initial_value(no_kernel_context, mutation_detection):
     initial_values: List[int] = [1, 2, 3]
     reactive = Reactive[List[int]](solara.toestand.mutation_detection_storage(initial_values))
     assert reactive.value == initial_values
-    # breakpoint()
     initial_values.append(4)
     with pytest.raises(ValueError, match="Reactive variable was initialized"):
         reactive.value = [3, 2, 1]
@@ -1283,12 +1323,59 @@ def test_mutate_initial_value(no_kernel_context, mutation_detection):
             _ = reactive.value
 
 
+@pytest.mark.skipif(not solara.settings.storage.mutation_detection, reason="only tests when SOLARA_STORAGE_MUTATION_DETECTION=1")
+def test_mutate_initial_value_local(no_kernel_context, mutation_detection):
+    initial_values: List[int] = [1, 2, 3]
+    reactive_local = solara.reactive([4, 5, 6])
+
+    @solara.component
+    def Page():
+        nonlocal reactive_local
+        reactive_local = solara.use_reactive(initial_values)
+
+    _, rc = react.render(Page(), handle_error=False)
+    try:
+        assert reactive_local.value == initial_values
+        initial_values.append(4)
+        with pytest.raises(ValueError, match="Reactive variable was initialized"):
+            reactive_local.value = [3, 2, 1]
+        kernel_shared = kernel.Kernel()
+        context = kernel_context.VirtualKernelContext(id="toestand-1", kernel=kernel_shared, session_id="session-1")
+        assert kernel_context.current_context[kernel_context.get_current_thread_key()] is None
+        with pytest.raises(ValueError, match="Reactive variable was initialized"):
+            with context:
+                # reading the initial values should also trigger the error
+                _ = reactive_local.value
+    finally:
+        rc.close()
+
+
 def test_mutate_value_public_value():
     values = [1, 2, 3]
+
     reactive = Reactive[List[int]](solara.toestand.mutation_detection_storage(values))
     reactive.value.append(4)
     with pytest.raises(ValueError, match="Reactive variable was read when it had the value of \\[1, 2, 3\\].*"):
         reactive._storage.check_mutations()  # type: ignore
+
+
+@pytest.mark.skipif(not solara.settings.storage.mutation_detection, reason="only tests when SOLARA_STORAGE_MUTATION_DETECTION=1")
+def test_mutate_value_public_value_local():
+    values = [1, 2, 3]
+    reactive = solara.reactive(values)
+
+    @solara.component
+    def Page():
+        nonlocal reactive
+        reactive = solara.use_reactive(values)
+
+    _, rc = react.render(Page(), handle_error=False)
+    try:
+        reactive.value.append(4)
+        with pytest.raises(ValueError, match="Reactive variable was read when it had the value of \\[1, 2, 3\\].*"):
+            _ = reactive.value
+    finally:
+        rc.close()
 
 
 def test_mutate_value_set_value():
