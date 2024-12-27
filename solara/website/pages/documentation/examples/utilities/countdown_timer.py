@@ -49,7 +49,7 @@ def Page():
         if seconds:
             solara.Markdown(f"# {seconds} seconds left")
         else:
-            solara.solara.Markdown("# Time's up!")
+            solara.Markdown("# Time's up!")
 
     solara.v.TextField(type="number", v_model=duration, on_v_model=on_duration, disabled=running)
     with solara.Row():
