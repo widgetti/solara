@@ -6,7 +6,7 @@
 from typing import Union
 
 import solara
-from solara.lab.components.confirmation_dialog import ConfirmationDialog
+from solara.components.confirmation_dialog import ConfirmationDialog
 from solara.website.utils import apidoc
 
 title = "ConfirmationDialog"
