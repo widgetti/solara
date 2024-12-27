@@ -77,6 +77,8 @@ from .spinner import SpinnerSolara
 from .switch import Switch
 from .progress import ProgressLinear
 from .component_vue import _component_vue, component_vue
+from .confirmation_dialog import ConfirmationDialog
+from .menu import ClickMenu, ContextMenu, Menu
 import reacton.core
 
 try:
@@ -177,6 +179,10 @@ __all__ = [
     "ProgressLinear",
     "_component_vue",
     "component_vue",
+    "ConfirmationDialog",
+    "ClickMenu",
+    "ContextMenu",
+    "Menu",
 ]
 
 

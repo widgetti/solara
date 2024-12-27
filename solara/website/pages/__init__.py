@@ -211,6 +211,8 @@ _redirects = {
     "/api/title": "/documentation/components/page/title",
     "/documentation/components/lab/use_task": "/documentation/api/hooks/use_task",
     "/documentation/components/lab/task": "/documentation/api/utilities/task",
+    "/documentation/components/lab/confirmation_dialog": "/documentation/components/layout/confirmation_dialog",
+    "/documentation/components/lab/menu": "/documentation/components/layout/menu",
 }
 
 
