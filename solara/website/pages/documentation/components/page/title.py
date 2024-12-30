@@ -8,9 +8,9 @@ from solara.website.utils import apidoc
 
 @solara.component
 def Page():
-    title, set_title = solara.use_state(cast(Optional[str], "Custom title!"))
+    title = solara.use_reactive(cast(Optional[str], "Custom title!"))
    
-    solara.ToggleButtonsSingle(value=title, values=[None, "Custom title!", "Different custom title"], on_value=set_title)
+    solara.ToggleButtonsSingle(value=title, values=[None, "Custom title!", "Different custom title"])
 
     if title is not None:
         # if the title is not set in a child component, the parent's title will be used
