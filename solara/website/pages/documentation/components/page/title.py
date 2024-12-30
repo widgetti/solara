@@ -21,7 +21,5 @@ def Page():
     else:
         solara.Warning("If no title is set, the parent title is used.", classes=["mt-4"])
 
-  
-
 
 __doc__ += apidoc(solara.Title.f)  # type: ignore
