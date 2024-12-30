@@ -39,12 +39,12 @@ graph TD;
     markdown_text, set_markdown_text = solara.use_state(markdown_initial)
     # with solara.GridFixed(columns=2) as main:
     with solara.HBox(grow=True) as main:
-        with solara.VBox():
+        with solara.Column():
             solara.Markdown("# Input text")
             with solara.Padding(2):
                 with solara.v.Sheet(elevation=2):
                     solara.v.Textarea(v_model=markdown_text, on_v_model=set_markdown_text, rows=30)
-        with solara.VBox():
+        with solara.Column():
             solara.Markdown("# Renders like")
             with solara.Padding(2):
                 with solara.v.Sheet(elevation=2):
