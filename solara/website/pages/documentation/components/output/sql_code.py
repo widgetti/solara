@@ -78,7 +78,7 @@ def Page():
     elif query_executed is not None:
         with solara.Div():
             solara.Text("Loading data...")
-            rv.ProgressCircular(indeterminate=True, class_="solara-progress")
+            solara.v.ProgressCircular(indeterminate=True, class_="solara-progress")
    
 
 
