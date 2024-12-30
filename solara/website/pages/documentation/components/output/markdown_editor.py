@@ -35,8 +35,8 @@ and line breaks
     """.strip()
 
     markdown_text, set_markdown_text = solara.use_state(markdown_initial)
-    with solara.HBox(grow=True) as main:
-        with solara.VBox():
+    with solara.Row(grow=True) as main:
+        with solara.Column():
             with solara.Padding(2):
                 with solara.v.Sheet(elevation=2):
                     solara.MarkdownEditor(markdown_text, on_value=set_markdown_text)
