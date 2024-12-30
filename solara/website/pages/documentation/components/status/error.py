@@ -17,16 +17,16 @@ from solara.website.utils import apidoc
 
 @solara.component
 def Page():
-    icon, set_icon = solara.use_state(True)
-    dense, set_dense = solara.use_state(False)
-    outlined, set_outlined = solara.use_state(True)
-    text, set_text = solara.use_state(True)
+    icon = solara.use_reactive(True)
+    dense = solara.use_reactive(False)
+    outlined = solara.use_reactive(True)
+    text = solara.use_reactive(True)
  
     with solara.GridFixed(4):
-        solara.Checkbox(label="Use icon", value=icon, on_value=set_icon)
-        solara.Checkbox(label="Show dense", value=dense, on_value=set_dense)
-        solara.Checkbox(label="Show as text", value=text, on_value=set_text)
-        solara.Checkbox(label="Show outlined", value=outlined, on_value=set_outlined)
+        solara.Checkbox(label="Use icon", value=icon)
+        solara.Checkbox(label="Show dense", value=dense)
+        solara.Checkbox(label="Show as text", value=text)
+        solara.Checkbox(label="Show outlined", value=outlined)
     solara.Error(
         f"This is solara.Error(label='...', text={text}, dense={dense}, outlined={outlined}, icon={icon})",
         text=text,
