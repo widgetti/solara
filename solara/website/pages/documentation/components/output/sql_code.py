@@ -15,7 +15,6 @@ except ImportError:
     vaex = None
 
 import solara
-from solara.alias import rv
 from solara.website.utils import apidoc
 
 if vaex is not None:
