@@ -9,7 +9,7 @@ from solara.website.utils import apidoc
 @solara.component
 def Page():
     title = solara.use_reactive(cast(Optional[str], "Custom title!"))
-   
+
     solara.ToggleButtonsSingle(value=title, values=[None, "Custom title!", "Different custom title"])
 
     if title is not None:
