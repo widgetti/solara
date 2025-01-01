@@ -13,7 +13,7 @@ backcall==0.2.0
 beautifulsoup4==4.12.3
 blake3==0.3.1
 bleach==4.1.0
-bqplot==0.12.43
+bqplot==0.12.44
 bqplot-image-gl==1.5.0
 branca==0.5.0
 bump2version==1.0.1
