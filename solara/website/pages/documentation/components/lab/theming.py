@@ -27,6 +27,8 @@ whether dark theme is enabled or not.
 
 ## Example
 
+**Note**: Light and dark theme colors have to be set separately.
+
 ```solara
 import solara
 import solara.lab
@@ -35,14 +37,14 @@ from solara.lab import theme as theme
 
 def change_color(colors):
     if "purple" in colors:
-        theme.themes.light.info = "#8617c2"
+        theme.themes.light.info = theme.themes.dark.info = "#8617c2"
     else:
-        theme.themes.light.info = "#2196f3"
+        theme.themes.light.info = theme.themes.dark.info = "#2196f3"
 
     if "green" in colors:
-        theme.themes.light.error = "#33bd65"
+        theme.themes.light.error = theme.themes.dark.error = "#33bd65"
     else:
-        theme.themes.light.error = "#ff5252"
+        theme.themes.light.error = theme.themes.dark.error = "#ff5252"
 
 
 @solara.component
