@@ -28,11 +28,11 @@ def Page():
         solara.Checkbox(label="Show as text", value=text)
         solara.Checkbox(label="Show outlined", value=outlined)
     solara.Error(
-        f"This is solara.Error(label='...', text={text}, dense={dense}, outlined={outlined}, icon={icon})",
-        text=text,
-        dense=dense,
-        outlined=outlined,
-        icon=icon,
+        f"This is solara.Error(label='...', text={text.value}, dense={dense.value}, outlined={outlined.value}, icon={icon.value})",
+        text=text.value,
+        dense=dense.value,
+        outlined=outlined.value,
+        icon=icon.value,
     )
 
 
