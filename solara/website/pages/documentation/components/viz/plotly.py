@@ -31,11 +31,11 @@ def Page():
     fig = px.scatter(df, x="sepal_width", y="sepal_length", color="species")
     solara.FigurePlotly(
         fig, 
-        on_selection=lambda data: state.value.update({"selection_data": data}),
-        on_click=lambda data: state.value.update({"click_data": data}),
-        on_hover=lambda data: state.value.update({"hover_data": data}),
-        on_unhover=lambda data: state.value.update({"unhover_data": data}),
-        on_deselect=lambda data: state.value.update({"deselect_data": data}),
+        on_selection=lambda data: state.set({**state.value, "selection_data": data}),
+        on_click=lambda data: state.set({**state.value, "click_data": data}),
+        on_hover=lambda data: state.set({**state.value, "hover_data": data}),
+        on_unhover=lambda data: state.set({**state.value, "unhover_data": data}),
+        on_deselect=lambda data: state.set({**state.value, "deselect_data": data}),
     )
 
     solara.Markdown(

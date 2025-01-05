@@ -53,20 +53,20 @@ options = {
 
 @solara.component
 def Page():
-    option, set_option = solara.use_state("bars")
-    click_data, set_click_data = solara.use_state(None)
-    mouseover_data, set_mouseover_data = solara.use_state(None)
-    mouseout_data, set_mouseout_data = solara.use_state(None)
+    option = solara.use_reactive("bars")
+    click_data = solara.use_reactive(None)
+    mouseover_data = solara.use_reactive(None)
+    mouseout_data = solara.use_reactive(None)
 
     with solara.Card("Echarts"):
-        with solara.ToggleButtonsSingle("bars", on_value=set_option):
-            solara.Button("bars")
-            solara.Button("pie")
-        solara.FigureEcharts(option=options[option], on_click=set_click_data, on_mouseover=set_mouseover_data, on_mouseout=set_mouseout_data, responsive=True)
+        with solara.ToggleButtonsSingle(value=option.value, on_value=lambda data: setattr(option, "value", data)):
+            solara.Button("bars", value="bars")
+            solara.Button("pie", value="pie")
+        solara.FigureEcharts(option=options[option.value], on_click=lambda e: setattr(click_data, "value", e), on_mouseover=lambda e: setattr(mouseover_data, "value", e), on_mouseout=lambda e: setattr(mouseout_data, "value", e), responsive=True)
     with solara.Card("Event data"):
-        solara.Markdown(f"**Click data**: {click_data}")
-        solara.Markdown(f"**Mouseover data**: {mouseover_data}")
-        solara.Markdown(f"**Mouseout data**: {mouseout_data}")
+        solara.Markdown(f"**Click data**: {click_data.value}")
+        solara.Markdown(f"**Mouseover data**: {mouseover_data.value}")
+        solara.Markdown(f"**Mouseout data**: {mouseout_data.value}")
 
 
 __doc__ += apidoc(solara.FigureEcharts.f)  # type: ignore
