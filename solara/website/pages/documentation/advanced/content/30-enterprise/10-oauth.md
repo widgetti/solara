@@ -56,7 +56,7 @@ def Page():
 ```
 ## How to configure OAuth
 
-Solara supports the following OAuth providers: [Auth0](https://auth0.com/) and [Fief](https://fief.dev/).
+Solara currently supports [Auth0](https://auth0.com/) as the sole OAuth provider. [Fief](https://fief.dev/) support is **deprecated** (currently untested), but is not planned to be removed. If you would like support for a different provider to be added, [contact us](/contact)
 
 
 ### Configuring Auth0
@@ -134,6 +134,8 @@ To create your own Auth0 application, follow these steps:
 
 ### Configuring Fief
 
+##### Note: Fief support is not maintained or tested. If you would like Fief to be supported, feel free to [contact us](/contact)
+
 You can also configure Solara to use our Fief test account. To do this, you need to set the following environment variables:
 
 ```bash
@@ -164,7 +166,7 @@ Solara provides two convenient components for creating a user interface for logi
  1. [Avatar](/documentation/components/enterprise/avatar): This component shows the user's avatar.
  2. [AvatarMenu](/documentation/components/enterprise/avatar_menu): This component shows a menu with the user's avatar and a logout button.
 
- ## Python version support
+## Python version support
 
 Please note that Python 3.6 is not supported for Solara OAuth.
 
