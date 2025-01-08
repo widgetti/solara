@@ -154,39 +154,52 @@ class ValueBase(Generic[T]):
         raise NotImplementedError
 
     def subscribe(self, listener: Callable[[T], None], scope: Optional[ContextManager] = None):
+        if scope is not None:
+            warnings.warn("scope argument should not be used, it was only for internal use")
+        del scope
         scope_id = self._get_scope_key()
-        self.listeners[scope_id].add((listener, scope))
+        rc = reacton.core.get_render_context(required=False)
+        kernel = solara.server.kernel_context.get_current_context() if solara.server.kernel_context.has_current_context() else nullcontext()
+        context = Context(rc, kernel)
+
+        self.listeners[scope_id].add((listener, context))
 
         def cleanup():
-            self.listeners[scope_id].remove((listener, scope))
+            self.listeners[scope_id].remove((listener, context))
 
         return cleanup
 
     def subscribe_change(self, listener: Callable[[T, T], None], scope: Optional[ContextManager] = None):
+        if scope is not None:
+            warnings.warn("scope argument should not be used, it was only for internal use")
+        del scope
         scope_id = self._get_scope_key()
-        self.listeners2[scope_id].add((listener, scope))
+        rc = reacton.core.get_render_context(required=False)
+        kernel = solara.server.kernel_context.get_current_context() if solara.server.kernel_context.has_current_context() else nullcontext()
+        context = Context(rc, kernel)
+        self.listeners2[scope_id].add((listener, context))
 
         def cleanup():
-            self.listeners2[scope_id].remove((listener, scope))
+            self.listeners2[scope_id].remove((listener, context))
 
         return cleanup
 
     def fire(self, new: T, old: T):
         logger.info("value change from %s to %s, will fire events", old, new)
         scope_id = self._get_scope_key()
-        scopes = set()
-        for listener, scope in self.listeners[scope_id].copy():
-            scopes.add(scope)
-        for listener2, scope in self.listeners2[scope_id].copy():
-            scopes.add(scope)
-        if scopes:
-            for scope in scopes:
-                with scope or nullcontext():
-                    for listener, scope_listener in self.listeners[scope_id].copy():
-                        if scope == scope_listener:
+        contexts = set()
+        for listener, context in self.listeners[scope_id].copy():
+            contexts.add(context)
+        for listener2, context in self.listeners2[scope_id].copy():
+            contexts.add(context)
+        if contexts:
+            for context in contexts:
+                with context or nullcontext():
+                    for listener, context_listener in self.listeners[scope_id].copy():
+                        if context == context_listener:
                             listener(new)
-                    for listener2, scope_listener in self.listeners2[scope_id].copy():
-                        if scope == scope_listener:
+                    for listener2, context_listener in self.listeners2[scope_id].copy():
+                        if context == context_listener:
                             listener2(new, old)
 
     def update(self, _f=None, **kwargs):
@@ -847,7 +860,7 @@ class AutoSubscribeContextManagerBase:
     def __init__(self):
         self.subscribed = {}
 
-    def update_subscribers(self, change_handler, scope=None):
+    def update_subscribers(self, change_handler):
         assert self.reactive_used is not None
         reactive_used = self.reactive_used
         # remove subfields for which we already listen to it's root reactive value
@@ -863,7 +876,7 @@ class AutoSubscribeContextManagerBase:
 
         for reactive in added:
             if reactive not in self.subscribed:
-                unsubscribe = reactive.subscribe_change(change_handler, scope=scope)
+                unsubscribe = reactive.subscribe_change(change_handler)
                 self.subscribed[reactive] = unsubscribe
         for reactive in removed:
             unsubscribe = self.subscribed[reactive]
@@ -892,12 +905,16 @@ class Context:
         self.kernel_context = kernel_context
 
     def __enter__(self):
-        self.render_context.__enter__()
+        if self.render_context is not None:
+            self.render_context.__enter__()
         self.kernel_context.__enter__()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        # this will trigger a render
-        res1 = self.render_context.__exit__(exc_type, exc_val, exc_tb)
+        if self.render_context is not None:
+            # this will trigger a render
+            res1 = self.render_context.__exit__(exc_type, exc_val, exc_tb)
+        else:
+            res1 = None
         # pop the current context from the stack
         res2 = self.kernel_context.__exit__(exc_type, exc_val, exc_tb)
         return res1 or res2
@@ -929,9 +946,7 @@ class AutoSubscribeContextManagerReacton(AutoSubscribeContextManagerBase):
         super().__enter__()
 
         def update_subscribers():
-            rc = reacton.core.get_render_context(required=True)
-            kernel = solara.server.kernel_context.get_current_context() if solara.server.kernel_context.has_current_context() else nullcontext()
-            self.update_subscribers(force_update, scope=Context(rc, kernel))
+            self.update_subscribers(force_update)
 
         solara.use_effect(update_subscribers, None)
 
