@@ -1,4 +1,3 @@
-import contextlib
 import dataclasses
 import inspect
 import logging
@@ -33,6 +32,7 @@ from solara.util import equals_extra
 import solara
 import solara.settings
 from solara import _using_solara_server
+from solara.util import nullcontext
 
 T = TypeVar("T")
 TS = TypeVar("TS")
@@ -176,18 +176,18 @@ class ValueBase(Generic[T]):
         scope_id = self._get_scope_key()
         scopes = set()
         for listener, scope in self.listeners[scope_id].copy():
-            if scope is not None:
-                scopes.add(scope)
+            scopes.add(scope)
         for listener2, scope in self.listeners2[scope_id].copy():
-            if scope is not None:
-                scopes.add(scope)
-        with contextlib.ExitStack() as stack:
+            scopes.add(scope)
+        if scopes:
             for scope in scopes:
-                stack.enter_context(scope)
-            for listener, scope in self.listeners[scope_id].copy():
-                listener(new)
-            for listener2, scope in self.listeners2[scope_id].copy():
-                listener2(new, old)
+                with scope or nullcontext():
+                    for listener, scope_listener in self.listeners[scope_id].copy():
+                        if scope == scope_listener:
+                            listener(new)
+                    for listener2, scope_listener in self.listeners2[scope_id].copy():
+                        if scope == scope_listener:
+                            listener2(new, old)
 
     def update(self, _f=None, **kwargs):
         if _f is not None:
@@ -885,6 +885,35 @@ class AutoSubscribeContextManagerBase:
         thread_local.reactive_used = self.reactive_used_before
 
 
+class Context:
+    def __init__(self, render_context, kernel_context):
+        # combine the render context *and* the kernel context into one context
+        self.render_context = render_context
+        self.kernel_context = kernel_context
+
+    def __enter__(self):
+        self.render_context.__enter__()
+        self.kernel_context.__enter__()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # this will trigger a render
+        res1 = self.render_context.__exit__(exc_type, exc_val, exc_tb)
+        # pop the current context from the stack
+        res2 = self.kernel_context.__exit__(exc_type, exc_val, exc_tb)
+        return res1 or res2
+
+    def __eq__(self, value: object) -> bool:
+        if not isinstance(value, Context):
+            return False
+        return self.render_context == value.render_context and self.kernel_context == value.kernel_context
+
+    def __hash__(self) -> int:
+        return hash(id(self.render_context)) ^ hash(id(self.kernel_context))
+
+    def __repr__(self) -> str:
+        return f"Context(render_context={self.render_context}, kernel_context={self.kernel_context})"
+
+
 class AutoSubscribeContextManagerReacton(AutoSubscribeContextManagerBase):
     def __init__(self, element: solara.Element):
         self.element = element
@@ -900,7 +929,9 @@ class AutoSubscribeContextManagerReacton(AutoSubscribeContextManagerBase):
         super().__enter__()
 
         def update_subscribers():
-            self.update_subscribers(force_update, scope=reacton.core.get_render_context(required=True))
+            rc = reacton.core.get_render_context(required=True)
+            kernel = solara.server.kernel_context.get_current_context() if solara.server.kernel_context.has_current_context() else nullcontext()
+            self.update_subscribers(force_update, scope=Context(rc, kernel))
 
         solara.use_effect(update_subscribers, None)
 
