@@ -239,7 +239,7 @@ class KernelStore(ValueBase[S], ABC):
     _type_counter: Dict[Any, int] = defaultdict(int)
     scope_lock = threading.RLock()
 
-    def __init__(self, key=None, equals: Callable[[Any, Any], bool] = equals_extra):
+    def __init__(self, key: str, equals: Callable[[Any, Any], bool] = equals_extra):
         super().__init__(equals=equals)
         self.storage_key = key
         self._global_dict = {}
