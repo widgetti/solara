@@ -1,39 +1,32 @@
-from time import sleep
-
-import numpy as np
-from matplotlib import pyplot as plt
-
+from typing import cast, Optional
+import httpx
+import asyncio
 import solara
+import solara.lab
 
 
 @solara.component
 def Page():
-    # define some state which will be updated regularly in a separate thread
-    counter = solara.use_reactive(0)
+    btc = solara.use_reactive(cast(Optional[float], None))
 
-    def render():
-        """Infinite loop regularly mutating counter state"""
+    async def fetch_btc_price():
         while True:
-            sleep(0.2)
-            counter.value += 1
+            await asyncio.sleep(1)
+            async with httpx.AsyncClient() as client:
+                url = "https://api.binance.com/api/v1/ticker/price?symbol=BTCUSDT"
+                response = await client.get(url)
+                btc.value = float(response.json()["price"])
+                print("btc.value", btc.value)
 
-    # run the render loop in a separate thread
-    result: solara.Result[bool] = solara.use_thread(render)
-    if result.error:
-        raise result.error
-
-    # create the LiveUpdatingComponent, this component depends on the counter
-    # value so will be redrawn whenever counter value changes
-    LiveUpdatingComponent(counter.value)
-
-
-@solara.component
-def LiveUpdatingComponent(counter):
-    """Component which will be redrawn whenever the counter value changes."""
-    fig, ax = plt.subplots()
-    ax.plot(np.arange(10), np.random.random(10))
-    plt.close(fig)
-    solara.FigureMatplotlib(fig)
+    fetch_result = solara.lab.use_task(fetch_btc_price, dependencies=[])
+    # the task keeps running, so is always in the pending mode, so we combine it with the btc value being None
+    if fetch_result.pending and btc.value is None:
+        solara.Text("Fetching BTC price...")
+    else:
+        if fetch_result.error:
+            solara.Error(f"Error fetching BTC price: {fetch_result.exception}")
+        else:
+            solara.Text(f"BTC price: ${btc.value}")
 
 
 Page()
