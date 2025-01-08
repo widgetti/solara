@@ -1,4 +1,7 @@
 from typing import Any, Callable, TypeVar
+import warnings
+
+import reacton.core
 
 from solara.toestand import Reactive
 import solara.util
@@ -8,7 +11,7 @@ __all__ = ["reactive", "Reactive"]
 T = TypeVar("T")
 
 
-def reactive(value: T, equals: Callable[[Any, Any], bool] = solara.util.equals_extra) -> Reactive[T]:
+def reactive(value: T, equals: Callable[[Any, Any], bool] = solara.util.equals_extra, allow_in_render=False) -> Reactive[T]:
     """Creates a new Reactive object with the given initial value.
 
     Reactive objects are mostly used to manage global or application-wide state in
@@ -40,6 +43,7 @@ def reactive(value: T, equals: Callable[[Any, Any], bool] = solara.util.equals_e
             The default function is `solara.util.equals`, which performs a deep comparison of the two values
             and is more forgiving than the default `==` operator.
             You can provide a custom function if you need to define a different notion of equality.
+        allow_in_render (bool): If True, do not warn if this function is called inside a render function.
 
 
     Returns:
@@ -96,4 +100,12 @@ def reactive(value: T, equals: Callable[[Any, Any], bool] = solara.util.equals_e
     Whenever the counter value changes, `CounterDisplay` automatically updates to display the new value.
 
     """
+    if not allow_in_render:
+        rc = reacton.core.get_render_context(False)
+        if rc:
+            warnings.warn(
+                "You are calling `solara.reactive()` inside a render function. This will cause the reactive variable to be re-created on every render, and reset to the initial default value. "
+                "Use `solara.use_reactive()` instead, or pass `allow_in_render=True` to `solara.reactive()`.",
+                stacklevel=2,
+            )
     return Reactive(value, equals=equals)

@@ -1405,3 +1405,14 @@ def test_mutate_value_set_value_dataframe():
     assert not reactive_df._storage.equals(df, df_orig)
     with pytest.raises(ValueError, match="Reactive variable was set.*"):
         reactive_df._storage.check_mutations()  # type: ignore
+
+
+def test_reactive_in_render_function_warning():
+    @solara.component
+    def Page():
+        reactive = solara.reactive(1)
+        solara.Button("test", on_click=lambda: reactive.set(2))
+
+    with pytest.warns(UserWarning, match="inside a render function"):
+        _, rc = react.render(Page(), handle_error=False)
+    rc.close()
