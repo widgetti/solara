@@ -90,6 +90,7 @@ class AppScript:
             self.path = Path(spec.origin)
             self.directory = self.path.parent
         self._initialized = False
+        self._lock = threading.Lock()
 
     def init(self):
         try:
@@ -225,7 +226,9 @@ class AppScript:
 
     def check(self):
         if not self._initialized:
-            raise RuntimeError("Call solara.server.app.ensure_apps_initialized() first")
+            with self._lock:
+                if not self._initialized:
+                    self.init()
 
     def run(self):
         self.check()

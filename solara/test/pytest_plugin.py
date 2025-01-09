@@ -144,13 +144,14 @@ def solara_app(solara_server):
     used_app = None
 
     @contextlib.contextmanager
-    def run(app: Union[solara.server.app.AppScript, str]):
+    def run(app: Union[solara.server.app.AppScript, str], init=True):
         nonlocal used_app
         if "__default__" in solara.server.app.apps:
             solara.server.app.apps["__default__"].close()
         if isinstance(app, str):
             app = solara.server.app.AppScript(app)
-            app.init()
+            if init:
+                app.init()
         used_app = app
         solara.server.app.apps["__default__"] = app
         try:

@@ -45,7 +45,7 @@ def test_starlette_mount(page_session: playwright.sync_api.Page, solara_app, ext
         server = solara.server.starlette.ServerStarlette(port=port, starlette_app=starlette_app)
         server.serve_threaded()
         server.wait_until_serving()
-        with extra_include_path(HERE), solara_app("starlette_test"):
+        with extra_include_path(HERE), solara_app("starlette_test", init=False):
             page_session.goto(f"{server.base_url}/solara_mount/")
             page_session.locator("text=Mounted in starlette").wait_for()
     finally:
