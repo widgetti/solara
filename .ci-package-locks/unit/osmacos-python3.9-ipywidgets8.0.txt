@@ -126,7 +126,7 @@ notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.26.4
 objgraph==3.6.2
-openai==1.59.5
+openai==1.59.6
 overrides==7.7.0
 packaging==24.2
 pandas==2.2.3
@@ -151,7 +151,7 @@ ptyprocess==0.7.0
 pure_eval==0.2.3
 pyarrow==18.1.0
 pycparser==2.22
-pydantic==2.10.4
+pydantic==2.10.5
 pydantic_core==2.27.2
 pyee==12.0.0
 Pygments==2.19.1
@@ -182,7 +182,7 @@ rfc3986-validator==0.1.1
 rich==13.9.4
 rich-click==1.8.5
 rpds-py==0.22.3
-ruff==0.8.6
+ruff==0.9.0
 Send2Trash==1.8.3
 simple-websocket==1.1.0
 simplejson==3.19.3
