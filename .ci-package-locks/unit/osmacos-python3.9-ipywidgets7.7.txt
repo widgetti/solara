@@ -182,7 +182,7 @@ rfc3986-validator==0.1.1
 rich==13.9.4
 rich-click==1.8.5
 rpds-py==0.22.3
-ruff==0.9.0
+ruff==0.9.1
 Send2Trash==1.8.3
 simple-websocket==1.1.0
 simplejson==3.19.3
@@ -220,7 +220,7 @@ vega-datasets==0.9.0
 virtualenv==20.28.1
 voila==0.5.8
 watchdog==6.0.0
-watchfiles==1.0.3
+watchfiles==1.0.4
 wcwidth==0.2.13
 webcolors==24.11.1
 webencodings==0.5.1

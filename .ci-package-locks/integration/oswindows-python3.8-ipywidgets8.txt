@@ -182,7 +182,7 @@ rfc3986-validator==0.1.1
 rich==13.9.4
 rich-click==1.8.5
 rpds-py==0.20.1
-ruff==0.9.0
+ruff==0.9.1
 Send2Trash==1.8.3
 simple-websocket==1.1.0
 simplejson==3.19.3
