@@ -127,7 +127,7 @@ $ export SOLARA_CACHE=redis
 
 We can chain a few caches to get a multilevel cache. This allows us to get the benefits of the low latency memory cache while sharing it with other workers and nodes.
 
-```python
+```{.python pycafe-link}
 import solara
 solara.cache.configure("memory,disk,redis")
 # or more explicit

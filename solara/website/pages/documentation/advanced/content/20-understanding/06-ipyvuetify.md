@@ -18,7 +18,7 @@ material design based widgets.
 We consider ipyvuetify one of the most essential ipywidget libraries, and that is the reason why [Reacton](/documentation/advanced/understanding/reacton) ships with
 generated ipyvuetify components to make your app type safe.
 
-```solara
+```{.python pycafe-link}
 
 import solara
 # rv is the reacton-ipyvuetify wrapper for Reacton/Solara

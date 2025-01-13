@@ -8,7 +8,7 @@ description: Using your favorite component, we try to understand better how it w
 Let us take our favorite component, and try to understand a bit better how it works to improve your understanding of Reacton and thus how to use Solara.
 
 
-```solara
+```{.python pycafe-link}
 import solara
 
 
