@@ -15,7 +15,7 @@ attrs==24.3.0
 Authlib==1.4.0
 babel==2.16.0
 beautifulsoup4==4.12.3
-blake3==1.0.1
+blake3==1.0.2
 bleach==6.2.0
 blinker==1.9.0
 bqplot==0.12.44
@@ -28,7 +28,7 @@ cffi==1.17.1
 cfgv==3.4.0
 charset-normalizer==3.4.1
 click==8.1.8
-cloudpickle==3.1.0
+cloudpickle==3.1.1
 codespell==2.3.0
 colorama==0.4.6
 comm==0.2.2
@@ -116,8 +116,8 @@ mistune==3.1.0
 mkdocs-pycafe==0.3.0
 mypy==1.14.1
 mypy-extensions==1.0.0
-narwhals==1.21.1
-nbclassic==1.1.0
+narwhals==1.22.0
+nbclassic==1.2.0
 nbclient==0.10.2
 nbconvert==7.16.5
 nbformat==5.10.4
@@ -127,7 +127,7 @@ notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.26.4
 objgraph==3.6.2
-openai==1.59.6
+openai==1.59.7
 overrides==7.7.0
 packaging==24.2
 pandas==2.2.3
