@@ -9,3 +9,11 @@
     justify-content: center;
     align-items: center;
 }
+
+.theme--dark #loader-container {
+    background-color: #1e1e1e;
+}
+
+.theme--light #loader-container {
+    background-color: #fff;
+}
