@@ -37,8 +37,8 @@ starlette_app = Starlette(routes=starlette_routes)
 
 
 def test_starlette_mount(page_session: playwright.sync_api.Page, solara_app, extra_include_path):
-    settings.main.root_path = None
-    settings.main.base_url = ""
+    settings.main.root_path = ""
+    settings.main.origin = None
     try:
         port = conftest.TEST_PORT
         conftest.TEST_PORT += 1
@@ -49,5 +49,5 @@ def test_starlette_mount(page_session: playwright.sync_api.Page, solara_app, ext
             page_session.goto(f"{server.base_url}/solara_mount/")
             page_session.locator("text=Mounted in starlette").wait_for()
     finally:
-        settings.main.root_path = None
-        settings.main.base_url = ""
+        settings.main.root_path = ""
+        settings.main.origin = None

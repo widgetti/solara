@@ -5,6 +5,7 @@ import site
 import sys
 import uuid
 import warnings
+import logging
 from enum import Enum
 from pathlib import Path
 from typing import Optional, List
@@ -178,8 +179,8 @@ class MainSettings(BaseSettings):
     mode: str = "production"
     tracer: bool = False
     timing: bool = False
-    root_path: Optional[str] = None  # e.g. /myapp (without trailing slash)
-    base_url: str = ""  # e.g. https://myapp.solara.run/myapp/
+    root_path: str = ""  # e.g. /myapp (without trailing slash)
+    origin: Optional[str] = None  # e.g. https://myapp.solara.run (without trailing slash)
     platform: str = sys.platform
     host: str = HOST_DEFAULT
     experimental_performance: bool = False
@@ -243,6 +244,21 @@ if oauth.client_id:
         # for the test accounts, this is fine
         if session.https_only is None:
             session.https_only = False
+
+
+# Make sure origin and root_path are correctly configured
+if "SOLARA_BASE_URL" in os.environ:
+    from urllib.parse import urlparse
+
+    base_url = urlparse(os.environ["SOLARA_BASE_URL"])
+
+    if not main.origin:
+        main.origin = base_url.scheme + "://" + base_url.netloc
+        main.root_path = base_url.path.rstrip("/")
+    logging.warning(
+        "SOLARA_BASE_URL is deprecated, please use SOLARA_ORIGIN and SOLARA_ROOT_PATH instead. "
+        "SOLARA_BASE_URL will be removed in a future major version of Solara.",
+    )
 
 
 # call early so a misconfiguration fails early
