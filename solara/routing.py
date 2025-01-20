@@ -56,7 +56,7 @@ class Router:
         if _using_solara_server():
             import solara.server.settings
 
-            self.root_path = solara.server.settings.main.root_path or ""
+            self.root_path = solara.server.settings.main.root_path
         # each route in this list corresponds to a part in self.parts
         self.path_routes: List["solara.Route"] = []
         self.path_routes_siblings: List[List["solara.Route"]] = []  # siblings including itself

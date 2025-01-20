@@ -122,8 +122,9 @@ def kernels(id):
 
 @websocket_extension.route("/jupyter/api/kernels/<kernel_id>/<name>")
 def kernels_connection(ws: simple_websocket.Server, kernel_id: str, name: str):
-    if not settings.main.base_url:
-        settings.main.base_url = url_for("blueprint-solara.read_root", _external=True)
+    if not settings.main.origin:
+        url = url_for("blueprint-solara.read_root", _external=True)
+        settings.main.origin = url.rstrip("/")
     if settings.oauth.private and not has_solara_enterprise:
         raise RuntimeError("SOLARA_OAUTH_PRIVATE requires solara-enterprise")
     if has_solara_enterprise:
@@ -238,8 +239,12 @@ def read_root(path):
     if root_path.endswith("/"):
         root_path = root_path[:-1]
 
-    if not settings.main.base_url:
-        settings.main.base_url = url_for("blueprint-solara.read_root", _external=True)
+    if not settings.main.origin:
+        url_str = url_for("blueprint-solara.read_root", _external=True)
+        url = urlparse(url_str)
+
+        settings.main.origin = url.scheme + "://" + url.netloc
+        settings.main.root_path = url.path.rstrip("/")
 
     session_id = request.cookies.get(server.COOKIE_KEY_SESSION_ID) or str(uuid4())
     if root_path:
