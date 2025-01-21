@@ -175,7 +175,7 @@ Please note that Python 3.6 is not supported for Solara OAuth.
 
 ### Wrong redirection
 
-If the redirection back to solara return to the wrong address, it might be due to solara not choosing the right default for `SOLARA_BASE_URL`. This can happen in a situation where you have multiple reverse proxies that communicate via https and therefore need to set the Host header. For instance this variable could be set to `SOLARA_BASE_URL=https://solara.dev` for the solara.dev server. If you application runs behind a subpath, e.g. `/myapp`, you might have to set `SOLARA_ROOT_PATH=/myapp`.
+If the redirection back to solara return to the wrong address, it might be due to solara not choosing the right default for `SOLARA_ORIGIN`. This can happen in a situation where you have multiple reverse proxies that communicate via https and therefore need to set the Host header. For instance this variable could be set to `SOLARA_ORIGIN=https://solara.dev` for the solara.dev server. If you application runs behind a subpath, e.g. `/myapp`, you might have to set `SOLARA_ROOT_PATH=/myapp`.
 
 
 ### Wrong schema detected for redirect URL
