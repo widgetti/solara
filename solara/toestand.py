@@ -159,7 +159,12 @@ class ValueBase(Generic[T]):
         del scope
         scope_id = self._get_scope_key()
         rc = reacton.core.get_render_context(required=False)
-        kernel = solara.server.kernel_context.get_current_context() if solara.server.kernel_context.has_current_context() else nullcontext()
+        if _using_solara_server():
+            import solara.server.kernel_context
+
+            kernel = solara.server.kernel_context.get_current_context() if solara.server.kernel_context.has_current_context() else nullcontext()
+        else:
+            kernel = nullcontext()
         context = Context(rc, kernel)
 
         self.listeners[scope_id].add((listener, context))
@@ -175,7 +180,12 @@ class ValueBase(Generic[T]):
         del scope
         scope_id = self._get_scope_key()
         rc = reacton.core.get_render_context(required=False)
-        kernel = solara.server.kernel_context.get_current_context() if solara.server.kernel_context.has_current_context() else nullcontext()
+        if _using_solara_server():
+            import solara.server.kernel_context
+
+            kernel = solara.server.kernel_context.get_current_context() if solara.server.kernel_context.has_current_context() else nullcontext()
+        else:
+            kernel = nullcontext()
         context = Context(rc, kernel)
         self.listeners2[scope_id].add((listener, context))
 
