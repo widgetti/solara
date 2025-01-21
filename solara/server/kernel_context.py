@@ -26,7 +26,7 @@ from ipywidgets import DOMWidget, Widget
 import solara.server.settings
 import solara.util
 
-from . import kernel, kernel_context, websocket
+from . import kernel, websocket
 from .. import lifecycle
 from .kernel import Kernel, WebsocketStreamWrapper
 
@@ -35,7 +35,7 @@ logger = logging.getLogger("solara.server.app")
 
 
 class Local(threading.local):
-    kernel_context_stack: Optional[List[Optional["kernel_context.VirtualKernelContext"]]] = None
+    kernel_context_stack: Optional[List[Optional["VirtualKernelContext"]]] = None
 
 
 local = Local()
