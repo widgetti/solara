@@ -65,11 +65,17 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
 
     def send_text(self, data: str) -> None:
         with self.lock:
-            self.ws.send(data)
+            try:
+                self.ws.send(data)
+            except simple_websocket.ws.ConnectionClosed:
+                raise websocket.WebSocketDisconnect()
 
     def send_bytes(self, data: bytes) -> None:
         with self.lock:
-            self.ws.send(data)
+            try:
+                self.ws.send(data)
+            except simple_websocket.ws.ConnectionClosed:
+                raise websocket.WebSocketDisconnect()
 
     async def receive(self):
         from anyio import to_thread
@@ -285,3 +291,7 @@ if has_solara_enterprise:
 
 if __name__ == "__main__":
     app.run(debug=False, port=8765)
+
+# we can only call this at the module level, which means that the solara script cannot import this
+# module. This is a difference with the asgi standard, which provides a lifecycle hook (see starlette.py)
+appmod.ensure_apps_initialized()

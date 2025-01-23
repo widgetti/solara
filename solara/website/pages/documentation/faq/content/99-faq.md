@@ -101,3 +101,12 @@ If you upgrade from an older version to 1.30 or later, the order in which pip in
 ```bash
 $ pip install solara-server --force-reinstall
 ```
+
+# I see an error in the browser console
+
+If you see an error like this in the browser console:
+```
+Uncaught Error: Script error for "base/js/namespace", needed by: /jupyter/nbextensions/dash/main.js
+```
+
+See [ignoring notebook extensions](/documentation/advanced/understanding/solara-server#ignoring-notebook-extensions) for more information.

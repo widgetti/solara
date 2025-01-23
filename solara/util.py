@@ -1,5 +1,6 @@
 import base64
 import contextlib
+import functools
 import gzip
 import hashlib
 import json
@@ -29,6 +30,28 @@ try:
     has_threads = True
 except RuntimeError:
     has_threads = False
+
+
+from reacton.utils import equals as equals_extra
+
+
+def equals_pickle(a, b):
+    """Compare two values for equality.
+
+    Avoid false negative, e.g. when comparing dataframes, we want to compare
+    the data, not the object identity.
+
+    """
+    if equals_extra(a, b):
+        return True
+    import pickle
+
+    try:
+        if pickle.dumps(a) == pickle.dumps(b):
+            return True
+    except Exception:
+        pass
+    return False
 
 
 def github_url(file):
@@ -306,3 +329,20 @@ def is_running_in_vscode():
 
 def is_running_in_voila():
     return os.environ.get("SERVER_SOFTWARE", "").startswith("voila")
+
+
+def once(f):
+    called = False
+    return_value = None
+
+    @functools.wraps(f)
+    def wrapper():
+        nonlocal called
+        nonlocal return_value
+        if called:
+            return return_value
+        called = True
+        return_value = f()
+        return return_value
+
+    return wrapper

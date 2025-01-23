@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling==1.22.2"]
+requires = ["hatchling==1.26.3"]
 build-backend = "hatchling.build"
 
 
@@ -9,7 +9,7 @@ readme = "README.md"
 authors = [{name = "Maarten A. Breddels", email = "maartenbreddels@gmail.com"}]
 license = {file = "LICENSE"}
 classifiers = ["License :: OSI Approved :: MIT License"]
-version = "1.41.0"
+version = "1.43.0"
 dynamic = ["description"]
 dependencies = [
     "solara-ui",

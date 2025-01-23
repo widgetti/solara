@@ -7,6 +7,7 @@ import sys
 import threading
 import traceback
 import warnings
+import weakref
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional, cast
@@ -62,6 +63,36 @@ class AppScript:
         else:
             self.name = name
         self.path: Path = Path(self.name).resolve()
+        if self.path.is_dir():
+            self.type = AppType.DIRECTORY
+            # resolve the directory, because Path("file").parent.parent == "." != ".."
+            self.directory = self.path.resolve()
+        elif self.name.endswith(".py"):
+            self.type = AppType.SCRIPT
+            self.directory = self.path.parent.resolve()
+        elif self.name.endswith(".ipynb"):
+            self.type = AppType.NOTEBOOK
+            self.directory = self.path.parent.resolve()
+        else:
+            self.type = AppType.MODULE
+            try:
+                spec = importlib.util.find_spec(self.name)
+            except ValueError:
+                if self.name not in sys.modules:
+                    raise ImportError(f"Module {self.name} not found")
+                spec = importlib.util.spec_from_file_location(self.name, sys.modules[self.name].__file__)
+            if spec is None:
+                raise ImportError(f"Module {self.name} cannot be found")
+            assert spec is not None
+            if spec.origin is None:
+                raise ImportError(f"Module {self.name} cannot be found, or is a namespace package")
+            assert spec.origin is not None
+            self.path = Path(spec.origin)
+            self.directory = self.path.parent
+        self._initialized = False
+        self._lock = threading.Lock()
+
+    def init(self):
         try:
             context = kernel_context.get_current_context()
         except RuntimeError:
@@ -84,6 +115,7 @@ class AppScript:
                 package_root_path = Path(mod.__file__).parent
                 reload.reloader.root_path = package_root_path
         dummy_kernel_context.close()
+        self._initialized = True
 
     def _execute(self):
         logger.info("Executing %s", self.name)
@@ -97,10 +129,8 @@ class AppScript:
                 if working_directory not in sys.path:
                     sys.path.insert(0, working_directory)
 
-        if self.path.is_dir():
-            self.type = AppType.DIRECTORY
+        if self.type == AppType.DIRECTORY:
             # resolve the directory, because Path("file").parent.parent == "." != ".."
-            self.directory = self.path.resolve()
             routes = solara.generate_routes_directory(self.path)
 
             if any(name for name in sys.modules.keys() if name.startswith(self.name)):
@@ -110,45 +140,26 @@ class AppScript:
                     "can avoid this ambiguity."
                 )
 
-        elif self.name.endswith(".py"):
-            self.type = AppType.SCRIPT
+        elif self.type == AppType.SCRIPT:
             add_path()
             # manually add the script to the watcher
             reload.reloader.watcher.add_file(self.path)
-            self.directory = self.path.parent.resolve()
             initial_namespace = {
                 "__name__": "__main__",
             }
             with reload.reloader.watch():
                 routes = [solara.autorouting._generate_route_path(self.path, first=True, initial_namespace=initial_namespace)]
-        elif self.name.endswith(".ipynb"):
-            self.type = AppType.NOTEBOOK
+        elif self.type == AppType.NOTEBOOK:
             add_path()
             # manually add the notebook to the watcher
             reload.reloader.watcher.add_file(self.path)
-            self.directory = self.path.parent.resolve()
             with reload.reloader.watch():
                 routes = [solara.autorouting._generate_route_path(self.path, first=True)]
         else:
             # the module itself will be added by reloader
             # automatically
-            with reload.reloader.watch():
+            with kernel_context.without_context(), reload.reloader.watch():
                 self.type = AppType.MODULE
-                try:
-                    spec = importlib.util.find_spec(self.name)
-                except ValueError:
-                    if self.name not in sys.modules:
-                        raise ImportError(f"Module {self.name} not found")
-                    spec = importlib.util.spec_from_file_location(self.name, sys.modules[self.name].__file__)
-                if spec is None:
-                    raise ImportError(f"Module {self.name} cannot be found")
-                assert spec is not None
-                if spec.origin is None:
-                    raise ImportError(f"Module {self.name} cannot be found, or is a namespace package")
-                assert spec.origin is not None
-                self.path = Path(spec.origin)
-                self.directory = self.path.parent
-
                 mod = importlib.import_module(self.name)
                 routes = solara.generate_routes(mod)
 
@@ -213,7 +224,14 @@ class AppScript:
         for context in context_values:
             context.close()
 
+    def check(self):
+        if not self._initialized:
+            with self._lock:
+                if not self._initialized:
+                    self.init()
+
     def run(self):
+        self.check()
         if reload.reloader.requires_reload or self._first_execute_app is None:
             with thread_lock:
                 if reload.reloader.requires_reload or self._first_execute_app is None:
@@ -420,6 +438,9 @@ def solara_comm_target(comm, msg_first):
 
     def on_msg(msg):
         nonlocal app
+        comm = comm_ref()
+        assert comm is not None
+        context = kernel_context.get_current_context()
         data = msg["content"]["data"]
         method = data["method"]
         if method == "run":
@@ -435,7 +456,12 @@ def solara_comm_target(comm, msg_first):
             themes = args.get("themes")
             dark = args.get("dark")
             load_themes(themes, dark)
-            load_app_widget(None, app, path)
+            try:
+                load_app_widget(None, app, path)
+            except Exception as e:
+                msg = f"Error loading app: from path {path} and app {app_name}"
+                logger.exception(msg)
+                raise RuntimeError(msg) from e
             comm.send({"method": "finished", "widget_id": context.container._model_id})
         elif method == "app-status":
             context = kernel_context.get_current_context()
@@ -464,9 +490,10 @@ def solara_comm_target(comm, msg_first):
         else:
             logger.error("Unknown comm method called on solara.control comm: %s", method)
 
-    comm.on_msg(on_msg)
-
     def reload():
+        comm = comm_ref()
+        assert comm is not None
+        context = kernel_context.get_current_context()
         # we don't reload the app ourself, we send a message to the client
         # this ensures that we don't run code of any client that for some reason is connected
         # but not working anymore. And it indirectly passes a message from the current thread
@@ -474,8 +501,11 @@ def solara_comm_target(comm, msg_first):
         logger.debug(f"Send reload to client: {context.id}")
         comm.send({"method": "reload"})
 
-    context = kernel_context.get_current_context()
-    context.reload = reload
+    comm.on_msg(on_msg)
+    comm_ref = weakref.ref(comm)
+    del comm
+
+    kernel_context.get_current_context().reload = reload
 
 
 def register_solara_comm_target(kernel: Kernel):
@@ -489,3 +519,9 @@ patch.patch()
 if "SOLARA_APP" in os.environ:
     with pdb_guard():
         apps["__default__"] = AppScript(os.environ.get("SOLARA_APP", "solara.website.pages:Page"))
+
+
+@solara.util.once
+def ensure_apps_initialized():
+    for app in apps.values():
+        app.init()

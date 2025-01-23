@@ -24,7 +24,7 @@ Run `pip install solara`, or follow the [Installation instructions](/documentati
 
 Put the following Python snippet in a file (we suggest `sol.py`), or put it in a Jupyter notebook cell:
 
-```solara
+```solara {pycafe-link}
 import solara
 
 # Declare reactive variables at the top level. Components using these variables
@@ -94,7 +94,7 @@ Or the more modern Jupyter lab:
 You can also run the script as a standalone app. This requires the extra packages `qtpy` and `PySide6` (or `PyQt6`) to be installed.
 
 ```bash
-$ pip install pip install qtpy PySide6
+$ pip install qtpy PySide6
 ```
 
 Run from the command line in the same directory where you put your file (`sol.py`):

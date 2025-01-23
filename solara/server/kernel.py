@@ -2,6 +2,7 @@ import json
 import logging
 import pdb
 import queue
+import re
 import struct
 import warnings
 from binascii import b2a_base64
@@ -53,7 +54,7 @@ def json_default(obj):
         import numpy as np
 
         if isinstance(obj, np.number):
-            return repr(obj.item())
+            return obj.item()
         else:
             raise TypeError("%r is not JSON serializable" % obj)
     else:
@@ -73,7 +74,7 @@ def json_dumps(data):
     )
 
 
-ipykernel_version = tuple(map(int, ipykernel.__version__.split(".")))
+ipykernel_version = tuple(map(int, re.split(r"\D+", ipykernel.__version__)[:3]))
 if ipykernel_version >= (6, 18, 0):
     import comm.base_comm
 
@@ -214,8 +215,20 @@ def send_websockets(websockets: Set[websocket.WebsocketWrapper], binary_msg):
     for ws in list(websockets):
         try:
             ws.send(binary_msg)
-        except:  # noqa
-            # in case of any issue, we simply remove it from the list
+        except websocket.WebSocketDisconnect:
+            # ignore the exception, we tried to send while websocket closed
+            # just remove it from the websocket set
+            try:
+                # websocket can be modified by another thread
+                websockets.remove(ws)
+            except KeyError:
+                pass  # already removed
+        except Exception as e:  # noqa
+            logger.exception("Error sending message: %s, closing websocket", e)
+            try:
+                ws.close()
+            except Exception as e:  # noqa
+                logger.exception("Error closing websocket: %s", e)
             try:
                 # websocket can be modified by another thread
                 websockets.remove(ws)
@@ -247,6 +260,8 @@ class SessionWebsocket(session.Session):
         header=None,
         metadata=None,
     ):
+        if stream is None:
+            return  # can happen when the kernel is closed but someone was still trying to send a message
         try:
             if isinstance(msg_or_type, dict):
                 msg = msg_or_type
@@ -312,6 +327,39 @@ class Kernel(ipykernel.kernelbase.Kernel):
         self.shell = SolaraInteractiveShell()
         self.shell.display_pub.session = self.session
         self.shell.display_pub.pub_socket = self.iopub_socket
+
+    def close(self):
+        if self.comm_manager is None:
+            raise RuntimeError("Kernel already closed")
+        self.session.close()
+        self._cleanup_references()
+
+    def _cleanup_references(self):
+        try:
+            # all of these reduce the circular references
+            # making it easier for the garbage collector to clean up
+            self.shell_handlers.clear()
+            self.control_handlers.clear()
+            for comm_object in list(self.comm_manager.comms.values()):  # type: ignore
+                comm_object.close()
+            self.comm_manager.targets.clear()  # type: ignore
+            # self.comm_manager.kernel points to us, but we cannot set it to None
+            # so we remove the circular reference by setting the comm_manager to None
+            self.comm_manager = None  # type: ignore
+            self.session.parent = None  # type: ignore
+
+            self.shell.display_pub.session = None  # type: ignore
+            self.shell.display_pub.pub_socket = None  # type: ignore
+            del self.shell.__dict__
+            self.shell = None  # type: ignore
+            self.session.websockets.clear()
+            self.session.stream = None  # type: ignore
+            self.session = None  # type: ignore
+            self.stream.session = None  # type: ignore
+            self.stream = None  # type: ignore
+            self.iopub_socket = None  # type: ignore
+        except Exception:
+            logger.exception("Error cleaning up references from kernel, not fatal")
 
     async def _flush_control_queue(self):
         pass

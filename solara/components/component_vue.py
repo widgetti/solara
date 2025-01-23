@@ -82,6 +82,29 @@ def component_vue(vue_path: str, vuetify=True) -> Callable[[Callable[P, None]], 
 
     See the [Vue component example](/documentation/examples/general/vue_component) for an example of how to use this decorator.
 
+
+    ## Examples
+
+    A component that takes a `foo` argument and an `on_foo` callback that gets called when `foo` changes (from the frontend).
+
+    ```python
+    import solara
+
+    @solara.component_vue("my_foo_component.vue")
+    def MyFooComponent(foo: int, on_foo: Callable[[int], None]):
+        pass
+    ```
+
+    The following component only takes in a month argument and an event_date_clicked callback that gets called from
+    the vue template using `this.date_clicked({'extra-data': 42, 'day': this.day})`.
+    ```python
+    import solara
+
+    @solara.component_vue("my_date_component.vue")
+    def MyDateComponent(month: int, event_date_clicked: Callable):
+        pass
+    ```
+
     ## Arguments
 
      * `vue_path`: The path to the Vue template file.

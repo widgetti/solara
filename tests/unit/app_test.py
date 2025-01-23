@@ -23,6 +23,7 @@ reload.reloader.start()
 def test_notebook_element(kernel_context, no_kernel_context):
     name = str(HERE / "solara_test_apps" / "notebookapp_element.ipynb")
     app = AppScript(name)
+    app.init()
     try:
         with kernel_context:
             el = app.run()
@@ -36,6 +37,7 @@ def test_notebook_element(kernel_context, no_kernel_context):
 def test_notebook_component(kernel_context, no_kernel_context):
     name = str(HERE / "solara_test_apps" / "notebookapp_component.ipynb")
     app = AppScript(name)
+    app.init()
     try:
         with kernel_context:
             el = app.run()
@@ -49,6 +51,7 @@ def test_notebook_component(kernel_context, no_kernel_context):
 def test_notebook_widget(kernel_context, no_kernel_context):
     name = str(HERE / "solara_test_apps" / "notebookapp_widget.ipynb")
     app = AppScript(name)
+    app.init()
     try:
         with kernel_context:
             el = app.run()
@@ -66,6 +69,7 @@ def test_notebook_widget(kernel_context, no_kernel_context):
 def test_sidebar_single_file_multiple_routes(kernel_context, no_kernel_context):
     name = str(HERE / "solara_test_apps" / "single_file_multiple_routes.py")
     app = AppScript(name)
+    app.init()
     try:
         with kernel_context:
             c = app.run()
@@ -79,6 +83,7 @@ def test_sidebar_single_file_multiple_routes(kernel_context, no_kernel_context):
 def test_sidebar_single_file(kernel_context, no_kernel_context):
     name = str(HERE / "solara_test_apps" / "single_file.py")
     app = AppScript(name)
+    app.init()
     try:
         with kernel_context:
             c = app.run()
@@ -92,6 +97,7 @@ def test_sidebar_single_file(kernel_context, no_kernel_context):
 def test_sidebar_single_file_missing(kernel_context, no_kernel_context):
     name = str(HERE / "solara_test_apps" / "single_file.py:doesnotexist")
     app = AppScript(name)
+    app.init()
     try:
         with kernel_context:
             c = app.run()
@@ -119,6 +125,7 @@ def test_watch_module_reload(tmpdir, kernel_context, extra_include_path, no_kern
         logger.info("wrote files")
 
         app = AppScript(f"{py_file}")
+        app.init()
         try:
             result = app.run()
             assert "somemod" in sys.modules

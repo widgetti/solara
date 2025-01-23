@@ -3,6 +3,11 @@ from solara.website.components import Gallery, MarkdownWithMetadata
 
 title = "Examples"
 
+pycafe_projects = [
+    "chatbot",
+    "tokenizer",
+]
+
 
 @solara.component
 def Page(route_external=None):
@@ -37,6 +42,11 @@ def Layout(children):
             with solara.Column(style={"max-width": "min(100%, 1024px)", "width": "100%"}):
                 if route_current.path != "/":
                     solara.Button("View source code on GitHub", icon_name="mdi-github-circle", href=github_url, class_="ma-2", target="_blank", text=True)
+                if route_current.path in pycafe_projects:
+                    pycafe_url = f"https://py.cafe/solara/{route_current.path}"
+                    solara.Button(
+                        "Run this example on PyCafe", icon_name="mdi-coffee-to-go-outline", href=pycafe_url, class_="ma-2", target="_blank", text=True
+                    )
                 if not hasattr(module, "Page"):
                     solara.Error(f"No Page component found in {module}")
                 else:

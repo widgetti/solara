@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling==1.22.2"]
+requires = ["hatchling==1.26.3"]
 build-backend = "hatchling.build"
 
 
@@ -14,7 +14,7 @@ packages = [
     { include = "solara" }
 ]
 dependencies = [
-    "reacton>=1.7.1",
+    "reacton>=1.9",
     "ipywidgets>=7.7",
     "ipyvuetify>=1.6.10",
     "ipyvue>=1.9.0",
@@ -85,6 +85,7 @@ extra = [
 fix = false
 line-length = 160
 lint.ignore = ["E402"]
+target-version = "py38"
 
 [tool.black]
 line-length = 160

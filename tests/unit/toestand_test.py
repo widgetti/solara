@@ -2,18 +2,24 @@ import dataclasses
 import threading
 import unittest.mock
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Set, TypeVar
+from typing import Callable, Dict, List, Optional, Set, TypeVar, cast
+
+import pytest
 
 import ipyvuetify as v
 import react_ipywidgets as react
 from typing_extensions import TypedDict
 
 import solara
+import solara.toestand
 import solara as sol
 import solara.lab
 import solara.toestand as toestand
+import solara.server.kernel_context
 from solara.server import kernel, kernel_context
 from solara.toestand import Reactive, Ref, State, use_sync_external_store
+import solara.settings
+import pandas as pd
 
 from .common import click
 
@@ -35,6 +41,14 @@ class BearReactive(Reactive[B]):
 
 
 bears: Bears = Bears(type="brown", count=1)
+
+
+def get_storage(store):
+    storage = store._storage
+    if hasattr(storage, "_storage"):
+        # this happens when mutation detection is used
+        storage = storage._storage
+    return storage
 
 
 def test_store_bare():
@@ -160,6 +174,98 @@ def test_scopes(no_kernel_context):
     for u in unsub:
         u()
 
+    # make sure the use_reactive can be used outside of a kernel context
+    reactives = [None, None]
+    index = 0
+
+    @solara.component
+    def Page():
+        reactive = solara.use_reactive(0)
+        assert solara.server.kernel_context.get_current_context() is expected_context
+        if reactives[index] is None:
+            reactives[index] = reactive  # type: ignore
+        solara.Info(str(reactive.value))
+
+    with context1:
+        expected_context = context1
+        _, rc1 = react.render(Page(), handle_error=False)
+        assert rc1.find(v.Alert).widget.children[0] == "0"
+        assert reactives[0] is not None
+
+    with context2:
+        index = 1
+        expected_context = context2
+        _, rc2 = react.render(Page(), handle_error=False)
+        assert rc2.find(v.Alert).widget.children[0] == "0"
+        assert reactives[1] is not None
+
+    expected_context = context1
+    reactives[0].value = 1
+    assert rc1.find(v.Alert).widget.children[0] == "1"
+    assert rc2.find(v.Alert).widget.children[0] == "0"
+
+    expected_context = context2
+    reactives[1].value = 2
+    assert rc1.find(v.Alert).widget.children[0] == "1"
+    assert rc2.find(v.Alert).widget.children[0] == "2"
+
+    assert reactives[0].value == 1
+    assert reactives[1].value == 2
+    with context1:
+        assert reactives[0].value == 1
+        assert reactives[1].value == 2
+
+    with context1:
+        rc1.close()
+    with context2:
+        rc2.close()
+
+
+def test_scopes_restore(no_kernel_context):
+    kernel1 = kernel.Kernel()
+    kernel2 = kernel.Kernel()
+    assert kernel_context.current_context[kernel_context.get_current_thread_key()] is None
+
+    context1 = kernel_context.VirtualKernelContext(id="toestand-1", kernel=kernel1, session_id="session-1")
+    context2 = kernel_context.VirtualKernelContext(id="toestand-2", kernel=kernel2, session_id="session-2")
+
+    from solara._stores import SharedStore
+
+    reactive: solara.Reactive[int] = solara.Reactive(SharedStore(10))
+
+    @solara.component
+    def Page1():
+        assert solara.server.kernel_context.get_current_context() is context1
+        solara.Info(str(reactive.value))
+        Page1b()
+
+    @solara.component
+    def Page1b():
+        assert solara.server.kernel_context.get_current_context() is context1
+        solara.Error(str(reactive.value))
+
+    @solara.component
+    def Page2():
+        assert solara.server.kernel_context.get_current_context() is context2
+        solara.Info(str(reactive.value))
+
+    with context2:
+        _, rc2 = react.render(Page2(), handle_error=False)
+        assert rc2.find(v.Alert).widget.children[0] == "10"
+
+    with context1:
+        _, rc1 = react.render(Page1(), handle_error=False)
+        assert rc1.find(v.Alert)[0].widget.children[0] == "10"
+
+    reactive.value = 42
+    assert rc1.find(v.Alert)[0].widget.children[0] == "42"
+    assert rc2.find(v.Alert).widget.children[0] == "42"
+
+    with context1:
+        rc1.close()
+    with context2:
+        rc2.close()
+
 
 def test_nested_update():
     # this effectively test the RLock vs Lock
@@ -178,7 +284,7 @@ def test_nested_update():
 
     Ref(bear_store.fields.type).subscribe(reset_count)
     Ref(bear_store.fields.type).value = "purple"
-    mock.assert_called_with(Bears(type="purple", count=0))
+    mock.assert_any_call(Bears(type="purple", count=0))
     mock_type.assert_called_with("purple")
     mock_count.assert_called_with(0)
     for u in unsub:
@@ -727,6 +833,7 @@ def test_dataframe():
 
     df = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
     df2 = df.copy()
+    df2["a"] = [1, 2, 4]
     store = Reactive[pd.DataFrame](df)
     unsub = store.subscribe(mock)
     mock.assert_not_called()
@@ -744,9 +851,15 @@ def test_dataframe():
         return solara.Info(repr(id(df)))
 
     box, rc = solara.render(Test(), handle_error=False)
+
+    if solara.settings.storage.mutation_detection:
+        # a copy is made, so get a reference to the actual used object
+        df = get_storage(store).value.public
     assert rc.find(v.Alert).widget.children[0] == repr(id(df))
-    df2 = df.copy()
+    df2 = df2.copy()
     store.set(df2)
+    if solara.settings.storage.mutation_detection:
+        df2 = get_storage(store).value.public
     assert rc.find(v.Alert).widget.children[0] == repr(id(df2))
 
     @dataclasses.dataclass(frozen=True)
@@ -816,7 +929,7 @@ def test_reactive_auto_subscribe(kernel_context):
     assert rc.find(v.Slider).widget.v_model == 2
     y.value = "hello"
     assert rc.find(v.Slider).widget.label == "hello"
-    assert len(x._storage.listeners2) == 1
+    assert len(get_storage(x).listeners2) == 1
     # force an extra listener
     x.value = 0
     # and remove it
@@ -824,10 +937,10 @@ def test_reactive_auto_subscribe(kernel_context):
 
     count.value = 2
     assert len(rc.find(v.Slider)) == 2
-    assert len(x._storage.listeners2[kernel_context.id]) == 2
+    assert len(get_storage(x).listeners2[kernel_context.id]) == 2
     x.value = 3
     assert rc.find(v.Slider)[0].widget.v_model == 3
-    assert len(x._storage.listeners2[kernel_context.id]) == 2
+    assert len(get_storage(x).listeners2[kernel_context.id]) == 2
 
     count.value = 1
     assert len(rc.find(v.Slider)) == 1
@@ -835,8 +948,8 @@ def test_reactive_auto_subscribe(kernel_context):
     assert len(rc.find(v.Slider)) == 0
 
     rc.close()
-    assert not x._storage.listeners[kernel_context.id]
-    assert not x._storage.listeners2[kernel_context.id]
+    assert not get_storage(x).listeners[kernel_context.id]
+    assert not get_storage(x).listeners2[kernel_context.id]
 
 
 def test_reactive_auto_subscribe_sub():
@@ -886,23 +999,23 @@ def test_reactive_auto_subscribe_cleanup(kernel_context):
     box, rc = solara.render(Test(), handle_error=False)
     assert rc.find(v.Slider).widget.v_model == 1
     assert renders == 1
-    assert len(x._storage.listeners2) == 1
-    assert len(y._storage.listeners2) == 0
+    assert len(get_storage(x).listeners2) == 1
+    assert len(get_storage(y).listeners2) == 0
     x.value = 42
     assert renders == 2
-    assert len(x._storage.listeners2[kernel_context.id]) == 1
-    assert len(y._storage.listeners2[kernel_context.id]) == 1
+    assert len(get_storage(x).listeners2[kernel_context.id]) == 1
+    assert len(get_storage(y).listeners2[kernel_context.id]) == 1
 
     # this triggers two renders, where during the first one we use y, but the seconds we don't
     x.value = 0
     assert rc.find(v.Slider).widget.v_model == 100
-    assert len(x._storage.listeners2[kernel_context.id]) == 1
+    assert len(get_storage(x).listeners2[kernel_context.id]) == 1
     # which means we shouldn't have a listener on y
-    assert len(y._storage.listeners2[kernel_context.id]) == 0
+    assert len(get_storage(y).listeners2[kernel_context.id]) == 0
 
     rc.close()
-    assert not x._storage.listeners[kernel_context.id]
-    assert not y._storage.listeners2[kernel_context.id]
+    assert not get_storage(x).listeners[kernel_context.id]
+    assert not get_storage(y).listeners2[kernel_context.id]
 
 
 def test_reactive_auto_subscribe_subfield_limit(kernel_context):
@@ -1134,10 +1247,10 @@ def test_computed():
     assert z.value == 3
     assert z._auto_subscriber.value.reactive_used == {x, y}
     # assert z._auto_subscriber.subscribed == 1
-    assert len(x._storage.listeners[context_id]) == 0
-    assert len(x._storage.listeners2[context_id]) == 1
-    assert len(y._storage.listeners[context_id]) == 0
-    assert len(y._storage.listeners2[context_id]) == 1
+    assert len(get_storage(x).listeners[context_id]) == 0
+    assert len(get_storage(x).listeners2[context_id]) == 1
+    assert len(get_storage(y).listeners[context_id]) == 0
+    assert len(get_storage(y).listeners2[context_id]) == 1
     assert calls == 1
     x.value = 2
     assert z.value == 4
@@ -1147,15 +1260,15 @@ def test_computed():
     assert z.value == 5
     assert z._auto_subscriber.value.reactive_used == {x, y}
     assert calls == 3
-    assert len(x._storage.listeners2[context_id]) == 1
-    assert len(y._storage.listeners2[context_id]) == 1
+    assert len(get_storage(x).listeners2[context_id]) == 1
+    assert len(get_storage(y).listeners2[context_id]) == 1
 
     # now we do not depend on y anymore
     x.value = 0
     assert z.value == 42
     assert z._auto_subscriber.value.reactive_used == {x}
-    assert len(x._storage.listeners2[context_id]) == 1
-    assert len(y._storage.listeners2[context_id]) == 0
+    assert len(get_storage(x).listeners2[context_id]) == 1
+    assert len(get_storage(y).listeners2[context_id]) == 0
     assert calls == 4
     y.value = 4
     assert z.value == 42
@@ -1173,6 +1286,7 @@ def test_computed_reload(no_kernel_context):
     # the reactive variable id's
     solara.toestand.KernelStore._type_counter.clear()
     app = AppScript(name)
+    app.init()
     try:
         assert len(app.routes) == 1
         route = app.routes[0]
@@ -1233,3 +1347,113 @@ def test_pydantic_basic():
     assert person.get().height == 2.0
     assert Ref(person.fields.name).get() == "Maria"
     assert Ref(person.fields.height).get() == 2.0
+
+
+@pytest.fixture
+def mutation_detection():
+    current = solara.settings.storage.mutation_detection
+    solara.settings.storage.mutation_detection = True
+    try:
+        yield
+    finally:
+        solara.settings.storage.mutation_detection = current
+
+
+def test_mutate_initial_value(no_kernel_context, mutation_detection):
+    initial_values: List[int] = [1, 2, 3]
+    reactive = Reactive[List[int]](solara.toestand.mutation_detection_storage(initial_values))
+    assert reactive.value == initial_values
+    initial_values.append(4)
+    with pytest.raises(ValueError, match="Reactive variable was initialized"):
+        reactive.value = [3, 2, 1]
+    kernel_shared = kernel.Kernel()
+    context = kernel_context.VirtualKernelContext(id="toestand-1", kernel=kernel_shared, session_id="session-1")
+    assert kernel_context.current_context[kernel_context.get_current_thread_key()] is None
+    with pytest.raises(ValueError, match="Reactive variable was initialized"):
+        with context:
+            # reading the initial values should also trigger the error
+            _ = reactive.value
+
+
+@pytest.mark.skipif(not solara.settings.storage.mutation_detection, reason="only tests when SOLARA_STORAGE_MUTATION_DETECTION=1")
+def test_mutate_initial_value_local(no_kernel_context, mutation_detection):
+    initial_values: List[int] = [1, 2, 3]
+    reactive_local = solara.reactive([4, 5, 6])
+
+    @solara.component
+    def Page():
+        nonlocal reactive_local
+        reactive_local = solara.use_reactive(initial_values)
+
+    _, rc = react.render(Page(), handle_error=False)
+    try:
+        assert reactive_local.value == initial_values
+        initial_values.append(4)
+        with pytest.raises(ValueError, match="Reactive variable was initialized"):
+            reactive_local.value = [3, 2, 1]
+        kernel_shared = kernel.Kernel()
+        context = kernel_context.VirtualKernelContext(id="toestand-1", kernel=kernel_shared, session_id="session-1")
+        assert kernel_context.current_context[kernel_context.get_current_thread_key()] is None
+        with pytest.raises(ValueError, match="Reactive variable was initialized"):
+            with context:
+                # reading the initial values should also trigger the error
+                _ = reactive_local.value
+    finally:
+        rc.close()
+
+
+def test_mutate_value_public_value():
+    values = [1, 2, 3]
+
+    reactive = Reactive[List[int]](solara.toestand.mutation_detection_storage(values))
+    reactive.value.append(4)
+    with pytest.raises(ValueError, match="Reactive variable was read when it had the value of \\[1, 2, 3\\].*"):
+        reactive._storage.check_mutations()  # type: ignore
+
+
+@pytest.mark.skipif(not solara.settings.storage.mutation_detection, reason="only tests when SOLARA_STORAGE_MUTATION_DETECTION=1")
+def test_mutate_value_public_value_local():
+    values = [1, 2, 3]
+    reactive = solara.reactive(values)
+
+    @solara.component
+    def Page():
+        nonlocal reactive
+        reactive = solara.use_reactive(values)
+
+    _, rc = react.render(Page(), handle_error=False)
+    try:
+        reactive.value.append(4)
+        with pytest.raises(ValueError, match="Reactive variable was read when it had the value of \\[1, 2, 3\\].*"):
+            _ = reactive.value
+    finally:
+        rc.close()
+
+
+def test_mutate_value_set_value():
+    values = [1, 2, 3]
+    reactive = Reactive[List[int]](solara.toestand.mutation_detection_storage(values))
+    new_values = [1, 2, 3, 4]
+    reactive.value = new_values
+    new_values.append(5)
+    # print(reactive.value)
+    with pytest.raises(ValueError, match="Reactive variable was set.*"):
+        reactive._storage.check_mutations()  # type: ignore
+
+
+def test_mutate_value_set_value_dataframe():
+    # dataframes do not support simple equality checks
+    # and we cannot have false equals(a, b) == False result when they
+    # actually are equal
+    df = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
+    df_orig = df.copy()
+    reactive_df = Reactive[Optional[pd.DataFrame]](
+        solara.toestand.mutation_detection_storage(cast(Optional[pd.DataFrame], None), equals=solara.util.equals_pickle)
+    )
+    assert reactive_df._storage.equals is solara.util.equals_pickle
+    assert reactive_df._storage.equals(df, df_orig)
+    reactive_df.value = df
+    df["a"][0] = 100
+    assert not reactive_df._storage.equals(df, df_orig)
+    with pytest.raises(ValueError, match="Reactive variable was set.*"):
+        reactive_df._storage.check_mutations()  # type: ignore

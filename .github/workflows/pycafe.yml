@@ -1,0 +1,20 @@
+---
+name: PyCafe Playground Link
+on:
+  workflow_run:
+    workflows: [Test]
+    types:
+      - completed
+
+jobs:
+  create-status:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Create PyCafe status link
+        run: |
+          pip install PyGithub
+          python .github/pycafe-create-status.py ${{ github.event.workflow_run.head_sha }} ${{ github.event.workflow_run.id }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

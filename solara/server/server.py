@@ -16,6 +16,7 @@ import requests
 import solara
 import solara.routing
 import solara.settings
+import solara.server.settings
 from solara.lab import cookies as solara_cookies
 from solara.lab import headers as solara_headers
 
@@ -66,6 +67,8 @@ nbextensions_ignorelist = [
     "jupyter-js/extension",
     "jupyter-js-widgets/extension",
     "jupyter_dash/main",
+    "dash/main",
+    *solara.server.settings.server.ignore_nbextensions,
 ]
 
 
@@ -157,7 +160,8 @@ async def app_loop(
                     message = await ws.receive()
                 except websocket.WebSocketDisconnect:
                     try:
-                        context.kernel.session.websockets.remove(ws)
+                        if context.kernel is not None and context.kernel.session is not None:
+                            context.kernel.session.websockets.remove(ws)
                     except KeyError:
                         pass
                     logger.debug("Disconnected")
@@ -168,10 +172,15 @@ async def app_loop(
                 else:
                     msg = deserialize_binary_message(message)
                 t1 = time.time()
-                if not process_kernel_messages(kernel, msg):
-                    # if we shut down the kernel, we do not keep the page session alive
-                    context.close()
-                    return
+                # we don't want to have the kernel closed while we are processing a message
+                # therefore we use this mutex that is also used in the context.close method
+                with context.lock:
+                    if context.closed_event.is_set():
+                        return
+                    if not process_kernel_messages(kernel, msg):
+                        # if we shut down the kernel, we do not keep the page session alive
+                        context.close()
+                        return
                 t2 = time.time()
                 if settings.main.timing:
                     widgets_ids_after = set(patch.widgets)
@@ -282,6 +291,7 @@ def read_root(
             return content
 
     default_app = app.apps["__default__"]
+    default_app.check()
     routes = default_app.routes
     router = solara.routing.Router(path, routes)
     if not router.possible_match:

@@ -9,7 +9,7 @@ on:
   pull_request:
   workflow_dispatch:
   schedule:
-    - cron: '0 6 * * *'  # at 06:00 UTC every day
+    - cron: "0 6 * * *" # at 06:00 UTC every day
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -96,7 +96,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: solara-builds-${{ github.run_number }}
+          name: solara-builds
           path: |
             dist
             packages/solara-assets/dist
@@ -112,7 +112,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.12"]  # 3.9 is the lowest version pre-commit supports
+        python-version: ["3.9", "3.12"] # 3.9 is the lowest version pre-commit supports
     env:
       LOCK_FILE_LOCATION: .ci-package-locks/code-quality/python${{ matrix.python-version }}.txt
       DIFF_FILE_LOCATION: diff-code-quality-python${{ matrix.python-version }}.txt
@@ -194,21 +194,19 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: solara-builds-${{ github.run_number }}
+          name: solara-builds
 
       - name: Debug
         run: ls -R dist
 
       - name: Install solara-ui
-        run:
-          pip install dist/*.whl
+        run: pip install dist/*.whl
 
       - name: Test import
         run: python -c "import solara"
 
       - name: Install solara-server
-        run:
-          pip install `echo packages/solara-server/dist/*.whl`[starlette]
+        run: pip install `echo packages/solara-server/dist/*.whl`[starlette]
 
       - name: Run solara create
         run: solara create button test.py
@@ -227,8 +225,7 @@ jobs:
         run: python -c "import solara_enterprise"
 
       - name: Install solara-meta
-        run:
-          pip install packages/solara-meta/dist/*.whl
+        run: pip install packages/solara-meta/dist/*.whl
 
   pyinstaller-test:
     needs: [build]
@@ -254,7 +251,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: solara-builds-${{ github.run_number }}
+          name: solara-builds
 
       - name: Link solara app package
         if: matrix.os != 'windows'
@@ -362,6 +359,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: ts-graphviz/setup-graphviz@v2
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
@@ -370,7 +369,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: solara-builds-${{ github.run_number }}
+          name: solara-builds
 
       - name: Link solara app package
         if: matrix.os != 'windows'
@@ -484,7 +483,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: solara-builds-${{ github.run_number }}
+          name: solara-builds
 
       - name: Link solara app package
         run: |
@@ -513,7 +512,7 @@ jobs:
           pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
           pip install "jupyterlab<4" "playwright==1.41.2" "pydantic<2" "ipywidgets~=${{ matrix.ipywidgets }}"
           pip install jupyter_core jupyter-packaging
-          pip install --pre ipyvue ipyvuetify
+          pip install --pre "ipyvue>=3" "ipyvuetify>=3"
           pip freeze --exclude solara --exclude solara-ui --exclude solara-server --exclude pytest-ipywidgets --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
           git diff | tee ${{ env.DIFF_FILE_LOCATION }}
           [ -s ${{ env.DIFF_FILE_LOCATION }} ] && echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT" || echo "No dependencies changed"
@@ -595,7 +594,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: solara-builds-${{ github.run_number }}
+          name: solara-builds
 
       - name: Prepare
         id: prepare
@@ -614,7 +613,7 @@ jobs:
           pip install `echo dist/*.whl`[all]
           pip install `echo packages/solara-server/dist/*.whl`[all]
           pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all]
-          pip install `echo packages/solara-meta/dist/*.whl`[dev,extra]
+          pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
           pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
           pip install "jupyterlab<4" diskcache redis "ipywidgets~=${{ matrix.ipywidgets }}"
           pip freeze --exclude solara --exclude solara-ui --exclude solara-server --exclude pytest-ipywidgets --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
@@ -628,14 +627,25 @@ jobs:
           pip install `echo dist/*.whl`[all]
           pip install `echo packages/solara-server/dist/*.whl`[all]
           pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all]
-          pip install `echo packages/solara-meta/dist/*.whl`[dev,extra]
+          pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
           pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
 
       - name: Start Redis
         if: ( github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true' ) && matrix.os != 'windows'
-        uses: shogo82148/actions-setup-redis@v1.35.1
+        uses: shogo82148/actions-setup-redis@v1.38.0
 
-      - name: test
+      - name: Run unit tests
+        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true'
+        run: |
+          # otherwise Python's inspect cannot find the source code
+          mv solara _solara
+          pytest tests/unit --doctest-modules --timeout=60
+
+      - name: Run unit tests as if we are running solara 2.0
+        env:
+          SOLARA_ALLOW_REACTIVE_BOOLEAN: 0
+          SOLARA_DEFAULT_CONTAINER: "Fragment"
+          SOLARA_STORAGE_MUTATION_DETECTION: 1
         if: github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true'
         run: |
           # otherwise Python's inspect cannot find the source code
@@ -661,7 +671,8 @@ jobs:
           include-hidden-files: true
 
   update-ci-package-locks:
-    needs: [build, code-quality, integration-test, integration-test-vue3, unit-test]
+    needs:
+      [build, code-quality, integration-test, integration-test-vue3, unit-test]
     runs-on: ubuntu-latest
 
     steps:
@@ -695,22 +706,30 @@ jobs:
           git push
 
   release:
-    needs: [build, code-quality, test-install, integration-test, integration-test-vue3, unit-test]
+    needs:
+      [
+        build,
+        code-quality,
+        test-install,
+        integration-test,
+        integration-test-vue3,
+        unit-test,
+      ]
     runs-on: ubuntu-latest
     permissions:
-      id-token: write  # this permission is mandatory for trusted publishing
+      id-token: write # this permission is mandatory for trusted publishing
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python 3.7
+      - name: Set up Python 3.10
         uses: actions/setup-python@v5
         with:
-          python-version: 3.7
+          python-version: "3.10"
 
       - uses: actions/download-artifact@v4
         with:
-          name: solara-builds-${{ github.run_number }}
+          name: solara-builds
 
       - name: Install build tools
         run: pip install hatch
@@ -795,3 +814,10 @@ jobs:
 
       - name: remove assets
         run: rm -rf packages/solara-assets/dist
+
+  check_pycafe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          diff solara/website/pages/documentation/examples/ai/chatbot.py <(curl -s https://py.cafe/files/solara/chatbot/app.py)

@@ -48,7 +48,7 @@ Follow the [installation instructions](/documentation/getting_started/installing
 
 Create a file `myapp.py`, or put the following code in the Jupyter notebook:
 
-```solara
+```solara {pycafe-link}
 import solara
 
 clicks = solara.reactive(0)

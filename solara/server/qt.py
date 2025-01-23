@@ -81,7 +81,7 @@ class QWebEngineViewWithPopup(QWebEngineView):
 
 
 def run_qt(url):
-    app = QApplication([])
+    app = QApplication(["Solara App"])
     web = QWebEngineViewWithPopup()
     web.setUrl(QtCore.QUrl(url))
     web.resize(1024, 1024)

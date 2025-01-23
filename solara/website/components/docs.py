@@ -5,6 +5,8 @@ from .breadcrumbs import BreadCrumbs
 
 @solara.component
 def Gallery(route_external=None):
+    from ..pages.documentation.examples import pycafe_projects
+
     if route_external is not None:
         route_current = route_external
     else:
@@ -49,6 +51,8 @@ def Gallery(route_external=None):
                                     image_url = "https://dxhl76zpt6fap.cloudfront.net/public/api/" + child.path + ".gif"
                                 elif child.path in ["card", "dataframe", "pivot_table", "slider"]:
                                     image_url = "https://dxhl76zpt6fap.cloudfront.net/public/api/" + child.path + ".png"
+                                elif child.path in pycafe_projects:
+                                    image_url = f"https://py.cafe/preview/solara/{child.path}"
                                 else:
                                     image_url = "https://dxhl76zpt6fap.cloudfront.net/public/logo.svg"
 

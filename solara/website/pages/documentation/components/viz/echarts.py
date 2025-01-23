@@ -63,7 +63,9 @@ def Page():
             with solara.ToggleButtonsSingle("bars", on_value=set_option):
                 solara.Button("bars")
                 solara.Button("pie")
-            solara.FigureEcharts(option=options[option], on_click=set_click_data, on_mouseover=set_mouseover_data, on_mouseout=set_mouseout_data)
+            solara.FigureEcharts(
+                option=options[option], on_click=set_click_data, on_mouseover=set_mouseover_data, on_mouseout=set_mouseout_data, responsive=True
+            )
         with solara.Card("Event data"):
             solara.Markdown(f"**Click data**: {click_data}")
             solara.Markdown(f"**Mouseover data**: {mouseover_data}")

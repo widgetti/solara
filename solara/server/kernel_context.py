@@ -6,6 +6,8 @@ try:
 except ModuleNotFoundError:
     contextvars = None  # type: ignore
 
+import concurrent.futures
+import contextlib
 import dataclasses
 import enum
 import logging
@@ -71,6 +73,7 @@ class VirtualKernelContext:
     page_status: Dict[str, PageStatus] = dataclasses.field(default_factory=dict)
     # only used for testing
     _last_kernel_cull_task: "Optional[asyncio.Future[None]]" = None
+    _last_kernel_cull_future: "Optional[concurrent.futures.Future[None]]" = None
     closed_event: threading.Event = dataclasses.field(default_factory=threading.Event)
     _on_close_callbacks: List[Callable[[], None]] = dataclasses.field(default_factory=list)
     lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
@@ -112,6 +115,10 @@ class VirtualKernelContext:
         with self, self.lock:
             for key in self.page_status:
                 self.page_status[key] = PageStatus.CLOSED
+            if self._last_kernel_cull_task:
+                self._last_kernel_cull_task.cancel()
+            if self._last_kernel_cull_future:
+                self._last_kernel_cull_future.cancel()
             if self.closed_event.is_set():
                 logger.error("Tried to close a kernel context that is already closed: %s", self.id)
                 return
@@ -129,9 +136,18 @@ class VirtualKernelContext:
             # what if we reference each other
             # import gc
             # gc.collect()
-            self.kernel.session.close()
+            self.kernel.close()
+            self.kernel = None  # type: ignore
             if self.id in contexts:
                 del contexts[self.id]
+            del current_context[get_current_thread_key()]
+            # We saw in memleak_test that there are sometimes other entries in current_context
+            # In which _DummyThread's reference this context, so we remove those references too
+            # TODO: Think about what to do with those Threads
+            _contexts = current_context.copy()
+            for key, _ctx in _contexts.items():
+                if _ctx is self:
+                    del current_context[key]
             self.closed_event.set()
 
     def _state_reset(self):
@@ -158,6 +174,8 @@ class VirtualKernelContext:
                 pickle.dump(state, f)
 
     def page_connect(self, page_id: str):
+        if self.closed_event.is_set():
+            raise RuntimeError("Cannot connect a page to a closed kernel")
         logger.info("Connect page %s for kernel %s", page_id, self.id)
         with self.lock:
             if self.closed_event.is_set():
@@ -184,13 +202,19 @@ class VirtualKernelContext:
                         logger.info("No connected pages, and timeout reached, shutting down virtual kernel %s", self.id)
                         self.close()
                 if current_event_loop is not None and future is not None:
-                    current_event_loop.call_soon_threadsafe(future.set_result, None)
+                    try:
+                        current_event_loop.call_soon_threadsafe(future.set_result, None)
+                    except RuntimeError:
+                        pass  # event loop already closed, happens during testing
             except asyncio.CancelledError:
                 if current_event_loop is not None and future is not None:
-                    if sys.version_info >= (3, 9):
-                        current_event_loop.call_soon_threadsafe(future.cancel, "cancelled because a new cull task was scheduled")
-                    else:
-                        current_event_loop.call_soon_threadsafe(future.cancel)
+                    try:
+                        if sys.version_info >= (3, 9):
+                            current_event_loop.call_soon_threadsafe(future.cancel, "cancelled because a new cull task was scheduled")
+                        else:
+                            current_event_loop.call_soon_threadsafe(future.cancel)
+                    except RuntimeError:
+                        pass  # event loop already closed, happens during testing
                 raise
 
         async def create_task():
@@ -212,7 +236,17 @@ class VirtualKernelContext:
                 self._last_kernel_cull_task.cancel()
 
             logger.info("Scheduling kernel cull for virtual kernel %s", self.id)
-            asyncio.run_coroutine_threadsafe(create_task(), keep_alive_event_loop)
+
+            async def create_task():
+                task = asyncio.create_task(kernel_cull())
+                # create a reference to the task so we can cancel it later
+                self._last_kernel_cull_task = task
+                try:
+                    await task
+                except RuntimeError:
+                    pass  # event loop already closed, happens during testing
+
+            self._last_kernel_cull_future = asyncio.run_coroutine_threadsafe(create_task(), keep_alive_event_loop)
             return future
 
     def page_disconnect(self, page_id: str) -> "Optional[asyncio.Future[None]]":
@@ -259,7 +293,12 @@ class VirtualKernelContext:
             pass
         else:
             future.set_result(None)
+
+        logger.info("page status: %s", self.page_status)
         with self.lock:
+            if self.closed_event.is_set():
+                logger.info("Kernel %s was already closed when page %s attempted to close", self.id, page_id)
+                return
             if self.page_status[page_id] == PageStatus.CLOSED:
                 logger.info("Page %s already closed for kernel %s", page_id, self.id)
                 return
@@ -351,6 +390,11 @@ def set_context_for_thread(context: VirtualKernelContext, thread: threading.Thre
     current_context[key] = context
 
 
+def clear_context_for_thread(thread: threading.Thread):
+    key = get_thread_key(thread)
+    current_context.pop(key, None)
+
+
 def has_current_context() -> bool:
     thread_key = get_current_thread_key()
     return (thread_key in current_context) and (current_context[thread_key] is not None)
@@ -375,6 +419,21 @@ def get_current_context() -> VirtualKernelContext:
 def set_current_context(context: Optional[VirtualKernelContext]):
     thread_key = get_current_thread_key()
     current_context[thread_key] = context
+
+
+@contextlib.contextmanager
+def without_context():
+    context = None
+    try:
+        context = get_current_context()
+    except RuntimeError:
+        pass
+    thread_key = get_current_thread_key()
+    current_context[thread_key] = None
+    try:
+        yield
+    finally:
+        current_context[thread_key] = context
 
 
 def initialize_virtual_kernel(session_id: str, kernel_id: str, websocket: websocket.WebsocketWrapper):

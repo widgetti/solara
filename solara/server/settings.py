@@ -132,6 +132,7 @@ OAUTH_TEST_CLIENT_IDs = [AUTH0_TEST_CLIENT_ID, FIEF_TEST_CLIENT_ID]
 
 class Session(BaseSettings):
     secret_key: str = SESSION_SECRET_KEY_DEFAULT
+    http_only: bool = False
     https_only: Optional[bool] = None
     same_site: str = "lax"
 
@@ -163,6 +164,15 @@ if is_mac_os_conda or is_wsl_windows:
     HOST_DEFAULT = "localhost"
 
 
+class Server(BaseSettings):
+    ignore_nbextensions: List[str] = []
+
+    class Config:
+        env_prefix = "solara_server_"
+        case_sensitive = False
+        env_file = ".env"
+
+
 class MainSettings(BaseSettings):
     use_pdb: bool = False
     mode: str = "production"
@@ -181,6 +191,7 @@ class MainSettings(BaseSettings):
 
 
 main = MainSettings()
+server = Server()
 theme = ThemeSettings()
 telemetry = Telemetry()
 ssg = SSG()

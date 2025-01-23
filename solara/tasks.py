@@ -1,3 +1,4 @@
+import sys
 import abc
 import asyncio
 import dataclasses
@@ -26,6 +27,12 @@ import solara.util
 from solara.toestand import Singleton
 
 from .toestand import Ref as ref
+
+if sys.version_info >= (3, 8):
+    from typing import Literal
+else:
+    from typing_extensions import Literal
+
 
 R = TypeVar("R")
 T = TypeVar("T")
@@ -297,6 +304,7 @@ class TaskThreaded(Task[P, R]):
         self.__qualname__ = function.__qualname__
         self.function = function
         self.lock = threading.Lock()
+        self._local = threading.local()
 
     def cancel(self) -> None:
         if self._cancel:
@@ -336,12 +344,16 @@ class TaskThreaded(Task[P, R]):
         current_thread.start()
 
     def is_current(self):
+        cancel_event = getattr(self._local, "cancel_event", None)
+        if cancel_event is not None and cancel_event.is_set():
+            return False
         return self._current_thread == threading.current_thread()
 
     def _run(self, _last_finished_event, previous_thread: Optional[threading.Thread], cancel_event, args, kwargs) -> None:
         # use_thread has this as default, which can make code run 10x slower
         intrusive_cancel = False
         wait_on_previous = False
+        self._local.cancel_event = cancel_event
 
         def runner():
             if wait_on_previous:
@@ -398,7 +410,7 @@ class TaskThreaded(Task[P, R]):
                     # this means this thread is cancelled not be request, but because
                     # a new thread is running, we can ignore this
             finally:
-                if self.is_current():
+                if self._current_thread == threading.current_thread():
                     self.running_thread = None
                     logger.info("thread done!")
                     if cancel_event.is_set():
@@ -686,24 +698,27 @@ def task(
         return wrapper(f)
 
 
+# Quotes around Task[...] are needed in Python <= 3.9, since ParamSpec doesn't properly support non-type arguments
+# i.e. [] is taken as a value instead of a type
+# See https://github.com/python/typing_extensions/issues/126 and related issues
 @overload
 def use_task(
     f: None = None,
     *,
-    dependencies: None = ...,
+    dependencies: Literal[None] = ...,
     raise_error=...,
     prefer_threaded=...,
-) -> Callable[[Callable[P, R]], Task[P, R]]: ...
+) -> Callable[[Callable[[], R]], "Task[[], R]"]: ...
 
 
 @overload
 def use_task(
-    f: Callable[P, R],
+    f: Callable[[], R],
     *,
-    dependencies: None = ...,
+    dependencies: Literal[None] = ...,
     raise_error=...,
     prefer_threaded=...,
-) -> Task[P, R]: ...
+) -> "Task[[], R]": ...
 
 
 @overload
@@ -727,12 +742,12 @@ def use_task(
 
 
 def use_task(
-    f: Union[None, Callable[P, R]] = None,
+    f: Union[None, Callable[[], R]] = None,
     *,
     dependencies: Union[None, List] = [],
     raise_error=True,
     prefer_threaded=True,
-) -> Union[Callable[[Callable[P, R]], Task[P, R]], Task[P, R]]:
+) -> Union[Callable[[Callable[[], R]], "Task[[], R]"], "Task[[], R]"]:
     """A hook that runs a function or coroutine function as a task and returns the result.
 
     Allows you to run code in the background, with the UI available to the user. This is useful for long running tasks,
@@ -811,7 +826,7 @@ def use_task(
     """
 
     def wrapper(f):
-        def create_task() -> Task[P, R]:
+        def create_task() -> "Task[[], R]":
             return task(f, prefer_threaded=prefer_threaded)
 
         task_instance = solara.use_memo(create_task, dependencies=[])

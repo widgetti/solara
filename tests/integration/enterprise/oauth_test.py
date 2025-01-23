@@ -38,7 +38,7 @@ def test_oauth_from_app_auth0(page_session: playwright.sync_api.Page, solara_ser
         page_session.locator("_vue=v-btn >> text=Login").wait_for()
 
 
-@pytest.mark.skipif(not bool(os.environ.get("FIEF_PASSWORD")), reason="FIEF_PASSWORD not set")
+@pytest.mark.skip(reason="Fief support is deprecated for now")
 def test_oauth_from_app_fief(page_session: playwright.sync_api.Page, solara_server, solara_app):
     with solara_app("solara.website.pages"):
         settings.main.base_url = ""

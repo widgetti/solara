@@ -26,20 +26,18 @@ def Page():
     }
     """
 
-    with solara.VBox() as main:
-        solara.Checkbox(label="Use CSS", value=insert_css, on_value=set_insert_css)
-        solara.Markdown(
-            f"""
+    solara.Checkbox(label="Use CSS", value=insert_css, on_value=set_insert_css)
+    solara.Markdown(
+        f"""
 ## CSS Example that styles the button below
 ```css
 {css}
 ```
 """
-        )
-        if insert_css:
-            solara.Style(css)
-        solara.Button(label="Advanced users might want to style this", icon_name="mdi-thumb-up", classes=["mybutton"])
-    return main
+    )
+    if insert_css:
+        solara.Style(css)
+    solara.Button(label="Advanced users might want to style this", icon_name="mdi-thumb-up", classes=["mybutton"])
 
 
 __doc__ += apidoc(solara.Style.f)  # type: ignore

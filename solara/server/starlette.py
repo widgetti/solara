@@ -15,6 +15,7 @@ import anyio
 import starlette.websockets
 import uvicorn.server
 import websockets.legacy.http
+import websockets.exceptions
 
 from solara.server.utils import path_is_child_of
 
@@ -86,8 +87,8 @@ prefix = ""
 # Since starlette seems to accept really large values for http, lets do the same for websockets
 # An arbitrarily large value we settled on for now is 32kb
 # If we don't do this, users with many cookies will fail to get a websocket connection.
-ws_version = tuple(map(int, websockets.__version__.split(".")))
-if ws_version[0] >= 13:
+ws_major_version = int(websockets.__version__.split(".")[0])
+if ws_major_version >= 13:
     websockets.legacy.http.MAX_LINE_LENGTH = int(os.environ.get("WEBSOCKETS_MAX_LINE_LENGTH", str(1024 * 32)))  # type: ignore
 else:
     websockets.legacy.http.MAX_LINE = 1024 * 32  # type: ignore
@@ -112,6 +113,7 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
         # we store a strong reference
         self.tasks: Set[asyncio.Task] = set()
         self.event_loop = asyncio.get_event_loop()
+        self._thread_id = threading.get_ident()
         if settings.main.experimental_performance:
             self.task = asyncio.ensure_future(self.process_messages_task())
 
@@ -121,37 +123,84 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
             while len(self.to_send) > 0:
                 first = self.to_send.pop(0)
                 if isinstance(first, bytes):
-                    await self.ws.send_bytes(first)
+                    await self._send_bytes_exc(first)
                 else:
-                    await self.ws.send_text(first)
+                    await self._send_text_exc(first)
+
+    async def _send_bytes_exc(self, data: bytes):
+        # make sures we catch the starlette/websockets specific exception
+        # and re-raise it as a websocket.WebSocketDisconnect
+        try:
+            await self.ws.send_bytes(data)
+        except (websockets.exceptions.ConnectionClosed, starlette.websockets.WebSocketDisconnect, RuntimeError) as e:
+            # starlette throws a RuntimeError once you call send after the connection is closed
+            if isinstance(e, RuntimeError) and "close message" in repr(e):
+                raise websocket.WebSocketDisconnect() from e
+            else:
+                raise
+
+    async def _send_text_exc(self, data: str):
+        # make sures we catch the starlette/websockets specific exception
+        # and re-raise it as a websocket.WebSocketDisconnect
+        try:
+            await self.ws.send_text(data)
+        except (websockets.exceptions.ConnectionClosed, starlette.websockets.WebSocketDisconnect, RuntimeError) as e:
+            if isinstance(e, RuntimeError) and "close message" in repr(e):
+                raise websocket.WebSocketDisconnect() from e
+            else:
+                raise
 
     def close(self):
         if self.portal is None:
             asyncio.ensure_future(self.ws.close())
         else:
-            self.portal.call(self.ws.close)  # type: ignore
+            self.portal.call(self.ws.close)
 
     def send_text(self, data: str) -> None:
         if self.portal is None:
-            task = self.event_loop.create_task(self.ws.send_text(data))
+            task = self.event_loop.create_task(self._send_text_exc(data))
             self.tasks.add(task)
             task.add_done_callback(self.tasks.discard)
         else:
             if settings.main.experimental_performance:
                 self.to_send.append(data)
             else:
-                self.portal.call(self.ws.send_bytes, data)  # type: ignore
+                if self._thread_id == threading.get_ident():
+                    warnings.warn("""You are triggering a websocket send from the event loop thread.
+Support for this is experimental, and to avoid this message, make sure you trigger updates
+that trigger this from a different thread, e.g.:
+
+from anyio import to_thread
+await to_thread.run_sync(my_update)
+""")
+                    task = self.event_loop.create_task(self._send_text_exc(data))
+                    self.tasks.add(task)
+                    task.add_done_callback(self.tasks.discard)
+                else:
+                    self.portal.call(self._send_text_exc, data)
 
     def send_bytes(self, data: bytes) -> None:
         if self.portal is None:
-            task = self.event_loop.create_task(self.ws.send_bytes(data))
+            task = self.event_loop.create_task(self._send_bytes_exc(data))
             self.tasks.add(task)
             task.add_done_callback(self.tasks.discard)
         else:
             if settings.main.experimental_performance:
                 self.to_send.append(data)
             else:
-                self.portal.call(self.ws.send_bytes, data)  # type: ignore
+                if self._thread_id == threading.get_ident():
+                    warnings.warn("""You are triggering a websocket send from the event loop thread.
+Support for this is experimental, and to avoid this message, make sure you trigger updates
+that trigger this from a different thread, e.g.:
+
+from anyio import to_thread
+await to_thread.run_sync(my_update)
+""")
+                    task = self.event_loop.create_task(self._send_bytes_exc(data))
+                    self.tasks.add(task)
+                    task.add_done_callback(self.tasks.discard)
+
+                self.portal.call(self._send_bytes_exc, data)
 
     async def receive(self):
         if self.portal is None:
@@ -159,9 +208,9 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
         else:
             if hasattr(self.portal, "start_task_soon"):
                 # version 3+
-                fut = self.portal.start_task_soon(self.ws.receive)  # type: ignore
+                fut = self.portal.start_task_soon(self.ws.receive)
             else:
-                fut = self.portal.spawn_task(self.ws.receive)  # type: ignore
+                fut = self.portal.spawn_task(self.ws.receive)
 
             message = await asyncio.wrap_future(fut)
         if "text" in message:
@@ -444,6 +493,7 @@ See also https://solara.dev/documentation/getting_started/deploying/self-hosted
     session_id = request.cookies.get(server.COOKIE_KEY_SESSION_ID) or str(uuid4())
     samesite = "lax"
     secure = False
+    httponly = settings.session.http_only
     # we want samesite, so we can set a cookie when embedded in an iframe, such as on huggingface
     # however, samesite=none requires Secure https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite
     # when hosted on the localhost domain we can always set the Secure flag
@@ -469,6 +519,7 @@ Also check out the following Solara documentation:
         expires="Fri, 01 Jan 2038 00:00:00 GMT",
         samesite=samesite,  # type: ignore
         secure=secure,  # type: ignore
+        httponly=httponly,  # type: ignore
     )  # type: ignore
     return response
 
@@ -549,12 +600,19 @@ class StaticCdn(StaticFilesOptionalAuth):
 
 
 def on_startup():
+    appmod.ensure_apps_initialized()
     # TODO: configure and set max number of threads
     # see https://github.com/encode/starlette/issues/1724
     telemetry.server_start()
 
 
 def on_shutdown():
+    # shutdown all kernels
+    for context in list(kernel_context.contexts.values()):
+        try:
+            context.close()
+        except:  # noqa
+            logger.exception("error closing kernel on shutdown")
     telemetry.server_stop()
 
 

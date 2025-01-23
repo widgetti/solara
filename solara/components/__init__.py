@@ -57,4 +57,21 @@ from .progress import ProgressLinear  # noqa: F401 F403
 from .component_vue import _component_vue, component_vue  # noqa: F401 F403
 import reacton.core
 
-reacton.core._default_container = Column  # noqa: F405
+try:
+    from reacton import Fragment as Fragment  # type: ignore
+except ImportError:
+    pass
+
+import logging
+from ..settings import main
+
+_container = None
+
+if main.default_container in globals():
+    _container = globals()[main.default_container]
+else:
+    logger = logging.getLogger("solara.components")
+    logger.warning(f"Default container {main.default_container} not found in solara.components. Defaulting to Column.")
+
+# TODO: When Solara 2.0 releases Column should be replaced with Fragment
+reacton.core._default_container = _container or Column  # noqa: F405
