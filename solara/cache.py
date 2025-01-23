@@ -1,3 +1,4 @@
+from collections.abc import Hashable
 import hashlib
 import inspect
 import logging
@@ -7,7 +8,6 @@ from typing import (
     Callable,
     Dict,
     Generic,
-    Hashable,
     MutableMapping,
     Optional,
     TypeVar,
@@ -51,6 +51,7 @@ if has_cachetools:
     class Memory(cachetools.LRUCache):
         def __init__(self, max_items=solara.settings.cache.memory_max_items):
             super().__init__(maxsize=max_items)
+
 else:
 
     class Memory(dict):  # type: ignore
