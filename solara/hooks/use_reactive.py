@@ -10,6 +10,7 @@ def use_reactive(
     value: Union[T, solara.Reactive[T]],
     on_change: Optional[Callable[[T], None]] = None,
     equals: Callable[[Any, Any], bool] = solara.util.equals_extra,
+    disable_mutation_detection: bool = False,
 ) -> solara.Reactive[T]:
     """Creates a reactive variable with the a local component scope.
 
@@ -111,7 +112,7 @@ def use_reactive(
 
             store: ValueBase[T]
 
-            if solara.settings.storage.mutation_detection is True:
+            if not disable_mutation_detection and solara.settings.storage.mutation_detection is True:
                 shared_store = SharedStore[StoreValue[T]](
                     StoreValue[T](private=value, public=_PublicValueNotSet(), get_traceback=None, set_value=_SetValueNotSet(), set_traceback=None),
                     unwrap=lambda x: x.private,

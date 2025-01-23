@@ -471,29 +471,36 @@ def mutation_detection_storage(default_value: S, key=None, equals=None) -> Value
     return MutateDetectorStore[S](kernel_store, equals=equals or default_equals)
 
 
-def default_storage(default_value: S, key=None, equals=None) -> ValueBase[S]:
+def default_storage(default_value: S, key=None, equals=None, disable_mutation_detection=False) -> ValueBase[S]:
     # We use mutation detection if it is explicitly enabled, or if it is not explicitly disabled and
     # We aren't running in production mode
-    if solara.settings.storage.mutation_detection is True or (
-        solara.settings.storage.mutation_detection is None and not solara.server.settings.main.mode == "production"
+    if not disable_mutation_detection and (
+        solara.settings.storage.mutation_detection is True
+        or (solara.settings.storage.mutation_detection is None and not solara.server.settings.main.mode == "production")
     ):
         return mutation_detection_storage(default_value, key=key, equals=equals)
     else:
         return KernelStoreValue[S](default_value, key=key, equals=equals or equals_extra)
 
 
-def _call_storage_factory(default_value: S, key=None, equals=None) -> ValueBase[S]:
+def _call_storage_factory(default_value: S, key=None, equals=None, disable_mutation_detection=False) -> ValueBase[S]:
     factory = solara.settings.storage.get_factory()
-    return factory(default_value, key=key, equals=equals)
+    try:
+        return factory(default_value, key=key, equals=equals, disable_mutation_detection=disable_mutation_detection)
+    except TypeError as e:
+        if "unexpected keyword argument 'disable_mutation_detection'" in str(e):
+            logger.warning("The custom storage factory %s does not support disable_mutation_detection", factory.__name__)
+            return factory(default_value, key=key, equals=equals)
+        raise TypeError from e
 
 
 class Reactive(ValueBase[S]):
     _storage: ValueBase[S]
 
-    def __init__(self, default_value: Union[S, ValueBase[S]], key=None, equals=None):
+    def __init__(self, default_value: Union[S, ValueBase[S]], key=None, equals=None, disable_mutation_detection=False):
         super().__init__()
         if not isinstance(default_value, ValueBase):
-            self._storage = _call_storage_factory(default_value, key=key, equals=equals)
+            self._storage = _call_storage_factory(default_value, key=key, equals=equals, disable_mutation_detection=disable_mutation_detection)
         else:
             self._storage = default_value
         self.__post__init__()

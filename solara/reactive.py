@@ -8,7 +8,7 @@ __all__ = ["reactive", "Reactive"]
 T = TypeVar("T")
 
 
-def reactive(value: T, equals: Callable[[Any, Any], bool] = solara.util.equals_extra) -> Reactive[T]:
+def reactive(value: T, equals: Callable[[Any, Any], bool] = solara.util.equals_extra, disable_mutation_detection=False) -> Reactive[T]:
     """Creates a new Reactive object with the given initial value.
 
     Reactive objects are mostly used to manage global or application-wide state in
@@ -96,4 +96,4 @@ def reactive(value: T, equals: Callable[[Any, Any], bool] = solara.util.equals_e
     Whenever the counter value changes, `CounterDisplay` automatically updates to display the new value.
 
     """
-    return Reactive(value, equals=equals)
+    return Reactive(value, equals=equals, disable_mutation_detection=disable_mutation_detection)
