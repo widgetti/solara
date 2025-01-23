@@ -1,4 +1,3 @@
-import contextlib
 import dataclasses
 import inspect
 import logging
@@ -33,6 +32,7 @@ from solara.util import equals_extra
 import solara
 import solara.settings
 from solara import _using_solara_server
+from solara.util import nullcontext
 
 T = TypeVar("T")
 TS = TypeVar("TS")
@@ -154,40 +154,53 @@ class ValueBase(Generic[T]):
         raise NotImplementedError
 
     def subscribe(self, listener: Callable[[T], None], scope: Optional[ContextManager] = None):
+        if scope is not None:
+            warnings.warn("scope argument should not be used, it was only for internal use")
+        del scope
         scope_id = self._get_scope_key()
-        self.listeners[scope_id].add((listener, scope))
+        rc = reacton.core.get_render_context(required=False)
+        kernel = solara.server.kernel_context.get_current_context() if solara.server.kernel_context.has_current_context() else nullcontext()
+        context = Context(rc, kernel)
+
+        self.listeners[scope_id].add((listener, context))
 
         def cleanup():
-            self.listeners[scope_id].remove((listener, scope))
+            self.listeners[scope_id].remove((listener, context))
 
         return cleanup
 
     def subscribe_change(self, listener: Callable[[T, T], None], scope: Optional[ContextManager] = None):
+        if scope is not None:
+            warnings.warn("scope argument should not be used, it was only for internal use")
+        del scope
         scope_id = self._get_scope_key()
-        self.listeners2[scope_id].add((listener, scope))
+        rc = reacton.core.get_render_context(required=False)
+        kernel = solara.server.kernel_context.get_current_context() if solara.server.kernel_context.has_current_context() else nullcontext()
+        context = Context(rc, kernel)
+        self.listeners2[scope_id].add((listener, context))
 
         def cleanup():
-            self.listeners2[scope_id].remove((listener, scope))
+            self.listeners2[scope_id].remove((listener, context))
 
         return cleanup
 
     def fire(self, new: T, old: T):
         logger.info("value change from %s to %s, will fire events", old, new)
         scope_id = self._get_scope_key()
-        scopes = set()
-        for listener, scope in self.listeners[scope_id].copy():
-            if scope is not None:
-                scopes.add(scope)
-        for listener2, scope in self.listeners2[scope_id].copy():
-            if scope is not None:
-                scopes.add(scope)
-        with contextlib.ExitStack() as stack:
-            for scope in scopes:
-                stack.enter_context(scope)
-            for listener, scope in self.listeners[scope_id].copy():
-                listener(new)
-            for listener2, scope in self.listeners2[scope_id].copy():
-                listener2(new, old)
+        contexts = set()
+        for listener, context in self.listeners[scope_id].copy():
+            contexts.add(context)
+        for listener2, context in self.listeners2[scope_id].copy():
+            contexts.add(context)
+        if contexts:
+            for context in contexts:
+                with context or nullcontext():
+                    for listener, context_listener in self.listeners[scope_id].copy():
+                        if context == context_listener:
+                            listener(new)
+                    for listener2, context_listener in self.listeners2[scope_id].copy():
+                        if context == context_listener:
+                            listener2(new, old)
 
     def update(self, _f=None, **kwargs):
         if _f is not None:
@@ -239,7 +252,7 @@ class KernelStore(ValueBase[S], ABC):
     _type_counter: Dict[Any, int] = defaultdict(int)
     scope_lock = threading.RLock()
 
-    def __init__(self, key=None, equals: Callable[[Any, Any], bool] = equals_extra):
+    def __init__(self, key: str, equals: Callable[[Any, Any], bool] = equals_extra):
         super().__init__(equals=equals)
         self.storage_key = key
         self._global_dict = {}
@@ -847,7 +860,7 @@ class AutoSubscribeContextManagerBase:
     def __init__(self):
         self.subscribed = {}
 
-    def update_subscribers(self, change_handler, scope=None):
+    def update_subscribers(self, change_handler):
         assert self.reactive_used is not None
         reactive_used = self.reactive_used
         # remove subfields for which we already listen to it's root reactive value
@@ -863,7 +876,7 @@ class AutoSubscribeContextManagerBase:
 
         for reactive in added:
             if reactive not in self.subscribed:
-                unsubscribe = reactive.subscribe_change(change_handler, scope=scope)
+                unsubscribe = reactive.subscribe_change(change_handler)
                 self.subscribed[reactive] = unsubscribe
         for reactive in removed:
             unsubscribe = self.subscribed[reactive]
@@ -885,6 +898,39 @@ class AutoSubscribeContextManagerBase:
         thread_local.reactive_used = self.reactive_used_before
 
 
+class Context:
+    def __init__(self, render_context, kernel_context):
+        # combine the render context *and* the kernel context into one context
+        self.render_context = render_context
+        self.kernel_context = kernel_context
+
+    def __enter__(self):
+        if self.render_context is not None:
+            self.render_context.__enter__()
+        self.kernel_context.__enter__()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.render_context is not None:
+            # this will trigger a render
+            res1 = self.render_context.__exit__(exc_type, exc_val, exc_tb)
+        else:
+            res1 = None
+        # pop the current context from the stack
+        res2 = self.kernel_context.__exit__(exc_type, exc_val, exc_tb)
+        return res1 or res2
+
+    def __eq__(self, value: object) -> bool:
+        if not isinstance(value, Context):
+            return False
+        return self.render_context == value.render_context and self.kernel_context == value.kernel_context
+
+    def __hash__(self) -> int:
+        return hash(id(self.render_context)) ^ hash(id(self.kernel_context))
+
+    def __repr__(self) -> str:
+        return f"Context(render_context={self.render_context}, kernel_context={self.kernel_context})"
+
+
 class AutoSubscribeContextManagerReacton(AutoSubscribeContextManagerBase):
     def __init__(self, element: solara.Element):
         self.element = element
@@ -900,7 +946,7 @@ class AutoSubscribeContextManagerReacton(AutoSubscribeContextManagerBase):
         super().__enter__()
 
         def update_subscribers():
-            self.update_subscribers(force_update, scope=reacton.core.get_render_context(required=True))
+            self.update_subscribers(force_update)
 
         solara.use_effect(update_subscribers, None)
 

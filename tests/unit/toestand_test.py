@@ -15,6 +15,7 @@ import solara.toestand
 import solara as sol
 import solara.lab
 import solara.toestand as toestand
+import solara.server.kernel_context
 from solara.server import kernel, kernel_context
 from solara.toestand import Reactive, Ref, State, use_sync_external_store
 import solara.settings
@@ -180,25 +181,30 @@ def test_scopes(no_kernel_context):
     @solara.component
     def Page():
         reactive = solara.use_reactive(0)
+        assert solara.server.kernel_context.get_current_context() is expected_context
         if reactives[index] is None:
             reactives[index] = reactive  # type: ignore
         solara.Info(str(reactive.value))
 
     with context1:
+        expected_context = context1
         _, rc1 = react.render(Page(), handle_error=False)
         assert rc1.find(v.Alert).widget.children[0] == "0"
         assert reactives[0] is not None
 
     with context2:
         index = 1
+        expected_context = context2
         _, rc2 = react.render(Page(), handle_error=False)
         assert rc2.find(v.Alert).widget.children[0] == "0"
         assert reactives[1] is not None
 
+    expected_context = context1
     reactives[0].value = 1
     assert rc1.find(v.Alert).widget.children[0] == "1"
     assert rc2.find(v.Alert).widget.children[0] == "0"
 
+    expected_context = context2
     reactives[1].value = 2
     assert rc1.find(v.Alert).widget.children[0] == "1"
     assert rc2.find(v.Alert).widget.children[0] == "2"
@@ -208,6 +214,52 @@ def test_scopes(no_kernel_context):
     with context1:
         assert reactives[0].value == 1
         assert reactives[1].value == 2
+
+    with context1:
+        rc1.close()
+    with context2:
+        rc2.close()
+
+
+def test_scopes_restore(no_kernel_context):
+    kernel1 = kernel.Kernel()
+    kernel2 = kernel.Kernel()
+    assert kernel_context.current_context[kernel_context.get_current_thread_key()] is None
+
+    context1 = kernel_context.VirtualKernelContext(id="toestand-1", kernel=kernel1, session_id="session-1")
+    context2 = kernel_context.VirtualKernelContext(id="toestand-2", kernel=kernel2, session_id="session-2")
+
+    from solara._stores import SharedStore
+
+    reactive: solara.Reactive[int] = solara.Reactive(SharedStore(10))
+
+    @solara.component
+    def Page1():
+        assert solara.server.kernel_context.get_current_context() is context1
+        solara.Info(str(reactive.value))
+        Page1b()
+
+    @solara.component
+    def Page1b():
+        assert solara.server.kernel_context.get_current_context() is context1
+        solara.Error(str(reactive.value))
+
+    @solara.component
+    def Page2():
+        assert solara.server.kernel_context.get_current_context() is context2
+        solara.Info(str(reactive.value))
+
+    with context2:
+        _, rc2 = react.render(Page2(), handle_error=False)
+        assert rc2.find(v.Alert).widget.children[0] == "10"
+
+    with context1:
+        _, rc1 = react.render(Page1(), handle_error=False)
+        assert rc1.find(v.Alert)[0].widget.children[0] == "10"
+
+    reactive.value = 42
+    assert rc1.find(v.Alert)[0].widget.children[0] == "42"
+    assert rc2.find(v.Alert).widget.children[0] == "42"
 
     with context1:
         rc1.close()
