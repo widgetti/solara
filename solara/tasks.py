@@ -104,6 +104,9 @@ class Task(Generic[P, R], abc.ABC):
         self._progress = ref(self._result.fields.progress)
         self._exception = ref(self._result.fields.exception)
         self._state_ = ref(self._result.fields._state)
+        # used for tests only
+        self._start_event = threading.Event()
+        self._start_event.set()
 
     @property
     def result(self) -> TaskResult[R]:
@@ -253,6 +256,8 @@ class TaskAsyncio(Task[P, R]):
         return (self.current_task == asyncio.current_task()) and not running_task.cancelled()
 
     async def _async_run(self, call_event_loop: asyncio.AbstractEventLoop, future: asyncio.Future, args, kwargs) -> None:
+        self._start_event.wait()
+
         task_for_this_call = asyncio.current_task()
         assert task_for_this_call is not None
 
@@ -351,6 +356,7 @@ class TaskThreaded(Task[P, R]):
 
     def _run(self, _last_finished_event, previous_thread: Optional[threading.Thread], cancel_event, args, kwargs) -> None:
         # use_thread has this as default, which can make code run 10x slower
+        self._start_event.wait()
         intrusive_cancel = False
         wait_on_previous = False
         self._local.cancel_event = cancel_event
