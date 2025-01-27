@@ -398,7 +398,7 @@ reactive_df = solara.reactive(df, equals=solara.util.equals_pickle)
                         code = tb.code_context[0]
                     else:
                         code = "<No code context available>"
-                    msg += "This warning was triggered from:\n" f"{tb.filename}:{tb.lineno}\n" f"{code}"
+                    msg += f"This warning was triggered from:\n{tb.filename}:{tb.lineno}\n{code}"
                 warnings.warn(msg)
                 self._mutation_detection = False
         cls = type(default_value)
@@ -425,7 +425,7 @@ reactive_df = solara.reactive(df, equals=solara.util.equals_pickle)
                     code = tb.code_context[0].strip()
                 else:
                     code = "No code context available"
-                msg = f"Reactive variable was initialized at {tb.filename}:{tb.lineno} with {initial!r}, but was mutated to {current!r}.\n" f"{code}"
+                msg = f"Reactive variable was initialized at {tb.filename}:{tb.lineno} with {initial!r}, but was mutated to {current!r}.\n{code}"
             else:
                 msg = f"Reactive variable was initialized with a value of {initial!r}, but was mutated to {current!r} (unable to report the location in the source code)."
             raise ValueError(msg)

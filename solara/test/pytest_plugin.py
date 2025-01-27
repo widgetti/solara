@@ -101,7 +101,7 @@ def context_session(
     if capture_screenshot:
         for index, page in enumerate(pages):
             human_readable_status = "failed" if failed else "finished"
-            screenshot_path = _build_artifact_test_folder(pytestconfig, request, f"test-{human_readable_status}-{index+1}.png")
+            screenshot_path = _build_artifact_test_folder(pytestconfig, request, f"test-{human_readable_status}-{index + 1}.png")
             try:
                 page.screenshot(timeout=5000, path=screenshot_path)
             except Error:
