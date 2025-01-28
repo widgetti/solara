@@ -164,7 +164,7 @@ def get_server_python_executable(silent: bool = False):
         else:
             python = pythons[0]
             if not silent:
-                warnings.warn("Found multiple find servers:\n{}\nWe are assuming the server is running under Python executable: {}".format(info, python))
+                warnings.warn(f"Found multiple find servers:\n{info}\nWe are assuming the server is running under Python executable: {python}")
     else:
         python = pythons[0]
     return python
