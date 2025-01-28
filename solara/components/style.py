@@ -101,5 +101,5 @@ module.exports = {
 {css_content}
 </style>
     """
-    # using .key avoids re-using the template, which causes a flicker (due to ipyvue)
+    # using .key avoids reusing the template, which causes a flicker (due to ipyvue)
     return v.VuetifyTemplate.element(template=template).key(key)
