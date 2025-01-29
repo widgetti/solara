@@ -1,5 +1,20 @@
 # Solara Changelog
 
+## Version 1.44.0
+
+   * Feature: Separate `disable_send` and `disable_input` to allow typing but not sending or vice versa for the `ChatInput` component. [86fc2ad](https://github.com/widgetti/solara/commit/86fc2ad88a89ffe134eaa6700a8c416bcab036b4).
+   * Feature: Support `autofocus` for the `ChatInput` component. [31dad76](https://github.com/widgetti/solara/commit/31dad767c15e3671e610fcba5ae2b124bb0b5220).
+   * Feature: Allow websocket messages to be sent from main thread. [#953](https://github.com/widgetti/solara/pull/953).
+   * Bug Fix: Typing for `memoize`'s `key` was incorrect. [#959](https://github.com/widgetti/solara/pull/959).
+   * Bug Fix: Using `get_ipython` outside Solara's virtual kernels after importing Solara would return `None`. [#990](https://github.com/widgetti/solara/pull/990).
+   * Bug Fix: Solara lab components (and perhaps others) didn't work when used in Jupyter contexts. [#981](https://github.com/widgetti/solara/pull/981).
+   * Bug Fix: Threaded and async tasks behaving differently when cancelling. [5fe30dc](https://github.com/widgetti/solara/commit/5fe30dc27fe99ee056f3a046c0942386b181d00f).
+   * Bug Fix: Fixes to handling context for reactive variable subscription / event handling. [06f1670](https://github.com/widgetti/solara/commit/06f1670bc918231897d4e5dcb00374711fc83464), [4ff39c5](https://github.com/widgetti/solara/commit/4ff39c5647057db53788c925139a710ab045897b).
+   * Bug Fix: Running a Solara app under FastAPI / Starlette was broken. [133e2ca](https://github.com/widgetti/solara/commit/133e2cab13efe4277f98305cdba412c08b47936f).
+   * Bug Fix: Allow reactive variables to be set from outside kernel context. [#952](https://github.com/widgetti/solara/pull/952).
+   * Bug Fix: Do not ignore all errors on websocket disconnect. [1f6d98e](https://github.com/widgetti/solara/commit/1f6d98e2b5233116cc617cf7d9019d2748ba251d).
+   * Bug Fix: Enable `dense` option for SelectMultiple. [#939](https://github.com/widgetti/solara/pull/939).
+
 ## Version 1.43.0
    * Feature: Time picker component. [#654](https://github.com/widgetti/solara/pull/654).
    * Feature: Make the default container of sibling components configurable. By default the setting remains the same (using `solara.Column`), but will default to `reacton.Fragment` in Solara 2.0 (see [the roadmap](/roadmap)). Can be changed by setting the `SOLARA_DEFAULT_CONTAINER` environmental variable to the name of a component (e.g. `"Column"`). [#928](https://github.com/widgetti/solara/pull/928).
