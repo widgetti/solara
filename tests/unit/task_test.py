@@ -86,7 +86,11 @@ def test_task_basic():
 
     box, rc = solara.render(SquareButton(3, on_render=collect), handle_error=False)
     button = rc.find(v.Btn, children=["Run"]).widget
+    # a combination of .clear/.set is needed to force the rendering of all the states
+    # otherwise some states are not rendered
+    square._start_event.clear()  # type: ignore
     button.click()
+    square._start_event.set()  # type: ignore
     assert square._last_finished_event  # type: ignore
     square._last_finished_event.wait()  # type: ignore
     assert results == [
@@ -98,7 +102,9 @@ def test_task_basic():
     results.clear()
     rc.render(SquareButton(2, on_render=collect))
     button = rc.find(v.Btn, children=["Run"]).widget
+    square._start_event.clear()
     button.click()
+    square._start_event.set()
     square._last_finished_event.wait()  # type: ignore
     assert results == [
         # extra finished due to the rc.render call
@@ -152,7 +158,9 @@ async def test_task_basic_async(run_in_thread):
 
     box, rc = solara.render(SquareButtonAsync(3, on_render=collect), handle_error=False)
     button = rc.find(v.Btn, children=["Run"]).widget
+    square_async._start_event.clear()  # type: ignore
     button.click()
+    square_async._start_event.set()  # type: ignore
     assert square_async.current_future  # type: ignore
     await square_async.current_future  # type: ignore
     assert results == [
@@ -164,7 +172,9 @@ async def test_task_basic_async(run_in_thread):
     results.clear()
     rc.render(SquareButtonAsync(2, on_render=collect))
     button = rc.find(v.Btn, children=["Run"]).widget
+    square_async._start_event.clear()  # type: ignore
     button.click()
+    square_async._start_event.set()  # type: ignore
     await square_async.current_future  # type: ignore
     assert results == [
         # extra finished due to the rc.render call
@@ -195,8 +205,9 @@ def test_task_two():
 
     box, rc = solara.render(Test(), handle_error=False)
     button = rc.find(v.Btn, children=["Run"])[0].widget
+    square._start_event.clear()  # type: ignore
     button.click()
-    assert square._last_finished_event  # type: ignore
+    square._start_event.set()  # type: ignore
     square._last_finished_event.wait()  # type: ignore
     assert (
         results2
@@ -214,7 +225,9 @@ def test_task_two():
     results2.clear()
     results3.clear()
     button = rc.find(v.Btn, children=["Run"])[1].widget
+    square._start_event.clear()  # type: ignore
     button.click()
+    square._start_event.set()  # type: ignore
     assert square._last_finished_event  # type: ignore
     square._last_finished_event.wait()  # type: ignore
     assert (
@@ -244,7 +257,9 @@ def test_task_cancel_retry():
     button = rc.find(v.Btn, children=["Run"]).widget
     cancel_square = True
     try:
+        square._start_event.clear()  # type: ignore
         button.click()
+        square._start_event.set()  # type: ignore
         assert square._last_finished_event  # type: ignore
         square._last_finished_event.wait()  # type: ignore
         assert results == [
@@ -284,7 +299,9 @@ async def test_task_async_cancel_retry(run_in_thread):
     button = rc.find(v.Btn, children=["Run"]).widget
     cancel_square_async = True
     try:
+        square_async._start_event.clear()  # type: ignore
         button.click()
+        square_async._start_event.set()  # type: ignore
         assert square_async.current_future  # type: ignore
         try:
             await square_async.current_future  # type: ignore
@@ -337,7 +354,9 @@ def test_task_scopes(no_kernel_context):
         button2 = rc2.find(v.Btn, children=["Run"]).widget
 
     with context1:
+        something._start_event.clear()  # type: ignore
         button1.click()
+        something._start_event.set()  # type: ignore
         finished_event1 = something._last_finished_event  # type: ignore
         assert finished_event1
 
@@ -356,7 +375,9 @@ def test_task_scopes(no_kernel_context):
     assert results2 == [(TaskState.NOTCALLED, None)]
 
     with context2:
+        something._start_event.clear()  # type: ignore
         button2.click()
+        something._start_event.set()  # type: ignore
         finished_event2 = something._last_finished_event  # type: ignore
         assert finished_event2
     finished_event2.wait()
