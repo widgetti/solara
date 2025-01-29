@@ -174,6 +174,8 @@ def display_solara(
 # if display_id:
 #     return DisplayHandle(display_id)
 
+get_ipython_original = IPython.get_ipython
+
 
 def get_ipython():
     if kernel_context.has_current_context():
@@ -181,7 +183,7 @@ def get_ipython():
         our_fake_ipython = FakeIPython(context)
         return our_fake_ipython
     else:
-        return None
+        return get_ipython_original()
 
 
 class context_dict(MutableMapping):
