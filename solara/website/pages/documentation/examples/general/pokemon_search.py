@@ -40,7 +40,7 @@ def Page():
                     for pokemon in pokemons[:20]:
                         with solara.Div():
                             name = pokemon["name"]
-                            url = f'{pokemon_base_url}/{pokemon["image"]}'
+                            url = f"{pokemon_base_url}/{pokemon['image']}"
                             # TODO: how to do this with solara
                             rv.Img(src=url, contain=True, max_height="200px")
                             solara.Text(name)

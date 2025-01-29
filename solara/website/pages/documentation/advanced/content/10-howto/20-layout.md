@@ -122,4 +122,4 @@ The following [Container components](/documentation/advanced/understanding/conta
  * [GridDraggable](/documentation/components/layout/griddraggable)
  * [VBox](/documentation/components/layout/vbox) (kept for ipywidgets compatibility, please use Column)
  * [HBox](/documentation/components/layout/hbox) (kept for ipywidgets compatibility, please use Row)
- * [AppLayout](/documentation/components/layout/app_layout) Not often used directly, since Solara will already wrap your page in it. Sometimes re-used in a new `Layout` component.
+ * [AppLayout](/documentation/components/layout/app_layout) Not often used directly, since Solara will already wrap your page in it. Sometimes reused in a new `Layout` component.

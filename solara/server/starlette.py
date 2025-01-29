@@ -380,7 +380,7 @@ async def root(request: Request, fullpath: str = ""):
     forwarded_proto = request.headers.get("x-forwarded-proto")
     host = request.headers.get("host")
     if forwarded_proto and forwarded_proto != request.scope["scheme"]:
-        warnings.warn(f"""Header x-forwarded-proto={forwarded_proto!r} does not match scheme={request.scope['scheme']!r} as given by the asgi framework (probably uvicorn)
+        warnings.warn(f"""Header x-forwarded-proto={forwarded_proto!r} does not match scheme={request.scope["scheme"]!r} as given by the asgi framework (probably uvicorn)
 
 This might be a configuration mismatch behind a reverse proxy and can cause issues with redirect urls, and auth.
 
@@ -439,10 +439,10 @@ This could be a configuration mismatch behind a reverse proxy and can cause issu
 See also https://solara.dev/documentation/getting_started/deploying/self-hosted
 """
         if "script-name" in request.headers:
-            msg += f"""It looks like the reverse proxy sets the script-name header to {request.headers['script-name']!r}
+            msg += f"""It looks like the reverse proxy sets the script-name header to {request.headers["script-name"]!r}
 """
         if "x-script-name" in request.headers:
-            msg += f"""It looks like the reverse proxy sets the x-script-name header to {request.headers['x-script-name']!r}
+            msg += f"""It looks like the reverse proxy sets the x-script-name header to {request.headers["x-script-name"]!r}
 """
         if configured_root_path:
             msg += f"""It looks like the root path was configured to {configured_root_path!r} in the settings
@@ -502,8 +502,8 @@ See also https://solara.dev/documentation/getting_started/deploying/self-hosted
         samesite = "none"
         secure = True
     elif request.base_url.hostname != "localhost":
-        warnings.warn(f"""Cookies with samesite=none require https, but according to the asgi framework, the scheme is {request.scope['scheme']!r}
-and the x-forwarded-proto header is {request.headers.get('x-forwarded-proto', 'http')!r}. We will fallback to samesite=lax.
+        warnings.warn(f"""Cookies with samesite=none require https, but according to the asgi framework, the scheme is {request.scope["scheme"]!r}
+and the x-forwarded-proto header is {request.headers.get("x-forwarded-proto", "http")!r}. We will fallback to samesite=lax.
 
 If you embed solara in an iframe, make sure you forward the x-forwarded-proto header correctly so that the session cookie can be set.
 

@@ -86,7 +86,7 @@ def test_pivot_table():
     assert data["values_x"] == ["106", "171"]
     assert data["values_y"] == ["158", "119"]
     assert data["values"] == [["12", "94"], ["146", "25"]]
-    assert data["total"] == f"{len(df[df.pclass==2]):,}"
+    assert data["total"] == f"{len(df[df.pclass == 2]):,}"
     set_filter(None)
     # wait for the filter to be applied (data should change)
     rc.find(PivotTableWidget).assert_wait(lambda w: w.d["values"] != [["12", "94"], ["146", "25"]], timeout=10)

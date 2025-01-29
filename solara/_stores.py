@@ -87,7 +87,7 @@ class MutateDetectorStore(ValueBase[S]):
                     code = tb.code_context[0]
                 else:
                     code = "<No code context available>"
-                msg += f"The last value was read in the following code:\n" f"{tb.filename}:{tb.lineno}\n" f"{code}"
+                msg += f"The last value was read in the following code:\n{tb.filename}:{tb.lineno}\n{code}"
             raise ValueError(msg)
         elif not isinstance(store_value.set_value, _SetValueNotSet) and not self.equals(store_value.set_value, store_value.private):
             tb = store_value.set_traceback
@@ -120,7 +120,7 @@ Good (if you want to keep mutating your own list):
                     code = tb.code_context[0]
                 else:
                     code = "<No code context available>"
-                msg += "The last time the value was set was at:\n" f"{tb.filename}:{tb.lineno}\n" f"{code}"
+                msg += f"The last time the value was set was at:\n{tb.filename}:{tb.lineno}\n{code}"
             raise ValueError(msg)
 
     def _ensure_public_exists(self):
@@ -164,7 +164,7 @@ reactive_df = solara.reactive(df, equals=solara.util.equals_pickle)
                     code = tb.code_context[0]
                 else:
                     code = "<No code context available>"
-                warn += "This warning was triggered from:\n" f"{tb.filename}:{tb.lineno}\n" f"{code}"
+                warn += f"This warning was triggered from:\n{tb.filename}:{tb.lineno}\n{code}"
             warnings.warn(warn)
             self._enabled = False
 
@@ -239,7 +239,7 @@ reactive_df = solara.reactive(df, equals=solara.util.equals_pickle)
                         code = tb.code_context[0]
                     else:
                         code = "<No code context available>"
-                    msg += "This warning was triggered from:\n" f"{tb.filename}:{tb.lineno}\n" f"{code}"
+                    msg += f"This warning was triggered from:\n{tb.filename}:{tb.lineno}\n{code}"
                 warnings.warn(msg)
                 self._mutation_detection = False
         super().__init__(equals=equals)
@@ -256,7 +256,7 @@ reactive_df = solara.reactive(df, equals=solara.util.equals_pickle)
                     code = tb.code_context[0].strip()
                 else:
                     code = "No code context available"
-                msg = f"Reactive variable was initialized at {tb.filename}:{tb.lineno} with {initial!r}, but was mutated to {current!r}.\n" f"{code}"
+                msg = f"Reactive variable was initialized at {tb.filename}:{tb.lineno} with {initial!r}, but was mutated to {current!r}.\n{code}"
             else:
                 msg = f"Reactive variable was initialized with a value of {initial!r}, but was mutated to {current!r} (unable to report the location in the source code)."
             raise ValueError(msg)

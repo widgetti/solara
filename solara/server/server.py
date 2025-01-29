@@ -187,7 +187,7 @@ async def app_loop(
                     created_widgets_count = len(widgets_ids_after - widgets_ids)
                     close_widgets_count = len(widgets_ids - widgets_ids_after)
                     print(  # noqa: T201
-                        f"timing: total={t2-t0:.3f}s, deserialize={t1-t0:.3f}s, kernel={t2-t1:.3f}s"
+                        f"timing: total={t2 - t0:.3f}s, deserialize={t1 - t0:.3f}s, kernel={t2 - t1:.3f}s"
                         f" widget: created: {created_widgets_count} closed: {close_widgets_count}"
                     )
     finally:

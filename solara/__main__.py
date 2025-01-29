@@ -156,7 +156,7 @@ if "SOLARA_MODE" in os.environ:
     "--restart-dir",
     "restart_dirs",
     multiple=True,
-    help="Set restart directories explicitly, instead of using the current working" " directory.",
+    help="Set restart directories explicitly, instead of using the current working directory.",
     type=click.Path(exists=True),
 )
 @click.option(
@@ -172,7 +172,7 @@ if "SOLARA_MODE" in os.environ:
     "--workers",
     default=None,
     type=int,
-    help="Number of worker processes. Defaults to the $WEB_CONCURRENCY environment" " variable if available, or 1. Not valid with --auto-restart/-a.",
+    help="Number of worker processes. Defaults to the $WEB_CONCURRENCY environment variable if available, or 1. Not valid with --auto-restart/-a.",
 )
 @click.option(
     "--env-file",

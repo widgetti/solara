@@ -203,12 +203,12 @@ def ChatMessage(
             .chat-message-{msg_uuid}.left{{
                     border-top-left-radius: 0;
                     background-color:var(--color);
-                    { "margin-left: 10px !important;" if notch else ""}
+                    {"margin-left: 10px !important;" if notch else ""}
             }}
             .chat-message-{msg_uuid}.right{{
                     border-top-right-radius: 0;
                     background-color:var(--color);
-                    { "margin-right: 10px !important;" if notch else ""}
+                    {"margin-right: 10px !important;" if notch else ""}
             }}
             {extra_styles}
             """
