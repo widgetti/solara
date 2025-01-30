@@ -17,7 +17,7 @@ blake3==1.0.4
 bleach==6.2.0
 blinker==1.9.0
 bqplot==0.12.44
-bqplot-image-gl==1.6.0
+bqplot-image-gl==1.6.1
 branca==0.8.1
 bump2version==1.0.1
 cachetools==5.5.1
@@ -46,7 +46,7 @@ filelock==3.17.0
 Flask==3.1.0
 flask-sock==0.7.0
 folium==0.19.4
-fonttools==4.55.7
+fonttools==4.55.8
 fqdn==1.5.1
 frozendict==2.4.6
 fsspec==2024.12.0
