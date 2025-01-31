@@ -22,7 +22,7 @@ bqplot-image-gl==1.6.1
 branca==0.8.1
 bump2version==1.0.1
 cachetools==5.5.1
-certifi==2024.12.14
+certifi==2025.1.31
 cffi==1.17.1
 cfgv==3.4.0
 charset-normalizer==3.4.1
@@ -167,11 +167,11 @@ python-json-logger==3.2.1
 python-slugify==8.0.4
 python-utils==3.8.2
 pythreejs==2.4.2
-pytz==2024.2
+pytz==2025.1
 pywin32==308
 pywinpty==2.0.14
 PyYAML==6.0.2
-pyzmq==26.2.0
+pyzmq==26.2.1
 reacton==1.9.0
 referencing==0.35.1
 regex==2024.11.6
@@ -181,7 +181,7 @@ rfc3986-validator==0.1.1
 rich==13.9.4
 rich-click==1.8.5
 rpds-py==0.20.1
-ruff==0.9.3
+ruff==0.9.4
 Send2Trash==1.8.3
 simple-websocket==1.1.0
 simplejson==3.19.3
