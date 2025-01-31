@@ -407,6 +407,13 @@ def patch_matplotlib():
             # same as _get
             return self[key]
 
+        def clear(self):
+            # in matplotlib .clear is effectively a no-op
+            # see https://github.com/matplotlib/matplotlib/issues/25855
+            pass
+            # in the future, we may want to clear the context dict if this is fixed
+            # self._get_context_dict().clear()
+
         def _get_context_dict(self) -> dict:
             if not self._was_initialized:
                 # since we monkey patch the class after __init__ was called
