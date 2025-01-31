@@ -1,17 +1,28 @@
 <template>
-  <div ref="dropzone" class="solara-file-drop" effectAllowed="move">
-    <template v-if="file_info && file_info.length > 0">
-      <template v-if="multiple">
-        <div v-for="file in file_info">
-          {{ file.name }}
-        </div>
-      </template>
-      <template v-else>
-        {{ file_info[0].name }}
-      </template>
+  <div ref="dropzone" effectAllowed="move" style="position: relative;">
+    <div ref="dropIndicator" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 31;">
+      <jupyter-widget v-if="file_hover_indicator" :widget="file_hover_indicator"></jupyter-widget>
+    </div>
+    <template v-if="children && children.length > 0">
+      <jupyter-widget v-for="child in children" :widget="child" :key="child.model_id"></jupyter-widget>
     </template>
     <template v-else>
-      {{ label }}
+      <!-- Default content -->
+       <div class="solara-file-drop">
+        <template v-if="file_info && file_info.length > 0">
+          <template v-if="multiple">
+            <div v-for="file in file_info">
+              {{ file.name }}
+            </div>
+          </template>
+          <template v-else>
+            {{ file_info[0].name }}
+          </template>
+        </template>
+        <template v-else>
+          {{ label }}
+        </template>
+      </div>
     </template>
   </div>
 </template>
@@ -21,7 +32,12 @@ module.exports = {
   mounted() {
     this.chunk_size = 2 * 1024 * 1024;
     this.$refs.dropzone.addEventListener('dragover', event => {
-      event.preventDefault();
+      this.$refs.dropIndicator.style.display = 'unset';
+    });
+    this.$refs.dropzone.addEventListener('dragleave', event => {
+      if (!event.relatedTarget || !this.$refs.dropzone.contains(event.relatedTarget)) {
+        this.$refs.dropIndicator.style.display = 'none';
+      }
     });
 
     this.$refs.dropzone.addEventListener('drop', async event => {
