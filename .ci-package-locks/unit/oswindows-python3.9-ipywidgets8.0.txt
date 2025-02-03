@@ -1,5 +1,5 @@
 aiofiles==22.1.0
-aiosqlite==0.20.0
+aiosqlite==0.21.0
 altair==5.5.0
 annotated-types==0.7.0
 anyio==4.8.0
@@ -13,8 +13,8 @@ asttokens==3.0.0
 async-timeout==5.0.1
 attrs==25.1.0
 Authlib==1.4.1
-babel==2.16.0
-beautifulsoup4==4.12.3
+babel==2.17.0
+beautifulsoup4==4.13.0
 blake3==1.0.4
 bleach==6.2.0
 blinker==1.9.0
@@ -54,7 +54,7 @@ folium==0.19.4
 fonttools==4.55.8
 fqdn==1.5.1
 frozendict==2.4.6
-fsspec==2024.12.0
+fsspec==2025.2.0
 future==1.0.0
 greenlet==3.1.1
 h11==0.14.0
@@ -116,7 +116,7 @@ mistune==3.1.1
 mkdocs-pycafe==0.3.0
 mypy==1.14.1
 mypy-extensions==1.0.0
-narwhals==1.24.1
+narwhals==1.24.2
 nbclassic==1.2.0
 nbclient==0.10.2
 nbconvert==7.16.6
@@ -127,7 +127,7 @@ notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.26.4
 objgraph==3.6.2
-openai==1.60.2
+openai==1.61.0
 overrides==7.7.0
 packaging==24.2
 pandas==2.2.3
@@ -155,13 +155,13 @@ pydantic==2.10.6
 pydantic_core==2.27.2
 pyee==12.0.0
 Pygments==2.19.1
-pymdown-extensions==10.14.2
+pymdown-extensions==10.14.3
 pyparsing==3.2.1
 pytest==8.3.4
 pytest-base-url==2.1.0
 pytest-cov==6.0.0
 pytest-mock==3.14.0
-pytest-playwright==0.6.2
+pytest-playwright==0.7.0
 pytest-timeout==2.3.1
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
