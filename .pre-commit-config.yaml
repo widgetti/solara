@@ -16,7 +16,7 @@ repos:
     -   id: pyupgrade
         args: [--py36-plus]
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.4.0
+    rev: v2.4.1
     hooks:
       - id: codespell
         files: ^.*\.(py|md|yaml|js|ts|ipynb)$
@@ -24,7 +24,7 @@ repos:
         additional_dependencies:
           - tomli
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.9.3
+    rev: v0.9.4
     hooks:
       - id: ruff
         stages: [pre-commit]
