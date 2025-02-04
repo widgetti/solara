@@ -1,5 +1,5 @@
 aiofiles==22.1.0
-aiosqlite==0.20.0
+aiosqlite==0.21.0
 altair==5.5.0
 annotated-types==0.7.0
 anyio==4.8.0
@@ -14,7 +14,7 @@ async-timeout==5.0.1
 attrs==25.1.0
 Authlib==1.4.1
 babel==2.17.0
-beautifulsoup4==4.13.0
+beautifulsoup4==4.13.1
 blake3==1.0.4
 bleach==6.2.0
 blinker==1.9.0
@@ -90,7 +90,7 @@ json5==0.10.0
 jsonpointer==3.0.0
 jsonschema==4.23.0
 jsonschema-specifications==2024.10.1
-jupyter-events==0.11.0
+jupyter-events==0.12.0
 jupyter-leaflet==0.19.2
 jupyter-ydoc==0.2.5
 jupyter_client==7.4.9
@@ -116,7 +116,7 @@ mistune==3.1.1
 mkdocs-pycafe==0.3.0
 mypy==1.14.1
 mypy-extensions==1.0.0
-narwhals==1.24.2
+narwhals==1.25.0
 nbclassic==1.2.0
 nbclient==0.10.2
 nbconvert==7.16.6
@@ -138,7 +138,7 @@ pillow==11.1.0
 pipx==1.7.1
 pixelmatch==0.3.0
 platformdirs==4.3.6
-playwright==1.49.1
+playwright==1.50.0
 plotly==6.0.0
 pluggy==1.5.0
 polars==1.21.0
@@ -147,13 +147,13 @@ progressbar2==4.5.0
 prometheus_client==0.21.1
 prompt_toolkit==3.0.50
 psutil==6.1.1
-psygnal==0.11.1
+psygnal==0.12.0
 pure_eval==0.2.3
 pyarrow==19.0.0
 pycparser==2.22
 pydantic==2.10.6
 pydantic_core==2.27.2
-pyee==12.0.0
+pyee==12.1.1
 Pygments==2.19.1
 pymdown-extensions==10.14.3
 pyparsing==3.2.1
@@ -171,7 +171,7 @@ python-utils==3.9.1
 pythreejs==2.4.2
 pytz==2025.1
 pywin32==308
-pywinpty==2.0.14
+pywinpty==2.0.15
 PyYAML==6.0.2
 pyzmq==26.2.1
 reacton==1.9.0
