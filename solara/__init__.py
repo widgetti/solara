@@ -40,8 +40,8 @@ from reacton import (
     use_state,
     use_state_widget,
 )
-from reacton.core import Element
-from .core import component
+from reacton.core import Element as Element
+from .core import component as component
 
 try:
     import ipyvuetify.components as v  # type: ignore
@@ -57,9 +57,7 @@ from .hooks import *
 from .cache import memoize
 from . import cache
 
-# TODO: components re-exports v, we should use __all__ in components/misc.py
 from .components import *  # type: ignore
-from .components import _component_vue
 
 from .routing import use_route, use_router, use_route_level, find_route, use_pathname, resolve_path
 from .autorouting import generate_routes, generate_routes_directory, RenderPage, RoutingProvider, DefaultLayout

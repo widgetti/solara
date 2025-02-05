@@ -13,6 +13,32 @@ GridDraggable = reacton.core.ComponentWidget(solara.widgets.GridLayout)
 GridLayout = GridDraggable
 
 
+# re-export components for typing to pick them up correctly
+__all__ = [
+    "Navigator",
+    "GridDraggable",
+    "GridLayout",
+    "ListItem",
+    "ui_dropdown",
+    "ui_text",
+    "ui_checkbox",
+    "ui_slider",
+    "Text",
+    "Div",
+    "Preformatted",
+    "IconButton",
+    "HTML",
+    "VBox",
+    "HBox",
+    "Row",
+    "Column",
+    "GridFixed",
+    "Padding",
+    "FigurePlotly",
+    "Code",
+]
+
+
 @solara.component
 def ListItem(title, icon_name: str = None, children=[], value=None):
     if value is None:
