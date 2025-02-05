@@ -10,6 +10,25 @@ from typing_extensions import TypedDict
 
 import solara
 import solara.hooks as hooks
+from solara.lab import theme, use_dark_effective
+
+
+@solara.component
+def FileHoverIndicator():
+    dark_theme = use_dark_effective()
+    border_color = theme.themes.dark.success if dark_theme else theme.themes.light.success
+    with solara.Row(
+        justify="center",
+        style={
+            "height": "100%",
+            "width": "100%",
+            "align-items": "center",
+            "border-radius": "8px",
+            "border": f"2px dashed {border_color}",
+        },
+    ):
+        solara.v.Icon(children=["mdi-upload"], size="48px")
+        solara.HTML(tag="h3", unsafe_innerHTML="Drop file here")
 
 
 class FileInfo(TypedDict):
@@ -23,6 +42,8 @@ class FileDropZone(FileInput):
     # override to narrow traitlet of FileInput
     template = traitlets.Instance(Template).tag(sync=True, **widget_serialization)
     template_file = (__file__, "file_drop.vue")
+    children = traitlets.List(cast(List[solara.Element], [])).tag(sync=True, **widget_serialization)
+    file_hover_indicator = traitlets.Any(allow_none=True).tag(sync=True, **widget_serialization)
     items = traitlets.List(default_value=cast(List[Any], [])).tag(sync=True)
     label = traitlets.Unicode().tag(sync=True)
     multiple = traitlets.Bool(True).tag(sync=True)
@@ -35,6 +56,8 @@ def _FileDrop(
     on_file: Optional[Callable[[Union[FileInfo, List[FileInfo]]], None]] = None,
     lazy: bool = True,
     multiple: bool = False,
+    children: List[solara.Element] = [],
+    file_hover_indicator: Optional[solara.Element] = None,
 ):
     """Generic implementation used by FileDrop and FileDropMultiple.
 
@@ -44,7 +67,14 @@ def _FileDrop(
     file_info, set_file_info = solara.use_state(None)
     wired_files, set_wired_files = solara.use_state(cast(Optional[typing.List[FileInfo]], None))
 
-    file_drop = FileDropZone.element(label=label, on_total_progress=on_total_progress, on_file_info=set_file_info, multiple=multiple)  # type: ignore
+    file_drop = FileDropZone.element(
+        label=label,
+        on_total_progress=on_total_progress,
+        on_file_info=set_file_info,
+        multiple=multiple,
+        children=children,
+        file_hover_indicator=file_hover_indicator,
+    )
 
     def wire_files():
         if not file_info:
@@ -87,6 +117,8 @@ def FileDrop(
     on_total_progress: Optional[Callable[[float], None]] = None,
     on_file: Optional[Callable[[FileInfo], None]] = None,
     lazy: bool = True,
+    children: List[solara.Element] = [],
+    file_hover_indicator: Optional[solara.Element] = FileHoverIndicator(),
 ):
     """Region a user can drop a file into for file uploading.
 
@@ -110,6 +142,9 @@ def FileDrop(
      * `on_file`: Will be called with a `FileInfo` object, which contains the file `.name`, `.length` and a `.file_obj` object.
      * `lazy`: Whether to load the file contents into memory or not. If `False`,
         the file contents will be loaded into memory via the `.data` attribute of file object(s).
+     * `children`: Elements to display inside the file drop zone. These will override the default drop zone.
+     * `file_hover_indicator`: Element to display when a file is hovered over the drop zone. The container of
+        this element is absolutely positioned over the whole area of the drop zone.
 
     ## Load into Pandas
     To load the data into a Pandas DF, set `lazy=False` and use `file['file_obj']` (be careful of memory)<br>
@@ -133,7 +168,15 @@ def FileDrop(
 
     """
 
-    return _FileDrop(label=label, on_total_progress=on_total_progress, on_file=on_file, lazy=lazy, multiple=False)
+    return _FileDrop(
+        label=label,
+        on_total_progress=on_total_progress,
+        on_file=on_file,
+        lazy=lazy,
+        multiple=False,
+        children=children,
+        file_hover_indicator=file_hover_indicator,
+    )
 
 
 @solara.component
@@ -142,6 +185,8 @@ def FileDropMultiple(
     on_total_progress: Optional[Callable[[float], None]] = None,
     on_file: Optional[Callable[[List[FileInfo]], None]] = None,
     lazy: bool = True,
+    children: List[solara.Element] = [],
+    file_hover_indicator: Optional[solara.Element] = FileHoverIndicator(),
 ):
     """Region a user can drop multiple files into for file uploading.
 
@@ -153,7 +198,18 @@ def FileDropMultiple(
      * `on_file`: Will be called with a `List[FileInfo]`.
         Each `FileInfo` contains the file `.name`, `.length`, `.file_obj` object, and `.data` attributes.
      * `lazy`: Whether to load the file contents into memory or not.
+     * `children`: Elements to display inside the file drop zone. These will override the default drop zone.
+     * `file_hover_indicator`: Element to display when a file is hovered over the drop zone. The container of
+        this element is absolutely positioned over the whole area of the drop zone.
 
     """
 
-    return _FileDrop(label=label, on_total_progress=on_total_progress, on_file=on_file, lazy=lazy, multiple=True)
+    return _FileDrop(
+        label=label,
+        on_total_progress=on_total_progress,
+        on_file=on_file,
+        lazy=lazy,
+        multiple=True,
+        children=children,
+        file_hover_indicator=file_hover_indicator,
+    )
