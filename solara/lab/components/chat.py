@@ -32,7 +32,7 @@ def ChatBox(
     if "overflow-y" not in style_flat:
         style_flat += " overflow-y: auto;"
 
-    classes += ["chat-box"]
+    classes = [*classes, "chat-box"]
     with solara.Column(
         style=style_flat,
         classes=classes,
