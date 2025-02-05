@@ -14,13 +14,13 @@
   "license": "MIT",
   "dependencies": {
     "@mariobuikhuizen/vue-compiler-addon": "^2.6.10-alpha.2",
+    "@mariobuikhuizen/vuetify": "^2.2.26-rc.0",
     "@mdi/font": "^4.9.95",
     "@widgetti/solara-widget-manager": "file:../solara-widget-manager",
     "@widgetti/solara-widget-manager8": "file:../solara-widget-manager8",
     "material-design-icons-iconfont": "^5.0.1",
     "typeface-roboto": "0.0.54",
-    "vue": "~2.6.14",
-    "vuetify": "~2.2.26"
+    "vue": "~2.6.14"
   },
   "devDependencies": {
     "css-loader": "^6.9.1",
