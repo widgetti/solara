@@ -113,7 +113,7 @@ mistune==0.8.4
 mkdocs-pycafe==0.3.0
 mypy==1.14.1
 mypy-extensions==1.0.0
-narwhals==1.25.0
+narwhals==1.25.1
 nbclassic==1.2.0
 nbclient==0.5.13
 nbconvert==6.5.4
@@ -124,7 +124,7 @@ notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.24.4
 objgraph==3.6.2
-openai==1.61.0
+openai==1.61.1
 packaging==24.2
 pandas==2.0.3
 pandocfilters==1.5.1
