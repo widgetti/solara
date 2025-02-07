@@ -11,6 +11,7 @@ from collections import abc
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
 from urllib.parse import urlencode
+import warnings
 
 if TYPE_CHECKING:
     import numpy as np
@@ -346,3 +347,33 @@ def once(f):
         return return_value
 
     return wrapper
+
+
+def deprecated(reason: str, category=DeprecationWarning):
+    """
+    Mark functions as deprecated. When the function is called, a warning is shown with the provided reason.
+
+    Parameters
+    ----------
+
+    reason : str
+        The message to display when the deprecated function is used.
+    category : type, optional
+        The warning category to use, defaults to DeprecationWarning. Use DeprecationWarning when users do not need to see
+        the warning, and FutureWarning when users should see the warning.
+
+    """
+
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapped(*args, **kwargs):
+            warnings.warn(
+                reason,
+                category=category,
+                stacklevel=2,  # this way we show the line where the function is called
+            )
+            return func(*args, **kwargs)
+
+        return wrapped
+
+    return decorator

@@ -6,7 +6,7 @@ import solara
 from solara.alias import rw
 
 HERE = Path(__file__).parent
-title = "use_thread"
+title = "use_thread (deprecated)"
 __doc__ = open(HERE / "use_thread.md").read()
 
 

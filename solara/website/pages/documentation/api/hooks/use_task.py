@@ -1,11 +1,10 @@
-"""# Task"""
+"""# use_task"""
 
 import solara
 import solara.autorouting
-import solara.lab
 from solara.website.components import NoPage
 from solara.website.utils import apidoc
 
-title = "Task"
+title = "use_task"
 Page = NoPage
-__doc__ += apidoc(solara.lab.task)  # type: ignore
+__doc__ += apidoc(solara.use_task)  # type: ignore

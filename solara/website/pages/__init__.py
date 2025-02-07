@@ -209,6 +209,8 @@ _redirects = {
     "/api/widget": "/documentation/api/utilities/widget",
     "/api/default_layout": "/documentation/components/layout",
     "/api/title": "/documentation/components/page/title",
+    "/documentation/components/lab/use_task": "/documentation/api/hooks/use_task",
+    "/documentation/components/lab/task": "/documentation/api/utilities/task",
 }
 
 
