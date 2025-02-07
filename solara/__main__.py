@@ -413,6 +413,7 @@ def run(
     kwargs["app"] = "solara.server.starlette:app"
     kwargs["log_config"] = LOGGING_CONFIG if log_config is None else log_config
     kwargs["loop"] = loop
+    settings.main.root_path = root_path
     settings.main.use_pdb = use_pdb
     settings.theme.loader = theme_loader
     if dark:

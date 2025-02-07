@@ -52,8 +52,9 @@ async def authorize(request: Request):
     check_oauth()
     assert oauth is not None
     assert oauth.oauth1 is not None
+    assert settings.main.origin is not None
 
-    org_url = request.session.pop("redirect_uri", settings.main.base_url + "/")
+    org_url = request.session.pop("redirect_uri", settings.main.origin + settings.main.root_path + "/")
 
     token = await oauth.oauth1.authorize_access_token(request)
     # workaround: if token is set in the session in one piece, it is not saved, so we
@@ -83,6 +84,7 @@ async def login(request: Request, redirect_uri: Optional[str] = None):
     check_oauth()
     assert oauth is not None
     assert oauth.oauth1 is not None
+    assert settings.main.origin is not None
     if "redirect_uri" in request.query_params:
         # we arrived here via the auth.get_login_url() call, which means the
         # redirect_uri is in the query params
@@ -92,7 +94,8 @@ async def login(request: Request, redirect_uri: Optional[str] = None):
         # where it detect we the OAuth.required=True setting, leading to a redirect
         request.session["redirect_uri"] = str(request.url.path)
     request.session["client_id"] = settings.oauth.client_id
-    result = await oauth.oauth1.authorize_redirect(request, str(settings.main.base_url) + "_solara/auth/authorize")
+    url = settings.main.origin + settings.main.root_path + "/_solara/auth/authorize"
+    result = await oauth.oauth1.authorize_redirect(request, url)
     return result
 
 

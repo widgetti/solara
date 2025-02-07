@@ -399,19 +399,17 @@ FORWARDED_ALLOW_IPS="*" # This can be a security risk, only use when you know wh
 """)
     if settings.oauth.private and not has_auth_support:
         raise RuntimeError("SOLARA_OAUTH_PRIVATE requires solara-enterprise")
-    root_path = settings.main.root_path or ""
-    if not settings.main.base_url:
+    root_path = settings.main.root_path
+    if not settings.main.origin:
         # Note:
         # starlette does not respect x-forwarded-host, and therefore
         # base_url and expected_origin below could be different
         # x-forwarded-host should only be considered if the same criteria in
         # uvicorn's ProxyHeadersMiddleware accepts x-forwarded-proto
-        settings.main.base_url = str(request.base_url)
-    # if not explicltly set,
-    configured_root_path = settings.main.root_path
+        settings.main.origin = request.base_url.scheme + "://" + request.base_url.netloc
     scope = request.scope
     root_path_asgi = scope.get("route_root_path", scope.get("root_path", ""))
-    if settings.main.root_path is None:
+    if settings.main.root_path == "":
         # use the default root path from the app, which seems to also include the path
         # if we are mounted under a path
         root_path = root_path_asgi
@@ -425,44 +423,16 @@ FORWARDED_ALLOW_IPS="*" # This can be a security risk, only use when you know wh
         if script_name:
             logger.debug("override root_path using x-script-name header from %s to %s", root_path, script_name)
             root_path = script_name
+        root_path = root_path.rstrip("/")
         settings.main.root_path = root_path
 
-    # lets be flexible about the trailing slash
-    # TODO: maybe we should be more strict about the trailing slash
-    naked_root_path = settings.main.root_path.rstrip("/")
-    naked_base_url = settings.main.base_url.rstrip("/")
-    if not naked_base_url.endswith(naked_root_path):
-        msg = f"""base url {naked_base_url!r} does not end with root path {naked_root_path!r}
-
-This could be a configuration mismatch behind a reverse proxy and can cause issues with redirect urls, and auth.
-
-See also https://solara.dev/documentation/getting_started/deploying/self-hosted
-"""
-        if "script-name" in request.headers:
-            msg += f"""It looks like the reverse proxy sets the script-name header to {request.headers["script-name"]!r}
-"""
-        if "x-script-name" in request.headers:
-            msg += f"""It looks like the reverse proxy sets the x-script-name header to {request.headers["x-script-name"]!r}
-"""
-        if configured_root_path:
-            msg += f"""It looks like the root path was configured to {configured_root_path!r} in the settings
-"""
-        if root_path_asgi:
-            msg += f"""It looks like the root path set by the asgi framework was configured to {root_path_asgi!r}
-"""
-        warnings.warn(msg)
     if host and forwarded_host and forwarded_proto:
         port = request.base_url.port
         ports = {"http": 80, "https": 443}
         expected_origin = f"{forwarded_proto}://{forwarded_host}"
         if port and port != ports[forwarded_proto]:
             expected_origin += f":{port}"
-        starlette_origin = settings.main.base_url
-        # strip off trailing / because we compare to the naked root path
-        starlette_origin = starlette_origin.rstrip("/")
-        if naked_root_path:
-            # take off the root path
-            starlette_origin = starlette_origin[: -len(naked_root_path)]
+        starlette_origin = settings.main.origin
         if starlette_origin != expected_origin:
             warnings.warn(f"""Origin as determined by starlette ({starlette_origin!r}) does not match expected origin ({expected_origin!r}) based on x-forwarded-proto ({forwarded_proto!r}) and x-forwarded-host ({forwarded_host!r}) headers.
 
