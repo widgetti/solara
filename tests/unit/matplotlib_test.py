@@ -1,8 +1,15 @@
 from matplotlib.figure import Figure
+from matplotlib import pyplot as plt
+import matplotlib
+from pathlib import Path
+
 
 import solara
 import solara.server.patch
 from solara.server import kernel
+from solara.server.app import AppScript
+
+HERE = Path(__file__).parent
 
 
 @solara.component
@@ -75,3 +82,17 @@ def test_pylab(no_kernel_context):
         cleanup()
         context_1.close()
         context_2.close()
+
+
+def test_clear_bug_in_matplotlib(no_kernel_context, kernel_context):
+    name = str(HERE / "solara_test_apps" / "single_file.py")
+    app = AppScript(name)
+    app.init()
+    try:
+        with kernel_context:
+            # see https://github.com/matplotlib/matplotlib/issues/25855
+            with plt.style.context({}, after_reset=True):
+                pass
+            matplotlib.get_backend().lower()
+    finally:
+        app.close()
