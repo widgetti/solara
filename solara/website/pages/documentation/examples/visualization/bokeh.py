@@ -21,7 +21,7 @@ df = penguins.data
 def Page():
     all_species = df["species"].unique().tolist()
     species = solara.use_reactive(all_species[0])
-    with solara.Div() as main:
+    with solara.Div():
         solara.Select(label="Species", value=species, values=all_species)
         dff = df[df["species"] == species.value]
 
