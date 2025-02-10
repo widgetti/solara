@@ -49,7 +49,7 @@ filelock==3.16.1
 Flask==3.0.3
 flask-sock==0.7.0
 folium==0.18.0
-fonttools==4.55.8
+fonttools==4.56.0
 fqdn==1.5.1
 frozendict==2.4.6
 fsspec==2025.2.0
