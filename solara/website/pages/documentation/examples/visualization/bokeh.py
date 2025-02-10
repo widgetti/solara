@@ -45,4 +45,3 @@ def Page():
         p.add_layout(cb, "right")
 
         solara.lab.FigureBokeh(p, dark_theme="carbon", dependencies=[species])
-    return main
