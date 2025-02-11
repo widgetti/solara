@@ -282,7 +282,10 @@ def AppLayout(
     if (tabs_element is None) and routes and navigation and (len(routes) > 1):
         with solara.lab.Tabs(value=index, on_value=set_path, align="center") as tabs_element:
             for route in routes:
-                name = route.path if route.path != "/" else "Home"
+                if route.label:
+                    name = route.label
+                else:
+                    name = route.path if route.path != "/" else "Home"
                 solara.lab.Tab(name)
         # with v.Tabs(v_model=index, on_v_model=set_path, centered=True) as tabs:
         #     for route in routes:
