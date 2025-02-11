@@ -113,7 +113,7 @@ mistune==3.1.1
 mkdocs-pycafe==0.3.0
 mypy==1.14.1
 mypy-extensions==1.0.0
-narwhals==1.25.2
+narwhals==1.26.0
 nbclassic==1.2.0
 nbclient==0.10.1
 nbconvert==7.16.6
@@ -172,7 +172,7 @@ pythreejs==2.4.2
 pytz==2025.1
 PyYAML==6.0.2
 pyzmq==26.2.1
-reacton==1.9.0
+reacton==1.9.1
 referencing==0.35.1
 regex==2024.11.6
 requests==2.32.3
@@ -181,7 +181,7 @@ rfc3986-validator==0.1.1
 rich==13.9.4
 rich-click==1.8.5
 rpds-py==0.20.1
-ruff==0.9.5
+ruff==0.9.6
 Send2Trash==1.8.3
 simple-websocket==1.1.0
 simplejson==3.19.3
@@ -215,7 +215,7 @@ vaex-hdf5==0.14.1
 vaex-jupyter==0.8.2
 vaex-viz==0.5.4
 vega-datasets==0.9.0
-virtualenv==20.29.1
+virtualenv==20.29.2
 voila==0.5.8
 watchdog==4.0.2
 watchfiles==0.24.0
