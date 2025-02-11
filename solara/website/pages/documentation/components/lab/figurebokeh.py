@@ -11,7 +11,6 @@ from solara.website.utils import apidoc
 
 title = "FigureBokeh"
 
-__doc__ += apidoc(
-    solara.lab.components.figurebokeh.FigureBokeh.f)  # type: ignore
+__doc__ += apidoc(solara.lab.components.figurebokeh.FigureBokeh.f)  # type: ignore
 
 Page = NoPage
