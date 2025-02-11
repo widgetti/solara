@@ -14,7 +14,8 @@ from bokeh.transform import linear_cmap, factor_cmap
 
 github_url = solara.util.github_url(__file__)
 if sys.platform != "emscripten":
-    pycafe_url = solara.util.pycafe_url(path=pathlib.Path(__file__), requirements=["vaex", "bokeh"])
+    pycafe_url = solara.util.pycafe_url(path=pathlib.Path(__file__),
+                                        requirements=["vaex", "bokeh"])
 else:
     pycafe_url = None
 
@@ -43,6 +44,7 @@ class State:
 def Page():
     df = State.df.value
     selected, on_selected = solara.use_state({"x": [0, 0]})  # noqa: SH101
+    solara.provide_cross_filter()
 
     # the PivotTable will set this cross filter
     filter, _ = solara.use_cross_filter(id(df), name="scatter")
@@ -62,8 +64,17 @@ def Page():
         with solara.Card("Controls", margin=0, elevation=0):
             with solara.Column():
                 with solara.Row():
-                    solara.Button("Sample dataset", color="primary", text=True, outlined=True, on_click=State.load_sample, disabled=df is not None)
-                    solara.Button("Clear dataset", color="primary", text=True, outlined=True, on_click=State.reset)
+                    solara.Button("Sample dataset",
+                                  color="primary",
+                                  text=True,
+                                  outlined=True,
+                                  on_click=State.load_sample,
+                                  disabled=df is not None)
+                    solara.Button("Clear dataset",
+                                  color="primary",
+                                  text=True,
+                                  outlined=True,
+                                  on_click=State.reset)
 
                 if df is not None:
                     columns = df.get_column_names()
@@ -71,8 +82,9 @@ def Page():
                     solara.Select("Column y", values=columns, value=State.y)
                     solara.Select("Color", values=columns, value=State.color)
 
-                    solara.provide_cross_filter()
-                    solara.PivotTable(df, ["pclass"], ["sex"], selected=selected, on_selected=on_selected)
+                    solara.PivotTable(df, ["pclass"], ["sex"],
+                                      selected=selected,
+                                      on_selected=on_selected)
 
     if dff is not None:
         source = ColumnDataSource(
@@ -80,10 +92,12 @@ def Page():
                 "x": dff[State.x.value].values,
                 "y": dff[State.y.value].values,
                 "z": dff[State.color.value].values,
-            }
-        )
+            })
         if State.x.value and State.y.value:
-            p = figure(x_axis_label=State.x.value, y_axis_label=State.y.value, width_policy="max", height=700)
+            p = figure(x_axis_label=State.x.value,
+                       y_axis_label=State.y.value,
+                       width_policy="max",
+                       height=700)
 
             # add a scatter, colorbar, and mapper
             color_expr = dff[State.color.value]
@@ -94,13 +108,25 @@ def Page():
                     factors.remove(None)
                 except ValueError:
                     pass
-                args = dict(palette=f"Viridis{min(11, max(3, color_expr.nunique()))}", factors=factors)
+                args = dict(
+                    palette=f"Viridis{min(11, max(3, color_expr.nunique()))}",
+                    factors=factors)
             else:
                 mapper = linear_cmap
-                args = dict(palette="Viridis256", low=color_expr.min()[()], high=color_expr.max()[()])
+                args = dict(palette="Viridis256",
+                            low=color_expr.min()[()],
+                            high=color_expr.max()[()])
 
-            s = p.scatter(source=source, x="x", y="y", size=12, fill_color=mapper(field_name="z", **args))
-            p.add_layout(s.construct_color_bar(title=State.color.value, label_standoff=6, padding=5, border_line_color=None), "right")
+            s = p.scatter(source=source,
+                          x="x",
+                          y="y",
+                          size=12,
+                          fill_color=mapper(field_name="z", **args))
+            p.add_layout(
+                s.construct_color_bar(title=State.color.value,
+                                      label_standoff=6,
+                                      padding=5,
+                                      border_line_color=None), "right")
 
             solara.lab.FigureBokeh(p, dark_theme="carbon")
 
@@ -108,15 +134,27 @@ def Page():
             solara.Warning("Select x and y columns")
 
     else:
-        solara.Info("No data loaded, click on the sample dataset button to load a sample dataset, or upload a file.")
+        solara.Info(
+            "No data loaded, click on the sample dataset button to load a sample dataset, or upload a file."
+        )
 
     with solara.Column(style={"max-width": "400px"}):
-        solara.Button(label="View source", icon_name="mdi-github-circle", attributes={"href": github_url, "target": "_blank"}, text=True, outlined=True)
+        solara.Button(label="View source",
+                      icon_name="mdi-github-circle",
+                      attributes={
+                          "href": github_url,
+                          "target": "_blank"
+                      },
+                      text=True,
+                      outlined=True)
         if sys.platform != "emscripten":
             solara.Button(
                 label="Edit this example live on py.cafe",
                 icon_name="mdi-coffee-to-go-outline",
-                attributes={"href": pycafe_url, "target": "_blank"},
+                attributes={
+                    "href": pycafe_url,
+                    "target": "_blank"
+                },
                 text=True,
                 outlined=True,
             )
@@ -126,4 +164,6 @@ def Page():
 def Layout(children):
     route, routes = solara.use_route()
     dark_effective = solara.lab.use_dark_effective()
-    return solara.AppLayout(children=children, toolbar_dark=dark_effective, color=None)  # if dark_effective else "primary")
+    return solara.AppLayout(children=children,
+                            toolbar_dark=dark_effective,
+                            color=None)  # if dark_effective else "primary")
