@@ -33,8 +33,8 @@ codespell==2.4.1
 colorama==0.4.6
 comm==0.2.2
 contourpy==1.3.0
-coverage==7.6.11
-cryptography==44.0.0
+coverage==7.6.12
+cryptography==44.0.1
 cycler==0.12.1
 dask==2024.8.0
 debugpy==1.8.12

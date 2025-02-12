@@ -32,7 +32,7 @@ codespell==2.4.1
 comm==0.2.2
 contourpy==1.1.1
 coverage==7.6.1
-cryptography==44.0.0
+cryptography==44.0.1
 cycler==0.12.1
 dask==2023.5.0
 debugpy==1.8.12
