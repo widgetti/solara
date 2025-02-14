@@ -1,9 +1,73 @@
 # isort: skip_file
-from .components import *  # noqa: F401, F403
-from .utils import cookies, headers  # noqa: F401, F403
-from ..lifecycle import on_kernel_start  # noqa: F401
-from ..tasks import task, use_task, Task, TaskResult  # noqa: F401, F403
-from ..toestand import computed  # noqa: F401
+from .components import (
+    ChatBox,
+    ChatInput,
+    ChatMessage,
+    ConfirmationDialog,
+    InputDate,
+    InputDateRange,
+    InputTime,
+    ClickMenu,
+    ContextMenu,
+    Menu,
+    Tab,
+    Tabs,
+    ThemeToggle,
+    theme,
+    use_dark_effective,
+)
+from .utils import cookies, headers
+from ..lifecycle import on_kernel_start
+from ..tasks import task as _task, use_task as _use_task, Task as _Task, TaskResult as _TaskResult
+from ..toestand import computed
+from ..util import deprecated
+
+
+__all__ = [
+    "ChatBox",
+    "ChatInput",
+    "ChatMessage",
+    "ConfirmationDialog",
+    "InputDate",
+    "InputDateRange",
+    "InputTime",
+    "ClickMenu",
+    "ContextMenu",
+    "Menu",
+    "Tab",
+    "Tabs",
+    "ThemeToggle",
+    "theme",
+    "use_dark_effective",
+    "cookies",
+    "headers",
+    "on_kernel_start",
+    "task",
+    "use_task",
+    "Task",
+    "TaskResult",
+    "computed",
+]
+
+
+@deprecated("solara.lab.task has been moved out of the lab namespace, use solara.task instead")
+def task(*args, **kwargs):
+    _task(*args, **kwargs)
+
+
+@deprecated("solara.lab.use_task has been moved out of the lab namespace, use solara.use_task instead")
+def use_task(*args, **kwargs):
+    return _use_task(*args, **kwargs)
+
+
+@deprecated("solara.lab.Task has been moved out of the lab namespace, use solara.Task instead")
+class Task(_Task):
+    pass
+
+
+@deprecated("solara.lab.TaskResult has been moved out of the lab namespace, use solara.TaskResult instead")
+class TaskResult(_TaskResult):
+    pass
 
 
 def __getattr__(name):
