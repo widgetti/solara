@@ -57,7 +57,7 @@ h11==0.14.0
 h5py==3.12.1
 httpcore==1.0.7
 httpx==0.28.1
-humanize==4.11.0
+humanize==4.12.0
 identify==2.6.7
 idna==3.10
 importlib_metadata==8.6.1
@@ -183,7 +183,7 @@ rpds-py==0.22.3
 ruff==0.9.6
 Send2Trash==1.8.3
 simple-websocket==1.1.0
-simplejson==3.19.3
+simplejson==3.20.1
 six==1.17.0
 sniffio==1.3.1
 soupsieve==2.6
@@ -221,7 +221,7 @@ wcwidth==0.2.13
 webcolors==24.11.1
 webencodings==0.5.1
 websocket-client==1.8.0
-websockets==14.2
+websockets==15.0
 Werkzeug==3.1.3
 widgetsnbextension==4.0.13
 wsproto==1.2.0

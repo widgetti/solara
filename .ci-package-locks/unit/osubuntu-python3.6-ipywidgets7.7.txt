@@ -151,7 +151,7 @@ rich==12.6.0
 rich-click==1.2.1
 Send2Trash==1.8.3
 simple-websocket==1.1.0
-simplejson==3.19.3
+simplejson==3.20.1
 six==1.17.0
 sniffio==1.2.0
 soupsieve==2.3.2.post1
