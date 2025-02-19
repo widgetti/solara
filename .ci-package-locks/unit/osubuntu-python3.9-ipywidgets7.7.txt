@@ -56,10 +56,10 @@ fsspec==2025.2.0
 future==1.0.0
 greenlet==3.1.1
 h11==0.14.0
-h5py==3.12.1
+h5py==3.13.0
 httpcore==1.0.7
 httpx==0.28.1
-humanize==4.12.0
+humanize==4.12.1
 identify==2.6.7
 idna==3.10
 importlib_metadata==8.6.1
@@ -110,7 +110,7 @@ matplotlib==3.9.4
 matplotlib-inline==0.1.7
 mdit-py-plugins==0.4.2
 mdurl==0.1.2
-mistune==3.1.1
+mistune==3.1.2
 mkdocs-pycafe==0.3.0
 mypy==1.15.0
 mypy-extensions==1.0.0
@@ -148,7 +148,7 @@ psutil==7.0.0
 psygnal==0.12.0
 ptyprocess==0.7.0
 pure_eval==0.2.3
-pyarrow==19.0.0
+pyarrow==19.0.1
 pycparser==2.22
 pydantic==2.10.6
 pydantic_core==2.27.2

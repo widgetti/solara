@@ -109,7 +109,7 @@ matplotlib==3.7.5
 matplotlib-inline==0.1.7
 mdit-py-plugins==0.4.2
 mdurl==0.1.2
-mistune==3.1.1
+mistune==3.1.2
 mkdocs-pycafe==0.3.0
 mypy==1.14.1
 mypy-extensions==1.0.0
