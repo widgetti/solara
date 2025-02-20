@@ -180,7 +180,7 @@ requests==2.32.3
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
 rich==13.9.4
-rich-click==1.8.5
+rich-click==1.8.6
 rpds-py==0.20.1
 ruff==0.9.6
 Send2Trash==1.8.3
