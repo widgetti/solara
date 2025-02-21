@@ -284,7 +284,7 @@ jobs:
           pip install `echo packages/solara-server/dist/*.whl`[all]
           pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
           # pefile >= 2023.2.7 make pyinstaller incredibly slow https://github.com/erocarrera/pefile/issues/420
-          pip install "jupyterlab<4"  "pydantic<2" "playwright==1.41.2" pyinstaller pefile==2023.2.7
+          pip install "jupyterlab<4"  "pydantic<2" "playwright==1.50.0" pyinstaller pefile==2023.2.7
           pip freeze --exclude solara --exclude solara-ui --exclude solara-server > ${{ env.LOCK_FILE_LOCATION }}
           git diff --quiet || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
           git diff | tee ${{ env.DIFF_FILE_LOCATION }}
@@ -403,7 +403,7 @@ jobs:
           pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets${{ matrix.ipywidgets_major }}]
           pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
           pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
-          pip install "jupyterlab<4"  "pydantic<2" "playwright==1.41.2" "ipywidgets~=${{ matrix.ipywidgets }}"
+          pip install "jupyterlab<4"  "pydantic<2" "playwright==1.50.0" "ipywidgets~=${{ matrix.ipywidgets }}"
           pip freeze --exclude solara --exclude solara-ui --exclude solara-server --exclude pytest-ipywidgets --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
           git diff | tee ${{ env.DIFF_FILE_LOCATION }}
           [ -s ${{ env.DIFF_FILE_LOCATION }} ] && echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT" || echo "No dependencies changed"
@@ -510,7 +510,7 @@ jobs:
           pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets${{ matrix.ipywidgets_major }}]
           pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
           pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
-          pip install "jupyterlab<4" "playwright==1.41.2" "pydantic<2" "ipywidgets~=${{ matrix.ipywidgets }}"
+          pip install "jupyterlab<4" "playwright==1.50.0" "pydantic<2" "ipywidgets~=${{ matrix.ipywidgets }}"
           pip install jupyter_core jupyter-packaging
           pip install --pre "ipyvue>=3" "ipyvuetify>=3"
           pip freeze --exclude solara --exclude solara-ui --exclude solara-server --exclude pytest-ipywidgets --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
