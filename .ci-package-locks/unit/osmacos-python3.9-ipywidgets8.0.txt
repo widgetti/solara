@@ -22,7 +22,7 @@ bqplot==0.12.44
 bqplot-image-gl==1.6.1
 branca==0.8.1
 bump2version==1.0.1
-cachetools==5.5.1
+cachetools==5.5.2
 certifi==2025.1.31
 cffi==1.17.1
 cfgv==3.4.0
@@ -77,7 +77,7 @@ ipython==8.18.1
 ipython-genutils==0.2.0
 ipyvolume==0.6.3
 ipyvue==1.11.2
-ipyvuetify==1.10.0
+ipyvuetify==1.11.0
 ipywebrtc==0.6.0
 ipywidgets==8.1.5
 isoduration==20.11.0
@@ -181,8 +181,8 @@ rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
 rich==13.9.4
 rich-click==1.8.6
-rpds-py==0.22.3
-ruff==0.9.6
+rpds-py==0.23.0
+ruff==0.9.7
 Send2Trash==1.8.3
 simple-websocket==1.1.0
 simplejson==3.20.1
