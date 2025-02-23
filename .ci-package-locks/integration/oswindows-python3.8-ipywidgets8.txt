@@ -3,7 +3,7 @@ aiosqlite==0.20.0
 altair==5.4.1
 annotated-types==0.7.0
 anyio==4.5.2
-anywidget==0.9.13
+anywidget==0.9.14
 aplus==0.11.0
 argon2-cffi==23.1.0
 argon2-cffi-bindings==21.2.0
@@ -37,7 +37,7 @@ cryptography==44.0.1
 cycler==0.12.1
 dask==2023.5.0
 debugpy==1.8.12
-decorator==5.1.1
+decorator==5.2.0
 defusedxml==0.7.1
 distlib==0.3.9
 distro==1.9.0
@@ -125,7 +125,7 @@ notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.24.4
 objgraph==3.6.2
-openai==1.63.2
+openai==1.64.0
 overrides==7.7.0
 packaging==24.2
 pandas==2.0.3
