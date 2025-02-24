@@ -37,7 +37,7 @@ cryptography==44.0.1
 cycler==0.12.1
 dask==2023.5.0
 debugpy==1.8.12
-decorator==5.2.0
+decorator==5.2.1
 defusedxml==0.7.1
 distlib==0.3.9
 distro==1.9.0
