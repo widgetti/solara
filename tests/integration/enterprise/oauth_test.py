@@ -17,7 +17,7 @@ if sys.version_info[:2] <= (3, 6):
 @pytest.mark.skipif(not bool(os.environ.get("AUTH0_PASSWORD")), reason="AUTH0_PASSWORD not set")
 def test_oauth_from_app_auth0(page_session: playwright.sync_api.Page, solara_server, solara_app):
     with solara_app("solara.website.pages"):
-        settings.main.base_url = ""
+        settings.main.origin = None
         settings.oauth.client_id = settings.AUTH0_TEST_CLIENT_ID
         settings.oauth.client_secret = settings.AUTH0_TEST_CLIENT_SECRET
         settings.oauth.api_base_url = settings.AUTH0_TEST_API_BASE_URL
@@ -41,7 +41,7 @@ def test_oauth_from_app_auth0(page_session: playwright.sync_api.Page, solara_ser
 @pytest.mark.skip(reason="Fief support is deprecated for now")
 def test_oauth_from_app_fief(page_session: playwright.sync_api.Page, solara_server, solara_app):
     with solara_app("solara.website.pages"):
-        settings.main.base_url = ""
+        settings.main.origin = None
         settings.oauth.client_id = settings.FIEF_TEST_CLIENT_ID
         settings.oauth.client_secret = settings.FIEF_TEST_CLIENT_SECRET
         settings.oauth.api_base_url = settings.FIEF_TEST_API_BASE_URL
@@ -60,7 +60,7 @@ def test_oauth_private(page_session: playwright.sync_api.Page, solara_server, so
     settings.oauth.private = True
     try:
         with solara_app("solara.website.pages"):
-            settings.main.base_url = ""
+            settings.main.origin = None
             settings.oauth.client_id = settings.AUTH0_TEST_CLIENT_ID
             settings.oauth.client_secret = settings.AUTH0_TEST_CLIENT_SECRET
             settings.oauth.api_base_url = settings.AUTH0_TEST_API_BASE_URL

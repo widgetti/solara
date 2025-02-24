@@ -52,8 +52,10 @@ def authorize():
     check_oauth()
     assert oauth is not None
     assert oauth.oauth1 is not None
+    assert settings.main.origin is not None
 
-    org_url = session.pop("redirect_uri", settings.main.base_url + "/")
+    base_url = settings.main.origin + settings.main.root_path + "/"
+    org_url = session.pop("redirect_uri", base_url)
 
     token = oauth.oauth1.authorize_access_token()
     # workaround: if token is set in the session in one piece, it is not saved, so we
@@ -82,6 +84,7 @@ def login(redirect_uri: Optional[str] = None):
     check_oauth()
     assert oauth is not None
     assert oauth.oauth1 is not None
+    assert settings.main.origin is not None
     if "redirect_uri" in request.args:
         # we arrived here via the auth.get_login_url() call, which means the
         # redirect_uri is in the query params
@@ -91,7 +94,8 @@ def login(redirect_uri: Optional[str] = None):
         # where it detect we the OAuth.private=True setting, leading to a redirect
         session["redirect_uri"] = str(request.url)
     session["client_id"] = settings.oauth.client_id
-    callback_url = str(settings.main.base_url) + "_solara/auth/authorize"
+    base_url = settings.main.origin + settings.main.root_path
+    callback_url = base_url + "/_solara/auth/authorize"
     result = oauth.oauth1.authorize_redirect(callback_url)
     return result
 

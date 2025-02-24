@@ -12,11 +12,12 @@ def get_logout_url(return_to_path: Optional[str] = None):
     if return_to_path is None:
         router = router_context.get()
         return_to_path = router.path
-    if return_to_path.startswith("/"):
-        return_to_path = return_to_path[1:]
-    assert settings.main.base_url is not None
-    return_to_app = urllib.parse.quote(settings.main.base_url + return_to_path)
-    return_to = urllib.parse.quote(settings.main.base_url + f"_solara/auth/logout?redirect_uri={return_to_app}")
+    if not return_to_path.startswith("/"):
+        return_to_path = "/" + return_to_path
+    assert settings.main.origin is not None
+    url = settings.main.origin + settings.main.root_path
+    return_to_app = urllib.parse.quote(url + return_to_path)
+    return_to = urllib.parse.quote(url + f"/_solara/auth/logout?redirect_uri={return_to_app}")
     client_id = settings.oauth.client_id
     url = f"https://{settings.oauth.api_base_url}/{settings.oauth.logout_path}"
     if settings.oauth.logout_path.startswith("http"):
@@ -28,9 +29,10 @@ def get_login_url(return_to_path: Optional[str] = None):
     if return_to_path is None:
         router = router_context.get()
         return_to_path = router.path
-    if return_to_path.startswith("/"):
-        return_to_path = return_to_path[1:]
-    assert settings.main.base_url is not None
-    redirect_uri = urllib.parse.quote(settings.main.base_url + return_to_path)
-    root = settings.main.root_path or ""
+    if not return_to_path.startswith("/"):
+        return_to_path = "/" + return_to_path
+    assert settings.main.origin is not None
+    url = settings.main.origin + settings.main.root_path
+    redirect_uri = urllib.parse.quote(url + return_to_path)
+    root = settings.main.root_path
     return f"{root}/_solara/auth/login?redirect_uri={redirect_uri}"
