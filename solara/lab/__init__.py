@@ -3,13 +3,9 @@ from .components import (
     ChatBox,
     ChatInput,
     ChatMessage,
-    ConfirmationDialog,
     InputDate,
     InputDateRange,
     InputTime,
-    ClickMenu,
-    ContextMenu,
-    Menu,
     Tab,
     Tabs,
     ThemeToggle,
@@ -19,6 +15,8 @@ from .components import (
 from .utils import cookies, headers
 from ..lifecycle import on_kernel_start
 from ..tasks import task as _task, use_task as _use_task, Task as _Task, TaskResult as _TaskResult
+from ..components.confirmation_dialog import ConfirmationDialog as _ConfirmationDialog
+from ..components.menu import ClickMenu as _ClickMenu, ContextMenu as _ContextMenu, Menu as _Menu
 from ..toestand import computed
 from ..util import deprecated
 
@@ -68,6 +66,26 @@ class Task(_Task):
 @deprecated("solara.lab.TaskResult has been moved out of the lab namespace, use solara.TaskResult instead")
 class TaskResult(_TaskResult):
     pass
+
+
+@deprecated("solara.lab.ConfirmationDialog has been moved out of the lab namespace, use solara.ConfirmationDialog instead")
+def ConfirmationDialog(*args, **kwargs):
+    return _ConfirmationDialog(*args, **kwargs)
+
+
+@deprecated("solara.lab.ClickMenu has been moved out of the lab namespace, use solara.ClickMenu instead")
+def ClickMenu(*args, **kwargs):
+    return _ClickMenu(*args, **kwargs)
+
+
+@deprecated("solara.lab.ContextMenu has been moved out of the lab namespace, use solara.ContextMenu instead")
+def ContextMenu(*args, **kwargs):
+    return _ContextMenu(*args, **kwargs)
+
+
+@deprecated("solara.lab.Menu has been moved out of the lab namespace, use solara.Menu instead")
+def Menu(*args, **kwargs):
+    return _Menu(*args, **kwargs)
 
 
 def __getattr__(name):
