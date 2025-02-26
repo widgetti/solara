@@ -11,7 +11,7 @@ arrow==1.3.0
 asttokens==3.0.0
 async-timeout==5.0.1
 attrs==25.1.0
-Authlib==1.4.1
+Authlib==1.5.0
 babel==2.17.0
 beautifulsoup4==4.13.3
 blake3==1.0.4
