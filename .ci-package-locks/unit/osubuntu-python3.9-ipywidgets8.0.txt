@@ -48,7 +48,7 @@ fastjsonschema==2.21.1
 filelock==3.17.0
 Flask==3.1.0
 flask-sock==0.7.0
-folium==0.19.4
+folium==0.19.5
 fonttools==4.56.0
 fqdn==1.5.1
 frozendict==2.4.6
@@ -76,7 +76,7 @@ ipython==8.18.1
 ipython-genutils==0.2.0
 ipyvolume==0.6.3
 ipyvue==1.11.2
-ipyvuetify==1.11.0
+ipyvuetify==1.11.1
 ipywebrtc==0.6.0
 ipywidgets==8.1.5
 isoduration==20.11.0
@@ -125,7 +125,7 @@ notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.26.4
 objgraph==3.6.2
-openai==1.64.0
+openai==1.65.1
 overrides==7.7.0
 packaging==24.2
 pandas==2.2.3
@@ -181,7 +181,7 @@ rfc3986-validator==0.1.1
 rich==13.9.4
 rich-click==1.8.6
 rpds-py==0.23.1
-ruff==0.9.7
+ruff==0.9.8
 Send2Trash==1.8.3
 simple-websocket==1.1.0
 simplejson==3.20.1
