@@ -252,7 +252,7 @@ def Layout(children=[]):
     target, set_target = solara.use_state(0)
 
     if route_current is not None:
-        with solara.Div(style={"display": "none"}):
+        with solara.Head():
             solara.Meta(name="twitter:card", content="summary_large_image")
             solara.Meta(name="twitter:site", content="@solara_dev")
             solara.Meta(name="twitter:image", content="https://solara.dev/static/assets/images/logo-small.png")
@@ -265,7 +265,7 @@ def Layout(children=[]):
         Title(title="Solara: Build high-quality web applications in pure Python")
         Home()
     else:
-        with solara.VBox(grow=False) as main:
+        with solara.VBox(grow=False):
             Title(title="Solara documentation")
             Header(
                 on_toggle_left_menu=lambda: set_show_left_menu(not show_left_menu),
@@ -343,8 +343,6 @@ def Layout(children=[]):
                         width="20rem",
                     ):
                         route_current.module.Sidebar()
-
-        return main
 
 
 @solara.component
