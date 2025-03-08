@@ -35,7 +35,7 @@ coverage==7.6.1
 cryptography==44.0.2
 cycler==0.12.1
 dask==2023.5.0
-debugpy==1.8.12
+debugpy==1.8.13
 decorator==5.2.1
 defusedxml==0.7.1
 deprecation==2.1.0
@@ -52,7 +52,7 @@ folium==0.18.0
 fonttools==4.56.0
 fqdn==1.5.1
 frozendict==2.4.6
-fsspec==2025.2.0
+fsspec==2025.3.0
 future==1.0.0
 greenlet==3.0.3
 h11==0.14.0
@@ -82,7 +82,7 @@ ipywidgets==8.1.5
 isoduration==20.11.0
 itsdangerous==2.2.0
 jedi==0.19.2
-Jinja2==3.1.5
+Jinja2==3.1.6
 jiter==0.8.2
 json5==0.10.0
 jsonpointer==3.0.0
@@ -115,7 +115,7 @@ mistune==3.1.2
 mkdocs-pycafe==0.3.0
 mypy==1.14.1
 mypy-extensions==1.0.0
-narwhals==1.28.0
+narwhals==1.29.1
 nbclassic==1.2.0
 nbclient==0.10.1
 nbconvert==7.16.6
@@ -126,7 +126,7 @@ notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.24.4
 objgraph==3.6.2
-openai==1.65.2
+openai==1.65.4
 overrides==7.7.0
 packaging==24.2
 pandas==2.0.3
@@ -167,7 +167,7 @@ pytest-playwright==0.5.2
 pytest-timeout==2.3.1
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
-python-json-logger==3.2.1
+python-json-logger==3.3.0
 python-slugify==8.0.4
 python-utils==3.8.2
 pythreejs==2.4.2
@@ -183,7 +183,7 @@ rfc3986-validator==0.1.1
 rich==13.9.4
 rich-click==1.8.6
 rpds-py==0.20.1
-ruff==0.9.9
+ruff==0.9.10
 Send2Trash==1.8.3
 simple-websocket==1.1.0
 simplejson==3.20.1
@@ -218,7 +218,7 @@ vaex-hdf5==0.14.1
 vaex-jupyter==0.8.2
 vaex-viz==0.5.4
 vega-datasets==0.9.0
-virtualenv==20.29.2
+virtualenv==20.29.3
 voila==0.5.8
 watchdog==4.0.2
 watchfiles==0.24.0
