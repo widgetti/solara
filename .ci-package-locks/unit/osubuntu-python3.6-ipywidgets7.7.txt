@@ -140,7 +140,7 @@ python-dateutil==2.9.0.post0
 python-dotenv==0.20.0
 python-utils==3.5.2
 pythreejs==2.3.0
-pytz==2025.1
+pytz==2025.2
 PyYAML==6.0.1
 pyzmq==25.1.2
 reacton==1.9.1
