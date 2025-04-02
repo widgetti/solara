@@ -84,7 +84,7 @@ itsdangerous==2.2.0
 jedi==0.19.2
 Jinja2==3.1.6
 jiter==0.9.0
-json5==0.10.0
+json5==0.11.0
 jsonpointer==3.0.0
 jsonschema==4.23.0
 jsonschema-specifications==2023.12.1
@@ -114,7 +114,7 @@ mistune==0.8.4
 mkdocs-pycafe==0.3.0
 mypy==1.14.1
 mypy-extensions==1.0.0
-narwhals==1.32.0
+narwhals==1.33.0
 nbclassic==1.2.0
 nbclient==0.5.13
 nbconvert==6.5.4
@@ -125,7 +125,7 @@ notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.24.4
 objgraph==3.6.2
-openai==1.69.0
+openai==1.70.0
 packaging==24.2
 pandas==2.0.3
 pandocfilters==1.5.1
@@ -178,7 +178,7 @@ regex==2024.11.6
 requests==2.32.3
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
-rich==13.9.4
+rich==14.0.0
 rich-click==1.8.8
 rpds-py==0.20.1
 ruff==0.11.2
@@ -215,7 +215,7 @@ vaex-hdf5==0.14.1
 vaex-jupyter==0.8.2
 vaex-viz==0.5.4
 vega-datasets==0.9.0
-virtualenv==20.29.3
+virtualenv==20.30.0
 voila==0.3.8
 watchdog==4.0.2
 watchfiles==0.24.0

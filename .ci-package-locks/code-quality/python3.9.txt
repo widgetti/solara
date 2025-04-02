@@ -6,4 +6,4 @@ nodeenv==1.9.1
 platformdirs==4.3.7
 pre_commit==4.2.0
 PyYAML==6.0.2
-virtualenv==20.29.3
+virtualenv==20.30.0
