@@ -1460,6 +1460,7 @@ def test_mutate_value_set_value_dataframe():
     with pytest.raises(ValueError, match="Reactive variable was set.*"):
         reactive_df._storage.check_mutations()  # type: ignore
 
+
 @dataclasses.dataclass(frozen=True)
 class Profile:
     name: str
