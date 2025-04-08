@@ -43,7 +43,7 @@
 #                 radius = width // 3
 #                 polygon(canvas, width // 2, height // 2, radius * radius_inner / 100, radius * radius_outer / 100, n_points)
 
-#         solara.use_side_effect(real_drawing, [fill, stroke, line_width, n_points, view_count, radius_inner, radius_outer])
+#         solara.use_effect(real_drawing, [fill, stroke, line_width, n_points, view_count, radius_inner, radius_outer])
 #         canvas_element = c.Canvas(width=width, height=height)
 
 #     return main

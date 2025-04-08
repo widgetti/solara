@@ -76,7 +76,7 @@ def Table(df, n=5):
             output_real.outputs = tuple()
             output_real.append_display_data(df)
 
-    solara.use_side_effect(output)
+    solara.use_effect(output)
     return output_c
 
 
