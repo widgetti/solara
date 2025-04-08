@@ -95,6 +95,7 @@ class ValueBase(Generic[T]):
     def __init__(self, merge: Callable = merge_state, equals=equals_extra):
         self.merge = merge
         self.equals = equals
+        self.listeners_changed: Dict[str, Set[Tuple[Callable[[], None], Optional[ContextManager]]]] = defaultdict(set)
         self.listeners: Dict[str, Set[Tuple[Callable[[T], None], Optional[ContextManager]]]] = defaultdict(set)
         self.listeners2: Dict[str, Set[Tuple[Callable[[T, T], None], Optional[ContextManager]]]] = defaultdict(set)
 
@@ -153,6 +154,15 @@ class ValueBase(Generic[T]):
     def _get_scope_key(self):
         raise NotImplementedError
 
+    def subscribe_changed(self, listener: Callable[[], None], scope: Optional[ContextManager] = None):
+        scope_id = self._get_scope_key()
+        self.listeners_changed[scope_id].add((listener, scope))
+
+        def cleanup():
+            self.listeners_changed[scope_id].remove((listener, scope))
+
+        return cleanup
+
     def subscribe(self, listener: Callable[[T], None], scope: Optional[ContextManager] = None):
         if scope is not None:
             warnings.warn("scope argument should not be used, it was only for internal use")
@@ -194,10 +204,30 @@ class ValueBase(Generic[T]):
 
         return cleanup
 
+    def _fire_changed(self):
+        logger.info("value changed from will fire changed events")
+        scope_id = self._get_scope_key()
+        scopes = set()
+        listeners_changed = self.listeners_changed[scope_id].copy()
+        if not listeners_changed:
+            return
+        for listener_changed, scope in listeners_changed:
+            if scope is not None:
+                scopes.add(scope)
+        stack = contextlib.ExitStack()
+        with contextlib.ExitStack() as stack:
+            for scope in scopes:
+                stack.enter_context(scope)
+            for listener_changed, scope in listeners_changed:
+                # TODO: disable getting state
+                listener_changed()
+
     def fire(self, new: T, old: T):
         logger.info("value change from %s to %s, will fire events", old, new)
         scope_id = self._get_scope_key()
         contexts = set()
+        for listener_changed, context in self.listeners_changed[scope_id].copy():
+            contexts.add(context)
         for listener, context in self.listeners[scope_id].copy():
             contexts.add(context)
         for listener2, context in self.listeners2[scope_id].copy():
@@ -205,6 +235,18 @@ class ValueBase(Generic[T]):
         if contexts:
             for context in contexts:
                 with context or nullcontext():
+                    # this is the first phase of the fire, we only notify the listeners that the value has changed
+                    # but not what the value is. This is the phase where all computed values are invalidated
+                    for listener_changed, context_listener in self.listeners_changed[scope_id].copy():
+                        # during this event handling we should not allow state updates (mayne not even reads) as that would
+                        # trigger new events, and we are in the middle of handling events.
+                        # TODO: disable getting state
+                        if context == context_listener:
+                            listener_changed()
+                    # we still support the old way of listening to changes, but ideally we deprecate this
+                    # as sync event handling is difficult to get right.
+                    # This will be difficult to do without, since depending on a ref to a field should not
+                    # trigger a re-render which currently requires knowing the value of the field
                     for listener, context_listener in self.listeners[scope_id].copy():
                         if context == context_listener:
                             listener(new)
@@ -549,6 +591,9 @@ class Reactive(ValueBase[S]):
         """Return the value without automatically subscribing to listeners."""
         return self._storage.peek()
 
+    def subscribe_changed(self, listener: Callable[[], None], scope: Optional[ContextManager] = None):
+        return self._storage.subscribe_changed(listener, scope=scope)
+
     def subscribe(self, listener: Callable[[S], None], scope: Optional[ContextManager] = None):
         return self._storage.subscribe(listener, scope=scope)
 
@@ -591,19 +636,28 @@ class Computed(Reactive[S]):
 
         self.f = f
 
-        def on_change(*ignore):
-            with self._auto_subscriber.value:
-                self.set(f())
+        def on_change():
+            self._dirty.set(True)  # settings state should not be allowed
+            # listeners are attached to the storage
+            self._storage._fire_changed()
+            scope_id = self._storage._get_scope_key()
+            if self._storage.listeners[scope_id] or self._storage.listeners2[scope_id]:
+                # DeprecationWarning: Using .subscribe and .subscribe_change on a computed value is not supported
+                warnings.warn("Using .subscribe and .subscribe_change on a computed value is deprecated, use .subscribe_changed", DeprecationWarning)
+                self._ensure_computed()
 
         import functools
 
         self._auto_subscriber = Singleton(functools.wraps(AutoSubscribeContextManager)(lambda: AutoSubscribeContextManager(on_change)))
+        # we should have a KernelVar, similar to ContextVar, or threading.local since we don't need/want reactivity
+        self._dirty = Reactive(False)
 
         @functools.wraps(f)
         def factory():
-            v = self._auto_subscriber.value
-            with v:
-                return f()
+            _auto_subscriber = self._auto_subscriber.value
+            with _auto_subscriber:
+                value = f()
+            return value
 
         super().__init__(KernelStoreFactory(factory, key=key))
 
@@ -615,6 +669,18 @@ class Computed(Reactive[S]):
             return cleanup
 
         solara.lifecycle.on_kernel_start(reset)
+
+    def _ensure_computed(self):
+        if self._dirty.peek():
+            self._dirty.set(False)
+            with self._auto_subscriber.value:
+                self.set(self.f())
+
+    def get(self):
+        self._ensure_computed()
+        if thread_local.reactive_used is not None:
+            thread_local.reactive_used.add(self)
+        return self._storage.get()
 
     def __repr__(self):
         value = super().__repr__()
@@ -707,6 +773,12 @@ class ReactiveField(Reactive[T]):
     @property
     def lock(self):
         return self._root.lock
+
+    def subscribe_changed(self, listener: Callable[[], None], scope: Optional[ContextManager] = None):
+        def on_changed():
+            listener()
+
+        return self._root.subscribe_changed(on_changed, scope=scope)
 
     def subscribe(self, listener: Callable[[T], None], scope: Optional[ContextManager] = None):
         def on_change(new, old):
@@ -886,7 +958,11 @@ class AutoSubscribeContextManagerBase:
 
         for reactive in added:
             if reactive not in self.subscribed:
-                unsubscribe = reactive.subscribe_change(change_handler)
+                # if we subscribe to subscribe_changed instead, we get too many false positives
+                # and we would render too often, the main issue is that a ref to a computed
+                # will say 'i may have changed' via subscribe_changed, but the subscribe_change
+                # in the field will do an (eager) comparison, avoiding the false positive
+                unsubscribe = reactive.subscribe_change(lambda a, b: change_handler())
                 self.subscribed[reactive] = unsubscribe
         for reactive in removed:
             unsubscribe = self.subscribed[reactive]
@@ -949,7 +1025,7 @@ class AutoSubscribeContextManagerReacton(AutoSubscribeContextManagerBase):
     def __enter__(self):
         _, set_counter = solara.use_state(0, key="auto_subscribe_force_update_counter")
 
-        def force_update(new_value, old_value):
+        def force_update():
             # can we do just x+1 to collapse multiple updates into one?
             set_counter(lambda x: x + 1)
 
