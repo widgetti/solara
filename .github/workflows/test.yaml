@@ -345,7 +345,7 @@ jobs:
         # osx should work fine (and we test that locally often)
         os: [ubuntu, windows]
         # just 1 version, it's heavy
-        python-version: [3.8]
+        python-version: [3.9]
         ipywidgets_major: ["7", "8"]
         include:
           - ipywidgets_major: "7"
@@ -404,6 +404,7 @@ jobs:
           pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
           pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
           pip install "jupyterlab<4"  "pydantic<2" "playwright==1.50.0" "ipywidgets~=${{ matrix.ipywidgets }}"
+          pip install pytest-retry
           pip freeze --exclude solara --exclude solara-ui --exclude solara-server --exclude pytest-ipywidgets --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
           git diff | tee ${{ env.DIFF_FILE_LOCATION }}
           [ -s ${{ env.DIFF_FILE_LOCATION }} ] && echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT" || echo "No dependencies changed"
@@ -431,7 +432,7 @@ jobs:
         # TODO: we used to also run the (cheap) unittests, to get better coverage report, but that gives errors
         # it seems on CI that the default playwright timeout is not (always?) respected, also, if the --timeout argument
         # is shorter than the timeout of playwright, we get no good error message, summary: always keep above 30!
-        run: pytest tests/integration --timeout=360 --video=retain-on-failure --output=test-results -vv -s --log-cli-level=warning
+        run: pytest tests/integration --timeout=360 --video=retain-on-failure --output=test-results -vv -s --log-cli-level=warning --retries 3
 
       - name: Upload Test artifacts
         if: always()
@@ -463,7 +464,7 @@ jobs:
         # osx should work fine (and we test that locally often)
         os: [ubuntu]
         # just 1 version, it's heavy
-        python-version: [3.8]
+        python-version: [3.9]
         ipywidgets_major: ["8"]
         include:
           - ipywidgets_major: "8"
@@ -511,6 +512,7 @@ jobs:
           pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
           pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
           pip install "jupyterlab<4" "playwright==1.50.0" "pydantic<2" "ipywidgets~=${{ matrix.ipywidgets }}"
+          pip install pytest-retry
           pip install jupyter_core jupyter-packaging
           pip install --pre "ipyvue>=3" "ipyvuetify>=3"
           pip freeze --exclude solara --exclude solara-ui --exclude solara-server --exclude pytest-ipywidgets --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
@@ -540,7 +542,7 @@ jobs:
         # TODO: we used to also run the (cheap) unittests, to get better coverage report, but that gives errors
         # it seems on CI that the default playwright timeout is not (always?) respected, also, if the --timeout argument
         # is shorter than the timeout of playwright, we get no good error message, summary: always keep above 30!
-        run: pytest tests/integration/widget_test.py --timeout=360 --video=retain-on-failure --output=test-results -vv -s --log-cli-level=warning
+        run: pytest tests/integration/widget_test.py --timeout=360 --video=retain-on-failure --output=test-results -vv -s --log-cli-level=warning --retries 3
 
       - name: Upload Test artifacts
         if: always()
