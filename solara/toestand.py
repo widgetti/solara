@@ -44,6 +44,7 @@ _DEBUG = False
 
 class ThreadLocal(threading.local):
     reactive_used: Optional[Set["ValueBase"]] = None
+    reactive_watch: Optional[Callable[["ValueBase"], None]] = None
 
 
 thread_local = ThreadLocal()
@@ -542,6 +543,8 @@ class Reactive(ValueBase[S]):
             warnings.warn("add_watch is deprecated, use .peek()", DeprecationWarning)
         if thread_local.reactive_used is not None:
             thread_local.reactive_used.add(self)
+        if thread_local.reactive_watch is not None:
+            thread_local.reactive_watch(self)
         # peek to avoid parents also adding themselves to the reactive_used set
         return self._storage.peek()
 
@@ -741,6 +744,8 @@ class ReactiveField(Reactive[T]):
             warnings.warn("add_watch is deprecated, use .peek()", DeprecationWarning)
         if thread_local.reactive_used is not None:
             thread_local.reactive_used.add(self)
+        if thread_local.reactive_watch is not None:
+            thread_local.reactive_watch(self)
         # peek to avoid parents also adding themselves to the reactive_used set
         return self._field.peek()
 
@@ -864,35 +869,42 @@ class AutoSubscribeContextManagerBase:
     # a render loop might trigger a new render loop of a differtent render context
     # so we want to save, and restore the current reactive_used
     reactive_used: Optional[Set[ValueBase]] = None
-    reactive_added_previous_run: Optional[Set[ValueBase]] = None
     subscribed: Dict[ValueBase, Callable]
+    subscribed_previous_run: Dict[ValueBase, Callable]
+    on_change: Callable[[], None]
+    previous_reactive_watch: Optional[Callable[["ValueBase"], None]] = None
 
     def __init__(self):
         self.subscribed = {}
+        self.subscribed_previous_run = {}
+        self.on_change = lambda: None
 
-    def update_subscribers(self, change_handler):
-        assert self.reactive_used is not None
-        reactive_used = self.reactive_used
-        # remove subfields for which we already listen to it's root reactive value
-        reactive_used_subfields = {k for k in reactive_used if isinstance(k, ValueSubField)}
-        reactive_used = reactive_used - reactive_used_subfields
-        # only add subfield for which we don't listen to it's parent
-        for reactive_used_subfield in reactive_used_subfields:
-            if reactive_used_subfield._root not in reactive_used:
-                reactive_used.add(reactive_used_subfield)
-        added = reactive_used - (self.reactive_added_previous_run or set())
+    def unsubscribe_previous(self):
+        removed = set(self.subscribed_previous_run or set()) - set(self.subscribed)
+        if removed:
+            for reactive in removed:
+                unsubscribe = self.subscribed_previous_run[reactive]
+                unsubscribe()
+                del self.subscribed_previous_run[reactive]
 
-        removed = (self.reactive_added_previous_run or set()) - reactive_used
+    def add(self, reactive: ValueBase):
+        relevant_reactive = reactive
+        if isinstance(reactive, ValueSubField):
+            root = reactive._root
+            if root in self.subscribed or root in self.subscribed_previous_run:
+                print("we already subscribed to this reactive's root")
+                return
+            else:
+                print("we are subscribing to this reactive's root")
 
-        for reactive in added:
-            if reactive not in self.subscribed:
-                unsubscribe = reactive.subscribe_change(change_handler)
-                self.subscribed[reactive] = unsubscribe
-        for reactive in removed:
-            unsubscribe = self.subscribed[reactive]
-            unsubscribe()
-            del self.subscribed[reactive]
-        self.reactive_added_previous_run = added
+        # TODO: we could see if we are the root of any of the subscribed fields,
+        # and remove that field.
+        if relevant_reactive not in self.subscribed:
+            if relevant_reactive not in self.subscribed_previous_run:
+                unsubscribe = relevant_reactive.subscribe_change(lambda *args: self.on_change())
+                self.subscribed[relevant_reactive] = unsubscribe
+            else:
+                self.subscribed[relevant_reactive] = self.subscribed_previous_run[relevant_reactive]
 
     def unsubscribe_all(self):
         for reactive in self.subscribed:
@@ -900,12 +912,17 @@ class AutoSubscribeContextManagerBase:
             unsubscribe()
 
     def __enter__(self):
+        self.subscribed = {}
         self.reactive_used_before = thread_local.reactive_used
+        self.previous_reactive_watch = thread_local.reactive_watch
+        thread_local.reactive_watch = self.add
         self.reactive_used = thread_local.reactive_used = set()
-        assert thread_local.reactive_used is self.reactive_used, f"{hex(id(thread_local.reactive_used))} vs {hex(id(self.reactive_used))}"
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         thread_local.reactive_used = self.reactive_used_before
+        thread_local.reactive_watch = self.previous_reactive_watch
+        self.unsubscribe_previous()
+        self.subscribed_previous_run = self.subscribed.copy()
 
 
 class Context:
@@ -925,6 +942,7 @@ class Context:
             res1 = self.render_context.__exit__(exc_type, exc_val, exc_tb)
         else:
             res1 = None
+
         # pop the current context from the stack
         res2 = self.kernel_context.__exit__(exc_type, exc_val, exc_tb)
         return res1 or res2
@@ -949,20 +967,15 @@ class AutoSubscribeContextManagerReacton(AutoSubscribeContextManagerBase):
     def __enter__(self):
         _, set_counter = solara.use_state(0, key="auto_subscribe_force_update_counter")
 
-        def force_update(new_value, old_value):
+        def force_update():
             # can we do just x+1 to collapse multiple updates into one?
             set_counter(lambda x: x + 1)
 
         super().__enter__()
-
-        def update_subscribers():
-            self.update_subscribers(force_update)
-
-        solara.use_effect(update_subscribers, None)
+        self.on_change = force_update
 
         def on_close():
             def cleanup():
-                assert self.reactive_added_previous_run is not None
                 self.unsubscribe_all()
 
             return cleanup
@@ -971,19 +984,9 @@ class AutoSubscribeContextManagerReacton(AutoSubscribeContextManagerBase):
 
 
 class AutoSubscribeContextManager(AutoSubscribeContextManagerBase):
-    on_change: Callable[[], None]
-
     def __init__(self, on_change: Callable[[], None]):
         super().__init__()
         self.on_change = on_change
-
-    def __enter__(self):
-        super().__enter__()
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        value = super().__exit__(exc_type, exc_val, exc_tb)
-        self.update_subscribers(self.on_change)
-        return value
 
 
 # alias for compatibility

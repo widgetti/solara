@@ -617,3 +617,38 @@ def test_run_async_task_from_threaded():
     button = rc.find(v.Btn, children=["Run"]).widget
     button.click()
     rc.find(children=["Done: 42"]).wait_for()
+
+
+def test_update_while_rendering():
+    some_reactive_var = solara.reactive(10)
+
+    @solara.lab.task
+    def update_task():
+        print("execute update_task")
+        time.sleep(0.1)
+        # this update will happen before the render of Child2 is finished
+        some_reactive_var.value = 20
+        print("update_task done")
+
+    @solara.component
+    def Child1():
+        print("rendering child1 with value", some_reactive_var.value)
+
+    @solara.component
+    def Child2():
+        print("rendering child2 with value", some_reactive_var.value)
+        solara.Text(f"value = {some_reactive_var.value}")
+        time.sleep(0.2)
+
+    @solara.component
+    def Test():
+        print("rendering parent with value", some_reactive_var.value)
+        # solara.use_effect(update_task, [])
+        if update_task.not_called:
+            update_task()
+        with solara.Column():
+            Child1()
+            Child2()
+
+    box, rc = solara.render(Test(), handle_error=False)
+    rc.find(children=["value = 20"]).wait_for(timeout=3)
