@@ -227,8 +227,10 @@ def send_websockets(websockets: Set[websocket.WebsocketWrapper], binary_msg):
             logger.exception("Error sending message: %s, closing websocket", e)
             try:
                 ws.close()
-            except Exception as e:  # noqa
-                logger.exception("Error closing websocket: %s", e)
+            except websocket.WebSocketDisconnect:
+                pass  # was already closed, which triggered the original exception
+            except Exception as e2:  # noqa
+                logger.exception("Error closing websocket: %s %s", e, e2)
             try:
                 # websocket can be modified by another thread
                 websockets.remove(ws)
