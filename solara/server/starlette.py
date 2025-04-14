@@ -132,29 +132,46 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
         # and re-raise it as a websocket.WebSocketDisconnect
         try:
             await self.ws.send_bytes(data)
-        except (websockets.exceptions.ConnectionClosed, starlette.websockets.WebSocketDisconnect, RuntimeError) as e:
+        except RuntimeError as e:
             # starlette throws a RuntimeError once you call send after the connection is closed
-            if isinstance(e, RuntimeError) and "close message" in repr(e):
+            # or RuntimeError: Unexpected ASGI message 'websocket.send', after sending 'websocket.close' or response already completed.
+            # from uvicorn.protocols.websockets.websockets_impl.py
+            if "close message" in repr(e) or "websocket.close" in repr(e):
                 raise websocket.WebSocketDisconnect() from e
             else:
                 raise
+        except (websockets.exceptions.ConnectionClosed, starlette.websockets.WebSocketDisconnect, RuntimeError) as e:
+            raise websocket.WebSocketDisconnect() from e
 
     async def _send_text_exc(self, data: str):
         # make sures we catch the starlette/websockets specific exception
         # and re-raise it as a websocket.WebSocketDisconnect
         try:
             await self.ws.send_text(data)
-        except (websockets.exceptions.ConnectionClosed, starlette.websockets.WebSocketDisconnect, RuntimeError) as e:
-            if isinstance(e, RuntimeError) and "close message" in repr(e):
+        except RuntimeError as e:
+            if "close message" in repr(e) or "websocket.close" in repr(e):
                 raise websocket.WebSocketDisconnect() from e
             else:
                 raise
+        except (websockets.exceptions.ConnectionClosed, starlette.websockets.WebSocketDisconnect, RuntimeError) as e:
+            raise websocket.WebSocketDisconnect() from e
 
     def close(self):
+        async def _close_exc():
+            try:
+                await self.ws.close()
+            except RuntimeError as e:
+                if "close message" in repr(e) or "websocket.close" in repr(e):
+                    raise websocket.WebSocketDisconnect() from e
+                else:
+                    raise
+            except (websockets.exceptions.ConnectionClosed, starlette.websockets.WebSocketDisconnect, RuntimeError) as e:
+                raise websocket.WebSocketDisconnect() from e
+
         if self.portal is None:
-            asyncio.ensure_future(self.ws.close())
+            asyncio.ensure_future(_close_exc())
         else:
-            self.portal.call(self.ws.close)
+            self.portal.call(_close_exc)
 
     def send_text(self, data: str) -> None:
         if self.portal is None:
