@@ -974,7 +974,7 @@ def test_reactive_auto_subscribe_sub():
     ref.value += 1
     assert rc.find(v.Alert).widget.children[0] == "2 bears around here"
     assert reactive_used == {ref}
-    # now check that we didn't listen to the while object, just count changes
+    # now check that we didn't listen to the whole object, just count changes
     renders_before = renders
     Ref(bears.fields.type).value = "pink"
     assert renders == renders_before
