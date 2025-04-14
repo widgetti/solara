@@ -588,3 +588,32 @@ async def test_use_task_async(prefer_threaded):
             raise TimeoutError("took too long, state = " + str(task._state))
     assert task._state == TaskState.FINISHED
     assert last_value == 99
+
+
+@solara.lab.task
+async def task_run_async():
+    print("running task_run_async")
+    return 42
+
+
+@solara.lab.task
+def task_threaded_run_async():
+    print("running task_threaded_run_async!")
+    task_run_async()
+
+
+def test_run_async_task_from_threaded():
+    @solara.component
+    def Test():
+        with solara.Column():
+            if task_threaded_run_async.error:
+                solara.Error("Error: " + str(task_threaded_run_async.exception))
+            elif task_run_async.finished:
+                solara.Info("Done: " + str(task_run_async.value))
+            else:
+                solara.Button("Run", on_click=lambda: task_threaded_run_async())
+
+    box, rc = solara.render(Test(), handle_error=False)
+    button = rc.find(v.Btn, children=["Run"]).widget
+    button.click()
+    rc.find(children=["Done: 42"]).wait_for()

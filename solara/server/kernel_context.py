@@ -77,6 +77,7 @@ class VirtualKernelContext:
     closed_event: threading.Event = dataclasses.field(default_factory=threading.Event)
     _on_close_callbacks: List[Callable[[], None]] = dataclasses.field(default_factory=list)
     lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
+    event_loop: asyncio.AbstractEventLoop = dataclasses.field(default_factory=asyncio.get_event_loop)
 
     def __post_init__(self):
         with self:
