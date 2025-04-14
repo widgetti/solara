@@ -25,6 +25,7 @@ import typing_extensions
 import solara
 import solara.util
 from solara.toestand import Singleton
+from solara import _using_solara_server
 
 from .toestand import Ref as ref
 
@@ -41,6 +42,20 @@ P = typing_extensions.ParamSpec("P")
 logger = logging.getLogger("solara.task")
 
 has_threads = solara.util.has_threads
+_main_event_loop: Optional[asyncio.AbstractEventLoop] = None
+try:
+    # this will be the event loop in Jupyter/IPython
+    _main_event_loop = asyncio.get_event_loop()
+except RuntimeError:
+    pass
+
+
+def _get_current_task():
+    # asyncio.current_task() is not available in Python 3.6
+    if sys.version_info >= (3, 7):
+        return asyncio.current_task()
+    else:
+        return asyncio.Task.current_task()
 
 
 class TaskState(Enum):
@@ -201,7 +216,6 @@ class TaskAsyncio(Task[P, R]):
             raise RuntimeError("Cannot retry task, never started")
 
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> None:
-        self.current_future = future = asyncio.Future[R]()
         self._last_progress = None
         current_task: asyncio.Task[None]
         if self.current_task:
@@ -214,7 +228,7 @@ class TaskAsyncio(Task[P, R]):
             event_loop = current_task.get_loop()
             # cancel after cancel is a no-op
             self._cancel = lambda: None
-            if asyncio.current_task() == current_task:
+            if _get_current_task() == current_task:
                 if event_loop == asyncio.get_event_loop():
                     # we got called in our own task and event loop
                     raise _CancelledErrorInOurTask()
@@ -227,7 +241,15 @@ class TaskAsyncio(Task[P, R]):
 
         self._cancel = cancel
         self._retry = retry
-        call_event_loop = asyncio.get_event_loop()
+        if _using_solara_server():
+            import solara.server.kernel_context
+
+            context = solara.server.kernel_context.get_current_context()
+            call_event_loop = context.event_loop
+        else:
+            call_event_loop = _main_event_loop or asyncio.get_event_loop()
+
+        self.current_future = future = call_event_loop.create_future()
 
         if self.run_in_thread:
             thread_event_loop = asyncio.new_event_loop()
@@ -253,12 +275,12 @@ class TaskAsyncio(Task[P, R]):
     def is_current(self):
         running_task = self.current_task
         assert running_task is not None
-        return (self.current_task == asyncio.current_task()) and not running_task.cancelled()
+        return (self.current_task == _get_current_task()) and not running_task.cancelled()
 
     async def _async_run(self, call_event_loop: asyncio.AbstractEventLoop, future: asyncio.Future, args, kwargs) -> None:
         self._start_event.wait()
 
-        task_for_this_call = asyncio.current_task()
+        task_for_this_call = _get_current_task()
         assert task_for_this_call is not None
 
         if self.is_current():
