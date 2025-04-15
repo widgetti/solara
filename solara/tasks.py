@@ -45,7 +45,11 @@ has_threads = solara.util.has_threads
 _main_event_loop: Optional[asyncio.AbstractEventLoop] = None
 try:
     # this will be the event loop in Jupyter/IPython
-    _main_event_loop = asyncio.get_event_loop()
+    # on Python >=3.12, get_running_loop() is preferred
+    if sys.version_info >= (3, 12):
+        _main_event_loop = asyncio.get_running_loop()
+    else:
+        _main_event_loop = asyncio.get_event_loop()
 except RuntimeError:
     pass
 

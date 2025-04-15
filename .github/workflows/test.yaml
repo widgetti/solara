@@ -179,7 +179,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu, macos, windows]
-        python: ["3.6", "3.10"]
+        python: ["3.6", "3.13"]
         exclude:
           - os: windows
             python: 3.6
@@ -205,6 +205,16 @@ jobs:
       - name: Test import
         run: python -c "import solara"
 
+      - name: Make sure pytest runs
+        run: |
+          pip install pytest
+          cd /tmp
+          printf 'import solara\ndef test_dummy(): pass\n' > dummy_test.py
+          # Add -W ignore flags directly to the command line
+          pytest dummy_test.py \
+            -W error \
+            -W "ignore:zmq.eventloop.ioloop is deprecated:DeprecationWarning"
+
       - name: Install solara-server
         run: pip install `echo packages/solara-server/dist/*.whl`[starlette]
 
@@ -218,6 +228,18 @@ jobs:
         run: |
           curl --head --retry 35 --retry-connrefused --retry-delay 5 http://localhost:8765
 
+      - name: Install pytest-ipywidgets
+        run: pip install packages/pytest-ipywidgets/dist/*.whl
+
+      - name: Make sure pytest runs
+        run: |
+          # Copy config file again as we are in /tmp
+          cd /tmp
+          # Add -W ignore flags directly to the command line
+          pytest dummy_test.py \
+            -W error \
+            -W "ignore:zmq.eventloop.ioloop is deprecated:DeprecationWarning"
+
       - name: Install
         run: pip install packages/solara-enterprise/dist/*.whl
 
@@ -226,6 +248,7 @@ jobs:
 
       - name: Install solara-meta
         run: pip install packages/solara-meta/dist/*.whl
+
 
   pyinstaller-test:
     needs: [build]
