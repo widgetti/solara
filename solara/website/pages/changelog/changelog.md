@@ -1,5 +1,15 @@
 # Solara Changelog
 
+## Version 1.45.0
+
+   * Bug Fix: Correctly handle expected websocket errors instead of logging them. [#1013](https://github.com/widgetti/solara/pull/1013)
+   * Bug Fix: Ensure component re-renders correctly when a reactive variable is updated from another thread during rendering. [#1030](https://github.com/widgetti/solara/pull/1030)
+   * Bug Fix: Allow calling async tasks from within threaded tasks. [#1029](https://github.com/widgetti/solara/pull/1029)
+   * Bug Fix: Replace deprecated `use_side_effect` calls with `use_effect`. [#1026](https://github.com/widgetti/solara/pull/1026)
+   * Bug Fix(pytest-ipywidgets): Support `pytest-playwright` version 0.7.0. [#1006](https://github.com/widgetti/solara/pull/1006)
+   * Docs: Ensure Twitter/OpenGraph meta tags are present on documentation pages. [#998](https://github.com/widgetti/solara/pull/998)
+   * Breaking change: Drop support for Python 3.6 due to CI runner deprecation. [#1032](https://github.com/widgetti/solara/pull/1032)
+
 ## Version 1.44.0
 
    * Feature: Separate `disable_send` and `disable_input` to allow typing but not sending or vice versa for the `ChatInput` component. [86fc2ad](https://github.com/widgetti/solara/commit/86fc2ad88a89ffe134eaa6700a8c416bcab036b4).
