@@ -929,7 +929,8 @@ def test_reactive_auto_subscribe(kernel_context):
     assert rc.find(v.Slider).widget.v_model == 2
     y.value = "hello"
     assert rc.find(v.Slider).widget.label == "hello"
-    assert len(get_storage(x).listeners2) == 1
+    assert len(get_storage(x).listeners2[kernel_context.id]) == 1
+    assert len(get_storage(x).listeners_changed[kernel_context.id]) == 0
     # force an extra listener
     x.value = 0
     # and remove it
@@ -950,6 +951,7 @@ def test_reactive_auto_subscribe(kernel_context):
     rc.close()
     assert not get_storage(x).listeners[kernel_context.id]
     assert not get_storage(x).listeners2[kernel_context.id]
+    assert not get_storage(x).listeners_changed[kernel_context.id]
 
 
 def test_reactive_auto_subscribe_sub():
@@ -974,7 +976,7 @@ def test_reactive_auto_subscribe_sub():
     ref.value += 1
     assert rc.find(v.Alert).widget.children[0] == "2 bears around here"
     assert reactive_used == {ref}
-    # now check that we didn't listen to the while object, just count changes
+    # now check that we didn't listen to the whole object, just count changes
     renders_before = renders
     Ref(bears.fields.type).value = "pink"
     assert renders == renders_before
@@ -1457,3 +1459,61 @@ def test_mutate_value_set_value_dataframe():
     assert not reactive_df._storage.equals(df, df_orig)
     with pytest.raises(ValueError, match="Reactive variable was set.*"):
         reactive_df._storage.check_mutations()  # type: ignore
+
+
+@dataclasses.dataclass(frozen=True)
+class Profile:
+    name: str
+    surname: str
+
+
+def test_computed_glitch_invalid_state_without_error():
+    from solara.toestand import Computed
+
+    profile = Reactive(Profile(name="John", surname="Doe"))
+
+    name = Computed(lambda: profile.value.name)
+    surname = Computed(lambda: profile.value.surname)
+
+    computed_initials = []
+
+    def compute_initials():
+        initials = name.value[0] + surname.value[0]
+        computed_initials.append(initials)
+        return initials
+
+    initials = Computed(compute_initials)
+
+    assert name.value == "John"
+    assert surname.value == "Doe"
+    assert initials.value == "JD"
+    assert computed_initials == ["JD"]
+
+    profile.value = Profile(name="Rosa", surname="Breddels")
+
+    assert name.value == "Rosa"
+    assert surname.value == "Breddels"
+    assert initials.value == "RB"
+    assert computed_initials == ["JD", "RB"]
+
+
+@dataclasses.dataclass(frozen=True)
+class CountrySelection:
+    countries: List[str]
+    selected: str
+
+
+def test_computed_glitch_invalid_state_with_error():
+    from solara.toestand import Computed
+
+    country_selection = Reactive(CountrySelection(countries=["Netherlands", "Belgium", "Germany"], selected="Germany"))
+
+    countries = Computed(lambda: country_selection.value.countries)
+    selected = Computed(lambda: country_selection.value.selected)
+    selected_index = Computed(lambda: countries.value.index(selected.value))
+
+    assert selected_index.value == 2
+
+    country_selection.value = CountrySelection(countries=["China", "Japan"], selected="Japan")
+
+    assert selected_index.value == 1
