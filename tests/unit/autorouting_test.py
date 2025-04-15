@@ -1,3 +1,6 @@
+import pytest
+
+pytest.importorskip("vaex")
 from pathlib import Path
 
 import ipyvuetify as v
