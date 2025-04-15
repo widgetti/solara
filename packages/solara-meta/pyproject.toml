@@ -8,6 +8,7 @@ name = "solara"
 readme = "main.README.md"
 authors = [{name = "Maarten A. Breddels", email = "maartenbreddels@gmail.com"}]
 license = {file = "LICENSE"}
+requires-python = ">=3.7"
 classifiers = ["License :: OSI Approved :: MIT License"]
 dynamic = ["description"]
 version = "1.44.1"
@@ -48,7 +49,7 @@ documentation = [
     "plotly",
     "vaex-core ; python_version < '3.11'",
     "vaex-hdf5 ; python_version < '3.11'",
-    "tiktoken; python_version > '3.6'",
+    "tiktoken; python_version >= '3.9'",
     "numpy<2",
 ]
 
@@ -64,7 +65,7 @@ dev = [
     "bqplot",
     "bqplot-image-gl",
     "ipyaggrid",
-    "ipyreact; python_version > '3.6'",
+    "ipyreact",
     "vaex-core ; python_version < '3.11'",
     "vaex-hdf5 ; python_version < '3.11'",
     "vaex-jupyter ; python_version < '3.11'",
@@ -80,11 +81,10 @@ dev = [
     "pytest-cov",
     "pytest-timeout",
     "pre-commit",
-    "ruff; python_version > '3.6'",
+    "ruff",
     "bump2version",
-    "dask[dataframe]; python_version < '3.7'",
-    "playwright; python_version > '3.6'",
-    "pytest-playwright; python_version > '3.6'",
+    "playwright",
+    "pytest-playwright",
     "polars",
     "numpy<2",
 ]

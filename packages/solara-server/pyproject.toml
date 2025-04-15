@@ -8,6 +8,7 @@ name = "solara-server"
 readme = "README.md"
 authors = [{name = "Maarten A. Breddels", email = "maartenbreddels@gmail.com"}]
 license = {file = "LICENSE"}
+requires-python = ">=3.7"
 classifiers = ["License :: OSI Approved :: MIT License"]
 version = "1.44.1"
 dynamic = ["description"]
@@ -33,7 +34,7 @@ all = [
     "solara-server[flask]",
 ]
 dev = [
-    "watchfiles; python_version > '3.6'",
+    "watchfiles",
     "watchdog",
 ]
 starlette = [
