@@ -892,10 +892,11 @@ class AutoSubscribeContextManagerBase:
         if isinstance(reactive, ValueSubField):
             root = reactive._root
             if root in self.subscribed or root in self.subscribed_previous_run:
-                print("we already subscribed to this reactive's root")
+                # we already subscribed to this reactive's root
                 return
             else:
-                print("we are subscribing to this reactive's root")
+                # we are subscribing to this reactive's root
+                pass
 
         # TODO: we could see if we are the root of any of the subscribed fields,
         # and remove that field.
