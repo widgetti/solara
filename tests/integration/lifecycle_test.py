@@ -45,9 +45,9 @@ def test_kernel_lifecycle_close_single(
         assert len(contexts) == 1
         context = contexts[0]
         assert not context.closed_event.is_set()
+        page_session.wait_for_timeout(500)
         page_session.goto("about:blank")
-        page_session.wait_for_timeout(100)
-        assert context.closed_event.is_set()
+        assert context.closed_event.wait(timeout=20)
 
 
 @pytest.mark.skip(reason="This test is flaky, re-enable when we have a more stable solution")
