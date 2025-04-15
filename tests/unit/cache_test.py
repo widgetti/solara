@@ -243,6 +243,8 @@ def test_memoize_hook():
         def f(x: int) -> int:
             return x**2
 
+        f.intrusive_cancel = False
+
         result = f.use_thread(10)
         result_values.append(result)
         if result.state == solara.ResultState.FINISHED:
@@ -269,6 +271,8 @@ def test_memoize_hook_no_None_after_hit():
     @solara.memoize
     def something(i):
         return i
+
+    something.intrusive_cancel = False
 
     @solara.component
     def Test():
