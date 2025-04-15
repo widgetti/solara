@@ -1,12 +1,26 @@
+import pytest
 from typing import Optional
 
 import solara
-import vaex
 
-df = vaex.from_arrays(x=[0, 1, 2, 3, 4], y=[0, 1, 4, 9, 16])
+try:
+    import vaex
+except ImportError:
+    vaex = None
+import pandas as pd
+
+df_pandas = pd.DataFrame(dict(x=[0, 1, 2, 3, 4], y=[0, 1, 4, 9, 16]))
+if vaex is not None:
+    df_vaex = vaex.from_arrays(x=[0, 1, 2, 3, 4], y=[0, 1, 4, 9, 16])
 
 
-def test_basic():
+@pytest.fixture(params=["pandas", "vaex"] if vaex is not None else ["pandas"])
+def df(request):
+    named = {"vaex": df_vaex, "pandas": df_pandas} if vaex is not None else {"pandas": df_pandas}
+    return named[request.param]
+
+
+def test_basic(df):
     set_filter1 = filter1 = None
     set_filter2 = filter2 = None
 
@@ -46,7 +60,7 @@ def test_basic():
     assert filter2 is not None
 
 
-def test_remove():
+def test_remove(df):
     set_filter1 = filter1 = None
     set_filter2 = filter2 = None
     set_multiple = None

@@ -1,3 +1,6 @@
+import pytest
+
+pytest.importorskip("vaex")
 import bqplot
 import ipyvuetify as vw
 import ipywidgets
