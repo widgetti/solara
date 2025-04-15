@@ -174,15 +174,15 @@ jobs:
 
   test-install:
     needs: [build]
-    runs-on: ${{ matrix.os }}-${{(matrix.os == 'ubuntu' && matrix.python == '3.6') && '20.04' || (matrix.os == 'macos' && matrix.python == '3.6') && '13' || 'latest' }}
+    runs-on: ${{ matrix.os }}-${{(matrix.os == 'ubuntu' && matrix.python == '3.7') && '22.04' || (matrix.os == 'macos' && matrix.python == '3.7') && '13' || 'latest' }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu, macos, windows]
-        python: ["3.6", "3.13"]
+        python: ["3.7", "3.13"]
         exclude:
           - os: windows
-            python: 3.6
+            python: 3.7
 
     steps:
       - name: Set up Python
@@ -588,21 +588,21 @@ jobs:
 
   unit-test:
     needs: [build]
-    runs-on: ${{ matrix.os }}-${{(matrix.os == 'ubuntu' && matrix.python == '3.6') && '20.04' || (matrix.os == 'macos' && matrix.python == '3.6') && '13' || 'latest' }}
+    runs-on: ${{ matrix.os }}-${{(matrix.os == 'ubuntu' && matrix.python == '3.7') && '22.04' || (matrix.os == 'macos' && matrix.python == '3.7') && '13' || 'latest' }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu, macos, windows]
-        python: [3.6, 3.12]
+        python: [3.7, 3.12]
         ipywidgets: ["7.7", "8.0"]
         exclude:
           - os: windows
-            python: 3.6
+            python: 3.7
           - os: ubuntu
-            python: 3.6
+            python: 3.7
             ipywidgets: "8.0"
           - os: macos
-            python: 3.6
+            python: 3.7
             ipywidgets: "8.0"
     env:
       LOCK_FILE_LOCATION: .ci-package-locks/unit/os${{ matrix.os }}-python${{ matrix.python }}-ipywidgets${{ matrix.ipywidgets }}.txt
