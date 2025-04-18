@@ -569,7 +569,7 @@ def task(
     ```solara
     import asyncio
     import solara
-    from solara.lab import task
+    from solara import task
 
     @task
     async def fetch_data():
@@ -598,7 +598,7 @@ def task(
     ```solara
     import time
     import solara
-    from solara.lab import task
+    from solara import task
 
     @task
     def fetch_data():
@@ -637,7 +637,7 @@ def task(
     ```solara
     import time
     import solara
-    from solara.lab import task
+    from solara import task
 
 
     @task
@@ -674,7 +674,7 @@ def task(
     ```solara
     import time
     import solara
-    from solara.lab import task
+    from solara import task
 
 
     @task
@@ -776,7 +776,7 @@ def use_task(
 def use_task(
     f: Union[None, Callable[[], R]] = None,
     *,
-    dependencies: Union[None, List] = [],
+    dependencies: Union[None, List] = None,
     raise_error=True,
     prefer_threaded=True,
 ) -> Union[Callable[[Callable[[], R]], "Task[[], R]"], "Task[[], R]"]:
@@ -797,7 +797,7 @@ def use_task(
     ```solara
     import time
     import solara
-    from solara.lab import use_task, Task
+    from solara import use_task, Task
 
 
     @solara.component
@@ -824,7 +824,7 @@ def use_task(
     ```solara
     import asyncio
     import solara
-    from solara.lab import use_task, Task
+    from solara import use_task, Task
 
 
     @solara.component
@@ -846,7 +846,7 @@ def use_task(
     ## Arguments
 
     - `f`: The function or coroutine to run as a task.
-    - `dependencies`: A list of dependencies that will trigger a rerun of the task when changed, the task will run automatically execute when the `dependencies=None`
+    - `dependencies`: A list of dependencies that will trigger a rerun of the task when changed, the task will not automatically execute when the `dependencies=None`.
     - `raise_error`: If true, an error in the task will be raised. If false, the error should be handled by the
         user and is available in the `.exception` attribute of the task result object.
     - `prefer_threaded` - bool: Will run coroutine functions as a task in a thread when threads are available.
