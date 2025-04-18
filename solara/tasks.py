@@ -270,7 +270,7 @@ class TaskAsyncio(Task[P, R]):
                     raise
 
             self._result.value = TaskResult[R](latest=self._last_value, _state=TaskState.STARTING)
-            thread = threading.Thread(target=runs_in_thread)
+            thread = threading.Thread(target=runs_in_thread, daemon=True)
             thread.start()
         else:
             self.current_task = current_task = asyncio.create_task(self._async_run(call_event_loop, future, args, kwargs))
