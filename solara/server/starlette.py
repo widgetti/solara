@@ -230,9 +230,9 @@ await to_thread.run_sync(my_update)
                 fut = self.portal.spawn_task(self.ws.receive)
 
             message = await asyncio.wrap_future(fut)
-        if "text" in message:
+        if message.get("text") is not None:
             return message["text"]
-        elif "bytes" in message:
+        elif message.get("bytes") is not None:
             return message["bytes"]
         elif message.get("type") == "websocket.disconnect":
             raise websocket.WebSocketDisconnect()
