@@ -7,6 +7,7 @@ import inspect
 import logging
 import threading
 from enum import Enum
+import typing
 from typing import (
     Any,
     Callable,
@@ -19,6 +20,7 @@ from typing import (
     cast,
     overload,
 )
+import weakref
 
 import typing_extensions
 
@@ -33,6 +35,11 @@ if sys.version_info >= (3, 8):
     from typing import Literal
 else:
     from typing_extensions import Literal
+
+
+# Import kernel_context for typing only
+if typing.TYPE_CHECKING:
+    import solara.server.kernel_context
 
 
 R = TypeVar("R")
@@ -201,6 +208,7 @@ class TaskAsyncio(Task[P, R]):
     current_future: Optional[asyncio.Future] = None
     _cancel: Optional[Callable[[], None]] = None
     _retry: Optional[Callable[[], None]] = None
+    _context: Optional["weakref.ReferenceType[solara.server.kernel_context.VirtualKernelContext]"] = None
 
     def __init__(self, run_in_thread: bool, function: Callable[P, Coroutine[Any, Any, R]], key: str):
         self.run_in_thread = run_in_thread
@@ -249,6 +257,7 @@ class TaskAsyncio(Task[P, R]):
             import solara.server.kernel_context
 
             context = solara.server.kernel_context.get_current_context()
+            self._context = weakref.ref(context)
             call_event_loop = context.event_loop
         else:
             call_event_loop = _main_event_loop or asyncio.get_event_loop()
@@ -263,10 +272,28 @@ class TaskAsyncio(Task[P, R]):
                 try:
                     thread_event_loop.run_until_complete(current_task)
                 except asyncio.CancelledError as e:
-                    call_event_loop.call_soon_threadsafe(future.set_exception, e)
+                    try:
+                        call_event_loop.call_soon_threadsafe(future.set_exception, e)
+                    except Exception as e2:
+                        if not self._is_context_closed():
+                            logger.exception(
+                                "error setting exception from for task %s. Original exception: %s\nReason for failing to set exception: %s",
+                                self.function.__name__,
+                                e,
+                                e2,
+                            )
                 except Exception as e:
                     logger.exception("error running in thread")
-                    call_event_loop.call_soon_threadsafe(future.set_exception, e)
+                    try:
+                        call_event_loop.call_soon_threadsafe(future.set_exception, e)
+                    except Exception as e2:
+                        if not self._is_context_closed():
+                            logger.exception(
+                                "error setting exception from for task %s. Original exception: %s\nReason for failing to set exception: %s",
+                                self.function.__name__,
+                                e,
+                                e2,
+                            )
                     raise
 
             self._result.value = TaskResult[R](latest=self._last_value, _state=TaskState.STARTING)
@@ -280,6 +307,14 @@ class TaskAsyncio(Task[P, R]):
         running_task = self.current_task
         assert running_task is not None
         return (self.current_task == _get_current_task()) and not running_task.cancelled()
+
+    def _is_context_closed(self):
+        if self._context is None:
+            return False
+        context = self._context()
+        if context is None:
+            return False
+        return context.closed_event.is_set()
 
     async def _async_run(self, call_event_loop: asyncio.AbstractEventLoop, future: asyncio.Future, args, kwargs) -> None:
         self._start_event.wait()
@@ -298,12 +333,34 @@ class TaskAsyncio(Task[P, R]):
                 if self.is_current() and not task_for_this_call.cancelled():  # type: ignore
                     self._result.value = TaskResult[R](value=value, latest=value, _state=TaskState.FINISHED, progress=self._last_progress)
                 logger.info("setting result to %r", value)
-                call_event_loop.call_soon_threadsafe(future.set_result, value)
+                try:
+                    call_event_loop.call_soon_threadsafe(future.set_result, value)
+                except Exception as e:
+                    if not self._is_context_closed():
+                        logger.exception(
+                            "error setting result from for task %s. Original exception: %s\nReason for failing to set result: %s", self.function.__name__, e, e
+                        )
+                    else:
+                        logger.debug(
+                            "ignoring error setting result from for task %s. Original exception: %s\nReason for failing to set result: %s",
+                            self.function.__name__,
+                            e,
+                            e,
+                        )
             except Exception as e:
                 if self.is_current():
                     logger.exception(e)
                     self._result.value = TaskResult[R](latest=self._last_value, exception=e, _state=TaskState.ERROR)
-                call_event_loop.call_soon_threadsafe(future.set_exception, e)
+                try:
+                    call_event_loop.call_soon_threadsafe(future.set_exception, e)
+                except Exception as e2:
+                    # we don't know if it is still useful to show this error, so we show it regardless if the context is closed or not
+                    logger.exception(
+                        "error setting exception from for task %s. Original exception: %s\nReason for failing to set exception: %s",
+                        self.function.__name__,
+                        e,
+                        e2,
+                    )
             # Although this seems like an easy way to handle cancellation, an early cancelled task will never execute
             # so this code will never execute, so we need to handle this in the cancel function in __call__
             # except asyncio.CancelledError as e:
