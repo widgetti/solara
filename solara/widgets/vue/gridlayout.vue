@@ -11,6 +11,7 @@
             :vertical-compact="true"
             :margin="[10, 10]"
             :use-css-transforms="true"
+            @layout-updated="onLayoutUpdated"
     >
 
         <grid-item v-for="item in grid_layout"
@@ -48,6 +49,9 @@ module.exports = {
         resizedEvent(i, newH, newW, newHPx, newWPx) {
           // this will cause bqplot to layout itself
           window.dispatchEvent(new Event('resize'));
+        },
+        onLayoutUpdated(layout) {
+          this.layout_updated(layout);
         },
         import(deps) {
           return this.loadRequire().then(

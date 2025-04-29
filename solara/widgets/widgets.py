@@ -52,6 +52,11 @@ class GridLayout(v.VuetifyTemplate):
     draggable = traitlets.CBool(True).tag(sync=True)
     resizable = traitlets.CBool(True).tag(sync=True)
     cdn = traitlets.Unicode(None, allow_none=True).tag(sync=True)
+    on_layout_updated = traitlets.traitlets.Callable(None, allow_none=True)
+
+    def vue_layout_updated(self, *args):
+        if self.on_layout_updated is not None:
+            self.on_layout_updated(*args)
 
     @traitlets.default("cdn")
     def _cdn(self):
