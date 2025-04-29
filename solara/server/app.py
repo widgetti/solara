@@ -8,6 +8,7 @@ import threading
 import traceback
 import warnings
 import weakref
+import html
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional, cast
@@ -15,6 +16,7 @@ from typing import Any, Dict, List, Optional, cast
 import ipywidgets as widgets
 import reacton
 from reacton.core import Element, render
+from reacton import ipywidgets
 
 import solara
 import solara.lifecycle
@@ -26,7 +28,7 @@ from .utils import pdb_guard
 
 WebSocket = Any
 apps: Dict[str, "AppScript"] = {}
-thread_lock = threading.Lock()
+thread_lock = threading.RLock()
 
 logger = logging.getLogger("solara.server.app")
 
@@ -232,12 +234,22 @@ class AppScript:
 
     def run(self):
         self.check()
-        if reload.reloader.requires_reload or self._first_execute_app is None:
+        if self._first_execute_app is None:
             with thread_lock:
-                if reload.reloader.requires_reload or self._first_execute_app is None:
-                    self._first_execute_app = None
-                    self._first_execute_app = self._execute()
-                    print("Re-executed app", self.name)  # noqa
+                if self._first_execute_app is None:
+                    try:
+                        self._first_execute_app = self._execute()
+                        print("Re-executed app", self.name)  # noqa
+                    except Exception as e:
+                        error = ""
+                        error = "".join(traceback.format_exception(None, e, e.__traceback__))
+                        print(error, file=sys.stdout, flush=True)  # noqa
+
+                        error = html.escape(error)
+                        self._first_execute_app = ipywidgets.HTML(value=f"<pre>{error}</pre>", layout=ipywidgets.Layout(overflow="auto"))
+                        # We now ran the app again, might contain new imports
+
+                        print("Failed to execute app, fix the error and save the file to reload")  # noqa
                     # We now ran the app again, might contain new imports
                     patch.patch_heavy_imports()
 
@@ -318,6 +330,9 @@ class AppScript:
                             render_context.close()
                         except Exception as e:
                             logger.exception("Could not close render context: %s", e)
+
+            self._first_execute_app = None
+            self.run()
 
             # ask all contexts/users to reload
             for context in context_values:

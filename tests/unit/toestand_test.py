@@ -1303,6 +1303,8 @@ def test_computed_reload(no_kernel_context):
             module = route.module
             assert text.widget.v_model == "3.0"
             solara.server.reload.reloader.requires_reload = True
+            assert solara.server.reload.reloader.on_change is not None
+            solara.server.reload.reloader.on_change("notimportant.py")
             kernel_context.restart()
         solara.toestand.KernelStore._type_counter.clear()
         c = app.run()
