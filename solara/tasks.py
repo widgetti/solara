@@ -772,12 +772,15 @@ def task(
     def wrapper(f: Union[None, Callable[P, Union[Coroutine[Any, Any, R], R]]]) -> Task[P, R]:
         # we use wraps to make the key of the reactive variable more unique
         # and less likely to mixup during hot reloads
+        assert f is not None
+        key = solara.toestand._create_key_callable(f)
+
         @functools.wraps(f)  # type: ignore
         def create_task():
             if inspect.iscoroutinefunction(f):
-                return TaskAsyncio[P, R](prefer_threaded and has_threads, f, key=solara.toestand._create_key_callable(create_task))
+                return TaskAsyncio[P, R](prefer_threaded and has_threads, f, key=key)
             else:
-                return TaskThreaded[P, R](cast(Callable[P, R], f), key=solara.toestand._create_key_callable(create_task))
+                return TaskThreaded[P, R](cast(Callable[P, R], f), key=key)
 
         return cast(Task[P, R], Proxy(create_task))
 

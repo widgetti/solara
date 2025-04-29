@@ -442,7 +442,7 @@ reactive_df = solara.reactive(df, equals=solara.util.equals_pickle)
             raise ValueError(msg)
 
 
-def _create_key_callable(f: Callable[[], S]):
+def _create_key_callable(f: Callable):
     try:
         prefix = f.__qualname__
     except Exception:
