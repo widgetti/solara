@@ -145,7 +145,7 @@ def ColumnsResponsive(
 
     class_ = _combine_classes([*(["flex-nowrap"] if not wrap else []), *classes])
     style_flat = solara.util._flatten_style(style)
-    with rv.Row(class_=class_ if not wrap else "", style_=style_flat, no_gutters=not gutters, dense=gutters_dense) as main:
+    with rv.Row(class_=class_, style_=style_flat, no_gutters=not gutters, dense=gutters_dense) as main:
         for child, xsmall, small, medium, large, xlarge in zip(children, cycle(default), cycle(small), cycle(medium), cycle(large), cycle(xlarge)):
             with rv.Col(
                 cols=xsmall,
