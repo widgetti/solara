@@ -11,13 +11,13 @@ license = {file = "LICENSE"}
 requires-python = ">=3.7"
 classifiers = ["License :: OSI Approved :: MIT License"]
 dynamic = ["description"]
-version = "1.46.0"
+version = "1.47.0"
 packages = [
     { include = "solara" }
 ]
 dependencies = [
-    "solara-ui[all]==1.46.0",
-    "solara-server[starlette,dev]==1.46.0"
+    "solara-ui[all]==1.47.0",
+    "solara-server[starlette,dev]==1.47.0"
 ]
 
 [project.urls]
@@ -33,7 +33,7 @@ all = [
 ]
 
 assets = [
-    "solara-assets==1.46.0"
+    "solara-assets==1.47.0"
 ]
 
 documentation = [
@@ -55,7 +55,7 @@ documentation = [
 
 # for backwards compatibility to support solara[pytest]
 pytest = [
-    "pytest-ipywidgets[all]==1.46.0"
+    "pytest-ipywidgets[all]==1.47.0"
 ]
 
 # for backwards compatibility to support solara[dev]
