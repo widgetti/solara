@@ -53,6 +53,8 @@ class GridLayout(v.VuetifyTemplate):
     resizable = traitlets.CBool(True).tag(sync=True)
     cdn = traitlets.Unicode(None, allow_none=True).tag(sync=True)
     on_layout_updated = traitlets.traitlets.Callable(None, allow_none=True)
+    col_num = traitlets.Int(12).tag(sync=True)
+    row_height = traitlets.Int(30).tag(sync=True)
 
     def vue_layout_updated(self, *args):
         if self.on_layout_updated is not None:

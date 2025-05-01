@@ -3,8 +3,8 @@
     <div v-if="gridlayout_loaded" style="padding: 0px; width: 100%;">
        <grid-layout
             :layout.sync="grid_layout"
-            :col-num="12"
-            :row-height="30"
+            :col-num="col_num"
+            :row-height="row_height"
             :is-draggable="draggable"
             :is-resizable="resizable"
             :is-mirrored="false"
