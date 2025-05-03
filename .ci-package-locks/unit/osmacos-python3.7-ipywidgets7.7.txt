@@ -26,13 +26,13 @@ cachetools==5.5.2
 certifi==2025.4.26
 cffi==1.15.1
 cfgv==3.3.1
-charset-normalizer==3.4.1
+charset-normalizer==3.4.2
 click==8.1.8
 cloudpickle==2.2.1
 codespell==2.2.5
 comm==0.1.4
 coverage==7.2.7
-cryptography==44.0.2
+cryptography==44.0.3
 cycler==0.11.0
 dask==2022.2.0
 debugpy==1.7.0
@@ -173,7 +173,7 @@ rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
 rich==13.8.1
 rich-click==1.8.8
-ruff==0.11.7
+ruff==0.11.8
 Send2Trash==1.8.3
 simple-websocket==1.1.0
 simplejson==3.20.1
