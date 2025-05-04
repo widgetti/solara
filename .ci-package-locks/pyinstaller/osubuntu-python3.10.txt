@@ -151,7 +151,7 @@ pydantic_core==2.33.2
 pyee==12.1.1
 Pygments==2.19.1
 pyinstaller==6.13.0
-pyinstaller-hooks-contrib==2025.3
+pyinstaller-hooks-contrib==2025.4
 pymdown-extensions==10.15
 pyparsing==3.2.3
 pytest==8.3.5
