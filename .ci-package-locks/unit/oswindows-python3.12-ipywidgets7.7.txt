@@ -99,7 +99,7 @@ mistune==3.1.3
 mkdocs-pycafe==0.3.0
 mypy==1.15.0
 mypy_extensions==1.1.0
-narwhals==1.37.1
+narwhals==1.38.0
 nbclassic==1.3.0
 nbclient==0.10.2
 nbconvert==7.16.6
@@ -127,7 +127,7 @@ pre_commit==4.2.0
 prometheus_client==0.21.1
 prompt_toolkit==3.0.51
 psutil==7.0.0
-psygnal==0.12.0
+psygnal==0.13.0
 pure_eval==0.2.3
 pycparser==2.22
 pydantic==2.11.4
@@ -141,7 +141,7 @@ pytest-base-url==2.1.0
 pytest-cov==6.1.1
 pytest-mock==3.14.0
 pytest-playwright==0.7.0
-pytest-timeout==2.3.1
+pytest-timeout==2.4.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.1.0
 python-json-logger==3.3.0
@@ -189,7 +189,7 @@ uri-template==1.3.0
 urllib3==2.4.0
 uvicorn==0.34.2
 vega-datasets==0.9.0
-virtualenv==20.30.0
+virtualenv==20.31.1
 voila==0.5.8
 watchdog==6.0.0
 watchfiles==1.0.5
