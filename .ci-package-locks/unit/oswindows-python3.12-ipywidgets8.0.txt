@@ -91,7 +91,7 @@ kiwisolver==1.4.8
 Markdown==3.8
 markdown-it-py==3.0.0
 MarkupSafe==3.0.2
-matplotlib==3.10.1
+matplotlib==3.10.3
 matplotlib-inline==0.1.7
 mdit-py-plugins==0.4.2
 mdurl==0.1.2
@@ -99,8 +99,8 @@ mistune==3.1.3
 mkdocs-pycafe==0.3.0
 mypy==1.15.0
 mypy_extensions==1.1.0
-narwhals==1.38.0
-nbclassic==1.3.0
+narwhals==1.38.2
+nbclassic==1.3.1
 nbclient==0.10.2
 nbconvert==7.16.6
 nbformat==5.10.4
@@ -110,7 +110,7 @@ notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.26.4
 objgraph==3.6.2
-openai==1.77.0
+openai==1.78.0
 overrides==7.7.0
 packaging==25.0
 pandas==2.2.3
@@ -118,7 +118,7 @@ pandocfilters==1.5.1
 parso==0.8.4
 pillow==11.2.1
 pixelmatch==0.3.0
-platformdirs==4.3.7
+platformdirs==4.3.8
 playwright==1.52.0
 plotly==6.0.1
 pluggy==1.5.0
@@ -189,7 +189,7 @@ uri-template==1.3.0
 urllib3==2.4.0
 uvicorn==0.34.2
 vega-datasets==0.9.0
-virtualenv==20.31.1
+virtualenv==20.31.2
 voila==0.5.8
 watchdog==6.0.0
 watchfiles==1.0.5
