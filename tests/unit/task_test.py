@@ -1,5 +1,6 @@
 import asyncio
 import time
+import warnings
 
 import ipyvuetify as v
 import pytest
@@ -652,3 +653,31 @@ def test_update_while_rendering():
 
     box, rc = solara.render(Test(), handle_error=False)
     rc.find(children=["value = 20"]).wait_for(timeout=3)
+
+
+def test_task_decorator_warning_in_component():
+    with pytest.warns(UserWarning, match=r"You are calling task.*"):
+
+        @solara.component
+        def ComponentWithTask():
+            @solara.tasks.task
+            def my_task_in_component():
+                return "done"
+
+            return solara.Text("ComponentWithTask")
+
+        solara.render(ComponentWithTask(), handle_error=False)
+
+    # Test that no warning is issued when task is used with use_memo
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")  # Treat all warnings as errors
+
+        @solara.component
+        def ComponentWithTaskInMemo():
+            def my_job_for_memo():
+                return "done"
+
+            solara.use_memo(lambda: solara.tasks.task(my_job_for_memo), dependencies=[])
+            return solara.Text("ComponentWithTaskInMemo")
+
+        solara.render_fixed(ComponentWithTaskInMemo(), handle_error=False)
