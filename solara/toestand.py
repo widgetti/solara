@@ -343,6 +343,7 @@ def _is_internal_module(file_name: str):
     return (
         file_name_parts[-2:] == ["solara", "toestand.py"]
         or file_name_parts[-2:] == ["solara", "reactive.py"]
+        or file_name_parts[-2:] == ["solara", "tasks.py"]
         or file_name_parts[-2:] == ["solara", "_stores.py"]
         or file_name_parts[-3:] == ["solara", "hooks", "use_reactive.py"]
         or file_name_parts[-2:] == ["reacton", "core.py"]

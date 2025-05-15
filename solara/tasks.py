@@ -6,6 +6,7 @@ import functools
 import inspect
 import logging
 import threading
+import warnings
 from enum import Enum
 import typing
 from typing import (
@@ -536,6 +537,7 @@ def task(
     f: None = None,
     *,
     prefer_threaded: bool = ...,
+    check_for_render_context: bool = ...,
 ) -> Callable[[Callable[P, R]], Task[P, R]]: ...
 
 
@@ -544,6 +546,7 @@ def task(
     f: Callable[P, Union[Coroutine[Any, Any, R], R]],
     *,
     prefer_threaded: bool = ...,
+    check_for_render_context: bool = ...,
 ) -> Task[P, R]: ...
 
 
@@ -551,6 +554,7 @@ def task(
     f: Union[None, Callable[P, Union[Coroutine[Any, Any, R], R]]] = None,
     *,
     prefer_threaded: bool = True,
+    check_for_render_context: bool = True,
 ) -> Union[Callable[[Callable[P, R]], Task[P, R]], Task[P, R]]:
     """Decorator to turn a function or coroutine function into a task.
 
@@ -764,12 +768,76 @@ def task(
         This ensures that even when a coroutine functions calls a blocking function the UI is still responsive.
         On platform where threads are not supported (like Pyodide / WASM / Emscripten / PyScript), a coroutine
         function will always run in the current event loop.
+    - `check_for_render_context` - bool: If true, we will check if we are in a render context, and if so, we will
+        warn you that you should probably be using `use_task` instead of `task`.
 
     ```
 
     """
 
+    def check_if_we_should_use_use_task():
+        import reacton.core
+
+        in_reacton_context = reacton.core.get_render_context(required=False) is not None
+        if not in_reacton_context:
+            # We are not in a reacton context, so we should not (and cannot) use use_task
+            return
+        from .toestand import _find_outside_solara_frame
+
+        frame = _find_outside_solara_frame()
+        if frame is None:
+            # We cannot determine which frame we are in, just skip this check
+            return
+        import inspect
+
+        tb = inspect.getframeinfo(frame)
+        msg = """You are calling task(...) from a component, while you should probably be using use_task.
+
+Reason:
+- task(...) creates a new task object on every render, and should only be used outside of a component.
+- use_task(...) returns the same task object on every render, and should be used inside a component.
+
+Example:
+@solara.component
+def Page():
+    @task  # This is wrong, this creates a new task object on every render
+    def my_task():
+        ...
+
+Instead, you should do:
+@solara.component
+def Page():
+    @use_task
+    def my_task():
+        ...
+
+"""
+        if tb:
+            if tb.code_context:
+                code = tb.code_context[0]
+            else:
+                code = "<No code context available>"
+            msg += f"This warning was triggered from:\n{tb.filename}:{tb.lineno}\n{code.strip()}"
+
+        # Check if the call is within a use_memo context by inspecting the call stack
+        if frame:
+            caller_frame = frame.f_back
+            # Check a few frames up the stack (e.g., up to 5) for 'use_memo'
+            for _ in range(5):
+                if caller_frame is None:
+                    break
+                func_name = caller_frame.f_code.co_name
+                module_name = caller_frame.f_globals.get("__name__", "")
+                if func_name == "use_memo" and (module_name.startswith("solara.") or module_name.startswith("reacton.")):
+                    # We are in a use_memo (or a context that should not trigger the warning)
+                    return
+                caller_frame = caller_frame.f_back
+
+        warnings.warn(msg)
+
     def wrapper(f: Union[None, Callable[P, Union[Coroutine[Any, Any, R], R]]]) -> Task[P, R]:
+        if check_for_render_context:
+            check_if_we_should_use_use_task()
         # we use wraps to make the key of the reactive variable more unique
         # and less likely to mixup during hot reloads
         assert f is not None
@@ -919,7 +987,7 @@ def use_task(
 
     def wrapper(f):
         def create_task() -> "Task[[], R]":
-            return task(f, prefer_threaded=prefer_threaded)
+            return task(f, prefer_threaded=prefer_threaded, check_for_render_context=False)
 
         task_instance = solara.use_memo(create_task, dependencies=[])
         # we always update the function so we do not have stale data in the function
