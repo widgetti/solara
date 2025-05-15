@@ -868,17 +868,7 @@ def use_task(
     dependencies: Literal[None] = ...,
     raise_error=...,
     prefer_threaded=...,
-) -> Callable[[Callable[[], R]], "Task[[], R]"]: ...
-
-
-@overload
-def use_task(
-    f: Callable[[], R],
-    *,
-    dependencies: Literal[None] = ...,
-    raise_error=...,
-    prefer_threaded=...,
-) -> "Task[[], R]": ...
+) -> Callable[[Callable[P, R]], "Task[P, R]"]: ...
 
 
 @overload
@@ -901,13 +891,23 @@ def use_task(
 ) -> "Task[[], R]": ...
 
 
+@overload
 def use_task(
-    f: Union[None, Callable[[], R]] = None,
+    f: Callable[P, R],
+    *,
+    dependencies: Literal[None] = ...,
+    raise_error=...,
+    prefer_threaded=...,
+) -> "Task[P, R]": ...
+
+
+def use_task(
+    f: Union[None, Callable[P, R]] = None,
     *,
     dependencies: Union[None, List] = [],
     raise_error=True,
     prefer_threaded=True,
-) -> Union[Callable[[Callable[[], R]], "Task[[], R]"], "Task[[], R]"]:
+) -> Union[Callable[[Callable[P, R]], "Task[P, R]"], "Task[P, R]"]:
     """A hook that runs a function or coroutine function as a task and returns the result.
 
     Allows you to run code in the background, with the UI available to the user. This is useful for long running tasks,
