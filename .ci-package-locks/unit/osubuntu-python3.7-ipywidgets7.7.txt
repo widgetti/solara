@@ -14,9 +14,9 @@ Authlib==1.2.1
 Babel==2.14.0
 backcall==0.2.0
 beautifulsoup4==4.13.4
-blake3==1.0.4
+blake3==1.0.5
 bleach==6.0.0
-bqplot==0.12.44
+bqplot==0.12.45
 bqplot-image-gl==1.6.1
 branca==0.8.1
 bump2version==1.0.1
@@ -31,7 +31,7 @@ cloudpickle==2.2.1
 codespell==2.2.5
 comm==0.1.4
 coverage==7.2.7
-cryptography==44.0.3
+cryptography==45.0.2
 cycler==0.11.0
 dask==2022.2.0
 debugpy==1.7.0
@@ -171,8 +171,8 @@ requests==2.31.0
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
 rich==13.8.1
-rich-click==1.8.8
-ruff==0.11.9
+rich-click==1.8.9
+ruff==0.11.10
 Send2Trash==1.8.3
 simple-websocket==1.1.0
 simplejson==3.20.1
