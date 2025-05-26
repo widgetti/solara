@@ -32,7 +32,7 @@ cloudpickle==2.2.1
 codespell==2.2.5
 comm==0.1.4
 coverage==7.2.7
-cryptography==45.0.2
+cryptography==45.0.3
 cycler==0.11.0
 dask==2022.2.0
 debugpy==1.7.0
