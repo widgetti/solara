@@ -136,7 +136,7 @@ class AppScript:
             routes = solara.generate_routes_directory(self.path)
 
             if any(name for name in sys.modules.keys() if name.startswith(self.name)):
-                logger.warn(
+                logger.warning(
                     f"Directory {self.name} is also used as a package. This can cause modules to be loaded twice, and might "
                     "cause unexpected behavior. If you run solara from a different directory (e.g. the parent directory) you "
                     "can avoid this ambiguity."
