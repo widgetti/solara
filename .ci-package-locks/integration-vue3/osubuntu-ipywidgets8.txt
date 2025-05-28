@@ -91,7 +91,7 @@ jupyter-events==0.12.0
 jupyter-leaflet==0.19.2
 jupyter-ydoc==0.2.5
 jupyter_client==7.4.9
-jupyter_core==5.8.0
+jupyter_core==5.8.1
 jupyter_packaging==0.12.3
 jupyter_server==2.16.0
 jupyter_server_fileid==0.9.3
@@ -137,7 +137,7 @@ pillow==11.2.1
 pixelmatch==0.3.0
 platformdirs==4.3.8
 playwright==1.50.0
-plotly==6.1.1
+plotly==6.1.2
 pluggy==1.6.0
 polars==1.30.0
 pre_commit==4.2.0
