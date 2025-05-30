@@ -19,7 +19,7 @@
 <script>
 module.exports = {
   mounted() {
-    this.chunk_size = 2 * 1024 * 1024;
+    this.chunk_size = 1 * 1024 * 1024;
     this.$refs.dropzone.addEventListener('dragover', event => {
       event.preventDefault();
     });
