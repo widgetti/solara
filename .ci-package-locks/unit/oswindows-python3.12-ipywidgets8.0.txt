@@ -59,7 +59,7 @@ ipycanvas==0.13.3
 ipykernel==6.29.5
 ipyleaflet==0.19.2
 ipyreact==0.5.0
-ipython==9.2.0
+ipython==9.3.0
 ipython-genutils==0.2.0
 ipython_pygments_lexers==1.1.1
 ipyvue==1.11.2
