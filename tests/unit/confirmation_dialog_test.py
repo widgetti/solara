@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 import ipyvuetify as vw
 
 import solara
-from solara.lab.components.confirmation_dialog import ConfirmationDialog
+from solara.components.confirmation_dialog import ConfirmationDialog
 
 
 def test_confirmation_dialog_ok():
