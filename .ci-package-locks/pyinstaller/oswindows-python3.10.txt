@@ -69,7 +69,7 @@ ipykernel==6.29.5
 ipyleaflet==0.19.2
 ipympl==0.9.7
 ipyreact==0.5.0
-ipython==8.36.0
+ipython==8.37.0
 ipython-genutils==0.2.0
 ipyvolume==0.6.3
 ipyvue==1.11.2
@@ -204,13 +204,13 @@ traittypes==0.2.1
 types-Markdown==3.8.0.20250415
 types-python-dateutil==2.9.0.20250516
 types-PyYAML==6.0.12.20250516
-types-requests==2.32.0.20250515
+types-requests==2.32.0.20250602
 typing-inspection==0.4.1
 typing_extensions==4.13.2
 tzdata==2025.2
 uri-template==1.3.0
 urllib3==2.4.0
-uvicorn==0.34.2
+uvicorn==0.34.3
 vaex-core==4.17.1
 vaex-hdf5==0.14.1
 vaex-jupyter==0.8.2
