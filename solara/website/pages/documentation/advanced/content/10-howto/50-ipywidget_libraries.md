@@ -8,7 +8,7 @@ Solara can work with any ipywidget library, such as [ipyleaflet](https://github.
 
 After `solara` is imported, every widget class has an extra `.element(...)` method added to itself. This allows us to create elements for all existing widgets. For example using regular ipywidgets:
 
-```python
+```{.python pycafe-link}
 import ipywidgets
 button_element = ipywidgets.Button.element(description="Click me")
 ```
@@ -17,7 +17,7 @@ button_element = ipywidgets.Button.element(description="Click me")
 
 For instance, if we want to use ipyleaflet using the classical ipywidget API, we can do:
 
-```python
+```{.python pycafe-link}
 import ipyleaflet
 
 map = ipyleaflet.Map(center=(52, 10), zoom=8)
@@ -32,7 +32,7 @@ However, how do we add the marker to the map? The map element object does not ha
 anymore. Instead, we need to pass the marker to the layers argument. That, however, introduces a new problem. Ipyleaflet by default adds a layer to the map when it is created, and the `add_layer` adds the second layer. We now need to manually add the map layer ourselves.
 
 Putting this together.
-```solara
+```{.python pycafe-link}
 import ipyleaflet
 import solara
 
