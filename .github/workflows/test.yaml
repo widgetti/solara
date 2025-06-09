@@ -657,7 +657,7 @@ jobs:
 
       - name: Start Redis
         if: ( github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true' ) && matrix.os != 'windows'
-        uses: shogo82148/actions-setup-redis@v1.39.0
+        uses: shogo82148/actions-setup-redis@v1.41.0
 
       - name: Run unit tests
         if: github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true'
