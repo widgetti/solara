@@ -1,0 +1,1 @@
+../../tests/qtapp/render_test.vue

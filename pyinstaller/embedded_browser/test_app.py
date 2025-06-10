@@ -1,0 +1,1 @@
+../../tests/qtapp/test_app.py

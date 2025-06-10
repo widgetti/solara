@@ -357,6 +357,113 @@ jobs:
           path: ./**/${{ env.LOCK_FILE_LOCATION }}
           include-hidden-files: true
 
+  qt-test:
+    needs: [build]
+    timeout-minutes: 15
+    runs-on: ${{ matrix.os }}-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos, windows, ubuntu]
+        # only 1 version, it's heavy
+        python-version: ["3.10"]
+    env:
+      LOCK_FILE_LOCATION: .ci-package-locks/qt-test/os${{ matrix.os }}-python${{ matrix.python-version }}.txt
+    steps:
+      - uses: ConorMacBride/install-package@v1
+        with:
+          # mirrored from glue-qt
+          #  https://github.com/glue-viz/glue-qt/blob/main/.github/workflows/ci_workflows.yml
+          #  using
+          #   https://github.com/OpenAstronomy/github-actions-workflows/blob/5edb24fa432c75c0ca723ddea8ea14b72582919d/.github/workflows/tox.yml#L175C15-L175C49
+          # Linux PyQt 5.15 and 6.x installations require apt-getting xcb and EGL deps
+          # and headless X11 display;
+          apt: '^libxcb.*-dev libxkbcommon-x11-dev libegl1-mesa libopenblas-dev libhdf5-dev'
+
+      - name: Setup headless display
+        uses: pyvista/setup-headless-display-action@v2
+
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: solara-builds
+
+      - name: Link solara app package
+        if: matrix.os != 'windows'
+        run: |
+          cd packages/solara-vuetify-app
+          npm run devlink
+      - name: Copy solara app package
+        if: matrix.os == 'windows'
+        run: |
+          cd packages/solara-vuetify-app
+          npm run wincopy
+      - name: Prepare
+        id: prepare
+        run: |
+          mkdir test-results
+          if [ -f ${{ env.LOCK_FILE_LOCATION }} ]; then
+            echo "LOCKS_EXIST=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "LOCKS_EXIST=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Install without locking versions
+        if: github.event_name == 'schedule' || steps.prepare.outputs.LOCKS_EXIST == 'false'
+        id: install_no_lock
+        run: |
+          mkdir -p .ci-package-locks/qt-test
+          # see https://github.com/erocarrera/pefile/issues/420 for performance issues on
+          # windows for pefile == 2024.8.26
+          pip install pyside6 qtpy pyinstaller "pefile<2024.8.26"
+          pip install `echo dist/*.whl`[all]
+          pip install `echo packages/solara-server/dist/*.whl`[all]
+          pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
+          pip freeze --exclude solara --exclude solara-ui --exclude solara-server > ${{ env.LOCK_FILE_LOCATION }}
+          git diff --quiet || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
+          git diff | tee ${{ env.DIFF_FILE_LOCATION }}
+          [ -s ${{ env.DIFF_FILE_LOCATION }} ] && echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT" || echo "No dependencies changed"
+
+
+
+      - name: Install
+        if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
+        run: |
+          pip install -r ${{ env.LOCK_FILE_LOCATION }}
+          pip install `echo dist/*.whl`[all]
+          pip install `echo packages/solara-server/dist/*.whl`[all]
+          pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
+      - name: test qt app
+        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true'
+        # this app should simply exit with an error code of 0 to indicate success
+        run: |
+          python tests/qtapp/solara-qt-test.py
+
+      - name: Test solara+qt+pyinstaller
+        run: |
+          (cd pyinstaller/embedded_browser; pyinstaller ./solara-qt.spec)
+          ./pyinstaller/embedded_browser/dist/solara-qt/solara-qt
+
+      - name: Upload Test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-qt-test-os${{ matrix.os }}-python${{ matrix.python-version }}
+          path: test-results
+
+      - name: Upload CI package locks
+        if: steps.install_no_lock.outputs.HAS_DIFF == 'true' || steps.prepare.outputs.LOCKS_EXIST == 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-package-locks-qt-test-os${{ matrix.os }}-python${{ matrix.python-version }}
+          path: ./**/${{ env.LOCK_FILE_LOCATION }}
+
   integration-test:
     needs: [build]
     timeout-minutes: 25
