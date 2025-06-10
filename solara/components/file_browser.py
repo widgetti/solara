@@ -114,7 +114,7 @@ def FileBrowser(
                 on_path_select(None)
             return
         if item["name"] == "..":
-            new_dir = current_dir.value.parent
+            new_dir = current_dir.value.resolve().parent
             action_change_directory = (can_select and double_click) or (not can_select and not double_click)
             if action_change_directory and change_dir(new_dir):
                 if scroll_pos_stack:
@@ -164,7 +164,7 @@ def FileBrowser(
 
     files = [{"name": "..", "is_file": False}] + list_dir(current_dir.value, filter=filter, directory_first=directory_first)
     with Div(class_="solara-file-browser") as main:
-        Div(children=[str(current_dir.value)])
+        Div(children=[str(current_dir.value.resolve())])
         FileListWidget.element(
             files=files,
             selected=selected,
