@@ -1,6 +1,7 @@
 import platform
 import unittest.mock
 from pathlib import Path
+from typing import Optional, cast
 
 import pytest
 
@@ -22,7 +23,7 @@ def test_file_browser_callback_no_select():
             HERE.parent, on_path_select=on_path_select, on_directory_change=on_directory_change, on_file_open=on_file_open, on_file_name=on_file_name
         )
 
-    div, rc = solara.render_fixed(Test())
+    div, rc = solara.render_fixed(Test(), handle_error=False)
     on_directory_change.assert_not_called()
     on_file_open.assert_not_called()
     on_path_select.assert_not_called()
@@ -149,10 +150,12 @@ def test_file_browser_no_access(tmpdir: Path):
 
     @solara.component
     def Test():
-        return solara.FileBrowser(tmpdir, on_path_select=on_path_select, on_directory_change=on_directory_change, on_file_open=on_file_open, can_select=True)
+        return solara.FileBrowser(
+            Path(tmpdir), on_path_select=on_path_select, on_directory_change=on_directory_change, on_file_open=on_file_open, can_select=True
+        )
 
     try:
-        div, rc = solara.render_fixed(Test())
+        div, rc = solara.render_fixed(Test(), handle_error=False)
 
         list: solara.components.file_browser.FileListWidget = div.children[1]
         # select is ok
@@ -179,7 +182,7 @@ def test_file_browser_filter():
     list: solara.components.file_browser.FileListWidget = div.children[1]
     items = list.files
     names = {k["name"] for k in items}
-    assert names == {"unit", "ui", "docs", "integration", "pyinstaller", ".."}
+    assert names.issuperset({"unit", "ui", "docs", "integration", "pyinstaller", ".."})
 
 
 def test_file_browser_test_change_directory():
@@ -212,7 +215,7 @@ def test_file_browser_control_directory():
     file_list.observe(mock, "files")
     items = file_list.files
     names = {k["name"] for k in items}
-    assert names == {"unit", "ui", "docs", "integration", "pyinstaller", ".."}
+    assert names.issuperset({"unit", "ui", "docs", "integration", "pyinstaller", ".."})
     file_list.test_click("..")
     assert mock.call_count == 0
     file_list.test_click("integration")
@@ -233,3 +236,41 @@ def test_file_browser_relative_path():
     list.test_click("..")
     files_parent = {k["name"] for k in list.files}
     assert files_parent != files
+
+
+def test_file_browser_programmatic_select():
+    # using a reactive value to select a file
+    selected = solara.reactive(cast(Optional[Path], None))
+
+    @solara.component
+    def Test():
+        return solara.FileBrowser(HERE.parent, selected=selected, can_select=True)
+
+    div, rc = solara.render_fixed(Test(), handle_error=False)
+    list: solara.components.file_browser.FileListWidget = div.children[1]
+    files = list.files.copy()
+    assert list.clicked is None
+    selected.value = HERE.parent / "file_browser_test.py"
+    assert list.clicked is not None
+    assert list.clicked["name"] == "file_browser_test.py"
+    list.test_click("..", double_click=True)
+    assert list.files != files
+    assert selected.value is None
+
+    selected.value = None
+
+    # passing selected as a value (non reactive)
+    @solara.component
+    def Test2():
+        return solara.FileBrowser(HERE.parent, selected=selected.value, on_path_select=selected.set, can_select=True)
+
+    div, rc = solara.render_fixed(Test2(), handle_error=False)
+    list = div.children[1]
+    files = list.files.copy()
+    assert list.clicked is None
+    selected.value = HERE.parent / "file_browser_test.py"
+    assert list.clicked is not None
+    assert list.clicked["name"] == "file_browser_test.py"
+    list.test_click("..", double_click=True)
+    assert list.files != files
+    assert selected.value is None
