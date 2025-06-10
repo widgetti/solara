@@ -220,3 +220,16 @@ def test_file_browser_control_directory():
     names = {k["name"] for k in items}
     assert names != {"unit", "ui", "docs", "integration", "pyinstaller", ".."}
     assert mock.call_count == 1
+
+
+def test_file_browser_relative_path():
+    @solara.component
+    def Test():
+        return solara.FileBrowser(".")
+
+    div, rc = solara.render_fixed(Test())
+    list: solara.components.file_browser.FileListWidget = div.children[1]
+    files = {k["name"] for k in list.files}
+    list.test_click("..")
+    files_parent = {k["name"] for k in list.files}
+    assert files_parent != files
