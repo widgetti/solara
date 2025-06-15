@@ -1,4 +1,5 @@
 
+const widgetViews = {};
 var jupyterWidgetMountPoint = {
     data() {
         return {
@@ -8,25 +9,22 @@ var jupyterWidgetMountPoint = {
     },
     props: ['mount-id'],
     created() {
-        requestWidget(this.mountId);
-    },
-    mounted() {
-        const vue3 = Vue.version.startsWith('3');
-        requestWidget(this.mountId)
-            .then(widgetView => {
-                if (['VuetifyView', 'VuetifyTemplateView'].includes(widgetView.model.get('_view_name'))) {
-                    this.renderFn = createElement => widgetView.vueRender(createElement);
-                } else {
-                    while (this.$el.firstChild) {
-                        this.$el.removeChild(this.$el.firstChild);
-                    }
-
-                    requirejs(['@jupyter-widgets/base'], widgets =>
-                        widgets.JupyterPhosphorWidget.attach(widgetView.pWidget, this.$el)
-                    );
+        const maybeCreateRenderFn = (widgetView) => {
+            // in solara, this is always the case, but lets keep this code so we could potentially
+            // support any ipywidget as a root view
+            if (['VuetifyView', 'VuetifyTemplateView'].includes(widgetView.model.get('_view_name'))) {
+                this.renderFn = createElement => widgetView.vueRender(createElement);
+            } else {
+                while (this.$el.firstChild) {
+                    this.$el.removeChild(this.$el.firstChild);
                 }
+
+                requirejs(['@jupyter-widgets/base'], widgets =>
+                    widgets.JupyterPhosphorWidget.attach(widgetView.pWidget, this.$el)
+                );
             }
-            );
+        }
+        maybeCreateRenderFn(widgetViews[this.mountId]);
     },
     render(createElement) {
         // in vue3 we have Vue.h, otherwise fall back to createElement (vue2)
@@ -42,24 +40,6 @@ var jupyterWidgetMountPoint = {
             [h('v-chip', `[${this.mountId}]`)]);
     }
 };
-
-const widgetResolveFns = {};
-const widgetPromises = {};
-
-function provideWidget(mountId, widgetView) {
-    if (widgetResolveFns[mountId]) {
-        widgetResolveFns[mountId](widgetView);
-    } else {
-        widgetPromises[mountId] = Promise.resolve(widgetView);
-    }
-}
-
-function requestWidget(mountId) {
-    if (!widgetPromises[mountId]) {
-        widgetPromises[mountId] = new Promise(resolve => widgetResolveFns[mountId] = resolve);
-    }
-    return widgetPromises[mountId];
-}
 
 function injectDebugMessageInterceptor(kernel) {
     const _original_handle_message = kernel._handleMessage.bind(kernel)
@@ -257,7 +237,7 @@ async function solaraMount(widgetManager, mountId, modelId) {
             const model = await modelPromise;
             if (model.model_id == modelId) {
                 const view = await widgetManager.create_view(model);
-                provideWidget(mountId, view);
+                widgetViews[mountId] = view;
             }
         }));
         app.$data.loadingPercentage = 0;
