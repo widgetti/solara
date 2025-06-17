@@ -32,7 +32,7 @@ def Page():
         with solara.Card("TESSA", style={"height": "100%"}):
             solara.Markdown(
                 """
-            [TESSA](https://planeto-energy.ch/solution/) is a tool developed by Planeto for district heating & cooling planning.
+            [TESSA](https://planeto-energy.ch/) is a tool developed by Planeto for district heating & cooling planning.
             """
             )
             with solara.Link("./planeto_tessa"):
