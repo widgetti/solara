@@ -638,6 +638,13 @@ def readyz(request: Request):
     return JSONResponse(json, status_code=status)
 
 
+def _sanitize_for_json(value):
+    """Convert infinite values to None for JSON serialization."""
+    if isinstance(value, (int, float)) and math.isinf(value):
+        return None
+    return value
+
+
 async def resourcez(request: Request):
     _ensure_limiter()
     assert limiter is not None
@@ -664,16 +671,16 @@ async def resourcez(request: Request):
         "has_disconnected": len([k for k in contexts if kernel_context.PageStatus.DISCONNECTED in k.page_status.values()]),
         "has_closed": len([k for k in contexts if kernel_context.PageStatus.CLOSED in k.page_status.values()]),
         "limiter": {
-            "total_tokens": limiter.total_tokens,
-            "borrowed_tokens": limiter.borrowed_tokens,
-            "available_tokens": limiter.available_tokens,
+            "total_tokens": _sanitize_for_json(limiter.total_tokens),
+            "borrowed_tokens": _sanitize_for_json(limiter.borrowed_tokens),
+            "available_tokens": _sanitize_for_json(limiter.available_tokens),
         },
     }
     default_limiter = anyio.to_thread.current_default_thread_limiter()
     data["anyio.to_thread.limiter"] = {
-        "total_tokens": default_limiter.total_tokens,
-        "borrowed_tokens": default_limiter.borrowed_tokens,
-        "available_tokens": default_limiter.available_tokens,
+        "total_tokens": _sanitize_for_json(default_limiter.total_tokens),
+        "borrowed_tokens": _sanitize_for_json(default_limiter.borrowed_tokens),
+        "available_tokens": _sanitize_for_json(default_limiter.available_tokens),
     }
     if verbose:
         try:
