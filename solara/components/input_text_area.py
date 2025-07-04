@@ -16,6 +16,11 @@ def InputTextArea(
     message: Optional[str] = None,
     auto_grow: bool = True,
     rows: int = 5,
+    dense: bool = False,
+    hide_details: Union[str, bool] = "auto",
+    placeholder: Optional[str] = None,
+    prefix: Optional[str] = None,
+    suffix: Optional[str] = None,
 ):
     r"""Free form text area input.
 
@@ -53,6 +58,11 @@ def InputTextArea(
     * `message`: Message to show below the input. If `error` is a string, this will be ignored.
     * `classes`: List of CSS classes to apply to the input.
     * `style`: CSS style to apply to the input.
+    * `dense`: Reduces the input height.
+    * `hide_details`: Hides hint and validation errors. When set to 'auto', messages will be rendered only if there's a message (hint, error message, counter value etc) to display.
+    * `placeholder`: Sets the input's placeholder text.
+    * `prefix`: Displays prefix text.
+    * `suffix`: Displays suffix text.
     """
     reactive_value = solara.use_reactive(value, on_value)
     del value, on_value
@@ -77,10 +87,14 @@ def InputTextArea(
         error=bool(error),
         messages=messages,
         solo=True,
-        hide_details=True,
+        hide_details=hide_details,
         outlined=True,
         rows=rows,
         auto_grow=auto_grow,
+        dense=dense,
+        placeholder=placeholder if placeholder is not None else "",
+        prefix=prefix if prefix is not None else "",
+        suffix=suffix if suffix is not None else "",
     )
     use_change(text_area, set_value_cast, enabled=not continuous_update, update_events=update_events)
     return text_area
