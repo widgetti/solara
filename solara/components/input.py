@@ -40,7 +40,7 @@ def use_change(el: reacton.core.Element, on_value: Callable[[Any], Any], enabled
 def InputText(
     label: str,
     value: Union[str, solara.Reactive[str]] = "",
-    on_value: Callable[[str], None] = None,
+    on_value: Optional[Callable[[str], None]] = None,
     disabled: bool = False,
     password: bool = False,
     continuous_update: bool = False,
@@ -50,6 +50,12 @@ def InputText(
     classes: List[str] = [],
     style: Optional[Union[str, Dict[str, str]]] = None,
     autofocus: bool = False,
+    dense: bool = False,
+    hide_details: Union[str, bool] = "auto",
+    placeholder: Optional[str] = None,
+    prefix: Optional[str] = None,
+    suffix: Optional[str] = None,
+    clearable: bool = False,
 ):
     """Free form text input.
 
@@ -107,6 +113,12 @@ def InputText(
     * `classes`: List of CSS classes to apply to the input.
     * `style`: CSS style to apply to the input.
     * `autofocus`: Determines if a component is to be autofocused or not (Default is False). Autofocus will occur during page load and only one component per page can have autofocus active.
+    * `dense`: Reduces the input height.
+    * `hide_details`: Hides hint and validation errors. When set to 'auto', messages will be rendered only if there's a message (hint, error message, etc) to display.
+    * `placeholder`: Sets the input's placeholder text.
+    * `prefix`: Displays prefix text.
+    * `suffix`: Displays suffix text.
+    * `clearable`: Whether the input can be cleared.
     """
     reactive_value = solara.use_reactive(value, on_value)
     del value, on_value
@@ -130,12 +142,18 @@ def InputText(
         on_v_model=on_v_model,
         label=label,
         disabled=disabled,
-        type="password" if password else None,
+        type="password" if password else "text",
         error=bool(error),
         messages=messages,
         class_=classes_flat,
         style_=style_flat,
         autofocus=autofocus,
+        dense=dense,
+        hide_details=hide_details,
+        placeholder=placeholder if placeholder is not None else "",
+        prefix=prefix if prefix is not None else "",
+        suffix=suffix if suffix is not None else "",
+        clearable=clearable,
     )
     use_change(text_field, set_value_cast, enabled=not continuous_update, update_events=update_events)
     return text_field
@@ -154,6 +172,11 @@ def InputFloat(
     classes: List[str] = ...,
     style: Optional[Union[str, Dict[str, str]]] = ...,
     autofocus: bool = False,
+    dense: bool = False,
+    hide_details: Union[str, bool] = "auto",
+    placeholder: Optional[str] = None,
+    prefix: Optional[str] = None,
+    suffix: Optional[str] = None,
 ) -> reacton.core.ValueElement[vw.TextField, Any]: ...
 
 
@@ -170,6 +193,11 @@ def InputFloat(
     classes: List[str] = ...,
     style: Optional[Union[str, Dict[str, str]]] = ...,
     autofocus: bool = False,
+    dense: bool = False,
+    hide_details: Union[str, bool] = "auto",
+    placeholder: Optional[str] = None,
+    prefix: Optional[str] = None,
+    suffix: Optional[str] = None,
 ) -> reacton.core.ValueElement[vw.TextField, Any]: ...
 
 
@@ -185,6 +213,11 @@ def InputFloat(
     classes: List[str] = [],
     style: Optional[Union[str, Dict[str, str]]] = None,
     autofocus: bool = False,
+    dense: bool = False,
+    hide_details: Union[str, bool] = "auto",
+    placeholder: Optional[str] = None,
+    prefix: Optional[str] = None,
+    suffix: Optional[str] = None,
 ):
     """Numeric input (floats).
 
@@ -218,6 +251,11 @@ def InputFloat(
     * `classes`: List of CSS classes to apply to the input.
     * `style`: CSS style to apply to the input.
     * `autofocus`: Determines if a component is to be autofocused or not (Default is False). Autofocus will occur either during page load, or when the component becomes visible (for example, dialog being opened). Only one component per page should have autofocus on each such event.
+    * `dense`: Reduces the input height.
+    * `hide_details`: Hides hint and validation errors. When set to 'auto', messages will be rendered only if there's a message (hint, error message, etc) to display.
+    * `placeholder`: Sets the input's placeholder text.
+    * `prefix`: Displays prefix text.
+    * `suffix`: Displays suffix text.
 
     """
 
@@ -237,15 +275,20 @@ def InputFloat(
     return _InputNumeric(
         str_to_float,
         label=label,
-        value=value,
-        on_value=on_value,
+        value=value,  # type: ignore
+        on_value=on_value,  # type: ignore
         disabled=disabled,
         continuous_update=continuous_update,
         clearable=clearable,
         classes=classes,
         style=style,
         autofocus=autofocus,
-    )
+        dense=dense,
+        hide_details=hide_details,
+        placeholder=placeholder,
+        prefix=prefix,
+        suffix=suffix,
+    )  # type: ignore
 
 
 @overload
@@ -261,6 +304,11 @@ def InputInt(
     classes: List[str] = ...,
     style: Optional[Union[str, Dict[str, str]]] = ...,
     autofocus: bool = False,
+    dense: bool = False,
+    hide_details: Union[str, bool] = "auto",
+    placeholder: Optional[str] = None,
+    prefix: Optional[str] = None,
+    suffix: Optional[str] = None,
 ) -> reacton.core.ValueElement[vw.TextField, Any]: ...
 
 
@@ -277,6 +325,11 @@ def InputInt(
     classes: List[str] = ...,
     style: Optional[Union[str, Dict[str, str]]] = ...,
     autofocus: bool = False,
+    dense: bool = False,
+    hide_details: Union[str, bool] = "auto",
+    placeholder: Optional[str] = None,
+    prefix: Optional[str] = None,
+    suffix: Optional[str] = None,
 ) -> reacton.core.ValueElement[vw.TextField, Any]: ...
 
 
@@ -292,6 +345,11 @@ def InputInt(
     classes: List[str] = [],
     style: Optional[Union[str, Dict[str, str]]] = None,
     autofocus: bool = False,
+    dense: bool = False,
+    hide_details: Union[str, bool] = "auto",
+    placeholder: Optional[str] = None,
+    prefix: Optional[str] = None,
+    suffix: Optional[str] = None,
 ):
     """Numeric input (integers).
 
@@ -324,6 +382,11 @@ def InputInt(
     * `classes`: List of CSS classes to apply to the input.
     * `style`: CSS style to apply to the input.
     * `autofocus`: Determines if a component is to be autofocused or not (Default is False). Autofocus will occur either during page load, or when the component becomes visible (for example, dialog being opened). Only one component per page should have autofocus on each such event.
+    * `dense`: Reduces the input height.
+    * `hide_details`: Hides hint and validation errors. When set to 'auto', messages will be rendered only if there's a message (hint, error message, etc) to display.
+    * `placeholder`: Sets the input's placeholder text.
+    * `prefix`: Displays prefix text.
+    * `suffix`: Displays suffix text.
     """
 
     def str_to_int(value: Optional[str]):
@@ -341,15 +404,20 @@ def InputInt(
     return _InputNumeric(
         str_to_int,
         label=label,
-        value=value,
-        on_value=on_value,
+        value=value,  # type: ignore
+        on_value=on_value,  # type: ignore
         disabled=disabled,
         continuous_update=continuous_update,
         clearable=clearable,
         classes=classes,
         style=style,
         autofocus=autofocus,
-    )
+        dense=dense,
+        hide_details=hide_details,
+        placeholder=placeholder,
+        prefix=prefix,
+        suffix=suffix,
+    )  # type: ignore
 
 
 def _use_input_type(
@@ -360,7 +428,7 @@ def _use_input_type(
 ):
     reactive_value = solara.use_reactive(input_value, on_value)  # type: ignore
     del input_value, on_value
-    string_value, set_string_value = solara.use_state(stringify(reactive_value.value) if reactive_value.value is not None else None)
+    string_value, set_string_value = solara.use_state(stringify(reactive_value.value) if reactive_value.value is not None else None)  # type: ignore
     # Use a ref to make sure sync_back_input_value() does not get a stale string_value
     string_value_ref = solara.use_ref(string_value)
     string_value_ref.current = string_value
@@ -368,14 +436,14 @@ def _use_input_type(
     error_message = cast(Union[str, None], None)
 
     try:
-        reactive_value.set(parse(string_value))
+        reactive_value.set(parse(string_value))  # type: ignore
     except ValueError as e:
         error_message = str(e.args[0])
 
     def sync_back_input_value():
         # Make sure we update string_value when the effect is rerun,
         # Since the parsing & stringigying functions might have changed
-        set_string_value(stringify(reactive_value.value) if reactive_value.value is not None else None)
+        set_string_value(stringify(reactive_value.value) if reactive_value.value is not None else None)  # type: ignore
 
         def on_external_value_change(new_value: Optional[T]):
             new_string_value = stringify(new_value)
@@ -388,7 +456,7 @@ def _use_input_type(
                 if new_value != parse(string_value_ref.current):
                     set_string_value(new_string_value)
 
-        return reactive_value.subscribe(on_external_value_change)
+        return reactive_value.subscribe(on_external_value_change)  # type: ignore
 
     solara.use_effect(sync_back_input_value, [reactive_value, parse, stringify])
 
@@ -407,6 +475,11 @@ def _InputNumeric(
     classes: List[str] = [],
     style: Optional[Union[str, Dict[str, str]]] = None,
     autofocus: bool = False,
+    dense: bool = False,
+    hide_details: Union[str, bool] = "auto",
+    placeholder: Optional[str] = None,
+    prefix: Optional[str] = None,
+    suffix: Optional[str] = None,
 ):
     """Numeric input.
 
@@ -420,6 +493,12 @@ def _InputNumeric(
     * `classes`: List of CSS classes to apply to the input.
     * `style`: CSS style to apply to the input.
     * `autofocus`: Determines if a component is to be autofocused or not (Default is False). Autofocus will occur either during page load, or when the component becomes visible (for example, dialog being opened). Only one component per page should have autofocus on each such event.
+    * `dense`: Reduces the input height.
+    * `hide_details`: Hides hint and validation errors. When set to 'auto', messages will be rendered only if there's a message (hint, error message, etc) to display.
+    * `placeholder`: Sets the input's placeholder text.
+    * `prefix`: Displays prefix text.
+    * `suffix`: Displays suffix text.
+    * `clearable`: Whether the input can be cleared.
     """
     style_flat = solara.util._flatten_style(style)
     classes_flat = solara.util._combine_classes(classes)
@@ -445,12 +524,16 @@ def _InputNumeric(
         # we are not using the number type, since we cannot validate invalid input
         # see https://stackoverflow.blog/2022/12/26/why-the-number-input-is-the-worst-input/
         # type="number",
-        hide_details=True,
+        hide_details=hide_details,
         clearable=clearable,
         error=bool(error),
         class_=classes_flat,
         style_=style_flat,
         autofocus=autofocus,
+        dense=dense,
+        placeholder=placeholder if placeholder is not None else "",
+        prefix=prefix if prefix is not None else "",
+        suffix=suffix if suffix is not None else "",
     )
     use_change(text_field, set_value_cast, enabled=not continuous_update)
     return text_field
