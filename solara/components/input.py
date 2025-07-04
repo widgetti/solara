@@ -36,11 +36,61 @@ def use_change(el: reacton.core.Element, on_value: Callable[[Any], Any], enabled
     solara.use_effect(add_events, [enabled])
 
 
+@overload
 @solara.component
 def InputText(
     label: str,
     value: Union[str, solara.Reactive[str]] = "",
-    on_value: Optional[Callable[[str], None]] = None,
+    on_value: Optional[Callable[[str], None]] = ...,
+    disabled: bool = ...,
+    password: bool = ...,
+    continuous_update: bool = ...,
+    update_events: list = ...,
+    error: Union[bool, str] = ...,
+    message: Optional[str] = ...,
+    classes: List[str] = ...,
+    style: Optional[Union[str, Dict[str, str]]] = ...,
+    autofocus: bool = ...,
+    dense: bool = ...,
+    hide_details: Union[str, bool] = ...,
+    placeholder: Optional[str] = ...,
+    prefix: Optional[str] = ...,
+    suffix: Optional[str] = ...,
+    clearable: Literal[False] = ...,
+    optional: Literal[False] = ...,
+) -> reacton.core.ValueElement[vw.TextField, Any]: ...
+
+
+@overload
+@solara.component
+def InputText(
+    label: str,
+    value: Union[Optional[str], solara.Reactive[Optional[str]]] = ...,
+    on_value: Optional[Callable[[Optional[str]], None]] = ...,
+    disabled: bool = ...,
+    password: bool = ...,
+    continuous_update: bool = ...,
+    update_events: list = ...,
+    error: Union[bool, str] = ...,
+    message: Optional[str] = ...,
+    classes: List[str] = ...,
+    style: Optional[Union[str, Dict[str, str]]] = ...,
+    autofocus: bool = ...,
+    dense: bool = ...,
+    hide_details: Union[str, bool] = ...,
+    placeholder: Optional[str] = ...,
+    prefix: Optional[str] = ...,
+    suffix: Optional[str] = ...,
+    clearable: bool = ...,
+    optional: Literal[True] = ...,
+) -> reacton.core.ValueElement[vw.TextField, Any]: ...
+
+
+@solara.component
+def InputText(
+    label: str,
+    value: Union[None, str, solara.Reactive[str], solara.Reactive[Optional[str]]] = "",
+    on_value: Union[None, Callable[[Optional[str]], None], Callable[[str], None]] = None,
     disabled: bool = False,
     password: bool = False,
     continuous_update: bool = False,
@@ -56,7 +106,8 @@ def InputText(
     prefix: Optional[str] = None,
     suffix: Optional[str] = None,
     clearable: bool = False,
-):
+    optional: bool = False,
+) -> reacton.core.ValueElement[vw.TextField, Optional[str]]:
     """Free form text input.
 
     ### Basic example:
@@ -119,8 +170,9 @@ def InputText(
     * `prefix`: Displays prefix text.
     * `suffix`: Displays suffix text.
     * `clearable`: Whether the input can be cleared.
+    * `optional`: Whether the value can be None. If `clearable=True`, `optional` is forced to True.
     """
-    reactive_value = solara.use_reactive(value, on_value)
+    reactive_value = solara.use_reactive(value, on_value)  # type: ignore
     del value, on_value
     style_flat = solara.util._flatten_style(style)
     classes_flat = solara.util._combine_classes(classes)
