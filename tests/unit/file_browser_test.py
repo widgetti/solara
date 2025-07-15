@@ -241,6 +241,7 @@ def test_file_browser_relative_path():
 def test_file_browser_programmatic_select():
     # using a reactive value to select a file
     selected = solara.reactive(cast(Optional[Path], None))
+    current_dir = solara.reactive(HERE.parent)
 
     @solara.component
     def Test():
@@ -258,6 +259,7 @@ def test_file_browser_programmatic_select():
     assert selected.value is None
 
     selected.value = None
+    rc.close()
 
     # passing selected as a value (non reactive)
     @solara.component
@@ -274,3 +276,17 @@ def test_file_browser_programmatic_select():
     list.test_click("..", double_click=True)
     assert list.files != files
     assert selected.value is None
+    rc.close()
+
+    @solara.component
+    def Test3():
+        return solara.FileBrowser(current_dir, selected=selected.value, on_path_select=selected.set, can_select=True)
+
+    div, rc = solara.render_fixed(Test3(), handle_error=False)
+    assert current_dir.value == HERE.parent
+    list.test_click("..", double_click=False)
+    assert current_dir.value == HERE.parent
+    # this will trigger the sync_directory_from_selected
+    selected.value = current_dir.value / ".." / "unit" / ".."
+    assert current_dir.value == HERE.parent
+    rc.close()
