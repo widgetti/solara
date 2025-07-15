@@ -137,7 +137,9 @@ def FileBrowser(
             # if we select a file, we need to make sure the directory is correct
             # NOTE: although we expect a Path, abuse might make it a string
             if isinstance(selected_private, Path):
-                current_dir.value = selected_private.resolve().parent
+                # Note that we do not call .resolve() before using .parent, otherwise /some/path/.. will
+                # set the current directory to /, moving up two levels.
+                current_dir.value = selected_private.parent.resolve()
 
     solara.use_effect(sync_directory_from_selected, [selected_private])
 
