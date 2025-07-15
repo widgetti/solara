@@ -77,7 +77,7 @@ dev = [
     "types-PyYAML",
     "objgraph",
     "pytest",
-    "pytest-asyncio",
+    "pytest-tornasync",
     "pytest-mock",
     "pytest-cov",
     "pytest-timeout",
