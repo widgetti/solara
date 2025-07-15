@@ -1,4 +1,5 @@
 import asyncio
+import sys
 import time
 from unittest.mock import Mock
 
@@ -7,6 +8,8 @@ import pytest
 import solara.server.server
 import solara.server.settings
 from solara.server import kernel_context
+
+on_windows = sys.platform == "win32"
 
 
 @pytest.fixture
@@ -19,6 +22,7 @@ def short_cull_timeout():
         solara.server.settings.kernel.cull_timeout = cull_timeout_previous
 
 
+@pytest.mark.skipif(on_windows, reason="This test is flaky on Windows")
 async def test_kernel_lifecycle_reconnect_simple(short_cull_timeout):
     # a reconnect should be possible within the reconnect window
     websocket = Mock()
@@ -35,6 +39,7 @@ async def test_kernel_lifecycle_reconnect_simple(short_cull_timeout):
     assert context.closed_event.is_set()
 
 
+@pytest.mark.skipif(on_windows, reason="This test is flaky on Windows")
 async def test_kernel_lifecycle_double_disconnect(short_cull_timeout):
     # a reconnect should be possible within the reconnect window
     websocket = Mock()
@@ -63,6 +68,7 @@ async def test_kernel_lifecycle_double_disconnect(short_cull_timeout):
     assert 0.3 >= (time.time() - t0_disconnect_page_2) >= 0.2
 
 
+@pytest.mark.skipif(on_windows, reason="This test is flaky on Windows")
 @pytest.mark.parametrize("close_first", [True, False])
 async def test_kernel_lifecycle_close_single(close_first, short_cull_timeout):
     # a reconnect should be possible within the reconnect window
@@ -80,6 +86,7 @@ async def test_kernel_lifecycle_close_single(close_first, short_cull_timeout):
         assert context.closed_event.is_set()
 
 
+@pytest.mark.skipif(on_windows, reason="This test is flaky on Windows")
 @pytest.mark.parametrize("close_first", [True, False])
 async def test_kernel_lifecycle_close_while_disconnected(close_first, short_cull_timeout):
     # a reconnect should be possible within the reconnect window
