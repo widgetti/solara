@@ -18,12 +18,12 @@ beautifulsoup4==4.13.4
 blake3==1.0.5
 bleach==6.0.0
 bqplot==0.12.45
-bqplot-image-gl==1.6.1
+bqplot-image-gl==1.7.0
 branca==0.8.1
 bump2version==1.0.1
 cached-property==1.5.2
 cachetools==5.5.2
-certifi==2025.4.26
+certifi==2025.7.14
 cffi==1.15.1
 cfgv==3.3.1
 charset-normalizer==3.4.2
@@ -32,7 +32,7 @@ cloudpickle==2.2.1
 codespell==2.2.5
 comm==0.1.4
 coverage==7.2.7
-cryptography==45.0.3
+cryptography==45.0.5
 cycler==0.11.0
 dask==2022.2.0
 debugpy==1.7.0
@@ -75,7 +75,7 @@ ipython==7.34.0
 ipython-genutils==0.2.0
 ipyvolume==0.6.3
 ipyvue==1.11.2
-ipyvuetify==1.11.1
+ipyvuetify==1.11.3
 ipywebrtc==0.6.0
 ipywidgets==7.8.5
 isoduration==20.11.0
@@ -157,6 +157,7 @@ pytest-cov==4.1.0
 pytest-mock==3.11.1
 pytest-playwright==0.3.3
 pytest-timeout==2.4.0
+pytest-tornasync==0.6.0.post2
 python-dateutil==2.9.0.post0
 python-dotenv==0.21.1
 python-json-logger==3.0.1
@@ -173,7 +174,7 @@ rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
 rich==13.8.1
 rich-click==1.8.9
-ruff==0.11.12
+ruff==0.12.3
 Send2Trash==1.8.3
 simple-websocket==1.1.0
 simplejson==3.20.1
