@@ -48,7 +48,7 @@ filelock==3.18.0
 Flask==3.1.1
 flask-sock==0.7.0
 folium==0.20.0
-fonttools==4.58.5
+fonttools==4.59.0
 fqdn==1.5.1
 frozendict==2.4.6
 fsspec==2025.7.0
@@ -125,7 +125,7 @@ notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.26.4
 objgraph==3.6.2
-openai==1.96.1
+openai==1.97.0
 overrides==7.7.0
 packaging==25.0
 pandas==2.3.1
