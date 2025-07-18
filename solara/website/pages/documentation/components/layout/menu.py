@@ -13,10 +13,10 @@ from solara.website.utils import apidoc
 title = "Menus"
 
 
-__doc__ += apidoc(solara.lab.components.menu.Menu.f)  # type: ignore
+__doc__ += apidoc(solara.components.menu.Menu.f)  # type: ignore
 __doc__ += "# ClickMenu"
-__doc__ += apidoc(solara.lab.components.menu.ClickMenu.f)  # type: ignore
+__doc__ += apidoc(solara.components.menu.ClickMenu.f)  # type: ignore
 __doc__ += "# ContextMenu"
-__doc__ += apidoc(solara.lab.components.menu.ContextMenu.f)  # type: ignore
+__doc__ += apidoc(solara.components.menu.ContextMenu.f)  # type: ignore
 
 Page = NoPage
