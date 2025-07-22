@@ -10,7 +10,7 @@ argon2-cffi-bindings==21.2.0
 arrow==1.3.0
 asttokens==3.0.0
 attrs==25.3.0
-Authlib==1.6.0
+Authlib==1.6.1
 babel==2.17.0
 beautifulsoup4==4.13.4
 blake3==1.0.5
@@ -84,7 +84,7 @@ Jinja2==3.1.6
 jiter==0.10.0
 json5==0.12.0
 jsonpointer==3.0.0
-jsonschema==4.24.1
+jsonschema==4.25.0
 jsonschema-specifications==2025.4.1
 jupyter-events==0.12.0
 jupyter-leaflet==0.20.0
@@ -100,6 +100,7 @@ jupyterlab_pygments==0.3.0
 jupyterlab_server==2.27.3
 jupyterlab_widgets==3.0.15
 kiwisolver==1.4.7
+lark==1.2.2
 locket==1.0.0
 Markdown==3.8.2
 markdown-it-py==3.0.0
@@ -112,7 +113,7 @@ mistune==3.1.3
 mkdocs-pycafe==0.3.0
 mypy==1.17.0
 mypy_extensions==1.1.0
-narwhals==1.47.1
+narwhals==1.48.0
 nbclassic==1.3.1
 nbclient==0.10.2
 nbconvert==7.16.6
@@ -178,6 +179,7 @@ regex==2024.11.6
 requests==2.32.4
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
+rfc3987-syntax==1.1.0
 rich==14.0.0
 rich-click==1.8.9
 rpds-py==0.26.0
@@ -189,7 +191,7 @@ six==1.17.0
 sniffio==1.3.1
 soupsieve==2.7
 stack-data==0.6.3
-starlette==0.47.1
+starlette==0.47.2
 tabulate==0.9.0
 terminado==0.18.1
 text-unidecode==1.3
@@ -216,7 +218,7 @@ vaex-hdf5==0.14.1
 vaex-jupyter==0.8.2
 vaex-viz==0.5.4
 vega-datasets==0.9.0
-virtualenv==20.31.2
+virtualenv==20.32.0
 voila==0.5.8
 watchdog==6.0.0
 watchfiles==1.1.0
