@@ -111,7 +111,7 @@ notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.26.4
 objgraph==3.6.2
-openai==1.97.0
+openai==1.97.1
 overrides==7.7.0
 packaging==25.0
 pandas==2.3.1
@@ -121,7 +121,7 @@ pathspec==0.12.1
 pillow==11.3.0
 pixelmatch==0.3.0
 platformdirs==4.3.8
-playwright==1.53.0
+playwright==1.54.0
 plotly==6.2.0
 pluggy==1.6.0
 polars==1.31.0

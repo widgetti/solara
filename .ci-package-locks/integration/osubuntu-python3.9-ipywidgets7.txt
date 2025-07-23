@@ -124,7 +124,7 @@ notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.26.4
 objgraph==3.6.2
-openai==1.97.0
+openai==1.97.1
 packaging==25.0
 pandas==2.3.1
 pandocfilters==1.5.1

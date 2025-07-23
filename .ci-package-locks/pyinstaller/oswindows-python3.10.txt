@@ -123,7 +123,7 @@ notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.26.4
 objgraph==3.6.2
-openai==1.97.0
+openai==1.97.1
 overrides==7.7.0
 packaging==25.0
 pandas==2.3.1
@@ -152,7 +152,7 @@ pydantic_core==2.33.2
 pyee==12.1.1
 Pygments==2.19.2
 pyinstaller==6.14.2
-pyinstaller-hooks-contrib==2025.6
+pyinstaller-hooks-contrib==2025.7
 pymdown-extensions==10.16
 pyparsing==3.2.3
 pytest==8.4.1
