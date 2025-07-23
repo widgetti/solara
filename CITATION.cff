@@ -13,6 +13,6 @@ abstract:  >-
 license: MIT
 license-url: "https://github.com/widgetti/solara/blob/master/LICENSE"
 repository-code: "https://github.com/widgetti/solara"
-date-released: 2022-04-2
+date-released: 2022-04-02
 type: software
 url: "https://solara.dev/"
