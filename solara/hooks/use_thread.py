@@ -7,13 +7,14 @@ from typing import Callable, Iterator, Optional, TypeVar, Union, cast
 
 import solara
 from solara.datatypes import Result, ResultState
-from solara.util import cancel_guard, nullcontext
+from solara.util import cancel_guard, nullcontext, deprecated
 
 SOLARA_ALLOW_OTHER_TRACER = os.environ.get("SOLARA_ALLOW_OTHER_TRACER", False) in (True, "True", "true", "1")
 T = TypeVar("T")
 logger = logging.getLogger("solara.hooks.use_thread")
 
 
+@deprecated("`use_thread` is deprecated, use the more modern and performant `use_task` or `Task` instead", category=FutureWarning)
 def use_thread(
     callback: Union[
         Callable[[threading.Event], T],
