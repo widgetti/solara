@@ -38,6 +38,7 @@ class ThemeSettings(BaseSettings):
     variant: ThemeVariant = ThemeVariant.light
     loader: str = "solara"
     show_banner: bool = True
+    title: str = "Solara ☀️"
 
     class Config:
         env_prefix = "solara_theme_"

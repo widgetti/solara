@@ -371,7 +371,7 @@ def read_root(
     pre_rendered_html = ""
     pre_rendered_css = ""
     pre_rendered_metas = ""
-    title = "Solara ☀️"
+    title = settings.theme.title
     if ssg_data is not None:
         pre_rendered_html = ssg_data["html"]
         pre_rendered_css = "\n".join(ssg_data["styles"])
