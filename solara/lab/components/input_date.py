@@ -1,4 +1,5 @@
 import datetime as dt
+import logging
 from typing import Callable, Dict, List, Optional, Tuple, Union, cast
 
 import ipyvue
@@ -9,6 +10,9 @@ import solara.lab
 from solara.components.input import _use_input_type
 
 
+logger = logging.getLogger(__name__)
+
+
 def use_close_menu(el: reacton.core.Element, is_open: solara.Reactive[bool]):
     is_open_ref = solara.use_ref(is_open)
     is_open_ref.current = is_open
@@ -17,7 +21,11 @@ def use_close_menu(el: reacton.core.Element, is_open: solara.Reactive[bool]):
         def close_menu(*ignore_args):
             is_open_ref.current.set(False)
 
-        widget = cast(ipyvue.VueWidget, solara.get_widget(el))
+        try:
+            widget = cast(ipyvue.VueWidget, solara.get_widget(el))
+        except Exception:
+            logger.exception("Error getting widget for use_close_menu")
+            return
         widget.on_event("keyup.enter", close_menu)
         widget.on_event("keydown.tab", close_menu)
 
@@ -178,9 +186,9 @@ def InputDate(
             max=max_date,  # type: ignore
             min=min_date,  # type: ignore
             type=date_picker_type,
+            children=children,
         ):
-            if len(children) > 0:
-                solara.display(*children)
+            pass
 
 
 @solara.component
@@ -366,7 +374,6 @@ def InputDateRange(
             max=max_date,  # type: ignore
             min=min_date,  # type: ignore
             type=date_picker_type,
+            children=children,
         ):
-            if len(children) > 0:
-                for el in children:
-                    solara.display(el)
+            pass
