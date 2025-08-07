@@ -280,7 +280,7 @@ def WidgetContextAwareThread__init__(self, *args, **kwargs):
     self.current_context = None
     # if we do this for the dummy threads, we got into a recursion
     # since threading.current_thread will call the _DummyThread constructor
-    if not ("name" in kwargs and "Dummy-" in kwargs["name"]):
+    if not ("name" in kwargs and kwargs["name"] is not None and "Dummy-" in kwargs["name"]):
         try:
             self.current_context = kernel_context.get_current_context()
         except RuntimeError:
