@@ -82,7 +82,7 @@ itsdangerous==2.2.0
 jedi==0.19.2
 Jinja2==3.1.6
 jiter==0.10.0
-json5==0.12.0
+json5==0.12.1
 jsonpointer==3.0.0
 jsonschema==4.25.0
 jsonschema-specifications==2025.4.1
@@ -113,7 +113,7 @@ mistune==0.8.4
 mkdocs-pycafe==0.3.0
 mypy==1.17.1
 mypy_extensions==1.1.0
-narwhals==2.1.0
+narwhals==2.1.1
 nbclassic==1.3.1
 nbclient==0.5.13
 nbconvert==6.5.4
@@ -136,7 +136,7 @@ pillow==11.3.0
 pixelmatch==0.3.0
 platformdirs==4.3.8
 playwright==1.50.0
-plotly==6.2.0
+plotly==6.3.0
 pluggy==1.6.0
 polars==1.32.2
 pre_commit==4.3.0
@@ -144,7 +144,7 @@ progressbar2==4.5.0
 prometheus_client==0.22.1
 prompt_toolkit==3.0.51
 psutil==7.0.0
-psygnal==0.14.0
+psygnal==0.14.1
 ptyprocess==0.7.0
 pure_eval==0.2.3
 pyarrow==21.0.0
