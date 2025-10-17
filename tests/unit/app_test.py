@@ -144,12 +144,12 @@ def test_watch_module_reload(tmpdir, kernel_context, extra_include_path, no_kern
             # assert "somemod" not in sys.modules
             # breakpoint()
             result = app.run()
-            assert "somemod" in sys.modules
+            somemod2 = sys.modules.get("somemod")
+            assert somemod1 is not somemod2
+            assert somemod2 is not None
             root = solara.RoutingProvider(children=[result], routes=app.routes, pathname="/")
             box, rc = solara.render(root, handle_error=False)
             assert rc.find(v.Card, children=["second"])
-            somemod2 = sys.modules["somemod"]
-            assert somemod1 is not somemod2
         finally:
             app.close()
             if "somemod" in sys.modules:
