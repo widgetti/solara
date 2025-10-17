@@ -1,5 +1,7 @@
 import unittest.mock
 
+import pytest
+
 import solara
 
 
@@ -13,6 +15,35 @@ def test_component_vue_basic():
     assert widget.value == 1
     assert widget.name == "World"
     rc.render(ComponentVueTest(value=2, name="Universe"))
+    assert widget.value == 2
+    assert widget.name == "Universe"
+
+
+@pytest.mark.parametrize("use_tags", [True, False])
+def test_component_vue_basic_with_custom_serializer(use_tags: bool):
+    if use_tags:
+
+        @solara._component_vue("component_vue_test.vue", tags={"value": {"to_json": lambda x, w: str(x), "from_json": lambda x, w: int(x)}})
+        def ComponentVueTest(value: int, name: str = "World"):
+            pass
+    else:
+
+        @solara._component_vue("component_vue_test.vue", to_json={"value": lambda x, w: str(x)}, from_json={"value": lambda x, w: int(x)})
+        def ComponentVueTest(value: int, name: str = "World"):
+            pass
+
+    box, rc = solara.render(ComponentVueTest(value=1))
+    widget = box.children[0]
+    assert widget.value == 1
+    assert widget.name == "World"
+
+    state = widget.get_state()
+    assert state["value"] == "1"
+    assert state["name"] == "World"
+
+    state["value"] = "2"
+    state["name"] = "Universe"
+    widget.set_state(state)
     assert widget.value == 2
     assert widget.name == "Universe"
 

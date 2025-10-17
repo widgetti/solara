@@ -12,8 +12,19 @@ import solara
 
 P = typing_extensions.ParamSpec("P")
 
+default_to_json = widgets.widget_serialization["to_json"]
+default_from_json = widgets.widget_serialization["from_json"]
 
-def _widget_from_signature(classname, base_class: Type[widgets.Widget], func: Callable[..., None], event_prefix: str) -> Type[widgets.Widget]:
+
+def _widget_from_signature(
+    classname,
+    base_class: Type[widgets.Widget],
+    func: Callable[..., None],
+    event_prefix: str,
+    tags: Dict[str, Any],
+    to_json: Dict[str, Callable[[Any, widgets.Widget], Any]],
+    from_json: Dict[str, Callable[[Any, widgets.Widget], Any]],
+) -> Type[widgets.Widget]:
     classprops: Dict[str, Any] = {}
 
     parameters = inspect.signature(func).parameters
@@ -38,7 +49,9 @@ def _widget_from_signature(classname, base_class: Type[widgets.Widget], func: Ca
                 trait = traitlets.Any()
             else:
                 trait = traitlets.Any(default_value=param.default)
-            classprops[name] = trait.tag(sync=True, **widgets.widget_serialization)
+            tag = dict(sync=True, to_json=to_json.get(name, default_to_json), from_json=from_json.get(name, default_from_json))
+            tag.update(**tags.get(name, {}))
+            classprops[name] = trait.tag(**tag)
     # maps event_foo to a callable
     classprops["_event_callbacks"] = traitlets.Dict(default_value={})
 
@@ -46,7 +59,13 @@ def _widget_from_signature(classname, base_class: Type[widgets.Widget], func: Ca
     return widget_class
 
 
-def _widget_vue(vue_path: str, vuetify=True) -> Callable[[Callable[P, None]], Type[v.VuetifyTemplate]]:
+def _widget_vue(
+    vue_path: str,
+    vuetify=True,
+    to_json: Dict[str, Callable[[Any, widgets.Widget], Any]] = {},
+    from_json: Dict[str, Callable[[Any, widgets.Widget], Any]] = {},
+    tags: Dict[str, Any] = {},
+) -> Callable[[Callable[P, None]], Type[v.VuetifyTemplate]]:
     def decorator(func: Callable[P, None]):
         class VuetifyWidgetSolara(v.VuetifyTemplate):
             template_file = (os.path.abspath(inspect.getfile(func)), vue_path)
@@ -55,14 +74,20 @@ def _widget_vue(vue_path: str, vuetify=True) -> Callable[[Callable[P, None]], Ty
             template_file = (os.path.abspath(inspect.getfile(func)), vue_path)
 
         base_class = VuetifyWidgetSolara if vuetify else VueWidgetSolara
-        widget_class = _widget_from_signature("VueWidgetSolaraSub", base_class, func, "vue_")
+        widget_class = _widget_from_signature("VueWidgetSolaraSub", base_class, func, "vue_", to_json=to_json, from_json=from_json, tags=tags)
 
         return widget_class
 
     return decorator
 
 
-def component_vue(vue_path: str, vuetify=True) -> Callable[[Callable[P, None]], Callable[P, solara.Element]]:
+def component_vue(
+    vue_path: str,
+    vuetify=True,
+    tags: Dict[str, Any] = {},
+    to_json: Dict[str, Callable[[Any, widgets.Widget], Any]] = {},
+    from_json: Dict[str, Callable[[Any, widgets.Widget], Any]] = {},
+) -> Callable[[Callable[P, None]], Callable[P, solara.Element]]:
     """Decorator to create a component backed by a Vue template.
 
     Although many components can be made from the Python side, sometimes it is easier to write components using Vue directly.
@@ -74,13 +99,18 @@ def component_vue(vue_path: str, vuetify=True) -> Callable[[Callable[P, None]], 
     are assumed by refer to the same vue property, with `on_foo` being the event handler when `foo` changes from
     the vue template.
 
-    Arguments or the form `event_foo` should be callbacks that can be called from the vue template. They are
+    Arguments of the form `event_foo` should be callbacks that can be called from the vue template. They are
     available as the function `foo` in the vue template.
 
     [See the vue v2 api](https://v2.vuejs.org/v2/api/) for more information on how to use Vue, like `watch`,
     `methods` and lifecycle hooks such as `mounted` and `destroyed`.
 
     See the [Vue component example](/documentation/examples/general/vue_component) for an example of how to use this decorator.
+
+    The underlying trait can be passed extra arguments by passing a dictionary to the `tags` argument.
+    The most common case is to pass a custom serializer and deserializer for the trait, for which we added the
+    strictly typed `to_json` and `from_json` arguments.
+    Otherwise pass a dictionary to the `tags` argument, see the example below for more details.
 
 
     ## Examples
@@ -105,6 +135,28 @@ def component_vue(vue_path: str, vuetify=True) -> Callable[[Callable[P, None]], 
         pass
     ```
 
+    ## Example with custom serializer and deserializer
+
+    ```python
+    import solara
+
+    def to_json_datetime(value: datetime.date, widget: widgets.Widget) -> str:
+        return value.isoformat()
+
+    def from_json_datetime(value: str, widget: widgets.Widget) -> datetime.date:
+        return datetime.date.fromisoformat(value)
+
+    @solara.component_vue("my_date_component.vue", to_json={"month": to_json_datetime}, from_json={"month": from_json_datetime})
+    def MyDateComponent(month: datetime.date, event_date_clicked: Callable):
+        pass
+
+    # the following will be the same, except that it is less strictly typed
+    @solara.component_vue("my_date_component.vue", tags={"month": {"to_json": to_json_datetime, "from_json": from_json_datetime}})
+    def MyDateComponentSame(month: datetime.date, event_date_clicked: Callable):
+        pass
+
+    ```
+
     ## Arguments
 
      * `vue_path`: The path to the Vue template file.
@@ -113,7 +165,7 @@ def component_vue(vue_path: str, vuetify=True) -> Callable[[Callable[P, None]], 
     """
 
     def decorator(func: Callable[P, None]):
-        VueWidgetSolaraSub = _widget_vue(vue_path, vuetify=vuetify)(func)
+        VueWidgetSolaraSub = _widget_vue(vue_path, vuetify=vuetify, to_json=to_json, from_json=from_json, tags=tags)(func)
 
         def wrapper(*args, **kwargs):
             event_callbacks = {}
