@@ -31,9 +31,13 @@ def _widget_from_signature(
     for name, param in parameters.items():
         if name.startswith("event_"):
             event_name = name[6:]
+            event_name_full = name  # LLM's are quick stubborn in wanting to call `event_foo` instead of `foo`
 
             def event_handler(self, data, buffers=None, event_name=event_name, param=param):
                 callback = self._event_callbacks.get(event_name, param.default)
+                if not callback:
+                    # support 'event_foo'
+                    callback = self._event_callbacks.get(event_name_full, None)
                 if callback:
                     if buffers:
                         callback(data, buffers)
@@ -41,6 +45,7 @@ def _widget_from_signature(
                         callback(data)
 
             classprops[f"vue_{event_name}"] = event_handler
+            classprops[f"vue_{event_name_full}"] = event_handler
         elif name.startswith("on_") and name[3:] in parameters:
             # callback, will be handled by reacton
             continue
@@ -100,7 +105,10 @@ def component_vue(
     the vue template.
 
     Arguments of the form `event_foo` should be callbacks that can be called from the vue template. They are
-    available as the function `foo` in the vue template.
+    available as the function `foo` and `event_foo` in the vue template.
+
+    Note that `foo` was kept for backwards compatibility, but LLM's have a tendency to use `event_foo`, so this was
+    changed to `event_foo`.
 
     [See the vue v2 api](https://v2.vuejs.org/v2/api/) for more information on how to use Vue, like `watch`,
     `methods` and lifecycle hooks such as `mounted` and `destroyed`.
