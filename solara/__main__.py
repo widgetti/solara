@@ -13,7 +13,7 @@ import rich
 import rich_click as click
 import uvicorn
 from rich import print as rprint
-from uvicorn.main import LEVEL_CHOICES, LOOP_CHOICES
+from uvicorn.main import LEVEL_CHOICES
 
 import solara
 from solara.server import settings
@@ -242,9 +242,9 @@ if "SOLARA_MODE" in os.environ:
 @click.argument("app")
 @click.option(
     "--loop",
-    type=LOOP_CHOICES,
+    type=str,
     default="auto",
-    help="Event loop implementation.",
+    help="Event loop implementation (see uvicorn documentation for possible values).",
     show_default=True,
 )
 @click.option(
