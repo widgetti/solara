@@ -18,7 +18,7 @@ dependencies = [
     "click>=7.1.0",
     "rich_click",
     "filelock",
-    "ipykernel",
+    "ipykernel<7",  # See https://github.com/widgetti/solara/issues/1110
     "nbformat",
     "jupyter_client",
 ]
