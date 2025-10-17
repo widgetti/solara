@@ -79,3 +79,6 @@ def test_component_vue_event():
     mock.assert_called_once_with(42)
     widget._handle_event(None, {"event": "foo", "data": 42}, [b"bar"])
     mock.assert_called_with(42, [b"bar"])
+
+    widget._handle_event(None, {"event": "event_foo", "data": 43}, [b"bar2"])
+    mock.assert_called_with(43, [b"bar2"])
