@@ -111,7 +111,7 @@ notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.26.4
 objgraph==3.6.2
-openai==2.4.0
+openai==2.5.0
 packaging==25.0
 pandas==2.3.3
 pandocfilters==1.5.1
@@ -132,7 +132,7 @@ psutil==7.1.0
 psygnal==0.15.0
 pure_eval==0.2.3
 pycparser==2.23
-pydantic==2.12.2
+pydantic==2.12.3
 pydantic_core==2.41.4
 pyee==13.0.0
 Pygments==2.19.2
