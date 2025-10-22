@@ -156,7 +156,7 @@ pyzmq==27.1.0
 reacton==1.9.1
 redis==6.4.0
 referencing==0.37.0
-regex==2025.10.22
+regex==2025.10.23
 requests==2.32.5
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1

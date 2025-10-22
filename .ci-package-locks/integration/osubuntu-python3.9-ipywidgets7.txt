@@ -173,7 +173,7 @@ PyYAML==6.0.3
 pyzmq==27.1.0
 reacton==1.9.1
 referencing==0.36.2
-regex==2025.10.22
+regex==2025.10.23
 requests==2.32.5
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
