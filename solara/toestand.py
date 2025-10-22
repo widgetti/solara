@@ -971,6 +971,19 @@ class AutoSubscribeContextManagerReacton(AutoSubscribeContextManagerBase):
 
         def force_update():
             # can we do just x+1 to collapse multiple updates into one?
+            if logger.isEnabledFor(logging.INFO):
+                frame = _find_outside_solara_frame()
+                if frame is not None:
+                    tb = inspect.getframeinfo(frame)
+                else:
+                    tb = None
+                if tb is not None and tb.code_context:
+                    code = tb.code_context[0]
+                    hint = f"\n{tb.filename}:{tb.lineno}\n{code.rstrip()}"
+                else:
+                    hint = "<No code context available>"
+                logger.info("A rerender was triggered by: %s", hint)
+
             set_counter(lambda x: x + 1)
 
         super().__enter__()
