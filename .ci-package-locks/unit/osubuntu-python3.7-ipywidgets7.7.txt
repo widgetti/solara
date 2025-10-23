@@ -191,7 +191,7 @@ toolz==0.12.1
 tornado==6.2
 tqdm==4.67.1
 traitlets==5.9.0
-traittypes==0.2.1
+traittypes==0.2.3
 typed-ast==1.5.5
 types-Markdown==3.5.0.3
 types-PyYAML==6.0.12.12
