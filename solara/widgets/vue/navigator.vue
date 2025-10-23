@@ -75,7 +75,7 @@ modules.export = {
     },
     makeFullRelativeUrl() {
       const url = new URL(this.location, window.location.origin + solara.rootPath);
-      return url.pathname + this.hash + url.search;
+      return url.pathname + url.search + this.hash;
     },
     navigateToHash(hash) {
       const targetEl = document.getElementById(hash.slice(1));
