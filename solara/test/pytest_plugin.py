@@ -35,7 +35,12 @@ if typing.TYPE_CHECKING:
 
 logger = logging.getLogger("solara.pytest_plugin")
 
-TEST_PORT_START = int(os.environ.get("PORT", "18765")) + 100  # do not interfere with the solara integration tests
+
+# support for pytest-xdist
+worker = os.environ.get("PYTEST_XDIST_WORKER", "gw0")
+# +100 so we do not interfere with the solara integration tests, +1 worker id to avoid port conflicts with other workers
+TEST_PORT_START = int(os.environ.get("PORT", "18765")) + int(worker[2:]) + 100
+
 TEST_HOST = solara.server.settings.main.host
 TIMEOUT = float(os.environ.get("SOLARA_PW_TIMEOUT", "18"))
 PYTEST_IPYWIDGETS_SOLARA_APP_WAIT_TIMEOUT = int(os.environ.get("PYTEST_IPYWIDGETS_SOLARA_APP_WAIT_TIMEOUT", "10"))
