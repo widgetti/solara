@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -118,7 +118,7 @@ jobs:
       DIFF_FILE_LOCATION: diff-code-quality-python${{ matrix.python-version }}.txt
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -190,7 +190,7 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: actions/download-artifact@v4
         with:
@@ -264,7 +264,7 @@ jobs:
       LOCK_FILE_LOCATION: .ci-package-locks/pyinstaller/os${{ matrix.os }}-python${{ matrix.python-version }}.txt
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -380,7 +380,7 @@ jobs:
       DIFF_FILE_LOCATION: diff-integration-os${{ matrix.os }}-python${{ matrix.python-version }}-ipywidgets${{ matrix.ipywidgets_major }}.txt
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: ts-graphviz/setup-graphviz@v2
 
@@ -497,7 +497,7 @@ jobs:
       DIFF_FILE_LOCATION: diff-integration-vue3-os${{ matrix.os }}-ipywidgets${{ matrix.ipywidgets_major }}.txt
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -609,7 +609,7 @@ jobs:
       DIFF_FILE_LOCATION: diff-unit-os${{ matrix.os }}-python${{ matrix.python }}-ipywidgets${{ matrix.ipywidgets }}.txt
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -701,7 +701,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           ref: ${{ github.head_ref || github.ref }}
@@ -745,7 +745,7 @@ jobs:
       id-token: write # this permission is mandatory for trusted publishing
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Python 3.10
         uses: actions/setup-python@v5
@@ -843,6 +843,6 @@ jobs:
   check_pycafe:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: |
           diff solara/website/pages/documentation/examples/ai/chatbot.py <(curl -s https://py.cafe/files/solara/chatbot/app.py)
