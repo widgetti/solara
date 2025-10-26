@@ -138,7 +138,7 @@ pre-commit==2.21.0
 progressbar2==4.2.0
 prometheus-client==0.17.1
 prompt_toolkit==3.0.48
-psutil==7.1.1
+psutil==7.1.2
 psygnal==0.9.5
 ptyprocess==0.7.0
 pyarrow==12.0.1
@@ -173,7 +173,7 @@ rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
 rich==13.8.1
 rich-click==1.8.9
-ruff==0.14.1
+ruff==0.14.2
 Send2Trash==1.8.3
 simple-websocket==1.1.0
 simplejson==3.20.2

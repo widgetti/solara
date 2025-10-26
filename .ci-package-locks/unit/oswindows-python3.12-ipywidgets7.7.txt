@@ -93,7 +93,7 @@ Markdown==3.9
 markdown-it-py==4.0.0
 MarkupSafe==3.0.3
 matplotlib==3.10.7
-matplotlib-inline==0.1.7
+matplotlib-inline==0.2.1
 mdit-py-plugins==0.5.0
 mdurl==0.1.2
 mistune==3.1.4
@@ -111,7 +111,7 @@ notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.26.4
 objgraph==3.6.2
-openai==2.6.0
+openai==2.6.1
 packaging==25.0
 pandas==2.3.3
 pandocfilters==1.5.1
@@ -128,7 +128,7 @@ polars-runtime-32==1.34.0
 pre_commit==4.3.0
 prometheus_client==0.23.1
 prompt_toolkit==3.0.52
-psutil==7.1.1
+psutil==7.1.2
 psygnal==0.15.0
 pure_eval==0.2.3
 pycparser==2.23
@@ -162,9 +162,9 @@ rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
 rfc3987-syntax==1.1.0
 rich==14.2.0
-rich-click==1.9.3
+rich-click==1.9.4
 rpds-py==0.28.0
-ruff==0.14.1
+ruff==0.14.2
 Send2Trash==1.8.3
 simple-websocket==1.1.0
 simplejson==3.20.2
