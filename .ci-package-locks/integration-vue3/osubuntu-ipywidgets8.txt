@@ -219,7 +219,7 @@ vaex-hdf5==0.14.1
 vaex-jupyter==0.8.2
 vaex-viz==0.5.4
 vega-datasets==0.9.0
-virtualenv==20.35.3
+virtualenv==20.35.4
 voila==0.5.11
 watchdog==6.0.0
 watchfiles==1.1.1

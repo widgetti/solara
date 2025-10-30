@@ -7,4 +7,4 @@ platformdirs==4.4.0
 pre_commit==4.3.0
 PyYAML==6.0.3
 typing_extensions==4.15.0
-virtualenv==20.35.3
+virtualenv==20.35.4

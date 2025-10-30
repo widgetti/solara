@@ -191,7 +191,7 @@ uri-template==1.3.0
 urllib3==2.5.0
 uvicorn==0.38.0
 vega-datasets==0.9.0
-virtualenv==20.35.3
+virtualenv==20.35.4
 voila==0.5.11
 watchdog==6.0.0
 watchfiles==1.1.1
