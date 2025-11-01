@@ -101,37 +101,33 @@ class BaseSettings:
         cls = type(self)
         self._values = {**kwargs}
         keys = {k.upper() for k in os.environ.keys()}
-        for key, field in cls.__dict__.items():
-            if key in kwargs:
-                continue
-            if isinstance(field, _Field):
-                value = field.default
-                if field.default_factory:
-                    value = field.default_factory()
 
-                if field.env:
-                    env_key = field.env.upper()
-                    if env_key in keys:
-                        # do a case-insensitive lookup
-                        for env_var_cased in os.environ.keys():
-                            if env_key.upper() == env_var_cased.upper():
-                                value = convert(field.annotation, os.environ[env_var_cased])
-                self._values[key] = value
+        for key, field in list(cls.__dict__.items()):
+            if key in kwargs or not isinstance(field, _Field):
+                continue
+            value = field.default
+            if field.default_factory:
+                value = field.default_factory()
+            if field.env:
+                env_key = field.env.upper()
+                if env_key in keys:
+                    for env_var_cased in os.environ.keys():
+                        if env_key.upper() == env_var_cased.upper():
+                            value = convert(field.annotation, os.environ[env_var_cased])
+            self._values[key] = value
 
     def __init_subclass__(cls) -> None:
         cls.__fields__ = {}
-        for key, field in cls.__dict__.items():
-            if key.startswith("_"):
+        items = list(cls.__dict__.items())
+
+        for key, value in items:
+            if key.startswith("_") or key == "Config" or inspect.isfunction(value):
                 continue
-            if key == "Config":
-                continue
-            if not isinstance(field, _Field):
-                if inspect.isfunction(field):
-                    continue
-                field = Field(field)
-                setattr(cls, key, field)
-                field.__set_name__(cls, key)
-            cls.__fields__[key] = field
+            if not isinstance(value, _Field):
+                value = Field(value)
+                setattr(cls, key, value)
+                value.__set_name__(cls, key)
+            cls.__fields__[key] = value
 
     def dict(self, by_alias=True):
         values = self._values.copy()
