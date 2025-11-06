@@ -368,7 +368,7 @@ jobs:
         # osx should work fine (and we test that locally often)
         os: [ubuntu, windows]
         # just 1 version, it's heavy
-        python-version: [3.9]
+        python-version: [3.9, 3.14]
         ipywidgets_major: ["7", "8"]
         include:
           - ipywidgets_major: "7"
