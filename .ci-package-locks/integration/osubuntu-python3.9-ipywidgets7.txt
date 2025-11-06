@@ -150,7 +150,7 @@ pure_eval==0.2.3
 pyarrow==21.0.0
 pycparser==2.23
 pydantic==1.10.24
-pydantic_core==2.41.4
+pydantic_core==2.41.5
 pyee==12.1.1
 Pygments==2.19.2
 pymdown-extensions==10.16.1
@@ -201,7 +201,7 @@ tornado==6.5.2
 tqdm==4.67.1
 traitlets==5.14.3
 traittypes==0.2.3
-types-Markdown==3.9.0.20250906
+types-Markdown==3.10.0.20251106
 types-PyYAML==6.0.12.20250915
 types-requests==2.32.4.20250913
 typing-inspection==0.4.2

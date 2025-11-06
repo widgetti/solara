@@ -59,7 +59,7 @@ ipycanvas==0.14.1
 ipykernel==6.29.5
 ipyleaflet==0.20.0
 ipyreact==0.5.0
-ipython==9.6.0
+ipython==9.7.0
 ipython-genutils==0.2.0
 ipython_pygments_lexers==1.1.1
 ipyvue==1.11.3
@@ -134,8 +134,8 @@ psygnal==0.15.0
 ptyprocess==0.7.0
 pure_eval==0.2.3
 pycparser==2.23
-pydantic==2.12.3
-pydantic_core==2.41.4
+pydantic==2.12.4
+pydantic_core==2.41.5
 pyee==13.0.0
 Pygments==2.19.2
 pymdown-extensions==10.16.1
@@ -182,7 +182,7 @@ tornado==6.5.2
 tqdm==4.67.1
 traitlets==5.14.3
 traittypes==0.2.3
-types-Markdown==3.9.0.20250906
+types-Markdown==3.10.0.20251106
 types-PyYAML==6.0.12.20250915
 types-requests==2.32.4.20250913
 typing-inspection==0.4.2
