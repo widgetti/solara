@@ -182,7 +182,7 @@ rfc3987-syntax==1.1.0
 rich==14.2.0
 rich-click==1.9.4
 rpds-py==0.27.1
-ruff==0.14.3
+ruff==0.14.4
 Send2Trash==1.8.3
 simple-websocket==1.1.0
 simplejson==3.20.2
