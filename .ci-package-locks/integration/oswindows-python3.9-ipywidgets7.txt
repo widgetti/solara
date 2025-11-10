@@ -83,7 +83,7 @@ isoduration==20.11.0
 itsdangerous==2.2.0
 jedi==0.19.2
 Jinja2==3.1.6
-jiter==0.11.1
+jiter==0.12.0
 json5==0.12.1
 jsonpointer==3.0.0
 jsonschema==4.25.1
@@ -140,8 +140,8 @@ platformdirs==4.4.0
 playwright==1.50.0
 plotly==6.4.0
 pluggy==1.6.0
-polars==1.35.1
-polars-runtime-32==1.35.1
+polars==1.35.2
+polars-runtime-32==1.35.2
 pre_commit==4.3.0
 prometheus_client==0.23.1
 prompt_toolkit==3.0.52
