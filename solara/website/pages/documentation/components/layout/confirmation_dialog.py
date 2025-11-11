@@ -6,7 +6,7 @@
 from typing import Union
 
 import solara
-from solara.lab.components.confirmation_dialog import ConfirmationDialog
+from solara.components.confirmation_dialog import ConfirmationDialog
 from solara.website.utils import apidoc
 
 title = "ConfirmationDialog"
@@ -52,4 +52,4 @@ def Page():
         solara.Markdown(f"Are you sure you want to delete user **{user_to_be_deleted.value}**?")
 
 
-__doc__ += apidoc(solara.lab.components.confirmation_dialog.ConfirmationDialog.f)  # type: ignore
+__doc__ += apidoc(solara.components.confirmation_dialog.ConfirmationDialog.f)  # type: ignore
