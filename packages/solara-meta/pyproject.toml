@@ -38,7 +38,8 @@ assets = [
 
 documentation = [
     "bqplot",
-    "altair",
+    "altair ; python_version < '3.14'",
+    "altair @ git+https://github.com/vega/altair.git ; python_version >= '3.14'",
     "folium",
     "ipycanvas",
     "ipyleaflet",
@@ -89,6 +90,9 @@ dev = [
     "polars",
     "numpy<2",
 ]
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
 include = ["LICENSE"]

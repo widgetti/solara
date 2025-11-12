@@ -179,7 +179,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu, macos, windows]
-        python: ["3.7", "3.13"]
+        python: ["3.7", "3.14"]
         exclude:
           - os: windows
             python: 3.7
@@ -368,7 +368,7 @@ jobs:
         # osx should work fine (and we test that locally often)
         os: [ubuntu, windows]
         # just 1 version, it's heavy
-        python-version: [3.9]
+        python-version: [3.9, 3.14]
         ipywidgets_major: ["7", "8"]
         include:
           - ipywidgets_major: "7"
@@ -593,7 +593,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu, macos, windows]
-        python: [3.7, 3.12]
+        python: [3.7, 3.14]
         ipywidgets: ["7.7", "8.0"]
         exclude:
           - os: windows

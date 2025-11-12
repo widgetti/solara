@@ -41,6 +41,18 @@ class Local(threading.local):
 local = Local()
 
 
+def _get_event_loop():
+    # not 100% why this is needed for Python 3.14 (maybe also lower?)
+    # but during the tests, even though we have pytest-tornasync installed, there is not
+    # event loop available.
+    current_loop = asyncio._get_running_loop()
+    if current_loop is not None:
+        return current_loop
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    return loop
+
+
 class PageStatus(enum.Enum):
     CONNECTED = "connected"
     DISCONNECTED = "disconnected"
@@ -77,7 +89,7 @@ class VirtualKernelContext:
     closed_event: threading.Event = dataclasses.field(default_factory=threading.Event)
     _on_close_callbacks: List[Callable[[], None]] = dataclasses.field(default_factory=list)
     lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
-    event_loop: asyncio.AbstractEventLoop = dataclasses.field(default_factory=asyncio.get_event_loop)
+    event_loop: asyncio.AbstractEventLoop = dataclasses.field(default_factory=_get_event_loop)
 
     def __post_init__(self):
         with self:

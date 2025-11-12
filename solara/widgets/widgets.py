@@ -22,6 +22,7 @@ class VegaLite(v.VuetifyTemplate):
     on_click = traitlets.traitlets.Callable(None, allow_none=True)
     on_hover = traitlets.traitlets.Callable(None, allow_none=True)
     cdn = traitlets.Unicode(None, allow_none=True).tag(sync=True)
+    version = traitlets.Int(6).tag(sync=True)
 
     def vue_altair_click(self, *args):
         if self.on_click is not None:
