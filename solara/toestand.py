@@ -313,6 +313,10 @@ class KernelStore(ValueBase[S], ABC):
 
     def set(self, value: S):
         scope_dict, scope_id = self._get_dict()
+        if not solara.settings.main.allow_global_context and scope_id == "global":
+            raise RuntimeError(
+                f"No kernel context found, and global context is not allowed for task, context key was {solara.server.kernel_context.get_current_thread_key()}"
+            )
         old = self.get()
         if self.equals(old, value):
             return

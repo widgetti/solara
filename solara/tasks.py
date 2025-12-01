@@ -1,3 +1,4 @@
+import contextvars
 import sys
 import abc
 import asyncio
@@ -267,7 +268,16 @@ class TaskAsyncio(Task[P, R]):
 
         if self.run_in_thread:
             thread_event_loop = asyncio.new_event_loop()
-            self.current_task = current_task = thread_event_loop.create_task(self._async_run(call_event_loop, future, args, kwargs))
+
+            def create_task():
+                # remove the stack, since this thread starts with a fresh stack
+                import solara.server.kernel_context
+
+                solara.server.kernel_context.async_stack.set(None)
+                return thread_event_loop.create_task(self._async_run(call_event_loop, future, args, kwargs))
+
+            new_context = contextvars.copy_context()
+            self.current_task = current_task = new_context.run(create_task)
 
             def runs_in_thread():
                 try:
@@ -298,7 +308,7 @@ class TaskAsyncio(Task[P, R]):
                     raise
 
             self._result.value = TaskResult[R](latest=self._last_value, _state=TaskState.STARTING)
-            thread = threading.Thread(target=runs_in_thread, daemon=True)
+            thread = threading.Thread(target=runs_in_thread, daemon=True, name=f"TaskAsyncio-{self.function.__name__}")
             thread.start()
         else:
             self.current_task = current_task = asyncio.create_task(self._async_run(call_event_loop, future, args, kwargs))
@@ -322,7 +332,6 @@ class TaskAsyncio(Task[P, R]):
 
         task_for_this_call = _get_current_task()
         assert task_for_this_call is not None
-
         if self.is_current():
             self._result.value = TaskResult[R](latest=self._last_value, _state=TaskState.STARTING)
 
