@@ -11,10 +11,10 @@ license = {file = "LICENSE"}
 requires-python = ">=3.7"
 classifiers = ["License :: OSI Approved :: MIT License"]
 dynamic = ["description"]
-version = "1.54.0"
+version = "1.55.0"
 dependencies = [
-    "solara-ui==1.54.0",
-    "solara-server[starlette]==1.54.0",
+    "solara-ui==1.55.0",
+    "solara-server[starlette]==1.55.0",
     "pytest",
     "playwright",
     "pytest-playwright",
