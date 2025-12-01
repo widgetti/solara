@@ -17,7 +17,7 @@ import threading
 import time
 import typing
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, cast
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union, cast
 
 import ipywidgets as widgets
 import reacton
@@ -39,6 +39,11 @@ class Local(threading.local):
 
 
 local = Local()
+# same idea, but for `async with ...`
+if typing.TYPE_CHECKING:
+    async_stack = contextvars.ContextVar[Union[Tuple[Union[None, "VirtualKernelContext"], ...], None]](name="async_stack", default=None)
+else:
+    async_stack = contextvars.ContextVar("async_stack", default=None)
 
 
 class PageStatus(enum.Enum):
@@ -99,6 +104,23 @@ class VirtualKernelContext:
 
     def on_close(self, f: Callable[[], None]):
         self._on_close_callbacks.append(f)
+
+    async def __aenter__(self):
+        stack = async_stack.get()
+        if stack is None:
+            stack = ()
+        key = get_current_thread_key()
+        async_stack.set(stack + (current_context.get(key, None),))
+        new_key = get_current_thread_key()
+        current_context[new_key] = self
+
+    async def __aexit__(self, *args):
+        key = get_current_thread_key()
+        assert local.kernel_context_stack is not None
+        stack = async_stack.get()
+        assert stack is not None
+        current_context[key] = stack[-1]
+        async_stack.set(stack[:-1])
 
     def __enter__(self):
         if local.kernel_context_stack is None:
@@ -364,6 +386,7 @@ else:
 
 
 def get_current_thread_key() -> str:
+    # consider renaming this to get_current_context_key
     if not solara.server.settings.kernel.threaded:
         if async_context_id is not None:
             try:
@@ -375,6 +398,13 @@ def get_current_thread_key() -> str:
     else:
         thread = threading.current_thread()
         key = get_thread_key(thread)
+        # this signals we are using `async with context`, which means we are interested in task-local context
+        stack = async_stack.get()
+        if stack is not None and len(stack) > 0:
+            current_task = asyncio.current_task()
+            if current_task is not None:
+                task_key = current_task.get_name()
+                key = f"{key}-task:{task_key}"
     return key
 
 
