@@ -17,7 +17,7 @@ packages = [
 dependencies = [
     "reacton>=1.9",
     "ipywidgets>=7.7",
-    "ipyvuetify>=1.6.10",
+    "ipyvuetify>=1.6.10,!=3.0.0a*",
     "ipyvue>=1.9.0",
     "requests",
     "humanize",
