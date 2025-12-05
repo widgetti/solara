@@ -31,11 +31,11 @@ noqa_pattern = re.compile(r".*# noqa(?::\s*([A-Z]{2,3}\d{2,3})(?:,\s*([A-Z]{2,3}
 
 
 if sys.version_info < (3, 11):
-    ScopeNodeType = t.Union[ast.For, ast.While, ast.If, ast.Try, ast.FunctionDef]
+    ScopeNodeType = t.Union[ast.For, ast.While, ast.If, ast.Try, ast.FunctionDef, ast.AsyncFunctionDef]
     TryNodes = (ast.Try,)
 else:
     # except* nodes are only standardized in 3.11+
-    ScopeNodeType = t.Union[ast.For, ast.While, ast.If, ast.Try, ast.TryStar, ast.FunctionDef]
+    ScopeNodeType = t.Union[ast.For, ast.While, ast.If, ast.Try, ast.TryStar, ast.FunctionDef, ast.AsyncFunctionDef]
     TryNodes = (ast.Try, ast.TryStar)
 
 
@@ -100,7 +100,7 @@ class HookValidator(ast.NodeVisitor):
         parsed = ast.parse(parsed_source)
         # Get nodes from inside the function body
         func_definition = t.cast(ast.FunctionDef, parsed.body[0])
-        self.function_scope: ast.FunctionDef = func_definition
+        self.function_scope: t.Union[ast.FunctionDef, ast.AsyncFunctionDef] = func_definition
         self._root_function_scope = self.function_scope
         # None means, *DO* qa
         self.no_qa: t.Optional[t.Set[InvalidReactivityCause]] = None
@@ -129,7 +129,7 @@ class HookValidator(ast.NodeVisitor):
             return InvalidReactivityCause.CONDITIONAL_USE
         elif isinstance(node, (ast.For, ast.While)):
             return InvalidReactivityCause.LOOP_USE
-        elif isinstance(node, ast.FunctionDef):
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             return InvalidReactivityCause.NESTED_FUNCTION_USE
         elif isinstance(node, TryNodes):
             return InvalidReactivityCause.EXCEPTION_USE
@@ -170,6 +170,12 @@ class HookValidator(ast.NodeVisitor):
             self._visit_children_using_scope(node)
 
     def visit_FunctionDef(self, node: ast.FunctionDef):
+        old_function_scope = self.function_scope
+        self.function_scope = node
+        self._visit_children_using_scope(node)
+        self.function_scope = old_function_scope
+
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef):
         old_function_scope = self.function_scope
         self.function_scope = node
         self._visit_children_using_scope(node)
