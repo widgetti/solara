@@ -120,6 +120,13 @@ def test_hook_use_early_return():
         return
         solara.use_state(1)
 
+    @solara.component
+    def Page4():
+        async def inner_function():
+            return
+
+        solara.use_state(1)
+
 
 def test_hook_use_nested_function():
     # sometimes we know that the use of a hook is stable, even when in a loop
