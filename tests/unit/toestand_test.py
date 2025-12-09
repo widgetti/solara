@@ -1,5 +1,5 @@
+import concurrent
 import dataclasses
-import threading
 import unittest.mock
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Set, TypeVar, cast
@@ -879,28 +879,24 @@ def test_dataframe():
 
 
 def test_thread_local():
-    def test1():
-        assert solara.lab.thread_local.reactive_used is None
+    with concurrent.futures.ThreadPoolExecutor(1) as w1, concurrent.futures.ThreadPoolExecutor(1) as w2:
 
-    t = threading.Thread(target=test1)
-    t.start()
-    t.join()
+        def test1():
+            assert solara.toestand.thread_local.reactive_used is None
 
-    def test2():
-        myset: Set[solara.lab.ValueBase] = set()
-        solara.lab.local.reactive_used = myset
-        assert solara.lab.thread_local.reactive_used is myset
+        w1.submit(test1).result()
 
-    t = threading.Thread(target=test2)
-    t.start()
-    t.join()
+        def test2():
+            myset: Set[solara.toestand.ValueBase] = set()
+            solara.toestand.thread_local.reactive_used = myset
+            assert solara.toestand.thread_local.reactive_used is myset
 
-    def test3():
-        assert solara.lab.thread_local.reactive_used is None
+        w1.submit(test2).result()
 
-    t = threading.Thread(target=test3)
-    t.start()
-    t.join()
+        def test3():
+            assert solara.toestand.thread_local.reactive_used is None
+
+        w2.submit(test3).result()
 
 
 def test_reactive_auto_subscribe(kernel_context):

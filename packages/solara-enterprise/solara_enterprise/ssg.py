@@ -2,6 +2,7 @@ import concurrent.futures.thread
 import logging
 import threading
 import time
+import sys
 import typing
 import urllib
 import weakref
@@ -65,26 +66,49 @@ def _worker_with_cleanup(*args, **kwargs):
 
 
 class CleanupThreadPoolExecutor(concurrent.futures.ThreadPoolExecutor):
-    def _adjust_thread_count(self):
-        # copy of the original code with _worker replaced
-        # if idle threads are available, don't spin new threads
-        if self._idle_semaphore.acquire(timeout=0):
-            return
+    if sys.version_info < (3, 14):
 
-        # When the executor gets lost, the weakref callback will wake up
-        # the worker threads.
-        def weakref_cb(_, q=self._work_queue):
-            q.put(None)
+        def _adjust_thread_count(self):
+            # copy of the original code with _worker replaced
+            # if idle threads are available, don't spin new threads
+            if self._idle_semaphore.acquire(timeout=0):
+                return
 
-        num_threads = len(self._threads)
-        if num_threads < self._max_workers:
-            thread_name = "%s_%d" % (self._thread_name_prefix or self, num_threads)
-            t = threading.Thread(
-                name=thread_name, target=_worker_with_cleanup, args=(weakref.ref(self, weakref_cb), self._work_queue, self._initializer, self._initargs)
-            )
-            t.start()
-            self._threads.add(t)  # type: ignore
-            concurrent.futures.thread._threads_queues[t] = self._work_queue  # type: ignore
+            # When the executor gets lost, the weakref callback will wake up
+            # the worker threads.
+            def weakref_cb(_, q=self._work_queue):
+                q.put(None)
+
+            num_threads = len(self._threads)
+            if num_threads < self._max_workers:
+                thread_name = "%s_%d" % (self._thread_name_prefix or self, num_threads)
+                t = threading.Thread(
+                    name=thread_name, target=_worker_with_cleanup, args=(weakref.ref(self, weakref_cb), self._work_queue, self._initializer, self._initargs)
+                )
+                t.start()
+                self._threads.add(t)  # type: ignore
+                concurrent.futures.thread._threads_queues[t] = self._work_queue  # type: ignore
+    else:
+
+        def _adjust_thread_count(self):
+            # if idle threads are available, don't spin new threads
+            if self._idle_semaphore.acquire(timeout=0):
+                return
+
+            # When the executor gets lost, the weakref callback will wake up
+            # the worker threads.
+            def weakref_cb(_, q=self._work_queue):
+                q.put(None)
+
+            num_threads = len(self._threads)
+            if num_threads < self._max_workers:
+                thread_name = "%s_%d" % (self._thread_name_prefix or self, num_threads)
+                t = threading.Thread(
+                    name=thread_name, target=_worker_with_cleanup, args=(weakref.ref(self, weakref_cb), self._create_worker_context(), self._work_queue)
+                )
+                t.start()
+                self._threads.add(t)
+                concurrent.futures.thread._threads_queues[t] = self._work_queue  # type: ignore
 
 
 def ssg_crawl(base_url: str):
