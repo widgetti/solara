@@ -1,5 +1,6 @@
+import asyncio
 from pathlib import Path
-from typing import BinaryIO, Callable, List, Optional, Union, cast
+from typing import Any, BinaryIO, Callable, Coroutine, List, Optional, Union, cast
 
 import ipyvuetify as vy
 import ipywidgets as widgets
@@ -19,7 +20,13 @@ class FileDownloadWidget(vy.VuetifyTemplate):
 
 @solara.component
 def FileDownload(
-    data: Union[str, bytes, BinaryIO, Callable[[], Union[str, bytes, BinaryIO]]],
+    data: Union[
+        str,
+        bytes,
+        BinaryIO,
+        Callable[[], Union[str, bytes, BinaryIO]],
+        Callable[[], Coroutine[Any, Any, Union[str, bytes, BinaryIO]]],
+    ],
     filename: Optional[str] = None,
     label: Optional[str] = None,
     icon_name: Optional[str] = "mdi-cloud-download-outline",
@@ -130,7 +137,7 @@ def FileDownload(
 
     ## Arguments
 
-     * `data`: The data to download. Can be a string, bytes, or a file like object, or a function that returns one of these.
+     * `data`: The data to download. Can be a string, bytes, or a file like object, or a function (or coroutine function) that returns one of these.
      * `filename`: The name of the file the user will see as default when downloading (default name is "solara-download.dat").
         If a file object is provided, the filename will be extracted from the file object if possible.
      * `label`: The label of the button. If not provided, the label will be "Download: {filename}".
@@ -162,7 +169,11 @@ def FileDownload(
     def get_data() -> Optional[bytes]:
         if request_download:
             if callable(data):
-                data_non_lazy = data()
+                # if it is a coroutine, we start a new event loop and run it
+                if asyncio.iscoroutinefunction(data):
+                    data_non_lazy = asyncio.run(data())
+                else:
+                    data_non_lazy = data()
             else:
                 data_non_lazy = data
             if hasattr(data_non_lazy, "read"):
