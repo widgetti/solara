@@ -39,7 +39,7 @@ assets = [
 documentation = [
     "bqplot",
     "altair ; python_version < '3.14'",
-    "altair @ git+https://github.com/vega/altair.git ; python_version >= '3.14'",
+    "altair >= 6.0.0 ; python_version >= '3.14'",
     "folium",
     "ipycanvas",
     "ipyleaflet",
