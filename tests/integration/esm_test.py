@@ -1,4 +1,3 @@
-import sys
 from pathlib import Path
 
 import ipyreact
@@ -37,7 +36,6 @@ def PageDefineDuringRun():
     ipyreact.ValueWidget.element(_module="solara-test-dynamic", value=0, on_value=value.set)
 
 
-@pytest.mark.skipif(sys.version_info < (3, 7, 0), reason="ipyreact requires python 3.7 or higher")
 @pytest.mark.parametrize("app", ["esm_test:Page", "esm_test:PageDefineDuringRun"])
 def test_ipyreact(browser: playwright.sync_api.Browser, page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, app):
     with extra_include_path(HERE), solara_app(app):
