@@ -12,8 +12,8 @@ requires-python = ">=3.8"
 classifiers = ["License :: Free for non-commercial use"]
 dynamic = ["version", "description"]
 dependencies = [
-    "solara-ui==1.55.1",
-    "solara-server==1.55.1",
+    "solara-ui==1.56.0",
+    "solara-server==1.56.0",
 ]
 
 [project.optional-dependencies]
