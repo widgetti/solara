@@ -39,6 +39,7 @@ class ThemeSettings(BaseSettings):
     loader: str = "solara"
     show_banner: bool = True
     title: str = "Solara ☀️"
+    force_refresh: bool = False
 
     class Config:
         env_prefix = "solara_theme_"

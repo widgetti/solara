@@ -245,6 +245,7 @@
         solara.rootPath = {{ root_path | tojson | safe}};
         solara.jupyterRootPath = {{ jupyter_root_path | tojson | safe}};
         solara.cdn = {{ cdn | tojson | safe }};
+        solara.forceRefresh = {{ force_refresh | tojson | safe }};
         // the vue templates expect it to not have a trailing slash
         solara.cdn = solara.cdn.replace(/\/$/, '');
         // keep this for backwards compatibility
@@ -364,7 +365,9 @@
                     }
                 },
                 needsRefresh: function (value) {
-                    if (this.needsRefresh && !this.cancelAutoRefresh && !solara.production) {
+                    if(solara.forceRefresh) {
+                        this.reload();
+                    } else if (this.needsRefresh && !this.cancelAutoRefresh && !solara.production) {
                         console.log('value for needRefresh', value);
                         setTimeout(() => {
                             console.log('this.autoRefreshCount', this.autoRefreshCount)

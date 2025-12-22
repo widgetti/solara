@@ -392,6 +392,7 @@ def read_root(
         "path": path,
         "root_path": root_path,
         "jupyter_root_path": jupyter_root_path,
+        "force_refresh": settings.theme.force_refresh,
         "resources": resources,
         "theme": settings.theme.dict(),
         "production": settings.main.mode == "production",
