@@ -36,7 +36,7 @@ def FigureAltair(
         # Altair 6+ emits newer Vega-Lite MIME types (e.g. v6).
         # Fall back to the first Vega-Lite spec we find instead of failing hard.
 
-        
+
 
         for key in bundle:
             if key.startswith("application/vnd.vegalite.v"):
@@ -47,7 +47,7 @@ def FigureAltair(
                 f"Unsupported Vega-Lite MIME type: {list(bundle.keys())}"
             )
 
-    
+
         return solara.widgets.VegaLite.element(
             spec=spec, on_click=on_click, listen_to_click=on_click is not None, on_hover=on_hover, listen_to_hover=on_hover is not None
         )
