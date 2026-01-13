@@ -1,3 +1,4 @@
+import asyncio
 import os
 from os.path import isfile, join
 from pathlib import Path
@@ -7,6 +8,11 @@ import logging
 import humanize
 import ipyvuetify as vy
 import traitlets
+
+try:
+    import watchfiles
+except ModuleNotFoundError:
+    watchfiles = None  # type: ignore
 
 import solara
 from solara.components import Div
@@ -84,6 +90,7 @@ def FileBrowser(
     on_file_name: Optional[Callable[[str], None]] = None,
     start_directory=None,
     can_select=False,
+    watch: bool = False,
 ):
     """File/directory browser at the server side.
 
@@ -109,6 +116,8 @@ def FileBrowser(
      * `directory_first`: If `True` directories are shown before files. Default: `False`.
      * `on_file_name`: (deprecated) Use on_file_open instead.
      * `start_directory`: (deprecated) Use directory instead.
+     * `watch`: If `True`, watch the current directory for file changes and automatically refresh the file list.
+        Requires the `watchfiles` package to be installed.
     """
     if start_directory is not None:
         directory = start_directory  # pragma: no cover
@@ -122,6 +131,8 @@ def FileBrowser(
     warning, set_warning = solara.use_state(cast(Optional[str], None))
     scroll_pos_stack, set_scroll_pos_stack = solara.use_state(cast(List[int], []))
     scroll_pos, set_scroll_pos = solara.use_state(0)
+    # Counter to trigger re-render when files change
+    file_change_counter, set_file_change_counter = solara.use_state(0)
     selected_private, set_selected_private = use_reactive_or_value(
         selected,
         on_value=on_path_select if can_select else lambda x: None,
@@ -142,6 +153,38 @@ def FileBrowser(
                 current_dir.value = selected_private.parent.resolve()
 
     solara.use_effect(sync_directory_from_selected, [selected_private])
+
+    def watch_directory():
+        if not watch:
+            return
+        if not watchfiles:
+            logger.warning("watchfiles not installed, cannot watch directory")
+            return
+
+        # Check if there's a running event loop before creating the coroutine
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            # No running event loop (e.g., in unit tests or non-server environments)
+            logger.warning("No running event loop, cannot watch directory for changes")
+            return
+
+        dir_to_watch = current_dir.value
+
+        async def watch_task():
+            try:
+                async for _ in watchfiles.awatch(dir_to_watch):
+                    logger.debug("Directory %s changed, refreshing file list", dir_to_watch)
+                    set_file_change_counter(lambda x: x + 1)
+            except RuntimeError:
+                pass  # swallow the RuntimeError: Already borrowed errors from watchfiles
+            except Exception:
+                logger.exception("Error watching directory")
+
+        future = asyncio.create_task(watch_task())
+        return future.cancel
+
+    solara.use_effect(watch_directory, [watch, current_dir.value])
 
     def change_dir(new_dir: Path):
         if os.access(new_dir, os.R_OK):
