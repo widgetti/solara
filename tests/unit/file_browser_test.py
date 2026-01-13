@@ -1,3 +1,4 @@
+import asyncio
 import platform
 import unittest.mock
 from pathlib import Path
@@ -289,4 +290,158 @@ def test_file_browser_programmatic_select():
     # this will trigger the sync_directory_from_selected
     selected.value = current_dir.value / ".." / "unit" / ".."
     assert current_dir.value == HERE.parent
+    rc.close()
+
+
+def test_file_browser_watch_no_event_loop(tmpdir: Path):
+    """Test that watch=True gracefully handles no running event loop."""
+    tmpdir = Path(tmpdir)
+    (tmpdir / "test.txt").write_text("test")
+
+    # When watch=True but no event loop is available, it should log a warning but not crash
+    with unittest.mock.patch.object(solara.components.file_browser.logger, "warning") as mock_warning:
+
+        @solara.component
+        def Test():
+            return solara.FileBrowser(tmpdir, watch=True)
+
+        div, rc = solara.render_fixed(Test(), handle_error=False)
+        file_list: solara.components.file_browser.FileListWidget = div.children[1]
+
+        # Verify files are still shown correctly
+        files = {k["name"] for k in file_list.files}
+        assert "test.txt" in files
+
+        # Verify warning was logged about no event loop
+        mock_warning.assert_called_with("No running event loop, cannot watch directory for changes")
+        rc.close()
+
+
+def test_file_browser_watch_disabled_by_default():
+    """Test that watch is disabled by default (no warning when watchfiles not available)."""
+
+    @solara.component
+    def Test():
+        return solara.FileBrowser(HERE.parent)
+
+    # This should work without any issues even if watchfiles is not installed
+    div, rc = solara.render_fixed(Test(), handle_error=False)
+    file_list: solara.components.file_browser.FileListWidget = div.children[1]
+    assert "file_browser_test.py" in file_list
+    rc.close()
+
+
+def test_file_browser_watch_no_watchfiles(tmpdir: Path):
+    """Test that watch=True logs a warning when watchfiles is not installed."""
+    tmpdir = Path(tmpdir)
+    (tmpdir / "test.txt").write_text("test")
+
+    with unittest.mock.patch.object(solara.components.file_browser, "watchfiles", None):
+        with unittest.mock.patch.object(solara.components.file_browser.logger, "warning") as mock_warning:
+
+            @solara.component
+            def Test():
+                return solara.FileBrowser(tmpdir, watch=True)
+
+            div, rc = solara.render_fixed(Test(), handle_error=False)
+
+            # Give the effect a chance to run
+            import time
+
+            time.sleep(0.1)
+
+            mock_warning.assert_called_with("watchfiles not installed, cannot watch directory")
+            rc.close()
+
+
+@pytest.mark.asyncio
+async def test_file_browser_watch_detects_new_file(tmpdir: Path):
+    """Test that watch=True actually detects when a new file is added."""
+    tmpdir = Path(tmpdir)
+    (tmpdir / "initial.txt").write_text("initial")
+
+    files_changed_event = asyncio.Event()
+
+    @solara.component
+    def Test():
+        return solara.FileBrowser(tmpdir, watch=True)
+
+    div, rc = solara.render_fixed(Test(), handle_error=False)
+    file_list: solara.components.file_browser.FileListWidget = div.children[1]
+
+    # Verify initial state
+    initial_files = {k["name"] for k in file_list.files}
+    assert "initial.txt" in initial_files
+    assert "new_file.txt" not in initial_files
+
+    # Set up observer to detect when files trait changes
+    def on_files_change(change):
+        files_changed_event.set()
+
+    file_list.observe(on_files_change, "files")
+
+    # Give the watcher task a moment to start
+    await asyncio.sleep(0.1)
+
+    # Create a new file - this should trigger the watcher
+    (tmpdir / "new_file.txt").write_text("new content")
+
+    # Wait for the watcher to detect the change
+    try:
+        await asyncio.wait_for(files_changed_event.wait(), timeout=5.0)
+    except asyncio.TimeoutError:
+        pytest.fail("File change was not detected within timeout")
+
+    # Verify the new file is now in the list
+    new_files = {k["name"] for k in file_list.files}
+    assert "new_file.txt" in new_files
+    assert "initial.txt" in new_files
+
+    rc.close()
+
+
+@pytest.mark.asyncio
+async def test_file_browser_watch_detects_deleted_file(tmpdir: Path):
+    """Test that watch=True detects when a file is deleted."""
+    tmpdir = Path(tmpdir)
+    (tmpdir / "file1.txt").write_text("content1")
+    (tmpdir / "file2.txt").write_text("content2")
+
+    files_changed_event = asyncio.Event()
+
+    @solara.component
+    def Test():
+        return solara.FileBrowser(tmpdir, watch=True)
+
+    div, rc = solara.render_fixed(Test(), handle_error=False)
+    file_list: solara.components.file_browser.FileListWidget = div.children[1]
+
+    # Verify initial state
+    initial_files = {k["name"] for k in file_list.files}
+    assert "file1.txt" in initial_files
+    assert "file2.txt" in initial_files
+
+    # Set up observer
+    def on_files_change(change):
+        files_changed_event.set()
+
+    file_list.observe(on_files_change, "files")
+
+    # Give the watcher task a moment to start
+    await asyncio.sleep(0.1)
+
+    # Delete a file
+    (tmpdir / "file2.txt").unlink()
+
+    # Wait for the watcher to detect the change
+    try:
+        await asyncio.wait_for(files_changed_event.wait(), timeout=5.0)
+    except asyncio.TimeoutError:
+        pytest.fail("File deletion was not detected within timeout")
+
+    # Verify file2 is gone
+    new_files = {k["name"] for k in file_list.files}
+    assert "file1.txt" in new_files
+    assert "file2.txt" not in new_files
+
     rc.close()
