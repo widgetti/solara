@@ -110,19 +110,42 @@ with unittest.mock.patch.object(solara.components.file_browser, "watchfiles", No
 
 ## Pull Request Workflow
 
+### Creating a Branch
+
+Before creating a new branch, always fetch the latest changes and create from the updated master:
+
+```bash
+# Fetch latest changes from remote
+git fetch origin  # or 'git fetch upstream' depending on your remote configuration
+
+# Create branch from updated master
+git checkout -b feat/my-feature origin/master
+```
+
 ### Creating a PR
 
 ```bash
-# Create a feature branch
-git checkout -b feat/my-feature
-
-# Make changes and commit
+# Make changes and commit (ideally squash into 1 commit)
 git add .
 git commit -m "feat: description of feature"
+
+# If you have multiple commits, squash them before pushing
+git rebase -i origin/master  # then squash/fixup commits into one
 
 # Push and create PR
 git push -u origin feat/my-feature
 gh pr create --title "feat: description" --body "## Summary\n..."
+```
+
+### Updating a Branch
+
+If master has changed since you created your branch:
+
+```bash
+git fetch origin
+git rebase origin/master
+# Resolve any conflicts, then force push
+git push --force-with-lease
 ```
 
 ### CI Checks
