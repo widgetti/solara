@@ -445,3 +445,43 @@ async def test_file_browser_watch_detects_deleted_file(tmpdir: Path):
     assert "file2.txt" not in new_files
 
     rc.close()
+
+
+def test_file_browser_selected_relative_path_after_full_path(tmpdir: Path):
+    """Test that FileBrowser handles setting selected to a relative path after a full path.
+
+    Regression test for issue where:
+    1. User sets selected to a full path like /some/path/subdir/file.txt
+    2. User then sets selected to a relative path like subdir/file.txt
+    3. The current_dir would incorrectly become /some/path/subdir/subdir
+       because the relative path's parent was appended to the existing directory.
+    """
+    tmpdir = Path(tmpdir)
+    subdir = tmpdir / "subdir"
+    subdir.mkdir()
+    (subdir / "file.txt").write_text("content")
+
+    selected = solara.reactive(cast(Optional[Path], None))
+
+    @solara.component
+    def Test():
+        return solara.FileBrowser(tmpdir, selected=selected, can_select=True)
+
+    div, rc = solara.render_fixed(Test(), handle_error=False)
+
+    # First, set selected to a full path
+    full_path = subdir / "file.txt"
+    selected.value = full_path
+
+    # Verify we're now in the subdir
+    current_dir_text = div.children[0].children[0]
+    assert str(subdir) in current_dir_text
+
+    # Now set selected to a relative path (simulating user setting selected to "subdir/file.txt")
+    # This should work and stay in the same subdir, not create /subdir/subdir
+    relative_path = Path("subdir") / "file.txt"
+    selected.value = relative_path
+
+    # This should not raise FileNotFoundError
+    # The current_dir should resolve relative to cwd, not to the previous current_dir
+    rc.close()
