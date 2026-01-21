@@ -39,13 +39,25 @@ The script will:
 
 ## Step 4: Wait for PyPI Publish CI
 
-Wait for the CI to publish packages to PyPI:
+Wait for the CI to publish packages to PyPI. The PyPI publish is part of the "Test" workflow (`.github/workflows/test.yaml`), which runs the `release` job after all tests pass when triggered by a version tag.
 
 ```bash
-gh run watch $(gh run list --workflow=release.yml --limit=1 --json databaseId -q '.[0].databaseId')
+# List recent runs and find the Test run for the version tag (headBranch shows v1.x.x)
+gh run list --limit=5
+
+# Example output:
+# queued  Bump version: 1.57.0 → 1.57.1  Test  v1.57.1  push  21209892447  ...
+# queued  Bump version: 1.57.0 → 1.57.1  Test  master   push  21209892400  ...
+
+# Watch the tag workflow (use the run ID from the v1.x.x row)
+gh run watch 21209892447 --exit-status
 ```
 
-Packages published: `solara`, `solara-server`, `solara-assets`, `solara-enterprise`, `solara-meta`, `pytest-ipywidgets`
+The `release` job in the workflow only runs when:
+1. All test jobs pass (build, code-quality, test-install, integration-test, unit-test)
+2. The ref is a version tag (starts with `refs/tags/v`)
+
+Packages published: `solara`, `solara-ui`, `solara-server`, `solara-assets`, `solara-enterprise`, `solara-meta`, `pytest-ipywidgets`
 
 ## Step 5: Push to Stable Branch
 
@@ -91,8 +103,9 @@ Complete release sequence (copy-paste friendly):
 # 1. Run release
 ./release.sh <patch|minor>
 
-# 2. Wait for PyPI publish
-gh run watch $(gh run list --workflow=release.yml --limit=1 --json databaseId -q '.[0].databaseId')
+# 2. Wait for PyPI publish (Test workflow on the version tag)
+gh run list --limit=5  # Find the Test run ID for the v1.x.x tag (NOT master)
+gh run watch <run-id> --exit-status  # Watch until complete
 
 # 3. Push to stable
 git push upstream master:stable
@@ -132,9 +145,9 @@ git add -u
 # Amend or rebase to fix the release commit
 git rebase -i HEAD~3
 
-# Force update the tag and push
-git tag v1.57.1 -f
-git push upstream master v1.57.1 -f
+# Force update the tag and push (replace vX.Y.Z with actual version)
+git tag vX.Y.Z -f
+git push upstream master vX.Y.Z -f
 ```
 
 ### Server fails to start after update
@@ -155,5 +168,5 @@ If the release script doesn't work, release manually:
 
 ```bash
 # Update solara/__init__.py with the new version
-git add -u && git commit -m 'Release v1.57.1' && git tag v1.57.1 && git push upstream master v1.57.1
+git add -u && git commit -m 'Release vX.Y.Z' && git tag vX.Y.Z && git push upstream master vX.Y.Z
 ```
