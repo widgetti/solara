@@ -1,5 +1,88 @@
 # Solara Changelog
 
+## Version 1.57.0
+
+   * Feature: Add `watch` option to `FileBrowser` for automatic file change detection. [a0c75202](https://github.com/widgetti/solara/commit/a0c75202)
+   * Bug Fix: Prevent `FileBrowser` from using relative paths for directory sync. [7be73e88](https://github.com/widgetti/solara/commit/7be73e88)
+
+## Version 1.56.0
+
+   * Feature: On disconnect and reconnect, force a page reload. [8d6fb2f1](https://github.com/widgetti/solara/commit/8d6fb2f1)
+   * Feature: Allow `data` function in `FileDownload` to be a coroutine. [a395f090](https://github.com/widgetti/solara/commit/a395f090)
+   * Breaking change: Drop Python 3.7 support. [abd9400d](https://github.com/widgetti/solara/commit/abd9400d)
+
+## Version 1.55.1
+
+   * Bug Fix: False positive for returns in async defs for hook use validation. [67381dc6](https://github.com/widgetti/solara/commit/67381dc6)
+
+## Version 1.55.0
+
+   * Feature: Allows tasks to have their own kernel context. [3a97835a](https://github.com/widgetti/solara/commit/3a97835a)
+   * Bug Fix: Python 3.14 compatibility - fix RuntimeError in BaseSettings iteration. [4bf31d5a](https://github.com/widgetti/solara/commit/4bf31d5a)
+
+## Version 1.54.0
+
+   * Feature: Use different port in `pytest-ipywidgets` for different workers in `pytest-xdist`. [7e924e21](https://github.com/widgetti/solara/commit/7e924e21)
+
+## Version 1.53.0
+
+   * Feature: With `--log-level=info` we can see where a reactive variable was set. [771df82f](https://github.com/widgetti/solara/commit/771df82f)
+   * Bug Fix: Hash and search were flipped, causing strange URLs/locations. [375fd9ba](https://github.com/widgetti/solara/commit/375fd9ba)
+
+## Version 1.52.0
+
+   * Feature: In Vue template, support both `event_foo` and `foo` to avoid LLM confusion. [3ba93278](https://github.com/widgetti/solara/commit/3ba93278)
+   * Feature: Allow custom serializers in Vue components. [cd1beabb](https://github.com/widgetti/solara/commit/cd1beabb)
+   * Bug Fix: Exclude breaking ipykernel releases. [9858c013](https://github.com/widgetti/solara/commit/9858c013)
+   * Bug Fix: Support modern versions of uvicorn. [ce2abebd](https://github.com/widgetti/solara/commit/ce2abebd)
+
+## Version 1.51.1
+
+   * Bug Fix: Enhance thread init patching to handle latest anyio (4.10.0) which may not populate name field properly. [93f78c6f](https://github.com/widgetti/solara/commit/93f78c6f)
+
+## Version 1.51.0
+
+   * Feature: Configure the initial title before the app runs/loads. [4515a8c3](https://github.com/widgetti/solara/commit/4515a8c3)
+   * Bug Fix: Do not crash on `use_close_menu`. [d0032943](https://github.com/widgetti/solara/commit/d0032943)
+
+## Version 1.50.1
+
+   * Bug Fix: `FileBrowser` could go two directories up if ".." was selected. [68e99e58](https://github.com/widgetti/solara/commit/68e99e58)
+   * Bug Fix: Tornado async gives no issues with event loops. [6706f6ed](https://github.com/widgetti/solara/commit/6706f6ed)
+
+## Version 1.50.0
+
+   * Feature: Support `Optional[str]` / optional for `InputText`. [814a8a6c](https://github.com/widgetti/solara/commit/814a8a6c)
+   * Feature: Give more control over the underlying Vuetify text input. [c5b47a84](https://github.com/widgetti/solara/commit/c5b47a84)
+   * Bug Fix: Sanitize infinite values in `/resourcez` JSON response. [6aacbff4](https://github.com/widgetti/solara/commit/6aacbff4)
+
+## Version 1.49.0
+
+   * Feature: Control selected file or directory externally in `FileBrowser`. [73a26dde](https://github.com/widgetti/solara/commit/73a26dde)
+   * Feature: Support relative paths in `FileBrowser`. [4b172244](https://github.com/widgetti/solara/commit/4b172244)
+
+## Version 1.48.0
+
+   * Feature: Expose `col_num` and `row_height` options for `GridLayout`. [8f40eeb5](https://github.com/widgetti/solara/commit/8f40eeb5)
+   * Feature: Warn if task is being called from a component. [e454b953](https://github.com/widgetti/solara/commit/e454b953)
+   * Bug Fix: Decrease `chunk_size` for `FileDrop` to 1MB to avoid Modal max 2MB limit. [fa65d5a1](https://github.com/widgetti/solara/commit/fa65d5a1)
+   * Bug Fix: Resolve logger warnings. [#1059](https://github.com/widgetti/solara/pull/1059)
+   * Bug Fix: A `use_task` with `dependencies=None` (user called) can have arguments. [da2f8cfe](https://github.com/widgetti/solara/commit/da2f8cfe)
+
+## Version 1.47.0
+
+   * Feature: Add `on_layer_updated` to `GridLayout`. [1163b89d](https://github.com/widgetti/solara/commit/1163b89d)
+   * Bug Fix: Classes were not applied to `ColumnsResponsive` when `wrap` was `False`. [ce879dad](https://github.com/widgetti/solara/commit/ce879dad)
+   * Bug Fix: Tasks did not have a stable key, causing hot reloads to miss values. [e1567f9d](https://github.com/widgetti/solara/commit/e1567f9d)
+   * Bug Fix: Re-run app on hot reload before running `on_kernel_start` callbacks. [cf4f5c1a](https://github.com/widgetti/solara/commit/cf4f5c1a)
+   * Bug Fix: Display port in runtime error when server is running. [cafe757c](https://github.com/widgetti/solara/commit/cafe757c)
+
+## Version 1.46.0
+
+   * Feature: When tasks fail to set results, handle it gracefully. [e6c1ce07](https://github.com/widgetti/solara/commit/e6c1ce07)
+   * Bug Fix: Follow ASGI spec and also check if text or bytes are `None` (Modal fix). [396c58ac](https://github.com/widgetti/solara/commit/396c58ac)
+   * Bug Fix: Make task threads daemon, so the Solara server can stop when tasks are running. [da346063](https://github.com/widgetti/solara/commit/da346063)
+
 ## Version 1.45.0
 
    * Bug Fix: Correctly handle expected websocket errors instead of logging them. [#1013](https://github.com/widgetti/solara/pull/1013)
