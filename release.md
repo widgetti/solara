@@ -59,7 +59,21 @@ The `release` job in the workflow only runs when:
 
 Packages published: `solara`, `solara-ui`, `solara-server`, `solara-assets`, `solara-enterprise`, `solara-meta`, `pytest-ipywidgets`
 
-## Step 5: Push to Stable Branch
+## Step 5: Update Changelog
+
+After verifying the PyPI release, update the changelog with the new version:
+
+1. Edit `solara/website/pages/changelog.md`
+2. Add a new section for the version with the changes
+3. Commit and push to master
+
+```bash
+git add solara/website/pages/changelog.md
+git commit -m "docs: update changelog for version X.Y.Z"
+git push upstream master
+```
+
+## Step 6: Push to Stable Branch
 
 Push master to stable to trigger SSG rendering for the website:
 
@@ -67,25 +81,27 @@ Push master to stable to trigger SSG rendering for the website:
 git push upstream master:stable
 ```
 
-## Step 6: Wait for Website Deploy CI
+## Step 7: Wait for Website Deploy CI
 
 Wait for the webdeploy workflow to generate SSG pages:
 
 ```bash
-gh run watch $(gh run list --workflow=webdeploy.yml --limit=1 --json databaseId -q '.[0].databaseId')
+gh run watch $(gh run list --workflow=webdeploy.yml --limit=1 --json databaseId -q '.[0].databaseId') --exit-status
 ```
 
 This generates static pages and pushes them to `stable-ssg`.
 
-## Step 7: Update Production Server
+## Step 8: Update Production Server
 
-Pull the changes on nyx-cloud and restart the service (see [SERVER.md](SERVER.md) for details):
+Update the server on nyx-cloud (see [SERVER.md](SERVER.md) for details).
+
+**Important:** The production server runs on the `stable-ssg` branch, which is force-pushed by the webdeploy workflow. Use `git reset --hard` instead of `git pull`:
 
 ```bash
-ssh nyx-cloud "cd /root/solara && git pull && systemctl restart solara.service"
+ssh nyx-cloud "cd /root/solara && git fetch origin && git reset --hard origin/stable-ssg && systemctl restart solara.service"
 ```
 
-## Step 8: Verify Deployment
+## Step 9: Verify Deployment
 
 ```bash
 # Check the server is running
@@ -107,14 +123,18 @@ Complete release sequence (copy-paste friendly):
 gh run list --limit=5  # Find the Test run ID for the v1.x.x tag (NOT master)
 gh run watch <run-id> --exit-status  # Watch until complete
 
-# 3. Push to stable
+# 3. Update changelog
+# Edit solara/website/pages/changelog.md, then:
+git add solara/website/pages/changelog.md && git commit -m "docs: update changelog" && git push upstream master
+
+# 4. Push to stable
 git push upstream master:stable
 
-# 4. Wait for website deploy
-gh run watch $(gh run list --workflow=webdeploy.yml --limit=1 --json databaseId -q '.[0].databaseId')
+# 5. Wait for website deploy
+gh run watch $(gh run list --workflow=webdeploy.yml --limit=1 --json databaseId -q '.[0].databaseId') --exit-status
 
-# 5. Update production server
-ssh nyx-cloud "cd /root/solara && git pull && systemctl restart solara.service"
+# 6. Update production server (stable-ssg is force-pushed, so use reset)
+ssh nyx-cloud "cd /root/solara && git fetch origin && git reset --hard origin/stable-ssg && systemctl restart solara.service"
 ```
 
 ## Troubleshooting
