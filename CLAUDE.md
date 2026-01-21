@@ -195,3 +195,16 @@ These are infrastructure timing issues, not code problems. Re-run the failed job
 ```bash
 gh run rerun --job <job-id>
 ```
+
+## Making a Release
+
+See [RELEASE.md](RELEASE.md) for the complete step-by-step release checklist.
+
+Quick summary:
+1. Run `./release.sh <patch|minor>`
+2. Wait for PyPI publish CI (`gh run watch`)
+3. Push to stable: `git push upstream master:stable`
+4. Wait for webdeploy CI (`gh run watch`)
+5. Update production server: `ssh nyx-cloud "cd /root/solara && git pull && systemctl restart solara.service"`
+
+See also: [SERVER.md](SERVER.md) for production server details.
