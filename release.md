@@ -133,8 +133,8 @@ git add -u
 git rebase -i HEAD~3
 
 # Force update the tag and push
-git tag v1.57.0 -f
-git push upstream master v1.57.0 -f
+git tag v1.57.1 -f
+git push upstream master v1.57.1 -f
 ```
 
 ### Server fails to start after update
@@ -155,5 +155,5 @@ If the release script doesn't work, release manually:
 
 ```bash
 # Update solara/__init__.py with the new version
-git add -u && git commit -m 'Release v1.57.0' && git tag v1.57.0 && git push upstream master v1.57.0
+git add -u && git commit -m 'Release v1.57.1' && git tag v1.57.1 && git push upstream master v1.57.1
 ```
