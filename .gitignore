@@ -67,6 +67,7 @@ python/.idea
 test/.idea
 venv
 .venv
+uv.lock
 tmp
 python/vaex/version.py # gets generated
 **/*.egg-info/

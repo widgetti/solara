@@ -20,26 +20,38 @@ Solara is a pure Python, React-style framework for building Jupyter and web appl
 
 ## Development Commands
 
+### Setting Up the Development Environment
+
+Use `uv` to create a virtual environment and install dependencies:
+
+```bash
+# Create venv with Python 3.11
+uv venv .venv --python 3.11
+
+# Install all dev dependencies
+uv pip install -r requirements-dev.txt --python .venv/bin/python
+```
+
 ### Running Tests
 
 ```bash
 # Run all unit tests
-pytest tests/unit/
+uv run pytest tests/unit/
 
 # Run a specific test file
-pytest tests/unit/file_browser_test.py -v
+uv run pytest tests/unit/file_browser_test.py -v
 
 # Run a specific test
-pytest tests/unit/file_browser_test.py::test_file_browser_watch_detects_new_file -v
+uv run pytest tests/unit/file_browser_test.py::test_file_browser_watch_detects_new_file -v
 
 # Run integration tests
-pytest tests/integration/
+uv run pytest tests/integration/
 ```
 
 ### Running the Server
 
 ```bash
-solara run sol.py
+uv run solara run sol.py
 ```
 
 ## Commit Message Convention
