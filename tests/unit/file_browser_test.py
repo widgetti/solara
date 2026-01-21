@@ -485,3 +485,61 @@ def test_file_browser_selected_relative_path_after_full_path(tmpdir: Path):
     # This should not raise FileNotFoundError
     # The current_dir should resolve relative to cwd, not to the previous current_dir
     rc.close()
+
+
+def test_file_browser_symlink_parent_navigation(tmpdir: Path):
+    """Test that navigating back (..) from a symlinked directory returns to the logical parent.
+
+    Regression test for issue #1133 where:
+    1. User is in workingdir containing a symlink to ../symlinkdir
+    2. User enters the symlinked directory
+    3. User clicks ".." to go back
+    4. Expected: return to workingdir
+    5. Actual (bug): goes to parent of the resolved symlink target
+    """
+    tmpdir = Path(tmpdir)
+    workingdir = tmpdir / "workingdir"
+    symlinkdir = tmpdir / "symlinkdir"
+    workingdir.mkdir()
+    symlinkdir.mkdir()
+
+    # Create a symlink inside workingdir pointing to symlinkdir
+    symlink = workingdir / "symlinkdir"
+    symlink.symlink_to(symlinkdir)
+
+    # Create a file in symlinkdir so we can verify we entered it
+    (symlinkdir / "file.txt").write_text("content")
+
+    @solara.component
+    def Test():
+        return solara.FileBrowser(workingdir)
+
+    div, rc = solara.render_fixed(Test(), handle_error=False)
+    file_list: solara.components.file_browser.FileListWidget = div.children[1]
+
+    # Verify we're in workingdir and can see the symlink
+    current_dir_text = div.children[0].children[0]
+    assert str(workingdir) in current_dir_text
+    file_names = {f["name"] for f in file_list.files}
+    assert "symlinkdir" in file_names
+
+    # Enter the symlinked directory (single click navigates when can_select=False)
+    file_list.test_click("symlinkdir", double_click=False)
+
+    # Verify we're now in the symlinked directory
+    current_dir_text = div.children[0].children[0]
+    file_names = {f["name"] for f in file_list.files}
+    assert "file.txt" in file_names
+
+    # Navigate back with ".."
+    file_list.test_click("..", double_click=False)
+
+    # We should be back in workingdir, not in tmpdir (parent of resolved symlink target)
+    current_dir_text = div.children[0].children[0]
+    assert str(workingdir) in current_dir_text, f"Expected to be in {workingdir}, but current directory text is: {current_dir_text}"
+
+    # Verify we can see the symlink again
+    file_names = {f["name"] for f in file_list.files}
+    assert "symlinkdir" in file_names
+
+    rc.close()
