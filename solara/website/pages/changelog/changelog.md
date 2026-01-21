@@ -1,5 +1,9 @@
 # Solara Changelog
 
+## Version 1.57.1
+
+   * Bug Fix: Support Altair 6+ Vega-Lite MIME types in `FigureAltair`. [724c01c8](https://github.com/widgetti/solara/commit/724c01c8)
+
 ## Version 1.57.0
 
    * Feature: Add `watch` option to `FileBrowser` for automatic file change detection. [a0c75202](https://github.com/widgetti/solara/commit/a0c75202)
