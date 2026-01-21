@@ -27,7 +27,11 @@ def path_is_child_of(path: Path, parent: Path) -> bool:
         # on windows, we sometimes get different casing (only seen on CI)
         path_string = path_string.lower()
         parent_string = parent_string.lower()
-    return path_string.startswith(parent_string)
+    # Ensure we check for a proper path boundary, not just string prefix.
+    # Without the separator, "/parent_sibling" would match "/parent"
+    if not parent_string.endswith(os.sep):
+        parent_string = parent_string + os.sep
+    return path_string.startswith(parent_string) or path_string == parent_string.rstrip(os.sep)
 
 
 @contextlib.contextmanager
