@@ -63,12 +63,12 @@ Packages published: `solara`, `solara-ui`, `solara-server`, `solara-assets`, `so
 
 After verifying the PyPI release, update the changelog with the new version:
 
-1. Edit `solara/website/pages/changelog.md`
+1. Edit `solara/website/pages/changelog/changelog.md`
 2. Add a new section for the version with the changes
 3. Commit and push to master
 
 ```bash
-git add solara/website/pages/changelog.md
+git add solara/website/pages/changelog/changelog.md
 git commit -m "docs: update changelog for version X.Y.Z"
 git push upstream master
 ```
@@ -124,8 +124,8 @@ gh run list --limit=5  # Find the Test run ID for the v1.x.x tag (NOT master)
 gh run watch <run-id> --exit-status  # Watch until complete
 
 # 3. Update changelog
-# Edit solara/website/pages/changelog.md, then:
-git add solara/website/pages/changelog.md && git commit -m "docs: update changelog" && git push upstream master
+# Edit solara/website/pages/changelog/changelog.md, then:
+git add solara/website/pages/changelog/changelog.md && git commit -m "docs: update changelog" && git push upstream master
 
 # 4. Push to stable
 git push upstream master:stable
