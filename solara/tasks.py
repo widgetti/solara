@@ -770,6 +770,28 @@ def task(
             solara.Text("Click the button to fetch data")
     ```
 
+    ## Hot reload
+
+    During development, Solara's hot reload feature may reload your app when you save changes.
+    Long-running tasks started before the reload will continue running with references to old module state,
+    which can cause issues.
+
+    Use [`solara.create_reload_checker()`](/documentation/advanced/reference/reloading#long-running-tasks-and-hot-reload)
+    to detect when a reload has occurred and exit your task gracefully:
+
+    ```python
+    did_reload = solara.create_reload_checker()
+
+    @task
+    async def my_long_running_task():
+        while not did_reload():
+            # do work...
+            await asyncio.sleep(1)
+    ```
+
+    Note: Hot reload only occurs in development mode. In production mode (`solara run --production`),
+    file watching is disabled and this is not a concern.
+
     ## Arguments
 
     - `f`: Function to turn into task or None
