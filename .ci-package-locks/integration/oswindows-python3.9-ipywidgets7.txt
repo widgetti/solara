@@ -153,7 +153,7 @@ pydantic==1.10.26
 pydantic_core==2.41.5
 pyee==12.1.1
 Pygments==2.19.2
-pymdown-extensions==10.20
+pymdown-extensions==10.20.1
 pyparsing==3.3.2
 pytest==8.4.2
 pytest-base-url==2.1.0
@@ -221,7 +221,7 @@ virtualenv==20.36.1
 voila==0.3.8
 watchdog==6.0.0
 watchfiles==1.1.1
-wcwidth==0.3.1
+wcwidth==0.3.2
 webcolors==24.11.1
 webencodings==0.5.1
 websocket-client==1.9.0
