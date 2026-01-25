@@ -182,7 +182,7 @@ referencing==0.35.1
 requests==2.32.4
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
-rich==14.2.0
+rich==14.3.1
 rich-click==1.9.6
 rpds-py==0.20.1
 ruff==0.14.14
@@ -221,7 +221,7 @@ virtualenv==20.36.1
 voila==0.5.11
 watchdog==4.0.2
 watchfiles==0.24.0
-wcwidth==0.3.2
+wcwidth==0.3.5
 webcolors==24.8.0
 webencodings==0.5.1
 websocket-client==1.8.0
