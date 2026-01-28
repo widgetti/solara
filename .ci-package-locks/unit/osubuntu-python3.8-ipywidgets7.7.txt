@@ -34,7 +34,7 @@ codespell==2.4.1
 comm==0.2.3
 contourpy==1.1.1
 coverage==7.6.1
-cryptography==46.0.3
+cryptography==46.0.4
 cycler==0.12.1
 dask==2023.5.0
 debugpy==1.8.19
@@ -221,7 +221,7 @@ virtualenv==20.36.1
 voila==0.5.11
 watchdog==4.0.2
 watchfiles==0.24.0
-wcwidth==0.4.0
+wcwidth==0.5.0
 webcolors==24.8.0
 webencodings==0.5.1
 websocket-client==1.8.0

@@ -20,7 +20,7 @@ bqplot==0.12.45
 bqplot-image-gl==1.8.0
 branca==0.8.2
 bump2version==1.0.1
-cachetools==6.2.5
+cachetools==6.2.6
 certifi==2026.1.4
 cffi==2.0.0
 cfgv==3.5.0
@@ -123,14 +123,14 @@ notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.26.4
 objgraph==3.6.2
-openai==2.15.0
+openai==2.16.0
 overrides==7.7.0
 packaging==26.0
 pandas==2.3.3
 pandocfilters==1.5.1
 parso==0.8.5
 partd==1.4.2
-pathspec==1.0.3
+pathspec==1.0.4
 pefile==2023.2.7
 pexpect==4.9.0
 pillow==12.1.0
@@ -219,7 +219,7 @@ vega-datasets==0.9.0
 virtualenv==20.36.1
 watchdog==6.0.0
 watchfiles==1.1.1
-wcwidth==0.4.0
+wcwidth==0.5.0
 webcolors==25.10.0
 webencodings==0.5.1
 websocket-client==1.9.0
