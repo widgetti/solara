@@ -583,6 +583,56 @@ jobs:
           path: ./**/${{ env.LOCK_FILE_LOCATION }}
           include-hidden-files: true
 
+  prerelease-test:
+      needs: [build]
+      timeout-minutes: 25
+      runs-on: ubuntu-latest
+      if: github.event_name == 'schedule'  # Only run on nightly builds
+      strategy:
+        fail-fast: false
+        matrix:
+          python-version: [3.12]
+          ipywidgets_major: ["8"]
+  
+      steps:
+        - uses: actions/checkout@v4
+  
+        - name: Set up Python ${{ matrix.python-version }}
+          uses: actions/setup-python@v5
+          with:
+            python-version: ${{ matrix.python-version }}
+  
+        - uses: actions/download-artifact@v4
+          with:
+            name: solara-builds
+  
+        - name: Link solara app package
+          run: |
+            cd packages/solara-vuetify-app
+            npm run devlink
+  
+        - name: Install with pre-release dependencies
+          run: |
+            pip install `echo dist/*.whl`[all]
+            pip install `echo packages/solara-server/dist/*.whl`[all]
+            pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets${{ matrix.ipywidgets_major }}]
+            pip install --upgrade --pre ipykernel ipywidgets ipyvue ipyvuetify jupyter-client traitlets
+            pip install "jupyterlab<4" "playwright==1.50.0"
+            echo "::notice::Installed pre-release versions:"
+            pip list | grep -E "(ipykernel|ipywidgets|ipyvue|ipyvuetify|jupyter-client|traitlets)"
+  
+        - name: Install playwright
+          run: playwright install
+  
+        - name: Run basic tests
+          run: pytest tests/integration/widget_test.py -k "test_button" --timeout=60 -vv
+  
+        - name: Report pre-release status
+          if: failure()
+          run: |
+            echo "::warning::Pre-release dependencies caused test failures. Potentially breaking changes detected in:"
+            pip list | grep -E "(ipykernel|ipywidgets|ipyvue|ipyvuetify|jupyter-client|traitlets)"
+
   unit-test:
     needs: [build]
     runs-on: ${{ matrix.os }}-latest
