@@ -180,7 +180,7 @@ rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
 rfc3987-syntax==1.1.0
 rich==14.3.1
-rich-click==1.9.6
+rich-click==1.9.7
 rpds-py==0.27.1
 ruff==0.14.14
 Send2Trash==2.1.0
@@ -199,7 +199,7 @@ tinycss2==1.4.0
 tomli==2.4.0
 toolz==1.1.0
 tornado==6.5.4
-tqdm==4.67.1
+tqdm==4.67.2
 traitlets==5.14.3
 traittypes==0.2.3
 types-Markdown==3.10.0.20251106
@@ -220,7 +220,7 @@ virtualenv==20.36.1
 voila==0.3.8
 watchdog==6.0.0
 watchfiles==1.1.1
-wcwidth==0.5.2
+wcwidth==0.5.3
 webcolors==24.11.1
 webencodings==0.5.1
 websocket-client==1.9.0
