@@ -11,7 +11,7 @@ argon2-cffi-bindings==25.1.0
 arrow==1.4.0
 asttokens==3.0.1
 attrs==25.4.0
-babel==2.17.0
+babel==2.18.0
 beautifulsoup4==4.14.3
 blake3==1.0.8
 bleach==6.3.0
@@ -20,7 +20,7 @@ bqplot==0.12.45
 bqplot-image-gl==1.8.0
 branca==0.8.2
 bump2version==1.0.1
-cachetools==6.2.6
+cachetools==7.0.0
 certifi==2026.1.4
 cffi==2.0.0
 cfgv==3.5.0
@@ -179,7 +179,7 @@ requests==2.32.5
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
 rfc3987-syntax==1.1.0
-rich==14.3.1
+rich==14.3.2
 rich-click==1.9.7
 rpds-py==0.30.0
 ruff==0.14.14
