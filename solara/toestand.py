@@ -4,6 +4,7 @@ import logging
 import os
 import sys
 import threading
+import weakref
 from types import FrameType
 import warnings
 import copy
@@ -929,37 +930,83 @@ class AutoSubscribeContextManagerBase:
         thread_local.reactive_watch = self.previous_reactive_watch
         self.unsubscribe_previous()
         self.subscribed_previous_run = self.subscribed.copy()
+        # Clear saved references to avoid preventing garbage collection.
+        # Without this, a Computed's AutoSubscribeContextManager retains
+        # previous_reactive_watch (a bound method from the component's
+        # AutoSubscribeContextManagerReacton), which transitively keeps
+        # the _RenderContext alive through closure cells.
+        self.previous_reactive_watch = None
+        self.reactive_used_before = None
 
 
 class Context:
     def __init__(self, render_context, kernel_context):
         # combine the render context *and* the kernel context into one context
-        self.render_context = render_context
-        self.kernel_context = kernel_context
+        # Use weakrefs for both render_context and kernel_context to avoid
+        # preventing garbage collection when contexts are closed.
+        # Subscriptions (e.g. from Computed/AutoSubscribeContextManager)
+        # capture Context objects in listeners dicts. Without weakrefs, these
+        # keep the contexts alive even after close(), causing memory leaks.
+        if render_context is not None:
+            self._render_context_ref: Optional[weakref.ref] = weakref.ref(render_context)
+            self._render_context_id: Optional[int] = id(render_context)
+        else:
+            self._render_context_ref = None
+            self._render_context_id = None
+        # Use weakref for kernel_context when possible. nullcontext (used when
+        # there is no kernel) doesn't support weakrefs, so fall back to strong ref.
+        try:
+            self._kernel_context_ref: Optional[weakref.ref] = weakref.ref(kernel_context)
+            self._kernel_context_id: Optional[int] = id(kernel_context)
+            self._kernel_context_strong: Any = None
+        except TypeError:
+            self._kernel_context_ref = None
+            self._kernel_context_id = id(kernel_context) if kernel_context is not None else None
+            self._kernel_context_strong = kernel_context
+
+    @property
+    def render_context(self):
+        if self._render_context_ref is not None:
+            return self._render_context_ref()
+        return None
+
+    @property
+    def kernel_context(self):
+        if self._kernel_context_ref is not None:
+            return self._kernel_context_ref()
+        return self._kernel_context_strong
 
     def __enter__(self):
-        if self.render_context is not None:
-            self.render_context.__enter__()
-        self.kernel_context.__enter__()
+        rc = self.render_context
+        if rc is not None:
+            rc.__enter__()
+        kc = self.kernel_context
+        if kc is not None:
+            kc.__enter__()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if self.render_context is not None:
+        rc = self.render_context
+        if rc is not None:
             # this will trigger a render
-            res1 = self.render_context.__exit__(exc_type, exc_val, exc_tb)
+            res1 = rc.__exit__(exc_type, exc_val, exc_tb)
         else:
             res1 = None
 
         # pop the current context from the stack
-        res2 = self.kernel_context.__exit__(exc_type, exc_val, exc_tb)
+        kc = self.kernel_context
+        if kc is not None:
+            res2 = kc.__exit__(exc_type, exc_val, exc_tb)
+        else:
+            res2 = None
         return res1 or res2
 
     def __eq__(self, value: object) -> bool:
         if not isinstance(value, Context):
             return False
-        return self.render_context == value.render_context and self.kernel_context == value.kernel_context
+        return self._render_context_id == value._render_context_id and self._kernel_context_id == value._kernel_context_id
 
     def __hash__(self) -> int:
-        return hash(id(self.render_context)) ^ hash(id(self.kernel_context))
+        return hash(self._render_context_id) ^ hash(self._kernel_context_id)
 
     def __repr__(self) -> str:
         return f"Context(render_context={self.render_context}, kernel_context={self.kernel_context})"
