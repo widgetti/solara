@@ -1,5 +1,10 @@
 # Solara Changelog
 
+## Version 1.57.2
+
+   * Security Fix: Ensure proper path boundary check in `path_is_child_of` to prevent path traversal (CVE-2026-24008). [a2222216](https://github.com/widgetti/solara/commit/a2222216)
+   * Bug Fix: Memory leak in `AutoSubscribeContextManager` and `Context`. [ef99f18a](https://github.com/widgetti/solara/commit/ef99f18a)
+
 ## Version 1.57.1
 
    * Bug Fix: Support Altair 6+ Vega-Lite MIME types in `FigureAltair`. [724c01c8](https://github.com/widgetti/solara/commit/724c01c8)
