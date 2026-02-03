@@ -50,10 +50,10 @@ def Page():
 
 artifact_name = "solara-builds"  # name given in the GitHub Actions workflow file for the artifact
 
-# your default requirements, the wheel version number (1.57.1) is bumped up for each new release using bump2version
+# your default requirements, the wheel version number (1.57.2) is bumped up for each new release using bump2version
 requirements = f"""solara
-https://py.cafe/gh/artifact/{repo_name}/actions/runs/{run_id}/{artifact_name}/solara-1.57.1-py2.py3-none-any.whl
-https://py.cafe/gh/artifact/{repo_name}/actions/runs/{run_id}/{artifact_name}/solara_ui-1.57.1-py2.py3-none-any.whl
+https://py.cafe/gh/artifact/{repo_name}/actions/runs/{run_id}/{artifact_name}/solara-1.57.2-py2.py3-none-any.whl
+https://py.cafe/gh/artifact/{repo_name}/actions/runs/{run_id}/{artifact_name}/solara_ui-1.57.2-py2.py3-none-any.whl
 """
 
 # GitHub Python API
