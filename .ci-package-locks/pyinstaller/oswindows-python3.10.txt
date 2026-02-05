@@ -138,8 +138,8 @@ platformdirs==4.5.1
 playwright==1.50.0
 plotly==6.5.2
 pluggy==1.6.0
-polars==1.37.1
-polars-runtime-32==1.37.1
+polars==1.38.0
+polars-runtime-32==1.38.0
 pre_commit==4.5.1
 prometheus_client==0.24.1
 prompt_toolkit==3.0.52
@@ -170,7 +170,7 @@ python-slugify==8.0.4
 pythreejs==2.4.2
 pytz==2025.2
 pywin32-ctypes==0.2.3
-pywinpty==3.0.2
+pywinpty==3.0.3
 PyYAML==6.0.3
 pyzmq==27.1.0
 reacton==1.9.1
