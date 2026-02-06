@@ -49,7 +49,7 @@ folium==0.20.0
 fonttools==4.61.1
 fqdn==1.5.1
 frozendict==2.4.7
-fsspec==2026.1.0
+fsspec==2026.2.0
 future==1.0.0
 greenlet==3.3.1
 h11==0.16.0
@@ -123,7 +123,7 @@ notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.26.4
 objgraph==3.6.2
-openai==2.16.0
+openai==2.17.0
 overrides==7.7.0
 packaging==26.0
 pandas==2.3.3
