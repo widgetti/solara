@@ -206,7 +206,12 @@ def FileBrowser(
                 on_path_select(None)
             return
         if item["name"] == "..":
-            new_dir = current_dir.value.resolve().parent
+            if current_dir.value.is_symlink():
+                new_dir = current_dir.value.parent
+            elif any([d.is_symlink() for d in current_dir.value.parents]):
+                new_dir = current_dir.value.parent
+            else:
+                new_dir = current_dir.value.resolve().parent
             action_change_directory = (can_select and double_click) or (not can_select and not double_click)
             if action_change_directory and change_dir(new_dir):
                 if scroll_pos_stack:
