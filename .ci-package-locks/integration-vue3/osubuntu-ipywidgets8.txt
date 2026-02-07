@@ -10,7 +10,7 @@ argon2-cffi-bindings==25.1.0
 arrow==1.4.0
 asttokens==3.0.1
 attrs==25.4.0
-Authlib==1.6.6
+Authlib==1.6.7
 babel==2.18.0
 beautifulsoup4==4.14.3
 blake3==1.0.8
@@ -224,7 +224,7 @@ virtualenv==20.36.1
 voila==0.5.11
 watchdog==6.0.0
 watchfiles==1.1.1
-wcwidth==0.5.3
+wcwidth==0.6.0
 webcolors==24.11.1
 webencodings==0.5.1
 websocket-client==1.9.0
