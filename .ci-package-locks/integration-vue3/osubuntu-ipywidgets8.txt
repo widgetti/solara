@@ -127,12 +127,12 @@ notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.26.4
 objgraph==3.6.2
-openai==2.17.0
+openai==2.18.0
 overrides==7.7.0
 packaging==26.0
 pandas==2.3.3
 pandocfilters==1.5.1
-parso==0.8.5
+parso==0.8.6
 partd==1.4.2
 pathspec==1.0.4
 pexpect==4.9.0

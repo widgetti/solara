@@ -133,7 +133,7 @@ overrides==7.7.0
 packaging==26.0
 pandas==2.0.3
 pandocfilters==1.5.1
-parso==0.8.5
+parso==0.8.6
 partd==1.4.1
 pexpect==4.9.0
 pickleshare==0.7.5
