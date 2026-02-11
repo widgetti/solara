@@ -20,7 +20,7 @@ bqplot==0.12.45
 bqplot-image-gl==1.8.0
 branca==0.8.2
 bump2version==1.0.1
-cachetools==7.0.0
+cachetools==7.0.1
 certifi==2026.1.4
 cffi==2.0.0
 cfgv==3.5.0
@@ -123,7 +123,7 @@ notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.26.4
 objgraph==3.6.2
-openai==2.18.0
+openai==2.20.0
 overrides==7.7.0
 packaging==26.0
 pandas==2.3.3
@@ -133,7 +133,7 @@ partd==1.4.2
 pathspec==1.0.4
 pefile==2023.2.7
 pexpect==4.9.0
-pillow==12.1.0
+pillow==12.1.1
 platformdirs==4.5.1
 playwright==1.50.0
 plotly==6.5.2
@@ -202,7 +202,7 @@ tornado==6.5.4
 tqdm==4.67.3
 traitlets==5.14.3
 traittypes==0.2.3
-types-Markdown==3.10.0.20251106
+types-Markdown==3.10.2.20260211
 types-PyYAML==6.0.12.20250915
 types-requests==2.32.4.20260107
 typing-inspection==0.4.2
