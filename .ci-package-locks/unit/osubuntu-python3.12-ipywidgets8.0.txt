@@ -9,7 +9,7 @@ argon2-cffi-bindings==25.1.0
 arrow==1.4.0
 asttokens==3.0.1
 attrs==25.4.0
-Authlib==1.6.7
+Authlib==1.6.8
 babel==2.18.0
 beautifulsoup4==4.14.3
 bleach==6.3.0
@@ -39,7 +39,7 @@ distro==1.9.0
 entrypoints==0.4
 executing==2.2.1
 fastjsonschema==2.21.2
-filelock==3.21.2
+filelock==3.23.0
 Flask==3.1.2
 flask-sock==0.7.0
 folium==0.20.0
@@ -111,7 +111,7 @@ notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.26.4
 objgraph==3.6.2
-openai==2.20.0
+openai==2.21.0
 packaging==26.0
 pandas==2.3.3
 pandocfilters==1.5.1
@@ -120,7 +120,7 @@ pathspec==1.0.4
 pexpect==4.9.0
 pillow==12.1.1
 pixelmatch==0.3.0
-platformdirs==4.7.0
+platformdirs==4.8.0
 playwright==1.58.0
 plotly==6.5.2
 pluggy==1.6.0

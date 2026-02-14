@@ -10,7 +10,7 @@ argon2-cffi-bindings==25.1.0
 arrow==1.4.0
 asttokens==3.0.1
 attrs==25.4.0
-Authlib==1.6.7
+Authlib==1.6.8
 babel==2.18.0
 beautifulsoup4==4.14.3
 blake3==1.0.8
@@ -127,7 +127,7 @@ notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.26.4
 objgraph==3.6.2
-openai==2.20.0
+openai==2.21.0
 overrides==7.7.0
 packaging==26.0
 pandas==2.3.3
