@@ -40,7 +40,7 @@ distro==1.9.0
 entrypoints==0.4
 executing==2.2.1
 fastjsonschema==2.21.2
-filelock==3.23.0
+filelock==3.24.0
 Flask==3.1.2
 flask-sock==0.7.0
 folium==0.20.0
@@ -121,7 +121,7 @@ pathspec==1.0.4
 pexpect==4.9.0
 pillow==12.1.1
 pixelmatch==0.3.0
-platformdirs==4.8.0
+platformdirs==4.9.1
 playwright==1.58.0
 plotly==6.5.2
 pluggy==1.6.0
@@ -137,7 +137,7 @@ pure_eval==0.2.3
 pycparser==3.0
 pydantic==2.12.5
 pydantic_core==2.41.5
-pyee==13.0.0
+pyee==13.0.1
 Pygments==2.19.2
 pymdown-extensions==10.20.1
 pyparsing==3.3.2
