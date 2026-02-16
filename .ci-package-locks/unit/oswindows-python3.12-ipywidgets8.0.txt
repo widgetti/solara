@@ -41,7 +41,7 @@ distro==1.9.0
 entrypoints==0.4
 executing==2.2.1
 fastjsonschema==2.21.2
-filelock==3.24.0
+filelock==3.24.2
 Flask==3.1.2
 flask-sock==0.7.0
 folium==0.20.0
@@ -139,7 +139,7 @@ pydantic==2.12.5
 pydantic_core==2.41.5
 pyee==13.0.1
 Pygments==2.19.2
-pymdown-extensions==10.20.1
+pymdown-extensions==10.21
 pyparsing==3.3.2
 pytest==9.0.2
 pytest-base-url==2.1.0

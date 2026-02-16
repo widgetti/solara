@@ -154,7 +154,7 @@ pydantic==1.10.26
 pydantic_core==2.41.5
 pyee==12.1.1
 Pygments==2.19.2
-pymdown-extensions==10.20.1
+pymdown-extensions==10.21
 pyparsing==3.3.2
 pytest==8.4.2
 pytest-base-url==2.1.0
