@@ -182,10 +182,10 @@ referencing==0.35.1
 requests==2.32.4
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
-rich==14.3.2
+rich==14.3.3
 rich-click==1.9.7
 rpds-py==0.20.1
-ruff==0.15.1
+ruff==0.15.2
 Send2Trash==2.1.0
 simple-websocket==1.1.0
 simplejson==3.20.2
@@ -217,7 +217,7 @@ vaex-hdf5==0.15.0
 vaex-jupyter==0.9.0
 vaex-viz==0.6.0
 vega-datasets==0.9.0
-virtualenv==20.36.1
+virtualenv==20.38.0
 voila==0.5.11
 watchdog==4.0.2
 watchfiles==0.24.0
