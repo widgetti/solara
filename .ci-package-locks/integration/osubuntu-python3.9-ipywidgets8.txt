@@ -52,7 +52,7 @@ fqdn==1.5.1
 frozendict==2.4.7
 fsspec==2025.10.0
 future==1.0.0
-greenlet==3.2.4
+greenlet==3.2.5
 h11==0.16.0
 h5py==3.14.0
 httpcore==1.0.9
