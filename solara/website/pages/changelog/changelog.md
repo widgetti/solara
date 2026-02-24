@@ -1,5 +1,9 @@
 # Solara Changelog
 
+## Version 1.57.3
+
+   * Bug Fix: Detect conditional hook usage when hook is used as a decorator. [71e34b8f](https://github.com/widgetti/solara/commit/71e34b8f)
+
 ## Version 1.57.2
 
    * Security Fix: Ensure proper path boundary check in `path_is_child_of` to prevent path traversal (CVE-2026-24008). [a2222216](https://github.com/widgetti/solara/commit/a2222216)
