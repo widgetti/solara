@@ -2,6 +2,15 @@
 
 Follow these steps in order to make a release.
 
+## Step 0: Switch to Master (or Main)
+
+Make sure you are on the master (or main) branch with the latest changes before starting:
+
+```bash
+git checkout master
+git pull upstream master
+```
+
 ## Step 1: Determine Release Type
 
 Check commits since last release to determine the release type:
