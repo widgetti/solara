@@ -168,6 +168,79 @@ def test_hook_use_in_try():
             pass
 
 
+def test_hook_use_invalid_conditional_decorator():
+    with hook_check_raise(), pytest.raises(HookValidationError):
+
+        @solara.component
+        def Page():
+            if 1 > 3:
+
+                @solara.use_effect
+                def effect():
+                    pass
+
+            solara.Text("Done")
+
+    with hook_check_warn(), pytest.warns(UserWarning):
+
+        @solara.component
+        def Page2():
+            if 1 > 3:
+
+                @solara.use_effect
+                def effect():
+                    pass
+
+            solara.Text("Done")
+
+    @solara.component
+    def Page3():
+        if 1 > 3:
+
+            @solara.use_effect  # noqa: SH102
+            def effect():
+                pass
+
+        solara.Text("Done")
+
+
+def test_hook_use_invalid_conditional_decorator_call():
+    """Test that @use_effect(dependencies=[...]) style call-decorators are also caught."""
+    with hook_check_raise(), pytest.raises(HookValidationError):
+
+        @solara.component
+        def Page():
+            if 1 > 3:
+
+                @solara.use_effect(dependencies=[])  # type: ignore[call-arg]
+                def task():
+                    pass
+
+            solara.Text("Done")
+
+    with hook_check_warn(), pytest.warns(UserWarning):
+
+        @solara.component
+        def Page2():
+            if 1 > 3:
+
+                @solara.use_effect(dependencies=[])  # type: ignore[call-arg]
+                def task():
+                    pass
+
+            solara.Text("Done")
+
+    @solara.component
+    def Page3():
+        if 1 > 3:
+
+            @solara.use_effect(dependencies=[])  # type: ignore[call-arg]  # noqa: SH102
+            def task():
+                pass
+
+        solara.Text("Done")
+
+
 def test_hook_use_invalid_assign():
     # sometimes we know that the use of a hook is stable, even when in a loop
 

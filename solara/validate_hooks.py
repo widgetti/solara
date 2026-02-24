@@ -169,13 +169,31 @@ class HookValidator(ast.NodeVisitor):
         def visit_TryStar(self, node: ast.TryStar) -> t.Any:
             self._visit_children_using_scope(node)
 
+    def _check_decorator_hooks(self, node: t.Union[ast.FunctionDef, ast.AsyncFunctionDef]):
+        """Check if any decorators are hooks (e.g. @use_effect, @solara.use_effect, or @use_task(...))."""
+        for decorator in node.decorator_list:
+            id_ = None
+            check_node = decorator
+            if isinstance(decorator, ast.Call):
+                # e.g. @use_task(dependencies=[...])
+                check_node = decorator.func
+            if isinstance(check_node, ast.Name):
+                id_ = check_node.id
+            elif isinstance(check_node, ast.Attribute):
+                id_ = check_node.attr
+            if id_ is not None and self.matches_use_function(id_):
+                self.error_on_early_return(decorator, id_)
+                self.error_on_invalid_scope(decorator, id_)
+
     def visit_FunctionDef(self, node: ast.FunctionDef):
+        self._check_decorator_hooks(node)
         old_function_scope = self.function_scope
         self.function_scope = node
         self._visit_children_using_scope(node)
         self.function_scope = old_function_scope
 
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef):
+        self._check_decorator_hooks(node)
         old_function_scope = self.function_scope
         self.function_scope = node
         self._visit_children_using_scope(node)
@@ -213,7 +231,7 @@ class HookValidator(ast.NodeVisitor):
                 f"{self.get_source_context(line)}: {message}",
             )
 
-    def error_on_early_return(self, use_node: ast.Call, use_node_id: str):
+    def error_on_early_return(self, use_node: ast.expr, use_node_id: str):
         """
         Checks if the latest use of a reactive function occurs after the earliest return
         """
@@ -231,7 +249,7 @@ class HookValidator(ast.NodeVisitor):
 {_hint_supress(line, cause)}""",
             )
 
-    def error_on_invalid_scope(self, use_node: ast.Call, use_node_id: str):
+    def error_on_invalid_scope(self, use_node: ast.expr, use_node_id: str):
         """
         Checks if the latest use of a reactive function occurs after the earliest return or in an invalid scope
         such as try-except blocks.
