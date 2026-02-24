@@ -6,7 +6,7 @@ on:
   # https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#push
   push:
     tags:
-      - '*'
+      - 'v*'
 
 # https://docs.github.com/en/actions/using-jobs/assigning-permissions-to-jobs#defining-access-for-the-github_token-scopes
 permissions: {}
