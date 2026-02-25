@@ -25,7 +25,7 @@ bqplot-image-gl==1.8.0
 branca==0.8.2
 bump2version==1.0.1
 cachetools==5.5.2
-certifi==2026.1.4
+certifi==2026.2.25
 cffi==1.17.1
 cfgv==3.4.0
 charset-normalizer==3.4.4
