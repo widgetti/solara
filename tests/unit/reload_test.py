@@ -54,3 +54,27 @@ def test_on_kernel_start_cleanup(kernel_context, no_kernel_context):
     assert test_callback_cleanup in [k.callback for k in solara.lifecycle._on_kernel_start_callbacks]
     cleanup()
     assert test_callback_cleanup not in [k.callback for k in solara.lifecycle._on_kernel_start_callbacks]
+
+
+def test_create_reload_checker():
+    from solara.server.reload import reloader
+
+    # Create a checker before any reload
+    did_reload = solara.create_reload_checker()
+    assert did_reload() is False
+
+    # Simulate a reload by incrementing the counter
+    reloader._reload_count += 1
+
+    # The checker should now detect a reload
+    assert did_reload() is True
+
+    # A new checker created after the reload should not detect a reload
+    did_reload_new = solara.create_reload_checker()
+    assert did_reload_new() is False
+
+    # But the old checker still detects it
+    assert did_reload() is True
+
+    # Clean up: reset the counter for other tests
+    reloader._reload_count -= 1
