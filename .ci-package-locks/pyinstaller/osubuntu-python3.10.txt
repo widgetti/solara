@@ -165,6 +165,7 @@ pytest-playwright==0.7.2
 pytest-timeout==2.4.0
 pytest-tornasync==0.6.0.post2
 python-dateutil==2.9.0.post0
+python-discovery==1.1.0
 python-dotenv==1.2.1
 python-json-logger==4.0.0
 python-slugify==8.0.4
@@ -174,7 +175,7 @@ PyYAML==6.0.3
 pyzmq==27.1.0
 reacton==1.9.1
 referencing==0.37.0
-regex==2026.2.19
+regex==2026.2.28
 requests==2.32.5
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
@@ -182,7 +183,7 @@ rfc3987-syntax==1.1.0
 rich==14.3.3
 rich-click==1.9.7
 rpds-py==0.30.0
-ruff==0.15.2
+ruff==0.15.4
 Send2Trash==2.1.0
 simple-websocket==1.1.0
 simplejson==3.20.2
@@ -216,7 +217,7 @@ vaex-hdf5==0.15.0
 vaex-jupyter==0.9.0
 vaex-viz==0.6.0
 vega-datasets==0.9.0
-virtualenv==20.39.0
+virtualenv==21.1.0
 watchdog==6.0.0
 watchfiles==1.1.1
 wcwidth==0.6.0

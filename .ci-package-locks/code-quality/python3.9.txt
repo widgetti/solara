@@ -5,6 +5,7 @@ identify==2.6.15
 nodeenv==1.10.0
 platformdirs==4.4.0
 pre_commit==4.3.0
+python-discovery==1.1.0
 PyYAML==6.0.3
 typing_extensions==4.15.0
-virtualenv==20.39.0
+virtualenv==21.1.0
