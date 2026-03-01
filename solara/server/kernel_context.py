@@ -473,7 +473,7 @@ def initialize_virtual_kernel(session_id: str, kernel_id: str, websocket: websoc
     if kernel_id in contexts:
         logger.info("reusing virtual kernel: %s", kernel_id)
         context = contexts[kernel_id]
-        if context.session_id != session_id:
+        if solara.server.settings.kernel.session_check and context.session_id != session_id:
             logger.critical("Session id mismatch when reusing kernel (hack attempt?): %s != %s", context.session_id, session_id)
             websocket.send_text("Session id mismatch when reusing kernel (hack attempt?)")
             # to avoid very fast reconnects (we are in a thread anyway)
