@@ -50,6 +50,7 @@ except ModuleNotFoundError:
     import reacton.ipyvuetify as v  # type: ignore
 from . import util
 
+from . import html
 from .reactive import *
 
 from .datatypes import *
