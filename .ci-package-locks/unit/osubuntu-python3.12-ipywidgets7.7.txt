@@ -39,7 +39,7 @@ distro==1.9.0
 entrypoints==0.4
 executing==2.2.1
 fastjsonschema==2.21.2
-filelock==3.24.3
+filelock==3.25.0
 Flask==3.1.3
 flask-sock==0.7.0
 folium==0.20.0
@@ -50,7 +50,7 @@ h11==0.16.0
 httpcore==1.0.9
 httpx==0.28.1
 humanize==4.15.0
-identify==2.6.16
+identify==2.6.17
 idna==3.11
 iniconfig==2.3.0
 ipyaggrid==0.5.4
@@ -119,7 +119,7 @@ parso==0.8.6
 pathspec==1.0.4
 pexpect==4.9.0
 pillow==12.1.1
-pixelmatch==0.3.0
+pixelmatch==0.3.1
 platformdirs==4.9.2
 playwright==1.58.0
 plotly==6.5.2
@@ -149,7 +149,7 @@ pytest-timeout==2.4.0
 pytest-tornasync==0.6.0.post2
 python-dateutil==2.9.0.post0
 python-discovery==1.1.0
-python-dotenv==1.2.1
+python-dotenv==1.2.2
 python-json-logger==4.0.0
 python-slugify==8.0.4
 pytz==2025.2
