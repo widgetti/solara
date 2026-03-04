@@ -9,7 +9,7 @@ argon2-cffi-bindings==25.1.0
 arrow==1.4.0
 asttokens==3.0.1
 attrs==25.4.0
-Authlib==1.6.8
+Authlib==1.6.9
 babel==2.18.0
 beautifulsoup4==4.14.3
 bleach==6.3.0
@@ -18,7 +18,7 @@ bqplot==0.12.45
 bqplot-image-gl==1.8.0
 branca==0.8.2
 bump2version==1.0.1
-cachetools==7.0.1
+cachetools==7.0.2
 certifi==2026.2.25
 cffi==2.0.0
 cfgv==3.5.0
@@ -122,7 +122,7 @@ pillow==12.1.1
 pixelmatch==0.3.1
 platformdirs==4.9.2
 playwright==1.58.0
-plotly==6.5.2
+plotly==6.6.0
 pluggy==1.6.0
 polars==1.38.1
 polars-runtime-32==1.38.1
@@ -152,7 +152,7 @@ python-discovery==1.1.0
 python-dotenv==1.2.2
 python-json-logger==4.0.0
 python-slugify==8.0.4
-pytz==2025.2
+pytz==2026.1.post1
 PyYAML==6.0.3
 pyzmq==27.1.0
 reacton==1.9.1

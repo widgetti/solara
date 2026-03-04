@@ -10,7 +10,7 @@ argon2-cffi-bindings==25.1.0
 arrow==1.4.0
 asttokens==3.0.1
 attrs==25.4.0
-Authlib==1.6.8
+Authlib==1.6.9
 babel==2.18.0
 beautifulsoup4==4.14.3
 blake3==1.0.8
@@ -137,7 +137,7 @@ pillow==11.3.0
 pixelmatch==0.3.0
 platformdirs==4.4.0
 playwright==1.50.0
-plotly==6.5.2
+plotly==6.6.0
 pluggy==1.6.0
 polars==1.36.1
 polars-runtime-32==1.36.1
@@ -170,7 +170,7 @@ python-dotenv==1.2.1
 python-json-logger==4.0.0
 python-slugify==8.0.4
 pythreejs==2.4.2
-pytz==2025.2
+pytz==2026.1.post1
 PyYAML==6.0.3
 pyzmq==27.1.0
 reacton==1.9.1
