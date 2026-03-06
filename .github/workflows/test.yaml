@@ -731,6 +731,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       id-token: write # this permission is mandatory for trusted publishing
+      contents: write
 
     steps:
       - uses: actions/checkout@v6
@@ -764,6 +765,21 @@ jobs:
 
       - name: Test import solara-enterprise
         run: python -c "import solara_enterprise"
+
+      - name: Publish wheels to GitHub Release (vue3-dev)
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="vue3-dev"
+          gh release view "$tag" --repo "${{ github.repository }}" >/dev/null 2>&1 || gh release create "$tag" --repo "${{ github.repository }}" --title "$tag" --notes "Auto-updated Vue 3 dev builds" --prerelease --target "${{ github.sha }}"
+          gh release upload "$tag" \
+            dist/*.whl \
+            packages/solara-meta/dist/*.whl \
+            packages/solara-server/dist/*.whl \
+            packages/pytest-ipywidgets/dist/*.whl \
+            --repo "${{ github.repository }}" \
+            --clobber
 
       - name: Publish solara-meta to PyPI
         if: startsWith(github.event.ref, 'refs/tags/v')
