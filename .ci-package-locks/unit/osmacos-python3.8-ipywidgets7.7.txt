@@ -28,7 +28,7 @@ cachetools==5.5.2
 certifi==2026.2.25
 cffi==1.17.1
 cfgv==3.4.0
-charset-normalizer==3.4.4
+charset-normalizer==3.4.5
 click==8.1.8
 cloudpickle==3.1.2
 codespell==2.4.1
@@ -187,7 +187,7 @@ rfc3986-validator==0.1.1
 rich==14.3.3
 rich-click==1.9.7
 rpds-py==0.20.1
-ruff==0.15.4
+ruff==0.15.5
 Send2Trash==2.1.0
 simple-websocket==1.1.0
 simplejson==3.20.2

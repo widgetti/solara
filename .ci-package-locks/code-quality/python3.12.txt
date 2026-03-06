@@ -3,7 +3,7 @@ distlib==0.4.0
 filelock==3.25.0
 identify==2.6.17
 nodeenv==1.10.0
-platformdirs==4.9.2
+platformdirs==4.9.4
 pre_commit==4.5.1
 python-discovery==1.1.0
 PyYAML==6.0.3
