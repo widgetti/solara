@@ -5,6 +5,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "solara-ui"
+description = "A Pure Python, React-style Framework for Scaling Your Jupyter and Web Apps"
 readme = "README.md"
 authors = [{name = "Maarten A. Breddels", email = "maartenbreddels@gmail.com"}]
 license = {file = "LICENSE"}
