@@ -1,0 +1,43 @@
+name: github/release
+run-name: "[${{ github.ref_name }}] github/release"
+
+
+on:
+  # https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#push
+  push:
+    tags:
+      - 'v*'
+
+# https://docs.github.com/en/actions/using-jobs/assigning-permissions-to-jobs#defining-access-for-the-github_token-scopes
+permissions: {}
+
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - id: checkout_source
+        name: Checkout Source
+        # https://github.com/actions/checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - id: create_release
+        name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash --noprofile --norc -euxo pipefail {0}
+        run: |
+          # create GitHub release
+          # https://cli.github.com/manual/gh_release_create
+          args=(
+            '${{ github.ref_name }}'
+            --repo '${{ github.repository }}'
+            --title 'Release ${{ github.ref_name }}'
+            --generate-notes
+          )
+          url=$(gh release create "${args[@]}")
+          echo "::notice::${url}"
