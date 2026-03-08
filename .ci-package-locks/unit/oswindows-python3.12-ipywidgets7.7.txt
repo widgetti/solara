@@ -121,7 +121,7 @@ parso==0.8.6
 pathspec==1.0.4
 pillow==12.1.1
 pipx==1.8.0
-pixelmatch==0.3.1
+pixelmatch==0.4.0
 platformdirs==4.9.2
 playwright==1.58.0
 plotly==6.6.0
