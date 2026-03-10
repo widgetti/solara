@@ -19,7 +19,7 @@ dependencies = [
     "playwright",
     "pytest-playwright",
     "pillow",
-    "pixelmatch",
+    "pixelmatch==0.3.0",
 ]
 
 [project.urls]
