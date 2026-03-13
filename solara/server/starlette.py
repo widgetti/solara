@@ -1,4 +1,5 @@
 import asyncio
+from contextlib import asynccontextmanager
 import json
 import logging
 import math
@@ -633,6 +634,14 @@ def on_shutdown():
     telemetry.server_stop()
 
 
+@asynccontextmanager
+async def lifespan(app):
+    """Lifespan context manager for Starlette (replaces on_startup/on_shutdown)."""
+    on_startup()
+    yield
+    on_shutdown()
+
+
 def readyz(request: Request):
     json, status = server.readyz()
     return JSONResponse(json, status_code=status)
@@ -767,7 +776,7 @@ routes = [
     Route("/{fullpath:path}", endpoint=root),
 ]
 
-app = Starlette(routes=routes, on_startup=[on_startup], on_shutdown=[on_shutdown], middleware=middleware)
+app = Starlette(routes=routes, lifespan=lifespan, middleware=middleware)
 
 # Uncomment the lines below to test solara mouted under a subpath
 # def myroot(request: Request):
