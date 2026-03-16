@@ -24,7 +24,7 @@ cachetools==6.2.6
 certifi==2026.2.25
 cffi==2.0.0
 cfgv==3.4.0
-charset-normalizer==3.4.5
+charset-normalizer==3.4.6
 click==8.1.8
 cloudpickle==3.1.2
 codespell==2.4.2
