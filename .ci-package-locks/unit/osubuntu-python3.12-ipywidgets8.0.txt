@@ -70,7 +70,7 @@ jedi==0.19.2
 Jinja2==3.1.6
 jiter==0.13.0
 json5==0.13.0
-jsonpointer==3.0.0
+jsonpointer==3.1.0
 jsonschema==4.26.0
 jsonschema-specifications==2025.9.1
 jupyter-events==0.12.0
@@ -124,8 +124,8 @@ platformdirs==4.9.4
 playwright==1.58.0
 plotly==6.6.0
 pluggy==1.6.0
-polars==1.39.2
-polars-runtime-32==1.39.2
+polars==1.39.3
+polars-runtime-32==1.39.3
 pre_commit==4.5.1
 prometheus_client==0.24.1
 prompt_toolkit==3.0.52
@@ -142,7 +142,7 @@ pymdown-extensions==10.21
 pyparsing==3.3.2
 pytest==9.0.2
 pytest-base-url==2.1.0
-pytest-cov==7.0.0
+pytest-cov==7.1.0
 pytest-mock==3.15.1
 pytest-playwright==0.7.2
 pytest-timeout==2.4.0
