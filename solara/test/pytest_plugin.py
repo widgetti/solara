@@ -251,7 +251,7 @@ used_contexts: Dict[str, solara.server.kernel_context.VirtualKernelContext] = {}
 def SyncWrapper():
     global run_calls
     router = solara.use_router()
-    values = urllib.parse.parse_qs(router.search, keep_blank_values=True)
+    values = urllib.parse.parse_qs(router.query, keep_blank_values=True)
     id = values.get("id", [None])[0]  # type: ignore
     if id is None:
         solara.Error("No id found in url")
