@@ -52,6 +52,17 @@ class PageStatus(enum.Enum):
     CLOSED = "closed"
 
 
+def _get_or_create_event_loop() -> asyncio.AbstractEventLoop:
+    # On Python 3.12+, asyncio.get_event_loop() raises RuntimeError when called
+    # from the main thread after asyncio.run() has cleaned up the loop.
+    try:
+        return asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        return loop
+
+
 @dataclasses.dataclass
 class VirtualKernelContext:
     id: str
@@ -82,7 +93,7 @@ class VirtualKernelContext:
     closed_event: threading.Event = dataclasses.field(default_factory=threading.Event)
     _on_close_callbacks: List[Callable[[], None]] = dataclasses.field(default_factory=list)
     lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
-    event_loop: asyncio.AbstractEventLoop = dataclasses.field(default_factory=asyncio.get_event_loop)
+    event_loop: asyncio.AbstractEventLoop = dataclasses.field(default_factory=_get_or_create_event_loop)
 
     def __post_init__(self):
         with self:
