@@ -12,7 +12,23 @@ import { Kernel, ServerConnection } from '@jupyterlab/services';
 import { KernelConnection } from '@jupyterlab/services/lib/kernel/default';
 import * as KernelMessage from '@jupyterlab/services/lib/kernel/messages';
 
+const SOLARA_KERNEL_TERMINATED_MSG_TYPE = 'solara_kernel_terminated';
 
+function installSolaraKernelMessageLogging(kernel: KernelConnection) {
+  kernel.iopubMessage.connect((_, msg) => {
+    if (msg.header.msg_type !== SOLARA_KERNEL_TERMINATED_MSG_TYPE) {
+      return;
+    }
+    console.error('Solara kernel terminated:', msg.content);
+    if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+      window.dispatchEvent(
+        new CustomEvent('solara.kernelTerminated', {
+          detail: msg.content,
+        })
+      );
+    }
+  });
+}
 
 export async function connectKernel(
   baseUrl?: string,
@@ -29,6 +45,7 @@ export async function connectKernel(
   // }
   const model = { 'id': kernelId, 'name': 'solara-name' }
   const kernel = new KernelConnection({ model, serverSettings });
+  installSolaraKernelMessageLogging(kernel);
   return kernel;
 }
 

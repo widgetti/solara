@@ -475,9 +475,17 @@ def initialize_virtual_kernel(session_id: str, kernel_id: str, websocket: websoc
         context = contexts[kernel_id]
         if context.session_id != session_id:
             logger.critical("Session id mismatch when reusing kernel (hack attempt?): %s != %s", context.session_id, session_id)
-            # Close the websocket cleanly instead of sending plain text.
-            # The JupyterLab kernel protocol expects all messages to be JSON,
-            # so sending plain text causes a parse error on the client.
+            context.kernel.session.send_to(
+                websocket,
+                context.kernel.iopub_socket,
+                "solara_kernel_terminated",
+                {
+                    "reason": "session_id_mismatch",
+                    "message": "Rejected websocket connection for existing virtual kernel because the session id did not match.",
+                    "kernel_id": kernel_id,
+                    "retryable": False,
+                },
+            )
             websocket.close()
             # to avoid very fast reconnects (we are in a thread anyway)
             time.sleep(0.5)
