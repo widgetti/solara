@@ -16,7 +16,7 @@ const SOLARA_KERNEL_TERMINATED_MSG_TYPE = 'solara_kernel_terminated';
 
 function installSolaraKernelMessageLogging(kernel: KernelConnection) {
   kernel.iopubMessage.connect((_, msg) => {
-    if (msg.header.msg_type !== SOLARA_KERNEL_TERMINATED_MSG_TYPE) {
+    if ((msg.header.msg_type as string) !== SOLARA_KERNEL_TERMINATED_MSG_TYPE) {
       return;
     }
     console.error('Solara kernel terminated:', msg.content);
