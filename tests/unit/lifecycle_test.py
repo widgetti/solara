@@ -1,4 +1,5 @@
 import asyncio
+import json
 import sys
 import time
 from unittest.mock import Mock
@@ -114,3 +115,26 @@ async def test_kernel_lifecycle_close_while_disconnected(close_first, short_cull
     assert not context.closed_event.is_set()
     await cull_task_2
     assert context.closed_event.is_set()
+
+
+def test_kernel_lifecycle_session_id_mismatch_sends_solara_message():
+    websocket = Mock()
+    kernel_context.initialize_virtual_kernel("session-id-1", "kernel-id-1", websocket)
+
+    mismatched_websocket = Mock()
+    with pytest.raises(ValueError, match="Session id mismatch"):
+        kernel_context.initialize_virtual_kernel("session-id-2", "kernel-id-1", mismatched_websocket)
+
+    mismatched_websocket.send.assert_called_once()
+    raw_message = mismatched_websocket.send.call_args.args[0]
+    msg = json.loads(raw_message)
+
+    assert msg["channel"] == "iopub"
+    assert msg["header"]["msg_type"] == "solara_kernel_terminated"
+    assert msg["content"] == {
+        "reason": "session_id_mismatch",
+        "message": "Rejected websocket connection for existing virtual kernel because the session id did not match.",
+        "kernel_id": "kernel-id-1",
+        "retryable": False,
+    }
+    mismatched_websocket.close.assert_called_once()

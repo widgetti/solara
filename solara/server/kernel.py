@@ -250,7 +250,7 @@ class SessionWebsocket(session.Session):
             except:  # noqa
                 pass
 
-    def send(
+    def _wire_message(
         self,
         stream,
         msg_or_type,
@@ -263,32 +263,87 @@ class SessionWebsocket(session.Session):
         metadata=None,
     ):
         if stream is None:
-            return  # can happen when the kernel is closed but someone was still trying to send a message
+            return None  # can happen when the kernel is closed but someone was still trying to send a message
+        if isinstance(msg_or_type, dict):
+            msg = msg_or_type
+        else:
+            msg = self.msg(
+                msg_or_type,
+                content=content,
+                parent=parent,
+                header=header,
+                metadata=metadata,
+            )
+        _fix_msg(msg)
+        msg["channel"] = stream.channel
         try:
-            if isinstance(msg_or_type, dict):
-                msg = msg_or_type
-            else:
-                msg = self.msg(
-                    msg_or_type,
-                    content=content,
-                    parent=parent,
-                    header=header,
-                    metadata=metadata,
-                )
-            _fix_msg(msg)
-            msg["channel"] = stream.channel
-            # not using pdb guard for performance reasons
-            try:
-                if buffers:
-                    msg["buffers"] = [memoryview(k).cast("b") for k in buffers]
-                    wire_message = serialize_binary_message(msg)
-                else:
-                    wire_message = json_dumps(msg)
-            except Exception:
-                logger.exception("Could not serialize message: %r", msg)
-                if settings.main.use_pdb:
-                    pdb.post_mortem()
-                raise
+            if buffers:
+                msg["buffers"] = [memoryview(k).cast("b") for k in buffers]
+                return serialize_binary_message(msg)
+            return json_dumps(msg)
+        except Exception:
+            logger.exception("Could not serialize message: %r", msg)
+            if settings.main.use_pdb:
+                pdb.post_mortem()
+            raise
+
+    def send_to(
+        self,
+        websocket_target: websocket.WebsocketWrapper,
+        stream,
+        msg_or_type,
+        content=None,
+        parent=None,
+        ident=None,
+        buffers=None,
+        track=False,
+        header=None,
+        metadata=None,
+    ):
+        try:
+            wire_message = self._wire_message(
+                stream,
+                msg_or_type,
+                content=content,
+                parent=parent,
+                ident=ident,
+                buffers=buffers,
+                track=track,
+                header=header,
+                metadata=metadata,
+            )
+            if wire_message is None:
+                return
+            send_websockets({websocket_target}, wire_message)
+        except Exception as e:
+            logger.exception("Error sending message: %s", e)
+
+    def send(
+        self,
+        stream,
+        msg_or_type,
+        content=None,
+        parent=None,
+        ident=None,
+        buffers=None,
+        track=False,
+        header=None,
+        metadata=None,
+    ):
+        try:
+            wire_message = self._wire_message(
+                stream,
+                msg_or_type,
+                content=content,
+                parent=parent,
+                ident=ident,
+                buffers=buffers,
+                track=track,
+                header=header,
+                metadata=metadata,
+            )
+            if wire_message is None:
+                return
             send_websockets(self.websockets, wire_message)
         except Exception as e:
             logger.exception("Error sending message: %s", e)
