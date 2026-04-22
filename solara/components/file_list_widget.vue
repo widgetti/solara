@@ -10,17 +10,16 @@
           :key="name + '|' + is_file"
           @click.stop="clicked = { name, is_file }"
           @dblclick="double_clicked = { name, is_file }"
-          :class="(clicked && clicked.name == name) ? 'solara-file-list-selected': ''"
+          :class="['solara-file-list-item', (clicked && clicked.name == name) ? 'solara-file-list-selected': '']"
       >
-        <v-list-item-icon>
-          <v-icon>{{ name === '..' ? 'mdi-keyboard-backspace' : is_file ? 'mdi-file-document' : 'mdi-folder' }}</v-icon>
-        </v-list-item-icon>
-
-        <v-list-item-content>
+        <div class="solara-file-list-row">
+          <div class="solara-file-list-icon">
+            <v-icon>{{ name === '..' ? 'mdi-keyboard-backspace' : is_file ? 'mdi-file-document' : 'mdi-folder' }}</v-icon>
+          </div>
           <v-list-item-title :class="'solara-file-list-' + (is_file ? 'file' : 'dir')">
             {{ name }}<span v-if="size"> - {{ size }}</span>
           </v-list-item-title>
-        </v-list-item-content>
+        </div>
       </v-list-item>
     </v-list>
   </v-sheet>
@@ -60,19 +59,31 @@ module.exports = {
 
 }
 
-.solara-file-list .v-list-item__icon,
-.solara-file-list .v-list-item__list {
-  margin-top: 0;
-  margin-bottom: 0;
+.solara-file-list .solara-file-list-row {
+  align-items: center;
+  display: flex;
+  min-height: 28px;
+  width: 100%;
 }
 
-.v-application--is-ltr .solara-file-list .v-list-item__icon {
+.solara-file-list .solara-file-list-icon {
+  align-items: center;
+  display: flex;
+  flex: 0 0 32px;
+  justify-content: center;
   margin-right: 8px;
 }
 
+.solara-file-list .solara-file-list-item.v-list-item,
 .solara-file-list .v-list-item {
   height: 28px;
   min-height: 0;
-  padding-left: 0;
+  padding: 0;
+  padding-inline-end: 0;
+  padding-inline-start: 0;
+}
+
+.solara-file-list .v-list-item-title {
+  line-height: 28px;
 }
 </style>
