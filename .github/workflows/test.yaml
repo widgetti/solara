@@ -586,6 +586,7 @@ jobs:
   unit-test:
     needs: [build]
     runs-on: ${{ matrix.os }}-latest
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -652,7 +653,7 @@ jobs:
         run: |
           # otherwise Python's inspect cannot find the source code
           mv solara _solara
-          pytest tests/unit --doctest-modules --timeout=60
+          pytest tests/unit --doctest-modules --timeout=60 --session-timeout=600 -v
 
       - name: Run unit tests as if we are running solara 2.0
         env:
@@ -663,7 +664,7 @@ jobs:
         run: |
           # otherwise Python's inspect cannot find the source code
           mv solara _solara
-          pytest tests/unit --doctest-modules --timeout=60
+          pytest tests/unit --doctest-modules --timeout=60 --session-timeout=600 -v
 
       - name: upload test artifacts
         if: github.event_name == 'schedule' || steps.prepare.outputs.LOCKS_EXIST == 'false'
