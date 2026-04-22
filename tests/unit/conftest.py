@@ -1,9 +1,20 @@
+import os
+import sys
+
 import pytest
 
 import solara.server.app
 import solara.server.kernel_context
 from solara.server import kernel
 from solara.server.kernel_context import VirtualKernelContext
+
+
+def pytest_sessionfinish(session, exitstatus):
+    # On Windows CI, lingering non-daemon threads (from websockets/ipykernel)
+    # keep the Python process alive for hours after pytest has reported all
+    # tests passed. Force-exit with the correct status so the job completes.
+    if sys.platform == "win32" and os.environ.get("CI"):
+        os._exit(exitstatus)
 
 
 @pytest.fixture(autouse=True)
