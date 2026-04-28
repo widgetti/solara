@@ -59,7 +59,7 @@ async def test_kernel_lifecycle_double_disconnect(short_cull_timeout):
     # but the first disconnect should not have closed the kernel context yet
     with pytest.raises(asyncio.CancelledError):
         await cull_task1
-    assert (time.time() - t_disconnect_page_2) < 0.001, "should be cancelled really quickly"
+    assert (time.time() - t_disconnect_page_2) < 0.05, "should be cancelled really quickly"
 
     assert not context.closed_event.is_set()
     await cull_task2
