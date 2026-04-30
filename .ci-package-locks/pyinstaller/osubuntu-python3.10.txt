@@ -49,7 +49,7 @@ folium==0.20.0
 fonttools==4.62.1
 fqdn==1.5.1
 frozendict==2.4.7
-fsspec==2026.3.0
+fsspec==2026.4.0
 future==1.0.0
 greenlet==3.5.0
 h11==0.16.0
