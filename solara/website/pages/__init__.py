@@ -174,6 +174,7 @@ _redirects = {
     "/api/hbox": "/documentation/components/layout/hbox",
     "/api/vbox": "/documentation/components/layout/vbox",
     "/api/sidebar": "/documentation/components/layout/sidebar",
+    "/api/details": "/documentation/components/layout/details",
     "/api/row": "/documentation/components/layout/row",
     "/api/error": "/documentation/components/status/error",
     "/api/info": "/documentation/components/status/info",
