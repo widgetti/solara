@@ -19,12 +19,12 @@ bqplot==0.12.46
 bqplot-image-gl==1.9.2
 branca==0.8.2
 bump2version==1.0.1
-cachetools==7.0.6
+cachetools==7.1.0
 certifi==2026.4.22
 cffi==2.0.0
 cfgv==3.5.0
 charset-normalizer==3.4.7
-click==8.3.2
+click==8.3.3
 codespell==2.4.2
 colorama==0.4.6
 comm==0.2.3
@@ -68,7 +68,7 @@ ipyvuetify==1.11.3
 ipywidgets==8.1.8
 isoduration==20.11.0
 itsdangerous==2.2.0
-jedi==0.19.2
+jedi==0.20.0
 Jinja2==3.1.6
 jiter==0.14.0
 joserfc==1.6.4
@@ -115,10 +115,10 @@ notebook_shim==0.2.4
 numpy==1.26.4
 objgraph==3.6.2
 openai==2.33.0
-packaging==26.0
+packaging==26.2
 pandas==2.3.3
 pandocfilters==1.5.1
-parso==0.8.6
+parso==0.8.7
 pathspec==1.1.1
 pillow==12.2.0
 pipx==1.11.1
