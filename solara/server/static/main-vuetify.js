@@ -11,10 +11,10 @@ var jupyterWidgetMountPoint = {
         requestWidget(this.mountId);
     },
     mounted() {
-        const vue3 = Vue.version.startsWith('3');
         requestWidget(this.mountId)
-            .then(widgetView => {
+            .then(async widgetView => {
                 if (['VuetifyView', 'VuetifyTemplateView'].includes(widgetView.model.get('_view_name'))) {
+                    await registerVueComponents(this, widgetView.model.widget_manager);
                     this.renderFn = createElement => widgetView.vueRender(createElement);
                 } else {
                     while (this.$el.firstChild) {
@@ -42,6 +42,24 @@ var jupyterWidgetMountPoint = {
             [h('v-chip', `[${this.mountId}]`)]);
     }
 };
+
+async function registerVueComponents(vueComponent, widgetManager) {
+    return new Promise(resolve => {
+        const warn = () => {
+            console.warn('jupyter-vue unavailable');
+            resolve();
+        };
+        if (!requirejs.defined('jupyter-vue') && !requirejs.specified('jupyter-vue')) {
+            warn();
+            return;
+        }
+        requirejs(
+            ['jupyter-vue'],
+            jupyterVue => resolve(jupyterVue.addApp(vueComponent.$.appContext.app, widgetManager)),
+            warn
+        );
+    });
+}
 
 const widgetResolveFns = {};
 const widgetPromises = {};
