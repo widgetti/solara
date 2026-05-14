@@ -13,8 +13,11 @@ var jupyterWidgetMountPoint = {
     mounted() {
         requestWidget(this.mountId)
             .then(async widgetView => {
-                if (['VuetifyView', 'VuetifyTemplateView'].includes(widgetView.model.get('_view_name'))) {
-                    await registerVueComponents(this, widgetView.model.widget_manager);
+                const model = widgetView.model;
+                if (['VuetifyView', 'VuetifyTemplateView'].includes(model.get('_view_name'))) {
+                    if (['VueTemplateModel', 'VuetifyTemplateModel'].includes(model.get('_model_name'))) {
+                        await registerVueComponents(this, widgetView);
+                    }
                     this.renderFn = createElement => widgetView.vueRender(createElement);
                 } else {
                     while (this.$el.firstChild) {
@@ -43,21 +46,25 @@ var jupyterWidgetMountPoint = {
     }
 };
 
-async function registerVueComponents(vueComponent, widgetManager) {
+async function registerVueComponents(vueComponent, widgetView) {
+    const app = vueComponent.$.appContext.app;
+    await loadWidgetModule('jupyter-vue', jupyterVue =>
+        jupyterVue.addApp(app, widgetView.model.widget_manager)
+    );
+    if (widgetView.model.get('_view_module') === 'jupyter-vuetify') {
+        await loadWidgetModule('jupyter-vuetify', jupyterVuetify =>
+            jupyterVuetify.addApp(app)
+        );
+    }
+}
+
+function loadWidgetModule(name, callback) {
     return new Promise(resolve => {
-        const warn = () => {
-            console.warn('jupyter-vue unavailable');
+        if (!requirejs.defined(name) && !requirejs.specified(name)) {
             resolve();
-        };
-        if (!requirejs.defined('jupyter-vue') && !requirejs.specified('jupyter-vue')) {
-            warn();
             return;
         }
-        requirejs(
-            ['jupyter-vue'],
-            jupyterVue => resolve(jupyterVue.addApp(vueComponent.$.appContext.app, widgetManager)),
-            warn
-        );
+        requirejs([name], module => resolve(callback(module)), () => resolve());
     });
 }
 

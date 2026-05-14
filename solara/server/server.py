@@ -346,8 +346,8 @@ def read_root(
         content, hash = solara.util.get_file_hash(filepath)
         content_utf8 = content.decode("utf-8")
         url = f"{root_path}{path}?v={hash}"
-        # when < 10k we embed, but if we use currentScript, it can break things
-        embed = len(content) < 1024 * 10 and b"currentScript" not in content
+        # when < 20k we embed, but if we use currentScript, it can break things
+        embed = len(content) < 1024 * 20 and b"currentScript" not in content
         if embed:
             if module:
                 code = f'<script type="module">/*\npath={path}\n*/{content_utf8}</script>'
