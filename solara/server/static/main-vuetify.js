@@ -4,6 +4,7 @@ var jupyterWidgetMountPoint = {
         return {
             renderFn: undefined,
             elem: undefined,
+            component: undefined,
         }
     },
     props: ['mount-id'],
@@ -36,6 +37,12 @@ var jupyterWidgetMountPoint = {
         let h = Vue.h || createElement;
         if (this.renderFn) {
             /* workaround for v-menu click */
+            if (Vue.h) {
+                if (!this.component) {
+                    this.component = this.renderFn(createElement).type;
+                }
+                return h(this.component);
+            }
             if (!this.elem) {
                 this.elem = this.renderFn(createElement);
             }
