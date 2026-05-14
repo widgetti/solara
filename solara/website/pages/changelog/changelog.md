@@ -1,5 +1,11 @@
 # Solara Changelog
 
+## Version 1.57.4
+
+   * Bug Fix: Handle Python 3.12+ `get_event_loop` RuntimeError in `VirtualKernelContext`. [437baab0](https://github.com/widgetti/solara/commit/437baab0)
+   * Bug Fix: Don't resolve symlinks when navigating up in `FileBrowser`. [fccfcab2](https://github.com/widgetti/solara/commit/fccfcab2)
+   * Bug Fix: Use `lifespan` instead of `on_startup`/`on_shutdown` for Starlette 1.0 compatibility. [1a19f8a2](https://github.com/widgetti/solara/commit/1a19f8a2)
+
 ## Version 1.57.3
 
    * Bug Fix: Detect conditional hook usage when hook is used as a decorator. [71e34b8f](https://github.com/widgetti/solara/commit/71e34b8f)
