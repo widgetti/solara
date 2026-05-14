@@ -41,7 +41,7 @@ jobs:
 
       - name: Cache JS bundle
         id: cache-js-bundle-v2
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             packages/solara-vuetify-app/dist
