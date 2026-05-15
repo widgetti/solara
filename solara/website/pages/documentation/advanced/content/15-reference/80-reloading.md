@@ -29,6 +29,34 @@ You don't need to care about this feature if you only use solara, this is only r
 If the `--auto-restart/-a` flag is passed to solara-server and any changes occur in the `solara` package (excluding `solara.webpage`), solara-server will restart. This speeds up development on `solara-server` for developers since you do not
 need to manually restart the server in the terminal.
 
+## Long-running tasks and hot reload
+
+When a hot reload occurs, long-running tasks (threads, async tasks, etc.) that were started before the reload may continue running with references to old module state. This can cause issues like class mismatches or stale data.
+
+Use `solara.create_reload_checker()` to detect when a reload has occurred and gracefully stop your task:
+
+```python
+import solara
+import asyncio
+
+did_reload = solara.create_reload_checker()
+
+async def my_long_running_task():
+    while not did_reload():
+        # do work...
+        await asyncio.sleep(1)
+    # Task exits gracefully after hot reload
+```
+
+The function returns a checker that captures the current reload state. Call the checker periodically in your task loop - it returns `True` once a reload has occurred since the checker was created.
+
+This is particularly useful for:
+
+- Background polling tasks
+- WebSocket connections
+- Database connections with ORM models
+- Any task that holds references to module-level objects
+
 ## Disabling reloading
 
 In production mode (pass the `--production` argument to `solara run`) watching of files is disabled, and no reloading of files or vue templates will occur. If you run solara integrated in flask or uvicorn as laid out in [deployment documentation](https://solara.dev/documentation/getting_started/deploying/self-hosted)
