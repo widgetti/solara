@@ -4,6 +4,7 @@ var jupyterWidgetMountPoint = {
         return {
             renderFn: undefined,
             elem: undefined,
+            component: undefined,
         }
     },
     props: ['mount-id'],
@@ -11,11 +12,18 @@ var jupyterWidgetMountPoint = {
         requestWidget(this.mountId);
     },
     mounted() {
-        const vue3 = Vue.version.startsWith('3');
         requestWidget(this.mountId)
-            .then(widgetView => {
-                if (['VuetifyView', 'VuetifyTemplateView'].includes(widgetView.model.get('_view_name'))) {
-                    this.renderFn = createElement => widgetView.vueRender(createElement);
+            .then(async widgetView => {
+                const model = widgetView.model;
+                if (['VuetifyView', 'VuetifyTemplateView'].includes(model.get('_view_name'))) {
+                    if (['VueTemplateModel', 'VuetifyTemplateModel'].includes(model.get('_model_name'))) {
+                        await registerVueComponents(this, widgetView);
+                    }
+                    if (Vue.h) {
+                        this.component = widgetView.vueComponent();
+                    } else {
+                        this.renderFn = createElement => widgetView.vueRender(createElement);
+                    }
                 } else {
                     while (this.$el.firstChild) {
                         this.$el.removeChild(this.$el.firstChild);
@@ -31,6 +39,9 @@ var jupyterWidgetMountPoint = {
     render(createElement) {
         // in vue3 we have Vue.h, otherwise fall back to createElement (vue2)
         let h = Vue.h || createElement;
+        if (this.component) {
+            return h(this.component);
+        }
         if (this.renderFn) {
             /* workaround for v-menu click */
             if (!this.elem) {
@@ -42,6 +53,28 @@ var jupyterWidgetMountPoint = {
             [h('v-chip', `[${this.mountId}]`)]);
     }
 };
+
+async function registerVueComponents(vueComponent, widgetView) {
+    const app = vueComponent.$.appContext.app;
+    await loadWidgetModule('jupyter-vue', jupyterVue =>
+        jupyterVue.addApp(app, widgetView.model.widget_manager)
+    );
+    if (widgetView.model.get('_view_module') === 'jupyter-vuetify') {
+        await loadWidgetModule('jupyter-vuetify', jupyterVuetify =>
+            jupyterVuetify.addApp(app)
+        );
+    }
+}
+
+function loadWidgetModule(name, callback) {
+    return new Promise(resolve => {
+        if (!requirejs.defined(name) && !requirejs.specified(name)) {
+            resolve();
+            return;
+        }
+        requirejs([name], module => resolve(callback(module)), () => resolve());
+    });
+}
 
 const widgetResolveFns = {};
 const widgetPromises = {};
@@ -115,6 +148,9 @@ async function solaraInit(mountId, appName) {
     console.log('solara init', mountId, appName);
     define("vue", [], () => Vue);
     define("vuetify", [], () => Vuetify);
+    if (typeof vuetifyPlugin !== "undefined") {
+        define("solara-vuetify-plugin", [], () => ({ vuetifyPlugin }));
+    }
     cookies = getCookiesMap(document.cookie);
     const searchParams = new URLSearchParams(window.location.search);
     let kernelId = searchParams.get('kernelid') || generateUuid()
