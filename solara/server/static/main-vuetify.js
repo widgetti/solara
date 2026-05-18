@@ -19,7 +19,11 @@ var jupyterWidgetMountPoint = {
                     if (['VueTemplateModel', 'VuetifyTemplateModel'].includes(model.get('_model_name'))) {
                         await registerVueComponents(this, widgetView);
                     }
-                    this.renderFn = createElement => widgetView.vueRender(createElement);
+                    if (Vue.h) {
+                        this.component = widgetView.vueComponent();
+                    } else {
+                        this.renderFn = createElement => widgetView.vueRender(createElement);
+                    }
                 } else {
                     while (this.$el.firstChild) {
                         this.$el.removeChild(this.$el.firstChild);
@@ -35,14 +39,11 @@ var jupyterWidgetMountPoint = {
     render(createElement) {
         // in vue3 we have Vue.h, otherwise fall back to createElement (vue2)
         let h = Vue.h || createElement;
+        if (this.component) {
+            return h(this.component);
+        }
         if (this.renderFn) {
             /* workaround for v-menu click */
-            if (Vue.h) {
-                if (!this.component) {
-                    this.component = this.renderFn(createElement).type;
-                }
-                return h(this.component);
-            }
             if (!this.elem) {
                 this.elem = this.renderFn(createElement);
             }
