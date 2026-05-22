@@ -133,6 +133,15 @@ async function solaraInit(mountId, appName) {
     }
     const close_url = `${solara.rootPath}/_solara/api/close/${kernelId}?session_id=${kernel.clientId}`;
     let skipReconnectedCheck = true;
+    kernel.iopubMessage.connect((_, msg) => {
+        if (msg.header.msg_type !== 'solara_kernel_terminated') {
+            return;
+        }
+        console.error('Solara kernel terminated:', msg.content);
+        window.dispatchEvent(new CustomEvent('solara.kernelTerminated', {
+            detail: msg.content,
+        }));
+    });
     kernel.statusChanged.connect(() => {
         app.$data.kernelBusy = kernel.status == 'busy';
     });
