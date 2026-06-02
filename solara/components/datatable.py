@@ -110,7 +110,7 @@ def DataTable(
             item[column] = format(dfs, column, i + i1, records[i][column])
         items.append(item)
 
-    headers = [{"text": name, "value": name, "sortable": False} for name in columns]
+    headers = [{"title": name, "key": name, "sortable": False} for name in columns]
     column_actions_callbacks = [k.on_click for k in column_actions]
     cell_actions_callbacks = [k.on_click for k in cell_actions]
     column_actions = [replace(k, on_click=None) for k in column_actions]

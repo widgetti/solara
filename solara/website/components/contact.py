@@ -127,7 +127,7 @@ def Contact(
         v_model=error.value is not None,
         timeout=5000,
         on_v_model=lambda *_: error.set(None),
-        left=True,
+        location="bottom start",
         color="error",
     ):
         solara.Markdown(error.value or "", style={"--dark-color-text": "white", "--color-text": "white"})
@@ -137,7 +137,7 @@ def Contact(
         v_model=success.value,
         timeout=5000,
         on_v_model=lambda *_: success.set(False),
-        left=True,
+        location="bottom start",
         color="success",
     ):
         solara.Markdown("Your message has been sent!", style={"--dark-color-text": "white", "--color-text": "white"})

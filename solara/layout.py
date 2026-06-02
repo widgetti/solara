@@ -19,11 +19,11 @@ def LayoutApp(children=[], left=None, right=None, open_left=False, open_right=Fa
     open_right, set_open_right = solara.use_state(open_right)
     with v.Html(tag="div") as main:
         if left:
-            with v.NavigationDrawer(absolute=True, right=False, width="min-content", v_model=open_left):
+            with v.NavigationDrawer(absolute=True, location="left", width="min-content", v_model=open_left):
                 AppIcon(open_left, on_click=lambda: set_open_left(not open_left))
                 with v.Html(tag="div", children=[left]):
                     pass
-        with v.Toolbar(dense=True, class_="elevation-3", dark=False):
+        with v.Toolbar(density="compact", class_="elevation-3"):
             if left:
                 AppIcon(open_left, on_click=lambda: set_open_left(not open_left))
             v.ToolbarTitle(children=[title])
@@ -35,7 +35,7 @@ def LayoutApp(children=[], left=None, right=None, open_left=False, open_right=Fa
         with v.Row():
             v.Col(cols=12, children=[*children])
         if right:
-            with v.NavigationDrawer(absolute=True, right=True, width="min-content", v_model=open_right):
+            with v.NavigationDrawer(absolute=True, location="right", width="min-content", v_model=open_right):
                 with v.Btn(icon=True) as btn:
                     vue.use_event(btn, "click", lambda *_ignore: set_open_right(not open_right))
                     v.Icon(children=["mdi-settings"])

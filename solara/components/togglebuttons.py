@@ -136,7 +136,16 @@ def ToggleButtonsSingle(
 
     return cast(
         reacton.core.ValueElement[v.BtnToggle, T],
-        rv.BtnToggle(children=children, multiple=False, mandatory=mandatory, v_model=index, on_v_model=on_index, dense=dense, class_=class_, style_=style_flat),
+        rv.BtnToggle(
+            children=children,
+            multiple=False,
+            mandatory=mandatory,
+            v_model=index,
+            on_v_model=on_index,
+            density="compact" if dense else None,
+            class_=class_,
+            style_=style_flat,
+        ),
     )
 
 
@@ -195,6 +204,13 @@ def ToggleButtonsMultiple(
     return cast(
         reacton.core.ValueElement[v.BtnToggle, List[T]],
         rv.BtnToggle(
-            children=children, multiple=True, mandatory=mandatory, v_model=indices, on_v_model=on_indices, dense=dense, class_=class_, style_=style_flat
+            children=children,
+            multiple=True,
+            mandatory=mandatory,
+            v_model=indices,
+            on_v_model=on_indices,
+            density="compact" if dense else None,
+            class_=class_,
+            style_=style_flat,
         ),
     )

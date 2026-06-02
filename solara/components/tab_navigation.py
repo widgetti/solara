@@ -24,14 +24,15 @@ def TabNavigation(children=[], vertical=False, **kwargs):
 
     tab_index = all_routes.index(route_current) if route_current is not None else 0
 
-    with rv.Tabs(v_model=tab_index, vertical=vertical, **kwargs) as main:
+    with rv.Tabs(v_model=tab_index, direction="vertical" if vertical else None, **kwargs) as main:
         for i, route in enumerate(all_routes):
             path = solara.resolve_path(route)
             LinkTab(path, route.label or "No title")
         if route_current is None:
             return solara.Error("Page does not exist")
 
-        with rv.TabsItems(v_model=tab_index, children=children):
-            pass
+        with rv.Window(v_model=tab_index):
+            with rv.WindowItem(value=tab_index, children=children):
+                pass
 
     return main

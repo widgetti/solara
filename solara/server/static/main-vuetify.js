@@ -16,7 +16,7 @@ var jupyterWidgetMountPoint = {
             .then(async widgetView => {
                 const model = widgetView.model;
                 if (['VuetifyView', 'VuetifyTemplateView'].includes(model.get('_view_name'))) {
-                    if (['VueTemplateModel', 'VuetifyTemplateModel'].includes(model.get('_model_name'))) {
+                    if (['VueTemplateModel', 'VuetifyTemplateModel', 'HtmlModel'].includes(model.get('_model_name'))) {
                         await registerVueComponents(this, widgetView);
                     }
                     if (Vue.h) {

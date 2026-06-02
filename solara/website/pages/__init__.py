@@ -271,7 +271,7 @@ def Layout(children=[]):
                 on_toggle_left_menu=lambda: set_show_left_menu(not show_left_menu),
                 on_toggle_right_menu=lambda: set_show_right_menu(not show_right_menu),
             )
-            with rv.Container(tag="section", fluid=True, ma_0=True, pa_0=True, class_="fill-height solara-content-main"):
+            with rv.Container(tag="section", fluid=True, class_="fill-height solara-content-main ma-0 pa-0"):
                 if route_current is None:
                     return solara.Error("Page not found")
                 else:
@@ -297,7 +297,6 @@ def Layout(children=[]):
                                 route_current.module.Sidebar()
                         with rv.Col(
                             tag="main",
-                            md=True,
                             class_="pa-0",
                             style_="max-width: 1024px" if route_current.path == "showcase" else "",
                         ):
@@ -314,30 +313,24 @@ def Layout(children=[]):
                 with rv.NavigationDrawer(
                     v_model=show_right_menu,
                     on_v_model=set_show_right_menu,
-                    fixed=True,
                     absolute=True,
-                    right=True,
-                    hide_overlay=False,
-                    overlay_color="#000000",
-                    overlay_opacity=0.5,
+                    location="right",
+                    scrim="#000000",
                     style_="height: 100vh",
                 ):
                     Algolia()
-                    with rv.List(nav=True):
-                        with rv.ListItemGroup(active_class="text--primary"):
-                            for route in all_routes:
-                                if route.path == "apps":
-                                    continue
-                                with solara.Link(route):
-                                    solara.ListItem(route.label)
+                    with rv.List(nav=True, active_class="text--primary"):
+                        for route in all_routes:
+                            if route.path == "apps":
+                                continue
+                            with solara.Link(route):
+                                solara.ListItem(route.label)
 
                 if route_current is not None and route_current.module is not None and hasattr(route_current.module, "Sidebar"):
                     with solara.v.NavigationDrawer(
                         absolute=True,
-                        clipped=True,
                         class_="d-md-none d-block",
-                        height="unset",
-                        style_="min-height: 100vh;",
+                        style_="min-height: 100vh; height: unset;",
                         v_model=show_left_menu,
                         on_v_model=set_show_left_menu,
                         width="20rem",
@@ -350,18 +343,17 @@ def Testimonial(text, name, position, img):
     max_width = "300px"
     with rv.Card(
         elevation=2,
-        dark=False,
         max_width=max_width,
         class_="testimonial-card",
     ):
         with rv.CardActions():
             with rv.ListItem(class_="grow"):
-                with rv.ListItemAvatar(color="grey darken-3"):
+                with rv.Avatar(color="grey darken-3", start=True):
                     rv.Img(
                         class_="elevation-6",
                         src=img,
                     )
-                with rv.ListItemContent():
+                with solara.Column(gap="0"):
                     rv.ListItemTitle(children=[name])
                     rv.ListItemSubtitle(children=[position], style_="white-space: unset;")
         rv.CardText(

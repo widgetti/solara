@@ -36,7 +36,7 @@ def Tab(
     if label is not None:
         tab_children = [label] + tab_children
     if icon_name:
-        tab_children = [v.Icon(left=bool(label), children=[icon_name])] + tab_children
+        tab_children = [v.Icon(start=bool(label), children=[icon_name])] + tab_children
     style_flat = solara.util._flatten_style(style)
     class_ = solara.util._combine_classes(classes)
     # note: children is not used, it is only used in the Tabs component
@@ -241,24 +241,22 @@ def Tabs(
     with v.Tabs(
         v_model=reactive_value.value,
         on_v_model=on_v_model,
-        centered=align == "center",
-        right=align in ["right", "end"],
+        align_tabs="center" if align == "center" else "end" if align in ["right", "end"] else "start",
         children=children,
-        vertical=vertical,
+        direction="vertical" if vertical else None,
         color=color,
-        background_color=background_color,
+        bg_color=background_color,
         show_arrows=True,
         grow=grow,
-        dark=dark,
+        slider_color=slider_color,
     ) as tabs:
-        v.TabsSlider(color=slider_color)
         if has_content:
-            with v.TabsItems(v_model=reactive_value.value, on_v_model=on_v_model):
+            with v.Window(v_model=reactive_value.value, on_v_model=on_v_model):
                 for i, child in enumerate(children):
                     if not lazy or reactive_value.value == i:
-                        v.TabItem(children=child.kwargs.get("children", []), value=i)
+                        v.WindowItem(children=child.kwargs.get("children", []), value=i)
                     else:
-                        v.TabItem(
+                        v.WindowItem(
                             value=i,
                             children=[
                                 # Nice idea, but by using the widget interface the tab does not change without binding using

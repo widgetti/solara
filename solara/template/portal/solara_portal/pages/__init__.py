@@ -24,21 +24,20 @@ def PeopleCard(name):
 def Layout(children=[]):
     router = solara.use_context(solara.routing.router_context)
     with solara.VBox() as navigation:
-        with rv.List(dense=True):
-            with rv.ListItemGroup(v_model=router.path):
-                with solara.Link(solara.resolve_path("/")):
-                    with solara.ListItem("Home", icon_name="mdi-home", value="/"):
-                        pass
-                with solara.ListItem("tabular data", icon_name="mdi-database"):
-                    for name in names:
-                        pathname = f"/tabular/{name}"
-                        with solara.Link(solara.resolve_path(pathname)):
-                            solara.ListItem(name, value=pathname)
-                with solara.ListItem("Articles", icon_name="mdi-book-open"):
-                    for name, article_ in articles.items():
-                        pathname = f"/article/{name}"
-                        with solara.Link(solara.resolve_path(pathname)):
-                            solara.ListItem(article_.title, value=pathname)
+        with rv.List(density="compact", selected=[router.path]):
+            with solara.Link(solara.resolve_path("/")):
+                with solara.ListItem("Home", icon_name="mdi-home", value="/"):
+                    pass
+            with solara.ListItem("tabular data", icon_name="mdi-database"):
+                for name in names:
+                    pathname = f"/tabular/{name}"
+                    with solara.Link(solara.resolve_path(pathname)):
+                        solara.ListItem(name, value=pathname)
+            with solara.ListItem("Articles", icon_name="mdi-book-open"):
+                for name, article_ in articles.items():
+                    pathname = f"/article/{name}"
+                    with solara.Link(solara.resolve_path(pathname)):
+                        solara.ListItem(article_.title, value=pathname)
 
     with solara.AppLayout(navigation=navigation, title="Solara demo", children=children) as main:
         pass

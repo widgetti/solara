@@ -47,7 +47,7 @@ def ExpressionEditor(df, value: str, label="Custom expression", on_value=None, p
         placeholder=placeholder,
         prepend_icon="mdi-filter",
         error_messages=error,
-        success_messages="Looking good" if value is not None else None,
+        messages="Looking good" if value is not None else None,
     )
 
 
@@ -97,7 +97,7 @@ def TableCard(df):
     with v.Card(elevation=2, height=cardheight) as main:
         with v.CardTitle(children=[title]):
             if filtered:
-                v.ProgressLinear(value=progress)
+                v.ProgressLinear(model_value=progress)
         with v.CardText():
             Table(dff)
     return main
@@ -114,7 +114,7 @@ def HistogramCard(df, column=None, max_unique=100):
         with v.CardTitle(children=["Histogram"]):
             pass
         with v.CardText():
-            with v.Btn(v_on="x.on", icon=True, absolute=True, style_="right: 10px; top: 10px") as btn:
+            with v.Btn(v_on="x.on", icon=True, position="absolute", style_="right: 10px; top: 10px") as btn:
                 v.Icon(children=["mdi-settings"])
             with v.Dialog(v_slots=[{"name": "activator", "variable": "x", "children": btn}], width="500"):
                 with v.Sheet():
@@ -213,7 +213,7 @@ def ScatterCard(df, x=None, y=None, color=None):
         with v.CardTitle(children=["Scatter"]):
             pass
         with v.CardText():
-            with v.Btn(v_on="x.on", icon=True, absolute=True, style_="right: 10px; top: 10px") as btn:
+            with v.Btn(v_on="x.on", icon=True, position="absolute", style_="right: 10px; top: 10px") as btn:
                 v.Icon(children=["mdi-settings"])
             with v.Dialog(v_slots=[{"name": "activator", "variable": "x", "children": btn}], width="500"):
                 with v.Sheet():
@@ -360,7 +360,7 @@ def HeatmapCard(df, x=None, y=None, debounce=True):
         with v.CardTitle(children=["Heatmap"]):
             pass
         with v.CardText():
-            with v.Btn(v_on="x.on", icon=True, absolute=True, style_="right: 10px; top: 10px") as btn:
+            with v.Btn(v_on="x.on", icon=True, position="absolute", style_="right: 10px; top: 10px") as btn:
                 v.Icon(children=["mdi-settings"])
             with v.Dialog(v_slots=[{"name": "activator", "variable": "x", "children": btn}], width="700"):
                 with v.Sheet():
@@ -488,7 +488,7 @@ def SummaryCard(df):
     with v.Card(elevation=2, height=cardheight) as main:
         with v.CardTitle(children=[title]):
             if filtered:
-                v.ProgressLinear(value=progress)
+                v.ProgressLinear(model_value=progress)
         with v.CardText():
             icon = "mdi-filter"
             v.Icon(children=[icon], style_="opacity: 0.1" if not filtered else "")
@@ -529,11 +529,11 @@ def DropdownCard(df, column=None):
         with v.CardTitle(children=["Filter out single value"]):
             pass
         with v.CardText():
-            with v.Btn(v_on="x.on", icon=True, absolute=True, style_="right: 10px; top: 10px") as btn:
+            with v.Btn(v_on="x.on", icon=True, position="absolute", style_="right: 10px; top: 10px") as btn:
                 v.Icon(children=["mdi-settings"])
             with v.Dialog(v_slots=[{"name": "activator", "variable": "x", "children": btn}], width="500"):
                 with v.Sheet():
-                    with v.Container(pa_4=True, ma_0=True):
+                    with v.Container(class_="pa-4 ma-0"):
                         with v.Row():
                             with v.Col():
                                 v.Select(v_model=column, items=columns, on_v_model=set_column, label="Choose column")

@@ -1165,7 +1165,7 @@ module.exports = {
     mounted() {
         document.querySelectorAll('a').forEach(this.setupRouter);
     },
-    destroyed() {
+    unmounted() {
         // when ssg is on, this css is not getting removed
         if(document.getElementById('ipyvue-solara-website-homepage')) {
             document.getElementById('ipyvue-solara-website-homepage').remove();

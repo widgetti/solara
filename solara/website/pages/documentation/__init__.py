@@ -37,7 +37,7 @@ def Page():
                                 },
                             ):
                                 solara.HTML(tag="h2", unsafe_innerHTML=route.label, style={"color": "white", "display": "block", "flex-grow": "1"})
-                                solara.v.Icon(children=["mdi-arrow-right"], color="var(--color-grey-light)", x_large=True, class_="docs-card-icon")
+                                solara.v.Icon(children=["mdi-arrow-right"], color="var(--color-grey-light)", size="x-large", class_="docs-card-icon")
                 with solara.Column(gap="10px", style={"flex-wrap": "wrap", "max-width": "80%"}):
                     solara.HTML(tag="h2", unsafe_innerHTML="How to use our documentation:", style={"padding": "1.5rem"})
                     solara.Markdown(

@@ -295,13 +295,12 @@ def AppLayout(
         # also ideal in jupyter notebooks
         with v.Html(tag="div") as main:
             if show_app_bar or use_drawer:
-                with v.AppBar(color=color, dark=toolbar_dark, v_slots=v_slots):
+                with v.AppBar(color=color, theme="dark" if toolbar_dark else None, v_slots=v_slots):
                     if use_drawer:
                         icon = AppIcon(sidebar_open, on_click=lambda: set_sidebar_open(not sidebar_open), v_on="x.on")
                         with v.Menu(
-                            offset_y=True,
-                            nudge_left="50px",
-                            left=True,
+                            location="bottom end",
+                            offset="8",
                             v_slots=[{"name": "activator", "variable": "x", "children": [icon]}],
                             close_on_content_click=False,
                         ):
@@ -333,11 +332,8 @@ def AppLayout(
                         v_model=sidebar_open,
                         on_v_model=set_sidebar_open,
                         style_="min-width: 400px; max-width: 600px",
-                        clipped=True,
-                        app=True,
                         # disable_resize_watcher=True,
                         disable_route_watcher=True,
-                        mobile_break_point="960",
                         class_="solara-content-main",
                     ):
                         if not show_app_bar:
@@ -346,7 +342,7 @@ def AppLayout(
             if show_app_bar:
                 # if hide_on_scroll is True, and we have a little bit of scrolling, vuetify seems to act strangely
                 # when scrolling (on @mariobuikhuizen/vuetify v2.2.26-rc.0
-                with v.AppBar(color=color, dark=toolbar_dark, app=True, clipped_left=True, hide_on_scroll=False, v_slots=v_slots).key("app-layout-appbar"):
+                with v.AppBar(color=color, theme="dark" if toolbar_dark else None, scroll_behavior=None, v_slots=v_slots).key("app-layout-appbar"):
                     if use_drawer:
                         AppIcon(sidebar_open, on_click=lambda: set_sidebar_open(not sidebar_open))
                     if title or children_appbartitle:
@@ -370,7 +366,7 @@ def AppLayout(
                 # use a margin: -12px which will make a horizontal scrollbar appear
                 solara.Div(style=style, classes=classes, children=children_content)
         if fullscreen:
-            with v.Dialog(v_model=True, children=[], fullscreen=True, hide_overlay=True, persistent=True, no_click_animation=True) as dialog:
+            with v.Dialog(v_model=True, children=[], fullscreen=True, scrim=False, persistent=True, no_click_animation=True) as dialog:
                 v.Sheet(class_="overflow-y-auto overflow-x-auto", children=[main])
                 pass
             return dialog

@@ -1,20 +1,21 @@
 <template>
     <v-menu
         v-model="show_results"
-        offset-y>
-        <template v-slot:activator="{ on }">
+        location="bottom"
+        :offset="4">
+        <template v-slot:activator="{ props }">
                 <v-text-field
                     v-model="query"
                     prepend-inner-icon="mdi-magnify"
                     hide-details
-                    dense
+                    density="compact"
                     :placeholder="mac ? '⌘K to search' : 'Ctrl+K to search'"
-                    filled
-                    outlined
+                    variant="outlined"
                     clearable
                     ref="search"
                     style="flex-grow: 1; max-width: 650px;"
-                    @click="show($event, on);"
+                    v-bind="props"
+                    @click="show($event);"
                     @keyup.enter="hoverItem === null ? item = 0 : item = hoverItem"
                     @keyup.esc="close();"
                     @keyup.down="hoverItem = hoverItem == null ? 0 : Math.min(hoverItem + 1, results.hits.length - 1, 9)"
@@ -25,35 +26,32 @@
         </template>
         <v-list v-if="results != null && results.length == 0">
             <v-list-item>
-                <v-list-item-content>
+                <v-list-item-title>
                     {{this.query == "" ? "Start Typing to Search" : "No search results found."}}
-                </v-list-item-content>
+                </v-list-item-title>
             </v-list-item>
         </v-list>
         <v-list v-else :style="{width: menuWidth + 'px'}">
-            <v-list-item-group v-model="item">
-                <v-list-item v-for="(element, index) in this.results.hits" :key="element['url']" :input-value="index === hoverItem">
-                    <v-list-item-content>
-                        <v-list-item-title>
-                            {{ element.hierarchy.lvl1 }}
-                        </v-list-item-title>
-                        <v-list-item-subtitle v-if="element.hierarchy.lvl2 !== null">
-                            {{ element.hierarchy.lvl2 }}
-                        </v-list-item-subtitle>
-                        <v-list-item-subtitle v-html="getSnippet(element)"></v-list-item-subtitle>
-                    </v-list-item-content>
+                <v-list-item
+                    v-for="(element, index) in this.results.hits"
+                    :key="element['url']"
+                    :active="index === hoverItem || index === item"
+                    @click="item = index">
+                    <v-list-item-title>
+                        {{ element.hierarchy.lvl1 }}
+                    </v-list-item-title>
+                    <v-list-item-subtitle v-if="element.hierarchy.lvl2 !== null">
+                        {{ element.hierarchy.lvl2 }}
+                    </v-list-item-subtitle>
+                    <v-list-item-subtitle v-html="getSnippet(element)"></v-list-item-subtitle>
                 </v-list-item>
-            </v-list-item-group>
             <v-list-item v-if="this.results.nbHits > 10">
-                <v-list-item-content>
-                    <v-list-item-title>And {{ this.results.nbHits - 10}} More...</v-list-item-title>
-                </v-list-item-content>
+                <v-list-item-title>And {{ this.results.nbHits - 10}} More...</v-list-item-title>
             </v-list-item>
         </v-list>
     </v-menu>
 </template>
 <script>
-const search = ref(null);
 module.exports = {
     async mounted() {
         window.search = this;
@@ -85,10 +83,10 @@ module.exports = {
         },
     },
     methods: {
-        show( e, on ) {
+        show( e ) {
             this.show_results = false;
             this.$nextTick( () => {
-                on.click( e )
+                this.show_results = true;
             } );
         },
         close() {
@@ -113,11 +111,11 @@ module.exports = {
             });
         },
         async search() {
-            results = await this.index.search( this.query, { hitsPerPage: 10 } );
+            const results = await this.index.search( this.query, { hitsPerPage: 10 } );
             if (results) {
                 this.results = results;
             }else{
-                this.$set(this.results, []);
+                this.results = [];
             }
         },
         selectText() {

@@ -25,9 +25,7 @@ def Header(
         #         "div",
         #         unsafe_innerHTML="<a href='https://github.com/widgetti/solara' target='_blank' >Star us on github 🤩</a>",
         #     )
-        with solara.v.AppBar(
-            tag="header", flat=True, clipped_left=True, style_="background-color: transparent; border-bottom: 1px solid var(--color-border-appbar);"
-        ):
+        with solara.v.AppBar(tag="header", flat=True, style_="background-color: transparent; border-bottom: 1px solid var(--color-border-appbar);"):
             if route_current is not None and route_current.module is not None and hasattr(route_current.module, "Sidebar"):
                 with solara.Button(icon=True, class_="hidden-md-and-up", on_click=lambda: on_toggle_left_menu and on_toggle_left_menu()):
                     rv.Icon(children=["mdi-menu"])

@@ -12,7 +12,7 @@ module.exports = {
     window._solaraHeadTags[this.key].push(this);
     this.updateElement();
   },
-  destroyed() {
+  unmounted() {
     const tags = window._solaraHeadTags[this.key];
     tags.splice(tags.indexOf(this), 1);
     // ask another headtag to update the element
