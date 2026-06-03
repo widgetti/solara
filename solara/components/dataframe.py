@@ -132,9 +132,8 @@ def HistogramCard(df, column=None, max_unique=100):
                 if len(dfg) > max_unique:
                     with v.Alert(
                         type="warning",
-                        text=True,
+                        variant="tonal",
                         prominent=True,
-                        icon="mdi-alert",
                         children=[f"Too many unique values: {len(dfg)}, only showing first {max_unique}"],
                     ):
                         pass
@@ -236,7 +235,10 @@ def ScatterCard(df, x=None, y=None, color=None):
             if xcol and ycol:
                 if len(dff) > max_points:
                     v.Alert(
-                        type="warning", text=True, prominent=True, icon="mdi-alert", children=[f"Too many unique values, will only show first {max_points}"]
+                        type="warning",
+                        variant="tonal",
+                        prominent=True,
+                        children=[f"Too many unique values, will only show first {max_points}"],
                     )
                     dff = dff[:max_points]
 
@@ -539,8 +541,17 @@ def DropdownCard(df, column=None):
                                 v.Select(v_model=column, items=columns, on_v_model=set_column, label="Choose column")
             # we use objects to we can distinguish between selecting nothing or None
             items = [{"value": magic_value_missing if k is None else k, "text": str(k)} for k in uniques]
-            v.Select(v_model=value, items=items, on_v_model=set_value_and_filter, label=f"Choose {column} value", clearable=True, return_object=True)
+            v.Select(
+                v_model=value,
+                items=items,
+                on_v_model=set_value_and_filter,
+                label=f"Choose {column} value",
+                clearable=True,
+                return_object=True,
+                item_title="text",
+                item_value="value",
+            )
             if len(uniques) > max_unique:
-                v.Alert(type="warning", text=True, prominent=True, icon="mdi-alert", children=[f"Too many unique values, will only show first {max_unique}"])
+                v.Alert(type="warning", variant="tonal", prominent=True, children=[f"Too many unique values, will only show first {max_unique}"])
 
     return main
