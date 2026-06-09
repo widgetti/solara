@@ -20,7 +20,8 @@ var jupyterWidgetMountPoint = {
                         await registerVueComponents(this, widgetView);
                     }
                     if (Vue.h) {
-                        this.component = widgetView.vueComponent();
+                        const component = widgetView.vueComponent();
+                        this.component = Vue.markRaw ? Vue.markRaw(component) : component;
                     } else {
                         this.renderFn = createElement => widgetView.vueRender(createElement);
                     }
