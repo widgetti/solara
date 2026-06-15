@@ -69,7 +69,7 @@ def test_input_date_single(solara_test, page_session: Page):
     input.click()
     page_session.wait_for_timeout(350)
     expect(date_picker_popup(page_session)).to_be_visible()
-    page_session.keyboard.press("Tab")
+    page_session.keyboard.press("Escape")
     expect(date_picker_popup(page_session)).not_to_be_visible()
 
 
@@ -116,5 +116,5 @@ def test_input_date_range(solara_test, page_session: Page):
     input.click()
     page_session.wait_for_timeout(350)
     expect(date_picker_popup(page_session)).to_be_visible()
-    page_session.keyboard.press("Tab")
+    page_session.keyboard.press("Escape")
     expect(date_picker_popup(page_session)).not_to_be_visible()

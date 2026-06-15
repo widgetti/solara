@@ -152,16 +152,16 @@ def test_input_time_on_open_value():
     on_value = MagicMock()
     el = InputTime(value=now, label="label", on_value=on_value, on_open_value=on_open_value)
     box, rc = solara.render(el, handle_error=False)
-    menu = rc.find(vw.VuetifyTemplate)
+    menu = rc.find(vw.Menu)
     assert menu is not None
 
     # Simulate opening the time picker
-    menu.widget.show_menu = True
+    menu.widget.v_model = True
     assert on_open_value.call_count == 1
     assert on_open_value.call_args[0][0] is True
 
     # Simulate closing the time picker
-    menu.widget.show_menu = False
+    menu.widget.v_model = False
     assert on_open_value.call_count == 2
     assert on_open_value.call_args[0][0] is False
 

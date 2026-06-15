@@ -61,9 +61,10 @@
         <v-progress-linear :style="{visibility: (kernelBusyLong && isMounted) ? 'visible' : 'hidden'}"
             :indeterminate="kernelBusyLong && isMounted"
             absolute></v-progress-linear>
-        <v-alert v-if="needsRefresh || cancelAutoRefresh" type="warning" border="left"
+        <v-alert v-if="needsRefresh || cancelAutoRefresh" type="warning" :border="vue3 ? 'start' : 'left'"
             style="position: absolute; right: 0px; z-index: 100; left: 0px;">
-            App is disconnected, and may not function properly. Please refresh the page.
+            <span v-if="needsRefresh">Could not restore session. Please refresh the page.</span>
+            <span v-else>App is disconnected, and may not function properly. Please refresh the page.</span>
         </v-alert>
         {% endraw -%}
         {# {% include "transition-domino.html" %} #}
@@ -73,7 +74,7 @@
                 disconnected.</v-progress-circular>
         </v-overlay>
 
-        <v-dialog v-model="needsRefresh" width="500">
+        <v-dialog v-if="!vue3" v-model="needsRefresh" width="500">
             <v-card>
                 <v-card-title class="text-h5 grey lighten-2">Please refresh the page</v-card-title>
 
@@ -410,6 +411,7 @@
                     solaraDebugMessages: [],
                     outputMessages: [],
                     theme: theme,
+                    vue3: Vue.version.startsWith('3'),
                     debug: debug,
                     connectionStatus: null,
                     wasConnected: false,

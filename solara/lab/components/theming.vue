@@ -46,7 +46,7 @@ module.exports = {
             return this.theme_dark === true ? 'dark' : this.theme_dark === false ? 'light' : 'auto';
         },
         initTheme() {
-            storedTheme = JSON.parse(localStorage.getItem(':solara:theme.variant'));
+            const storedTheme = JSON.parse(localStorage.getItem(':solara:theme.variant'));
             return storedTheme === 'dark' ? true : storedTheme === 'light' ? false : null;
         },
         setTheme() {

@@ -284,6 +284,8 @@ def Layout(children=[]):
                                 style_="""
                                     height: 100vh;
                                     width: 20rem;
+                                    min-width: 20rem;
+                                    flex: 0 0 20rem;
                                     overflow: auto;
                                     border-right: 1px solid var(--color-border-appbar);
                                     position: sticky;
@@ -311,9 +313,10 @@ def Layout(children=[]):
                 # absolute = True prevents the drawer from being below the overlay it generates
                 # Drawer navigation for top menu
                 with rv.NavigationDrawer(
-                    v_model=show_right_menu,
-                    on_v_model=set_show_right_menu,
+                    model_value=show_right_menu,
+                    on_model_value=set_show_right_menu,
                     absolute=True,
+                    temporary=True,
                     location="right",
                     scrim="#000000",
                     style_="height: 100vh",
@@ -331,8 +334,9 @@ def Layout(children=[]):
                         absolute=True,
                         class_="d-md-none d-block",
                         style_="min-height: 100vh; height: unset;",
-                        v_model=show_left_menu,
-                        on_v_model=set_show_left_menu,
+                        model_value=show_left_menu,
+                        on_model_value=set_show_left_menu,
+                        temporary=True,
                         width="20rem",
                     ):
                         route_current.module.Sidebar()

@@ -14,9 +14,20 @@ def Sidebar():
             all_routes = route.children
             break
 
+    opened = []
+    for route in all_routes:
+        path_top_level = "/documentation/" + route.path
+        if router.path.startswith(path_top_level):
+            opened.append(path_top_level)
+            for item in route.children:
+                path_sub = "/documentation/" + route.path + "/" + item.path
+                if router.path.startswith(path_sub):
+                    opened.append(path_sub)
+
     with solara.v.List(
         nav=True,
         selected=[router.path],
+        opened=opened,
         style_="height: 100%; max-height: 100vh; display: flex; flex-direction: column; background-color: var(--color-material-background); overflow-y: auto;",
     ) as main:
         # e.g. getting_started, examples, components, api, advanced, faq
@@ -31,10 +42,10 @@ def Sidebar():
                     )
             else:
                 path_top_level = "/documentation/" + route.path
-                top_level_expanded = router.path.startswith(path_top_level)
+                activator = solara.v.ListItem(title=route.label, style_="padding: 0 20px;", v_bind="x.props")
                 with solara.v.ListGroup(
-                    title=route.label,
-                    value=top_level_expanded,
+                    value=path_top_level,
+                    v_slots=[{"name": "activator", "variable": "x", "children": activator}],
                     style_="padding: 0 20px;",
                 ):
                     for item in route.children:
@@ -43,12 +54,11 @@ def Sidebar():
                             # the 'homepage' of the subpage are named Overview
                             label = "Overview"
                         path_sub = "/documentation/" + route.path + "/" + item.path
-                        sub_should_be_expanded = router.path.startswith(path_sub)
                         if item.children != [] and any([c.label is not None and c.path != "/" for c in item.children]):
+                            activator = solara.v.ListItem(title=label, density="compact", style_="padding: 0 20px;", v_bind="x.props")
                             with solara.v.ListGroup(
-                                title=label,
-                                subgroup=True,
-                                value=sub_should_be_expanded,
+                                value=path_sub,
+                                v_slots=[{"name": "activator", "variable": "x", "children": activator}],
                             ):
                                 for subitem in item.children:
                                     # skip the 'homepage' of the examples only
