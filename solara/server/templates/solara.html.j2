@@ -58,7 +58,8 @@
 {% raw -%}
 <script type="x-template" id="vue-app-template" style="display: none">
     <v-app :key="forceUpdateTrigger" :class="loadingPage ? 'solara-page-loading' : ''">
-        <v-progress-linear :style="{visibility: (kernelBusyLong && isMounted) ? 'visible' : 'hidden'}" indeterminate
+        <v-progress-linear :style="{visibility: (kernelBusyLong && isMounted) ? 'visible' : 'hidden'}"
+            :indeterminate="kernelBusyLong && isMounted"
             absolute></v-progress-linear>
         <v-alert v-if="needsRefresh || cancelAutoRefresh" type="warning" border="left"
             style="position: absolute; right: 0px; z-index: 100; left: 0px;">
