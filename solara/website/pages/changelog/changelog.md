@@ -1,5 +1,10 @@
 # Solara Changelog
 
+## Version 1.57.5
+
+   * Bug Fix: Stop the busy indicator animation while hidden. [b882606c](https://github.com/widgetti/solara/commit/b882606c)
+   * Bug Fix: Check for `_create_comm` attribute on comm to support newer ipykernel. [4804a0e4](https://github.com/widgetti/solara/commit/4804a0e4)
+
 ## Version 1.57.4
 
    * Bug Fix: Handle Python 3.12+ `get_event_loop` RuntimeError in `VirtualKernelContext`. [437baab0](https://github.com/widgetti/solara/commit/437baab0)
