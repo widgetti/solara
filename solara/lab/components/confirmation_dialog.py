@@ -134,6 +134,7 @@ def ConfirmationDialog(
         on_v_model=on_v_model,
         persistent=persistent,
         max_width=max_width,
+        eager=True,
     ):
         with solara.v.Card():
             solara.v.CardTitle(children=[title])
