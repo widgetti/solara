@@ -27,7 +27,7 @@ def Sidebar():
 
     with solara.v.List(
         class_="docs-sidebar-list",
-        active_color="#ff991f",
+        color="#ff991f",
         selected=[router.path],
         opened=opened,
         style_="height: 100%; max-height: 100vh; display: flex; flex-direction: column; background-color: var(--color-material-background); overflow-y: auto; padding: 8px;",
