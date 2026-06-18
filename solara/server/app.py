@@ -438,7 +438,7 @@ def load_app_widget(app_state, app_script: AppScript, pathname: str):
             container.children = [widget]
 
 
-def load_themes(themes: Dict[str, Dict[str, str]], dark: bool):
+def load_themes(themes: Dict[str, Dict[str, Any]], dark: bool):
     # While these usually gets set from the frontend, in solara (server) we want to know theme information directly at the first
     # render. Also, using the same trait allows us to write code which works on all widgets platforms, instead
     # or using something different when running under solara server

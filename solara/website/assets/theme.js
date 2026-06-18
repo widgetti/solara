@@ -1,8 +1,14 @@
 vuetifyThemes = {
     light: {
-        primary: '#ff991f',
+        dark: false,
+        colors: {
+            primary: '#ff991f',
+        },
     },
     dark: {
-        primary: '#f77e14',
+        dark: true,
+        colors: {
+            primary: '#f77e14',
+        },
     }
 }

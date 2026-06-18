@@ -10,38 +10,36 @@
           scrollable && 'solara-data-table--scrollable',
         ]" :style="scrollable && height != null && `height: ${height}`">
         <template v-slot:headers>
-          <thead>
-            <tr>
-              <th style="padding: 0 10px; width: 40px">#</th>
-              <th style="padding: 0 1px; width: 30px" v-if="selection_enabled">
-                <v-btn icon color="primary" variant="text" size="small" @click="apply_filter">
-                  <v-icon>filter_list</v-icon>
-                </v-btn>
-              </th>
-              <th style="padding: 0 1px" v-for="(header, index) in headers_selections" :key="header.title">
-                <v-icon style="padding: 0 1px" :key="index" :color="selection_colors[index]">brightness_1</v-icon>
-              </th>
-              <th class="text-no-wrap" :key="header.title" v-for="header in headers">
-                {{ header.title }}
-                <span class="solara-data-table-header-menu" @mouseenter="onHeaderHover({ isOpen: true, header })"
-                  @mouseleave="onHeaderHover({ isOpen: false, header })"
-                  v-if="(column_actions && column_actions.length) || column_header_widget">
-                  <v-icon size="small" class="solara-data-table-menu">mdi-dots-vertical</v-icon>
-                  <v-sheet v-if="header.key === column_header_hover" class="solara-data-table-column-header-sheet solara-data-table-header-menu-content" elevation="2">
-                    <jupyter-widget v-if="column_header_widget" :widget="column_header_widget"></jupyter-widget>
-                    <v-list v-if="column_actions && column_actions.length">
-                      <v-list-subheader>Actions:</v-list-subheader>
-                      <v-list-item link @click="on_column_action([header.key, index])"
-                        v-for="(action, index) in column_actions" :key="index">
-                        <template v-slot:prepend><v-icon>{{ action.icon }}</v-icon></template>
-                        <v-list-item-title>{{ action.name }}</v-list-item-title>
-                      </v-list-item>
-                    </v-list>
-                  </v-sheet>
-                </span>
-              </th>
-            </tr>
-          </thead>
+          <tr>
+            <th style="padding: 0 10px; width: 40px">#</th>
+            <th style="padding: 0 1px; width: 30px" v-if="selection_enabled">
+              <v-btn icon color="primary" variant="text" size="small" @click="apply_filter">
+                <v-icon>filter_list</v-icon>
+              </v-btn>
+            </th>
+            <th style="padding: 0 1px" v-for="(header, index) in headers_selections" :key="header.title">
+              <v-icon style="padding: 0 1px" :key="index" :color="selection_colors[index]">brightness_1</v-icon>
+            </th>
+            <th class="text-no-wrap" :key="header.title" v-for="header in headers">
+              {{ header.title }}
+              <span class="solara-data-table-header-menu" @mouseenter="onHeaderHover({ isOpen: true, header })"
+                @mouseleave="onHeaderHover({ isOpen: false, header })"
+                v-if="(column_actions && column_actions.length) || column_header_widget">
+                <v-icon size="small" class="solara-data-table-menu">mdi-dots-vertical</v-icon>
+                <v-sheet v-if="header.key === column_header_hover" class="solara-data-table-column-header-sheet solara-data-table-header-menu-content" elevation="2">
+                  <jupyter-widget v-if="column_header_widget" :widget="column_header_widget"></jupyter-widget>
+                  <v-list v-if="column_actions && column_actions.length">
+                    <v-list-subheader>Actions:</v-list-subheader>
+                    <v-list-item link @click="on_column_action([header.key, index])"
+                      v-for="(action, index) in column_actions" :key="index">
+                      <template v-slot:prepend><v-icon>{{ action.icon }}</v-icon></template>
+                      <v-list-item-title>{{ action.name }}</v-list-item-title>
+                    </v-list-item>
+                  </v-list>
+                </v-sheet>
+              </span>
+            </th>
+          </tr>
         </template>
         <template v-slot:item="props">
           <!-- @click="on_row_clicked(props.item.__row__)" -->

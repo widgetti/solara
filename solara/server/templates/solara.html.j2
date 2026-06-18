@@ -228,6 +228,7 @@
         }
     </script>
     {% block after_pre_rendered_html %}{% endblock %}
+    {{ resources.include_js("/static/assets/theme.js") }}
     {% if vue3 == True %}
         <link href="{{cdn}}/@widgetti/solara-vuetify3-app@5.0.2/dist/fonts.css" rel="stylesheet"></link>
         {% if production %}
@@ -262,7 +263,6 @@
     </script>
 
     {{ resources.include_js("/static/assets/custom.js") }}
-    {{ resources.include_js("/static/assets/theme.js") }}
 
     <script src="{{cdn}}/requirejs@2.3.6/require.js" crossorigin="anonymous">
     </script>
@@ -308,7 +308,7 @@
                 document.querySelector('#app').removeAttribute("style");
                 // listen to change in preferred color scheme (e.g if choosing dark in OSX)
                 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
-                    this.$vuetify.theme.dark = inDarkMode();
+                    this.$vuetify.theme.global.name = inDarkMode() ? 'dark' : 'light';
                 });
                 document.getElementById('pre-render-theme').remove();
             },

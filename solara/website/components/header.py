@@ -17,6 +17,7 @@ def Header(
     route_current_with_children, all_routes_with_children = solara.use_route()
     router = solara.use_router()
     dark_effective = solara.lab.use_dark_effective()
+    header_icon_style = "color: var(--color-text-fade);"
 
     # set states for menu
     with solara.Column(gap="0px"):
@@ -25,7 +26,7 @@ def Header(
         #         "div",
         #         unsafe_innerHTML="<a href='https://github.com/widgetti/solara' target='_blank' >Star us on github 🤩</a>",
         #     )
-        with solara.v.AppBar(tag="header", flat=True, style_="background-color: transparent; border-bottom: 1px solid var(--color-border-appbar);"):
+        with solara.v.Toolbar(tag="header", flat=True, style_="background-color: transparent; border-bottom: 1px solid var(--color-border-appbar);"):
             if route_current is not None and route_current.module is not None and hasattr(route_current.module, "Sidebar"):
                 with solara.Button(icon=True, class_="hidden-md-and-up", on_click=lambda: on_toggle_left_menu and on_toggle_left_menu()):
                     rv.Icon(children=["mdi-menu"])
@@ -60,13 +61,15 @@ def Header(
                     current = route_current == route
                     with rv.Html(tag="li", class_="active" if current else None):
                         solara.Link("/" + route.path if route.path != "/" else "/", children=[route.label])
-            with rv.Btn(icon=True, tag="a", class_="d-none d-md-flex", attributes={"href": solara.github_url, "target": "_blank"}):
+            with rv.Btn(icon=True, tag="a", class_="d-none d-md-flex", style_=header_icon_style, attributes={"href": solara.github_url, "target": "_blank"}):
                 rv.Icon(children=["mdi-github-circle"])
 
-            with rv.Btn(icon=True, tag="a", class_="d-none d-md-flex", attributes={"href": "https://discord.solara.dev", "target": "_blank"}):
+            with rv.Btn(
+                icon=True, tag="a", class_="d-none d-md-flex", style_=header_icon_style, attributes={"href": "https://discord.solara.dev", "target": "_blank"}
+            ):
                 rv.Icon(children=["mdi-discord"])
 
-            with solara.v.Html(tag="div", class_="d-none d-md-flex"):
+            with solara.v.Html(tag="div", class_="header-theme-toggle d-none d-md-flex"):
                 solara.lab.ThemeToggle()
 
             # with solara.Button(icon=True, class_="hidden-md-and-up", on_click=lambda: on_toggle_right_menu and on_toggle_right_menu()):

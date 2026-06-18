@@ -479,7 +479,7 @@ body {
     align-items: stretch;
 
     color: var(--color-text);
-    font-family: "Roboto, sans-serif";
+    font-family: "Roboto", sans-serif;
     font-style: normal;
     font-weight: 500;
 }
