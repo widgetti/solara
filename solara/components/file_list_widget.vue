@@ -14,7 +14,7 @@
       >
         <div class="solara-file-list-row">
           <div class="solara-file-list-icon">
-            <v-icon>{{ name === '..' ? 'mdi-keyboard-backspace' : is_file ? 'mdi-file-document' : 'mdi-folder' }}</v-icon>
+            <v-icon class="text-medium-emphasis">{{ name === '..' ? 'mdi-keyboard-backspace' : is_file ? 'mdi-file-document' : 'mdi-folder' }}</v-icon>
           </div>
           <v-list-item-title :class="'solara-file-list-' + (is_file ? 'file' : 'dir')">
             {{ name }}<span v-if="size"> - {{ size }}</span>
