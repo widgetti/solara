@@ -68,6 +68,14 @@ class MainSettings(BaseSettings):
 class Storage(BaseSettings):
     mutation_detection: Optional[bool] = None  # True/False, or None to auto determine
     factory: str = "solara.toestand.default_storage"
+    init_lock_timeout: float = Field(
+        2.0,
+        title="Seconds to wait for a reactive variable's initialization lock before logging a possible-deadlock warning (<=0 or NaN disables the warning and waits indefinitely)",
+    )
+    init_lock_warning_cooldown: float = Field(
+        60.0,
+        title="Minimum seconds between repeated initialization-lock timeout warnings for the same reactive variable",
+    )
 
     def get_factory(self):
         return solara.util.import_item(self.factory)

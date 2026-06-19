@@ -1,9 +1,12 @@
+import contextlib
 import dataclasses
 import inspect
 import logging
 import os
 import sys
 import threading
+import time
+import traceback
 import weakref
 from types import FrameType
 import warnings
@@ -262,7 +265,9 @@ class KernelStore(ValueBase[S], ABC):
     _global_dict: Dict[str, S] = {}  # outside of solara context, this is used
     # we keep a counter per type, so the storage keys we generate are deterministic
     _type_counter: Dict[Any, int] = defaultdict(int)
-    scope_lock = threading.RLock()
+    # guards the shared, class-level _type_counter above; must stay class-level
+    # because the counter is shared across all instances
+    _type_counter_lock = threading.RLock()
 
     def __init__(self, key: str, equals: Callable[[Any, Any], bool] = equals_extra):
         super().__init__(equals=equals)
@@ -270,6 +275,15 @@ class KernelStore(ValueBase[S], ABC):
         self._global_dict = {}
         # since a set can trigger events, which can trigger new updates, we need a recursive lock
         self._lock = threading.RLock()
+        # guards lazy initialization of the value in the GLOBAL scope (the per-instance
+        # _global_dict). For a kernel scope the lock lives on the kernel context instead, keyed
+        # by storage_key (see _scope_init_lock), so the same reactive initializing in different
+        # kernels uses different locks and does not serialize.
+        self._init_lock = threading.RLock()
+        # monotonic time of the last "init lock seems stuck" warning, to throttle logging. This
+        # is per-instance (per reactive, shared across kernels) -- intentionally coarser than the
+        # lock, to bound log volume.
+        self._init_lock_warning_time: Optional[float] = None
         self.local = threading.local()
 
     @property
@@ -277,43 +291,99 @@ class KernelStore(ValueBase[S], ABC):
         return self._lock
 
     def _get_scope_key(self):
-        scope_dict, scope_id = self._get_dict()
+        scope_dict, scope_id, context = self._get_dict()
         return scope_id
 
     def _get_dict(self):
+        # Resolve the scope once: the per-kernel user_dicts (plus the context, whose init_locks we
+        # use for locking) when inside a kernel, else the per-instance global dict. Returning the
+        # context here -- rather than re-resolving it for the lock -- keeps get()'s dict and lock
+        # from ever disagreeing.
         scope_dict = self._global_dict
         scope_id = "global"
+        context = None
         if _using_solara_server():
             import solara.server.kernel_context
 
             try:
                 context = solara.server.kernel_context.get_current_context()
             except RuntimeError:  # noqa
-                pass  # do we need to be more strict?
+                context = None  # no current kernel context -> global scope
             else:
                 scope_dict = cast(Dict[str, S], context.user_dicts)
                 scope_id = context.id
-        return cast(Dict[str, S], scope_dict), scope_id
+        return cast(Dict[str, S], scope_dict), scope_id, context
 
     def peek(self):
         return self.get()
 
     def get(self):
-        scope_dict, scope_id = self._get_dict()
+        scope_dict, scope_id, context = self._get_dict()
         if self.storage_key not in scope_dict:
-            with self.scope_lock:
+            # The lock guarding lazy init of THIS reactive in THIS scope. For a kernel scope it
+            # lives on the context (keyed by storage_key, created on first access, dying with the
+            # context), so the same reactive initializing in different kernels uses different
+            # locks. For the global scope it is the per-instance lock.
+            lock = self._init_lock if context is None else context.init_locks[self.storage_key]
+            with self._init_lock_held(lock, scope_id):
                 if self.storage_key not in scope_dict:
                     # we assume immutable, so don't make a copy
                     scope_dict[self.storage_key] = self.initial_value()
         return scope_dict[self.storage_key]
 
+    @contextlib.contextmanager
+    def _init_lock_held(self, lock: threading.RLock, scope_id: str):
+        # Acquire the given lazy-init lock, then release it once initial_value() has run (acquire
+        # and release live together so they stay balanced, even when initial_value() raises). A
+        # non-positive (or NaN) init_lock_timeout disables the warning and waits indefinitely;
+        # otherwise we keep retrying, warning (throttled) when we seem stuck -- which usually means
+        # a deadlock or an unusually slow initial value.
+        timeout = solara.settings.storage.init_lock_timeout
+        if timeout > 0:
+            while not lock.acquire(timeout=timeout):
+                self._warn_init_lock_timeout(timeout, scope_id)
+        else:
+            lock.acquire()
+        try:
+            yield
+        finally:
+            lock.release()
+
+    def _warn_init_lock_timeout(self, timeout: float, scope_id: str):
+        now = time.monotonic()
+        cooldown = solara.settings.storage.init_lock_warning_cooldown
+        last = self._init_lock_warning_time
+        if last is not None and (now - last) < cooldown:
+            return
+        self._init_lock_warning_time = now
+        # Dump every thread's stack so the one stuck inside initial_value() is visible. Building
+        # the diagnostic must never break the retry loop, so fall back quietly on any problem.
+        try:
+            frames = sys._current_frames() if hasattr(sys, "_current_frames") else {}
+            stacks = "\n".join(f"Thread {ident}:\n" + "".join(traceback.format_stack(frame)) for ident, frame in frames.items())
+        except Exception:  # noqa
+            stacks = "<thread stacks unavailable>"
+        # error (not warning) is intentional: a multi-second init stall is a real production
+        # problem even though we keep retrying and usually recover.
+        logger.error(
+            "Timed out after %.1fs waiting to initialize reactive variable %r (scope=%r). This usually indicates a "
+            "deadlock (an initial value or factory blocking on a lock held by the initializing thread) or an unusually "
+            "slow initial value. Still retrying; further warnings for this variable (across all kernels) are suppressed "
+            "for %.0fs.\nThread stacks:\n%s",
+            timeout,
+            self.storage_key,
+            scope_id,
+            cooldown,
+            stacks,
+        )
+
     def clear(self):
-        scope_dict, scope_id = self._get_dict()
+        scope_dict, scope_id, context = self._get_dict()
         if self.storage_key in scope_dict:
             del scope_dict[self.storage_key]
 
     def set(self, value: S):
-        scope_dict, scope_id = self._get_dict()
+        scope_dict, scope_id, context = self._get_dict()
         if not solara.settings.main.allow_global_context and scope_id == "global":
             raise RuntimeError(
                 f"No kernel context found, and global context is not allowed for task, context key was {solara.server.kernel_context.get_current_thread_key()}"
@@ -420,7 +490,7 @@ reactive_df = solara.reactive(df, equals=solara.util.equals_pickle)
                 self._mutation_detection = False
         cls = type(default_value)
         if key is None:
-            with KernelStoreValue.scope_lock:
+            with KernelStore._type_counter_lock:
                 index = self._type_counter[cls]
                 self._type_counter[cls] += 1
             key = cls.__module__ + ":" + cls.__name__ + ":" + str(index)
@@ -453,7 +523,7 @@ def _create_key_callable(f: Callable):
         prefix = f.__qualname__
     except Exception:
         prefix = repr(f)
-    with KernelStore.scope_lock:
+    with KernelStore._type_counter_lock:
         index = KernelStore._type_counter[prefix]
         KernelStore._type_counter[prefix] += 1
     try:
