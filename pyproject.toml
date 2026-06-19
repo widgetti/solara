@@ -17,7 +17,8 @@ packages = [
 dependencies = [
     "reacton>=1.9",
     "ipywidgets>=7.7",
-    "ipyvuetify @ https://nbg1.your-objectstorage.com/ipyvue3-packages/packages/ipyvuetify/ipyvuetify-3.0.0a3-py2.py3-none-any.whl",
+    "ipyvue>=3.0.0a6",
+    "ipyvuetify>=3.0.0a4",
     "requests",
     "humanize",
 ]
@@ -31,10 +32,6 @@ Documentation = "https://solara.dev"
 
 [tool.hatch.version]
 path = "solara/__init__.py"
-
-[tool.hatch.metadata]
-# TODO: remove line below when "ipyvuetify>=3" is available on PyPI.
-allow-direct-references = true
 
 # we ignore build/ but on the website we add solara/website/build
 # when using SSG
