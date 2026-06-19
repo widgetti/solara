@@ -1,3 +1,3 @@
 "CDN assets for Solara"
 
-__version__ = "1.57.5"
+__version__ = "1.57.6"

@@ -1,6 +1,6 @@
 """Build webapps using IPywidgets"""
 
-__version__ = "1.57.5"
+__version__ = "1.57.6"
 github_url = "https://github.com/widgetti/solara"
 git_branch = "master"
 
