@@ -1,5 +1,9 @@
 # Solara Changelog
 
+## Version 1.57.6
+
+   * Bug Fix: Scope reactive lazy-init lock per `(variable, kernel)` instead of one global lock, fixing a possible deadlock when initializers themselves access reactive state. [28b80125](https://github.com/widgetti/solara/commit/28b80125)
+
 ## Version 1.57.5
 
    * Bug Fix: Stop the busy indicator animation while hidden. [b882606c](https://github.com/widgetti/solara/commit/b882606c)
