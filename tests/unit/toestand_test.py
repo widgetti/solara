@@ -1,5 +1,7 @@
 import dataclasses
+import logging
 import threading
+import time
 import unittest.mock
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Set, TypeVar, cast
@@ -1459,3 +1461,327 @@ def test_mutate_value_set_value_dataframe():
     assert not reactive_df._storage.equals(df, df_orig)
     with pytest.raises(ValueError, match="Reactive variable was set.*"):
         reactive_df._storage.check_mutations()  # type: ignore
+
+
+# Lazy initialization in KernelStore.get() is guarded by a lock. Originally one global
+# class-level lock guarded *every* store; it was then split per-store; and finally made
+# per-(reactive, kernel) by living on the kernel context (keyed by storage_key) for kernel
+# scopes, with a per-instance lock kept for the global scope. These tests pin down the
+# resulting properties: different stores don't block each other, the same store in different
+# kernels doesn't serialize, and the deadlock-diagnostic timeout still fires for genuine
+# same-scope contention.
+#
+# The threaded tests are deterministic (handoff via threading.Event; completion is observed
+# via a "done" event with a generous timeout rather than a tight join window, so a correct
+# run never flakes on a slow CI box) and self-cleaning (a finally block releases every lock
+# so even a failing run leaves no thread stuck holding a lock, which would poison later tests).
+
+
+def test_lazy_init_lock_is_per_store():
+    """A store's lazy init must not block an unrelated store's lazy init.
+
+    Thread 1 enters store A's ``initial_value`` and parks there while holding A's init lock.
+    The main thread then asks an unrelated store B for its value; with a per-store lock B
+    initializes immediately, with a global lock B blocks behind A (``b_done`` never fires).
+    """
+    a_initializing = threading.Event()
+    release_a = threading.Event()
+    b_done = threading.Event()
+    b_value: List[str] = []
+
+    def factory_a():
+        a_initializing.set()  # we are inside A.get(), holding A's init lock
+        assert release_a.wait(timeout=10), "test bug: A was never released"
+        return "a"
+
+    store_a = toestand.KernelStoreFactory(factory_a, key="per-store-lock-a")
+    store_b = toestand.KernelStoreFactory(lambda: "b", key="per-store-lock-b")
+    # distinct stores must not share an init lock; the threaded handoff below proves B does not
+    # block on A (see test_init_lock_distinct_per_kernel for the per-kernel object-identity check)
+
+    def get_b():
+        b_value.append(store_b.get())
+        b_done.set()
+
+    t1 = threading.Thread(target=store_a.get, daemon=True)
+    t2 = threading.Thread(target=get_b, daemon=True)
+    try:
+        t1.start()
+        assert a_initializing.wait(timeout=10), "thread 1 never entered A's initial_value"
+        # A is parked mid-init holding its init lock. B is a different store and must not block.
+        t2.start()
+        assert b_done.wait(timeout=10), "store B's lazy init blocked on store A's — the init lock is shared (global) across stores"
+        assert b_value == ["b"]
+    finally:
+        release_a.set()
+        t1.join(timeout=10)
+        t2.join(timeout=10)
+
+
+def test_lazy_init_does_not_deadlock_across_stores_via_user_lock():
+    """A store whose ``initial_value`` takes a user lock must not deadlock another store.
+
+    ``initial_value`` runs arbitrary user code, which may acquire a lock the application
+    already has. That sets up a lock-ordering inversion against the init lock::
+
+        main thread : user_lock -> init lock   (holds user lock, then reads store A)
+        b    thread : init lock  -> user_lock   (reads store B, whose init takes user lock)
+
+    With one global init lock the two stores alias the same lock, so the two orderings form
+    an A/B–B/A deadlock. With a per-store lock no shared lock exists.
+
+    ``user_lock`` is acquired with a timeout inside the factory so that, on the buggy
+    (global-lock) code, the deadlock resolves itself after the assertion instead of hanging
+    the whole test session.
+    """
+    user_lock = threading.Lock()
+    b_holds_init_lock = threading.Event()
+    a_done = threading.Event()
+    a_value: List[str] = []
+
+    def factory_b():
+        # initial_value that "calls a lock"; runs while holding store B's init lock
+        b_holds_init_lock.set()
+        if user_lock.acquire(timeout=15):
+            user_lock.release()
+        return "b"
+
+    def get_a():
+        a_value.append(store_a.get())
+        a_done.set()
+
+    store_a = toestand.KernelStoreFactory(lambda: "a", key="deadlock-a")
+    store_b = toestand.KernelStoreFactory(factory_b, key="deadlock-b")
+
+    t_b = threading.Thread(target=store_b.get, daemon=True)
+    t_a = threading.Thread(target=get_a, daemon=True)
+
+    user_lock.acquire()
+    try:
+        t_b.start()
+        assert b_holds_init_lock.wait(timeout=10), "store B never reached its initial_value"
+        # store B now holds its init lock and is blocked on user_lock (held by us).
+        # Reading the unrelated store A must not need store B's lock.
+        t_a.start()
+        assert a_done.wait(timeout=10), "reading store A blocked while store B was initializing — the init lock is shared (global) across stores"
+        assert a_value == ["a"]
+    finally:
+        user_lock.release()  # let store B's initial_value finish
+        t_b.join(timeout=15)
+        t_a.join(timeout=15)
+
+
+def test_init_lock_timeout_logs_error(monkeypatch):
+    """A stuck init lock logs a throttled error naming the variable, with thread stacks.
+
+    One thread parks inside ``initial_value`` (holding the init lock); a second thread then
+    reads the same store, times out acquiring the lock, and should log an error that keeps
+    retrying until the first thread is released.
+
+    The record is captured by our own handler (appended *before* the event is set) instead of
+    via ``caplog``, to avoid racing the record's propagation to caplog's root handler.
+    """
+    monkeypatch.setattr(solara.settings.storage, "init_lock_timeout", 0.05)
+    monkeypatch.setattr(solara.settings.storage, "init_lock_warning_cooldown", 60.0)
+
+    holding = threading.Event()
+    release = threading.Event()
+    logged = threading.Event()
+    captured: List[logging.LogRecord] = []
+
+    def factory():
+        holding.set()
+        assert release.wait(timeout=10), "test bug: holder was never released"
+        return "value"
+
+    store = toestand.KernelStoreFactory(factory, key="init-lock-timeout")
+
+    class _Handler(logging.Handler):
+        def emit(self, record):
+            if record.levelno >= logging.ERROR:
+                captured.append(record)
+                logged.set()
+
+    handler = _Handler()
+    logging.getLogger("solara.toestand").addHandler(handler)
+
+    holder = threading.Thread(target=store.get, daemon=True)
+    waiter_result: List[str] = []
+    waiter = threading.Thread(target=lambda: waiter_result.append(store.get()), daemon=True)
+    try:
+        holder.start()
+        assert holding.wait(timeout=10), "holder never entered initial_value"
+        waiter.start()
+        assert logged.wait(timeout=10), "no timeout error was logged while the init lock was held"
+        message = captured[0].getMessage()
+        assert "init-lock-timeout" in message  # names the variable
+        assert "Thread stacks:" in message  # dumps stacks so the stuck thread is visible
+    finally:
+        release.set()
+        logging.getLogger("solara.toestand").removeHandler(handler)
+        holder.join(timeout=10)
+        waiter.join(timeout=10)
+    assert waiter_result == ["value"]  # the waiting get() still completed once the lock was released
+
+
+def test_init_lock_warning_cooldown(monkeypatch, caplog):
+    """Repeated timeouts for the same store are throttled to one warning per cooldown."""
+    monkeypatch.setattr(solara.settings.storage, "init_lock_warning_cooldown", 60.0)
+    store = toestand.KernelStoreFactory(lambda: "value", key="init-lock-cooldown")
+
+    with caplog.at_level(logging.ERROR, logger="solara.toestand"):
+        store._warn_init_lock_timeout(0.05, "scope")
+        store._warn_init_lock_timeout(0.05, "scope")  # within cooldown -> suppressed
+        assert len(caplog.records) == 1
+        # pretend the previous warning happened longer ago than the cooldown
+        store._init_lock_warning_time = time.monotonic() - 61.0
+        store._warn_init_lock_timeout(0.05, "scope")
+        assert len(caplog.records) == 2
+
+
+def test_init_lock_timeout_disabled(monkeypatch, caplog):
+    """A non-positive timeout disables the warning and waits indefinitely (no error logged)."""
+    monkeypatch.setattr(solara.settings.storage, "init_lock_timeout", 0.0)
+
+    holding = threading.Event()
+    release = threading.Event()
+    waiter_done = threading.Event()
+    result: List[str] = []
+
+    def factory():
+        holding.set()
+        assert release.wait(timeout=10), "test bug: holder was never released"
+        return "value"
+
+    store = toestand.KernelStoreFactory(factory, key="init-lock-disabled")
+
+    # one thread holds the init lock by parking inside initial_value; another then reads the
+    # same store and must block silently (no warning) because the timeout is disabled
+    def get_waiter():
+        result.append(store.get())
+        waiter_done.set()
+
+    holder = threading.Thread(target=store.get, daemon=True)
+    waiter = threading.Thread(target=get_waiter, daemon=True)
+    try:
+        with caplog.at_level(logging.ERROR, logger="solara.toestand"):
+            holder.start()
+            assert holding.wait(timeout=10), "holder never entered initial_value"
+            waiter.start()
+            # while the holder holds the lock the waiter can never finish, regardless of timing,
+            # and with the timeout disabled it must not log a warning either
+            assert not waiter_done.wait(timeout=0.3)
+            assert caplog.records == []
+    finally:
+        release.set()
+        assert waiter_done.wait(timeout=10), "waiter did not complete after the lock was released"
+        holder.join(timeout=10)
+        waiter.join(timeout=10)
+    assert result == ["value"]
+
+
+def test_init_lock_released_when_initial_value_raises():
+    """If initial_value() raises, the init lock is released so a later get() can retry."""
+    calls: List[int] = []
+
+    def factory():
+        calls.append(1)
+        if len(calls) == 1:
+            raise RuntimeError("boom")
+        return "value"
+
+    store = toestand.KernelStoreFactory(factory, key="init-lock-raise")
+    with pytest.raises(RuntimeError, match="boom"):
+        store.get()
+    # the lock must be free again — prove it from another thread so RLock reentrancy can't mask a leak
+    done = threading.Event()
+    result: List[str] = []
+
+    def retry():
+        result.append(store.get())
+        done.set()
+
+    t = threading.Thread(target=retry, daemon=True)
+    t.start()
+    assert done.wait(timeout=10), "init lock leaked after initial_value raised"
+    t.join(timeout=10)
+    assert result == ["value"]
+    assert len(calls) == 2
+
+
+def test_init_lock_is_per_kernel(no_kernel_context):
+    """Initializing the same reactive in two different kernels must not serialize.
+
+    Kernel 1 parks inside the factory while holding kernel 1's init lock for the reactive;
+    kernel 2 initializing the SAME reactive must proceed immediately because it uses kernel 2's
+    own (per-context) lock. With a per-instance lock shared across kernels, kernel 2 would block
+    behind kernel 1 and ``k2_done`` would never fire.
+    """
+    kernel_shared = kernel.Kernel()
+    context1 = kernel_context.VirtualKernelContext(id="oc-kernel-1", kernel=kernel_shared, session_id="s1")
+    context2 = kernel_context.VirtualKernelContext(id="oc-kernel-2", kernel=kernel_shared, session_id="s2")
+
+    k1_initializing = threading.Event()
+    release_k1 = threading.Event()
+    k2_done = threading.Event()
+    k2_value: List[str] = []
+
+    def factory():
+        ctx = solara.server.kernel_context.get_current_context()
+        if ctx.id == "oc-kernel-1":
+            k1_initializing.set()
+            assert release_k1.wait(timeout=10), "test bug: kernel 1 never released"
+        return f"value-{ctx.id}"
+
+    store = toestand.KernelStoreFactory(factory, key="per-kernel-init")
+
+    def init_k1():
+        with context1:
+            store.get()
+
+    def init_k2():
+        with context2:
+            k2_value.append(store.get())
+            k2_done.set()
+
+    t1 = threading.Thread(target=init_k1, daemon=True)
+    t2 = threading.Thread(target=init_k2, daemon=True)
+    try:
+        t1.start()
+        assert k1_initializing.wait(timeout=10), "kernel 1 never entered the factory"
+        # kernel 1 is parked mid-init holding kernel 1's lock; kernel 2 must not block on it
+        t2.start()
+        assert k2_done.wait(timeout=10), "kernel 2 blocked behind kernel 1 — the init lock is shared across kernels"
+        assert k2_value == ["value-oc-kernel-2"]
+    finally:
+        release_k1.set()
+        t1.join(timeout=10)
+        t2.join(timeout=10)
+
+
+def test_init_lock_distinct_per_kernel(no_kernel_context):
+    """Each kernel gets its own init lock for the same reactive, living on the context."""
+    kernel_shared = kernel.Kernel()
+    context1 = kernel_context.VirtualKernelContext(id="oc-distinct-1", kernel=kernel_shared, session_id="s1")
+    context2 = kernel_context.VirtualKernelContext(id="oc-distinct-2", kernel=kernel_shared, session_id="s2")
+    store = toestand.KernelStoreFactory(lambda: "v", key="per-kernel-distinct")
+
+    with context1:
+        assert store.get() == "v"
+    with context2:
+        assert store.get() == "v"
+
+    key = store.storage_key
+    # the lock lives on the context (so it dies with the context — no leak) and is distinct per kernel
+    assert key in context1.init_locks
+    assert key in context2.init_locks
+    assert context1.init_locks[key] is not context2.init_locks[key]
+
+
+def test_init_lock_in_global_scope_uses_per_instance_lock(no_kernel_context):
+    """With no kernel context, the scope is global and lazy init uses the per-instance lock."""
+    store = toestand.KernelStoreFactory(lambda: "v", key="global-scope-init")
+    scope_dict, scope_id, context = store._get_dict()
+    assert scope_id == "global"
+    assert context is None  # no kernel context -> global scope, per-instance lock
+    assert store.get() == "v"  # lazy init works through the global (per-instance) lock

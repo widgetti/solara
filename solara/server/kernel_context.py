@@ -10,6 +10,7 @@ import concurrent.futures
 import contextlib
 import dataclasses
 import enum
+from collections import defaultdict
 import logging
 import os
 import pickle
@@ -17,7 +18,7 @@ import threading
 import time
 import typing
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union, cast
+from typing import Any, Callable, DefaultDict, Dict, List, Optional, Tuple, Union, cast
 
 import ipywidgets as widgets
 import reacton
@@ -79,6 +80,14 @@ class VirtualKernelContext:
     # see patch.py
     templates: Dict[str, Widget] = dataclasses.field(default_factory=dict)
     user_dicts: Dict[str, Dict] = dataclasses.field(default_factory=dict)
+    # Per-reactive RLocks guarding lazy initialization of a reactive variable's value in this
+    # kernel's user_dicts (see solara.toestand.KernelStore), keyed by storage_key and created on
+    # first access. Relies on defaultdict's GIL-atomic create, so concurrent first-access returns
+    # the same lock (a no-GIL build could create two, which only risks a benign double-init).
+    # Living on the context (rather than on the process-global KernelStore instance) means the
+    # same reactive initializing in different kernels uses different locks (no cross-kernel
+    # serialization), and they die with the context (no leak).
+    init_locks: DefaultDict[str, threading.RLock] = dataclasses.field(default_factory=lambda: defaultdict(threading.RLock))
     # anything we need to attach to the context
     # e.g. for a react app the render context, so that we can store/restore the state
     app_object: Optional[Any] = None
