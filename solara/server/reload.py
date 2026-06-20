@@ -150,6 +150,7 @@ class Reloader:
         #  * https://github.com/widgetti/solara/issues/177
         #  * https://github.com/widgetti/solara/issues/148
         self.aggresive_reload = False
+        self._reload_count = 0
 
     def start(self):
         if self._first:
@@ -192,6 +193,7 @@ class Reloader:
             return reload
 
     def reload(self):
+        self._reload_count += 1
         # before we did this:
         # # don't reload modules like solara.server and react
         # # that may cause issues (like 2 Element classes existing)
@@ -249,3 +251,25 @@ class Reloader:
 # there is only a reloader, and there should be only 1 app
 # that connect to the on_change
 reloader = Reloader()
+
+
+def create_reload_checker() -> Callable[[], bool]:
+    """Returns a function that checks if a hot reload occurred since creation.
+
+    This is useful for long-running tasks that need to detect when the app
+    has been reloaded and should stop running to avoid issues with stale
+    references to old module state.
+
+    Example:
+        did_reload = solara.create_reload_checker()
+
+        while not did_reload():
+            # do work...
+            await asyncio.sleep(1)
+    """
+    snapshot = reloader._reload_count
+
+    def did_reload() -> bool:
+        return reloader._reload_count != snapshot
+
+    return did_reload
