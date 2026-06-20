@@ -2,7 +2,7 @@ import asyncio
 import platform
 import unittest.mock
 from pathlib import Path
-from typing import Optional, cast
+from typing import List, Optional, cast
 
 import pytest
 
@@ -113,6 +113,16 @@ def test_file_browser_callback_can_select():
     # go up again
     list.test_click("..", double_click=True)
     assert "conftest.py" not in list
+
+
+def test_file_list_widget_test_click_payload_shape():
+    file_list = solara.components.file_browser.FileListWidget(files=[{"name": "file.txt", "is_file": True}])
+
+    file_list.test_click("file.txt")
+    assert set(file_list.clicked) == {"name", "is_file"}
+
+    file_list.test_click("file.txt", double_click=True)
+    assert set(file_list.double_clicked) == {"name", "is_file"}
 
 
 def test_file_browser_scroll_pos():
@@ -255,6 +265,7 @@ def test_file_browser_programmatic_select():
     selected.value = HERE.parent / "file_browser_test.py"
     assert list.clicked is not None
     assert list.clicked["name"] == "file_browser_test.py"
+    assert list.clicked["is_file"] is True
     list.test_click("..", double_click=True)
     assert list.files != files
     assert selected.value is None
@@ -274,6 +285,7 @@ def test_file_browser_programmatic_select():
     selected.value = HERE.parent / "file_browser_test.py"
     assert list.clicked is not None
     assert list.clicked["name"] == "file_browser_test.py"
+    assert list.clicked["is_file"] is True
     list.test_click("..", double_click=True)
     assert list.files != files
     assert selected.value is None
@@ -284,12 +296,224 @@ def test_file_browser_programmatic_select():
         return solara.FileBrowser(current_dir, selected=selected.value, on_path_select=selected.set, can_select=True)
 
     div, rc = solara.render_fixed(Test3(), handle_error=False)
+    list = div.children[1]
     assert current_dir.value == HERE.parent
     list.test_click("..", double_click=False)
     assert current_dir.value == HERE.parent
     # this will trigger the sync_directory_from_selected
     selected.value = current_dir.value / ".." / "unit" / ".."
     assert current_dir.value == HERE.parent
+    rc.close()
+
+
+def test_file_browser_selected_value_without_callback_warning():
+    selected = HERE.parent / "file_browser_test.py"
+
+    with unittest.mock.patch.object(solara.components.file_browser.logger, "warning") as mock_warning:
+        div, rc = solara.render_fixed(solara.FileBrowser(HERE.parent, selected=selected, can_select=True), handle_error=False)
+
+    mock_warning.assert_called_with(
+        "You should provide an %s callback if you are not using a reactive value, otherwise %s input will not update",
+        "on_path_select",
+        "selected",
+    )
+    rc.close()
+
+
+def test_file_browser_multiple_callback_select(tmp_path: Path):
+    (tmp_path / "a.txt").write_text("a")
+    (tmp_path / "b.txt").write_text("b")
+
+    selected = solara.reactive(cast(List[Path], []))
+    on_paths_select = unittest.mock.MagicMock()
+
+    @solara.component
+    def Test():
+        return solara.FileBrowserMultiple(tmp_path, selected=selected, on_paths_select=on_paths_select)
+
+    div, rc = solara.render_fixed(Test(), handle_error=False)
+    file_list: solara.components.file_browser.FileListWidget = div.children[1]
+
+    file_list.test_click("a.txt")
+    assert selected.value == [tmp_path / "a.txt"]
+    on_paths_select.assert_called_with([tmp_path / "a.txt"])
+
+    file_list.test_click("b.txt")
+    assert selected.value == [tmp_path / "a.txt", tmp_path / "b.txt"]
+    on_paths_select.assert_called_with([tmp_path / "a.txt", tmp_path / "b.txt"])
+
+    file_list.test_click("a.txt")
+    assert selected.value == [tmp_path / "b.txt"]
+    on_paths_select.assert_called_with([tmp_path / "b.txt"])
+
+    rc.close()
+
+
+def test_file_browser_multiple_programmatic_select(tmp_path: Path):
+    (tmp_path / "a.txt").write_text("a")
+    (tmp_path / "b.txt").write_text("b")
+    (tmp_path / "c.txt").write_text("c")
+
+    selected = solara.reactive(cast(List[Path], []))
+
+    @solara.component
+    def Test():
+        return solara.FileBrowserMultiple(tmp_path, selected=selected)
+
+    div, rc = solara.render_fixed(Test(), handle_error=False)
+    file_list: solara.components.file_browser.FileListWidget = div.children[1]
+
+    assert file_list.selected_names == []
+    selected.value = [tmp_path / "a.txt", tmp_path / "b.txt"]
+    assert sorted(file_list.selected_names) == ["a.txt", "b.txt"]
+
+    selected.value = [tmp_path / "nested" / "outside.txt", tmp_path / "c.txt"]
+    assert file_list.selected_names == ["c.txt"]
+
+    rc.close()
+
+
+def test_file_browser_multiple_open_and_navigate_clear_selection(tmp_path: Path):
+    (tmp_path / "a.txt").write_text("a")
+    subdir = tmp_path / "subdir"
+    subdir.mkdir()
+    (subdir / "b.txt").write_text("b")
+
+    selected = solara.reactive(cast(List[Path], []))
+    on_file_open = unittest.mock.MagicMock()
+    on_directory_change = unittest.mock.MagicMock()
+    on_paths_select = unittest.mock.MagicMock()
+
+    @solara.component
+    def Test():
+        return solara.FileBrowserMultiple(
+            tmp_path,
+            selected=selected,
+            on_paths_select=on_paths_select,
+            on_file_open=on_file_open,
+            on_directory_change=on_directory_change,
+        )
+
+    div, rc = solara.render_fixed(Test(), handle_error=False)
+    file_list: solara.components.file_browser.FileListWidget = div.children[1]
+
+    file_list.test_click("a.txt")
+    assert selected.value == [tmp_path / "a.txt"]
+
+    file_list.test_click("a.txt", double_click=True)
+    on_file_open.assert_called_with(tmp_path / "a.txt")
+    assert selected.value == []
+    on_paths_select.assert_called_with([])
+
+    file_list.test_click("subdir")
+    assert selected.value == [subdir]
+
+    file_list.test_click("subdir", double_click=True)
+    on_directory_change.assert_called_with(subdir)
+    assert selected.value == []
+    on_paths_select.assert_called_with([])
+    assert "b.txt" in file_list
+
+    rc.close()
+
+
+def test_file_browser_multiple_does_not_select_parent(tmp_path: Path):
+    selected = solara.reactive(cast(List[Path], []))
+    on_paths_select = unittest.mock.MagicMock()
+
+    @solara.component
+    def Test():
+        return solara.FileBrowserMultiple(tmp_path, selected=selected, on_paths_select=on_paths_select)
+
+    div, rc = solara.render_fixed(Test(), handle_error=False)
+    file_list: solara.components.file_browser.FileListWidget = div.children[1]
+
+    file_list.test_click("..")
+    assert selected.value == []
+    on_paths_select.assert_not_called()
+
+    rc.close()
+
+
+def test_file_browser_multiple_requires_path_directory(tmp_path: Path):
+    with pytest.raises(TypeError, match="directory"):
+        solara.render_fixed(solara.FileBrowserMultiple(str(tmp_path)), handle_error=False)
+
+
+def test_file_browser_base_supports_generic_source():
+    file_browser = solara.components.file_browser
+
+    class FakeSource(file_browser._FileBrowserSource[str]):
+        def __init__(self):
+            self.entries = {
+                "fake:/": [
+                    file_browser._FileBrowserEntry(name="docs", value="fake:/docs/", is_file=False),
+                    file_browser._FileBrowserEntry(name="readme.md", value="fake:/readme.md", is_file=True, size="9 B"),
+                ],
+                "fake:/docs/": [
+                    file_browser._FileBrowserEntry(name="guide.md", value="fake:/docs/guide.md", is_file=True, size="12 B"),
+                ],
+            }
+
+        def list(self, location):
+            return self.entries[location]
+
+        def parent(self, location):
+            if location == "fake:/docs/":
+                return "fake:/"
+            return "fake:/"
+
+        def can_read(self, location):
+            return True
+
+        def location_name(self, location):
+            return location
+
+        def value_name(self, value):
+            return value.rstrip("/").split("/")[-1]
+
+        def is_visible(self, location, value):
+            return any(entry.value == value for entry in self.list(location))
+
+    selected = solara.reactive(cast(List[str], []))
+    location = solara.reactive("fake:/")
+    on_select = unittest.mock.MagicMock()
+    on_location_change = unittest.mock.MagicMock()
+    on_open = unittest.mock.MagicMock()
+
+    @solara.component
+    def Test():
+        return file_browser._FileBrowserBase(
+            FakeSource(),
+            location,
+            selected_multiple=selected,
+            on_select_multiple=on_select,
+            on_location_change=on_location_change,
+            on_open=on_open,
+            selection_mode="multiple",
+        )
+
+    div, rc = solara.render_fixed(Test(), handle_error=False)
+    file_list: solara.components.file_browser.FileListWidget = div.children[1]
+
+    assert div.children[0].children[0] == "fake:/"
+    assert "docs" in file_list
+    assert "readme.md" in file_list
+
+    file_list.test_click("readme.md")
+    assert selected.value == ["fake:/readme.md"]
+    on_select.assert_called_with(["fake:/readme.md"])
+    assert file_list.selected_names == ["readme.md"]
+
+    file_list.test_click("docs", double_click=True)
+    on_location_change.assert_called_with("fake:/docs/")
+    assert location.value == "fake:/docs/"
+    assert selected.value == []
+    assert "guide.md" in file_list
+
+    file_list.test_click("guide.md", double_click=True)
+    on_open.assert_called_with("fake:/docs/guide.md")
+
     rc.close()
 
 
@@ -329,6 +553,29 @@ def test_file_browser_watch_disabled_by_default():
     file_list: solara.components.file_browser.FileListWidget = div.children[1]
     assert "file_browser_test.py" in file_list
     rc.close()
+
+
+def test_file_browser_watch_can_be_enabled_after_render(tmpdir: Path):
+    """Test that toggling watch from False to True starts the watch effect."""
+    tmpdir = Path(tmpdir)
+    (tmpdir / "test.txt").write_text("test")
+    watch = solara.reactive(False)
+
+    with unittest.mock.patch.object(solara.components.file_browser.logger, "warning") as mock_warning:
+
+        @solara.component
+        def Test():
+            return solara.FileBrowser(tmpdir, watch=watch.value)
+
+        div, rc = solara.render_fixed(Test(), handle_error=False)
+        file_list: solara.components.file_browser.FileListWidget = div.children[1]
+        assert "test.txt" in file_list
+        mock_warning.assert_not_called()
+
+        watch.value = True
+
+        mock_warning.assert_called_with("No running event loop, cannot watch directory for changes")
+        rc.close()
 
 
 def test_file_browser_watch_no_watchfiles(tmpdir: Path):
@@ -482,8 +729,11 @@ def test_file_browser_selected_relative_path_after_full_path(tmpdir: Path):
     relative_path = Path("subdir") / "file.txt"
     selected.value = relative_path
 
-    # This should not raise FileNotFoundError
-    # The current_dir should resolve relative to cwd, not to the previous current_dir
+    # This should not raise FileNotFoundError, and should not append the relative
+    # path's parent to the directory shown by the FileBrowser.
+    current_dir_text = div.children[0].children[0]
+    assert str(subdir) in current_dir_text
+    assert str(subdir / "subdir") not in current_dir_text
     rc.close()
 
 
