@@ -119,7 +119,8 @@ module.exports = {
                     {left: "$", right: "$", display: false},
                     {left: "\\[", right: "\\]", display: true},
                     {left: "\\(", right: "\\)", display: false}
-                ]
+                ],
+                ignoredClasses: ["solara-markdown-output", "jupyter-widgets"]
             };
         if (window.renderMathInElement) {
             window.renderMathInElement(this.$el, this.latexSettings);
@@ -224,16 +225,6 @@ module.exports = {
         },
         getCdn() {
             return this.cdn || (window.solara ? window.solara.cdn : `${this.getJupyterBaseUrl()}_solara/cdn`);
-        }
-    },
-    updated() {
-        // if the html gets update, re-run mermaid
-        this.mermaid.init();
-
-        if(window.MathJax && MathJax.Hub) {
-            MathJax.Hub.Queue(['Typeset', MathJax.Hub, this.$el]);
-        } else {
-            window.renderMathInElement(this.$el, this.latexSettings);
         }
     }
 }
