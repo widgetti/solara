@@ -98,6 +98,13 @@ class VirtualKernelContext:
     # seam in solara.toestand.KernelStore.get() reads it; the server wiring that populates it
     # lands in commit 2 of the state-persistence feature.
     state_persistence: Optional[Any] = None
+    # the per-kernel debounced write-behind flush worker (solara.state.KernelFlushWorker),
+    # reachable so close()/on_shutdown can drain it OUTSIDE context.lock (the deadlock contract,
+    # §5.3) and so a ws reconnect can call new_epoch() on it (§5.5). None when persistence is off.
+    state_flush_worker: Optional[Any] = None
+    # why this context was closed: "page-close" | "cull" | "superseded" | "server-shutdown" |
+    # "evicted" | "unknown". Drives the reason-gated fenced delete (§5.4) and is logged/asserted.
+    close_reason: str = "unknown"
     container: Optional[DOMWidget] = None
     # we track which pages are connected to implement kernel culling
     page_status: Dict[str, PageStatus] = dataclasses.field(default_factory=dict)
@@ -159,7 +166,56 @@ class VirtualKernelContext:
         assert local.kernel_context_stack is not None
         current_context[key] = local.kernel_context_stack.pop()
 
-    def close(self):
+    def _teardown_persistence(self, reason: str) -> None:
+        """Drain the flush worker and reason-gate the fenced delete (§5.3/§5.4/§12).
+
+        MUST run BEFORE ``close()`` acquires ``self.lock``: the worker's final flush does backend
+        I/O and the delete is a backend call - doing either under ``context.lock`` is the documented
+        deadlock (docs/reactive-initialization-lock-deadlock.md). Wrapped so a persistence failure
+        never breaks close(). Idempotent (the worker's own close() and manager detach guard reruns).
+        """
+        worker = self.state_flush_worker
+        manager = self.state_persistence
+        if worker is None and manager is None:
+            return
+        import solara.state as solara_state
+        from solara.state.stats import log_close
+
+        deleted = False
+        try:
+            # bounded final flush (flush-and-leave for every reason); manager.close() detaches
+            if worker is not None:
+                worker.close(timeout=2.0)
+            elif manager is not None:
+                manager.close()
+            # read the owned generation AFTER the final flush (the rejection protocol may have
+            # re-taken during it), and only if persistence is still enabled for this kernel
+            generation = manager.generation if manager is not None else None
+            disabled = manager.disabled if manager is not None else True
+            # Reason-gated fenced delete (§5.4): only a genuine tab close removes the hash; every
+            # other reason flushes-and-leaves so the TTL (or a later failover) reclaims it - an
+            # unconditional delete here would wipe every session on a rolling deploy / superseded
+            # takeover / cull (the §12 blocker).
+            if reason == "page-close" and generation and not disabled:
+                backend = solara_state.get_backend()
+                breaker = solara_state.get_breaker()
+                if backend is not None and breaker.allow():
+                    try:
+                        deleted = backend.delete(self.id, generation=generation)
+                        breaker.record_success()
+                    except Exception:  # noqa
+                        breaker.record_failure()
+                        logger.exception("failed to delete state for kernel %s on close", self.id)
+            log_close(reason, deleted=deleted)
+        except Exception:  # noqa
+            logger.exception("state persistence teardown failed for kernel %s", self.id)
+
+    def close(self, reason: str = "unknown"):
+        # persistence teardown MUST happen before we acquire self.lock (backend I/O; §5.3 deadlock
+        # contract). Guard so the first close wins the reason and a double close does not re-flush.
+        if not self.closed_event.is_set():
+            self.close_reason = reason
+            self._teardown_persistence(reason)
         with self, self.lock:
             for key in self.page_status:
                 self.page_status[key] = PageStatus.CLOSED
@@ -235,20 +291,38 @@ class VirtualKernelContext:
                 logger.info("Cancelling previous kernel cull task for virtual kernel %s", self.id)
                 self._last_kernel_cull_task.cancel()
 
+    def _cull_timeout_seconds(self) -> float:
+        """The cull timeout for this kernel (design §5.4).
+
+        With a genuinely *shared* backend and an attached, enabled persistence manager, an
+        orphaned (disconnected) kernel need not linger 24h: its state outlives it in the shared
+        store, so cull after the shortened ``SOLARA_STATE_ORPHAN_CULL_TIMEOUT``. The memory
+        backend (shared=False) and the persistence-off case keep today's ``kernel.cull_timeout`` -
+        there shortening would only lose state (state and kernel die together).
+        """
+        import solara.state as solara_state
+
+        backend = solara_state.get_backend()
+        manager = self.state_persistence
+        if backend is not None and backend.shared and manager is not None and not manager.disabled:
+            return solara.util.parse_timedelta(solara.settings.state.orphan_cull_timeout)
+        return solara.util.parse_timedelta(solara.server.settings.kernel.cull_timeout)
+
     def _bump_kernel_cull(self):
         async def kernel_cull():
             try:
-                cull_timeout_sleep_seconds = solara.util.parse_timedelta(solara.server.settings.kernel.cull_timeout)
+                cull_timeout_sleep_seconds = self._cull_timeout_seconds()
                 logger.info("Scheduling kernel cull, will wait for max %s before shutting down the virtual kernel %s", cull_timeout_sleep_seconds, self.id)
                 await asyncio.sleep(cull_timeout_sleep_seconds)
                 logger.info("Timeout reached, checking if we should be shutting down virtual kernel %s", self.id)
                 with self.lock:
                     has_connected_pages = PageStatus.CONNECTED in self.page_status.values()
-                    if has_connected_pages:
-                        logger.info("We have (re)connected pages, keeping the virtual kernel %s alive", self.id)
-                    else:
-                        logger.info("No connected pages, and timeout reached, shutting down virtual kernel %s", self.id)
-                        self.close()
+                if has_connected_pages:
+                    logger.info("We have (re)connected pages, keeping the virtual kernel %s alive", self.id)
+                else:
+                    logger.info("No connected pages, and timeout reached, shutting down virtual kernel %s", self.id)
+                    # close() OUTSIDE self.lock: its persistence teardown does backend I/O (§5.3)
+                    self.close(reason="cull")
                 if current_event_loop is not None and future is not None:
                     try:
                         current_event_loop.call_soon_threadsafe(future.set_result, None)
@@ -343,13 +417,14 @@ class VirtualKernelContext:
             future.set_result(None)
 
         logger.info("page status: %s", self.page_status)
+        should_close = False
         with self.lock:
             if self.closed_event.is_set():
                 logger.info("Kernel %s was already closed when page %s attempted to close", self.id, page_id)
-                return
+                return future
             if self.page_status[page_id] == PageStatus.CLOSED:
                 logger.info("Page %s already closed for kernel %s", page_id, self.id)
-                return
+                return future
             self.page_status[page_id] = PageStatus.CLOSED
             logger.info("Close page %s for kernel %s", page_id, self.id)
             has_connected_pages = PageStatus.CONNECTED in self.page_status.values()
@@ -360,10 +435,14 @@ class VirtualKernelContext:
             if has_disconnected_pages:
                 future = self._bump_kernel_cull()
             if not (has_connected_pages or has_disconnected_pages):
-                logger.info("No connected or disconnected pages, shutting down virtual kernel %s", self.id)
-                self.close()
+                should_close = True
             else:
                 logger.info("Still have connected or disconnected pages, keeping virtual kernel %s alive", self.id)
+        if should_close:
+            # a genuine tab close: close() OUTSIDE self.lock (persistence teardown does backend
+            # I/O, §5.3) with reason="page-close" so the fenced delete removes the hash (§5.4)
+            logger.info("No connected or disconnected pages, shutting down virtual kernel %s", self.id)
+            self.close(reason="page-close")
         return future
 
 
@@ -492,31 +571,217 @@ def without_context():
         current_context[thread_key] = context
 
 
-def initialize_virtual_kernel(session_id: str, kernel_id: str, websocket: websocket.WebsocketWrapper):
-    from solara.server import app as appmodule
+# guards the check-and-reserve of a context slot in initialize_virtual_kernel (§5.1). It is
+# deliberately NOT held across the backend takeover I/O: the slot is reserved first, then the
+# takeover runs off-lock (no backend I/O under any lock).
+_init_lock = threading.Lock()
 
-    if kernel_id in contexts:
-        logger.info("reusing virtual kernel: %s", kernel_id)
-        context = contexts[kernel_id]
-        if context.session_id != session_id:
-            logger.critical("Session id mismatch when reusing kernel (hack attempt?): %s != %s", context.session_id, session_id)
-            websocket.send_text("Session id mismatch when reusing kernel (hack attempt?)")
-            # to avoid very fast reconnects (we are in a thread anyway)
-            time.sleep(0.5)
-            raise ValueError("Session id mismatch")
-        kernel = context.kernel
-    else:
-        kernel = Kernel()
-        logger.info("new virtual kernel: %s", kernel_id)
-        context = contexts[kernel_id] = VirtualKernelContext(id=kernel_id, session_id=session_id, kernel=kernel, control_sockets=[], widgets={}, templates={})
+# takeovers run on this pool so a slow/hung backend cannot block the connect path past the hard
+# deadline (§5.1); a hung future keeps running and its late completion fenced-deletes the hash.
+_takeover_executor: "Optional[concurrent.futures.ThreadPoolExecutor]" = None
+_takeover_executor_lock = threading.Lock()
 
-        with context:
-            widgets.register_comm_target(kernel)
-            appmodule.register_solara_comm_target(kernel)
+
+def _get_takeover_executor() -> "concurrent.futures.ThreadPoolExecutor":
+    global _takeover_executor
+    if _takeover_executor is None:
+        with _takeover_executor_lock:
+            if _takeover_executor is None:
+                _takeover_executor = concurrent.futures.ThreadPoolExecutor(thread_name_prefix="solara-state-takeover")
+    return _takeover_executor
+
+
+def _has_connected_page(context: VirtualKernelContext) -> bool:
+    # lock-free snapshot read (§5.3): the flush worker calls this off the hot path
+    return PageStatus.CONNECTED in tuple(context.page_status.values())
+
+
+def _restore_on_connect(context: VirtualKernelContext, backend, session_id: str) -> None:
+    """Run the atomic backend takeover for a fresh context and attach persistence (§5.1/§5.3).
+
+    Never blocks past ``state.connect_timeout`` and never raises: any failure degrades to today's
+    behavior (a fresh, unpersisted kernel). Called OUTSIDE ``_init_lock`` (backend I/O).
+    """
+    import solara.state as solara_state
+    from solara.state.stats import log_restore
+
+    breaker = solara_state.get_breaker()
+    kernel_id = context.id
+    shmac = solara_state.session_hmac(session_id)
+    schema_tag = solara_state.effective_schema_tag()
+    stats = solara_state.stats()
+
+    # breaker gates restores too (§5.3): during a brownout, skip the takeover read instantly
+    # instead of paying the deadline on every connect of a deploy herd.
+    if not breaker.allow():
+        stats.incr("restore_attempts")
+        log_restore("timeout", kernel=kernel_id)
+        logger.info("state restore skipped for kernel %s (circuit breaker open)", kernel_id)
+        return
+
+    timeout = float(solara.settings.state.connect_timeout)
+    future = _get_takeover_executor().submit(backend.takeover, kernel_id, shmac, schema_tag)
+    try:
+        result = future.result(timeout=timeout)
+    except concurrent.futures.TimeoutError:
+        # claim-or-delete (§5.1/§12 zombie fix): we degrade to an unpersisted kernel now, but the
+        # takeover already bumped (or will bump) the generation in the backend. Leaving the hash
+        # readable would let a LATER failover silently roll the user back to this pre-timeout
+        # snapshot after they diverged. So when the late takeover finally completes, use its result
+        # ONLY to fenced-delete the hash (fire-and-forget on the executor thread that completes it).
+        breaker.record_failure()
+        stats.incr("restore_attempts")
+        stats.record_backend_error("takeover timeout")
+        log_restore("timeout", kernel=kernel_id)
+
+        def _claim_or_delete(fut: "concurrent.futures.Future") -> None:
+            try:
+                res = fut.result()
+            except Exception:  # noqa
+                return
+            if res.reason in ("restored", "miss", "schema-reset") and res.generation:
+                try:
+                    backend.delete(kernel_id, generation=res.generation)
+                except Exception:  # noqa
+                    logger.exception("late takeover claim-or-delete failed for kernel %s", kernel_id)
+
+        future.add_done_callback(_claim_or_delete)
+        return
+    except Exception:  # noqa
+        breaker.record_failure()
+        stats.incr("restore_attempts")
+        stats.record_backend_error("takeover raised")
+        log_restore("timeout", kernel=kernel_id)
+        logger.exception("state takeover raised for kernel %s", kernel_id)
+        return
+
+    breaker.record_success()
+    if result.generation == 0:  # identity-mismatch (§5.1) - mirrors the in-memory hijack guard
+        stats.incr("restore_attempts")
+        logger.warning("state takeover identity mismatch for kernel %s (session hijack?); serving unpersisted", kernel_id)
+        return
+
+    try:
+        manager = solara_state.attach(
+            context,
+            backend,
+            session_hmac=shmac,
+            schema_tag=schema_tag,
+            generation=result.generation,
+            envelopes=result.fields,
+            restore_reason=result.reason,
+        )
+    except Exception:  # noqa - e.g. PersistKeyError from an unresolved class-body persist=True
+        logger.exception("state attach failed for kernel %s; serving unpersisted", kernel_id)
+        return
+
+    if manager.recovery_failed:
+        # all-or-nothing bail-out happened inside attach (§4.3): keep the manager (it exposes the
+        # recovery-failed state for a future canRecover:false) but do NOT start a worker - the
+        # kernel runs fresh.
+        return
+
+    worker = solara_state.KernelFlushWorker(
+        manager,
+        breaker=breaker,
+        has_connected_page=lambda: _has_connected_page(context),
+        on_superseded=lambda: context.close(reason="superseded"),
+    )
+    context.state_flush_worker = worker
+    worker.start()
+
+
+def _reuse_context_is_stale(context: VirtualKernelContext, backend) -> bool:
+    """Whether a reused in-memory context has been superseded in the shared backend (§5.1).
+
+    A fast double reconnect can land back on an instance whose old context is still alive after
+    another instance took over in between; resuming it blindly would roll the user back. Compare
+    the remembered generation with the backend's. On a peek failure or an open breaker, serve
+    in-memory (the documented TOCTOU closure: the fenced write path catches real mismatches).
+    Never raises. Called OUTSIDE ``_init_lock`` (backend I/O).
+    """
+    import solara.state as solara_state
+
+    manager = context.state_persistence
+    if manager is None or manager.disabled:
+        return False
+    breaker = solara_state.get_breaker()
+    if not breaker.allow():
+        return False
+    try:
+        # TODO(commit 3): deadline-wrap this peek like the takeover, so a hung Redis cannot block
+        # the reconnect path; the breaker bounds sustained brownouts today.
+        stored = backend.peek_generation(context.id)
+        breaker.record_success()
+    except Exception:  # noqa
+        breaker.record_failure()
+        logger.exception("peek_generation failed for kernel %s; serving in-memory", context.id)
+        return False
+    if stored is None:
+        return False
+    return stored != manager.generation
+
+
+def _wire_kernel_streams(context: VirtualKernelContext, websocket: websocket.WebsocketWrapper) -> None:
     with context:
         assert has_current_context()
-        assert kernel is Kernel.instance()
-        kernel.shell_stream = WebsocketStreamWrapper(websocket, "shell")
-        kernel.control_stream = WebsocketStreamWrapper(websocket, "control")
-        kernel.session.websockets.add(websocket)
+        assert context.kernel is Kernel.instance()
+        context.kernel.shell_stream = WebsocketStreamWrapper(websocket, "shell")
+        context.kernel.control_stream = WebsocketStreamWrapper(websocket, "control")
+        context.kernel.session.websockets.add(websocket)
+
+
+def initialize_virtual_kernel(session_id: str, kernel_id: str, websocket: websocket.WebsocketWrapper):
+    from solara.server import app as appmodule
+    import solara.state as solara_state
+
+    backend = solara_state.get_backend()
+
+    # Reserve or find the context slot under a small lock (no backend I/O here, §5.1). A brand-new
+    # context is created and registered immediately - the slot is "reserved" - so a concurrent
+    # reconnect for the same kernel finds it via the reuse branch (its state_persistence is still
+    # None then -> not stale) instead of racing a second takeover, while the takeover I/O itself
+    # runs off-lock below.
+    with _init_lock:
+        context = contexts.get(kernel_id)
+        mismatch = context is not None and context.session_id != session_id
+        newly_created = False
+        if context is None:
+            kernel = Kernel()
+            logger.info("new virtual kernel: %s", kernel_id)
+            context = contexts[kernel_id] = VirtualKernelContext(
+                id=kernel_id, session_id=session_id, kernel=kernel, control_sockets=[], widgets={}, templates={}
+            )
+            newly_created = True
+
+    if mismatch:
+        assert context is not None
+        logger.critical("Session id mismatch when reusing kernel (hack attempt?): %s != %s", context.session_id, session_id)
+        websocket.send_text("Session id mismatch when reusing kernel (hack attempt?)")
+        # to avoid very fast reconnects (we are in a thread anyway)
+        time.sleep(0.5)
+        raise ValueError("Session id mismatch")
+
+    if newly_created:
+        with context:
+            widgets.register_comm_target(context.kernel)
+            appmodule.register_solara_comm_target(context.kernel)
+        if backend is not None:
+            _restore_on_connect(context, backend, session_id)
+    else:
+        # reuse branch (§5.1): verify ownership against the shared backend before serving
+        if backend is not None and context.state_persistence is not None and _reuse_context_is_stale(context, backend):
+            logger.info("virtual kernel %s superseded (generation mismatch); recreating with a fresh takeover", kernel_id)
+            # close the stale context (flush-and-leave; backend I/O, so OUTSIDE _init_lock), which
+            # frees the slot, then recurse to run the normal atomic takeover + restore.
+            context.close(reason="superseded")
+            return initialize_virtual_kernel(session_id, kernel_id, websocket)
+        logger.info("reusing virtual kernel: %s", kernel_id)
+        worker = context.state_flush_worker
+        if worker is not None:
+            # a genuine client reconnect starts a new connection epoch: reset the one-re-takeover
+            # budget of the rejection protocol (§5.5)
+            worker.new_epoch()
+
+    _wire_kernel_streams(context, websocket)
     return context

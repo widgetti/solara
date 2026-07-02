@@ -101,6 +101,7 @@ class State(BaseSettings):
     schema_tag: str = ""  # state-schema tag ("" -> derived); mismatch => clean state reset
     auto_remount: Optional[bool] = None  # None: on iff backend set; can force on/off
     bailout_storm_threshold: float = 0.5  # bail-out rate valve
+    test_eviction: bool = False  # dev/test-only kernel-eviction route gate (§6.4); refused in production
 
     def secret_key_list(self):
         # secret_keys is a comma-separated env value; minisettings has no native List type here

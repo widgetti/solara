@@ -66,6 +66,8 @@ from .routing import use_route, use_router, use_route_level, find_route, use_pat
 from .autorouting import generate_routes, generate_routes_directory, RenderPage, RoutingProvider, DefaultLayout
 from .checks import check_jupyter
 from .scope import get_kernel_id, get_session_id
+from .lifecycle import kernel_closed_event  # noqa: F401
+from .state import state_generation  # noqa: F401
 
 
 def display(*objs, **kwargs):

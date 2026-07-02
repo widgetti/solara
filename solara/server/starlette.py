@@ -1,4 +1,5 @@
 import asyncio
+import concurrent.futures
 from contextlib import asynccontextmanager
 import json
 import logging
@@ -7,6 +8,7 @@ import os
 from pathlib import Path
 import sys
 import threading
+import time
 import typing
 from typing import Any, Dict, List, Optional, Set, Union, cast
 from uuid import uuid4
@@ -393,6 +395,32 @@ def close(request: Request):
     return response
 
 
+def _eviction_enabled() -> bool:
+    # fail-closed (§6.4): only in an explicitly test-enabled, non-production deployment
+    return solara.settings.state.test_eviction and settings.main.mode != "production"
+
+
+async def evict(request: Request):
+    """Dev/test-only kernel eviction, the server half of ``solara.debug.simulateFailover()`` (§6.4).
+
+    Removes a kernel context from this process so a subsequent reconnect exercises the REAL restore
+    path in a single process (with a shared/memory backend that flushes-and-leaves on close). Fails
+    closed: 404 when disabled or the kernel is unknown, 403 on a session-ownership mismatch (unlike
+    the unauthenticated close route, this verifies the requester's solara-session-id cookie).
+    """
+    kernel_id = request.path_params["kernel_id"]
+    if not _eviction_enabled():
+        return Response(status_code=404)
+    context = kernel_context.contexts.get(kernel_id, None)
+    if context is None:
+        return Response(status_code=404)
+    session_id = request.cookies.get(server.COOKIE_KEY_SESSION_ID)
+    if not session_id or session_id != context.session_id:
+        return Response(status_code=403)
+    context.close(reason="evicted")
+    return Response(status_code=200)
+
+
 async def root(request: Request, fullpath: str = ""):
     forwarded_host = request.headers.get("x-forwarded-host")
     forwarded_proto = request.headers.get("x-forwarded-proto")
@@ -619,16 +647,74 @@ class StaticCdn(StaticFilesOptionalAuth):
 
 def on_startup():
     appmod.ensure_apps_initialized()
+    # fail fast on a misconfigured state-persistence deployment (secrets/pickle gate; §5.6)
+    try:
+        import solara.state as solara_state
+
+        solara_state.validate_state_settings()
+    except Exception:
+        logger.exception("invalid state-persistence configuration")
+        raise
+    # the dev/test-only kernel-eviction route must never be live in production (§6.4, fail-closed)
+    if solara.settings.state.test_eviction and settings.main.mode == "production":
+        logger.error("SOLARA_STATE_TEST_EVICTION is enabled but mode is 'production': the kernel-eviction route stays DISABLED. Never enable it in production.")
     # TODO: configure and set max number of threads
     # see https://github.com/encode/starlette/issues/1724
     telemetry.server_start()
 
 
+def _drain_state_workers(deadline_seconds: float = 5.0) -> None:
+    """One bounded, batched, parallel pass draining every kernel's flush worker (§5.3).
+
+    On SIGTERM uvicorn's lifespan teardown closes every context; doing N serial timeout-bounded
+    final flushes would blow any grace window under a correlated Redis brownout. So flush all
+    workers in parallel under one global deadline first; the subsequent per-context close loop
+    then finds persistence already drained and skips the I/O.
+    """
+    import solara.state as solara_state
+
+    if solara_state.get_backend() is None:
+        return
+    workers = [c.state_flush_worker for c in list(kernel_context.contexts.values()) if getattr(c, "state_flush_worker", None) is not None]
+    if not workers:
+        return
+    deadline = time.monotonic() + deadline_seconds
+    pool = concurrent.futures.ThreadPoolExecutor(max_workers=min(32, len(workers)), thread_name_prefix="solara-state-shutdown")
+
+    def _close_worker(worker):
+        remaining = max(0.0, deadline - time.monotonic())
+        try:
+            worker.close(timeout=remaining)
+        except Exception:  # noqa
+            logger.exception("error draining state flush worker on shutdown")
+
+    try:
+        futures = [pool.submit(_close_worker, worker) for worker in workers]
+        for future in futures:
+            remaining = max(0.0, deadline - time.monotonic())
+            try:
+                future.result(timeout=remaining)
+            except Exception:  # noqa - hard cap: never let shutdown hang
+                pass
+    finally:
+        # wait=False: do not block past the deadline on a hung worker (Python 3.8: no cancel_futures)
+        pool.shutdown(wait=False)
+
+
 def on_shutdown():
+    # bounded, batched final flush BEFORE the close loop, so the closes below skip backend I/O.
+    # TODO: uvicorn waits for websocket connections indefinitely by default, so this lifespan
+    # teardown may not run until Kubernetes SIGKILLs. Ship deployments with uvicorn's
+    # timeout_graceful_shutdown set (documented against terminationGracePeriodSeconds). It is not
+    # currently exposed as a solara CLI flag; pass it via a custom uvicorn Config / gunicorn worker.
+    try:
+        _drain_state_workers()
+    except Exception:  # noqa
+        logger.exception("error draining state workers on shutdown")
     # shutdown all kernels
     for context in list(kernel_context.contexts.values()):
         try:
-            context.close()
+            context.close(reason="server-shutdown")
         except:  # noqa
             logger.exception("error closing kernel on shutdown")
     telemetry.server_stop()
@@ -691,6 +777,16 @@ async def resourcez(request: Request):
         "borrowed_tokens": _sanitize_for_json(default_limiter.borrowed_tokens),
         "available_tokens": _sanitize_for_json(default_limiter.available_tokens),
     }
+    # state-persistence health (§7a): cheap, no backend I/O - "is the feature on right now?"
+    import solara.state as solara_state
+
+    state_stats = solara_state.stats().as_dict()
+    if solara_state.get_backend() is None:
+        data["state"] = {"status": "off", "circuit_breaker": "closed", **state_stats}
+    else:
+        breaker_state = solara_state.get_breaker().state
+        degraded = breaker_state != "closed" or state_stats.get("backend_last_error") is not None
+        data["state"] = {"status": "degraded" if degraded else "healthy", "circuit_breaker": breaker_state, **state_stats}
     if verbose:
         try:
             import psutil
@@ -767,6 +863,8 @@ routes = [
     Route("/", endpoint=root),
     Route("/{fullpath}", endpoint=root),
     Route("/_solara/api/close/{kernel_id}", endpoint=close, methods=["POST"]),
+    # dev/test-only, fail-closed (§6.4): the handler returns 404 unless explicitly enabled
+    Route("/_solara/api/evict/{kernel_id}", endpoint=evict, methods=["POST"]),
     # only enable when the proxy is turned on, otherwise if the directory does not exists we will get an exception
     *([Mount(f"/{cdn_url_path}", app=StaticCdn(directory=settings.assets.proxy_cache_dir))] if solara.settings.assets.proxy else []),
     Mount(f"{prefix}/static/public", app=StaticPublic()),

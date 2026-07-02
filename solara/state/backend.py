@@ -30,6 +30,12 @@ class TakeoverResult:
 class StateBackend(abc.ABC):
     """Abstract base for state backends (ABC, not a Protocol, so shared logic can live here)."""
 
+    # whether this backend is genuinely shared across processes/instances (Redis: True). The
+    # server gates the shortened orphan cull on this (§5.4): shortening only makes sense when
+    # state outlives the kernel in a shared store. Defaults True; single-process backends
+    # override to False.
+    shared: bool = True
+
     @abc.abstractmethod
     def takeover(self, kernel_id: str, session_hmac: bytes, schema_tag: str) -> TakeoverResult:
         """Atomically verify identity, bump the generation, and read all envelopes.

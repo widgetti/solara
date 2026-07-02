@@ -20,6 +20,7 @@ Three pieces live here (design ``docs/design-redis-state-persistence.md`` §4):
 
 import copy
 import dataclasses
+import enum
 import logging
 import threading
 import weakref
@@ -31,6 +32,7 @@ import solara.util
 from . import derive
 from .backend import StateBackend
 from .envelope import EnvelopeError, HmacError, decode, encode
+from .stats import log_flush, log_restore, stats
 
 if TYPE_CHECKING:
     from solara.server.kernel_context import VirtualKernelContext
@@ -41,11 +43,29 @@ logger = logging.getLogger("solara.state")
 __all__ = [
     "PersistConfig",
     "KernelStatePersistence",
+    "FlushOutcome",
     "attach",
     "FIELD_PREFIX",
     "register_persisted_reactive",
     "persisted_reactives",
 ]
+
+
+class FlushOutcome(str, enum.Enum):
+    """The result of :meth:`KernelStatePersistence.flush_now`.
+
+    Split so the write-behind worker can route each outcome correctly (design §5.3/§5.5):
+    a fenced rejection feeds the *rejection protocol*, a backend error feeds the *circuit
+    breaker*, and a serialize failure disables persistence (§4.3) - conflating them (the
+    commit-1 ``bool``) hid that distinction.
+    """
+
+    OK = "ok"  # the fenced write was acked
+    NOTHING = "nothing"  # nothing was dirty (or persistence disabled and nothing to do)
+    REJECTED = "rejected"  # the backend fenced us out (another instance owns the generation)
+    ERROR = "error"  # the backend call raised (feeds the breaker)
+    DISABLED = "disabled"  # a serialize failure disabled persistence for this kernel (§4.3)
+
 
 # backend hash fields for reactives are namespaced (user_dicts is shared with solara.scope,
 # and future namespaces - e.g. session storage - must not collide with reactive keys)
@@ -82,16 +102,30 @@ _persist_registry: Dict[str, Tuple[PersistConfig, "weakref.ref"]] = {}
 # persistence use (attach) fails loudly.
 _pending: List[Tuple["weakref.ref", Tuple[str, int, int]]] = []
 
+# live per-kernel managers (weakly held): a persisted reactive lazily imported *after* a
+# manager attached must still get dirty-tracked, so register notifies every attached manager
+# to watch it (commit-1 gap: watch-on-late-registration).
+_managers_lock = threading.Lock()
+_attached_managers: "weakref.WeakSet[KernelStatePersistence]" = weakref.WeakSet()
+
 
 def register_persisted_reactive(key: str, config: PersistConfig, reactive: "Reactive", source: Tuple[str, int, int], derived: bool) -> None:
     """Register a persisted reactive under its resolved storage key.
 
     Runs the collision check (two live reactives from different definition sites must not
-    share a key) and records the public reactive for restore/flush.
+    share a key), records the public reactive for restore/flush, and - for a reactive
+    imported after a kernel already attached - subscribes the live managers so its writes
+    are dirty-tracked from now on.
     """
     derive.register_persist_key(key, reactive, source, derived)
     with _registry_lock:
         _persist_registry[key] = (config, weakref.ref(reactive))
+    # notify live managers outside _registry_lock: manager.watch enters a kernel context and
+    # subscribes a listener, which must not run under the registry lock.
+    with _managers_lock:
+        managers = list(_attached_managers)
+    for manager in managers:
+        manager.watch(reactive, key)
 
 
 def register_pending(reactive: "Reactive", source: Tuple[str, int, int]) -> None:
@@ -191,6 +225,11 @@ class KernelStatePersistence:
         self._dirty_lock = threading.Lock()
         self._dirty: Set[str] = set()
         self._unsubscribers: List[Callable[[], None]] = []
+        # storage keys already subscribed, so watch_all + late-registration cannot double-watch
+        self._watched: Set[str] = set()
+        # set by the flush worker (commit 2); called once when the dirty set goes clean->dirty
+        # so a write from any source (task/thread/callback) schedules a debounced flush (§5.3)
+        self._flush_scheduler: Optional[Callable[[], None]] = None
         self._decode_envelopes(envelopes)
 
     def _decode_envelopes(self, envelopes: Dict[str, bytes]) -> None:
@@ -209,13 +248,9 @@ class KernelStatePersistence:
                 self.recovery_failed = True
                 self.failed_key = storage_key
                 self.cause = cause
-                logger.error(
-                    "solara.state.restore result=bailout kernel=%s key=%s cause=%s error=%s",
-                    self.kernel_id,
-                    storage_key,
-                    cause,
-                    exc,
-                )
+                stats().incr("restore_bailout")
+                log_restore("bailout", kernel=self.kernel_id, key=storage_key, cause=cause)
+                logger.debug("bail-out envelope error for kernel %s key %s: %s", self.kernel_id, storage_key, exc)
                 # poisoned-hash deletion (§4.3): otherwise every reconnect re-reads the same
                 # poisoned envelope and loops in permanent bail-out until TTL
                 try:
@@ -225,7 +260,8 @@ class KernelStatePersistence:
                 return
         self.restored = restored
         if restored:
-            logger.info("solara.state.restore result=success kernel=%s n_fields=%d", self.kernel_id, len(restored))
+            stats().incr("restore_success")
+            log_restore("success", kernel=self.kernel_id)
 
     # --- restore seam ---------------------------------------------------------------------
 
@@ -280,14 +316,38 @@ class KernelStatePersistence:
 
         ``subscribe_change`` fires after the ``equals`` dedup and hands the unwrapped new
         value; we deliberately do not capture it (flush peeks fresh). NO I/O here, ever.
+        Idempotent per key, so ``watch_all`` and late-registration cannot double-subscribe.
         """
+        with self._dirty_lock:
+            if storage_key in self._watched:
+                return
+            self._watched.add(storage_key)
 
         def _mark_dirty(_new: Any, _old: Any, storage_key: str = storage_key) -> None:
             with self._dirty_lock:
+                was_clean = not self._dirty
                 self._dirty.add(storage_key)
+            # schedule the debounced flush on the clean->dirty edge, outside the dirty lock
+            # (the worker takes its own lock); no I/O here, just an alarm-arm.
+            if was_clean:
+                scheduler = self._flush_scheduler
+                if scheduler is not None:
+                    scheduler()
 
         with self.context:
             self._unsubscribers.append(reactive.subscribe_change(_mark_dirty))
+
+    def set_flush_scheduler(self, scheduler: Optional[Callable[[], None]]) -> None:
+        """Install (or clear) the callback the write-behind worker arms on the clean->dirty edge."""
+        self._flush_scheduler = scheduler
+
+    def mark_all_dirty(self) -> None:
+        """Mark every registered persisted key dirty (the rejection-protocol re-flush, §5.5)."""
+        keys = set(persisted_reactives().keys())
+        if not keys:
+            return
+        with self._dirty_lock:
+            self._dirty |= keys
 
     @property
     def dirty_keys(self) -> Set[str]:
@@ -297,23 +357,28 @@ class KernelStatePersistence:
 
     # --- flush ------------------------------------------------------------------------------
 
-    def flush_now(self) -> bool:
+    def flush_now(self) -> FlushOutcome:
         """Drain the dirty set and write one fenced batch to the backend.
 
         Snapshot (deepcopy) under the reactive's lock inside the kernel context; serialize
         and write outside all locks. On a fenced rejection or backend error the drained keys
         are re-marked dirty (keys stay dirty until the write is ACKed, §4.4). A serialize
-        failure follows §4.3: log ERROR once, delete the kernel's hash, and disable
-        persistence for this kernel. Returns True when there was nothing to do or the write
-        was ACKed. The debounced worker (commit 2) drives this method.
+        failure follows §4.3: log once, delete the kernel's hash, and disable persistence for
+        this kernel.
+
+        Returns a :class:`FlushOutcome` so the worker can route the result (a rejection feeds
+        the rejection protocol, an error feeds the breaker; §5.3/§5.5). This method is
+        breaker-agnostic - the caller checks ``breaker.allow()`` before invoking it. It enters
+        the kernel context itself for the snapshot phase (the ONE owner of that step); it never
+        holds ``context.lock`` and does the backend I/O outside every lock.
         """
         if self.disabled:
-            return False
+            return FlushOutcome.DISABLED
         with self._dirty_lock:
             drained = set(self._dirty)
             self._dirty.clear()
         if not drained:
-            return True
+            return FlushOutcome.NOTHING
         registry = persisted_reactives()
         snapshots: Dict[str, Tuple[PersistConfig, Any]] = {}
         # enter the kernel context: a context-less thread would resolve reactives to the
@@ -343,33 +408,45 @@ class KernelStatePersistence:
             except EnvelopeError as exc:
                 # §4.3 serialize failure: no false confidence - delete the hash and stop
                 # persisting for this kernel; a reconnect then restores nothing (fresh state)
+                log_flush("error", kernel=self.kernel_id, n_fields=len(fields))
                 logger.error(
-                    "solara.state.flush result=error kernel=%s key=%s cause=serialize error=%s"
-                    " - disabling persistence for this kernel and deleting its stored state",
+                    "serialize failure for kernel %s key %s (%s): disabling persistence and deleting stored state",
                     self.kernel_id,
                     storage_key,
                     exc,
                 )
+                stats().incr("flush_failures")
                 self.disabled = True
                 try:
                     self.backend.delete(self.kernel_id)
                 except Exception:  # noqa
                     logger.exception("failed to delete state for kernel %s", self.kernel_id)
-                return False
+                return FlushOutcome.DISABLED
         try:
             ok = self.backend.flush(self.kernel_id, self.generation, fields, self.ttl, self.session_hmac, self.schema_tag)
         except Exception:  # noqa
-            logger.exception("solara.state.flush result=error kernel=%s n_fields=%d", self.kernel_id, len(fields))
-            ok = False
-        if not ok:
-            # keys stay dirty until ACK (§4.4): a rejection or error must not silently drop
-            # these keys until some unrelated future write
+            # a backend error (not a fence rejection): re-mark dirty and report ERROR so the
+            # caller can feed the circuit breaker
             with self._dirty_lock:
                 self._dirty |= drained
-            logger.warning("solara.state.flush result=rejected kernel=%s n_fields=%d generation=%d", self.kernel_id, len(fields), self.generation)
-            return False
-        logger.debug("solara.state.flush result=ok kernel=%s n_fields=%d", self.kernel_id, len(fields))
-        return True
+            log_flush("error", kernel=self.kernel_id, n_fields=len(fields))
+            logger.exception("backend flush raised for kernel %s", self.kernel_id)
+            stats().incr("flush_failures")
+            stats().record_backend_error("flush raised")
+            return FlushOutcome.ERROR
+        if not ok:
+            # fenced out: another instance owns the generation. Keys stay dirty until ACK
+            # (§4.4); this is NOT a backend-health signal, so it does not feed the breaker.
+            with self._dirty_lock:
+                self._dirty |= drained
+            log_flush("rejected", kernel=self.kernel_id, n_fields=len(fields))
+            stats().incr("flush_rejected")
+            stats().record_backend_ok()
+            return FlushOutcome.REJECTED
+        log_flush("ok", kernel=self.kernel_id, n_fields=len(fields))
+        stats().incr("flush_ok")
+        stats().record_backend_ok()
+        return FlushOutcome.OK
 
     def close(self) -> None:
         """Best-effort final flush, then unsubscribe and drop references.
@@ -382,12 +459,16 @@ class KernelStatePersistence:
                 self.flush_now()
         except Exception:  # noqa
             logger.exception("final state flush failed for kernel %s", self.kernel_id)
+        self._flush_scheduler = None
+        with _managers_lock:
+            _attached_managers.discard(self)
         for unsubscribe in self._unsubscribers:
             try:
                 unsubscribe()
             except (KeyError, ValueError):  # already removed
                 pass
         del self._unsubscribers[:]
+        self._watched.clear()
         self.restored = {}
         if getattr(self.context, "state_persistence", None) is self:
             self.context.state_persistence = None
@@ -402,6 +483,7 @@ def attach(
     generation: int,
     envelopes: Dict[str, bytes],
     ttl: Optional[float] = None,
+    restore_reason: Optional[str] = None,
 ) -> KernelStatePersistence:
     """Create a :class:`KernelStatePersistence` for ``context`` and attach it.
 
@@ -412,11 +494,17 @@ def attach(
     (the restore seam in ``KernelStore.get()`` reads it), and subscribes dirty-marking
     listeners for all registered persisted reactives, scoped to this context.
 
-    The caller is responsible for wiring ``context.on_close(manager.close)``.
+    ``restore_reason`` is the ``TakeoverResult.reason`` the server observed; it drives the
+    §7a restore counters that only the takeover outcome knows (``miss``/``schema-reset``).
+    The ``success``/``bailout`` counters are bumped by the eager decode.
+
+    The caller is responsible for wiring ``context.on_close(manager.close)`` (or, with the
+    write-behind worker, ``context.on_close(lambda: worker.close(timeout))``).
     """
     # a persist=True class-body reactive that never got __set_name__ must fail loudly at the
     # first persistence use, not silently never persist
     _check_pending_resolved()
+    stats().incr("restore_attempts")
     manager = KernelStatePersistence(
         context,
         backend,
@@ -426,6 +514,16 @@ def attach(
         envelopes=envelopes,
         ttl=ttl,
     )
+    if restore_reason == "miss":
+        stats().incr("restore_miss")
+        log_restore("miss", kernel=context.id)
+    elif restore_reason == "schema-reset":
+        stats().incr("restore_schema_reset")
+        log_restore("fresh-schema", kernel=context.id)
     context.state_persistence = manager
+    # register before watch_all so a reactive registered concurrently is watched by exactly
+    # one path (watch() is idempotent per key, so the overlap cannot double-subscribe)
+    with _managers_lock:
+        _attached_managers.add(manager)
     manager.watch_all()
     return manager

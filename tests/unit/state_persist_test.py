@@ -24,7 +24,7 @@ import solara.settings
 import solara.toestand as toestand
 import solara.server.kernel_context as kernel_context
 from solara.server import kernel
-from solara.state import MemoryStateBackend, decode, encode, session_hmac
+from solara.state import FlushOutcome, MemoryStateBackend, decode, encode, session_hmac
 from solara.state import derive, persist
 from solara.state.derive import PersistKeyError
 
@@ -262,7 +262,7 @@ def test_dirty_marking_is_per_context():
     assert manager_a.dirty_keys == {key}
     assert manager_b.dirty_keys == set()
     # drain via a successful flush
-    assert manager_a.flush_now()
+    assert manager_a.flush_now() == FlushOutcome.OK
     assert manager_a.dirty_keys == set()
     # a no-op set (equals) does not mark dirty
     with context_a:
@@ -308,7 +308,7 @@ def test_flush_roundtrip_failover_loop():
     with context_a:
         r.value = "hello from instance A"
     assert manager_a.dirty_keys == {key}
-    assert manager_a.flush_now()
+    assert manager_a.flush_now() == FlushOutcome.OK
     assert manager_a.dirty_keys == set()
 
     # instance B: takeover bumps the generation and reads the envelopes
@@ -324,7 +324,7 @@ def test_flush_roundtrip_failover_loop():
     # instance A is now fenced out: its flush is rejected and its keys stay dirty
     with context_a:
         r.value = "stale write from instance A"
-    assert not manager_a.flush_now()
+    assert manager_a.flush_now() == FlushOutcome.REJECTED
     assert key in manager_a.dirty_keys
 
     # instance B keeps working; close() does a best-effort final flush (wired via on_close)
@@ -346,16 +346,16 @@ def test_keys_stay_dirty_until_ack():
     with context:
         r.value = 1
     assert manager.dirty_keys == {key}
-    # rejected write: dirty set unchanged
+    # fenced rejection: dirty set unchanged, reported as REJECTED (not a backend-health error)
     with unittest.mock.patch.object(backend, "flush", return_value=False):
-        assert not manager.flush_now()
+        assert manager.flush_now() == FlushOutcome.REJECTED
     assert manager.dirty_keys == {key}
-    # backend exception: dirty set unchanged
+    # backend exception: dirty set unchanged, reported as ERROR (feeds the breaker)
     with unittest.mock.patch.object(backend, "flush", side_effect=RuntimeError("backend down")):
-        assert not manager.flush_now()
+        assert manager.flush_now() == FlushOutcome.ERROR
     assert manager.dirty_keys == {key}
     # ACKed write: cleared
-    assert manager.flush_now()
+    assert manager.flush_now() == FlushOutcome.OK
     assert manager.dirty_keys == set()
     assert backend.peek_generation(context.id) == 1
 
@@ -369,13 +369,13 @@ def test_serialize_failure_disables_persistence():
     # make sure a hash exists, so we can observe its deletion
     with context:
         r.value = 1
-    assert manager.flush_now()
+    assert manager.flush_now() == FlushOutcome.OK
     assert backend.peek_generation(context.id) == 1
     # an unserializable value reaches the opted-in reactive
     with context:
         r.value = lambda: 1  # noqa: E731
     assert manager.dirty_keys == {key}
-    assert not manager.flush_now()
+    assert manager.flush_now() == FlushOutcome.DISABLED
     assert manager.disabled
     # no false confidence: the stored (stale) state is deleted
     assert backend.peek_generation(context.id) is None
@@ -383,7 +383,7 @@ def test_serialize_failure_disables_persistence():
     with context:
         r.value = 42
         assert r.value == 42
-    assert not manager.flush_now()
+    assert manager.flush_now() == FlushOutcome.DISABLED
 
 
 def test_snapshot_under_concurrent_mutation_smoke():
@@ -419,7 +419,7 @@ def test_snapshot_under_concurrent_mutation_smoke():
         thread.join()
     assert errors == []
     # a final flush drains whatever is left
-    assert manager.flush_now()
+    assert manager.flush_now() in (FlushOutcome.OK, FlushOutcome.NOTHING)
 
 
 # --- zero overhead ------------------------------------------------------------------------

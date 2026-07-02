@@ -5,6 +5,7 @@ feature. Commit 2 wires the server lifecycle (takeover on connect, write-behind 
 commit 3 adds the Redis backend, commit 4 the client soft-remount.
 """
 
+import threading
 from typing import Dict, Optional
 
 import solara.settings
@@ -12,6 +13,10 @@ import solara.util
 
 from .backend import StateBackend, TakeoverResult
 from .memory import MemoryStateBackend
+from .breaker import CircuitBreaker
+from .persist import FlushOutcome, KernelStatePersistence, PersistConfig, attach
+from .stats import Stats, stats
+from .worker import KernelFlushWorker
 from .envelope import (
     CodecError,
     EnvelopeError,
@@ -44,6 +49,18 @@ __all__ = [
     "HmacError",
     "CodecError",
     "SerializeError",
+    "CircuitBreaker",
+    "get_breaker",
+    "reset_breaker",
+    "Stats",
+    "stats",
+    "KernelFlushWorker",
+    "FlushOutcome",
+    "KernelStatePersistence",
+    "PersistConfig",
+    "attach",
+    "state_generation",
+    "effective_schema_tag",
 ]
 
 # name -> dotted class path, resolved lazily (like solara.cache.cache_type_map); the redis
@@ -79,6 +96,70 @@ def reset_backend() -> None:
     global _backend, _backend_built
     _backend = None
     _backend_built = False
+
+
+# --- circuit breaker singleton -----------------------------------------------------------
+#
+# One process-wide breaker guards the backend (design §5.3); both restore (takeover) and
+# flush callers check breaker.allow() before a backend call.
+
+_breaker: Optional[CircuitBreaker] = None
+_breaker_lock = threading.Lock()
+
+
+def get_breaker() -> CircuitBreaker:
+    """Return the process-wide circuit breaker guarding the state backend."""
+    global _breaker
+    if _breaker is None:
+        with _breaker_lock:
+            if _breaker is None:
+                _breaker = CircuitBreaker()
+    return _breaker
+
+
+def reset_breaker() -> None:
+    """Drop the cached breaker singleton (test hook / re-read settings)."""
+    global _breaker
+    with _breaker_lock:
+        _breaker = None
+
+
+def state_generation() -> Optional[int]:
+    """The current kernel's remembered fencing generation, or ``None`` (design §5.5b).
+
+    Apps pass this into their own external writes (DB rows, idempotency keys) as a true
+    fencing epoch - it needs no backend round trip. Returns ``None`` when there is no kernel
+    context, no persistence manager, persistence is disabled for this kernel, or the manager
+    holds no write rights (generation 0), i.e. whenever this instance cannot claim ownership.
+    """
+    # imported lazily to avoid an import cycle (the server package imports solara.state)
+    try:
+        from solara.server import kernel_context
+    except Exception:  # noqa
+        return None
+    if not kernel_context.has_current_context():
+        return None
+    context = kernel_context.get_current_context()
+    manager = getattr(context, "state_persistence", None)
+    if manager is None or getattr(manager, "disabled", False):
+        return None
+    generation = getattr(manager, "generation", None)
+    if not generation:  # 0 (no write rights) or None
+        return None
+    return generation
+
+
+def effective_schema_tag() -> str:
+    """The state-schema tag used for takeover/flush (design §6.1, §11.7).
+
+    The configured ``SOLARA_STATE_SCHEMA_TAG`` when set, else a value derived from the solara
+    version. A mismatch on takeover triggers a clean state reset (fresh start + soft-remount),
+    so this must be stable within one deploy and change when the persisted value shape does.
+    """
+    tag = solara.settings.state.schema_tag
+    if tag:
+        return tag
+    return "solara-" + solara.__version__
 
 
 def validate_state_settings() -> None:

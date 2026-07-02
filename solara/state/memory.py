@@ -26,6 +26,10 @@ class _Entry:
 
 
 class MemoryStateBackend(StateBackend):
+    # in-process only: state dies with the process, so the shortened orphan cull (§5.4) must
+    # not apply (it would only lose state, never save a failover).
+    shared = False
+
     def __init__(self, clock: Callable[[], float] = time.monotonic) -> None:
         self._store: Dict[str, _Entry] = {}
         self._lock = threading.Lock()

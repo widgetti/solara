@@ -174,13 +174,17 @@ async def app_loop(
                 t1 = time.time()
                 # we don't want to have the kernel closed while we are processing a message
                 # therefore we use this mutex that is also used in the context.close method
+                shutdown = False
                 with context.lock:
                     if context.closed_event.is_set():
                         return
                     if not process_kernel_messages(kernel, msg):
-                        # if we shut down the kernel, we do not keep the page session alive
-                        context.close()
-                        return
+                        shutdown = True
+                if shutdown:
+                    # if we shut down the kernel, we do not keep the page session alive. close()
+                    # OUTSIDE context.lock: its persistence teardown does backend I/O (§5.3)
+                    context.close()
+                    return
                 t2 = time.time()
                 if settings.main.timing:
                     widgets_ids_after = set(patch.widgets)
