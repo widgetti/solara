@@ -48,5 +48,10 @@ services:
       - solara2
     ports:
       - "8000:8000"
-    # round-robin across the two backends; Caddy proxies websockets transparently.
-    command: ["caddy", "reverse-proxy", "--from", ":8000", "--to", "solara1:8765", "--to", "solara2:8765"]
+    # A Caddyfile (not the inline `caddy reverse-proxy` CLI) so we can set health-checking:
+    # without it, round-robin keeps handing a crashed backend its turn and half the reconnects
+    # get connection-refused. lb_try_duration retries the live backend within the same request;
+    # fail_duration then skips the dead one. Caddy proxies websockets transparently. This file
+    # targets the docker service names; the top-level Caddyfile targets localhost for run.sh.
+    volumes:
+      - ./Caddyfile.docker:/etc/caddy/Caddyfile:ro

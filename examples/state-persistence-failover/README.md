@@ -9,6 +9,14 @@ It runs two Solara backends behind a [Caddy](https://caddyserver.com/) `round_ro
 balancer, both sharing one Redis. Caddy assigns each new connection to a backend in turn, so a
 reconnect after a disconnect lands on the *other* backend — a real cross-instance failover.
 
+> The [`Caddyfile`](./Caddyfile) sets `lb_try_duration` + `fail_duration` on purpose. Plain
+> `round_robin` has no health-checking, so after a backend *crashes* the rotation keeps handing
+> it its turn and half the reconnects get connection-refused; those two directives retry the
+> live backend within the request and then skip the dead one. Verified end-to-end by
+> `SIGKILL`-ing the instance that owns the live websocket and watching the browser recover on
+> the survivor. (The docker-compose path uses [`Caddyfile.docker`](./Caddyfile.docker), same
+> directives with the container hostnames.)
+
 ## What it demonstrates
 
 The app ([`app.py`](./app.py)) has:

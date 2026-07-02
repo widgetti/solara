@@ -12,5 +12,11 @@
 :8000 {
 	reverse_proxy localhost:8765 localhost:8766 {
 		lb_policy round_robin
+		# Failover needs health-checking, or a dead backend keeps getting its turn in the
+		# rotation: lb_try_duration retries the other backend within the same request when one
+		# refuses (so the first reconnect after a crash still lands somewhere alive), and
+		# fail_duration passively marks a backend down so the rotation skips it afterwards.
+		lb_try_duration 5s
+		fail_duration 30s
 	}
 }
