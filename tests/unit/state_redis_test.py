@@ -14,6 +14,8 @@ import time
 from typing import Callable
 from unittest.mock import Mock
 
+# hard test dependency (solara-meta dev extra): these tests must run, never silently skip
+import fakeredis
 import pytest
 
 import solara
@@ -23,8 +25,7 @@ import solara.server.kernel_context as kc
 from solara.server import kernel
 from solara.state import FlushOutcome, session_hmac
 
-fakeredis = pytest.importorskip("fakeredis")
-from solara.state.redis import RedisStateBackend  # noqa: E402
+from solara.state.redis import RedisStateBackend
 
 SESSION_A = b"session-hmac-a"
 SESSION_B = b"session-hmac-b"

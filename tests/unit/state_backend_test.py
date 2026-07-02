@@ -1,7 +1,11 @@
 import os
 import threading
 
+# fakeredis[lua] is a hard test dependency (solara-meta dev extra): the fenced-Lua contract
+# tests must always run, never silently skip. A missing install fails loudly here.
+import fakeredis
 import pytest
+import redis
 
 import solara.server.settings
 import solara.state as state
@@ -28,7 +32,6 @@ def backend(request):
         yield MemoryStateBackend()
         return
     if request.param == "fakeredis":
-        fakeredis = pytest.importorskip("fakeredis")
         from solara.state.redis import RedisStateBackend
 
         server = fakeredis.FakeServer()
@@ -38,7 +41,7 @@ def backend(request):
     url = os.environ.get("SOLARA_TEST_REDIS_URL")
     if not url:
         pytest.skip("set SOLARA_TEST_REDIS_URL to run the contract against a real redis server")
-    redis = pytest.importorskip("redis")
+        return  # mypy does not narrow Optional through pytest.skip here
     from solara.state.redis import RedisStateBackend
 
     client = redis.Redis.from_url(url, decode_responses=False)
