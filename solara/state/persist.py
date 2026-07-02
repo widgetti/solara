@@ -220,6 +220,12 @@ class KernelStatePersistence:
         self.cause: Optional[str] = None
         # set on a serialize failure at flush: stop persisting for this kernel (§4.3)
         self.disabled = False
+        # the TakeoverResult.reason the server observed ("restored"/"miss"/"schema-reset"); set by
+        # attach(). Drives the client-facing last_restore status (§6.4). None until attach runs.
+        self.restore_reason: Optional[str] = None
+        # number of reactive envelopes decoded at takeover; stable even after pop_restored consumes
+        # self.restored, so last_restore.nFields stays meaningful once first-render installs values.
+        self.n_restored = 0
         # storage_key -> raw (unwrapped) python value, consumed by pop_restored
         self.restored: Dict[str, Any] = {}
         self._dirty_lock = threading.Lock()
@@ -259,9 +265,29 @@ class KernelStatePersistence:
                     logger.exception("failed to delete poisoned state for kernel %s", self.kernel_id)
                 return
         self.restored = restored
+        self.n_restored = len(restored)
         if restored:
             stats().incr("restore_success")
             log_restore("success", kernel=self.kernel_id)
+
+    @property
+    def last_restore(self) -> Dict[str, Any]:
+        """Read-only restore outcome for the client (design §6.4 ``lastRestore`` / app-status).
+
+        Maps the takeover reason + eager-decode result to the client-facing vocabulary:
+        ``bailout`` (all-or-nothing failure), ``fresh-schema`` (schema-tag reset), ``success``
+        (values restored), or ``miss`` (nothing to restore). The ``off`` status is the None-manager
+        case, handled by the caller.
+        """
+        if self.recovery_failed:
+            status = "bailout"
+        elif self.restore_reason == "schema-reset":
+            status = "fresh-schema"
+        elif self.n_restored > 0:
+            status = "success"
+        else:
+            status = "miss"
+        return {"status": status, "failedKey": self.failed_key, "cause": self.cause, "nFields": self.n_restored}
 
     # --- restore seam ---------------------------------------------------------------------
 
@@ -514,6 +540,7 @@ def attach(
         envelopes=envelopes,
         ttl=ttl,
     )
+    manager.restore_reason = restore_reason
     if restore_reason == "miss":
         stats().incr("restore_miss")
         log_restore("miss", kernel=context.id)

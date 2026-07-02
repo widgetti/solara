@@ -29,7 +29,7 @@
         </div>
     </div>
     <div v-else>
-        <jupyter-widget-mount-point mount-id="solara-main">
+        <jupyter-widget-mount-point :key="remountKey" mount-id="solara-main">
             A widget with mount-id="solara-main" should go here
         </jupyter-widget-mount-point>
         <div v-if="showBanner" style="position: absolute; right: 0px; bottom: 0px; padding: 10px;">

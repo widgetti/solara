@@ -989,7 +989,7 @@ without touching the CDN bundles.
 **Decided: one PR, staged as ~4 commits** (each commit coherent and green, so the PR
 reads as the plan):
 
-1. **Commit 1 — core state layer (no Redis, no server changes):** `StateBackend`
+1. **Commit 1 — core state layer (no Redis, no server changes)** *(shipped: f12e6e25)***:** `StateBackend`
    four-verb protocol (§5.7) + memory backend (envelope-byte fidelity) +
    `state_backend_map` registry, settings + startup validation (secrets, pickle gate),
    `persist=`/`key=` on `solara.reactive()` + key auto-derivation (`executing` +
@@ -1003,7 +1003,7 @@ reads as the plan):
    detection, restore-skips-default in both wrapping modes, bail-out on one bad
    envelope, codec failures + coercion matrix, `Ref` field writes dirty the root,
    snapshot-then-serialize under concurrent mutation, keys-stay-dirty-until-ACK.
-2. **Commit 2 — server lifecycle:** takeover in `initialize_virtual_kernel`
+2. **Commit 2 — server lifecycle** *(shipped: bd1b749b)***:** takeover in `initialize_virtual_kernel`
    (verify-then-bump-then-read atomically, no-write-on-miss, claim-or-delete on
    fresh-start, kernel_id UUID validation, reuse-branch ownership check), write-behind
    worker (context-entering, snapshot-under-lock) + debounce + specified circuit
@@ -1016,11 +1016,11 @@ reads as the plan):
    (restore-for-real without Redis, §6.4) — covers restore, bail-out + poisoned-hash
    deletion, rejection/concede, and the fast double reconnect (A → B → A with A's
    context still live) largely as unit/light-integration tests.
-3. **Commit 3 — Redis backend:** `state/redis.py` in core (lazy `import redis`), Lua
+3. **Commit 3 — Redis backend** *(shipped: 2b2ec1d9)***:** `state/redis.py` in core (lazy `import redis`), Lua
    atomic takeover + fenced pipeline writes, TTL refresh. CI gains a Redis service;
    integration test: two solara-server processes sharing Redis, kill/evict one
    mid-session, reconnect to the other.
-4. **Commit 4 — client soft-remount + demo + docs:** inline app-status probe,
+4. **Commit 4 — client soft-remount + demo + docs** *(shipped: this PR)***:** inline app-status probe,
    `canRecover`/`appVersion`, remount sequence, `remountKey`, UX polish, popout/SSG
    handling, `solara.debug.*` hooks incl. `simulateFailover()` (§6.4). **Caddy
    round-robin demo** — one artifact serving as demo, integration test, and

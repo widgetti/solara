@@ -133,6 +133,132 @@ async function solaraInit(mountId, appName) {
     }
     const close_url = `${solara.rootPath}/_solara/api/close/${kernelId}?session_id=${kernel.clientId}`;
     let skipReconnectedCheck = true;
+    // re-entrancy + flapping guard for the soft-remount (§6.2)
+    let remountInProgress = false;
+
+    // debug/test hooks on the solara JS global (§6.4): always-on, unstable-by-contract. Getters
+    // return the CURRENT closure values because the socket is replaced on every reconnect and the
+    // widget manager on every soft-remount, so captured references go stale by design.
+    solara.debug = {
+        kernel: () => kernel,
+        widgetManager: () => widgetManager,
+        ws: () => kernel && kernel._ws,
+        connectionStatus: kernel.connectionStatus,
+        reconnectCount: 0,
+        remountCount: 0,
+        lastRestore: null,
+        dropConnection() {
+            // close the raw underlying socket WITHOUT kernel.dispose, so the jupyterlab-services
+            // reconnect machinery fires as on a network blip. kernel._ws is a private field of the
+            // vendored bundle - guard against a bundle change.
+            if (!kernel._ws) {
+                console.warn('solara.debug: kernel._ws not found (bundle change?)');
+                return false;
+            }
+            kernel._ws.close();
+            return true;
+        },
+        async simulateFailover() {
+            // evict the kernel context server-side (dev/test-gated route), then drop the socket, so
+            // the reconnect behaves exactly like landing on a fresh instance - with only backend
+            // state surviving. With the memory backend this exercises the real restore path in a
+            // single dev process (§6.5).
+            try {
+                await fetch(`${solara.rootPath}/_solara/api/evict/${kernelId}`, { method: 'POST', credentials: 'same-origin' });
+            } catch (e) {
+                console.warn('solara.debug.simulateFailover: evict request failed', e);
+            }
+            return this.dropConnection();
+        },
+    };
+
+    // build a fresh widget manager from the same construction args as the initial mount, so the
+    // initial path and the soft-remount path share one construction (§6.2)
+    function makeWidgetManager() {
+        return new solara.WidgetManager(context, rendermime, settings);
+    }
+
+    async function fallbackToDialog() {
+        // the refresh-dialog path (recovery disabled, bundle changed, bailout, popout, or a failed
+        // remount). shutdownKernel lives ONLY here.
+        app.$data.needsRefresh = true;
+        await solara.shutdownKernel(kernel);
+    }
+
+    async function solaraAppStatus(k) {
+        // inline control-comm probe (mirrors solara-widget-manager appStatus) that returns the FULL
+        // reply object - the bundled widgetManager.appStatus() drops canRecover/clientVersion/lastRestore.
+        const controlComm = k.createComm('solara.control', generateUuid());
+        controlComm.open({}, {}, []);
+        return await new Promise((resolve, reject) => {
+            controlComm.onMsg = (msg) => {
+                const data = msg['content']['data'];
+                if (data.method === 'app-status') {
+                    resolve(data);
+                } else {
+                    reject(new Error('unexpected message on solara.control comm'));
+                }
+            };
+            controlComm.onClose = () => reject(new Error('solara.control comm closed'));
+            setTimeout(() => reject(new Error('app-status timeout')), 500);
+            controlComm.send({ method: 'app-status' });
+        });
+    }
+
+    async function solaraRemount() {
+        if (remountInProgress) {
+            // a reconnect arriving mid-remount is ignored; the in-progress attempt re-checks the
+            // connection before its final swap (last completed attempt wins, §6.2)
+            return;
+        }
+        if (searchParams.has('modelid')) {
+            // popouts attach to a specific model id that no longer exists on a fresh instance -
+            // there is nothing to soft-remount, so fall back to the dialog (§6.2)
+            await fallbackToDialog();
+            return;
+        }
+        remountInProgress = true;
+        app.$data.remounting = true;
+        try {
+            // tear down the dead widget manager (closes dead comms, disposes models)
+            try {
+                widgetManager.clear_state();
+            } catch (e) {
+                console.warn('solara remount: clear_state failed', e);
+            }
+            if (typeof widgetManager.dispose === 'function') {
+                try {
+                    widgetManager.dispose();
+                } catch (e) {
+                    console.warn('solara remount: dispose failed', e);
+                }
+            }
+            // settled promises would otherwise make the re-mount a no-op (§6.2)
+            delete widgetPromises[mountId];
+            delete widgetResolveFns[mountId];
+            // destroy + recreate the Vue mount-point (bound :key in the loader templates)
+            app.$data.remountKey += 1;
+            // fresh widget manager on the same reconnected kernel
+            widgetManager = makeWidgetManager();
+            // pushState routing makes the boot-time path stale - recompute from the live URL now
+            const path = window.location.pathname.slice(solara.rootPath.length) + window.location.search;
+            const widgetModelId = await widgetManager.run(appName, { path, dark: inDarkMode(), themes: vuetifyThemes });
+            if (kernel.connectionStatus !== 'connected') {
+                // the socket dropped again during the remount - abort quietly; the next 'connected'
+                // event restarts the flow
+                return;
+            }
+            await solaraMount(widgetManager, mountId, widgetModelId);
+            solara.debug.remountCount++;
+        } catch (e) {
+            console.error('solara remount failed', e);
+            await fallbackToDialog();
+        } finally {
+            app.$data.remounting = false;
+            remountInProgress = false;
+        }
+    }
+
     kernel.statusChanged.connect(() => {
         app.$data.kernelBusy = kernel.status == 'busy';
     });
@@ -167,26 +293,35 @@ async function solaraInit(mountId, appName) {
             return;
         }
         app.$data.connectionStatus = s.connectionStatus;
+        solara.debug.connectionStatus = s.connectionStatus;
         if (s.connectionStatus == 'connected') {
             app.$data.wasConnected = true;
         }
         if (s.connectionStatus == 'connected' && !skipReconnectedCheck) {
+            solara.debug.reconnectCount++;
             (async () => {
                 if (app.$data.needsRefresh) {
-                    // give up
+                    // already gave up
                     return;
                 }
-                // if we are reconnected, we expected the app to be in a started
-                // state. If it is not started, we will shutdown the kernel and
-                // Recommend to refresh the page. This situation can happen if
-                // we reconnect to a different node/worker, or when the server
-                // was restarted.
-                const status = await widgetManager.appStatus()
-                if (!status.started) {
-                    app.$data.needsRefresh = true;
-                    await solara.shutdownKernel(kernel);
-                } else {
+                // On reconnect we expect the app to still be started. If it is not, we either landed
+                // on a different node/worker or the server restarted. Probe app-status and decide
+                // (§6.1): started -> hot reconnect (fetchAll); recoverable AND matching client bundle
+                // -> soft-remount (no dialog); otherwise -> refresh dialog.
+                let reply;
+                try {
+                    reply = await solaraAppStatus(kernel);
+                } catch (e) {
+                    // no reply within the timeout - treat as not started and not recoverable
+                    reply = { started: false, canRecover: false };
+                }
+                solara.debug.lastRestore = reply.lastRestore || null;
+                if (reply.started) {
                     await widgetManager.fetchAll();
+                } else if (reply.canRecover && reply.clientVersion === solara.clientVersion) {
+                    await solaraRemount();
+                } else {
+                    await fallbackToDialog();
                 }
             })();
         }
@@ -230,7 +365,7 @@ async function solaraInit(mountId, appName) {
         latexTypesetter: new solara.KatexTypesetter(),
     });
 
-    let widgetManager = new solara.WidgetManager(context, rendermime, settings);
+    let widgetManager = makeWidgetManager();
     // it seems if we attach this to early, it will not be called
     app.$data.loading_text = 'Loading app';
     const path = window.location.pathname.slice(solara.rootPath.length) + window.location.search;

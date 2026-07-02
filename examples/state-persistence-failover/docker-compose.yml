@@ -1,0 +1,52 @@
+# Minimal, self-contained cross-instance failover demo:
+#   redis  +  two solara backends (sharing that redis)  +  caddy round-robin load balancer.
+#
+# Start it:   docker compose up
+# Open:       http://localhost:8000
+#
+# Then build up state, click "Disconnect websocket" (or run solara.debug.simulateFailover() in
+# the devtools console). Caddy routes the reconnect to the OTHER backend; your persisted state is
+# restored from redis, the non-persisted "scratch note" resets, and no refresh dialog appears.
+#
+# NOTE: the two backends MUST share the same SOLARA_STATE_SECRET_KEYS (envelopes are HMAC-signed;
+# a mismatch is the #1 real-world cause of silent restore failures). Change the demo secret below
+# before using anything like this outside a throwaway demo.
+
+x-solara: &solara
+  image: python:3.11-slim
+  depends_on:
+    - redis
+  volumes:
+    - ./app.py:/app/app.py:ro
+  environment:
+    SOLARA_STATE_BACKEND: redis
+    SOLARA_STATE_URL: redis://redis:6379/0
+    SOLARA_STATE_SECRET_KEYS: demo-shared-secret-change-me
+  # --production runs in production mode; each container listens on 8765 inside its own network
+  # namespace, so both can use the same internal port.
+  command: >
+    sh -c "pip install --no-cache-dir 'solara[redis]' &&
+           solara run /app/app.py --host 0.0.0.0 --port 8765 --production"
+
+services:
+  redis:
+    image: redis:7-alpine
+    # a recovery cache must never silently evict LIVE sessions: keep noeviction + rely on TTLs
+    # (design §7). Never point this demo at a shared allkeys-lru cache instance.
+    command: ["redis-server", "--maxmemory-policy", "noeviction"]
+
+  solara1:
+    <<: *solara
+
+  solara2:
+    <<: *solara
+
+  caddy:
+    image: caddy:2-alpine
+    depends_on:
+      - solara1
+      - solara2
+    ports:
+      - "8000:8000"
+    # round-robin across the two backends; Caddy proxies websockets transparently.
+    command: ["caddy", "reverse-proxy", "--from", ":8000", "--to", "solara1:8765", "--to", "solara2:8765"]

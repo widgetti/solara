@@ -73,6 +73,13 @@
                 disconnected.</v-progress-circular>
         </v-overlay>
 
+        <!-- non-blocking indicator during a soft-remount (§6.2/§6.3): the stale DOM stays visible
+             until the swap; this is NOT the full loader -->
+        <v-snackbar :value="remounting" :timeout="-1" top color="primary">
+            Restoring session…
+            <v-progress-circular indeterminate size="18" width="2" class="ml-3"></v-progress-circular>
+        </v-snackbar>
+
         <v-dialog v-model="needsRefresh" width="500">
             <v-card>
                 <v-card-title class="text-h5 grey lighten-2">Please refresh the page</v-card-title>
@@ -247,6 +254,9 @@
         solara.jupyterRootPath = {{ jupyter_root_path | tojson | safe}};
         solara.cdn = {{ cdn | tojson | safe }};
         solara.forceRefresh = {{ force_refresh | tojson | safe }};
+        // opaque asset hash; compared against the app-status reply on reconnect to decide
+        // soft-remount vs hard-refresh (design §6.1)
+        solara.clientVersion = {{ client_version | tojson | safe }};
         // the vue templates expect it to not have a trailing slash
         solara.cdn = solara.cdn.replace(/\/$/, '');
         // keep this for backwards compatibility
@@ -312,11 +322,6 @@
                 document.getElementById('pre-render-theme').remove();
             },
             methods: {
-                stateReset() {
-                    console.log('reset')
-                    msg = { "type": "state_reset", "reason": "user command" }
-                    wsWatchdog.send(JSON.stringify(msg))
-                },
                 setCancelAutoRefresh() {
                     this.needsRefresh = false;
                     this.cancelAutoRefresh = true;
@@ -413,6 +418,10 @@
                     debug: debug,
                     connectionStatus: null,
                     wasConnected: false,
+                    // soft-remount state (§6.2): remountKey is bound as :key on the mount point so
+                    // bumping it destroys/recreates it; remounting drives the "Restoring session…" indicator
+                    remountKey: 0,
+                    remounting: false,
                     needsRefresh: false,
                     cancelAutoRefresh: false,
                     autoRefreshCount: 3,

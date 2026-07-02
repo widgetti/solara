@@ -397,6 +397,9 @@ def read_root(
         "root_path": root_path,
         "jupyter_root_path": jupyter_root_path,
         "force_refresh": settings.theme.force_refresh,
+        # opaque asset hash baked into the page; the client compares it against the app-status
+        # reply on reconnect to decide soft-remount vs hard-refresh (design §6.1)
+        "client_version": app.client_version(),
         "resources": resources,
         "theme": settings.theme.dict(),
         "production": settings.main.mode == "production",

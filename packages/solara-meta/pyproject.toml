@@ -32,6 +32,10 @@ all = [
     "solara[dev]"
 ]
 
+redis = [
+    "solara-ui[redis]"
+]
+
 assets = [
     "solara-assets==1.57.6"
 ]
