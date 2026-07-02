@@ -190,8 +190,8 @@ def test_e2e_single_process_failover_over_fakeredis(monkeypatch):
     assert context.state_persistence is not None
     with context:
         r.value = "restored-value"
-    assert wait_until(lambda: not context.state_persistence.dirty_keys)
-    assert be.peek_generation(kernel_id) == 1
+    # wait on the backend observable, not the dirty set (drained before the write lands)
+    assert wait_until(lambda: be.peek_generation(kernel_id) == 1)
 
     # evict (the server half of simulateFailover): flush-and-leave + drop the in-memory context
     context.close(reason="evicted")
@@ -223,8 +223,7 @@ def test_e2e_double_reconnect_two_backends_one_server(monkeypatch):
     context_a.page_connect("pageA")
     with context_a:
         r.value = "from-A"
-    assert wait_until(lambda: not context_a.state_persistence.dirty_keys)
-    assert backend_a.peek_generation(kernel_id) == 1
+    assert wait_until(lambda: backend_a.peek_generation(kernel_id) == 1)
 
     # instance B (the second backend on the same server) takes over -> gen 2, then flushes "from-B"
     result_b = backend_b.takeover(kernel_id, shmac, SCHEMA_TAG)

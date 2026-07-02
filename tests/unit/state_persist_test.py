@@ -387,7 +387,11 @@ def test_serialize_failure_disables_persistence():
     assert manager.flush_now() == FlushOutcome.DISABLED
 
 
-def test_snapshot_under_concurrent_mutation_smoke():
+def test_snapshot_under_concurrent_mutation_smoke(monkeypatch):
+    # this test's mechanism IS in-place mutation (probing the flush's snapshot-under-lock
+    # against torn reads) - which mutation detection forbids by design, so force it off here;
+    # the ValueError it would raise is that feature working, not a persistence bug
+    monkeypatch.setattr(solara.settings.storage, "mutation_detection", False)
     key = "test.concurrent"
     r = solara.reactive({"count": 0}, persist=True, key=key)
     backend = MemoryStateBackend()

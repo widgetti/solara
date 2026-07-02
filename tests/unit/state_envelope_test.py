@@ -2,6 +2,7 @@ import datetime
 import decimal
 import enum
 import uuid
+from typing import List
 
 import pytest
 
@@ -224,7 +225,7 @@ class User(pydantic.BaseModel):
 
 class Team(pydantic.BaseModel):
     lead: User
-    members: "list[User]"
+    members: List["User"]  # typing.List: py3.8 cannot evaluate builtin subscripting in annotations
     tags: list = []
 
 

@@ -93,3 +93,15 @@ storage = Storage()
 
 if main.check_hooks not in ["off", "warn", "raise"]:
     raise ValueError(f"Invalid value for check_hooks: {main.check_hooks}, expected one of ['off', 'warn', 'raise']")
+
+
+def __getattr__(name):
+    # `state` (state persistence) is defined in solara.server.settings - it is a server-only
+    # feature and its knobs are coupled to server siblings (kernel.cull_timeout,
+    # session.secret_key, main.mode) - but it stays reachable as solara.settings.state too.
+    # PEP 562 keeps the import lazy so this module never eagerly pulls in server modules.
+    if name == "state":
+        import solara.server.settings
+
+        return solara.server.settings.state
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

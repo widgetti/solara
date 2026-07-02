@@ -26,7 +26,7 @@ import threading
 import weakref
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Set, Tuple
 
-from solara.state._settings import state_settings
+import solara.settings
 import solara.util
 
 from . import derive
@@ -170,7 +170,7 @@ def _reset_registry() -> None:
 
 
 def _default_ttl() -> float:
-    ttl = state_settings().ttl
+    ttl = solara.settings.state.ttl
     if ttl:
         return solara.util.parse_timedelta(ttl)
     try:
@@ -341,16 +341,35 @@ class KernelStatePersistence:
     def watch(self, reactive: "Reactive", storage_key: str) -> None:
         """Dirty-mark ``storage_key`` on every real change of ``reactive`` in this context.
 
-        ``subscribe_change`` fires after the ``equals`` dedup and hands the unwrapped new
-        value; we deliberately do not capture it (flush peeks fresh). NO I/O here, ever.
+        We deliberately do not capture the value (flush peeks fresh). NO I/O here, ever.
         Idempotent per key, so ``watch_all`` and late-registration cannot double-subscribe.
+
+        The subscription goes to the reactive's INNER kernel store, not through the public
+        ``subscribe_change``: the mutation-detection wrapper delivers unwrapped values via
+        internal assertions that do not survive two live contexts sharing one kernel id
+        (the instance-A/instance-B failover topology - toestand scopes listeners by kernel
+        *id*, so A's wrapper can fire for B's write and assert on B's store value while
+        peeking A's). The dirty-mark ignores the delivered values, so it needs none of the
+        wrapper's delivery - only its equals-dedup, replicated below on unwrapped values.
         """
         with self._dirty_lock:
             if storage_key in self._watched:
                 return
             self._watched.add(storage_key)
 
-        def _mark_dirty(_new: Any, _old: Any, storage_key: str = storage_key) -> None:
+        from solara._stores import StoreValue, _SetValueNotSet
+        from solara.toestand import KernelStore
+
+        def _unwrap(value: Any) -> Any:
+            if isinstance(value, StoreValue):
+                return value.set_value if not isinstance(value.set_value, _SetValueNotSet) else value.private
+            return value
+
+        def _mark_dirty(new: Any, old: Any, storage_key: str = storage_key) -> None:
+            # with mutation detection on, the inner store fires a fresh StoreValue wrapper on
+            # every set (its equals cannot dedup wrappers); replicate the public wrapper's dedup
+            if isinstance(new, StoreValue) and reactive.equals(_unwrap(new), _unwrap(old)):
+                return
             with self._dirty_lock:
                 was_clean = not self._dirty
                 self._dirty.add(storage_key)
@@ -361,8 +380,11 @@ class KernelStatePersistence:
                 if scheduler is not None:
                     scheduler()
 
+        storage = reactive._storage
+        inner = storage if isinstance(storage, KernelStore) else getattr(storage, "_storage", None)
+        assert isinstance(inner, KernelStore), f"cannot watch reactive with storage {type(storage).__name__}"
         with self.context:
-            self._unsubscribers.append(reactive.subscribe_change(_mark_dirty))
+            self._unsubscribers.append(inner.subscribe_change(_mark_dirty))
 
     def set_flush_scheduler(self, scheduler: Optional[Callable[[], None]]) -> None:
         """Install (or clear) the callback the write-behind worker arms on the clean->dirty edge."""

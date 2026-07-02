@@ -93,8 +93,9 @@ def test_single_process_failover_loop(backend):
     with context:
         r.value = "restored-value"
     # the debounced worker flushes it to the backend
-    assert wait_until(lambda: not context.state_persistence.dirty_keys)
-    assert backend.peek_generation(kernel_id) == 1
+    # wait on the backend observable: flush_now drains the dirty set BEFORE the write,
+    # so waiting on not-dirty would race the backend I/O
+    assert wait_until(lambda: backend.peek_generation(kernel_id) == 1)
 
     # evict (the server half of simulateFailover): flush-and-leave + remove the in-memory context
     context.close(reason="evicted")
@@ -123,8 +124,7 @@ def test_double_reconnect_supersedes_stale_context(backend):
     context_a.page_connect("pageA")
     with context_a:
         r.value = "from-A"
-    assert wait_until(lambda: not context_a.state_persistence.dirty_keys)
-    assert backend.peek_generation(kernel_id) == 1
+    assert wait_until(lambda: backend.peek_generation(kernel_id) == 1)
 
     # simulate instance B taking over on another instance: takeover bumps to 2, then flush "from-B"
     result_b = backend.takeover(kernel_id, shmac, SCHEMA_TAG)
@@ -227,8 +227,9 @@ def _connect_flush(backend, key, value, session_id, kernel_id):
     context.page_connect("p1")
     with context:
         r.value = value
-    assert wait_until(lambda: not context.state_persistence.dirty_keys)
-    assert backend.peek_generation(kernel_id) == 1
+    # wait on the backend observable: flush_now drains the dirty set BEFORE the write,
+    # so waiting on not-dirty would race the backend I/O
+    assert wait_until(lambda: backend.peek_generation(kernel_id) == 1)
     return context
 
 

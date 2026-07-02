@@ -8,7 +8,7 @@ commit 3 adds the Redis backend, commit 4 the client soft-remount.
 import threading
 from typing import Dict, Optional
 
-from solara.state._settings import state_settings
+import solara.settings
 import solara.util
 
 from .backend import StateBackend, TakeoverResult
@@ -79,7 +79,7 @@ def get_backend() -> Optional[StateBackend]:
     global _backend, _backend_built
     if _backend_built:
         return _backend
-    name = state_settings().backend
+    name = solara.settings.state.backend
     if not name:
         _backend = None
     elif name not in state_backend_map:
@@ -156,7 +156,7 @@ def effective_schema_tag() -> str:
     version. A mismatch on takeover triggers a clean state reset (fresh start + soft-remount),
     so this must be stable within one deploy and change when the persisted value shape does.
     """
-    tag = state_settings().schema_tag
+    tag = solara.settings.state.schema_tag
     if tag:
         return tag
     return "solara-" + solara.__version__
@@ -169,7 +169,7 @@ def validate_state_settings() -> None:
     - when a backend is configured, secret keys must be non-empty and not the placeholder,
       and the backend name must be known.
     """
-    st = state_settings()
+    st = solara.settings.state
     keys = st.secret_key_list()
     default_or_empty = (not keys) or any(key == "change me" for key in keys)
     if st.allow_pickle and default_or_empty:

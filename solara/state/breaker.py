@@ -20,7 +20,7 @@ import threading
 import time
 from typing import Callable, Optional
 
-from solara.state._settings import state_settings
+import solara.settings
 import solara.util
 
 from .stats import log_breaker, stats
@@ -40,9 +40,9 @@ class CircuitBreaker:
         clock: Callable[[], float] = time.monotonic,
     ) -> None:
         """Create a breaker. ``failures``/``window`` default to the ``state`` settings when None."""
-        self._failures_threshold = state_settings().breaker_failures if failures is None else failures
+        self._failures_threshold = solara.settings.state.breaker_failures if failures is None else failures
         if window is None:
-            window = solara.util.parse_timedelta(state_settings().breaker_window)
+            window = solara.util.parse_timedelta(solara.settings.state.breaker_window)
         self._window = window
         self._clock = clock
         self._lock = threading.Lock()
