@@ -210,8 +210,9 @@ def test_breaker_open_leaves_keys_dirty_then_drains(worker_factory):
     # let the window elapse; the re-armed timer retries and, with the breaker now closing on a
     # successful probe, drains the dirty keys (no permanent stranding)
     clock.advance(30.0)
-    assert wait_until(lambda: manager.dirty_keys == set())
-    assert backend.peek_generation(context.id) == 1
+    # wait on the backend observable: flush_now drains dirty BEFORE the write lands
+    assert wait_until(lambda: backend.peek_generation(context.id) == 1)
+    assert manager.dirty_keys == set()
     assert breaker.state == "closed"
 
 
@@ -239,11 +240,10 @@ def test_rejection_connected_retakes_once(worker_factory):
     with context:
         r.value = "from-A-again"
     # A's flush is fenced (gen 1 != 2) -> exactly one re-takeover to gen 3, then re-flush
-    assert wait_until(lambda: manager.generation == 3)
+    assert wait_until(lambda: manager.generation == 3 and backend.peek_generation(kernel_id) == 3)
     assert wait_until(lambda: manager.dirty_keys == set())
     assert worker.retakeovers_this_epoch == 1
     assert not manager.disabled
-    assert backend.peek_generation(kernel_id) == 3
     # the new generation's data is A's latest in-memory value (the takeover read was discarded)
     result = backend.takeover(kernel_id, shmac, SCHEMA_TAG)
     assert decode(result.fields[field], kernel_id=kernel_id, field_name=field) == "from-A-again"
@@ -321,12 +321,15 @@ def test_new_epoch_resets_retakeover_budget(worker_factory):
 
     with context:
         r.value = "a"
-    assert wait_until(lambda: manager.dirty_keys == set())  # flushed at gen 1
+    # confirm the gen-1 flush LANDED before bumping the generation below - an in-flight flush
+    # would get fenced and spend the retake budget on the wrong write (dirty empties before
+    # the backend write completes)
+    assert wait_until(lambda: backend.peek_generation(kernel_id) == 1 and manager.dirty_keys == set())
     # someone takes over -> gen 2; A re-takes once (gen 3)
     backend.takeover(kernel_id, shmac, SCHEMA_TAG)
     with context:
         r.value = "b"
-    assert wait_until(lambda: manager.generation == 3 and manager.dirty_keys == set())
+    assert wait_until(lambda: manager.generation == 3 and backend.peek_generation(kernel_id) == 3 and manager.dirty_keys == set())
     assert worker.retakeovers_this_epoch == 1
 
     # a genuine reconnect starts a new epoch and restores the budget
@@ -335,7 +338,7 @@ def test_new_epoch_resets_retakeover_budget(worker_factory):
     backend.takeover(kernel_id, shmac, SCHEMA_TAG)  # gen 4
     with context:
         r.value = "c"
-    assert wait_until(lambda: manager.generation == 5 and manager.dirty_keys == set())
+    assert wait_until(lambda: manager.generation == 5 and backend.peek_generation(kernel_id) == 5 and manager.dirty_keys == set())
     assert worker.retakeovers_this_epoch == 1
     assert not manager.disabled
 
