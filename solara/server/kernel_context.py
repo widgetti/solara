@@ -93,6 +93,11 @@ class VirtualKernelContext:
     app_object: Optional[Any] = None
     reload: Callable = lambda: None  # noqa: E731
     state: Any = None
+    # per-kernel opt-in state-persistence manager (solara.state.persist.KernelStatePersistence),
+    # attached after a successful backend takeover; None when persistence is off. The restore
+    # seam in solara.toestand.KernelStore.get() reads it; the server wiring that populates it
+    # lands in commit 2 of the state-persistence feature.
+    state_persistence: Optional[Any] = None
     container: Optional[DOMWidget] = None
     # we track which pages are connected to implement kernel culling
     page_status: Dict[str, PageStatus] = dataclasses.field(default_factory=dict)

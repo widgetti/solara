@@ -21,6 +21,7 @@ dependencies = [
     "ipyvue>=1.9.0",
     "requests",
     "humanize",
+    "executing",
 ]
 
 [project.urls]

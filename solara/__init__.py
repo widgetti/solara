@@ -51,6 +51,7 @@ except ModuleNotFoundError:
 from . import util
 
 from .reactive import *
+from .state.persist import PersistConfig
 
 from .datatypes import *
 from .hooks import *

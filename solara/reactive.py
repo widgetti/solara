@@ -1,14 +1,23 @@
-from typing import Any, Callable, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, Union
 
 from solara.toestand import Reactive
 import solara.util
+
+if TYPE_CHECKING:
+    from solara.state.persist import PersistConfig
 
 __all__ = ["reactive", "Reactive"]
 
 T = TypeVar("T")
 
 
-def reactive(value: T, equals: Callable[[Any, Any], bool] = solara.util.equals_extra) -> Reactive[T]:
+def reactive(
+    value: T,
+    equals: Callable[[Any, Any], bool] = solara.util.equals_extra,
+    *,
+    key: Optional[str] = None,
+    persist: "Union[bool, PersistConfig]" = False,
+) -> Reactive[T]:
     """Creates a new Reactive object with the given initial value.
 
     Reactive objects are mostly used to manage global or application-wide state in
@@ -40,6 +49,15 @@ def reactive(value: T, equals: Callable[[Any, Any], bool] = solara.util.equals_e
             The default function is `solara.util.equals`, which performs a deep comparison of the two values
             and is more forgiving than the default `==` operator.
             You can provide a custom function if you need to define a different notion of equality.
+        key: A stable storage key for this reactive variable. Required to be stable across
+            processes/refactors when combined with `persist=` (when omitted there, the key is
+            derived from the definition site for module-level single-name assignments and class
+            attributes; anything ambiguous raises a `ValueError` demanding an explicit key).
+        persist: Opt this reactive variable into state persistence. `True` uses the default
+            configuration (JSON serializer); pass a `solara.PersistConfig(key=..., serializer=...)`
+            for control. When falsy (the default) the reactive behaves exactly as before, with
+            zero persistence overhead. Persistence requires a state backend to be configured
+            on the server (see the state persistence documentation).
 
 
     Returns:
@@ -96,4 +114,4 @@ def reactive(value: T, equals: Callable[[Any, Any], bool] = solara.util.equals_e
     Whenever the counter value changes, `CounterDisplay` automatically updates to display the new value.
 
     """
-    return Reactive(value, equals=equals)
+    return Reactive(value, equals=equals, key=key, persist=persist)
