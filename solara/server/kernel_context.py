@@ -709,8 +709,10 @@ def _reuse_context_is_stale(context: VirtualKernelContext, backend) -> bool:
     if not breaker.allow():
         return False
     try:
-        # TODO(commit 3): deadline-wrap this peek like the takeover, so a hung Redis cannot block
-        # the reconnect path; the breaker bounds sustained brownouts today.
+        # The redis backend builds its client with socket_timeout/socket_connect_timeout set to
+        # state.connect_timeout, so peek_generation (a single HGET) is bounded at the client level
+        # even on the reuse branch - a hung Redis cannot block the reconnect path. The breaker
+        # additionally bounds sustained brownouts.
         stored = backend.peek_generation(context.id)
         breaker.record_success()
     except Exception:  # noqa

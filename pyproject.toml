@@ -77,6 +77,12 @@ cache = [
     "cachetools"
 ]
 
+# the redis state backend for opt-in reactive state persistence (imported lazily, only when
+# SOLARA_STATE_BACKEND=redis). Not a hard dependency. Covers Valkey/KeyDB/Dragonfly via redis-py.
+redis = [
+    "redis>=4.2"
+]
+
 extra = [
     "numpy",
     "pillow",

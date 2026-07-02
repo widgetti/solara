@@ -1,3 +1,4 @@
+import os
 import threading
 
 import pytest
@@ -13,9 +14,39 @@ SESSION_B = b"session-hmac-b"
 TTL = 60.0
 
 
-@pytest.fixture
-def backend():
-    return MemoryStateBackend()
+@pytest.fixture(params=["memory", "fakeredis", "redis"])
+def backend(request):
+    """The shared four-verb contract, parametrized across every backend.
+
+    - ``memory``: the in-process reference backend.
+    - ``fakeredis``: the real RedisStateBackend (Lua scripts and all) driven by an in-process
+      fakeredis[lua] server, so the fenced Lua is exercised on every contract assertion.
+    - ``redis``: the same against a real server; opt-in via ``SOLARA_TEST_REDIS_URL`` (a throwaway
+      db - the fixture ``flushdb()``s around each test), skipped otherwise so CI can enable it later.
+    """
+    if request.param == "memory":
+        yield MemoryStateBackend()
+        return
+    if request.param == "fakeredis":
+        fakeredis = pytest.importorskip("fakeredis")
+        from solara.state.redis import RedisStateBackend
+
+        server = fakeredis.FakeServer()
+        yield RedisStateBackend(client=fakeredis.FakeRedis(server=server))
+        return
+    # real redis (opt-in): the same contract against a live server
+    url = os.environ.get("SOLARA_TEST_REDIS_URL")
+    if not url:
+        pytest.skip("set SOLARA_TEST_REDIS_URL to run the contract against a real redis server")
+    redis = pytest.importorskip("redis")
+    from solara.state.redis import RedisStateBackend
+
+    client = redis.Redis.from_url(url, decode_responses=False)
+    client.flushdb()
+    try:
+        yield RedisStateBackend(client=client)
+    finally:
+        client.flushdb()
 
 
 def test_miss_writes_nothing(backend):
@@ -107,6 +138,10 @@ def test_unfenced_delete(backend):
 
 
 def test_ttl_expiry_via_monkeypatched_clock(backend):
+    if not isinstance(backend, MemoryStateBackend):
+        # redis has its own clock; clock injection is memory-only. Redis TTL (EXPIRE set on
+        # create, refreshed on flush and takeover) is covered in state_redis_test.py.
+        pytest.skip("clock injection is memory-only; redis TTL is covered in state_redis_test.py")
     now = [0.0]
     backend._clock = lambda: now[0]
     backend.flush("k", 1, {"reactive:x": b"e1"}, 10.0, SESSION_A, "v1")
