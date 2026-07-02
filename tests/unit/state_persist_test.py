@@ -20,6 +20,7 @@ from typing import Any
 import pytest
 
 import solara
+import solara.server.settings
 import solara.settings
 import solara.toestand as toestand
 import solara.server.kernel_context as kernel_context
@@ -34,7 +35,7 @@ SESSION_ID = "test-session"
 
 @pytest.fixture(autouse=True)
 def state_env(monkeypatch):
-    monkeypatch.setattr(solara.settings.state, "secret_keys", "unit-test-secret-key")
+    monkeypatch.setattr(solara.server.settings.state, "secret_keys", "unit-test-secret-key")
     derive._reset_registry()
     persist._reset_registry()
     yield

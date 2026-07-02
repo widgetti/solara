@@ -17,7 +17,7 @@ from unittest.mock import Mock
 import pytest
 
 import solara
-import solara.settings
+import solara.server.settings
 import solara.state
 import solara.server.kernel_context as kc
 from solara.server import kernel
@@ -70,7 +70,7 @@ def test_flush_rejection_writes_nothing(rb):
 
 def test_ttl_present_and_refreshed(rb, monkeypatch):
     # takeover has no ttl arg; it refreshes using the settings TTL, so make that deterministic
-    monkeypatch.setattr(solara.settings.state, "ttl", "100s")
+    monkeypatch.setattr(solara.server.settings.state, "ttl", "100s")
     key = rb._key("k")
     rb.flush("k", 1, {"reactive:x": b"e1"}, TTL, SESSION_A, "v1")
     assert 0 < rb.client.ttl(key) <= 60  # EXPIRE set on first flush, from the passed ttl
@@ -104,7 +104,7 @@ def test_envelope_bytes_round_trip_exactly(rb):
 
 
 def test_prefix_respected(monkeypatch):
-    monkeypatch.setattr(solara.settings.state, "prefix", "custom:pfx:")
+    monkeypatch.setattr(solara.server.settings.state, "prefix", "custom:pfx:")
     be = _new_backend()  # constructed AFTER the prefix change, so it reads the new prefix
     be.flush("kk", 1, {"reactive:x": b"e"}, TTL, SESSION_A, "v1")
     assert be.client.exists("custom:pfx:kk")
@@ -124,7 +124,7 @@ def test_missing_session_id_hard_rejects(rb):
 def test_lazy_import_error_message(monkeypatch):
     # make `import redis` fail even though the package is installed, to prove the message
     monkeypatch.setitem(sys.modules, "redis", None)
-    monkeypatch.setattr(solara.settings.state, "url", "redis://localhost:6379/0")
+    monkeypatch.setattr(solara.server.settings.state, "url", "redis://localhost:6379/0")
     with pytest.raises(ImportError) as excinfo:
         RedisStateBackend()  # no injected client -> _make_client -> import redis
     message = str(excinfo.value)
@@ -133,7 +133,7 @@ def test_lazy_import_error_message(monkeypatch):
 
 
 def test_make_client_requires_url(monkeypatch):
-    monkeypatch.setattr(solara.settings.state, "url", "")
+    monkeypatch.setattr(solara.server.settings.state, "url", "")
     with pytest.raises(ValueError):
         RedisStateBackend()  # no url and no injected client
 
@@ -154,9 +154,9 @@ def wait_until(pred: Callable[[], bool], timeout: float = 2.0, interval: float =
 def state_env(monkeypatch):
     from solara.state import derive, persist, stats
 
-    monkeypatch.setattr(solara.settings.state, "secret_keys", "unit-test-secret-key")
-    monkeypatch.setattr(solara.settings.state, "schema_tag", SCHEMA_TAG)
-    monkeypatch.setattr(solara.settings.state, "flush_debounce", "10ms")
+    monkeypatch.setattr(solara.server.settings.state, "secret_keys", "unit-test-secret-key")
+    monkeypatch.setattr(solara.server.settings.state, "schema_tag", SCHEMA_TAG)
+    monkeypatch.setattr(solara.server.settings.state, "flush_debounce", "10ms")
     derive._reset_registry()
     persist._reset_registry()
     persist._attached_managers.clear()

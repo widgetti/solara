@@ -24,7 +24,7 @@ import threading
 import time
 from typing import Callable, Optional
 
-import solara.settings
+from solara.state._settings import state_settings
 import solara.util
 
 from .breaker import CircuitBreaker
@@ -50,7 +50,7 @@ def _parse_debounce(text: str) -> float:
 
 
 def _default_debounce() -> float:
-    return _parse_debounce(solara.settings.state.flush_debounce)
+    return _parse_debounce(state_settings().flush_debounce)
 
 
 class KernelFlushWorker:

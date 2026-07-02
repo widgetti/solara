@@ -397,7 +397,7 @@ def close(request: Request):
 
 def _eviction_enabled() -> bool:
     # fail-closed (§6.4): only in an explicitly test-enabled, non-production deployment
-    return solara.settings.state.test_eviction and settings.main.mode != "production"
+    return settings.state.test_eviction and settings.main.mode != "production"
 
 
 async def evict(request: Request):
@@ -656,7 +656,7 @@ def on_startup():
         logger.exception("invalid state-persistence configuration")
         raise
     # the dev/test-only kernel-eviction route must never be live in production (§6.4, fail-closed)
-    if solara.settings.state.test_eviction and settings.main.mode == "production":
+    if settings.state.test_eviction and settings.main.mode == "production":
         logger.error("SOLARA_STATE_TEST_EVICTION is enabled but mode is 'production': the kernel-eviction route stays DISABLED. Never enable it in production.")
     # TODO: configure and set max number of threads
     # see https://github.com/encode/starlette/issues/1724

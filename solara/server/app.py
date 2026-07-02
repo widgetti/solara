@@ -468,10 +468,10 @@ def _can_recover(context: "kernel_context.VirtualKernelContext") -> bool:
     fully URL/DB-derived need no backend), AND ``auto_remount`` is not forced off, AND the context
     did not bail out during restore (a recovery-failed context must hard-refresh, §4.3).
     """
-    import solara.settings
+    import solara.server.settings
     import solara.state
 
-    auto_remount = solara.settings.state.auto_remount
+    auto_remount = solara.server.settings.state.auto_remount
     if auto_remount is False:
         return False
     manager = context.state_persistence

@@ -5,7 +5,7 @@ import uuid
 
 import pytest
 
-import solara.settings
+import solara.server.settings
 import solara.state as state
 from solara.state import CodecError, EnvelopeError, HmacError, SerializeError
 
@@ -22,8 +22,8 @@ class Size(enum.IntEnum):
 
 @pytest.fixture(autouse=True)
 def _secret_keys(monkeypatch):
-    monkeypatch.setattr(solara.settings.state, "secret_keys", "primary-test-key")
-    monkeypatch.setattr(solara.settings.state, "allow_pickle", False)
+    monkeypatch.setattr(solara.server.settings.state, "secret_keys", "primary-test-key")
+    monkeypatch.setattr(solara.server.settings.state, "allow_pickle", False)
 
 
 def roundtrip(value, codec="json", kernel_id="kern", field_name="field"):
@@ -127,10 +127,10 @@ def test_cross_field_replay_rejected():
 
 
 def test_key_rotation_add_new_key_first(monkeypatch):
-    monkeypatch.setattr(solara.settings.state, "secret_keys", "oldkey")
+    monkeypatch.setattr(solara.server.settings.state, "secret_keys", "oldkey")
     old_blob = state.encode({"x": 1}, kernel_id="k", field_name="f")
     # add-new-verify-only: new key goes first (becomes the signer) but the old still verifies
-    monkeypatch.setattr(solara.settings.state, "secret_keys", "newkey,oldkey")
+    monkeypatch.setattr(solara.server.settings.state, "secret_keys", "newkey,oldkey")
     assert state.decode(old_blob, kernel_id="k", field_name="f") == {"x": 1}
     new_blob = state.encode({"y": 2}, kernel_id="k", field_name="f")
     assert state.decode(new_blob, kernel_id="k", field_name="f") == {"y": 2}
@@ -139,9 +139,9 @@ def test_key_rotation_add_new_key_first(monkeypatch):
 
 
 def test_dropping_signing_key_invalidates_its_envelopes(monkeypatch):
-    monkeypatch.setattr(solara.settings.state, "secret_keys", "oldkey")
+    monkeypatch.setattr(solara.server.settings.state, "secret_keys", "oldkey")
     old_blob = state.encode({"x": 1}, kernel_id="k", field_name="f")
-    monkeypatch.setattr(solara.settings.state, "secret_keys", "brandnew")
+    monkeypatch.setattr(solara.server.settings.state, "secret_keys", "brandnew")
     with pytest.raises(HmacError):
         state.decode(old_blob, kernel_id="k", field_name="f")
 
@@ -163,34 +163,34 @@ def test_unknown_codec_raises_codec_error():
 
 
 def test_pickle_gate_off_refuses_encode_and_decode(monkeypatch):
-    monkeypatch.setattr(solara.settings.state, "allow_pickle", False)
+    monkeypatch.setattr(solara.server.settings.state, "allow_pickle", False)
     with pytest.raises(CodecError) as excinfo:
         state.encode({"x": 1}, codec="pickle", kernel_id="k", field_name="f")
     assert "SOLARA_STATE_ALLOW_PICKLE" in str(excinfo.value)
 
 
 def test_pickle_gate_on_roundtrips_then_decode_refuses_when_flipped_off(monkeypatch):
-    monkeypatch.setattr(solara.settings.state, "allow_pickle", True)
+    monkeypatch.setattr(solara.server.settings.state, "allow_pickle", True)
     blob = state.encode({"z": 3}, codec="pickle", kernel_id="k", field_name="f")
     assert state.decode(blob, kernel_id="k", field_name="f") == {"z": 3}
-    monkeypatch.setattr(solara.settings.state, "allow_pickle", False)
+    monkeypatch.setattr(solara.server.settings.state, "allow_pickle", False)
     with pytest.raises(CodecError):
         state.decode(blob, kernel_id="k", field_name="f")
 
 
 def test_missing_secret_keys_raises(monkeypatch):
-    monkeypatch.setattr(solara.settings.state, "secret_keys", "")
+    monkeypatch.setattr(solara.server.settings.state, "secret_keys", "")
     with pytest.raises(EnvelopeError):
         state.encode({"x": 1}, kernel_id="k", field_name="f")
 
 
 def test_session_hmac_deterministic_and_key_dependent(monkeypatch):
-    monkeypatch.setattr(solara.settings.state, "secret_keys", "keyA")
+    monkeypatch.setattr(solara.server.settings.state, "secret_keys", "keyA")
     first = state.session_hmac("session-123")
     assert first == state.session_hmac("session-123")
     assert first != state.session_hmac("session-456")
     assert len(first) == 32
-    monkeypatch.setattr(solara.settings.state, "secret_keys", "keyB")
+    monkeypatch.setattr(solara.server.settings.state, "secret_keys", "keyB")
     assert first != state.session_hmac("session-123")
 
 

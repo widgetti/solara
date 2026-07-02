@@ -3,7 +3,7 @@ import threading
 
 import pytest
 
-import solara.settings
+import solara.server.settings
 import solara.state as state
 from solara.state import MemoryStateBackend
 
@@ -186,7 +186,7 @@ def test_concurrent_flushes_never_interleave_partially(backend):
 
 
 def test_get_backend_disabled_by_default(monkeypatch):
-    monkeypatch.setattr(solara.settings.state, "backend", "")
+    monkeypatch.setattr(solara.server.settings.state, "backend", "")
     state.reset_backend()
     try:
         assert state.get_backend() is None
@@ -195,7 +195,7 @@ def test_get_backend_disabled_by_default(monkeypatch):
 
 
 def test_get_backend_memory_singleton(monkeypatch):
-    monkeypatch.setattr(solara.settings.state, "backend", "memory")
+    monkeypatch.setattr(solara.server.settings.state, "backend", "memory")
     state.reset_backend()
     try:
         one = state.get_backend()
@@ -206,7 +206,7 @@ def test_get_backend_memory_singleton(monkeypatch):
 
 
 def test_get_backend_unknown_raises(monkeypatch):
-    monkeypatch.setattr(solara.settings.state, "backend", "does-not-exist")
+    monkeypatch.setattr(solara.server.settings.state, "backend", "does-not-exist")
     state.reset_backend()
     try:
         with pytest.raises(ValueError):
@@ -216,36 +216,36 @@ def test_get_backend_unknown_raises(monkeypatch):
 
 
 def test_validate_state_settings_ok_when_disabled(monkeypatch):
-    monkeypatch.setattr(solara.settings.state, "backend", "")
-    monkeypatch.setattr(solara.settings.state, "secret_keys", "")
-    monkeypatch.setattr(solara.settings.state, "allow_pickle", False)
+    monkeypatch.setattr(solara.server.settings.state, "backend", "")
+    monkeypatch.setattr(solara.server.settings.state, "secret_keys", "")
+    monkeypatch.setattr(solara.server.settings.state, "allow_pickle", False)
     state.validate_state_settings()  # no error
 
 
 def test_validate_state_settings_requires_secrets_when_enabled(monkeypatch):
-    monkeypatch.setattr(solara.settings.state, "backend", "memory")
-    monkeypatch.setattr(solara.settings.state, "secret_keys", "")
+    monkeypatch.setattr(solara.server.settings.state, "backend", "memory")
+    monkeypatch.setattr(solara.server.settings.state, "secret_keys", "")
     with pytest.raises(ValueError):
         state.validate_state_settings()
 
 
 def test_validate_state_settings_rejects_placeholder_secret(monkeypatch):
-    monkeypatch.setattr(solara.settings.state, "backend", "memory")
-    monkeypatch.setattr(solara.settings.state, "secret_keys", "change me")
+    monkeypatch.setattr(solara.server.settings.state, "backend", "memory")
+    monkeypatch.setattr(solara.server.settings.state, "secret_keys", "change me")
     with pytest.raises(ValueError):
         state.validate_state_settings()
 
 
 def test_validate_state_settings_ok_with_real_secret(monkeypatch):
-    monkeypatch.setattr(solara.settings.state, "backend", "memory")
-    monkeypatch.setattr(solara.settings.state, "secret_keys", "a-real-secret")
-    monkeypatch.setattr(solara.settings.state, "allow_pickle", False)
+    monkeypatch.setattr(solara.server.settings.state, "backend", "memory")
+    monkeypatch.setattr(solara.server.settings.state, "secret_keys", "a-real-secret")
+    monkeypatch.setattr(solara.server.settings.state, "allow_pickle", False)
     state.validate_state_settings()  # no error
 
 
 def test_validate_state_settings_pickle_gate_needs_real_secret(monkeypatch):
-    monkeypatch.setattr(solara.settings.state, "backend", "")
-    monkeypatch.setattr(solara.settings.state, "secret_keys", "")
-    monkeypatch.setattr(solara.settings.state, "allow_pickle", True)
+    monkeypatch.setattr(solara.server.settings.state, "backend", "")
+    monkeypatch.setattr(solara.server.settings.state, "secret_keys", "")
+    monkeypatch.setattr(solara.server.settings.state, "allow_pickle", True)
     with pytest.raises(ValueError):
         state.validate_state_settings()

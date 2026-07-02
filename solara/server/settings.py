@@ -118,6 +118,41 @@ class Kernel(BaseSettings):
         env_file = ".env"
 
 
+class State(BaseSettings):
+    """Opt-in reactive state persistence (docs/design-redis-state-persistence.md).
+
+    A server-only feature (restore happens on websocket connect, flushes from the server's
+    write-behind worker), so it lives here with its coupled siblings: ``orphan_cull_timeout``
+    modulates ``Kernel.cull_timeout``, ``secret_keys`` is the deliberate sibling of
+    ``Session.secret_key``, and ``test_eviction`` gates on ``main.mode``.
+    """
+
+    backend: str = ""  # "" = disabled; a name in solara.state.state_backend_map ("redis", "memory", ...)
+    url: str = ""  # backend DSN, e.g. "redis://localhost:6379/0"
+    secret_keys: str = ""  # comma-separated HMAC keys; verify-any, sign-first (rotation). REQUIRED when enabled
+    allow_pickle: bool = False  # deployer gate; the "pickle" codec raises without it
+    ttl: Optional[str] = None  # default: kernel.cull_timeout
+    orphan_cull_timeout: str = "5m"  # applies only with a shared backend
+    prefix: str = "solara:state:"  # key prefix / table name, backend-interpreted
+    flush_debounce: str = "300ms"
+    connect_timeout: float = 0.3  # hard cap on takeover/flush blocking
+    breaker_failures: int = 3  # circuit breaker: consecutive failures to open
+    breaker_window: str = "30s"  # open duration before a half-open probe
+    schema_tag: str = ""  # state-schema tag ("" -> derived); mismatch => clean state reset
+    auto_remount: Optional[bool] = None  # None: on iff backend set; can force on/off
+    bailout_storm_threshold: float = 0.5  # bail-out rate valve
+    test_eviction: bool = False  # dev/test-only kernel-eviction route gate (§6.4); refused in production
+
+    def secret_key_list(self):
+        # secret_keys is a comma-separated env value; minisettings has no native List type here
+        return [key.strip() for key in self.secret_keys.split(",") if key.strip()]
+
+    class Config:
+        env_prefix = "solara_state_"
+        case_sensitive = False
+        env_file = ".env"
+
+
 AUTH0_TEST_CLIENT_ID = "cW7owP5Q52YHMZAnJwT8FPlH2ZKvvL3U"
 AUTH0_TEST_CLIENT_SECRET = "zxITXxoz54OjuSmdn-PluQgAwbeYyoB7ALlnLoodftvAn81usDXW0quchvoNvUYD"
 AUTH0_TEST_API_BASE_URL = "dev-y02f2bpr8skxu785.us.auth0.com"
@@ -202,6 +237,7 @@ assets = Assets()
 oauth = OAuth()
 session = Session()
 kernel = Kernel()
+state = State()
 # fail early
 solara.util.parse_timedelta(kernel.cull_timeout)
 

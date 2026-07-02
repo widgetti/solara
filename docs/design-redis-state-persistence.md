@@ -617,7 +617,15 @@ background code therefore stops with no new API. On top of that:
 
 ### 5.6 Settings
 
-Follow the existing `BaseSettings` pattern (`settings.py:110-118`):
+Follow the existing `BaseSettings` pattern (`settings.py:110-118`). **Placement (decided
+post-PR-review): `solara.server.settings`**, not core `solara.settings` — persistence is a
+server-only feature (every consumer of these settings is a server execution path; the core
+`persist=` API glue reads none of them), and the fields are coupled to server siblings:
+`orphan_cull_timeout` modulates `Kernel.cull_timeout`, `secret_keys` is the deliberate
+sibling of `Session.secret_key`, `test_eviction` gates on `main.mode`. The env-var
+interface (`SOLARA_STATE_*`) is unchanged. Reads from `solara/state/*` go through a lazy
+accessor (`solara/state/_settings.py`, the `routing.py` precedent) so importing the core
+package never eagerly drags server modules on solara.state's account:
 
 ```python
 class State(BaseSettings):

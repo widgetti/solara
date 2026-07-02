@@ -305,7 +305,7 @@ class VirtualKernelContext:
         backend = solara_state.get_backend()
         manager = self.state_persistence
         if backend is not None and backend.shared and manager is not None and not manager.disabled:
-            return solara.util.parse_timedelta(solara.settings.state.orphan_cull_timeout)
+            return solara.util.parse_timedelta(solara.server.settings.state.orphan_cull_timeout)
         return solara.util.parse_timedelta(solara.server.settings.kernel.cull_timeout)
 
     def _bump_kernel_cull(self):
@@ -619,7 +619,7 @@ def _restore_on_connect(context: VirtualKernelContext, backend, session_id: str)
         logger.info("state restore skipped for kernel %s (circuit breaker open)", kernel_id)
         return
 
-    timeout = float(solara.settings.state.connect_timeout)
+    timeout = float(solara.server.settings.state.connect_timeout)
     future = _get_takeover_executor().submit(backend.takeover, kernel_id, shmac, schema_tag)
     try:
         result = future.result(timeout=timeout)

@@ -23,7 +23,7 @@ import sys
 import uuid
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-import solara.settings
+from solara.state._settings import state_settings
 
 __all__ = [
     "encode",
@@ -265,7 +265,7 @@ def _json_loads(blob: bytes) -> Any:
 
 
 def _require_pickle_allowed() -> None:
-    if not solara.settings.state.allow_pickle:
+    if not state_settings().allow_pickle:
         raise CodecError(
             "the 'pickle' codec is disabled. Set SOLARA_STATE_ALLOW_PICKLE=true to enable it. "
             "This is a deployer-side gate: pickle can execute arbitrary code on decode, so it must "
@@ -297,7 +297,7 @@ register_codec("pickle", _pickle_dumps, _pickle_loads)
 
 
 def _secret_keys() -> List[str]:
-    keys = solara.settings.state.secret_key_list()
+    keys = state_settings().secret_key_list()
     if not keys:
         raise EnvelopeError("no state secret keys configured; set SOLARA_STATE_SECRET_KEYS")
     return keys

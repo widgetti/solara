@@ -86,38 +86,10 @@ class Storage(BaseSettings):
         env_file = ".env"
 
 
-class State(BaseSettings):
-    backend: str = ""  # "" = disabled; a name in solara.state.state_backend_map ("redis", "memory", ...)
-    url: str = ""  # backend DSN, e.g. "redis://localhost:6379/0"
-    secret_keys: str = ""  # comma-separated HMAC keys; verify-any, sign-first (rotation). REQUIRED when enabled
-    allow_pickle: bool = False  # deployer gate; the "pickle" codec raises without it
-    ttl: Optional[str] = None  # default: kernel.cull_timeout
-    orphan_cull_timeout: str = "5m"  # applies only with a shared backend
-    prefix: str = "solara:state:"  # key prefix / table name, backend-interpreted
-    flush_debounce: str = "300ms"
-    connect_timeout: float = 0.3  # hard cap on takeover/flush blocking
-    breaker_failures: int = 3  # circuit breaker: consecutive failures to open
-    breaker_window: str = "30s"  # open duration before a half-open probe
-    schema_tag: str = ""  # state-schema tag ("" -> derived); mismatch => clean state reset
-    auto_remount: Optional[bool] = None  # None: on iff backend set; can force on/off
-    bailout_storm_threshold: float = 0.5  # bail-out rate valve
-    test_eviction: bool = False  # dev/test-only kernel-eviction route gate (§6.4); refused in production
-
-    def secret_key_list(self):
-        # secret_keys is a comma-separated env value; minisettings has no native List type here
-        return [key.strip() for key in self.secret_keys.split(",") if key.strip()]
-
-    class Config:
-        env_prefix = "solara_state_"
-        case_sensitive = False
-        env_file = ".env"
-
-
 assets: Assets = Assets()
 cache: Cache = Cache()
 main = MainSettings()
 storage = Storage()
-state = State()
 
 if main.check_hooks not in ["off", "warn", "raise"]:
     raise ValueError(f"Invalid value for check_hooks: {main.check_hooks}, expected one of ['off', 'warn', 'raise']")

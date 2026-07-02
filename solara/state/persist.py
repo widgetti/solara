@@ -26,7 +26,7 @@ import threading
 import weakref
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Set, Tuple
 
-import solara.settings
+from solara.state._settings import state_settings
 import solara.util
 
 from . import derive
@@ -170,7 +170,7 @@ def _reset_registry() -> None:
 
 
 def _default_ttl() -> float:
-    ttl = solara.settings.state.ttl
+    ttl = state_settings().ttl
     if ttl:
         return solara.util.parse_timedelta(ttl)
     try:

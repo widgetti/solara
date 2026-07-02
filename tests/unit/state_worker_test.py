@@ -15,7 +15,7 @@ from typing import Callable
 import pytest
 
 import solara
-import solara.settings
+import solara.server.settings
 import solara.server.kernel_context as kernel_context
 from solara.server import kernel
 from solara.state import CircuitBreaker, FlushOutcome, KernelFlushWorker, MemoryStateBackend, decode, session_hmac, stats
@@ -27,7 +27,7 @@ SESSION_ID = "test-session"
 
 @pytest.fixture(autouse=True)
 def state_env(monkeypatch):
-    monkeypatch.setattr(solara.settings.state, "secret_keys", "unit-test-secret-key")
+    monkeypatch.setattr(solara.server.settings.state, "secret_keys", "unit-test-secret-key")
     from solara.state import derive
 
     derive._reset_registry()

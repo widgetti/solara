@@ -19,7 +19,7 @@ Transparently covers Valkey/KeyDB/Dragonfly (Redis-protocol compatible via redis
 
 from typing import Any, Dict, List, Optional
 
-import solara.settings
+from solara.state._settings import state_settings
 
 from .backend import StateBackend, TakeoverResult
 
@@ -108,7 +108,7 @@ return 1
 class RedisStateBackend(StateBackend):
     """Redis-backed state backend (design §5.2/§5.5/§5.7).
 
-    Constructed with no arguments by ``get_backend()``: it reads ``solara.settings.state.url``
+    Constructed with no arguments by ``get_backend()``: it reads ``state_settings().url``
     (the redis DSN) and ``prefix``, and builds a sync ``redis.Redis`` client whose socket
     timeouts bound *every* operation (the connect deadline in commit 2 relies on this). The
     ``client`` kwarg and the :meth:`_make_client` factory are the test-injection seam.
@@ -118,7 +118,7 @@ class RedisStateBackend(StateBackend):
     shared = True
 
     def __init__(self, client: Optional[Any] = None) -> None:
-        self._prefix = solara.settings.state.prefix
+        self._prefix = state_settings().prefix
         # the client is the injection seam: tests pass a fakeredis client (optionally sharing one
         # FakeServer across two backend instances to model the two-instances-one-redis topology);
         # in production _make_client() builds a real client from settings.
@@ -136,7 +136,7 @@ class RedisStateBackend(StateBackend):
             raise ImportError(
                 "the redis state backend requires the 'redis' package. Install it with `pip install solara[redis]` (or `pip install redis`)."
             ) from exc
-        st = solara.settings.state
+        st = state_settings()
         if not st.url:
             raise ValueError("SOLARA_STATE_URL must be set to a redis DSN (e.g. redis://localhost:6379/0) for the redis state backend")
         # socket_timeout bounds every op incl. peek_generation; socket_connect_timeout bounds connect.

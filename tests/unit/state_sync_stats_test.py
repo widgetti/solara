@@ -9,7 +9,7 @@ restore-byte accounting through the real manager attach path.
 import pytest
 
 import solara
-import solara.settings
+import solara.server.settings
 import solara.server.kernel_context as kernel_context
 from solara.server import kernel
 from solara.state import MemoryStateBackend, encode, session_hmac
@@ -22,7 +22,7 @@ SESSION_ID = "test-session"
 
 @pytest.fixture(autouse=True)
 def state_env(monkeypatch):
-    monkeypatch.setattr(solara.settings.state, "secret_keys", "unit-test-secret-key")
+    monkeypatch.setattr(solara.server.settings.state, "secret_keys", "unit-test-secret-key")
     derive._reset_registry()
     persist._reset_registry()
     stats()._reset()

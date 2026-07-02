@@ -20,7 +20,6 @@ from unittest.mock import Mock
 import pytest
 
 import solara
-import solara.settings
 import solara.server.settings
 import solara.server.kernel_context as kc
 import solara.state
@@ -34,9 +33,9 @@ SCHEMA_TAG = "server-schema-1"
 def state_env(monkeypatch):
     from solara.state import derive
 
-    monkeypatch.setattr(solara.settings.state, "secret_keys", "unit-test-secret-key")
-    monkeypatch.setattr(solara.settings.state, "schema_tag", SCHEMA_TAG)
-    monkeypatch.setattr(solara.settings.state, "flush_debounce", "10ms")
+    monkeypatch.setattr(solara.server.settings.state, "secret_keys", "unit-test-secret-key")
+    monkeypatch.setattr(solara.server.settings.state, "schema_tag", SCHEMA_TAG)
+    monkeypatch.setattr(solara.server.settings.state, "flush_debounce", "10ms")
     derive._reset_registry()
     persist._reset_registry()
     persist._attached_managers.clear()
@@ -180,7 +179,7 @@ def test_restore_timeout_degrades_and_late_deletes(backend, monkeypatch):
     # a hash exists, so the late takeover returns "restored" and the claim-or-delete removes it
     assert backend.flush(kernel_id, 1, {field: encode("v", kernel_id=kernel_id, field_name=field)}, 60.0, shmac, SCHEMA_TAG)
 
-    monkeypatch.setattr(solara.settings.state, "connect_timeout", 0.05)
+    monkeypatch.setattr(solara.server.settings.state, "connect_timeout", 0.05)
     real_takeover = backend.takeover
 
     def slow_takeover(*args, **kwargs):
@@ -203,7 +202,7 @@ def test_restore_timeout_degrades_and_late_deletes(backend, monkeypatch):
 def test_breaker_open_skips_takeover(backend, monkeypatch):
     solara.reactive("x", persist=True, key="test.server.breakeropen")
     breaker = solara.state.get_breaker()
-    for _ in range(solara.settings.state.breaker_failures):
+    for _ in range(solara.server.settings.state.breaker_failures):
         breaker.record_failure()
     assert breaker.state == "open"
 
@@ -257,7 +256,7 @@ def test_orphan_cull_timeout_selection(monkeypatch):
 
     shared = SharedBackend()
     monkeypatch.setattr(solara.state, "get_backend", lambda: shared)
-    monkeypatch.setattr(solara.settings.state, "orphan_cull_timeout", "5m")
+    monkeypatch.setattr(solara.server.settings.state, "orphan_cull_timeout", "5m")
     monkeypatch.setattr(solara.server.settings.kernel, "cull_timeout", "24h")
     solara.reactive(0, persist=True, key="test.server.orphan")
 
@@ -309,7 +308,7 @@ def test_resourcez_state_block_off(monkeypatch):
 
 def test_resourcez_state_block_degraded(backend):
     breaker = solara.state.get_breaker()
-    for _ in range(solara.settings.state.breaker_failures):
+    for _ in range(solara.server.settings.state.breaker_failures):
         breaker.record_failure()
     assert breaker.state == "open"
     data = _call_resourcez()
@@ -334,7 +333,7 @@ def test_evict_route_gating(backend, monkeypatch):
     context = kc.initialize_virtual_kernel(session_id, kernel_id, Mock())
 
     # production mode -> route disabled (fail-closed), even with test_eviction on
-    monkeypatch.setattr(solara.settings.state, "test_eviction", True)
+    monkeypatch.setattr(solara.server.settings.state, "test_eviction", True)
     monkeypatch.setattr(solara.server.settings.main, "mode", "production")
     assert _call_evict(kernel_id, session_id).status_code == 404
     assert not context.closed_event.is_set()

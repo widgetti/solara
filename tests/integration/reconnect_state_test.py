@@ -27,7 +27,7 @@ import pytest
 import requests
 
 import solara
-import solara.settings
+import solara.server.settings
 import solara.state
 import solara.server.kernel_context
 from solara.state import persist, stats
@@ -67,18 +67,18 @@ def Page():
 def state_settings(monkeypatch):
     """Configure the in-process server for memory-backed persistence + the eviction route.
 
-    Settings reach the server via ``solara.settings.state`` (the backend is read at
+    Settings reach the server via ``solara.server.settings.state`` (the backend is read at
     ``get_backend()`` time via a cached singleton), so we mutate the shared settings object and
     reset the singletons. We deliberately do NOT reset the persist registry here (unlike the
     unit-test autouse fixture): the persisted reactive above is registered at MODULE import, so
     clearing the registry would unregister it and disable persistence for the test app.
     """
-    monkeypatch.setattr(solara.settings.state, "backend", "memory")
-    monkeypatch.setattr(solara.settings.state, "secret_keys", "integration-test-secret-key")
-    monkeypatch.setattr(solara.settings.state, "schema_tag", "integration-schema-1")
+    monkeypatch.setattr(solara.server.settings.state, "backend", "memory")
+    monkeypatch.setattr(solara.server.settings.state, "secret_keys", "integration-test-secret-key")
+    monkeypatch.setattr(solara.server.settings.state, "schema_tag", "integration-schema-1")
     # a short debounce plus the bounded final flush on evict makes the flush deterministic
-    monkeypatch.setattr(solara.settings.state, "flush_debounce", "50ms")
-    monkeypatch.setattr(solara.settings.state, "test_eviction", True)
+    monkeypatch.setattr(solara.server.settings.state, "flush_debounce", "50ms")
+    monkeypatch.setattr(solara.server.settings.state, "test_eviction", True)
     solara.state.reset_backend()
     solara.state.reset_breaker()
     stats()._reset()
@@ -170,7 +170,7 @@ def test_eviction_route_disabled_returns_404(solara_server, request, monkeypatch
     """The kernel-eviction route must fail closed: 404 when SOLARA_STATE_TEST_EVICTION is off."""
     if request.node.callspec.params.get("solara_server") != "starlette":
         pytest.skip("The kernel-eviction route only exists on the starlette server.")
-    monkeypatch.setattr(solara.settings.state, "test_eviction", False)
+    monkeypatch.setattr(solara.server.settings.state, "test_eviction", False)
     kernel_id = str(uuid.uuid4())
     url = f"{solara_server.base_url}/_solara/api/evict/{kernel_id}"
     response = requests.post(url, timeout=10)
