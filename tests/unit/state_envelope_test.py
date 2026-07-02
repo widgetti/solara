@@ -203,3 +203,125 @@ def test_register_custom_codec():
         from solara.state import envelope
 
         envelope._CODECS.pop("reverse", None)
+
+
+# --- structured types: pydantic models and dataclasses (self-describing tags) --------------
+#
+# The class travels with the value (module:qualname), so deserialization needs no target
+# class declared anywhere - reactive(None, persist=True) works when a model lands in it
+# later. Decode gates on issubclass(BaseModel)/is_dataclass before instantiating.
+
+import dataclasses  # noqa: E402
+
+import pydantic  # noqa: E402
+
+
+class User(pydantic.BaseModel):
+    name: str
+    color: Color = Color.RED
+    joined: datetime.date = datetime.date(2020, 1, 2)
+
+
+class Team(pydantic.BaseModel):
+    lead: User
+    members: "list[User]"
+    tags: list = []
+
+
+@dataclasses.dataclass
+class Point:
+    x: int
+    y: int
+
+
+@dataclasses.dataclass
+class Path:
+    label: str
+    points: list
+    start: "Point" = dataclasses.field(default_factory=lambda: Point(0, 0))
+    length: int = dataclasses.field(init=False, default=0)
+
+    def __post_init__(self):
+        self.length = len(self.points)
+
+
+def test_pydantic_model_roundtrip():
+    user = User(name="ada", color=Color.BLUE, joined=datetime.date(2021, 3, 4))
+    result = roundtrip(user)
+    assert isinstance(result, User)
+    assert result == user
+    assert result.color is Color.BLUE
+    assert result.joined == datetime.date(2021, 3, 4)
+
+
+def test_pydantic_nested_model_and_container_roundtrip():
+    team = Team(lead=User(name="ada"), members=[User(name="bob", color=Color.BLUE)])
+    result = roundtrip({"team": team, "count": 2})
+    assert isinstance(result["team"], Team)
+    assert isinstance(result["team"].lead, User)
+    # typed fields reconstruct nested models: the codec matches pydantic's own
+    # dump/validate round-trip semantics exactly
+    assert result["team"].members[0].color is Color.BLUE
+
+
+def test_pydantic_untyped_container_matches_pydantic_semantics():
+    # an untyped `list` field means "list of anything" to pydantic: its own
+    # model_validate(model_dump()) round-trip leaves nested models as dicts, and so do we
+    team = Team(lead=User(name="ada"), members=[], tags=[User(name="bob")])
+    pydantic_roundtrip = Team.model_validate(team.model_dump())
+    ours = roundtrip(team)
+    assert isinstance(pydantic_roundtrip.tags[0], dict)
+    assert isinstance(ours.tags[0], dict)
+    assert ours.tags[0]["name"] == "bob"
+
+
+def test_dataclass_roundtrip_nested_with_post_init():
+    path = Path(label="route", points=[Point(1, 2), Point(3, 4)])
+    result = roundtrip(path)
+    assert isinstance(result, Path)
+    assert result == path
+    assert isinstance(result.points[0], Point)
+    # init=False fields are not stored: recomputed by __post_init__
+    assert result.length == 2
+
+
+def test_none_roundtrips_without_class_knowledge():
+    # the Optional[Model]-with-None-default case: None needs no tag, a later model tags itself
+    assert roundtrip(None) is None
+    assert roundtrip(User(name="ada")) == User(name="ada")
+
+
+def test_decode_gate_refuses_non_model_class():
+    from solara.state.envelope import _from_jsonable
+
+    with pytest.raises(CodecError, match="not a pydantic.BaseModel"):
+        _from_jsonable({"__solara_type__": "pydantic", "type": "builtins:dict", "value": {}})
+    with pytest.raises(CodecError, match="not a dataclass"):
+        _from_jsonable({"__solara_type__": "dataclass", "type": "builtins:dict", "value": {}})
+
+
+def test_renamed_class_fails_loud_not_silent():
+    from solara.state.envelope import _from_jsonable
+
+    with pytest.raises(CodecError, match="failed to decode tagged value"):
+        _from_jsonable({"__solara_type__": "dataclass", "type": "tests_no_such_module:Gone", "value": {}})
+
+
+def test_model_shape_skew_fails_loud():
+    # a required field added after the envelope was written -> validation error -> CodecError
+    from solara.state.envelope import _from_jsonable, _to_jsonable
+
+    tree = _to_jsonable(User(name="ada"))
+    del tree["value"]["name"]
+    with pytest.raises(CodecError, match="failed to decode tagged value"):
+        _from_jsonable(tree)
+
+
+def test_reserved_marker_key_in_dict_rejected_at_encode():
+    with pytest.raises(SerializeError, match="reserved"):
+        state.encode({"__solara_type__": "x"}, kernel_id="kern", field_name="field")
+
+
+def test_non_string_dict_key_rejected_at_encode():
+    with pytest.raises(SerializeError, match="dict keys must be str"):
+        state.encode({1: "a"}, kernel_id="kern", field_name="field")

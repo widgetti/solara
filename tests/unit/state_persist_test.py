@@ -435,3 +435,39 @@ def test_zero_overhead_without_persist(monkeypatch):
     r.value = 2
     assert r.value == 2
     assert persist.persisted_reactives() == {}
+
+
+def test_none_default_pydantic_model_full_failover_loop():
+    # THE motivating case for self-describing tags: an Optional[Model] reactive starting as
+    # None - no class is known at definition time, the envelope carries it once a model
+    # lands in the reactive. Full loop: set on kernel A, flush, takeover + restore on B.
+    import pydantic
+
+    class Profile(pydantic.BaseModel):
+        name: str
+        age: int
+
+    # the class must be resolvable by module:qualname on the decoding side; a local class
+    # is not - promote it to module level for the test
+    import sys
+
+    Profile.__qualname__ = "Profile"
+    setattr(sys.modules[__name__], "Profile", Profile)
+    Profile.__module__ = __name__
+
+    key = "test.optional_profile"
+    r: solara.Reactive[Any] = solara.reactive(None, persist=True, key=key)
+    backend = MemoryStateBackend()
+    context_a = make_context("pydantic-kernel")
+    manager_a = fresh_manager(context_a, backend)
+    with context_a:
+        r.value = Profile(name="ada", age=36)
+    assert manager_a.flush_now() == FlushOutcome.OK
+
+    context_b = make_context("pydantic-kernel")
+    manager_b = fresh_manager(context_b, backend)
+    assert not manager_b.recovery_failed
+    with context_b:
+        restored = r.value
+    assert isinstance(restored, Profile)
+    assert restored == Profile(name="ada", age=36)

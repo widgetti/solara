@@ -136,10 +136,20 @@ filters = solara.reactive(
     Filters(),
     persist=solara.PersistConfig(
         key="myapp.filters",
-        serializer="pydantic",     # or "json" (default), "pickle" (gated, §4.2), or a (dumps, loads) pair
+        serializer="json",         # default; or "pickle" (gated, §4.2), or a registered custom codec
     ),
 )
 ```
+
+Pydantic models and dataclasses need no separate serializer (shipped post-v1-review): the
+default json codec tags them **self-describingly** — the envelope records `module:qualname`
+with the value, decode imports the class, gates on
+`issubclass(BaseModel)`/`is_dataclass` (never instantiates an arbitrary class), and
+validates. This is what makes `solara.reactive(None, persist=True)` (`Optional[Model]`)
+work: with a None default no target class exists anywhere at definition time, so the class
+must travel with the value. Trade-off, documented: renaming a persisted model class breaks
+old envelopes (bail-out; schema-tag bump = clean reset). Pydantic round-trip semantics
+match `model_validate(model_dump())` exactly.
 
 `PersistConfig` is deliberately two fields in v1. Cut after review (maintainer): per-
 variable `ttl` (needs emulation the hash can't do natively; kernel-scoped TTL is the

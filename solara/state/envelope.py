@@ -10,6 +10,7 @@ before the restore read, so a generation-bound envelope could never verify).
 """
 
 import base64
+import dataclasses
 import datetime
 import decimal
 import enum
@@ -18,6 +19,7 @@ import hmac
 import importlib
 import json
 import pickle
+import sys
 import uuid
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
@@ -106,6 +108,18 @@ def _coerce_numpy(value: Any) -> Any:
 _UNSET = object()
 
 
+def _get_pydantic_base_model() -> Optional[type]:
+    # pydantic stays an optional dependency: a value can only BE a BaseModel instance if
+    # pydantic is already imported, so sys.modules is sufficient on the encode side
+    pydantic = sys.modules.get("pydantic")
+    return None if pydantic is None else pydantic.BaseModel
+
+
+def _class_tag(value: Any) -> str:
+    cls = type(value)
+    return f"{cls.__module__}:{cls.__qualname__}"
+
+
 def _to_jsonable(value: Any) -> Any:
     # enum first: IntEnum/StrEnum members are also int/str instances
     if isinstance(value, enum.Enum):
@@ -114,6 +128,14 @@ def _to_jsonable(value: Any) -> Any:
     if value is None or isinstance(value, (bool, int, float, str)):
         return value
     if isinstance(value, dict):
+        # strictness guards against silent corruption: a reserved-marker key would be
+        # misread as a tagged value at decode, and json stringifies non-str keys ({1: ..}
+        # would come back as {"1": ..}) - fail loud at the first write instead
+        if _MARKER in value:
+            raise SerializeError(f"dict key {_MARKER!r} is reserved by the json codec")
+        for key in value:
+            if not isinstance(key, str):
+                raise SerializeError(f"dict keys must be str for the json codec (found {type(key).__name__} key {key!r}); json would silently stringify it")
         return {key: _to_jsonable(item) for key, item in value.items()}
     if isinstance(value, list):
         return [_to_jsonable(item) for item in value]
@@ -136,6 +158,25 @@ def _to_jsonable(value: Any) -> Any:
         return {_MARKER: "decimal", "value": str(value)}
     if isinstance(value, (bytes, bytearray)):
         return {_MARKER: "bytes", "value": base64.b64encode(bytes(value)).decode("ascii")}
+    # self-describing structured types: the class travels WITH the value (module:qualname),
+    # so deserialization needs no target class declared anywhere - which is what makes
+    # `solara.reactive(None, persist=True)` work when a model lands in it later. Decode
+    # verifies the resolved class is a BaseModel/dataclass before instantiating (never an
+    # arbitrary class), and runs only after HMAC verification. Trade-off, documented:
+    # renaming/moving the class makes old envelopes undecodable (-> bail-out; bump
+    # SOLARA_STATE_SCHEMA_TAG for a clean reset instead).
+    base_model = _get_pydantic_base_model()
+    if base_model is not None and isinstance(value, base_model):
+        # model_dump() (python mode) keeps nested exotic types (datetime, Enum, nested
+        # models become dicts pydantic re-validates) for our recursive tagging; v1: dict()
+        dump = value.model_dump() if hasattr(value, "model_dump") else value.dict()  # type: ignore[attr-defined]
+        return {_MARKER: "pydantic", "type": _class_tag(value), "value": _to_jsonable(dump)}
+    if dataclasses.is_dataclass(value) and not isinstance(value, type):
+        # recursive tagging is self-describing at every level, so reconstruction is
+        # cls(**fields) with already-decoded children - no type-hint introspection.
+        # init=False fields are derived state: recomputed by __post_init__/defaults, not stored
+        fields = {f.name: _to_jsonable(getattr(value, f.name)) for f in dataclasses.fields(value) if f.init}
+        return {_MARKER: "dataclass", "type": _class_tag(value), "value": fields}
     coerced = _coerce_numpy(value)
     if coerced is not _UNSET:
         return coerced
@@ -176,6 +217,24 @@ def _from_jsonable(value: Any) -> Any:
             if marker == "enum":
                 enum_cls = _resolve(value["type"])
                 return enum_cls(_from_jsonable(value["value"]))
+            if marker == "pydantic":
+                cls = _resolve(value["type"])
+                import pydantic  # decoding a pydantic tag on an instance without pydantic -> ImportError -> CodecError
+
+                # strict gate: only ever instantiate BaseModel subclasses - a forged (but
+                # HMAC-valid) tag must not become an arbitrary-constructor call
+                if not (isinstance(cls, type) and issubclass(cls, pydantic.BaseModel)):
+                    raise CodecError(f"refusing to decode pydantic tag: {value['type']!r} is not a pydantic.BaseModel subclass")
+                fields = _from_jsonable(value["value"])
+                if hasattr(cls, "model_validate"):
+                    return cls.model_validate(fields)
+                return cls.parse_obj(fields)  # type: ignore[attr-defined]  # pydantic v1
+            if marker == "dataclass":
+                cls = _resolve(value["type"])
+                if not (isinstance(cls, type) and dataclasses.is_dataclass(cls)):
+                    raise CodecError(f"refusing to decode dataclass tag: {value['type']!r} is not a dataclass")
+                fields = {key: _from_jsonable(item) for key, item in value["value"].items()}
+                return cls(**fields)
         except EnvelopeError:
             raise
         except Exception as exc:

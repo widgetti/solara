@@ -175,14 +175,44 @@ widget, filter and form state. It round-trips:
 | `uuid.UUID`, `decimal.Decimal` | round-trips faithfully |
 | `bytes` | round-trips faithfully (base64) |
 | `enum.Enum` (incl. `IntEnum` / `StrEnum`) | round-trips faithfully |
+| **Pydantic `BaseModel`** (v2, v1 fallback) | round-trips faithfully (self-describing, see below) |
+| **`dataclass` instances** (incl. nested) | round-trips faithfully (self-describing, see below) |
 | `tuple` | **coerced to `list`** (JSON has no tuple type) |
 | `bytearray` | coerced to `bytes` |
 | `numpy` integer / float scalar | coerced to Python `int` / `float` |
 
-Anything else — including a plain **dataclass or Pydantic model** — raises a `SerializeError`.
-The strict codec fails deterministically on the *first* write, so you hit it immediately in
-development, never silently in production. For structured objects, register a custom codec (see
-below) or hold the state as a plain `dict` of the supported types.
+Anything else raises a `SerializeError`. The strict codec fails deterministically on the *first*
+write, so you hit it immediately in development, never silently in production. For exotic
+objects, register a custom codec (see below).
+
+### Pydantic models and dataclasses
+
+Models and dataclasses are **self-describing**: the envelope records the class
+(`module:qualname`) *with* the value, so deserialization never needs a type declared anywhere —
+which is exactly what makes the common `Optional[Model]` pattern work:
+
+```python
+user = solara.reactive(None, persist=True, key="myapp.user")  # holds None or a User
+```
+
+When a `User` lands in the reactive, the envelope tags it; on restore the class is imported,
+checked (only `BaseModel` subclasses and dataclasses are ever instantiated — never an arbitrary
+class), and validated with `model_validate` (pydantic) or reconstructed field-by-field
+(dataclasses; `init=False` fields are recomputed by `__post_init__`, not stored). Nested
+dataclasses, enums and dates inside models all round-trip. Pydantic semantics are preserved
+exactly: a typed field (`members: list[User]`) reconstructs its models, an untyped `list` field
+round-trips to dicts — the same as pydantic's own `model_validate(model_dump())`.
+
+Two caveats:
+
+> **Renaming or moving a persisted class breaks old envelopes** (the stored `module:qualname`
+> no longer resolves) — the restore bails out and the user gets the refresh dialog. Bump
+> `SOLARA_STATE_SCHEMA_TAG` when you rename model classes for a clean reset instead.
+
+> **Model shape changes follow pydantic rules**: added *optional* fields are compatible; a new
+> *required* field makes old envelopes fail validation (bail-out). Breaking shape changes are
+> what the schema tag is for. Validators and `__post_init__` run during restore, so keep them
+> side-effect-free.
 
 > **Watch out for the `tuple` -> `list` round trip.** A reactive holding a `tuple` restores as a
 > `list`. If your code branches on `isinstance(x, tuple)`, normalize on read or hold a `list`.
@@ -195,30 +225,25 @@ below) or hold the state as a plain `dict` of the supported types.
 
 ### Custom codecs
 
-Register a `(dumps, loads)` pair under a name and select it with `serializer=`. This is the
-supported way to persist dataclasses, Pydantic models or any structured type:
+Register a `(dumps, loads)` pair under a name and select it with `serializer=`. Use this for
+types the JSON codec does not cover, or when you want rename-robust envelopes (a custom codec
+names its class in *code*, not in the stored data, so renaming the class cannot break old
+envelopes as long as the codec keeps up):
 
 ```python
 import json
-import dataclasses
 import solara
 import solara.state
 
 
-@dataclasses.dataclass
-class Filters:
-    country: str = "NL"
-    year: int = 2024
-
-
 solara.state.register_codec(
-    "filters",
-    lambda value: json.dumps(dataclasses.asdict(value)).encode("utf-8"),
-    lambda blob: Filters(**json.loads(blob)),
+    "geo",
+    lambda value: value.to_wkb(),
+    lambda blob: shapely.from_wkb(blob),
 )
 
-filters = solara.reactive(
-    Filters(), persist=solara.PersistConfig(key="myapp.filters", serializer="filters")
+area = solara.reactive(
+    DEFAULT_AREA, persist=solara.PersistConfig(key="myapp.area", serializer="geo")
 )
 ```
 
