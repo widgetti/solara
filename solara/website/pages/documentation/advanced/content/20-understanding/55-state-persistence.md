@@ -199,9 +199,14 @@ When a `User` lands in the reactive, the envelope tags it; on restore the class 
 checked (only `BaseModel` subclasses and dataclasses are ever instantiated — never an arbitrary
 class), and validated with `model_validate` (pydantic) or reconstructed field-by-field
 (dataclasses; `init=False` fields are recomputed by `__post_init__`, not stored). Nested
-dataclasses, enums and dates inside models all round-trip. Pydantic semantics are preserved
+dataclasses, enums and dates inside models all round-trip. **Containers of models work too**:
+a reactive holding `[User, User]` — or models nested in dicts/lists at any depth — restores
+real model instances, because every element carries its own tag (a *tuple* of models comes
+back as a list of models, the usual tuple caveat). Pydantic semantics are preserved
 exactly: a typed field (`members: list[User]`) reconstructs its models, an untyped `list` field
-round-trips to dicts — the same as pydantic's own `model_validate(model_dump())`.
+round-trips to dicts — the same as pydantic's own `model_validate(model_dump())`. (Untyped
+*dataclass* fields do reconstruct models — dataclass fields go through solara's recursive
+tagging rather than `model_dump()`.)
 
 Two caveats:
 

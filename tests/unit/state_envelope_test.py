@@ -325,3 +325,37 @@ def test_reserved_marker_key_in_dict_rejected_at_encode():
 def test_non_string_dict_key_rejected_at_encode():
     with pytest.raises(SerializeError, match="dict keys must be str"):
         state.encode({1: "a"}, kernel_id="kern", field_name="field")
+
+
+def test_containers_of_models_roundtrip():
+    # every element is individually tagged (self-describing at every level), so bare
+    # containers of models reconstruct real instances - no outer schema needed
+    users = [User(name="a"), User(name="b", color=Color.BLUE)]
+    result = roundtrip(users)
+    assert [type(u) for u in result] == [User, User]
+    assert result[1].color is Color.BLUE
+    # tuples of models come back as LISTS of models (the documented tuple caveat)
+    result = roundtrip((User(name="a"), User(name="b")))
+    assert isinstance(result, list)
+    assert [type(u) for u in result] == [User, User]
+    # arbitrary nesting reconstructs too
+    assert type(roundtrip({"team": [{"lead": User(name="x")}]})["team"][0]["lead"]) is User
+
+
+def test_untyped_dataclass_field_reconstructs_models_unlike_pydantic():
+    # asymmetry worth pinning: dataclass fields are tagged by OUR recursion (element by
+    # element), so even an UNTYPED dataclass field reconstructs models - whereas an untyped
+    # pydantic field goes through model_dump() first, which flattens models to dicts
+    # (test_pydantic_untyped_container_matches_pydantic_semantics pins that side)
+    @dataclasses.dataclass
+    class Box:
+        items: list
+
+    import sys
+
+    Box.__qualname__ = "Box"
+    setattr(sys.modules[__name__], "Box", Box)
+    Box.__module__ = __name__
+
+    result = roundtrip(Box(items=[User(name="a")]))
+    assert type(result.items[0]) is User
