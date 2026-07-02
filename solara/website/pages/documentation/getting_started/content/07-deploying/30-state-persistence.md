@@ -152,7 +152,19 @@ endpoint under a `state` block (no backend I/O — it answers "is the feature on
   "superseded_closes": 2,
   "superseded_while_connected": 0,
   "backend_last_ok_age_seconds": 0.4,
-  "backend_last_error": null
+  "backend_last_error": null,
+  "sync_count": 8420,               // fields written and ACKed
+  "sync_bytes_total": 1264000,      // envelope bytes actually written
+  "sync_mb_total": 1.264,
+  "restore_bytes_total": 52000,     // envelope bytes read back on restores
+  "sync_keys_dropped": 0,           // per-key table overflow (capped at 500, then "(other)")
+  "sync_kernels_dropped": 0,
+  "sync_by_key": [                  // top keys by bytes: WHICH VARIABLE costs the most
+    {"key": "myapp.filters", "syncs": 4200, "bytes": 940000, "bytes_per_sync": 223}
+  ],
+  "sync_by_kernel": [               // top kernels by bytes: which session syncs the most
+    {"kernel": "3308f3b8", "syncs": 120, "bytes": 26000, "bytes_per_sync": 216}
+  ]
 }
 ```
 
@@ -160,6 +172,13 @@ The numbers that matter most: the **restore success ratio** after a rolling depl
 that says the feature works; `superseded_while_connected` is the signature of broken stickiness,
 cross-instance multi-tab, or an attack, and should be loud; `status` / `circuit_breaker` tell you
 whether the feature quietly turned itself off.
+
+The **sync tables** answer "are we writing too much?": `sync_by_key` aggregates per persisted
+variable across all kernels (a variable with a large `bytes_per_sync` is a candidate for
+persisting a reference instead of the value), `sync_by_kernel` shows which session writes the
+most (kernel ids are truncated to an 8-character prefix — enough to grep the full id in the
+`solara.state` log lines). Both tables show the top 10 by default and the top 100 with
+`/resourcez?verbose=1`. Only ACKed writes are counted, so retries never double-count.
 
 `/readyz` is deliberately **backend-independent** — gating readiness on a recovery cache would turn
 a Redis blip into a fleet-wide NotReady. Backend health appears only on `/resourcez`.

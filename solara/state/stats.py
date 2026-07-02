@@ -16,9 +16,15 @@ Two things live here:
 import logging
 import threading
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger("solara.state")
+
+# Per-key/per-kernel sync tables are capped: per-user key patterns (key=f"user:{id}:x") and
+# long-lived processes would otherwise grow them unboundedly. Overflow aggregates into an
+# "(other)" bucket and bumps the corresponding *_dropped counter.
+SYNC_TABLE_CAP = 500
+_OTHER = "(other)"
 
 __all__ = [
     "Stats",
@@ -52,6 +58,17 @@ class Stats:
         # backend health (§7a #2); monotonic timestamp of the last acked backend write
         self.backend_last_ok: Optional[float] = None
         self.backend_last_error: Optional[str] = None
+        # sync volume: how much data we actually write, per persisted key (aggregated across
+        # kernels: which VARIABLE costs the most) and per kernel ("per user": which session
+        # syncs the most). Only ACKed writes are recorded - rejected/errored flushes re-mark
+        # their keys dirty and would double-count on retry. Value shape: [syncs, bytes].
+        self.sync_count = 0
+        self.sync_bytes_total = 0
+        self.restore_bytes_total = 0
+        self.sync_keys_dropped = 0
+        self.sync_kernels_dropped = 0
+        self._sync_by_key: Dict[str, List[int]] = {}
+        self._sync_by_kernel: Dict[str, List[int]] = {}
 
     def incr(self, name: str, n: int = 1) -> None:
         """Increment a named integer counter by ``n`` (raises on an unknown counter)."""
@@ -72,8 +89,54 @@ class Stats:
         with self._lock:
             self.backend_last_error = error
 
-    def as_dict(self) -> Dict[str, Any]:
-        """A snapshot for the ``/resourcez`` state block; adds a computed ok-age."""
+    def _bump_sync_table(self, table: Dict[str, List[int]], key: str, nbytes: int, dropped_counter: str) -> None:
+        entry = table.get(key)
+        if entry is None:
+            if len(table) >= SYNC_TABLE_CAP:
+                setattr(self, dropped_counter, getattr(self, dropped_counter) + 1)
+                key = _OTHER
+                entry = table.get(key)
+            if entry is None:
+                entry = table[key] = [0, 0]
+        entry[0] += 1
+        entry[1] += nbytes
+
+    def record_sync(self, kernel_id: str, sizes: Dict[str, int]) -> None:
+        """Record an ACKed flush batch: ``sizes`` maps persist key -> envelope byte length."""
+        with self._lock:
+            for key, nbytes in sizes.items():
+                self.sync_count += 1
+                self.sync_bytes_total += nbytes
+                self._bump_sync_table(self._sync_by_key, key, nbytes, "sync_keys_dropped")
+                self._bump_sync_table(self._sync_by_kernel, kernel_id, nbytes, "sync_kernels_dropped")
+
+    def record_restore_bytes(self, nbytes: int) -> None:
+        """Record the envelope bytes read by a successful restore."""
+        with self._lock:
+            self.restore_bytes_total += nbytes
+
+    @staticmethod
+    def _top_syncers(table: Dict[str, List[int]], label: str, limit: int, truncate: int = 0) -> List[Dict[str, Any]]:
+        rows = sorted(table.items(), key=lambda kv: kv[1][1], reverse=True)[:limit]
+        return [
+            {
+                label: (name[:truncate] if truncate and name != _OTHER else name),
+                "syncs": syncs,
+                "bytes": nbytes,
+                "bytes_per_sync": nbytes // max(syncs, 1),
+            }
+            for name, (syncs, nbytes) in rows
+        ]
+
+    def as_dict(self, verbose: bool = False) -> Dict[str, Any]:
+        """A snapshot for the ``/resourcez`` state block; adds a computed ok-age.
+
+        ``verbose`` widens the per-key and per-kernel sync tables from the top 10 to the
+        top 100 rows (by bytes) - pass ``/resourcez?verbose=1``. Kernel ids are truncated to
+        an 8-char prefix: enough to grep the full id in the ``solara.state`` log lines,
+        without exposing complete ids on an ops endpoint.
+        """
+        limit = 100 if verbose else 10
         with self._lock:
             last_ok = self.backend_last_ok
             age = None if last_ok is None else max(0.0, time.monotonic() - last_ok)
@@ -91,6 +154,14 @@ class Stats:
                 "superseded_while_connected": self.superseded_while_connected,
                 "backend_last_ok_age_seconds": age,
                 "backend_last_error": self.backend_last_error,
+                "sync_count": self.sync_count,
+                "sync_bytes_total": self.sync_bytes_total,
+                "sync_mb_total": round(self.sync_bytes_total / 1e6, 3),
+                "restore_bytes_total": self.restore_bytes_total,
+                "sync_keys_dropped": self.sync_keys_dropped,
+                "sync_kernels_dropped": self.sync_kernels_dropped,
+                "sync_by_key": self._top_syncers(self._sync_by_key, "key", limit),
+                "sync_by_kernel": self._top_syncers(self._sync_by_kernel, "kernel", limit, truncate=8),
             }
 
     def _reset(self) -> None:
@@ -109,6 +180,13 @@ class Stats:
             self.superseded_while_connected = 0
             self.backend_last_ok = None
             self.backend_last_error = None
+            self.sync_count = 0
+            self.sync_bytes_total = 0
+            self.restore_bytes_total = 0
+            self.sync_keys_dropped = 0
+            self.sync_kernels_dropped = 0
+            self._sync_by_key = {}
+            self._sync_by_kernel = {}
 
 
 _stats = Stats()

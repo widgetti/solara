@@ -780,7 +780,8 @@ async def resourcez(request: Request):
     # state-persistence health (§7a): cheap, no backend I/O - "is the feature on right now?"
     import solara.state as solara_state
 
-    state_stats = solara_state.stats().as_dict()
+    # verbose widens the sync tables (top 10 -> top 100 keys/kernels by bytes)
+    state_stats = solara_state.stats().as_dict(verbose=verbose)
     if solara_state.get_backend() is None:
         data["state"] = {"status": "off", "circuit_breaker": "closed", **state_stats}
     else:

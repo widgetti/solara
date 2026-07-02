@@ -916,6 +916,13 @@ silently turn itself off must announce itself. V1 ships:
   4. `flush_queue_depth` + `flush_failures_total`
   5. `superseded_closes_total` + `superseded_while_connected_total` — broken-stickiness
      / takeover-churn / attack detector
+  6. **Sync volume** (added post-v1-review): `sync_count` / `sync_bytes_total` /
+     `sync_mb_total` / `restore_bytes_total`, plus two top-N tables (`sync_by_key`
+     aggregated across kernels — which VARIABLE costs the most — and `sync_by_kernel`,
+     which session syncs the most; kernel ids truncated to an 8-char greppable prefix).
+     Top 10 by default, top 100 with `?verbose=1`; tables capped at 500 entries with an
+     `"(other)"` overflow bucket + drop counters (per-user key patterns are unbounded).
+     Recorded only on ACKed writes so retried flushes never double-count.
 - **A structured log spec** (stable event names, greppable, alertable; one line per
   event at a fixed level, always carrying `kernel_id` + a session hash):
   ```

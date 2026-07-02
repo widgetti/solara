@@ -268,6 +268,7 @@ class KernelStatePersistence:
         self.n_restored = len(restored)
         if restored:
             stats().incr("restore_success")
+            stats().record_restore_bytes(sum(len(blob) for field_name, blob in envelopes.items() if field_name.startswith(FIELD_PREFIX)))
             log_restore("success", kernel=self.kernel_id)
 
     @property
@@ -472,6 +473,9 @@ class KernelStatePersistence:
         log_flush("ok", kernel=self.kernel_id, n_fields=len(fields))
         stats().incr("flush_ok")
         stats().record_backend_ok()
+        # sync-volume accounting, only on ACK: rejected/errored flushes re-mark their keys
+        # dirty and would double-count on retry (per persist key + per kernel, §7a)
+        stats().record_sync(self.kernel_id, {field_name[len(FIELD_PREFIX) :]: len(blob) for field_name, blob in fields.items()})
         return FlushOutcome.OK
 
     def close(self) -> None:
