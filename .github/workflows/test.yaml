@@ -414,6 +414,8 @@ jobs:
     env:
       LOCK_FILE_LOCATION: .ci-package-locks/integration/os${{ matrix.os }}-python${{ matrix.python-version }}-ipywidgets${{ matrix.ipywidgets_major }}.txt
       DIFF_FILE_LOCATION: diff-integration-os${{ matrix.os }}-python${{ matrix.python-version }}-ipywidgets${{ matrix.ipywidgets_major }}.txt
+      IPYVUE_V3_WHEEL: https://nbg1.your-objectstorage.com/ipyvue3-packages/packages/ipyvue/ipyvue-3.0.0a5-py2.py3-none-any.whl
+      IPYVUETIFY_V3_WHEEL: https://nbg1.your-objectstorage.com/ipyvue3-packages/packages/ipyvuetify/ipyvuetify-3.0.0a3-py2.py3-none-any.whl
 
     steps:
       - uses: actions/checkout@v6
@@ -462,6 +464,7 @@ jobs:
           pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets${{ matrix.ipywidgets_major }}]
           pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
           pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
+          pip install --force-reinstall --no-deps "${{ env.IPYVUE_V3_WHEEL }}" "${{ env.IPYVUETIFY_V3_WHEEL }}"
           pip install "jupyterlab<4"  "pydantic<2" "playwright==1.50.0" "ipywidgets~=${{ matrix.ipywidgets }}"
           pip install pytest-retry
           pip freeze --exclude solara --exclude solara-ui --exclude solara-server --exclude pytest-ipywidgets --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
@@ -477,6 +480,7 @@ jobs:
           pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets${{ matrix.ipywidgets_major }}]
           pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
           pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
+          pip install --force-reinstall --no-deps "${{ env.IPYVUE_V3_WHEEL }}" "${{ env.IPYVUETIFY_V3_WHEEL }}"
 
       - name: Install playwright
         run: playwright install
@@ -531,6 +535,8 @@ jobs:
     env:
       LOCK_FILE_LOCATION: .ci-package-locks/integration-vue3/os${{ matrix.os }}-ipywidgets${{ matrix.ipywidgets_major }}.txt
       DIFF_FILE_LOCATION: diff-integration-vue3-os${{ matrix.os }}-ipywidgets${{ matrix.ipywidgets_major }}.txt
+      IPYVUE_V3_WHEEL: https://nbg1.your-objectstorage.com/ipyvue3-packages/packages/ipyvue/ipyvue-3.0.0a5-py2.py3-none-any.whl
+      IPYVUETIFY_V3_WHEEL: https://nbg1.your-objectstorage.com/ipyvue3-packages/packages/ipyvuetify/ipyvuetify-3.0.0a3-py2.py3-none-any.whl
 
     steps:
       - uses: actions/checkout@v6
@@ -587,6 +593,7 @@ jobs:
           pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets${{ matrix.ipywidgets_major }}]
           pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
           pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
+          pip install --pre "ipyvuetify>=3.0.0a4"
 
       - name: Install playwright
         run: playwright install

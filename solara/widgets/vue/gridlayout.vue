@@ -2,7 +2,7 @@
   <div>
     <div v-if="gridlayout_loaded" style="padding: 0px; width: 100%;">
        <grid-layout
-            :layout.sync="grid_layout"
+            v-model:layout="grid_layout"
             :col-num="col_num"
             :row-height="row_height"
             :is-draggable="draggable"

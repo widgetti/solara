@@ -153,7 +153,7 @@ def CrossFilterSelect(
             if configurable:
                 with v.Menu(v_slots=[{"name": "activator", "variable": "x", "children": btn}], close_on_content_click=False):
                     with v.Sheet():
-                        with v.Container(py_0=True, px_3=True, ma_0=True):
+                        with v.Container(class_="py-0 px-3 ma-0"):
                             with v.Row():
                                 with v.Col():
                                     v.Select(v_model=column, items=columns, on_v_model=set_column, label="Choose column")
@@ -195,9 +195,9 @@ def CrossFilterReport(df, classes: List[str] = []):
             v.Html(tag="h3", children=[summary], style_="display: inline")
         # always add a progress bar to make sure the layout is the same
         if filtered:
-            v.ProgressLinear(value=progress).key("visible")
+            v.ProgressLinear(model_value=progress).key("visible")
         else:
-            v.ProgressLinear(value=0, style_="visibility: hidden").key("hidden")
+            v.ProgressLinear(model_value=0, style_="visibility: hidden").key("hidden")
 
     return main
 
@@ -295,7 +295,7 @@ def CrossFilterSlider(
             if configurable:
                 with v.Menu(v_slots=[{"name": "activator", "variable": "x", "children": btn}], close_on_content_click=False):
                     with v.Sheet():
-                        with v.Container(py_0=True, px_3=True, ma_0=True):
+                        with v.Container(class_="py-0 px-3 ma-0"):
                             with v.Row():
                                 with v.Col():
                                     columns_numeric = [c for c in columns if py_types[c] in [int, float]]

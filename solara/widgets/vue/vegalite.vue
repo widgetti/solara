@@ -15,7 +15,7 @@ module.exports = {
     mounted() {
         this.do_plot_debounced();
     },
-    destroyed() {
+    unmounted() {
         if (this.observer) {
             this.observer.disconnect();
         }
@@ -33,7 +33,7 @@ module.exports = {
             require(['vega', 'vega-lite', 'vega-embed'], (vega, vl, vegaEmbed) => {
                 (async () => {
                     const spec = {
-                        ...this.spec,
+                        ...JSON.parse(JSON.stringify(this.spec)),
                         "renderer": "svg",
                     };
                     if (spec.width === "container") {
@@ -74,9 +74,9 @@ module.exports = {
             require.config({
                 map: {
                     '*': {
-                        'vega': `${this.getCdn()}/vega@5/build/vega.min.js`,
-                        'vega-lite': `${this.getCdn()}/vega-lite@5/build/vega-lite.min.js`,
-                        'vega-embed': `${this.getCdn()}/vega-embed@6/build/vega-embed.min.js`,
+                        'vega': `${this.getCdn()}/vega@6.2.0/build/vega.min.js`,
+                        'vega-lite': `${this.getCdn()}/vega-lite@6.4.3/build/vega-lite.min.js`,
+                        'vega-embed': `${this.getCdn()}/vega-embed@7.1.0/build/vega-embed.min.js`,
                     }
                 }
             })

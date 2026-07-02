@@ -6,6 +6,14 @@ import solara
 from solara.util import _combine_classes
 
 
+def _alert_variant(outlined: bool, text: bool) -> str:
+    if outlined:
+        return "outlined"
+    if text:
+        return "tonal"
+    return "elevated"
+
+
 @solara.component
 def Success(
     label: Optional[str] = None,
@@ -34,9 +42,8 @@ def Success(
         icon = None
     return v.Alert(
         type="success",
-        text=text,
-        outlined=outlined,
-        dense=dense,
+        variant=_alert_variant(outlined, text),
+        density="compact" if dense else None,
         icon=icon,
         children=[*([label] if label is not None else []), *children],
         class_=_combine_classes(classes),
@@ -71,9 +78,8 @@ def Info(
         icon = None
     return v.Alert(
         type="info",
-        text=text,
-        outlined=outlined,
-        dense=dense,
+        variant=_alert_variant(outlined, text),
+        density="compact" if dense else None,
         icon=icon,
         children=[*([label] if label is not None else []), *children],
         class_=_combine_classes(classes),
@@ -108,9 +114,8 @@ def Warning(
         icon = None
     return v.Alert(
         type="warning",
-        text=text,
-        outlined=outlined,
-        dense=dense,
+        variant=_alert_variant(outlined, text),
+        density="compact" if dense else None,
         icon=icon,
         children=[*([label] if label is not None else []), *children],
         class_=_combine_classes(classes),
@@ -145,9 +150,8 @@ def Error(
         icon = None
     return v.Alert(
         type="error",
-        text=text,
-        outlined=outlined,
-        dense=dense,
+        variant=_alert_variant(outlined, text),
+        density="compact" if dense else None,
         icon=icon,
         children=[*([label] if label is not None else []), *children],
         class_=_combine_classes(classes),

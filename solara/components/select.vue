@@ -9,19 +9,19 @@
     :label="label"
     class="solara-cross-filter-select"
   >
-    <template v-slot:item="{ item }">
-      <v-list-item-content>
-        <v-list-item-title v-text="item.text"></v-list-item-title>
+    <template v-slot:item="{ props, item }">
+      <v-list-item v-bind="props">
+        <v-list-item-title v-text="item.raw.text"></v-list-item-title>
         <v-list-item-subtitle>
-          <v-progress-linear :value="(item.count / count) * 100"></v-progress-linear>
+          <v-progress-linear :model-value="(item.raw.count / count) * 100"></v-progress-linear>
           <div style="display: flex">
-            <span v-if="count > 0"> {{ ((item.count / count) * 100).toFixed(1) }}%</span>
+            <span v-if="count > 0"> {{ ((item.raw.count / count) * 100).toFixed(1) }}%</span>
             <v-spacer></v-spacer>
-            <span v-if="filtered"> {{ item.count }} of {{ count }} after filtering </span>
-            <span v-if="!filtered">{{ item.count_max }} of {{ count }} </span>
+            <span v-if="filtered"> {{ item.raw.count }} of {{ count }} after filtering </span>
+            <span v-if="!filtered">{{ item.raw.count_max }} of {{ count }} </span>
           </div>
         </v-list-item-subtitle>
-      </v-list-item-content>
+      </v-list-item>
     </template>
   </v-autocomplete>
 </template>

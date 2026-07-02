@@ -1,8 +1,8 @@
 <template>
-    <v-card class="text-center" :color="color" dark>
+    <v-card class="text-center" :color="color" theme="dark">
         <v-card-text>
             <v-sheet color="rgba(0, 0, 0, .12)">
-                <v-sparkline :value="value" color="rgba(255, 255, 255, .7)" height="100" padding="24" stroke-linecap="round"
+                <v-sparkline :model-value="value" color="rgba(255, 255, 255, .7)" height="100" padding="24" stroke-linecap="round"
                     smooth>
                     <template v-slot:label="item">
                         ${{ item.value }}
@@ -18,7 +18,7 @@
         <v-divider></v-divider>
 
         <v-card-actions class="justify-center">
-            <v-btn block text @click="goto_report">
+            <v-btn block variant="text" @click="goto_report">
                 Go to Report
             </v-btn>
         </v-card-actions>
@@ -46,7 +46,7 @@ export default {
     mounted: () => {
         console.log('mounted');
     },
-    destroyed: () => {
+    unmounted: () => {
         console.log('destroyed');
     },
     watch: {

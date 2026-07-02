@@ -65,7 +65,7 @@ def AvatarMenu(image_url: Optional[str] = None, size: Union[int, str] = 40, colo
     if not children:
         children = [solara.Button("logout", icon_name="mdi-logout", href=auth.get_logout_url(), text=True)]
 
-    with v.Menu(v_slots=[{"name": "activator", "children": activator, "variable": "x"}], offset_y=True) as menu:
+    with v.Menu(v_slots=[{"name": "activator", "children": activator, "variable": "x"}], location="bottom", offset="8") as menu:
         with v.List():
             for child in children:
                 with v.ListItem(children=[child]):

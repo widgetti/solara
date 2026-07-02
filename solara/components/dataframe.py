@@ -47,7 +47,7 @@ def ExpressionEditor(df, value: str, label="Custom expression", on_value=None, p
         placeholder=placeholder,
         prepend_icon="mdi-filter",
         error_messages=error,
-        success_messages="Looking good" if value is not None else None,
+        messages="Looking good" if value is not None else None,
     )
 
 
@@ -97,7 +97,7 @@ def TableCard(df):
     with v.Card(elevation=2, height=cardheight) as main:
         with v.CardTitle(children=[title]):
             if filtered:
-                v.ProgressLinear(value=progress)
+                v.ProgressLinear(model_value=progress)
         with v.CardText():
             Table(dff)
     return main
@@ -114,7 +114,7 @@ def HistogramCard(df, column=None, max_unique=100):
         with v.CardTitle(children=["Histogram"]):
             pass
         with v.CardText():
-            with v.Btn(v_on="x.on", icon=True, absolute=True, style_="right: 10px; top: 10px") as btn:
+            with v.Btn(v_on="x.on", icon=True, position="absolute", style_="right: 10px; top: 10px") as btn:
                 v.Icon(children=["mdi-settings"])
             with v.Dialog(v_slots=[{"name": "activator", "variable": "x", "children": btn}], width="500"):
                 with v.Sheet():
@@ -132,9 +132,8 @@ def HistogramCard(df, column=None, max_unique=100):
                 if len(dfg) > max_unique:
                     with v.Alert(
                         type="warning",
-                        text=True,
+                        variant="tonal",
                         prominent=True,
-                        icon="mdi-alert",
                         children=[f"Too many unique values: {len(dfg)}, only showing first {max_unique}"],
                     ):
                         pass
@@ -213,7 +212,7 @@ def ScatterCard(df, x=None, y=None, color=None):
         with v.CardTitle(children=["Scatter"]):
             pass
         with v.CardText():
-            with v.Btn(v_on="x.on", icon=True, absolute=True, style_="right: 10px; top: 10px") as btn:
+            with v.Btn(v_on="x.on", icon=True, position="absolute", style_="right: 10px; top: 10px") as btn:
                 v.Icon(children=["mdi-settings"])
             with v.Dialog(v_slots=[{"name": "activator", "variable": "x", "children": btn}], width="500"):
                 with v.Sheet():
@@ -236,7 +235,10 @@ def ScatterCard(df, x=None, y=None, color=None):
             if xcol and ycol:
                 if len(dff) > max_points:
                     v.Alert(
-                        type="warning", text=True, prominent=True, icon="mdi-alert", children=[f"Too many unique values, will only show first {max_points}"]
+                        type="warning",
+                        variant="tonal",
+                        prominent=True,
+                        children=[f"Too many unique values, will only show first {max_points}"],
                     )
                     dff = dff[:max_points]
 
@@ -360,7 +362,7 @@ def HeatmapCard(df, x=None, y=None, debounce=True):
         with v.CardTitle(children=["Heatmap"]):
             pass
         with v.CardText():
-            with v.Btn(v_on="x.on", icon=True, absolute=True, style_="right: 10px; top: 10px") as btn:
+            with v.Btn(v_on="x.on", icon=True, position="absolute", style_="right: 10px; top: 10px") as btn:
                 v.Icon(children=["mdi-settings"])
             with v.Dialog(v_slots=[{"name": "activator", "variable": "x", "children": btn}], width="700"):
                 with v.Sheet():
@@ -488,7 +490,7 @@ def SummaryCard(df):
     with v.Card(elevation=2, height=cardheight) as main:
         with v.CardTitle(children=[title]):
             if filtered:
-                v.ProgressLinear(value=progress)
+                v.ProgressLinear(model_value=progress)
         with v.CardText():
             icon = "mdi-filter"
             v.Icon(children=[icon], style_="opacity: 0.1" if not filtered else "")
@@ -529,18 +531,27 @@ def DropdownCard(df, column=None):
         with v.CardTitle(children=["Filter out single value"]):
             pass
         with v.CardText():
-            with v.Btn(v_on="x.on", icon=True, absolute=True, style_="right: 10px; top: 10px") as btn:
+            with v.Btn(v_on="x.on", icon=True, position="absolute", style_="right: 10px; top: 10px") as btn:
                 v.Icon(children=["mdi-settings"])
             with v.Dialog(v_slots=[{"name": "activator", "variable": "x", "children": btn}], width="500"):
                 with v.Sheet():
-                    with v.Container(pa_4=True, ma_0=True):
+                    with v.Container(class_="pa-4 ma-0"):
                         with v.Row():
                             with v.Col():
                                 v.Select(v_model=column, items=columns, on_v_model=set_column, label="Choose column")
             # we use objects to we can distinguish between selecting nothing or None
             items = [{"value": magic_value_missing if k is None else k, "text": str(k)} for k in uniques]
-            v.Select(v_model=value, items=items, on_v_model=set_value_and_filter, label=f"Choose {column} value", clearable=True, return_object=True)
+            v.Select(
+                v_model=value,
+                items=items,
+                on_v_model=set_value_and_filter,
+                label=f"Choose {column} value",
+                clearable=True,
+                return_object=True,
+                item_title="text",
+                item_value="value",
+            )
             if len(uniques) > max_unique:
-                v.Alert(type="warning", text=True, prominent=True, icon="mdi-alert", children=[f"Too many unique values, will only show first {max_unique}"])
+                v.Alert(type="warning", variant="tonal", prominent=True, children=[f"Too many unique values, will only show first {max_unique}"])
 
     return main

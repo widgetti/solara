@@ -304,10 +304,38 @@ blockquote p:last-child {
     color: white !important;
 }
 
+.header-theme-toggle .v-btn {
+    color: var(--color-text-fade);
+}
+
+.header-theme-toggle .v-icon {
+    opacity: 0.9;
+}
+
 
 /* fixes padding issue on drawer menu */
 .v-list-group__items {
     padding-left: 1rem;
+}
+
+.docs-sidebar-list .docs-sidebar-home-item.v-list-item--active {
+    background-color: rgba(255, 153, 31, 0.1);
+}
+
+.docs-sidebar-list .v-list-item--active > .v-list-item__overlay {
+    opacity: 0;
+}
+
+.docs-sidebar-list .v-list-item:not(.v-list-item--active) .v-icon {
+    color: rgba(0, 0, 0, 0.54);
+}
+
+.theme--dark .docs-sidebar-list .docs-sidebar-home-item.v-list-item--active {
+    background-color: var(--dark-color-primary-lightest);
+}
+
+.theme--dark .docs-sidebar-list .v-list-item:not(.v-list-item--active) .v-icon {
+    color: var(--dark-color-grey);
 }
 
 /* menu */

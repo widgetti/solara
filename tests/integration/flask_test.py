@@ -1,3 +1,4 @@
+from contextlib import suppress
 from pathlib import Path
 
 import playwright.sync_api
@@ -30,13 +31,23 @@ def hello_world():
 
 
 def test_flask_mount(page_session: playwright.sync_api.Page, solara_app, extra_include_path):
-    port = conftest.TEST_PORT
-    conftest.TEST_PORT += 1
-    server = solara.server.flask.ServerFlask(port=port, flask_app=flask_app, url_prefix="/solara_mount")
-    server.serve_threaded()
-    server.wait_until_serving()
-    with extra_include_path(HERE), solara_app("flask_test"):
-        page_session.goto(f"{server.base_url}/solara_mount/")
-        page_session.locator("text=Mounted in flask").wait_for()
-        # assert page_session.text_content("p") == "Mounted in flask"
-        # assert page_session.text_content("p") == "Mounted in flask"
+    server = None
+    try:
+        port = conftest.TEST_PORT
+        conftest.TEST_PORT += 1
+        server = solara.server.flask.ServerFlask(port=port, flask_app=flask_app, url_prefix="/solara_mount")
+        server.serve_threaded()
+        server.wait_until_serving()
+        with extra_include_path(HERE), solara_app("flask_test"):
+            page_session.goto(f"{server.base_url}/solara_mount/")
+            page_session.locator("text=Mounted in flask").wait_for()
+            # assert page_session.text_content("p") == "Mounted in flask"
+            # assert page_session.text_content("p") == "Mounted in flask"
+    finally:
+        # page_session is shared across integration tests. Leave the mounted app
+        # before stopping its private server so reconnects cannot leak
+        # /solara_mount state into the next test.
+        with suppress(Exception):
+            page_session.goto("about:blank")
+        if server is not None:
+            server.stop_serving()

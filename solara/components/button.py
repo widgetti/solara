@@ -62,7 +62,7 @@ def Button(
     if label:
         children = [label] + children
     if icon_name:
-        children = [v.Icon(left=bool(label), children=[icon_name])] + children
+        children = [v.Icon(start=bool(label), children=[icon_name])] + children
     if "class_" in kwargs:
         kwargs = kwargs.copy()
         class_ = solara.util._combine_classes([*classes, kwargs.pop("class_")])
@@ -72,14 +72,11 @@ def Button(
     style_flat = solara.util._flatten_style(style)
     if "style_" in kwargs:
         style_flat += kwargs.pop("style_")
-    if solara.util.ipyvuetify_major_version == 3:
-        variant = "elevated"
-        if text:
-            variant = "text"
-        elif outlined:
-            variant = "outlined"
-        btn = solara.v.Btn(children=children, **kwargs, disabled=disabled, class_=class_, style_=style_flat, color=color, variant=variant)
-    else:
-        btn = solara.v.Btn(children=children, **kwargs, disabled=disabled, text=text, class_=class_, style_=style_flat, outlined=outlined, color=color)
+    variant = "elevated"
+    if text:
+        variant = "text"
+    elif outlined:
+        variant = "outlined"
+    btn = solara.v.Btn(children=children, **kwargs, disabled=disabled, class_=class_, style_=style_flat, color=color, variant=variant, value=value)
     ipyvue.use_event(btn, click_event, lambda *_ignore: on_click and on_click())
     return btn

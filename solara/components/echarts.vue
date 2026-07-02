@@ -23,7 +23,7 @@ module.exports = {
       this.resizeObserver.observe(this.$refs.echarts);
     };
   },
-  beforeDestroy() {
+  beforeUnmount() {
     if (this.resizeObserver) {
       this.resizeObserver.unobserve(this.$refs.echarts);
       this.resizeObserver.disconnect();

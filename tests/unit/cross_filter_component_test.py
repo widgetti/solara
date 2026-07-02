@@ -11,6 +11,7 @@ except ImportError:
 import solara
 import solara.lab
 from solara.components.cross_filter import Select, magic_value_missing
+from solara.lab.utils.dataframe import df_filter_missing, df_len
 
 HERE = Path(__file__).parent
 
@@ -80,7 +81,7 @@ def test_cross_filter_select(df_titanic):
     select.value = {"value": magic_value_missing}
     assert filter is not None
     df = df_titanic[filter]
-    assert list(df.cabin.unique()) in [[None], []]
+    assert df_len(df[df_filter_missing(df, "cabin")]) == df_len(df)
 
     # changing column should clear filter
     rc.render(Test(column="boat"))

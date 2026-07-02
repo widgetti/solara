@@ -26,7 +26,7 @@ modules.export = {
     window.addEventListener("hashchange", this.onHashChange);
     window.addEventListener("solara.pageReady", this.onPageLoad);
   },
-  destroyed() {
+  unmounted() {
     window.removeEventListener("popstate", this.onPopState);
     window.removeEventListener("scroll", this.onScroll);
     window.removeEventListener("hashchange", this.onHashChange);

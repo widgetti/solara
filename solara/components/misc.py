@@ -2,7 +2,7 @@ import warnings
 from typing import Any, Callable, Dict, List, Union
 
 import reacton
-import reacton.ipyvuetify as v
+import ipyvuetify.components as v
 import solara
 import solara.widgets
 from solara.util import _combine_classes
@@ -18,20 +18,9 @@ def ListItem(title, icon_name: str = None, children=[], value=None):
     if value is None:
         value = title
     if children:
-        with v.ListItemContent() as main:
-            v.ListItemTitle(children=[title])
-            if icon_name is not None:
-                with v.ListItemIcon():
-                    v.Icon(children=[icon_name or ""])
-        return v.ListGroup(children=children, v_slots=[{"name": "activator", "children": main}], no_action=True, value=True, append_icon=icon_name)
+        return v.ListGroup(children=children, title=title, prepend_icon=icon_name, value=True)
     else:
-        with v.ListItem(value=value) as main:
-            if icon_name is not None:
-                with v.ListItemIcon():
-                    v.Icon(children=[icon_name or ""])
-            with v.ListItemContent():
-                v.ListItemTitle(children=[title])
-        return main
+        return v.ListItem(value=value, title=title, prepend_icon=icon_name)
 
 
 def ui_dropdown(label, value=None, options=["foo", "bar"], key=None, disabled=False, **kwargs):
@@ -68,8 +57,8 @@ def ui_slider(value=1, label="", min=0, max=100, key=None, tick_labels=None, thu
         min=min,
         max=max,
         on_v_model=set_value,
-        ticks=tick_labels is not None,
-        tick_labels=tick_labels,
+        show_ticks=tick_labels is not None,
+        ticks=tick_labels or [],
         thumb_label=thumb_label,
         disabled=disabled,
         **kwargs,
@@ -326,8 +315,8 @@ def Code(path, path_header=None):
 
     with v.ExpansionPanels() as main:
         with v.ExpansionPanel():
-            with v.ExpansionPanelHeader(children=["View source"]):
+            with v.ExpansionPanelTitle(children=["View source"]):
                 pass
-            with v.ExpansionPanelContent(children=[md]):
+            with v.ExpansionPanelText(children=[md]):
                 pass
     return main

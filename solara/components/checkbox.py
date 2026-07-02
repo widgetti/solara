@@ -44,7 +44,10 @@ def Checkbox(
     """
     reactive_value = solara.use_reactive(value, on_value)
     del value, on_value
-    children = []
-    if label is not None:
-        children = [label]
-    return v.Checkbox(label=label, v_model=reactive_value.value, on_v_model=reactive_value.set, disabled=disabled, style_=style, children=children)
+    return v.Checkbox(
+        label=label,
+        v_model=reactive_value.value,
+        on_v_model=reactive_value.set,
+        disabled=disabled,
+        style_=style,
+    )

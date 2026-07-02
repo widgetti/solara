@@ -1,6 +1,6 @@
 <template>
   <div>
-    <v-subheader class="pl-0 query-input-label">{{ label }}</v-subheader>
+    <div class="pl-0 query-input-label">{{ label }}</div>
     <div ref="cm" class="solara-sql-code" :style="`height: ${height};`"></div>
     <div>Use <kbd>Ctrl</kbd>+<kbd>Space</kbd> for auto-complete</div>
   </div>
