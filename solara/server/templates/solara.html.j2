@@ -73,12 +73,15 @@
                 disconnected.</v-progress-circular>
         </v-overlay>
 
-        <!-- non-blocking indicator during a soft-remount (§6.2/§6.3): the stale DOM stays visible
-             until the swap; this is NOT the full loader -->
-        <v-snackbar :value="remounting" :timeout="-1" top color="primary">
-            Restoring session…
-            <v-progress-circular indeterminate size="18" width="2" class="ml-3"></v-progress-circular>
-        </v-snackbar>
+        <!-- soft-remount indicator (§6.2/§6.3): while the app re-runs on the new instance the mount
+             point is withheld from the DOM (see the loader templates), so we show a spinner here
+             instead of letting the empty mount-point placeholder flash through. Not the full loader. -->
+        <v-overlay style="z-index: 100001;" :value="remounting" opacity="0.9">
+            <div style="text-align: center;">
+                <v-progress-circular indeterminate size="64" width="4"></v-progress-circular>
+                <div style="margin-top: 16px;">Restoring session…</div>
+            </div>
+        </v-overlay>
 
         <v-dialog v-model="needsRefresh" width="500">
             <v-card>
