@@ -57,6 +57,12 @@ class MemoryStateBackend(StateBackend):
                 del self._store[kernel_id]
                 return TakeoverResult(reason="schema-reset", generation=1, fields={})
             entry.generation += 1
+            # refresh the deadline on connect, matching the redis Lua's EXPIRE on takeover
+            # (design §5.2: TTL refreshed on write AND on connect); derive the ttl the same
+            # way the redis backend does so the two stay in lockstep
+            from .persist import _default_ttl
+
+            entry.deadline = self._clock() + _default_ttl()
             return TakeoverResult(reason="restored", generation=entry.generation, fields=dict(entry.fields))
 
     def flush(

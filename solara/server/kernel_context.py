@@ -14,6 +14,7 @@ from collections import defaultdict
 import logging
 import os
 import pickle
+import re
 import threading
 import time
 import typing
@@ -112,6 +113,11 @@ class VirtualKernelContext:
     _last_kernel_cull_task: "Optional[asyncio.Future[None]]" = None
     _last_kernel_cull_future: "Optional[concurrent.futures.Future[None]]" = None
     closed_event: threading.Event = dataclasses.field(default_factory=threading.Event)
+    # guards persistence teardown so concurrent closes (cull vs page-close vs superseded) run it
+    # exactly once, WITHOUT waiting on self.lock (teardown does backend I/O that must stay
+    # off-lock, §5.3). A plain lock + flag rather than the racy outside-lock closed_event check.
+    _teardown_lock: threading.Lock = dataclasses.field(default_factory=threading.Lock)
+    _teardown_done: bool = False
     _on_close_callbacks: List[Callable[[], None]] = dataclasses.field(default_factory=list)
     lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
     event_loop: asyncio.AbstractEventLoop = dataclasses.field(default_factory=_get_or_create_event_loop)
@@ -212,9 +218,15 @@ class VirtualKernelContext:
 
     def close(self, reason: str = "unknown"):
         # persistence teardown MUST happen before we acquire self.lock (backend I/O; §5.3 deadlock
-        # contract). Guard so the first close wins the reason and a double close does not re-flush.
-        if not self.closed_event.is_set():
-            self.close_reason = reason
+        # contract). Run it exactly once across concurrent closers, under a dedicated lock so a
+        # loser does not fall through and re-flush; the first closer wins the reason.
+        run_teardown = False
+        with self._teardown_lock:
+            if not self._teardown_done:
+                self._teardown_done = True
+                self.close_reason = reason
+                run_teardown = True
+        if run_teardown:
             self._teardown_persistence(reason)
         with self, self.lock:
             for key in self.page_status:
@@ -576,6 +588,12 @@ def without_context():
 # takeover runs off-lock (no backend I/O under any lock).
 _init_lock = threading.Lock()
 
+# kernel_id becomes a backend key (and cluster hash-tag), so persistence only accepts a safe
+# charset + bounded length: this covers UUIDs and ordinary custom ids while rejecting Redis glob
+# metacharacters (*?[]), cluster hash-tags ({}), the ':' key separator, and whitespace/control
+# chars that could escape the keyspace, pollute operator SCAN/DEL patterns, or inject into logs.
+_KERNEL_ID_RE = re.compile(r"\A[A-Za-z0-9._-]{1,128}\Z")
+
 # takeovers run on this pool so a slow/hung backend cannot block the connect path past the hard
 # deadline (§5.1); a hung future keeps running and its late completion fenced-deletes the hash.
 _takeover_executor: "Optional[concurrent.futures.ThreadPoolExecutor]" = None
@@ -605,8 +623,15 @@ def _restore_on_connect(context: VirtualKernelContext, backend, session_id: str)
     import solara.state as solara_state
     from solara.state.stats import log_restore
 
-    breaker = solara_state.get_breaker()
     kernel_id = context.id
+    # kernel_id is client-supplied (the URL path, overridable via ?kernelid=) and becomes the
+    # backend key. Reject anything outside the safe charset so a crafted id cannot inject into
+    # the keyspace; such a kernel simply runs unpersisted (degrade, never fail the connection).
+    if not _KERNEL_ID_RE.match(kernel_id):
+        logger.warning("state restore skipped for kernel %s: kernel id outside the safe charset", kernel_id)
+        return
+
+    breaker = solara_state.get_breaker()
     shmac = solara_state.session_hmac(session_id)
     schema_tag = solara_state.effective_schema_tag()
     stats = solara_state.stats()

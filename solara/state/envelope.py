@@ -16,7 +16,6 @@ import decimal
 import enum
 import hashlib
 import hmac
-import importlib
 import json
 import pickle
 import sys
@@ -185,8 +184,23 @@ def _to_jsonable(value: Any) -> Any:
 
 
 def _resolve(dotted: str) -> Any:
+    # Resolve a "module:qualname" tag to the object it names. The tag comes from an envelope
+    # that HMAC verification has already accepted - but a *forged* tag can be HMAC-valid too, if
+    # the attacker holds the secret (a leaked secret is medium severity: forge/tamper state). We
+    # deliberately do NOT let that escalate to RCE: the default JSON codec must stay code-exec
+    # free even when the secret leaks (pickle is the separate, deployer-gated path for code exec).
+    # Two rules enforce that here, and each caller ALSO gates the resolved class to its own kind
+    # (enum/BaseModel/dataclass) before instantiating it:
+    #   1. never import a fresh module - only resolve from modules already loaded in this process.
+    #      A value's class is always imported by the time we restore it, so this loses nothing
+    #      legitimate while removing "import an attacker-named module for its import-time side
+    #      effect" as a gadget.
+    #   2. walk plain attributes only (no descriptors/callables invoked during the walk).
     module_name, _, qualname = dotted.partition(":")
-    obj: Any = importlib.import_module(module_name)
+    module = sys.modules.get(module_name)
+    if module is None:
+        raise CodecError(f"refusing to import module {module_name!r} to decode a tagged value (not already loaded)")
+    obj: Any = module
     for part in qualname.split("."):
         obj = getattr(obj, part)
     return obj
@@ -216,6 +230,12 @@ def _from_jsonable(value: Any) -> Any:
                 return base64.b64decode(value["value"])
             if marker == "enum":
                 enum_cls = _resolve(value["type"])
+                # gate like the pydantic/dataclass branches below: a forged (but HMAC-valid)
+                # tag must not turn into an arbitrary call. Without this, type="os:system"
+                # would resolve os.system and call it with the attacker's "value" - RCE on the
+                # default codec for anyone who holds the secret. Only ever call an Enum subclass.
+                if not (isinstance(enum_cls, type) and issubclass(enum_cls, enum.Enum)):
+                    raise CodecError(f"refusing to decode enum tag: {value['type']!r} is not an enum.Enum subclass")
                 return enum_cls(_from_jsonable(value["value"]))
             if marker == "pydantic":
                 cls = _resolve(value["type"])

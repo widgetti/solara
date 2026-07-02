@@ -574,6 +574,13 @@ def attach(
         stats().incr("restore_schema_reset")
         log_restore("fresh-schema", kernel=context.id)
     context.state_persistence = manager
+    if manager.recovery_failed:
+        # the eager decode already deleted the poisoned hash and no worker will be started;
+        # disable so a final flush on close cannot recreate it with fresh (valid) envelopes,
+        # and skip watching so we neither subscribe listeners nor mark keys dirty. The manager
+        # stays attached only to expose recovery_failed/last_restore to the client (canRecover).
+        manager.disabled = True
+        return manager
     # register before watch_all so a reactive registered concurrently is watched by exactly
     # one path (watch() is idempotent per key, so the overlap cannot double-subscribe)
     with _managers_lock:

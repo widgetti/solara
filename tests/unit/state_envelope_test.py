@@ -301,10 +301,56 @@ def test_decode_gate_refuses_non_model_class():
         _from_jsonable({"__solara_type__": "dataclass", "type": "builtins:dict", "value": {}})
 
 
+def test_enum_tag_refuses_non_enum_class_no_rce():
+    # the class-tag decoder must never turn an HMAC-valid tag into an arbitrary call: without
+    # the enum gate, type="os:system" resolved os.system and called it (RCE on the default
+    # codec for anyone holding the secret). Every non-enum callable must be refused.
+    from solara.state.envelope import _from_jsonable
+
+    with pytest.raises(CodecError, match="not an enum.Enum subclass"):
+        _from_jsonable({"__solara_type__": "enum", "type": "os:system", "value": "echo pwned"})
+    with pytest.raises(CodecError, match="not an enum.Enum subclass"):
+        _from_jsonable({"__solara_type__": "enum", "type": "builtins:print", "value": "x"})
+    # end to end through a real signed envelope: a forged (valid-HMAC) enum tag decodes to an
+    # error, never a call
+    import os
+
+    sentinel = f"/tmp/solara_enum_rce_{os.getpid()}"
+    if os.path.exists(sentinel):
+        os.remove(sentinel)
+    # forge a valid-HMAC os.system payload with the (test) secret the attacker is assumed to hold
+    import json
+
+    from solara.state import envelope
+
+    payload = json.dumps({"__solara_type__": "enum", "type": "os:system", "value": f"touch {sentinel}"}).encode()
+    key = envelope._secret_keys()[0]
+    key_id = envelope._key_id(key)
+    mac = envelope._sign(key, envelope._canonical(key_id, "k", "f", "json", payload))
+    forged = envelope._pack(key_id, "json", payload, mac)
+    with pytest.raises(CodecError):
+        state.decode(forged, kernel_id="k", field_name="f")
+    assert not os.path.exists(sentinel), "enum gate bypassed: os.system ran during decode"
+
+
+def test_resolve_refuses_not_already_imported_module():
+    # _resolve never imports a fresh module: importing an attacker-named module for its
+    # import-time side effect is not a gadget. The class of any real value is already imported
+    # by restore time, so this loses nothing legitimate.
+    from solara.state.envelope import _from_jsonable
+
+    with pytest.raises(CodecError, match="not already loaded"):
+        _from_jsonable({"__solara_type__": "dataclass", "type": "antigravity:x", "value": {}})
+
+
 def test_renamed_class_fails_loud_not_silent():
     from solara.state.envelope import _from_jsonable
 
+    # a class renamed/removed within a still-loaded module: getattr fails -> loud CodecError
     with pytest.raises(CodecError, match="failed to decode tagged value"):
+        _from_jsonable({"__solara_type__": "dataclass", "type": f"{__name__}:GoneAfterRename", "value": {}})
+    # a class whose whole module is gone (module rename): also loud, via the not-loaded gate
+    with pytest.raises(CodecError, match="not already loaded"):
         _from_jsonable({"__solara_type__": "dataclass", "type": "tests_no_such_module:Gone", "value": {}})
 
 

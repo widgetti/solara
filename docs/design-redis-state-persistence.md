@@ -1030,7 +1030,7 @@ reads as the plan):
    snapshot-then-serialize under concurrent mutation, keys-stay-dirty-until-ACK.
 2. **Commit 2 — server lifecycle** *(shipped: bd1b749b)***:** takeover in `initialize_virtual_kernel`
    (verify-then-bump-then-read atomically, no-write-on-miss, claim-or-delete on
-   fresh-start, kernel_id UUID validation, reuse-branch ownership check), write-behind
+   fresh-start, kernel_id safe-charset validation, reuse-branch ownership check), write-behind
    worker (context-entering, snapshot-under-lock) + debounce + specified circuit
    breaker (gates restores too), reason-gated fenced `DEL`, orphan-cull knob (shared
    backend only), bounded rejection protocol (one re-takeover per epoch, then concede),
@@ -1138,7 +1138,9 @@ revision:
 3. **Takeover wrote before verifying** (security): unauthenticated Redis key-flooding
    via random `?kernelid=` + victim takeover-DoS by generation-bumping. Fixed:
    verify-inside-the-Lua, never write on a miss, hash created only by the first
-   legitimate flush; kernel_id UUID-validated at the websocket entry (§5.1).
+   legitimate flush; kernel_id restricted to a safe charset before it becomes a backend
+   key, in the restore path — a bad id degrades to unpersisted, never fails the
+   connection (`_restore_on_connect`, `kernel_context.py`).
 4. **Reclaim-iff-connected livelock** (dist-sys): `page_status` reflects *observed*
    disconnects, so half-open TCP / cross-instance multi-tab put multiple instances in
    "I hold the socket" and the reclaim rule looped `HINCRBY` + full re-flush unbounded.

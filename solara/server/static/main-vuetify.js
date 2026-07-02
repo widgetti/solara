@@ -163,10 +163,20 @@ async function solaraInit(mountId, appName) {
             // the reconnect behaves exactly like landing on a fresh instance - with only backend
             // state surviving. With the memory backend this exercises the real restore path in a
             // single dev process (§6.5).
+            // fetch does NOT reject on 4xx, so we must check response.ok: a refused evict
+            // (route disabled, or session mismatch) would otherwise drop the socket anyway and
+            // the reconnect would land on the SAME live context - a silent no-op that looks
+            // like a passing failover to a developer or CI. Fail loud instead.
             try {
-                await fetch(`${solara.rootPath}/_solara/api/evict/${kernelId}`, { method: 'POST', credentials: 'same-origin' });
+                const response = await fetch(`${solara.rootPath}/_solara/api/evict/${kernelId}`, { method: 'POST', credentials: 'same-origin' });
+                if (!response.ok) {
+                    console.warn(`solara.debug.simulateFailover: evict route refused (HTTP ${response.status}); kernel not evicted. ` +
+                        'Enable it with SOLARA_STATE_TEST_EVICTION=true (non-production only).');
+                    return false;
+                }
             } catch (e) {
                 console.warn('solara.debug.simulateFailover: evict request failed', e);
+                return false;
             }
             return this.dropConnection();
         },
