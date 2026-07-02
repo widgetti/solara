@@ -220,11 +220,24 @@ async function solaraInit(mountId, appName) {
         remountInProgress = true;
         app.$data.remounting = true;
         try {
-            // tear down the dead widget manager (closes dead comms, disposes models)
-            try {
-                widgetManager.clear_state();
-            } catch (e) {
-                console.warn('solara remount: clear_state failed', e);
+            // tear down the dead widget manager (disposes models). On a fresh kernel the old comms
+            // are already gone server-side, so prefer the silent local teardown (bundle >= 0.5.0)
+            // which does NOT send a comm_close per widget over the reconnected socket. Fall back to
+            // clear_state() on older bundles (it sends comm_close - harmless, the server filters the
+            // resulting "No such comm" noise). Bundle and pip versions are decoupled in the wild, so
+            // the feature-detect is required.
+            if (typeof widgetManager.clearStateLocal === 'function') {
+                try {
+                    await widgetManager.clearStateLocal();  // silent local teardown (bundle >= 0.5.0)
+                } catch (e) {
+                    console.warn('solara remount: clearStateLocal failed', e);
+                }
+            } else {
+                try {
+                    widgetManager.clear_state();  // old bundles: sends comm_close (server filters the noise)
+                } catch (e) {
+                    console.warn('solara remount: clear_state failed', e);
+                }
             }
             if (typeof widgetManager.dispose === 'function') {
                 try {
