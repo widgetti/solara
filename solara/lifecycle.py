@@ -1,3 +1,4 @@
+import threading
 from types import FrameType, ModuleType
 from typing import Callable, List, NamedTuple, Optional
 from pathlib import Path
@@ -44,3 +45,19 @@ def on_kernel_start(f: Callable[[], Optional[Callable[[], None]]]) -> Callable[[
     kce = _on_kernel_callback_entry(f, path, module, cleanup)
     _on_kernel_start_callbacks.append(kce)
     return cleanup
+
+
+def kernel_closed_event() -> threading.Event:
+    """Return the current kernel context's closed :class:`threading.Event` (design §5.5b).
+
+    For user-managed threads: capture this inside the kernel context at thread-spawn time,
+    then ``wait()`` on it (or poll ``is_set()`` as a loop guard) to stop cleanly when the
+    kernel is closed - including a supersession/cull/server-shutdown close, not just a tab
+    close. Raises :class:`RuntimeError` when called outside a kernel context.
+    """
+    # imported lazily: solara.server.kernel_context imports this module (avoid the cycle)
+    from solara.server import kernel_context
+
+    if not kernel_context.has_current_context():
+        raise RuntimeError("solara.kernel_closed_event() must be called inside a kernel context")
+    return kernel_context.get_current_context().closed_event

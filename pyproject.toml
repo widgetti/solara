@@ -21,6 +21,7 @@ dependencies = [
     "ipyvue>=1.9.0",
     "requests",
     "humanize",
+    "executing",
 ]
 
 [project.urls]
@@ -74,6 +75,12 @@ markdown = [
 
 cache = [
     "cachetools"
+]
+
+# the redis state backend for opt-in reactive state persistence (imported lazily, only when
+# SOLARA_STATE_BACKEND=redis). Not a hard dependency. Covers Valkey/KeyDB/Dragonfly via redis-py.
+redis = [
+    "redis>=4.2"
 ]
 
 extra = [

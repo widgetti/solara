@@ -22,6 +22,32 @@ def short_cull_timeout():
         solara.server.settings.kernel.cull_timeout = cull_timeout_previous
 
 
+def test_kernel_max_per_session(monkeypatch):
+    # one session cookie may create at most max_per_session live kernels; a different session is
+    # unaffected, and reconnecting an existing kernel does not count against the cap. The cap only
+    # engages when a state backend is configured (additive: no change without persistence).
+    import solara.state
+
+    be = solara.state.MemoryStateBackend()
+    monkeypatch.setattr(solara.state, "get_backend", lambda: be)
+    monkeypatch.setattr(solara.server.settings.state, "secret_keys", "test-secret-key")
+    monkeypatch.setattr(solara.server.settings.kernel, "max_per_session", 3)
+    created = []
+    try:
+        for i in range(3):
+            created.append(kernel_context.initialize_virtual_kernel("sess-cap", f"kern-cap-{i}", Mock()))
+        with pytest.raises(RuntimeError, match="too many live kernels"):
+            kernel_context.initialize_virtual_kernel("sess-cap", "kern-cap-overflow", Mock())
+        # reconnect of an existing kernel is fine (reuse, not a new kernel)
+        assert kernel_context.initialize_virtual_kernel("sess-cap", "kern-cap-0", Mock()) is created[0]
+        # a different session is not blocked
+        other = kernel_context.initialize_virtual_kernel("sess-other", "kern-other", Mock())
+        created.append(other)
+    finally:
+        for ctx in list(kernel_context.contexts.values()):
+            ctx.close()
+
+
 @pytest.mark.skipif(on_windows, reason="This test is flaky on Windows")
 async def test_kernel_lifecycle_reconnect_simple(short_cull_timeout):
     # a reconnect should be possible within the reconnect window

@@ -1,12 +1,17 @@
 import asyncio
+import concurrent.futures
 from contextlib import asynccontextmanager
+import hashlib
+import hmac
 import json
 import logging
 import math
 import os
+import secrets
 from pathlib import Path
 import sys
 import threading
+import time
 import typing
 from typing import Any, Dict, List, Optional, Set, Union, cast
 from uuid import uuid4
@@ -18,7 +23,7 @@ import uvicorn.server
 import websockets.legacy.http
 import websockets.exceptions
 
-from solara.server.utils import path_is_child_of
+from solara.server.utils import path_is_child_of, redact_id
 
 try:
     import solara_enterprise
@@ -326,7 +331,9 @@ async def _kernel_connection(ws: starlette.websockets.WebSocket):
         logger.error("no kernel_id")
         await ws.close()
         return
-    logger.info("Solara kernel requested for session_id=%s kernel_id=%s", session_id, kernel_id)
+    # redact both: raw session_id (the cookie) + kernel_id together are a state-theft credential
+    # once persistence is on (design §5.6). redact_id is stable so log lines still correlate.
+    logger.info("Solara kernel requested for session=%s kernel=%s", redact_id(session_id), redact_id(kernel_id))
     await ws.accept()
     with WebsocketDebugInfo.lock:
         WebsocketDebugInfo.connecting -= 1
@@ -388,9 +395,57 @@ def close(request: Request):
     page_id = request.query_params["session_id"]
     context = kernel_context.contexts.get(kernel_id, None)
     if context is not None:
-        context.page_close(page_id)
+        # ADDITIVE: only tighten this route when a state backend is configured. Without persistence
+        # a tab-close deletes no durable state, so the original (unauthenticated) behavior is kept -
+        # this route is byte-for-byte unchanged for deployments that do not opt into persistence.
+        import solara.state as _solara_state
+
+        if _solara_state.get_backend() is None:
+            context.page_close(page_id)
+        else:
+            # With persistence on, page_close() fenced-DELETEs the persisted state (§5.4), so it must
+            # not be an unauthenticated primitive: an attacker who learns a kernel_id + page_id could
+            # otherwise erase another session's saved state. A real same-origin unload beacon carries
+            # the session cookie; verify it (as the evict route does). On a missing/mismatched cookie,
+            # skip the close - the kernel just culls later.
+            session_id = request.cookies.get(server.COOKIE_KEY_SESSION_ID)
+            if session_id and session_id == context.session_id:
+                context.page_close(page_id)
+            else:
+                logger.warning("refused close for kernel %s: session cookie missing or mismatched", redact_id(kernel_id))
     response = HTMLResponse(content="", status_code=200)
     return response
+
+
+def _eviction_enabled() -> bool:
+    # fail-closed (§6.4): only in an explicitly test-enabled, non-production deployment
+    return appmod.eviction_enabled()
+
+
+async def evict(request: Request):
+    """Dev/test-only kernel eviction over HTTP (§6.4).
+
+    ``solara.debug.simulateFailover()`` sends evict over the kernel websocket instead (the
+    ``solara.control`` comm in app.py) so it reaches the owning instance behind any load
+    balancer; this route only serves out-of-band tooling that holds the session cookie but no
+    websocket, and only works when it happens to hit the owning instance.
+
+    Removes a kernel context from this process so a subsequent reconnect exercises the REAL restore
+    path in a single process (with a shared/memory backend that flushes-and-leaves on close). Fails
+    closed: 404 when disabled or the kernel is unknown, 403 on a session-ownership mismatch (unlike
+    the unauthenticated close route, this verifies the requester's solara-session-id cookie).
+    """
+    kernel_id = request.path_params["kernel_id"]
+    if not _eviction_enabled():
+        return Response(status_code=404)
+    context = kernel_context.contexts.get(kernel_id, None)
+    if context is None:
+        return Response(status_code=404)
+    session_id = request.cookies.get(server.COOKIE_KEY_SESSION_ID)
+    if not session_id or session_id != context.session_id:
+        return Response(status_code=403)
+    context.close(reason="evicted")
+    return Response(status_code=200)
 
 
 async def root(request: Request, fullpath: str = ""):
@@ -619,16 +674,74 @@ class StaticCdn(StaticFilesOptionalAuth):
 
 def on_startup():
     appmod.ensure_apps_initialized()
+    # fail fast on a misconfigured state-persistence deployment (secrets/pickle gate; §5.6)
+    try:
+        import solara.state as solara_state
+
+        solara_state.validate_state_settings()
+    except Exception:
+        logger.exception("invalid state-persistence configuration")
+        raise
+    # the dev/test-only kernel-eviction route must never be live in production (§6.4, fail-closed)
+    if settings.state.test_eviction and settings.main.mode == "production":
+        logger.error("SOLARA_STATE_TEST_EVICTION is enabled but mode is 'production': the kernel-eviction route stays DISABLED. Never enable it in production.")
     # TODO: configure and set max number of threads
     # see https://github.com/encode/starlette/issues/1724
     telemetry.server_start()
 
 
+def _drain_state_workers(deadline_seconds: float = 5.0) -> None:
+    """One bounded, batched, parallel pass draining every kernel's flush worker (§5.3).
+
+    On SIGTERM uvicorn's lifespan teardown closes every context; doing N serial timeout-bounded
+    final flushes would blow any grace window under a correlated Redis brownout. So flush all
+    workers in parallel under one global deadline first; the subsequent per-context close loop
+    then finds persistence already drained and skips the I/O.
+    """
+    import solara.state as solara_state
+
+    if solara_state.get_backend() is None:
+        return
+    workers = [c.state_flush_worker for c in list(kernel_context.contexts.values()) if getattr(c, "state_flush_worker", None) is not None]
+    if not workers:
+        return
+    deadline = time.monotonic() + deadline_seconds
+    pool = concurrent.futures.ThreadPoolExecutor(max_workers=min(32, len(workers)), thread_name_prefix="solara-state-shutdown")
+
+    def _close_worker(worker):
+        remaining = max(0.0, deadline - time.monotonic())
+        try:
+            worker.close(timeout=remaining)
+        except Exception:  # noqa
+            logger.exception("error draining state flush worker on shutdown")
+
+    try:
+        futures = [pool.submit(_close_worker, worker) for worker in workers]
+        for future in futures:
+            remaining = max(0.0, deadline - time.monotonic())
+            try:
+                future.result(timeout=remaining)
+            except Exception:  # noqa - hard cap: never let shutdown hang
+                pass
+    finally:
+        # wait=False: do not block past the deadline on a hung worker (Python 3.8: no cancel_futures)
+        pool.shutdown(wait=False)
+
+
 def on_shutdown():
+    # bounded, batched final flush BEFORE the close loop, so the closes below skip backend I/O.
+    # TODO: uvicorn waits for websocket connections indefinitely by default, so this lifespan
+    # teardown may not run until Kubernetes SIGKILLs. Ship deployments with uvicorn's
+    # timeout_graceful_shutdown set (documented against terminationGracePeriodSeconds). It is not
+    # currently exposed as a solara CLI flag; pass it via a custom uvicorn Config / gunicorn worker.
+    try:
+        _drain_state_workers()
+    except Exception:  # noqa
+        logger.exception("error draining state workers on shutdown")
     # shutdown all kernels
     for context in list(kernel_context.contexts.values()):
         try:
-            context.close()
+            context.close(reason="server-shutdown")
         except:  # noqa
             logger.exception("error closing kernel on shutdown")
     telemetry.server_stop()
@@ -652,6 +765,50 @@ def _sanitize_for_json(value):
     if isinstance(value, (int, float)) and math.isinf(value):
         return None
     return value
+
+
+# Per-process salt for redacting persist key labels on /resourcez: stable across scrapes of THIS
+# process (a hot key correlates over time) but not reversible and not guessable. Deliberately not
+# the state secret - resourcez must not couple to the crypto module, and cross-instance label
+# correlation is not a goal (scrapers hit one instance at a time).
+_RESOURCEZ_LABEL_SALT = secrets.token_bytes(16)
+
+
+def _resourcez_full_detail_allowed(request: Request) -> bool:
+    """Whether this caller may see the identifier-bearing /resourcez breakdowns.
+
+    Non-production (dev on localhost): always. Production: only with a valid bearer token when
+    SOLARA_RESOURCEZ_TOKEN is configured; otherwise the caller gets aggregates + hashed labels.
+    A missing/wrong token degrades to the redacted view (never an error) so a misconfigured
+    scraper loses detail rather than breaking. /readyz is never gated (liveness probe).
+    """
+    if settings.main.mode != "production":
+        return True
+    token = settings.main.resourcez_token
+    if not token:
+        return False
+    header = request.headers.get("authorization", "")
+    scheme, _, presented = header.partition(" ")
+    if scheme.lower() != "bearer" or not presented:
+        return False
+    return hmac.compare_digest(presented, token)
+
+
+def _redact_sync_labels(state_stats: Dict[str, Any]) -> Dict[str, Any]:
+    """Replace persist key names in the sync_by_key table with a salted hash.
+
+    Persist keys can embed identifiers (the recommended pattern is ``key=f"user:{id}:..."``), so
+    the raw label is PII on an ops endpoint. The numbers (syncs/bytes) are kept - a runaway key is
+    still visible as a hot hash. Kernel ids are already truncated upstream and left as-is.
+    """
+    rows = state_stats.get("sync_by_key")
+    if not rows:
+        return state_stats
+    redacted = dict(state_stats)
+    redacted["sync_by_key"] = [
+        {**row, "key": "sha256:" + hashlib.sha256(_RESOURCEZ_LABEL_SALT + str(row.get("key", "")).encode("utf-8")).hexdigest()[:12]} for row in rows
+    ]
+    return redacted
 
 
 async def resourcez(request: Request):
@@ -691,6 +848,21 @@ async def resourcez(request: Request):
         "borrowed_tokens": _sanitize_for_json(default_limiter.borrowed_tokens),
         "available_tokens": _sanitize_for_json(default_limiter.available_tokens),
     }
+    # state-persistence health (§7a): cheap, no backend I/O - "is the feature on right now?"
+    import solara.state as solara_state
+
+    # verbose widens the sync tables (top 10 -> top 100 keys/kernels by bytes)
+    state_stats = solara_state.stats().as_dict(verbose=verbose)
+    # The aggregate counters are safe to expose everywhere; only the per-key breakdown carries
+    # identifiers. In production without a bearer token, hash the key labels (keep the numbers).
+    if not _resourcez_full_detail_allowed(request):
+        state_stats = _redact_sync_labels(state_stats)
+    if solara_state.get_backend() is None:
+        data["state"] = {"status": "off", "circuit_breaker": "closed", **state_stats}
+    else:
+        breaker_state = solara_state.get_breaker().state
+        degraded = breaker_state != "closed" or state_stats.get("backend_last_error") is not None
+        data["state"] = {"status": "degraded" if degraded else "healthy", "circuit_breaker": breaker_state, **state_stats}
     if verbose:
         try:
             import psutil
@@ -767,6 +939,8 @@ routes = [
     Route("/", endpoint=root),
     Route("/{fullpath}", endpoint=root),
     Route("/_solara/api/close/{kernel_id}", endpoint=close, methods=["POST"]),
+    # dev/test-only, fail-closed (§6.4): the handler returns 404 unless explicitly enabled
+    Route("/_solara/api/evict/{kernel_id}", endpoint=evict, methods=["POST"]),
     # only enable when the proxy is turned on, otherwise if the directory does not exists we will get an exception
     *([Mount(f"/{cdn_url_path}", app=StaticCdn(directory=settings.assets.proxy_cache_dir))] if solara.settings.assets.proxy else []),
     Mount(f"{prefix}/static/public", app=StaticPublic()),

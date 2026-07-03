@@ -111,9 +111,55 @@ class Kernel(BaseSettings):
     cull_timeout: str = "24h"
     max_count: Optional[int] = None
     threaded: bool = solara.util.has_threads
+    # Cap on live kernels a single session cookie may create. kernel_id is client-chosen and a
+    # brand-new id accepts any cookie, so without this one session can spawn unbounded contexts,
+    # threads and (with persistence) Redis keys. The default is far above any legitimate multi-tab
+    # use; 0 disables the cap. Reconnects reuse an existing kernel and do not count against it.
+    max_per_session: int = 100
 
     class Config:
         env_prefix = "solara_kernel_"
+        case_sensitive = False
+        env_file = ".env"
+
+
+class State(BaseSettings):
+    """Opt-in reactive state persistence (docs/design-redis-state-persistence.md).
+
+    A server-only feature (restore happens on websocket connect, flushes from the server's
+    write-behind worker), so it lives here with its coupled siblings: ``orphan_cull_timeout``
+    modulates ``Kernel.cull_timeout``, ``secret_keys`` is the deliberate sibling of
+    ``Session.secret_key``, and ``test_eviction`` gates on ``main.mode``.
+    """
+
+    backend: str = ""  # "" = disabled; a name in solara.state.state_backend_map ("redis", "memory", ...)
+    url: str = ""  # backend DSN, e.g. "redis://localhost:6379/0"
+    secret_keys: str = ""  # comma-separated HMAC keys; verify-any, sign-first (rotation). REQUIRED when enabled
+    allow_pickle: bool = False  # deployer gate; the "pickle" codec raises without it
+    ttl: Optional[str] = None  # default: kernel.cull_timeout
+    orphan_cull_timeout: str = "5m"  # applies only with a shared backend
+    prefix: str = "solara:state:"  # key prefix / table name, backend-interpreted
+    flush_debounce: str = "300ms"
+    connect_timeout: float = 0.3  # hard cap on takeover/flush blocking
+    breaker_failures: int = 3  # circuit breaker: consecutive failures to open
+    breaker_window: str = "30s"  # open duration before a half-open probe
+    schema_tag: str = ""  # state-schema tag ("" -> derived); mismatch => clean state reset
+    auto_remount: Optional[bool] = None  # None: on iff backend set; can force on/off
+    bailout_storm_threshold: float = 0.5  # bail-out rate valve
+    # §4.3 size guard: per-variable serialized (envelope) byte limits. A value over warn_value_bytes
+    # is logged; a value over max_value_bytes is SKIPPED (not flushed) so one huge reactive cannot
+    # fill Redis or spike memory - the rest of the kernel's state still persists. Persist references,
+    # not large objects/DataFrames.
+    warn_value_bytes: int = 1_000_000  # ~1 MB: log a warning, still persist
+    max_value_bytes: int = 5_000_000  # ~5 MB: skip this key (persist the rest); 0 disables the cap
+    test_eviction: bool = False  # dev/test-only kernel-eviction route gate (§6.4); refused in production
+
+    def secret_key_list(self):
+        # secret_keys is a comma-separated env value; minisettings has no native List type here
+        return [key.strip() for key in self.secret_keys.split(",") if key.strip()]
+
+    class Config:
+        env_prefix = "solara_state_"
         case_sensitive = False
         env_file = ".env"
 
@@ -185,6 +231,10 @@ class MainSettings(BaseSettings):
     platform: str = sys.platform
     host: str = HOST_DEFAULT
     experimental_performance: bool = False
+    # Bearer token gating the identifier-bearing /resourcez breakdowns in production. When set,
+    # `Authorization: Bearer <token>` unlocks the un-redacted per-key/per-kernel tables; when
+    # empty, production serves aggregates + hashed key labels only. Never gates /readyz.
+    resourcez_token: str = ""
 
     class Config:
         env_prefix = "solara_"
@@ -202,6 +252,7 @@ assets = Assets()
 oauth = OAuth()
 session = Session()
 kernel = Kernel()
+state = State()
 # fail early
 solara.util.parse_timedelta(kernel.cull_timeout)
 

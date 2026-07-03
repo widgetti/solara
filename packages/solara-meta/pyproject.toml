@@ -32,6 +32,10 @@ all = [
     "solara[dev]"
 ]
 
+redis = [
+    "solara-ui[redis]"
+]
+
 assets = [
     "solara-assets==1.57.6"
 ]
@@ -81,6 +85,7 @@ dev = [
     "pytest-mock",
     "pytest-cov",
     "pytest-timeout",
+    "fakeredis[lua]",  # in-process redis (with Lua) for the state-backend contract + failover tests
     "pre-commit",
     "ruff",
     "bump2version",

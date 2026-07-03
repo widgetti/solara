@@ -1,14 +1,30 @@
 import contextlib
+import hashlib
 import logging
 import os
 from pathlib import Path
 import pdb
 import sys
 import traceback
+from typing import Optional
 
 from rich import print
 
 logger = logging.getLogger("solara.server")
+
+
+def redact_id(value: Optional[str]) -> str:
+    """A stable, non-reversible short tag for logging a high-entropy identifier.
+
+    With state persistence enabled, the raw ``solara-session-id`` cookie is a bearer credential:
+    logging it next to a ``kernel_id`` hands anyone with log access enough to pass the takeover
+    identity check and restore another user's persisted state. Session and kernel ids are
+    high-entropy random tokens, so a truncated SHA-256 is non-reversible in practice while staying
+    stable across instances (so a session's log lines still correlate fleet-wide).
+    """
+    if not value:
+        return "none"
+    return "id:" + hashlib.sha256(value.encode("utf-8")).hexdigest()[:12]
 
 
 def start_error(title, msg, exception: Exception = None):

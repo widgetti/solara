@@ -15,6 +15,7 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from operator import getitem
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     ContextManager,
@@ -37,6 +38,9 @@ import solara
 import solara.settings
 from solara import _using_solara_server
 from solara.util import nullcontext
+
+if TYPE_CHECKING:
+    from solara.state.persist import PersistConfig
 
 T = TypeVar("T")
 TS = TypeVar("TS")
@@ -328,8 +332,21 @@ class KernelStore(ValueBase[S], ABC):
             with self._init_lock_held(lock, scope_id):
                 if self.storage_key not in scope_dict:
                     # we assume immutable, so don't make a copy
-                    scope_dict[self.storage_key] = self.initial_value()
+                    scope_dict[self.storage_key] = self._restored_or_initial_value(context)
         return scope_dict[self.storage_key]
+
+    def _restored_or_initial_value(self, context) -> S:
+        # Restore seam for opt-in state persistence: when this kernel context carries a
+        # persistence manager holding a restored value for this key (attached after a backend
+        # takeover, see solara.state.persist), install that value instead of the default.
+        # Runs under the per-(variable, kernel) init lock: the manager hook does no I/O and
+        # fires no listeners, and the restored entry is consumed so a later clear() lazy-inits
+        # from the default again. Non-server/global scopes have context None and pay nothing.
+        if context is not None and context.state_persistence is not None:
+            restored, value = context.state_persistence.pop_restored(self.storage_key, self)
+            if restored:
+                return cast(S, value)
+        return self.initial_value()
 
     @contextlib.contextmanager
     def _init_lock_held(self, lock: threading.RLock, scope_id: str):
@@ -572,19 +589,93 @@ def _call_storage_factory(default_value: S, key=None, equals=None) -> ValueBase[
 class Reactive(ValueBase[S]):
     _storage: ValueBase[S]
 
-    def __init__(self, default_value: Union[S, ValueBase[S]], key=None, equals=None):
+    def __init__(self, default_value: Union[S, ValueBase[S]], key=None, equals=None, persist: Union[bool, "PersistConfig"] = False):
         super().__init__()
+        self._persist_config: Optional["PersistConfig"] = None
+        self._persist_derived = False
+        # persist=True in a class body: the key is resolved in __set_name__ (module:Owner.attr)
+        self._persist_pending = False
+        if persist:
+            key = self._init_persist(default_value, key, persist)
         if not isinstance(default_value, ValueBase):
             self._storage = _call_storage_factory(default_value, key=key, equals=equals)
         else:
             self._storage = default_value
+        if self._persist_config is not None:
+            self._register_persist(key)
         self.__post__init__()
         self._name = None
         self._owner = None
 
+    def _init_persist(self, default_value, key: Optional[str], persist: "Union[bool, PersistConfig]") -> Optional[str]:
+        # Resolve the persistence key: explicit key= (or PersistConfig.key) wins; otherwise it
+        # is derived from the definition site (raising PersistKeyError on anything ambiguous -
+        # that error message is the specified UX). The resolved key becomes the storage_key of
+        # the underlying store, so restored state lands on the right variable cross-process.
+        from solara.state import derive
+        from solara.state.persist import PersistConfig
+
+        if isinstance(default_value, ValueBase):
+            raise ValueError("persist= cannot be combined with a custom store, pass a plain default value instead")
+        config = PersistConfig() if persist is True else persist
+        if not isinstance(config, PersistConfig):
+            raise TypeError(f"persist must be True/False or a solara.PersistConfig, not {persist!r}")
+        self._persist_config = config
+        if key is None:
+            key = config.key
+        if key is None:
+            try:
+                key = derive.derive_key()
+            except derive.PersistKeyError as exception:
+                if getattr(exception, "reason", None) == derive.REASON_CLASS_BODY:
+                    # a class attribute: __set_name__ (called when the class body completes)
+                    # resolves the key to module:Owner.attr; until then we are pending
+                    self._persist_pending = True
+                    return None
+                raise
+            self._persist_derived = True
+        return key
+
+    def _register_persist(self, key: Optional[str]) -> None:
+        from solara.state import persist as state_persist
+
+        frame = _find_outside_solara_frame()
+        source = (frame.f_code.co_filename, frame.f_lineno, 0) if frame is not None else ("<unknown>", 0, 0)
+        assert self._persist_config is not None
+        if self._persist_pending:
+            state_persist.register_pending(self, source)
+        else:
+            assert key is not None
+            state_persist.register_persisted_reactive(key, self._persist_config, self, source, derived=self._persist_derived)
+
     def __set_name__(self, owner, name):
         self._name = name
         self._owner = owner
+        if getattr(self, "_persist_pending", False):
+            self._resolve_persist_key_for_class_attribute(owner, name)
+
+    def _resolve_persist_key_for_class_attribute(self, owner, name):
+        from solara.state import derive
+        from solara.state import persist as state_persist
+
+        key = derive.derive_key_for_class_attribute(owner, name)
+        storage = self._storage
+        kernel_store = storage if isinstance(storage, KernelStore) else getattr(storage, "_storage", None)
+        if not isinstance(kernel_store, KernelStore):
+            raise derive.PersistKeyError(
+                f"cannot re-key the storage of persisted class attribute {owner.__qualname__}.{name}: "
+                f"unsupported storage type {type(storage).__name__}; give an explicit key= instead"
+            )
+        # Re-key before any kernel use: user_dicts fill lazily and the class body has just
+        # finished executing, so nothing can have read this reactive under the temporary key
+        # yet (cheaply verifiable only for the global scope).
+        assert kernel_store.storage_key not in kernel_store._global_dict, "reactive was read before __set_name__ resolved its persistence key"
+        kernel_store.storage_key = key
+        self._persist_pending = False
+        assert self._persist_config is not None
+        frame = _find_outside_solara_frame()
+        source = (frame.f_code.co_filename, frame.f_lineno, 0) if frame is not None else ("<unknown>", 0, 0)
+        state_persist.resolve_pending(self, key, self._persist_config, source)
 
     def __repr__(self):
         value = self.peek()

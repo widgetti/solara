@@ -1,4 +1,5 @@
 import dataclasses
+import hashlib
 import importlib.util
 import logging
 import os
@@ -448,6 +449,61 @@ def load_themes(themes: Dict[str, Dict[str, str]], dark: bool):
     theme.dark_effective = dark
 
 
+def client_version() -> str:
+    """Opaque short hash identifying the served client assets (design §6.1).
+
+    The pip-shipped JS/templates are version-locked to the package, so a hash of the version
+    string is a sufficient bundle identity. The client compares the value baked into its page
+    (``solara.clientVersion``) against this value in the ``app-status`` reply; a mismatch means
+    the browser runs JS from a different server build and must hard-refresh instead of
+    soft-remounting on stale assets.
+    """
+    return hashlib.sha256(solara.__version__.encode("utf-8")).hexdigest()[:12]
+
+
+def _can_recover(context: "kernel_context.VirtualKernelContext") -> bool:
+    """Whether the client may soft-remount on this reconnect instead of showing the dialog (§6.1).
+
+    True iff a state backend is configured OR ``auto_remount`` is forced on (apps whose state is
+    fully URL/DB-derived need no backend), AND ``auto_remount`` is not forced off, AND the context
+    did not bail out during restore (a recovery-failed context must hard-refresh, §4.3).
+    """
+    import solara.server.settings
+    import solara.state
+
+    auto_remount = solara.server.settings.state.auto_remount
+    if auto_remount is False:
+        return False
+    manager = context.state_persistence
+    if manager is not None and manager.recovery_failed:
+        # Normally a recovery-failed context must hard-refresh (§4.3). But when bail-outs are
+        # STORMING - a systemic cause (schema_tag bump, non-uniform secret_keys across replicas)
+        # that fails every reconnecting session - a fleet-wide refresh dialog is worse than a
+        # silent fresh start. The bail-out storm valve (§4.3) flips those users to a soft-remount:
+        # their state is already gone (the poisoned hash was deleted), so this only trades a manual
+        # refresh for an automatic one, and never costs a recoverable user anything.
+        if solara.state.stats().bailout_storm_active(solara.server.settings.state.bailout_storm_threshold):
+            logger.warning("bail-out storm active; soft-remounting kernel %s fresh instead of showing the refresh dialog", context.id)
+            return True
+        return False
+    if auto_remount is True:
+        return True
+    return solara.state.get_backend() is not None
+
+
+def _last_restore(manager) -> Dict[str, Any]:
+    """The client-facing restore outcome (§6.4). ``off`` when there is no persistence manager."""
+    if manager is None:
+        return {"status": "off", "failedKey": None, "cause": None, "nFields": 0}
+    return manager.last_restore
+
+
+def eviction_enabled() -> bool:
+    # fail-closed (§6.4): dev/test-only kernel eviction, refused in production even when the
+    # test flag is on. Shared by the ws comm method below and the HTTP route in starlette.py.
+    return settings.state.test_eviction and settings.main.mode != "production"
+
+
 def solara_comm_target(comm, msg_first):
     app: Optional[AppScript] = None
 
@@ -481,12 +537,20 @@ def solara_comm_target(comm, msg_first):
         elif method == "app-status":
             context = kernel_context.get_current_context()
             # if there is no container, we never ran the app
-            if context.container is not None:
-                logger.info("app-status check: %s app started", context.id)
-                comm.send({"method": "app-status", "started": True})
-            else:
-                logger.info("app-status check: %s app not started", context.id)
-                comm.send({"method": "app-status", "started": False})
+            started = context.container is not None
+            reply = {
+                "method": "app-status",
+                "started": started,
+                # whether the client may soft-remount instead of showing the refresh dialog (§6.1)
+                "canRecover": _can_recover(context),
+                # opaque asset hash; a mismatch with the client's baked-in solara.clientVersion
+                # means the browser runs a different bundle and must hard-refresh (§6.1)
+                "clientVersion": client_version(),
+                # restore outcome for solara.debug.lastRestore / observability (§6.4)
+                "lastRestore": _last_restore(context.state_persistence),
+            }
+            logger.info("app-status check: %s app %s", context.id, "started" if started else "not started")
+            comm.send(reply)
 
         elif method == "reload":
             from solara.lab.components.theming import _get_theme, theme
@@ -502,6 +566,24 @@ def solara_comm_target(comm, msg_first):
                 load_themes(theme_dict, current_theme.dark_effective)
                 load_app_widget(context.state, app, path)
                 comm.send({"method": "finished"})
+        elif method == "evict":
+            # Dev/test-only kernel eviction, the server half of solara.debug.simulateFailover()
+            # (§6.4). It arrives over the kernel's own websocket, so unlike the HTTP evict route
+            # it inherently executes on the instance that OWNS the kernel - behind a round-robin
+            # load balancer the HTTP route lands on an arbitrary instance and 404s on every
+            # non-owner. Ownership needs no cookie check here either: this comm only exists on
+            # the connection that authenticated for this kernel. Fails closed like the route.
+            context = kernel_context.get_current_context()
+            if not eviction_enabled():
+                comm.send({"method": "evict", "status": "refused"})
+            else:
+                # reply BEFORE closing: sends are synchronous onto the websocket, and close()
+                # tears down the session (which also closes the socket server-side)
+                comm.send({"method": "evict", "status": "evicted"})
+                # close() from a separate thread: it closes this kernel's session and dispatch
+                # machinery, which must not happen re-entrantly from the kernel's own message
+                # thread that is executing this handler
+                threading.Thread(target=lambda: context.close(reason="evicted"), name=f"evict-{context.id}", daemon=True).start()
         else:
             logger.error("Unknown comm method called on solara.control comm: %s", method)
 

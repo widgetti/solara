@@ -27,6 +27,22 @@ ipykernel_major = int(ipykernel.__version__.split(".")[0])
 jsonmodule = json
 
 
+class _NoSuchCommFilter(logging.Filter):
+    # A soft-remount tears down the client's old widget manager, which sends comm_close/comm_msg
+    # for the previous kernel's comms over the reconnected socket - but that socket now serves a
+    # fresh kernel that never knew those comm ids, so the `comm` package logs "No such comm: <id>"
+    # once per widget. The kernel already handles this correctly (ignores the message); the log
+    # line is pure noise on every failover. Drop only that benign message - keep the meaningful
+    # "No such comm target registered" error, which signals a genuinely missing comm target.
+    def filter(self, record: logging.LogRecord) -> bool:
+        message = record.getMessage()
+        return not (message.startswith("No such comm: ") and "target" not in message)
+
+
+# the `comm` package (comm.base_comm) logs on the "Comm" logger; install the filter once at import
+logging.getLogger("Comm").addFilter(_NoSuchCommFilter())
+
+
 # from jupyter_client/jsonutil.py
 def _ensure_tzinfo(dt: datetime) -> datetime:
     """Ensure a datetime object has tzinfo
