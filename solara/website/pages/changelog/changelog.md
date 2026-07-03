@@ -1,5 +1,10 @@
 # Solara Changelog
 
+## Version 1.58.0
+
+   * Feature: Opt-in reactive state persistence — survive load-balancer failover without the refresh dialog. Enable with `solara.settings.session.persist = True` (or `SOLARA_SESSION_PERSIST=true`). [489c5573](https://github.com/widgetti/solara/commit/489c5573)
+   * Bump `@widgetti/solara-vuetify-app` → 10.1.0 and `@widgetti/solara-vuetify3-app` → 5.1.0 (new `clearStateLocal` in the widget-manager for cleaner soft-remount after reconnect to a fresh kernel).
+
 ## Version 1.57.6
 
    * Bug Fix: Scope reactive lazy-init lock per `(variable, kernel)` instead of one global lock, fixing a possible deadlock when initializers themselves access reactive state. [28b80125](https://github.com/widgetti/solara/commit/28b80125)
