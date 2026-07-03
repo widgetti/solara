@@ -11,6 +11,11 @@
   },
   "author": "",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/widgetti/solara.git",
+    "directory": "packages/solara-vuetify3-app"
+  },
   "dependencies": {
     "@mdi/font": "^4.9.95",
     "@widgetti/solara-widget-manager": "file:../solara-widget-manager",

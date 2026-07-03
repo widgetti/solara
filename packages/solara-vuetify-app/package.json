@@ -12,6 +12,11 @@
   },
   "author": "",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/widgetti/solara.git",
+    "directory": "packages/solara-vuetify-app"
+  },
   "dependencies": {
     "@mariobuikhuizen/vue-compiler-addon": "^2.6.10-alpha.2",
     "@mdi/font": "^4.9.95",
