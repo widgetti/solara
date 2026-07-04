@@ -147,6 +147,44 @@ def test_double_reconnect_supersedes_stale_context(backend):
         assert r.value == "from-B"
 
 
+def test_double_reconnect_supersedes_never_flushed_context(backend):
+    """The A->B->A bounce for a kernel that NEVER flushed (e.g. a login form pre-login).
+
+    Regression for the unfenceable-zombie hole: without claim-on-miss in ``takeover()``, a
+    never-flushed kernel has no backend row, ``peek_generation()`` returns None forever, and
+    ``_reuse_context_is_stale`` can never supersede the old context after a cross-node takeover -
+    it keeps re-serving stale widgets whose inputs no longer sync (observed on a round-robin
+    staging deploy as a login button that could never enable). With the claim, the miss itself
+    establishes generation 1, so the takeover on node B is visible to node A's reuse check.
+    """
+    r = solara.reactive("v0", persist=True, key="test.server.neverflushed")
+    session_id, kernel_id = "sess-neverflushed", "kern-neverflushed"
+    shmac = session_hmac(session_id)
+
+    # instance A connects; nothing is ever flushed (the user typed into non-persisted inputs only)
+    context_a = kc.initialize_virtual_kernel(session_id, kernel_id, Mock())
+    context_a.page_connect("pageA")
+    assert context_a.state_persistence is not None
+    assert context_a.state_persistence.generation == 1
+    # the claim made the never-flushed kernel visible (this is the fix's crux: None before)
+    assert backend.peek_generation(kernel_id) == 1
+
+    # instance B takes over the same kernel id (same browser session); still no flush anywhere
+    result_b = backend.takeover(kernel_id, shmac, SCHEMA_TAG)
+    assert result_b.generation == 2
+
+    # reconnect lands back on A's reuse branch: the never-flushed zombie must be superseded
+    context_new = kc.initialize_virtual_kernel(session_id, kernel_id, Mock())
+    assert context_new is not context_a
+    assert context_a.closed_event.is_set()
+    assert context_a.close_reason == "superseded"
+    assert context_new.state_persistence is not None
+    # the fresh context took over at a higher generation and starts from defaults (nothing stored)
+    assert context_new.state_persistence.generation == 3
+    with context_new:
+        assert r.value == "v0"
+
+
 # --- session mismatch on takeover ---------------------------------------------------------
 
 

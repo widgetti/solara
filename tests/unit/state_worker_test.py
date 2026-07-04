@@ -251,15 +251,18 @@ def test_breaker_open_leaves_keys_dirty_then_drains(worker_factory):
     worker.start()
     with context:
         r.value = 5
-    # first attempt hits an open breaker: skip, keys stay dirty, nothing written
+    # first attempt hits an open breaker: skip, keys stay dirty, no DATA written (the attach-time
+    # takeover claim-on-miss already wrote the generation-1 meta row, so peek is 1 by design;
+    # "nothing flushed" is now observable as the claimed row having no data fields)
     assert worker.wait_for_flushes(1)
     assert manager.dirty_keys == {key}
-    assert backend.peek_generation(context.id) is None
+    assert backend.peek_generation(context.id) == 1
+    assert backend._store[context.id].fields == {}
     # let the window elapse; the re-armed timer retries and, with the breaker now closing on a
     # successful probe, drains the dirty keys (no permanent stranding)
     clock.advance(30.0)
     # wait on the backend observable: flush_now drains dirty BEFORE the write lands
-    assert wait_until(lambda: backend.peek_generation(context.id) == 1)
+    assert wait_until(lambda: backend._store[context.id].fields != {})
     assert manager.dirty_keys == set()
     assert breaker.state == "closed"
 

@@ -52,14 +52,65 @@ def backend(request):
         client.flushdb()
 
 
-def test_miss_writes_nothing(backend):
+def test_miss_claims_the_key(backend):
     result = backend.takeover("k", SESSION_A, "v1")
     assert result.reason == "miss"
     assert result.generation == 1
     assert result.fields == {}
-    # a miss must not have created anything: a second takeover is still a miss
-    assert backend.peek_generation("k") is None
-    assert backend.takeover("k", SESSION_A, "v1").reason == "miss"
+    # claim-on-miss: the fresh-start generation is immediately visible to peek_generation, so a
+    # kernel that never flushes anything (e.g. a login form pre-login) is still FENCEABLE - its
+    # node can detect a later takeover elsewhere and supersede the zombie context. (Before the
+    # claim, peek stayed None until the first flush and such kernels were unfenceable.)
+    assert backend.peek_generation("k") == 1
+    # a repeat takeover by the same session is now a restore of the claimed (empty) key
+    again = backend.takeover("k", SESSION_A, "v1")
+    assert again.reason == "restored"
+    assert again.generation == 2
+    assert again.fields == {}
+
+
+def test_claimed_key_supersedes_never_flushed_owner(backend):
+    # node A claims on miss and never flushes (nothing persisted yet)
+    a = backend.takeover("k", SESSION_A, "v1")
+    assert (a.reason, a.generation) == ("miss", 1)
+    # node B (same browser session) takes over the same kernel id
+    b = backend.takeover("k", SESSION_A, "v1")
+    assert b.generation == 2
+    # A can now SEE it is behind - exactly the _reuse_context_is_stale comparison
+    stored = backend.peek_generation("k")
+    assert stored == 2
+    assert stored != a.generation
+    # and A's late first-flush is fenced out
+    assert backend.flush("k", a.generation, {"reactive:x": b"stale"}, TTL, SESSION_A, "v1") is False
+
+
+def test_claimed_key_refuses_foreign_session(backend):
+    # the claimed-but-never-flushed key follows the same identity rule as a flushed one
+    backend.takeover("k", SESSION_A, "v1")
+    result = backend.takeover("k", SESSION_B, "v1")
+    assert result.reason == "identity-mismatch"
+    assert result.generation == 0
+    assert result.fields == {}
+    # the foreign session gained no write rights
+    assert backend.flush("k", 2, {"reactive:x": b"evil"}, TTL, SESSION_B, "v1") is False
+
+
+def test_claim_expires_with_ttl(backend):
+    if isinstance(backend, MemoryStateBackend):
+        now = [0.0]
+        backend._clock = lambda: now[0]
+        backend.takeover("k", SESSION_A, "v1")
+        assert backend.peek_generation("k") == 1
+        # the claim carries the default ttl (hours in practice); jump far past any sane value
+        now[0] = 10 * 24 * 3600.0
+        assert backend.peek_generation("k") is None
+        # an expired claim behaves as absent: the next takeover is a fresh miss+claim
+        assert backend.takeover("k", SESSION_A, "v1").reason == "miss"
+    else:
+        # redis: the claim must have set an EXPIRE (abandoned claims may not live forever)
+        backend.takeover("k", SESSION_A, "v1")
+        ttl = backend.client.ttl(backend._key("k"))
+        assert ttl > 0
 
 
 def test_flush_creates_with_identity_on_absent_key(backend):
@@ -123,9 +174,13 @@ def test_schema_reset_deletes(backend):
     assert result.reason == "schema-reset"
     assert result.generation == 1
     assert result.fields == {}
-    # the hash was deleted, so it is gone entirely
-    assert backend.peek_generation("k") is None
-    assert backend.takeover("k", SESSION_A, "v1").reason == "miss"
+    # the old-tag data was deleted, and (same unfenceable-zombie hole as a miss) the key was
+    # re-CLAIMED for the caller under the new tag: generation 1, no data fields
+    assert backend.peek_generation("k") == 1
+    assert backend.takeover("k", SESSION_A, "v2").fields == {}
+    # a takeover with the old tag hits the claimed key and resets again (schema flapping is
+    # always a reset, never a silent restore across tags)
+    assert backend.takeover("k", SESSION_A, "v1").reason == "schema-reset"
 
 
 def test_fenced_flush_rejects_stale_generation(backend):
