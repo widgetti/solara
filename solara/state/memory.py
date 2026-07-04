@@ -46,6 +46,27 @@ class MemoryStateBackend(StateBackend):
             return None
         return entry
 
+    def _claim(self, kernel_id: str, session_hmacs: Sequence[bytes], schema_tag: str) -> None:
+        """Write the fresh-start entry (generation 1, no fields) for claim-on-miss.
+
+        Caller holds ``self._lock``. Stores the FIRST candidate hmac as the identity (there is no
+        stored identity to verify against on a miss; the first candidate is the current signing
+        key by the sign-first rotation convention). No candidates -> no claim (fail open to the
+        pre-claim behavior rather than storing an unverifiable empty identity).
+        """
+        first = bytes(session_hmacs[0]) if session_hmacs else b""
+        if not first:
+            return
+        from .persist import _default_ttl
+
+        self._store[kernel_id] = _Entry(
+            generation=1,
+            session_hmac=first,
+            schema_tag=schema_tag,
+            fields={},
+            deadline=self._clock() + _default_ttl(),
+        )
+
     def takeover(self, kernel_id: str, session_hmacs: "Union[bytes, Sequence[bytes]]", schema_tag: str) -> TakeoverResult:
         # bytes IS a Sequence[int]: a bare-bytes arg would iterate to ints and silently never match.
         if isinstance(session_hmacs, (bytes, bytearray)):
@@ -53,6 +74,15 @@ class MemoryStateBackend(StateBackend):
         with self._lock:
             entry = self._get_live(kernel_id)
             if entry is None:
+                # claim-on-miss (fencing for never-flushed kernels): write the fresh-start
+                # generation NOW instead of waiting for the first flush. Without the claim,
+                # peek_generation() stays None until something is flushed, so a kernel that never
+                # persists a value (e.g. a login form pre-login) is an UNFENCEABLE zombie: after a
+                # cross-node takeover, _reuse_context_is_stale can never supersede the old context
+                # and it keeps re-serving stale widgets. The claim stores the claimer's identity
+                # (first candidate = the current signing key, sign-first convention) and the same
+                # TTL as a takeover refresh, so an abandoned claim simply expires.
+                self._claim(kernel_id, session_hmacs, schema_tag)
                 return TakeoverResult(reason="miss", generation=1, fields={})
             # verify-ANY (key rotation): the stored identity may have been written under a now-old
             # key; constant-time compare against every candidate.
@@ -60,6 +90,9 @@ class MemoryStateBackend(StateBackend):
                 return TakeoverResult(reason="identity-mismatch", generation=0, fields={})
             if entry.schema_tag != schema_tag:
                 del self._store[kernel_id]
+                # same unfenceable-zombie hole as the miss branch: the caller proceeds at
+                # generation 1 with fresh state, so claim the key for it under the new schema tag.
+                self._claim(kernel_id, session_hmacs, schema_tag)
                 return TakeoverResult(reason="schema-reset", generation=1, fields={})
             entry.generation += 1
             # refresh the deadline on connect, matching the redis Lua's EXPIRE on takeover

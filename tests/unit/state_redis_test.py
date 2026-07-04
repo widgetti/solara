@@ -218,12 +218,26 @@ def test_e2e_double_reconnect_two_backends_one_server(monkeypatch):
     session_id, kernel_id = "sess-r-abab", "kern-r-abab"
     shmac = session_hmac(session_id)
 
-    # instance A flushes "from-A" at generation 1
+    # instance A flushes "from-A" at generation 1. Flush synchronously: since takeover claims
+    # the key on a miss, peek==1 no longer means "A's flush landed" — a debounced flush still
+    # in flight here would race B's takeover below and get fenced, flipping this into the
+    # (designed, §5.5) reclaim-once fight instead of the zombie scenario this test pins.
     context_a = kc.initialize_virtual_kernel(session_id, kernel_id, Mock())
     context_a.page_connect("pageA")
     with context_a:
         r.value = "from-A"
-    assert wait_until(lambda: backend_a.peek_generation(kernel_id) == 1)
+    manager_a = context_a.state_persistence
+    assert manager_a is not None
+    assert manager_a.flush_now() == FlushOutcome.OK
+    assert backend_a.peek_generation(kernel_id) == 1
+    # the page's websocket drops BEFORE the reconnect lands on B (what a real failover does).
+    # Also required for determinism in-process: toestand scopes listeners by kernel *id* (see
+    # watch()'s docstring), so B's r.value below re-marks A dirty; A's debounced flush then gets
+    # fenced, and a fenced kernel WITH a connected page would take the (designed, §5.5)
+    # reclaim-once path — gen 3, defeating the zombie scenario this test pins. Disconnected,
+    # a fenced A is an orphan: it concedes and closes as superseded — the same outcome the
+    # reconnect's staleness check produces, whichever fires first.
+    context_a.page_disconnect("pageA")
 
     # instance B (the second backend on the same server) takes over -> gen 2, then flushes "from-B"
     result_b = backend_b.takeover(kernel_id, shmac, SCHEMA_TAG)

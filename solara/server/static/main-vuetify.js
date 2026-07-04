@@ -136,6 +136,35 @@ async function solaraInit(mountId, appName) {
     // re-entrancy + flapping guard for the soft-remount (§6.2)
     let remountInProgress = false;
 
+    // Purge orphaned comm registrations left on the kernel CONNECTION after a widget manager is
+    // torn down. jupyter-widgets' WidgetModel.close(true) (used by clearStateLocal for a silent
+    // local teardown) deletes the model's reference to its comm but does NOT unregister the
+    // CommHandler from the connection's private _comms map (close(true) skips comm.close()). Those
+    // orphans are inert on the same node, but on a reconnect that lands on a DIFFERENT node still
+    // serving one of those ids, the resync (_loadFromKernel -> createComm(id)) throws
+    // "Comm is already created" mid-map, leaving half the widget tree detached (inputs never sync
+    // to python again). Disposing the CommHandler runs its unregister callback WITHOUT sending a
+    // comm_close over the wire (matching clearStateLocal's silent intent). commIdsBefore is
+    // snapshotted before the new manager registers its fresh comms, so we never purge live ones.
+    function purgeStaleComms(commIdsBefore) {
+        const comms = kernel && kernel._comms;
+        if (!comms || typeof comms.get !== 'function') {
+            // bundle change (private field renamed): skip rather than throw - the collision is
+            // rare (needs a cross-node reconnect) and must not break the common reconnect path.
+            return;
+        }
+        for (const id of commIdsBefore) {
+            const comm = comms.get(id);
+            if (comm && typeof comm.dispose === 'function') {
+                try {
+                    comm.dispose();
+                } catch (e) {
+                    console.warn('solara remount: stale comm dispose failed', e);
+                }
+            }
+        }
+    }
+
     // debug/test hooks on the solara JS global (§6.4): always-on, unstable-by-contract. Getters
     // return the CURRENT closure values because the socket is replaced on every reconnect and the
     // widget manager on every soft-remount, so captured references go stale by design.
@@ -246,6 +275,12 @@ async function solaraInit(mountId, appName) {
         }
         remountInProgress = true;
         app.$data.remounting = true;
+        // snapshot the comm ids registered on the connection BEFORE teardown, so we can purge the
+        // ones orphaned by the silent teardown below (see purgeStaleComms). Taken before the new
+        // manager runs, so it can only ever name comms from the generation we are tearing down.
+        const commIdsBefore = (kernel && kernel._comms && typeof kernel._comms.keys === 'function')
+            ? [...kernel._comms.keys()]
+            : [];
         try {
             // tear down the dead widget manager (disposes models). On a fresh kernel the old comms
             // are already gone server-side, so prefer the silent local teardown (bundle >= 0.5.0)
@@ -273,6 +308,10 @@ async function solaraInit(mountId, appName) {
                     console.warn('solara remount: dispose failed', e);
                 }
             }
+            // the silent teardown above (clearStateLocal / close(true)) leaves the disposed
+            // widgets' CommHandlers registered on the connection; purge them now, before the new
+            // manager registers its own, so a later cross-node reconnect resync cannot collide.
+            purgeStaleComms(commIdsBefore);
             // settled promises would otherwise make the re-mount a no-op (§6.2)
             delete widgetPromises[mountId];
             delete widgetResolveFns[mountId];

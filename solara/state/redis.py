@@ -34,8 +34,30 @@ logger = logging.getLogger("solara.state.redis")
 # Verify identity (verify-ANY across the candidate session HMACs, for key rotation) -> check schema
 # -> bump generation -> refresh TTL -> read reactive:* fields, as one atomic unit. Returns a flat
 # array: {reason, generation [, field, value]...}.
+#
+# On a MISS (and after a schema reset) the key is CLAIMED: the fresh-start generation (1), the
+# claimer's identity (ARGV[3] - the current signing key, sign-first rotation convention; on a miss
+# there is no stored hmac to verify against) and the schema tag are written with the takeover TTL.
+# Without the claim, peek_generation() stays nil until the first flush, so a kernel that never
+# persists a value (e.g. a login form pre-login) is an UNFENCEABLE zombie: after a cross-node
+# takeover the old node's _reuse_context_is_stale can never supersede its live context, and it
+# keeps re-serving stale widgets whose inputs no longer sync. An abandoned claim simply
+# TTL-expires; the claimer's first flush (generation 1) becomes a plain fenced update.
 _LUA_TAKEOVER = """
+local function claim()
+    if not ARGV[3] then
+        return
+    end
+    redis.call('HSET', KEYS[1], '__generation__', 1)
+    redis.call('HSET', KEYS[1], '__session_id__', ARGV[3])
+    redis.call('HSET', KEYS[1], '__version__', ARGV[1])
+    local ttl = tonumber(ARGV[2])
+    if ttl and ttl >= 1 then
+        redis.call('EXPIRE', KEYS[1], ttl)
+    end
+end
 if redis.call('EXISTS', KEYS[1]) == 0 then
+    claim()
     return {'miss', 1}
 end
 local stored_session = redis.call('HGET', KEYS[1], '__session_id__')
@@ -54,6 +76,7 @@ end
 local stored_version = redis.call('HGET', KEYS[1], '__version__')
 if (not stored_version) or (stored_version ~= ARGV[1]) then
     redis.call('DEL', KEYS[1])
+    claim()
     return {'schema-reset', 1}
 end
 local generation = redis.call('HINCRBY', KEYS[1], '__generation__', 1)
