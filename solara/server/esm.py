@@ -23,11 +23,18 @@ _import_map_per_kernel: Dict[str, ipyreact.importmap.ImportMap] = {}
 # in solara server, we'll monkey patch ipyreact.module with this
 def define_module(name, module: Union[str, Path]):
     # collect the dependencies at this moment
-    dependencies = list(_modules.keys())
-    logger.info("define module %s %s (dependencies=%r)", name, module, dependencies)
-    if name in _modules:
-        old_module, dependencies = _modules[name]
-    _modules[name] = (module, dependencies)
+    with lock:
+        dependencies = list(_modules.keys())
+        logger.info("define module %s %s (dependencies=%r)", name, module, dependencies)
+        if name in _modules:
+            old_module, dependencies = _modules[name]
+        _modules[name] = (module, dependencies)
+    if isinstance(module, Path):
+        # rebuilding the bundle (e.g. vite/esbuild --watch) triggers a normal
+        # solara reload, which re-reads the file in create_modules
+        from solara.server import reload
+
+        reload.reloader.watcher.add_file(str(module))
     if kernel_context.has_current_context():
         create_modules()
     return None
@@ -38,13 +45,26 @@ def get_module_names():
 
 
 def create_modules():
-    kernel_id = kernel_context.get_current_context().id
+    context = kernel_context.get_current_context()
+    kernel_id = context.id
+    if kernel_id not in _modules_added_per_kernel:
+        # widgets close with the kernel; drop our per-kernel bookkeeping too
+        def cleanup(kernel_id=kernel_id):
+            _modules_added_per_kernel.pop(kernel_id, None)
+            _import_map_per_kernel.pop(kernel_id, None)
+
+        context.on_close(cleanup)
     _modules_added = _modules_added_per_kernel[kernel_id]
     logger.info("create modules %s", _modules)
     widgets = {}
     with lock:
         for name, (module, dependencies) in _modules.items():
-            if name not in _modules_added:
+            widget = _modules_added.get(name)
+            if widget is not None and widget.comm is None:
+                # closed by context.restart (hot reload) - a trait update
+                # would go nowhere, recreate instead
+                widget = None
+            if widget is None:
                 _modules_added[name] = create_module(name, module, dependencies=dependencies)
                 logger.info("create module %s %s %s", name, module, dependencies)
             else:
@@ -62,7 +82,11 @@ def create_module(name, module: Union[str, Path], dependencies: List[str]):
 def create_import_map():
     kernel_id = kernel_context.get_current_context().id
     with lock:
-        if kernel_id not in _import_map_per_kernel:
+        widget = _import_map_per_kernel.get(kernel_id)
+        if widget is not None and widget.comm is None:
+            # closed by context.restart (hot reload), recreate instead
+            widget = None
+        if widget is None:
             _import_map_per_kernel[kernel_id] = ipyreact.importmap.ImportMap(import_map=ipyreact.importmap._effective_import_map)
             logger.info("create import map %s", ipyreact.importmap._effective_import_map)
         else:
