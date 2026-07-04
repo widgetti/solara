@@ -92,9 +92,11 @@ server_classes = {
 @pytest.fixture(params=SERVERS, scope="session")
 def solara_server(request):
     server_class = server_classes[request.param]
-    global TEST_PORT
-    webserver = server_class(TEST_PORT)
-    TEST_PORT += 1
+    # a FIXED port per server param, not a drifting global counter: with xdist load scheduling
+    # this session fixture is torn down and re-created on every flask<->starlette param switch,
+    # and a counter would drift into the other worker's port range (and past the valid auth0
+    # callback ports, breaking the oauth tests)
+    webserver = server_class(TEST_PORT + SERVERS.index(request.param))
 
     try:
         webserver.serve_threaded()

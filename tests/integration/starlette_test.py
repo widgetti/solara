@@ -10,12 +10,6 @@ import solara
 import solara.server.starlette
 from solara.server import settings
 
-try:
-    from . import conftest
-except ImportError:
-    pass
-
-
 HERE = Path(__file__).parent
 
 
@@ -40,9 +34,9 @@ def test_starlette_mount(page_session: playwright.sync_api.Page, solara_app, ext
     settings.main.root_path = None
     settings.main.base_url = ""
     try:
-        port = conftest.TEST_PORT
-        conftest.TEST_PORT += 1
-        server = solara.server.starlette.ServerStarlette(port=port, starlette_app=starlette_app)
+        # port=0 gives an OS-assigned free port: this server does not need to be in the auth0
+        # callback range, and taking TEST_PORT + 1 collides with other xdist workers
+        server = solara.server.starlette.ServerStarlette(port=0, starlette_app=starlette_app)
         server.serve_threaded()
         server.wait_until_serving()
         with extra_include_path(HERE), solara_app("starlette_test", init=False):
