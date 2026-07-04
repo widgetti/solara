@@ -1,10 +1,14 @@
 import logging
+import os
 import threading
 import time
 from typing import Optional
 import socket
 
 logger = logging.getLogger("solara.server.threaded")
+
+# a cold jupyter lab on a slow windows CI runner can take ~18s to start serving
+SERVER_START_TIMEOUT = float(os.environ.get("SOLARA_TEST_SERVER_START_TIMEOUT", "30"))
 
 
 def get_free_port():
@@ -46,14 +50,18 @@ class ServerBase(threading.Thread):
         if self.error:
             raise self.error
 
-    def wait_until_serving(self, timeout: float = 10):
+    def wait_until_serving(self, timeout: float = SERVER_START_TIMEOUT):
         start = time.time()
         while time.time() < start + timeout:
+            if self.error is not None:
+                # without this, a server that crashes after started.set() burns the full
+                # timeout and hides the real traceback behind the generic RuntimeError
+                raise RuntimeError(f"Server thread for {self.base_url} failed") from self.error
             if self.has_started():
                 time.sleep(0.1)  # give some time to really start
                 return
             time.sleep(0.05)
-        raise RuntimeError(f"Server at {self.base_url} does not seem to be running")
+        raise RuntimeError(f"Server at {self.base_url} does not seem to be running after waiting {timeout} seconds")
 
     def serve(self):
         raise NotImplementedError

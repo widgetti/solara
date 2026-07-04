@@ -1,8 +1,11 @@
+import http.server
+import json
 import threading
 import time
 from pathlib import Path
 from typing import Optional
 
+import pytest
 from reacton import component
 from reacton import ipywidgets as w
 from reacton import render_fixed
@@ -12,6 +15,42 @@ from solara.datatypes import FileContentResult
 from solara.hooks import use_download, use_fetch, use_json, use_thread
 
 from .common import busy_wait_compare
+
+TEXT_CONTENT = b"solara test file content\n" * 13
+JSON_CONTENT = json.dumps([{"name": f"pokemon-{i}"} for i in range(799)]).encode("utf8")
+routes = {
+    "/file.txt": (TEXT_CONTENT, "text/plain"),
+    "/index.json": (JSON_CONTENT, "application/json"),
+}
+
+
+@pytest.fixture(scope="module")
+def local_server_url():
+    # tests used to fetch from raw.githubusercontent.com, which made them flaky on CI
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            if self.path in routes:
+                body, content_type = routes[self.path]
+                self.send_response(200)
+                self.send_header("Content-Type", content_type)
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+            else:
+                self.send_error(404)
+
+        def log_message(self, format, *args):
+            pass
+
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    server.daemon_threads = True
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        yield f"http://127.0.0.1:{server.server_address[1]}"
+    finally:
+        server.shutdown()
+        thread.join()
 
 
 def test_hook_thread():
@@ -136,9 +175,8 @@ def test_use_thread_intrusive_cancel():
     assert last_value == 99
 
 
-def test_hook_download(tmpdir):
-    url = "https://raw.githubusercontent.com/widgetti/reacton/master/.gitignore"
-    # content_length = 865
+def test_hook_download(tmpdir, local_server_url):
+    url = local_server_url + "/file.txt"
 
     path = tmpdir / "file.txt"
 
@@ -165,9 +203,9 @@ def test_hook_download(tmpdir):
     assert label.value == expected
 
 
-def test_hook_use_fetch():
-    url = "https://raw.githubusercontent.com/widgetti/reacton/master/.gitignore"
-    content_length = 888
+def test_hook_use_fetch(local_server_url):
+    url = local_server_url + "/file.txt"
+    content_length = len(TEXT_CONTENT)
 
     result = None
 
@@ -187,8 +225,8 @@ def test_hook_use_fetch():
     assert label.value == expected
 
 
-def test_hook_use_json():
-    url = "https://raw.githubusercontent.com/jherr/pokemon/0722479d4153b1db0d0326956b08b37f44a95a5f/index.json"
+def test_hook_use_json(local_server_url):
+    url = local_server_url + "/index.json"
     pokemons = 799
 
     result = None

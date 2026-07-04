@@ -46,6 +46,8 @@ def test_cdn_via_altair(ipywidgets_runner, page_session: playwright.sync_api.Pag
 
     ipywidgets_runner(kernel_code)
     vega_selector = page_session.locator('details[title="Click to view actions"]')
-    vega_selector.wait_for(state="attached")
+    # the vega/vega-lite/vega-embed js loads from the real CDN (the point of this test), which can
+    # be slow on CI: the default 30s timeout was the most frequent flake in the whole test suite
+    vega_selector.wait_for(state="attached", timeout=60_000)
     # assert_solara_snapshot(vega_selector.screenshot())
     # page_session.wait_for_timeout(1000)
