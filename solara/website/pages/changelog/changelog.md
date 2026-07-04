@@ -1,5 +1,9 @@
 # Solara Changelog
 
+## Version 1.58.2
+
+   * Bug Fix: Purge stale comms on soft-remount and claim backend key on takeover miss (zombie-kernel fencing) to make state persistence robust against orphaned comms/kernels. [5a7e8767](https://github.com/widgetti/solara/commit/5a7e8767)
+
 ## Version 1.58.1
 
    * Bug Fix: Make ES module (`define_module`) hot reload survive in-place app reload. [c5ab5e36](https://github.com/widgetti/solara/commit/c5ab5e36)
