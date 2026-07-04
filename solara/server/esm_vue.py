@@ -8,7 +8,7 @@ import logging
 import threading
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import ipyvue.esm
 
@@ -21,13 +21,16 @@ _modules: Dict[str, Tuple[Union[str, Path], List[str]]] = {}
 _modules_added_per_kernel: Dict[str, Dict[str, ipyvue.esm.Module]] = defaultdict(dict)
 
 
-def define_module(name: str, module: Union[str, Path]):
+def define_module(name: str, module: Union[str, Path, None] = None, *, code: Optional[str] = None):
+    if (module is None) == (code is None):
+        raise TypeError("pass either module (url or Path) or code")
+    source: Union[str, Path] = _CODE_PREFIX + code if code is not None else module  # type: ignore[assignment]
     with lock:
         dependencies = list(_modules.keys())
-        logger.info("define vue module %s %s (dependencies=%r)", name, module, dependencies)
+        logger.info("define vue module %s (dependencies=%r)", name, dependencies)
         if name in _modules:
             _old_module, dependencies = _modules[name]
-        _modules[name] = (module, dependencies)
+        _modules[name] = (source, dependencies)
     if isinstance(module, Path):
         # rebuilding the bundle (e.g. vite build --watch) triggers a normal
         # solara reload, which re-reads the file in create_modules
@@ -43,12 +46,18 @@ def get_module_names() -> List[str]:
     return list(_modules.keys())
 
 
+# inline source is stored with this prefix so a plain str always means a url
+_CODE_PREFIX = "\x00code:"
+
+
 def _is_url(module: Union[str, Path]) -> bool:
-    return isinstance(module, str) and (module.startswith("http") or module.startswith("/"))
+    return isinstance(module, str) and not module.startswith(_CODE_PREFIX)
 
 
 def _read(module: Union[str, Path]) -> str:
-    return module.read_text(encoding="utf8") if isinstance(module, Path) else module
+    if isinstance(module, Path):
+        return module.read_text(encoding="utf8")
+    return module[len(_CODE_PREFIX) :] if module.startswith(_CODE_PREFIX) else module
 
 
 def create_modules():
