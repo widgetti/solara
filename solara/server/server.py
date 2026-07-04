@@ -364,8 +364,20 @@ def read_root(
                 code = f'<script src="{url}"></script>'
         return Markup(code)
 
+    module_urls = []
+    try:
+        import ipyvue
+
+        if hasattr(ipyvue, "define_module"):
+            from solara.server import esm_vue
+
+            module_urls = esm_vue.get_module_urls()
+    except ModuleNotFoundError:
+        pass
+
     resources = {
         "theme": "light",
+        "module_urls": module_urls,
         "nbextensions": nbextensions,
         "nbextensions_hashes": nbextensions_hashes,
         "include_css": include_css,

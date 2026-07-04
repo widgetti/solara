@@ -108,3 +108,12 @@ def test_component_vue_esm_widget(virtual_context):
     widget = box.children[0]
     assert widget.template.esm_module == "esm-vue-test-module"
     assert widget.count == 5
+
+
+def test_get_module_urls(clean_esm_state, tmp_path: Path):
+    esm_vue.define_module("esm-vue-url-module", "/static/public/bundle.mjs")
+    module = tmp_path / "bundle.mjs"
+    module.write_text("export default 1")
+    esm_vue.define_module("esm-vue-file-module", module)
+    # only url-backed modules can be preloaded by the page
+    assert esm_vue.get_module_urls() == ["/static/public/bundle.mjs"]
