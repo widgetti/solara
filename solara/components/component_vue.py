@@ -1,6 +1,6 @@
 import inspect
 import os
-from typing import Any, Callable, Dict, Type
+from typing import Any, Callable, Dict, Optional, Type
 
 import ipyvue as vue
 import ipyvuetify as v
@@ -65,18 +65,36 @@ def _widget_from_signature(
 
 
 def _widget_vue(
-    vue_path: str,
+    vue_path: Optional[str],
     vuetify=True,
     to_json: Dict[str, Callable[[Any, widgets.Widget], Any]] = {},
     from_json: Dict[str, Callable[[Any, widgets.Widget], Any]] = {},
     tags: Dict[str, Any] = {},
+    esm_module: Optional[str] = None,
+    esm_export: Optional[str] = None,
 ) -> Callable[[Callable[P, None]], Type[v.VuetifyTemplate]]:
     def decorator(func: Callable[P, None]):
-        class VuetifyWidgetSolara(v.VuetifyTemplate):
-            template_file = (os.path.abspath(inspect.getfile(func)), vue_path)
+        if esm_module is not None:
+            # the component is an export of a precompiled ES module
+            # (see ipyvue.define_module) instead of a compiled-in-the-browser
+            # .vue file
+            class VuetifyWidgetSolara(v.VuetifyTemplate):
+                @traitlets.default("template")
+                def _default_template(self):
+                    return vue.Template(esm_module=esm_module, esm_export=esm_export)
 
-        class VueWidgetSolara(vue.VueTemplate):
-            template_file = (os.path.abspath(inspect.getfile(func)), vue_path)
+            class VueWidgetSolara(vue.VueTemplate):
+                @traitlets.default("template")
+                def _default_template(self):
+                    return vue.Template(esm_module=esm_module, esm_export=esm_export)
+
+        else:
+
+            class VuetifyWidgetSolara(v.VuetifyTemplate):  # type: ignore[no-redef]
+                template_file = (os.path.abspath(inspect.getfile(func)), vue_path)
+
+            class VueWidgetSolara(vue.VueTemplate):  # type: ignore[no-redef]
+                template_file = (os.path.abspath(inspect.getfile(func)), vue_path)
 
         base_class = VuetifyWidgetSolara if vuetify else VueWidgetSolara
         widget_class = _widget_from_signature("VueWidgetSolaraSub", base_class, func, "vue_", to_json=to_json, from_json=from_json, tags=tags)
@@ -87,11 +105,13 @@ def _widget_vue(
 
 
 def component_vue(
-    vue_path: str,
+    vue_path: Optional[str] = None,
     vuetify=True,
     tags: Dict[str, Any] = {},
     to_json: Dict[str, Callable[[Any, widgets.Widget], Any]] = {},
     from_json: Dict[str, Callable[[Any, widgets.Widget], Any]] = {},
+    esm_module: Optional[str] = None,
+    esm_export: Optional[str] = None,
 ) -> Callable[[Callable[P, None]], Callable[P, solara.Element]]:
     """Decorator to create a component backed by a Vue template.
 
@@ -165,15 +185,40 @@ def component_vue(
 
     ```
 
+    ## Precompiled ES modules
+
+    Instead of a `.vue` file that is compiled in the browser, the component can be an export of a
+    precompiled ES module (e.g. built with vite, see `ipyvue.define_module`). This requires ipyvue
+    with ES module support:
+
+    ```python
+    import ipyvue
+    import solara
+
+    ipyvue.define_module("my-components", Path(__file__).parent / "dist/my-components.mjs")
+
+    @solara.component_vue(esm_module="my-components", esm_export="Counter")
+    def Counter(count: int = 0, event_bump: Callable[[int], None] = None):
+        pass
+    ```
+
     ## Arguments
 
      * `vue_path`: The path to the Vue template file.
      * `vuetify`: Whether the Vue template uses Vuetify components.
+     * `esm_module`: Name of an ES module registered with `ipyvue.define_module` (alternative to `vue_path`).
+     * `esm_export`: The export of that module to use as the component (default: the default export).
 
     """
+    if (vue_path is None) == (esm_module is None):
+        raise TypeError("pass either vue_path or esm_module")
+    if esm_module is not None and not hasattr(vue, "define_module"):
+        raise RuntimeError("esm_module requires ipyvue with ES module support")
 
     def decorator(func: Callable[P, None]):
-        VueWidgetSolaraSub = _widget_vue(vue_path, vuetify=vuetify, to_json=to_json, from_json=from_json, tags=tags)(func)
+        VueWidgetSolaraSub = _widget_vue(
+            vue_path, vuetify=vuetify, to_json=to_json, from_json=from_json, tags=tags, esm_module=esm_module, esm_export=esm_export
+        )(func)
 
         def wrapper(*args, **kwargs):
             event_callbacks = {}

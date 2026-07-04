@@ -369,6 +369,22 @@ def patch_ipyreact():
     ipyreact.importmap._update_import_map = lambda: None
 
 
+def patch_ipyvue_esm():
+    import ipyvue
+
+    if not hasattr(ipyvue, "define_module"):
+        # ipyvue without ES module support
+        return
+
+    import ipyvue.esm
+
+    from . import esm_vue
+
+    ipyvue.esm.define_module = esm_vue.define_module
+    ipyvue.esm.get_module_names = esm_vue.get_module_names
+    ipyvue.define_module = esm_vue.define_module
+
+
 @solara.util.once
 def patch_matplotlib():
     import matplotlib
@@ -465,6 +481,8 @@ def patch():
         pass
     else:
         patch_ipyreact()
+
+    patch_ipyvue_esm()
 
     if "MPLBACKEND" not in os.environ:
         if ipykernel_version_major < 6:
