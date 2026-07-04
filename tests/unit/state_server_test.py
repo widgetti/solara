@@ -510,6 +510,37 @@ def test_evict_comm_closes_context(backend, monkeypatch):
     assert kernel_id not in kc.contexts
 
 
+# --- app-status reply shape (the client reconnect state machine's PROBE input) -------------
+
+
+def test_app_status_reply_shape(backend):
+    """Pin the fields the client's reconnect state machine branches on (main-vuetify.js).
+
+    ``containerId`` in particular: it is what lets a client whose rebuild was interrupted
+    (started=true but no view mounted) RE-ATTACH to the running app instead of resyncing
+    state into a viewless page (the REPAIR verdict).
+    """
+    from solara.server.app import client_version, solara_comm_target
+
+    context = kc.initialize_virtual_kernel("sess-status", "kern-status", Mock())
+    fake = _FakeComm()
+    with context:
+        solara_comm_target(fake, None)
+        fake.dispatch({"method": "app-status"})
+        not_started = fake.sent[-1]
+        # a started context (the run handler sets context.container) reports its root container
+        context.container = Mock(_model_id="model-123")
+        fake.dispatch({"method": "app-status"})
+        started = fake.sent[-1]
+
+    assert not_started["started"] is False
+    assert not_started["containerId"] is None
+    assert not_started["clientVersion"] == client_version()
+    assert not_started["canRecover"] is True  # a backend is configured, no bail-out
+    assert started["started"] is True
+    assert started["containerId"] == "model-123"
+
+
 # --- bail-out storm valve (§4.3) ----------------------------------------------------------
 
 

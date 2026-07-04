@@ -21,6 +21,7 @@ Eviction fails closed; the second test pins the fail-closed gate of the HTTP evi
 pinned in tests/unit/state_server_test.py).
 """
 
+import time
 import uuid
 from pathlib import Path
 
@@ -29,6 +30,7 @@ import pytest
 import requests
 
 import solara
+import solara.server.app
 import solara.server.settings
 import solara.state
 import solara.server.kernel_context
@@ -220,6 +222,184 @@ def test_soft_remount_purges_stale_comms(
             page_session.locator("text=IncrementCount").click()
             page_session.locator("text=Value 1").wait_for()
             assert not any("Comm is already created" in e for e in page_errors), page_errors
+    finally:
+        page_session.goto("about:blank")
+
+
+# --- slow app-status probe must not tear down a healthy session ----------------------------
+
+
+@pytest.fixture
+def slow_app_status(monkeypatch):
+    """Delay the server's app-status control-comm reply by ~1s.
+
+    ``_last_restore`` is called only while building the app-status reply, so this delays
+    exactly the reconnect probe - nothing else. 1s is over the old hard 500ms probe timeout
+    (which turned one late reply into the refresh dialog / a full reload) and well under the
+    current per-attempt timeout.
+    """
+    orig = solara.server.app._last_restore
+
+    def slow(manager):
+        time.sleep(1.0)
+        return orig(manager)
+
+    monkeypatch.setattr(solara.server.app, "_last_restore", slow)
+
+
+def test_slow_app_status_probe_does_not_reload(
+    browser: playwright.sync_api.Browser,
+    page_session: playwright.sync_api.Page,
+    solara_server,
+    solara_app,
+    extra_include_path,
+    request,
+    state_settings,
+    slow_app_status,
+):
+    """A single slow app-status probe on reconnect must NOT conclude "not recoverable".
+
+    Regression test for a spurious full-page reload seen behind a round-robin load balancer:
+    the reconnect handler probed app-status with a hard 500ms timeout and treated ONE timeout
+    as "not started, not recoverable" -> refresh dialog + shutdownKernel of a perfectly healthy
+    kernel (and with SOLARA_THEME_FORCE_REFRESH=True an immediate location.reload()). A busy or
+    cold backend (here: a 1s reply latency) or a second reconnect racing the probe was enough.
+    The probe now retries with a longer per-attempt timeout, and a superseded cycle never
+    concludes; the dialog requires consistent failure.
+    """
+    try:
+        with extra_include_path(HERE), solara_app("reconnect_state_test:Page"):
+            page_session.goto(solara_server.base_url)
+            page_session.locator("text=Value 0").wait_for()
+            # reload canary: survives everything except an actual page (re)load
+            page_session.evaluate("window.__reloadCanary = true")
+            page_session.locator("text=IncrementCount").click()
+            page_session.locator("text=Value 1").wait_for()
+
+            # a plain network blip: drop the raw socket, kernel and context stay alive
+            page_session.evaluate("solara.debug.dropConnection()")
+            page_session.wait_for_function("() => window.solara && solara.debug && solara.debug.reconnectCount >= 1", timeout=30000)
+
+            # deterministic sync point for the probe verdict: on success the handler stores the
+            # reply's lastRestore (the ~1s-late reply must WIN); on the old code the 500ms
+            # timeout flips needsRefresh instead and lastRestore stays null.
+            page_session.wait_for_function(
+                "() => (solara.debug.lastRestore !== null) || (window.app && app.$data.needsRefresh)",
+                timeout=30000,
+            )
+            assert not page_session.evaluate("window.app && app.$data.needsRefresh"), "one slow app-status probe tore the session down (refresh dialog)"
+            assert page_session.evaluate("window.__reloadCanary === true"), "the page reloaded"
+            assert page_session.locator("text=Please refresh the page").count() == 0
+
+            # and the session actually resynced: the button still reaches python
+            page_session.locator("text=IncrementCount").click()
+            page_session.locator("text=Value 2").wait_for(timeout=15000)
+    finally:
+        page_session.goto("about:blank")
+
+
+# --- interrupted rebuild must self-heal on the next reconnect (the empty-mount wedge) ------
+
+
+@pytest.fixture
+def lose_remount_run_reply(monkeypatch):
+    """Sabotage the SECOND app run (the soft-remount's) so its 'finished' reply is lost.
+
+    After ``load_app_widget`` completes (the app IS started server-side, container set), the
+    kernel's websockets are removed from the session and closed. Removing them FIRST makes the
+    loss deterministic on every server: starlette's ``close()`` is scheduled through a portal,
+    so a closed-but-still-draining socket could otherwise let the reply escape. The client's
+    ``widgetManager.run()`` promise then never settles - exactly what a socket drop between
+    run() and the mount produces in production. The client is left with started=true
+    server-side and NO view client-side: the empty-mount wedge.
+    """
+    import solara.server.app as server_app
+
+    orig = server_app.load_app_widget
+    calls = {"n": 0}
+
+    def sabotaged(state, app, path):
+        orig(state, app, path)
+        calls["n"] += 1
+        if calls["n"] == 2:
+            context = solara.server.kernel_context.get_current_context()
+            sockets = list(context.kernel.session.websockets)
+            context.kernel.session.websockets.clear()
+            for ws in sockets:
+                try:
+                    ws.close()
+                except Exception:  # noqa
+                    pass
+
+    monkeypatch.setattr(server_app, "load_app_widget", sabotaged)
+    return calls
+
+
+def test_interrupted_remount_repairs_on_next_reconnect(
+    browser: playwright.sync_api.Browser,
+    page_session: playwright.sync_api.Page,
+    solara_server,
+    solara_app,
+    extra_include_path,
+    request,
+    state_settings,
+    lose_remount_run_reply,
+):
+    """A rebuild interrupted mid-way (lost run reply + socket drop) must self-heal.
+
+    Regression test for the empty-mount wedge: a soft-remount whose ``run()`` reply is lost
+    hangs after it already tore the client view down. The old ``remountInProgress`` boolean
+    then swallowed every later remount, and the next probe (started=true, the run DID execute
+    server-side) resynced state into a viewless page: empty DOM, no errors, forever.
+
+    The state machine invariant under test: a rebuild either completes to a mounted view, or
+    leaves ``viewMounted == false``, which the NEXT reconnect cycle detects (started=true from
+    the probe) and REPAIRs by re-attaching to the running app via the reply's containerId.
+
+    NOTE the stale-DOM trap: after ``simulateFailover()`` the pre-failover DOM stays visible
+    until the rebuild's teardown, so DOM locators alone prove nothing here. The sync points
+    are the fixture's server-side call counter and the client's remountCount/viewMounted;
+    only the final click round-trip proves a live view.
+    """
+    calls = lose_remount_run_reply
+    try:
+        with extra_include_path(HERE), solara_app("reconnect_state_test:Page"):
+            page_session.goto(solara_server.base_url)
+            page_session.locator("text=Value 0").wait_for()
+            page_session.locator("text=IncrementCount").click()
+            page_session.locator("text=Value 1").wait_for()
+            # reload canary: survives everything except an actual page (re)load
+            page_session.evaluate("window.__reloadCanary = true")
+
+            # failover -> reconnect cycle 1 -> REMOUNT -> its run() executes server-side (the
+            # app restores "Value 1") but the reply is destroyed together with the socket by
+            # the fixture -> the rebuild hangs, view torn down, viewMounted stays false
+            page_session.evaluate("solara.debug.simulateFailover()")
+
+            # sync point 1: the remount's run reached the server and its reply was destroyed
+            # (the server runs threaded in-process, so we can poll the fixture's counter)
+            deadline = time.time() + 20
+            while calls["n"] < 2 and time.time() < deadline:
+                page_session.wait_for_timeout(100)
+            assert calls["n"] >= 2, "the soft-remount's run never reached the server"
+
+            # sync point 2: the wedge cannot resolve itself (the hung rebuild never counts) -
+            # a completed mount from here on MUST be the next cycle's REPAIR. On the old code
+            # remountCount stays 0 forever (the wedge), so this wait times out.
+            page_session.wait_for_function(
+                "() => window.solara && solara.debug && solara.debug.remountCount >= 1 && solara.debug.viewMounted()",
+                timeout=30000,
+            )
+
+            assert not page_session.evaluate("window.app && app.$data.needsRefresh"), "the wedge escalated to the refresh dialog"
+            assert page_session.evaluate("window.__reloadCanary === true"), "the page reloaded"
+            assert page_session.locator("text=Please refresh the page").count() == 0
+
+            # the REPAIR re-attached to the SAME app run (persisted value restored by run #2),
+            # and the view is live: the button round-trips to python
+            page_session.locator("text=Value 1").wait_for(timeout=15000)
+            page_session.locator("text=IncrementCount").click()
+            page_session.locator("text=Value 2").wait_for(timeout=15000)
     finally:
         page_session.goto("about:blank")
 
