@@ -337,7 +337,10 @@ class AppScript:
             # ask all contexts/users to reload
             for context in context_values:
                 with context:
-                    context.reload()
+                    try:
+                        context.reload()
+                    except Exception:
+                        logger.exception("Could not reload context %s", context.id)
 
 
 def _run_app(
@@ -407,6 +410,13 @@ def load_app_widget(app_state, app_script: AppScript, pathname: str):
         # will create widgets, but will clean itself up when the kernel closes
         solara.server.esm.create_modules()
         solara.server.esm.create_import_map()
+
+    import ipyvue
+
+    if hasattr(ipyvue, "define_module"):
+        import solara.server.esm_vue
+
+        solara.server.esm_vue.create_modules()
 
     try:
         render_context = context.app_object
@@ -507,8 +517,11 @@ def solara_comm_target(comm, msg_first):
 
     def reload():
         comm = comm_ref()
-        assert comm is not None
         context = kernel_context.get_current_context()
+        if comm is None:
+            # client is gone (page closed/navigated); nothing to reload
+            logger.debug(f"No control comm for context {context.id}, skipping reload")
+            return
         # we don't reload the app ourself, we send a message to the client
         # this ensures that we don't run code of any client that for some reason is connected
         # but not working anymore. And it indirectly passes a message from the current thread
