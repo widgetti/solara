@@ -21,19 +21,25 @@ _import_map_per_kernel: Dict[str, ipyreact.importmap.ImportMap] = {}
 
 
 # in solara server, we'll monkey patch ipyreact.module with this
-def define_module(name, module: Union[str, Path, None] = None, *, code: Optional[str] = None):
-    if (module is None) == (code is None):
-        raise TypeError("pass either module (url or Path) or code")
+def define_module(name: str, module: Optional[Path] = None, *, code: Optional[str] = None, url: Optional[str] = None):
+    if sum(x is not None for x in (module, code, url)) != 1:
+        raise TypeError("pass exactly one of module (a Path), code or url")
+    if module is not None and not isinstance(module, Path):
+        raise TypeError("module must be a Path; use url=... or code=... for strings")
+    source: Union[str, Path]
     if code is not None:
-        module = _CODE_PREFIX + code
-    assert module is not None
-    # collect the dependencies at this moment
+        source = _CODE_PREFIX + code
+    elif url is not None:
+        source = url
+    else:
+        assert module is not None
+        source = module
     with lock:
         dependencies = list(_modules.keys())
-        logger.info("define module %s %s (dependencies=%r)", name, module, dependencies)
+        logger.info("define module %s (dependencies=%r)", name, dependencies)
         if name in _modules:
             old_module, dependencies = _modules[name]
-        _modules[name] = (module, dependencies)
+        _modules[name] = (source, dependencies)
     if isinstance(module, Path):
         # rebuilding the bundle (e.g. vite/esbuild --watch) triggers a normal
         # solara reload, which re-reads the file in create_modules

@@ -27,7 +27,7 @@ import solara
 
 ipyvue.define_module(
     "my-components",
-    """
+    code="""
     import { h } from "vue";
 
     export const Counter = {
@@ -102,11 +102,11 @@ and every save of a `.vue` file rebuilds the bundle and hot reloads the page in 
 
 ## Serving the bundle by url (production)
 
-`define_module` also accepts a **url** (a plain `str` always means a url; use `code=` for
-inline source). Serve the built bundle from your app's `public/` directory and pass the url:
+`define_module` also accepts an explicit **url** keyword (next to `module` for a `Path` and
+`code=` for inline source). Serve the built bundle from your app's `public/` directory and pass the url:
 
 ```python
-ipyvue.define_module("my-components", "/static/public/my-components.mjs")
+ipyvue.define_module("my-components", url="/static/public/my-components.mjs")
 ```
 
 For urls solara serves itself this enables aggressive caching without staleness:

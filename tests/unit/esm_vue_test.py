@@ -111,7 +111,7 @@ def test_component_vue_esm_widget(virtual_context):
 
 
 def test_get_module_urls(clean_esm_state, tmp_path: Path):
-    esm_vue.define_module("esm-vue-url-module", "/static/public/bundle.mjs")
+    esm_vue.define_module("esm-vue-url-module", url="/static/public/bundle.mjs")
     module = tmp_path / "bundle.mjs"
     module.write_text("export default 1")
     esm_vue.define_module("esm-vue-file-module", module)
@@ -152,7 +152,7 @@ def test_module_widget_and_page_share_versioned_url(virtual_context, tmp_path: P
     monkeypatch.setattr(server, "public_directories", lambda: [public])
     server._public_hash_cache.clear()
 
-    esm_vue.define_module("esm-vue-versioned", "/static/public/bundle.mjs")
+    esm_vue.define_module("esm-vue-versioned", url="/static/public/bundle.mjs")
     widget = esm_vue.create_modules()["esm-vue-versioned"]
     # the preload hint in the page and the widget must agree, so the
     # preloaded response is a cache hit
