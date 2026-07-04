@@ -37,7 +37,7 @@ def virtual_context(clean_esm_state):
 
 
 def test_create_modules_per_kernel_reuse(virtual_context):
-    esm_vue.define_module("esm-vue-test-module", "export default 1")
+    esm_vue.define_module("esm-vue-test-module", code="export default 1")
     widgets = esm_vue.create_modules()
     widget = widgets["esm-vue-test-module"]
     # a second call must reuse the same (live) widget for this kernel
@@ -45,7 +45,7 @@ def test_create_modules_per_kernel_reuse(virtual_context):
 
 
 def test_create_modules_recreates_closed_widget(virtual_context):
-    esm_vue.define_module("esm-vue-test-module", "export default 1")
+    esm_vue.define_module("esm-vue-test-module", code="export default 1")
     widget = esm_vue.create_modules()["esm-vue-test-module"]
     # context.restart() closes the kernel's widgets on (hot) reload; updating
     # a trait on a closed widget never reaches the browser, so create_modules
@@ -58,9 +58,9 @@ def test_create_modules_recreates_closed_widget(virtual_context):
 
 
 def test_redefine_module_updates_live_widget(virtual_context):
-    esm_vue.define_module("esm-vue-test-module", "export default 1")
+    esm_vue.define_module("esm-vue-test-module", code="export default 1")
     widget = esm_vue.create_modules()["esm-vue-test-module"]
-    esm_vue.define_module("esm-vue-test-module", "export default 2")
+    esm_vue.define_module("esm-vue-test-module", code="export default 2")
     assert esm_vue.create_modules()["esm-vue-test-module"] is widget
     assert widget.code == "export default 2"
 
@@ -79,7 +79,7 @@ def test_define_module_path_is_watched(clean_esm_state, tmp_path: Path, monkeypa
 def test_kernel_bookkeeping_dropped_on_close(clean_esm_state):
     context = kernel_context.VirtualKernelContext(id="esm-vue-test-2", kernel=Kernel(), session_id="session-esm-vue-2")
     with context:
-        esm_vue.define_module("esm-vue-test-module", "export default 1")
+        esm_vue.define_module("esm-vue-test-module", code="export default 1")
         esm_vue.create_modules()
         assert "esm-vue-test-2" in esm_vue._modules_added_per_kernel
     context.close()
