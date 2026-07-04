@@ -22,11 +22,18 @@ _modules_added_per_kernel: Dict[str, Dict[str, ipyvue.esm.Module]] = defaultdict
 
 
 def define_module(name: str, module: Union[str, Path]):
-    dependencies = list(_modules.keys())
-    logger.info("define vue module %s %s (dependencies=%r)", name, module, dependencies)
-    if name in _modules:
-        _old_module, dependencies = _modules[name]
-    _modules[name] = (module, dependencies)
+    with lock:
+        dependencies = list(_modules.keys())
+        logger.info("define vue module %s %s (dependencies=%r)", name, module, dependencies)
+        if name in _modules:
+            _old_module, dependencies = _modules[name]
+        _modules[name] = (module, dependencies)
+    if isinstance(module, Path):
+        # rebuilding the bundle (e.g. vite build --watch) triggers a normal
+        # solara reload, which re-reads the file in create_modules
+        from solara.server import reload
+
+        reload.reloader.watcher.add_file(str(module))
     if kernel_context.has_current_context():
         create_modules()
     return None
@@ -41,7 +48,14 @@ def _read(module: Union[str, Path]) -> str:
 
 
 def create_modules():
-    kernel_id = kernel_context.get_current_context().id
+    context = kernel_context.get_current_context()
+    kernel_id = context.id
+    if kernel_id not in _modules_added_per_kernel:
+        # widgets close with the kernel; drop our per-kernel bookkeeping too
+        def cleanup(kernel_id=kernel_id) -> None:
+            _modules_added_per_kernel.pop(kernel_id, None)
+
+        context.on_close(cleanup)
     _modules_added = _modules_added_per_kernel[kernel_id]
     widgets = {}
     with lock:
@@ -64,10 +78,3 @@ def create_modules():
                     widget.dependencies = dependencies
             widgets[name] = widget
     return widgets
-
-
-def cull_closed_kernels():
-    with lock:
-        for kernel_id in list(_modules_added_per_kernel):
-            if kernel_id not in kernel_context.contexts:
-                del _modules_added_per_kernel[kernel_id]
