@@ -163,6 +163,67 @@ def test_state_persistence_soft_remount(
         page_session.goto("about:blank")
 
 
+# --- stale-comm purge on soft-remount (regression for the cross-node comm collision) -------
+
+
+def test_soft_remount_purges_stale_comms(
+    browser: playwright.sync_api.Browser,
+    page_session: playwright.sync_api.Page,
+    solara_server,
+    solara_app,
+    extra_include_path,
+    request,
+    state_settings,
+):
+    """A soft-remount must not leak the disposed generation's comms on the kernel connection.
+
+    Mechanism (confirmed against @jupyter-widgets/base): the silent local teardown closes each
+    widget model with ``close(true)`` ("comm already closed remotely"), which deletes the model's
+    reference to its comm but does NOT unregister the CommHandler from the connection's ``_comms``
+    map. Those orphans are inert on the same node, but when a later reconnect lands on a DIFFERENT
+    node that still serves one of those ids, the resync (``_loadFromKernel`` -> ``createComm(id)``)
+    throws "Comm is already created" mid-map and leaves half the widget tree detached (its inputs
+    never sync to python again - e.g. a login button that can never enable). Observed on a
+    round-robin staging deploy.
+
+    We can't stand up two nodes in-process, but we can pin the fix's precondition deterministically:
+    after a real single-process soft-remount, NONE of the comm ids that were registered before the
+    remount may still be registered on the connection. Without the purge they linger (RED); with it
+    they are disposed (GREEN). We also assert the collision error never surfaces and the app stays
+    interactive.
+    """
+    page_errors: list = []
+    page_session.on("pageerror", lambda exc: page_errors.append(str(exc)))
+    try:
+        with extra_include_path(HERE), solara_app("reconnect_state_test:Page"):
+            page_session.goto(solara_server.base_url)
+            page_session.locator("text=Value 0").wait_for()
+
+            # comm ids registered on the connection for THIS (pre-remount) generation
+            comm_ids_before = set(page_session.evaluate("Array.from(solara.debug.kernel()._comms.keys())"))
+            assert comm_ids_before, "expected the kernel connection to have registered comms before failover"
+
+            # real single-process failover -> soft-remount (same path as the marquee test)
+            page_session.evaluate("solara.debug.simulateFailover()")
+            page_session.wait_for_function("() => window.solara && solara.debug && solara.debug.remountCount === 1", timeout=30000)
+            page_session.locator("text=Value 0").wait_for()
+
+            # the disposed generation's comms must be gone from the connection registry
+            comm_ids_after = set(page_session.evaluate("Array.from(solara.debug.kernel()._comms.keys())"))
+            leaked = comm_ids_before & comm_ids_after
+            assert not leaked, f"stale comms from before the remount still registered on the kernel connection: {leaked}"
+
+            # the collision itself must never have surfaced
+            assert not any("Comm is already created" in e for e in page_errors), page_errors
+
+            # app still interactive after the remount: the button syncs to python
+            page_session.locator("text=IncrementCount").click()
+            page_session.locator("text=Value 1").wait_for()
+            assert not any("Comm is already created" in e for e in page_errors), page_errors
+    finally:
+        page_session.goto("about:blank")
+
+
 # --- fail-closed gate (cheap negative, no browser) ----------------------------------------
 
 
