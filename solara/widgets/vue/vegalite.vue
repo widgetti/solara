@@ -67,6 +67,13 @@ module.exports = {
             });
         },
         async loadVega() {
+            // we need to remove the define function to avoid conflicts with requirejs
+            // which will do an early exit:
+            //   https://github.com/requirejs/requirejs/blob/898ff9e60eb6897500720151c0b488b8749fbe8d/require.js#L177
+            // the define function is added by on colab when widgets are loaded:
+            //   https://github.com/googlecolab/colab-cdn-widget-manager/blob/664b13da3289597966bfb5b7dd5e347233d48524/src/amd.ts#L81
+            const previousDefine = window.define;
+            delete window.define;
             await this.loadRequire();
             requirejs.undef("vega")
             requirejs.undef("vega-lite")
@@ -83,6 +90,8 @@ module.exports = {
             // pre load
             await new Promise((resolve, reject) => {
                 require(['vega', 'vega-lite', 'vega-embed'], () => {
+                    // should we restore the define function?
+                    window.define = previousDefine;
                     resolve()
                 }, reject)
             });
