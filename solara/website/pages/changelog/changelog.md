@@ -1,5 +1,9 @@
 # Solara Changelog
 
+## Version 1.58.1
+
+   * Bug Fix: Make ES module (`define_module`) hot reload survive in-place app reload. [c5ab5e36](https://github.com/widgetti/solara/commit/c5ab5e36)
+
 ## Version 1.58.0
 
    * Feature: Opt-in reactive state persistence — survive load-balancer failover without the refresh dialog. Enable with `solara.settings.session.persist = True` (or `SOLARA_SESSION_PERSIST=true`). [489c5573](https://github.com/widgetti/solara/commit/489c5573)
