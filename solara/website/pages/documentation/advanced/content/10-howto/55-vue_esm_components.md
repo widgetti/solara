@@ -100,6 +100,26 @@ ipyvue.define_module("my-components", Path(__file__).parent / "dist/my-component
 Under `solara run`, the bundle file is watched: run `vite build --watch` next to the server
 and every save of a `.vue` file rebuilds the bundle and hot reloads the page in place.
 
+## Serving the bundle by url (production)
+
+`define_module` also accepts a **url** (a plain `str` always means a url; use `code=` for
+inline source). Serve the built bundle from your app's `public/` directory and pass the url:
+
+```python
+ipyvue.define_module("my-components", "/static/public/my-components.mjs")
+```
+
+For urls solara serves itself this enables aggressive caching without staleness:
+
+- the page emits `<link rel="modulepreload" href=".../my-components.mjs?v=<content-hash>">`,
+  so the browser fetches the bundle in parallel with kernel startup;
+- the widget uses the **same versioned url**, so the preload is always a cache hit;
+- solara serves the file with `Cache-Control: max-age=1y, immutable` when the requested
+  hash matches — a rebuild changes the hash and therefore the url, so caches never go stale.
+
+The same applies to ipyreact modules. During development, prefer the `Path` form: the file
+is watched, so a bundler in watch mode gives in-place hot reload.
+
 ## Using a precompiled component as a tag
 
 An export can also be used as a tag inside any other template via the `components` dict.

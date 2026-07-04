@@ -5,7 +5,7 @@ import logging
 import threading
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import ipyreact.importmap
 import ipyreact.module
@@ -21,7 +21,12 @@ _import_map_per_kernel: Dict[str, ipyreact.importmap.ImportMap] = {}
 
 
 # in solara server, we'll monkey patch ipyreact.module with this
-def define_module(name, module: Union[str, Path]):
+def define_module(name, module: Union[str, Path, None] = None, *, code: Optional[str] = None):
+    if (module is None) == (code is None):
+        raise TypeError("pass either module (url or Path) or code")
+    if code is not None:
+        module = _CODE_PREFIX + code
+    assert module is not None
     # collect the dependencies at this moment
     with lock:
         dependencies = list(_modules.keys())
@@ -68,15 +73,42 @@ def create_modules():
                 _modules_added[name] = create_module(name, module, dependencies=dependencies)
                 logger.info("create module %s %s %s", name, module, dependencies)
             else:
-                _modules_added[name].code = module if not isinstance(module, Path) else module.read_text(encoding="utf8")
+                _modules_added[name].code = _read(module) if not _is_url(module) else _modules_added[name].code
                 _modules_added[name].dependencies = dependencies
                 logger.info("update module %s %s %s", name, module, dependencies)
             widgets[name] = _modules_added[name]
     return widgets
 
 
+# inline source is stored with this prefix so a plain str always means a url
+_CODE_PREFIX = "\x00code:"
+
+
+def _is_url(module: Union[str, Path]) -> bool:
+    return isinstance(module, str) and not module.startswith(_CODE_PREFIX)
+
+
+def _read(module: Union[str, Path]) -> str:
+    if isinstance(module, Path):
+        return module.read_text(encoding="utf8")
+    return module[len(_CODE_PREFIX) :] if module.startswith(_CODE_PREFIX) else module
+
+
+def get_module_urls() -> List[str]:
+    from solara.server.server import versioned_url
+
+    with lock:
+        urls = [module for module, _ in _modules.values() if isinstance(module, str) and _is_url(module)]
+    return [versioned_url(url) for url in urls]
+
+
 def create_module(name, module: Union[str, Path], dependencies: List[str]):
-    return ipyreact.module.Module(code=module if not isinstance(module, Path) else module.read_text(encoding="utf8"), name=name, dependencies=dependencies)
+    from solara.server.server import versioned_url
+
+    if _is_url(module):
+        assert isinstance(module, str)
+        return ipyreact.module.Module(url=versioned_url(module), name=name, dependencies=dependencies)
+    return ipyreact.module.Module(code=_read(module), name=name, dependencies=dependencies)
 
 
 def create_import_map():

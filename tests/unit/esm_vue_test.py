@@ -129,18 +129,18 @@ def test_versioned_url(clean_esm_state, tmp_path: Path, monkeypatch):
     monkeypatch.setattr(server, "public_directories", lambda: [public])
     server._public_hash_cache.clear()
 
-    url = esm_vue.versioned_url("/static/public/bundle.mjs")
+    url = server.versioned_url("/static/public/bundle.mjs")
     assert url.startswith("/static/public/bundle.mjs?v=")
     # stable until the content changes
-    assert esm_vue.versioned_url("/static/public/bundle.mjs") == url
+    assert server.versioned_url("/static/public/bundle.mjs") == url
     bundle.write_text("export default 2")
-    assert esm_vue.versioned_url("/static/public/bundle.mjs") != url
+    assert server.versioned_url("/static/public/bundle.mjs") != url
 
     # pass-through cases: external, already versioned, unresolvable, traversal
-    assert esm_vue.versioned_url("https://cdn.example/x.mjs") == "https://cdn.example/x.mjs"
-    assert esm_vue.versioned_url("/static/public/bundle.mjs?v=1") == "/static/public/bundle.mjs?v=1"
-    assert esm_vue.versioned_url("/static/public/missing.mjs") == "/static/public/missing.mjs"
-    assert esm_vue.versioned_url("/static/public/../secret.mjs") == "/static/public/../secret.mjs"
+    assert server.versioned_url("https://cdn.example/x.mjs") == "https://cdn.example/x.mjs"
+    assert server.versioned_url("/static/public/bundle.mjs?v=1") == "/static/public/bundle.mjs?v=1"
+    assert server.versioned_url("/static/public/missing.mjs") == "/static/public/missing.mjs"
+    assert server.versioned_url("/static/public/../secret.mjs") == "/static/public/../secret.mjs"
 
 
 def test_module_widget_and_page_share_versioned_url(virtual_context, tmp_path: Path, monkeypatch):

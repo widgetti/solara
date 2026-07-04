@@ -46,29 +46,12 @@ def get_module_names() -> List[str]:
     return list(_modules.keys())
 
 
-_PUBLIC_PREFIX = "/static/public/"
-
-
-def versioned_url(url: str) -> str:
-    """Append ?v=<content-hash> to urls solara serves itself.
-
-    The same url is used for the modulepreload hint in the page and the
-    Module widget, so the preload always hits the cache; StaticPublic sends
-    long-lived cache headers when the hash matches (see starlette.py).
-    Urls with an existing query string and external urls pass through.
-    """
-    from solara.server import server
-
-    if not url.startswith(_PUBLIC_PREFIX) or "?" in url:
-        return url
-    digest = server.public_url_content_hash(url[len(_PUBLIC_PREFIX) :])
-    return f"{url}?v={digest}" if digest else url
-
-
 def get_module_urls() -> List[str]:
     """Urls of url-backed modules, for modulepreload hints in the page."""
     with lock:
         urls = [module for module, _ in _modules.values() if isinstance(module, str) and _is_url(module)]
+    from solara.server.server import versioned_url
+
     return [versioned_url(url) for url in urls]
 
 
@@ -84,6 +67,12 @@ def _read(module: Union[str, Path]) -> str:
     if isinstance(module, Path):
         return module.read_text(encoding="utf8")
     return module[len(_CODE_PREFIX) :] if module.startswith(_CODE_PREFIX) else module
+
+
+def _versioned(url: str) -> str:
+    from solara.server.server import versioned_url
+
+    return versioned_url(url)
 
 
 def create_modules():
@@ -107,14 +96,14 @@ def create_modules():
             if widget is None:
                 if _is_url(module):
                     assert isinstance(module, str)
-                    widget = ipyvue.esm.Module(url=versioned_url(module), name=name, dependencies=dependencies)
+                    widget = ipyvue.esm.Module(url=_versioned(module), name=name, dependencies=dependencies)
                 else:
                     widget = ipyvue.esm.Module(code=_read(module), name=name, dependencies=dependencies)
                 _modules_added[name] = widget
                 logger.info("create vue module %s", name)
             elif _is_url(module):
                 assert isinstance(module, str)
-                url = versioned_url(module)
+                url = _versioned(module)
                 if widget.url != url:
                     widget.url = url
                     logger.info("update vue module url %s", name)

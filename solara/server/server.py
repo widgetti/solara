@@ -371,7 +371,15 @@ def read_root(
         if hasattr(ipyvue, "define_module"):
             from solara.server import esm_vue
 
-            module_urls = esm_vue.get_module_urls()
+            module_urls += esm_vue.get_module_urls()
+    except ModuleNotFoundError:
+        pass
+    try:
+        import ipyreact  # noqa: F401
+
+        from solara.server import esm
+
+        module_urls += esm.get_module_urls()
     except ModuleNotFoundError:
         pass
 
@@ -475,6 +483,23 @@ def public_url_content_hash(filename: str) -> Optional[str]:
             _public_hash_cache[key] = ((stat.st_mtime, stat.st_size), digest)
             return digest
     return None
+
+
+_PUBLIC_PREFIX = "/static/public/"
+
+
+def versioned_url(url: str) -> str:
+    """Append ?v=<content-hash> to urls solara serves itself.
+
+    The same url is used for the modulepreload hint in the page and the
+    Module widget, so the preload always hits the cache; StaticPublic sends
+    long-lived cache headers when the hash matches (see starlette.py).
+    Urls with an existing query string and external urls pass through.
+    """
+    if not url.startswith(_PUBLIC_PREFIX) or "?" in url:
+        return url
+    digest = public_url_content_hash(url[len(_PUBLIC_PREFIX) :])
+    return f"{url}?v={digest}" if digest else url
 
 
 def get_nbextensions_directories() -> List[Path]:
