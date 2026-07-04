@@ -38,8 +38,9 @@ logger = logging.getLogger("solara.pytest_plugin")
 
 # support for pytest-xdist
 worker = os.environ.get("PYTEST_XDIST_WORKER", "gw0")
-# +100 so we do not interfere with the solara integration tests, +1 worker id to avoid port conflicts with other workers
-TEST_PORT_START = int(os.environ.get("PORT", "18765")) + int(worker[2:]) + 100
+# +100 so we do not interfere with the solara integration tests, and 10 ports per worker id, since
+# each worker can run a solara, jupyter and voila server (+1 spacing would make workers collide)
+TEST_PORT_START = int(os.environ.get("PORT", "18765")) + int(worker[2:]) * 10 + 100
 
 TEST_HOST = solara.server.settings.main.host
 TIMEOUT = float(os.environ.get("SOLARA_PW_TIMEOUT", "18"))

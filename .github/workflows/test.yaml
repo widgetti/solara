@@ -18,6 +18,9 @@ concurrency:
 env:
   SOLARA_TELEMETRY_SERVER_USER_ID: "install-test"
   SOLARA_TELEMETRY_MIXPANEL_TOKEN: adbf863d17cba80db608788e7fce9843
+  # without this, buffered output is lost when a process force-exits (e.g. os._exit on windows,
+  # pytest-timeout kills), which made CI failures undiagnosable
+  PYTHONUNBUFFERED: "1"
 
 defaults:
   run:
@@ -322,7 +325,8 @@ jobs:
         run: (cd pyinstaller/minimal; pyinstaller ./solara.spec --log-level DEBUG)
 
       - name: Install playwright
-        run: playwright install
+        # only chromium is used in these tests
+        run: playwright install chromium
 
       - name: Run solara server (pyinstaller)
         run: pyinstaller/minimal/dist/solara/solara --port 18765 &
@@ -418,13 +422,14 @@ jobs:
         id: install_no_lock
         run: |
           mkdir -p .ci-package-locks/integration
-          pip install `echo dist/*.whl`[all]
-          pip install `echo packages/solara-server/dist/*.whl`[all]
-          pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets${{ matrix.ipywidgets_major }}]
-          pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
-          pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
-          pip install "jupyterlab<4"  "pydantic<2" "playwright==1.50.0" "ipywidgets~=${{ matrix.ipywidgets }}"
-          pip install pytest-retry
+          # one pip invocation: a single resolve is faster and avoids install-then-downgrade churn
+          pip install `echo dist/*.whl`[all] \
+            `echo packages/solara-server/dist/*.whl`[all] \
+            `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets${{ matrix.ipywidgets_major }}] \
+            `echo packages/solara-meta/dist/*.whl`[dev,documentation] \
+            `echo packages/solara-enterprise/dist/*.whl`[ssg,auth] \
+            "jupyterlab<4" "pydantic<2" "playwright==1.50.0" "ipywidgets~=${{ matrix.ipywidgets }}" \
+            pytest-retry pytest-xdist
           pip freeze --exclude solara --exclude solara-ui --exclude solara-server --exclude pytest-ipywidgets --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
           git diff | tee ${{ env.DIFF_FILE_LOCATION }}
           [ -s ${{ env.DIFF_FILE_LOCATION }} ] && echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT" || echo "No dependencies changed"
@@ -432,15 +437,18 @@ jobs:
       - name: Install
         if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
         run: |
-          pip install -r ${{ env.LOCK_FILE_LOCATION }}
-          pip install `echo dist/*.whl`[all]
-          pip install `echo packages/solara-server/dist/*.whl`[all]
-          pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets${{ matrix.ipywidgets_major }}]
-          pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
-          pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
+          # pytest-xdist explicitly: existing lock files do not have it until the next lock refresh
+          pip install -r ${{ env.LOCK_FILE_LOCATION }} \
+            `echo dist/*.whl`[all] \
+            `echo packages/solara-server/dist/*.whl`[all] \
+            `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets${{ matrix.ipywidgets_major }}] \
+            `echo packages/solara-meta/dist/*.whl`[dev,documentation] \
+            `echo packages/solara-enterprise/dist/*.whl`[ssg,auth] \
+            pytest-xdist
 
       - name: Install playwright
-        run: playwright install
+        # only chromium is used in these tests
+        run: playwright install chromium
 
       - name: test
         if: github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true'
@@ -452,7 +460,9 @@ jobs:
         # TODO: we used to also run the (cheap) unittests, to get better coverage report, but that gives errors
         # it seems on CI that the default playwright timeout is not (always?) respected, also, if the --timeout argument
         # is shorter than the timeout of playwright, we get no good error message, summary: always keep above 30!
-        run: pytest tests/integration --timeout=360 --video=retain-on-failure --output=test-results -vv -s --log-cli-level=warning --retries 3
+        # -n 2: keep in sync with the port spacing in tests/integration/conftest.py — more workers
+        # would put ports outside the valid auth0 callback range (18765-18770)
+        run: pytest tests/integration -n 2 --timeout=360 --video=retain-on-failure --output=test-results -vv -s --log-cli-level=warning --retries 3
 
       - name: Upload Test artifacts
         if: always()
@@ -624,12 +634,13 @@ jobs:
         if: github.event_name == 'schedule' || steps.prepare.outputs.LOCKS_EXIST == 'false'
         run: |
           mkdir -p .ci-package-locks/unit
-          pip install `echo dist/*.whl`[all]
-          pip install `echo packages/solara-server/dist/*.whl`[all]
-          pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all]
-          pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
-          pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
-          pip install "jupyterlab<4" diskcache redis "ipywidgets~=${{ matrix.ipywidgets }}"
+          # one pip invocation: a single resolve is faster and avoids install-then-downgrade churn
+          pip install `echo dist/*.whl`[all] \
+            `echo packages/solara-server/dist/*.whl`[all] \
+            `echo packages/pytest-ipywidgets/dist/*.whl`[all] \
+            `echo packages/solara-meta/dist/*.whl`[dev,documentation] \
+            `echo packages/solara-enterprise/dist/*.whl`[ssg,auth] \
+            "jupyterlab<4" diskcache redis "ipywidgets~=${{ matrix.ipywidgets }}"
           pip freeze --exclude solara --exclude solara-ui --exclude solara-server --exclude pytest-ipywidgets --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
           git diff | tee ${{ env.DIFF_FILE_LOCATION }}
           [ -s ${{ env.DIFF_FILE_LOCATION }} ] && echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT" || echo "No dependencies changed"
@@ -637,12 +648,12 @@ jobs:
       - name: Install
         if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
         run: |
-          pip install -r ${{ env.LOCK_FILE_LOCATION }}
-          pip install `echo dist/*.whl`[all]
-          pip install `echo packages/solara-server/dist/*.whl`[all]
-          pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all]
-          pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
-          pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
+          pip install -r ${{ env.LOCK_FILE_LOCATION }} \
+            `echo dist/*.whl`[all] \
+            `echo packages/solara-server/dist/*.whl`[all] \
+            `echo packages/pytest-ipywidgets/dist/*.whl`[all] \
+            `echo packages/solara-meta/dist/*.whl`[dev,documentation] \
+            `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
 
       - name: Start Redis
         if: ( github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true' ) && matrix.os != 'windows'

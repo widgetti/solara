@@ -16,7 +16,10 @@ reload.reloader.start()
 logger = logging.getLogger("solara-test.integration")
 
 worker = os.environ.get("PYTEST_XDIST_WORKER", "gw0")
-TEST_PORT = int(os.environ.get("PORT", "18765")) + int(worker[2:])  # up to 18770 is a valid callback for auth0
+# each xdist worker runs its own flask and starlette server (see solara_server below), so workers
+# need to be at least 2 ports apart. Ports up to 18770 are a valid callback for auth0, which keeps
+# all ports valid with 2 workers.
+TEST_PORT = int(os.environ.get("PORT", "18765")) + int(worker[2:]) * 3
 SERVER = os.environ.get("SOLARA_SERVER")
 if SERVER:
     SERVERS = [SERVER]
