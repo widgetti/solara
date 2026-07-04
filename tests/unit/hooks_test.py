@@ -186,8 +186,9 @@ def test_hook_download(tmpdir, local_server_url):
         return w.Label(value=f"{result.progress} {result.state} {result.error}")
 
     label, rc = render_fixed(DownloadFile())
-    assert label.value == "0 ResultState.RUNNING None"
     expected = "1.0 ResultState.FINISHED None"
+    # the local server is fast enough that the download thread may already be done here
+    assert label.value in ("0 ResultState.RUNNING None", expected)
     busy_wait_compare(lambda: label.value, expected)
     assert label.value == expected
 
@@ -219,8 +220,9 @@ def test_hook_use_fetch(local_server_url):
         return w.Label(value=f"{len(data) if data else '-'}")
 
     label, rc = render_fixed(FetchFile(), handle_error=False)
-    assert label.value == "-"
     expected = f"{content_length}"
+    # the local server is fast enough that the fetch thread may already be done here
+    assert label.value in ("-", expected)
     busy_wait_compare(lambda: label.value, expected)
     assert label.value == expected
 
@@ -239,8 +241,9 @@ def test_hook_use_json(local_server_url):
         return w.Label(value=f"{len(data) if data else '-'}")
 
     label, rc = render_fixed(FetchJson())
-    assert label.value == "-"
     expected = f"{pokemons}"
+    # the local server is fast enough that the fetch thread may already be done here
+    assert label.value in ("-", expected)
     busy_wait_compare(lambda: label.value, expected)
     assert label.value == expected
 
