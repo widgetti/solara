@@ -362,8 +362,20 @@ def read_root(
                 code = f'<script src="{url}"></script>'
         return Markup(code)
 
+    module_urls = []
+    try:
+        import ipyvue
+
+        if hasattr(ipyvue, "define_module"):
+            from solara.server import esm_vue
+
+            module_urls = esm_vue.get_module_urls()
+    except ModuleNotFoundError:
+        pass
+
     resources = {
         "theme": "light",
+        "module_urls": module_urls,
         "nbextensions": nbextensions,
         "nbextensions_hashes": nbextensions_hashes,
         "include_css": include_css,
@@ -425,6 +437,41 @@ def find_prefixed_directory(path):
 
 
 @solara.memoize(storage=cache_memory)
+def public_directories() -> List[Path]:
+    from . import app as appmod
+
+    return [app.directory.parent / "public" for app in appmod.apps.values()]
+
+
+_public_hash_cache: Dict[str, Tuple[Tuple[float, int], str]] = {}
+
+
+def public_url_content_hash(filename: str) -> Optional[str]:
+    """Content hash of a file served at /static/public/<filename>, or None.
+
+    Memoized on (mtime, size), so rebuilt bundles get a fresh hash.
+    """
+    for directory in public_directories():
+        path = (directory / filename).resolve()
+        if not str(path).startswith(str(directory.resolve())):
+            return None
+        if path.exists():
+            stat = path.stat()
+            key = str(path)
+            cached = _public_hash_cache.get(key)
+            if cached and cached[0] == (stat.st_mtime, stat.st_size):
+                return cached[1]
+            if sys.version_info[:2] < (3, 9):
+                h = hashlib.new("md5")
+            else:
+                h = hashlib.new("md5", usedforsecurity=False)  # type: ignore
+            h.update(path.read_bytes())
+            digest = h.hexdigest()[:12]
+            _public_hash_cache[key] = ((stat.st_mtime, stat.st_size), digest)
+            return digest
+    return None
+
+
 def get_nbextensions_directories() -> List[Path]:
     from jupyter_core.paths import jupyter_path
 

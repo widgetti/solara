@@ -48,6 +48,8 @@ from starlette.middleware.gzip import GZipMiddleware
 from starlette.requests import HTTPConnection, Request
 from starlette.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from starlette.routing import Mount, Route, WebSocketRoute
+from urllib.parse import parse_qs
+
 from starlette.staticfiles import StaticFiles
 from starlette.types import Receive, Scope, Send
 
@@ -581,6 +583,15 @@ class StaticPublic(StaticFilesOptionalAuth):
     def lookup_path(self, *args, **kwargs):
         self.all_directories = self.get_directories(None, None)
         return super().lookup_path(*args, **kwargs)
+
+    async def get_response(self, path: str, scope):
+        response = await super().get_response(path, scope)
+        query = parse_qs(scope.get("query_string", b"").decode())
+        version = query.get("v", [None])[0]
+        if version is not None and response.status_code in (200, 304):
+            if version == server.public_url_content_hash(path):
+                response.headers["Cache-Control"] = "max-age=31536000, immutable"
+        return response
 
     def get_directories(
         self,

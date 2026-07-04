@@ -9,6 +9,10 @@
     <link rel="icon" type="image/png" sizes="any" href="{{root_path}}/static/assets/favicon.png">
     <link rel="icon" type="image/svg+xml" href="{{root_path}}/static/assets/favicon.svg">
 
+    {% for url in resources.module_urls -%}
+    {# start fetching ES modules (ipyvue.define_module) while the kernel starts #}
+    <link rel="modulepreload" href="{{ url }}" />
+    {% endfor -%}
     {% block header %}
 
     {{ pre_rendered_css | safe }}
