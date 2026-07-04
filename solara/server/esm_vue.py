@@ -43,6 +43,10 @@ def get_module_names() -> List[str]:
     return list(_modules.keys())
 
 
+def _is_url(module: Union[str, Path]) -> bool:
+    return isinstance(module, str) and (module.startswith("http") or module.startswith("/"))
+
+
 def _read(module: Union[str, Path]) -> str:
     return module.read_text(encoding="utf8") if isinstance(module, Path) else module
 
@@ -66,9 +70,16 @@ def create_modules():
                 # would go nowhere, recreate instead
                 widget = None
             if widget is None:
-                widget = ipyvue.esm.Module(code=_read(module), name=name, dependencies=dependencies)
+                if _is_url(module):
+                    widget = ipyvue.esm.Module(url=module, name=name, dependencies=dependencies)
+                else:
+                    widget = ipyvue.esm.Module(code=_read(module), name=name, dependencies=dependencies)
                 _modules_added[name] = widget
                 logger.info("create vue module %s", name)
+            elif _is_url(module):
+                if widget.url != module:
+                    widget.url = module
+                    logger.info("update vue module url %s", name)
             else:
                 code = _read(module)
                 if widget.code != code:
