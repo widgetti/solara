@@ -119,12 +119,21 @@ def test_double_reconnect_supersedes_stale_context(backend):
     session_id, kernel_id = "sess-abab", "kern-abab"
     shmac = session_hmac(session_id)
 
-    # instance A lives in contexts and flushes "from-A" at generation 1
+    # instance A lives in contexts and flushes "from-A" at generation 1. Flush synchronously
+    # (claim-on-miss makes peek==1 true before the debounced flush lands) and drop A's page —
+    # what a real failover does — so A's cross-marked debounced flush (toestand scopes listeners
+    # by kernel id, so B's write below re-marks A dirty) fences as an ORPHAN that concedes,
+    # instead of taking the connected-page reclaim-once path (§5.5) that would bump past B on
+    # slow runners and fence B's flush.
     context_a = kc.initialize_virtual_kernel(session_id, kernel_id, Mock())
     context_a.page_connect("pageA")
     with context_a:
         r.value = "from-A"
-    assert wait_until(lambda: backend.peek_generation(kernel_id) == 1)
+    manager_a = context_a.state_persistence
+    assert manager_a is not None
+    assert manager_a.flush_now() == FlushOutcome.OK
+    assert backend.peek_generation(kernel_id) == 1
+    context_a.page_disconnect("pageA")
 
     # simulate instance B taking over on another instance: takeover bumps to 2, then flush "from-B"
     result_b = backend.takeover(kernel_id, shmac, SCHEMA_TAG)
