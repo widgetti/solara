@@ -728,19 +728,28 @@ separate triggers:
   genuinely correct** (the browser needs new assets; a soft-remount on stale JS is
   wrong).
 
-`app-status` reply (`app.py:481-489`) gains two fields:
+`app-status` reply (`app.py:481-489`) gains these fields:
 
 ```python
 {"method": "app-status", "started": bool,
+ "containerId": <root container model id when started, else None>,
  "canRecover": <persistence enabled or auto_remount forced, and not recovery-failed>,
  "clientVersion": <opaque asset hash>}
 ```
 
-Client decision on reconnect:
+Client decision on reconnect — one *reconnect cycle* per `connected` event, owned by a
+monotonic generation; a cycle superseded by a newer one (or whose socket dropped again)
+aborts silently, and the probe retries before a failure counts as a verdict (the full
+state machine — PROBE / RESUME / REPAIR / REMOUNT / GIVE UP, with its invariants — is
+documented in the block comment above `connectionStatusChanged` in `main-vuetify.js`):
 
-- `started: true` → today's `fetchAll()` (same-instance hot reconnect — unchanged).
+- `started: true` and the client still has its mounted view → `fetchAll()`
+  (same-instance hot reconnect — unchanged; **RESUME**).
+- `started: true` but the client's view is gone (a previous soft-remount was interrupted
+  mid-way by another socket drop) → **re-attach** to the running app: `fetchAll()` +
+  mount the reply's `containerId` — the popout attach path (**REPAIR**).
 - `started: false && canRecover && clientVersion == own` → **soft-remount** (including
-  after a schema-tag reset — the client can't tell and doesn't need to).
+  after a schema-tag reset — the client can't tell and doesn't need to; **REMOUNT**).
 - otherwise → today's `needsRefresh` dialog: recovery disabled, the client bundle
   changed, or **restore bailed out** (§4.3, `canRecover: false` on a recovery-failed
   context — "we lost", visibly; subject to the bail-out storm valve).
@@ -761,8 +770,12 @@ release; the version-pinned `@widgetti/solara-vuetify-app` bundles are untouched
 
 ### 6.2 Remount sequence (replaces `main-vuetify.js:185-187`)
 
-1. Guard `remountInProgress`; popouts (`?modelid`) keep current behavior (they attach to
-   a specific model that no longer exists; dialog or auto-close).
+1. Ownership by reconnect generation (no in-flight boolean: a boolean guard wedges
+   forever when a rebuild hangs on a reply lost to a socket drop). A rebuild flips
+   `viewMounted` to false first and back to true only after a completed mount, so an
+   interrupted rebuild is *detected and repaired by the next cycle* (REPAIR, §6.1)
+   instead of blocking it. Popouts (`?modelid`) keep current behavior (they attach to a
+   specific model that no longer exists; dialog or auto-close).
 2. Show a light "Restoring session…" indicator (reuse the top progress bar / small
    overlay — not the full loader; keep the stale DOM visible until swap).
 3. Tear down: `widgetManager.clear_state()`/`dispose()` (closes dead comms, disposes
@@ -775,10 +788,11 @@ release; the version-pinned `@widgetti/solara-vuetify-app` bundles are untouched
    `window.location` (pushState routing means the boot-time `path` variable is stale);
    `run(appName, {path, dark, themes})`.
 6. Server restores state before/at first render (Pillars A+B), replies new root
-   `widget_id`; `solaraMount()` swaps it in. Clear the guard and indicator.
+   `widget_id`; `solaraMount()` swaps it in. Set `viewMounted`, clear the indicator.
 
-Edge cases handled: flapping reconnects (guard + re-check connection before final swap;
-last completed attempt wins), fast double reconnect landing back on the original
+Edge cases handled: flapping reconnects (generation ownership: superseded cycles abort
+silently at their next await boundary; the latest cycle repairs whatever an interrupted
+one left behind), fast double reconnect landing back on the original
 instance (server discards its stale context on generation mismatch, §5.1 — the client
 just sees another `started: false` + `canRecover` and soft-remounts; no client-side
 special case needed), multiple tabs sharing one kernel id (each re-runs `run`; restore
