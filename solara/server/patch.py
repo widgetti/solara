@@ -302,6 +302,11 @@ def _WidgetContextAwareThread__bootstrap(self):
     if not hasattr(self, "current_context"):
         # this happens when a thread was running before we patched
         return Thread__bootstrap(self)
+    if self.current_context and self.current_context.kernel is None:
+        # the context closed between thread creation and start (close() sets kernel to
+        # None): run without a kernel context instead of crashing before _started is
+        # set, which would hang the Thread.start() caller forever
+        self.current_context = None
     if self.current_context:
         # we need to call this manually, because set_context_for_thread
         # uses this, and the original _bootstrap calls it too late for us

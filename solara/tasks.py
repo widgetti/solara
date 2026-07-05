@@ -211,6 +211,7 @@ class TaskAsyncio(Task[P, R]):
     _cancel: Optional[Callable[[], None]] = None
     _retry: Optional[Callable[[], None]] = None
     _context: Optional["weakref.ReferenceType[solara.server.kernel_context.VirtualKernelContext]"] = None
+    _drop_call_state_on_close_registered = False
 
     def __init__(self, run_in_thread: bool, function: Callable[P, Coroutine[Any, Any, R]], key: str):
         self.run_in_thread = run_in_thread
@@ -261,6 +262,11 @@ class TaskAsyncio(Task[P, R]):
             context = solara.server.kernel_context.get_current_context()
             self._context = weakref.ref(context)
             call_event_loop = context.event_loop
+            if not self._drop_call_state_on_close_registered:
+                # the task instance is per kernel (it lives in a kernel store), so one
+                # registration covers all calls
+                self._drop_call_state_on_close_registered = True
+                context.on_close(self._drop_call_state)
         else:
             call_event_loop = _main_event_loop or asyncio.get_event_loop()
         try:
@@ -291,43 +297,24 @@ class TaskAsyncio(Task[P, R]):
 
             def runs_in_thread():
                 try:
-                    thread_event_loop.run_until_complete(current_task)
-                except asyncio.CancelledError as e:
                     try:
-                        call_event_loop.call_soon_threadsafe(future.set_exception, e)
-                    except Exception as e2:
-                        if not self._is_future_orphaned(call_event_loop):
-                            logger.exception(
-                                "error setting exception from for task %s. Original exception: %s\nReason for failing to set exception: %s",
-                                self.function.__name__,
-                                e,
-                                e2,
-                            )
-                        else:
-                            logger.debug(
-                                "ignoring error setting exception for task %s, nobody can await the future anymore: %s",
-                                self.function.__name__,
-                                e2,
-                            )
-                except Exception as e:
-                    logger.exception("error running in thread")
-                    try:
-                        call_event_loop.call_soon_threadsafe(future.set_exception, e)
-                    except Exception as e2:
-                        if not self._is_future_orphaned(call_event_loop):
-                            logger.exception(
-                                "error setting exception from for task %s. Original exception: %s\nReason for failing to set exception: %s",
-                                self.function.__name__,
-                                e,
-                                e2,
-                            )
-                        else:
-                            logger.debug(
-                                "ignoring error setting exception for task %s, nobody can await the future anymore: %s",
-                                self.function.__name__,
-                                e2,
-                            )
-                    raise
+                        thread_event_loop.run_until_complete(current_task)
+                    except asyncio.CancelledError:
+                        # deliver the cancellation via future.cancel(): awaiters still get a
+                        # CancelledError, but no exception object (with a traceback that pins
+                        # the coroutine frames and the kernel context) crosses the thread.
+                        self._finish_future_threadsafe(call_event_loop, future, lambda f: f.cancel(), "cancellation")
+                    except Exception as e:
+                        logger.exception("error running in thread")
+                        # bind to a fresh name: `e` is unbound when the except block exits,
+                        # but the delivery lambda runs later on the call loop
+                        exception = e
+                        self._finish_future_threadsafe(call_event_loop, future, lambda f: f.set_exception(exception), "exception")
+                        raise
+                finally:
+                    # each call creates a fresh event loop; not closing it would leak its
+                    # selector file descriptor until the garbage collector gets to it
+                    thread_event_loop.close()
 
             self._result.value = TaskResult[R](latest=self._last_value, _state=TaskState.STARTING)
             thread = threading.Thread(target=runs_in_thread, daemon=True, name=f"TaskAsyncio-{self.function.__name__}")
@@ -338,8 +325,23 @@ class TaskAsyncio(Task[P, R]):
 
     def is_current(self):
         running_task = self.current_task
-        assert running_task is not None
+        if running_task is None:
+            # the kernel context closed (which drops the call state): any still-running
+            # call is stale and should stop
+            return False
         return (self.current_task == _get_current_task()) and not running_task.cancelled()
+
+    def _drop_call_state(self):
+        # A finished or cancelled asyncio.Task keeps its contextvars copy (which references
+        # the kernel context) and its exception traceback (which pins coroutine frames)
+        # alive. Keeping the task in `current_task` after the kernel context closes turns
+        # the context graph into one big reference cycle that has to wait for a gen-2 gc
+        # (measured as a memory sawtooth under load). Drop the call bookkeeping at close
+        # so plain refcounting can free the context right away.
+        self.current_task = None
+        self.current_future = None
+        self._cancel = None
+        self._retry = None
 
     def _is_context_closed(self):
         if self._context is None:
@@ -357,6 +359,31 @@ class TaskAsyncio(Task[P, R]):
         # loop), so failing to deliver is expected and harmless, just like a closed context.
         return call_event_loop.is_closed() or self._is_context_closed()
 
+    def _finish_future_threadsafe(self, call_event_loop: asyncio.AbstractEventLoop, future: asyncio.Future, finish: Callable[[asyncio.Future], Any], what: str):
+        """Complete the future from the task's thread, tolerating the expected shutdown races.
+
+        The future can already be done (a page close or shutdown cancelled it while our
+        completion was in flight) and the call loop can be closed (page close): both are
+        normal races, and completing a done future would raise InvalidStateError inside
+        the loop callback — asyncio then logs that with the exception traceback attached,
+        and exception tracebacks pin every frame they passed through (including the whole
+        kernel context), creating large reference cycles that stay around until a gen-2
+        gc. So we check done() inside the loop callback and skip delivery silently.
+        """
+
+        def deliver():
+            if not future.done():
+                finish(future)
+
+        try:
+            call_event_loop.call_soon_threadsafe(deliver)
+        except Exception as e:
+            if not self._is_future_orphaned(call_event_loop):
+                # the delivery failure has an unexpected cause, so we show it
+                logger.exception("error delivering %s for task %s: %s", what, self.function.__name__, e)
+            else:
+                logger.debug("ignoring failure to deliver %s for task %s, nobody can await the future anymore: %s", what, self.function.__name__, e)
+
     async def _async_run(self, call_event_loop: asyncio.AbstractEventLoop, future: asyncio.Future, args, kwargs) -> None:
         self._start_event.wait()
 
@@ -373,72 +400,25 @@ class TaskAsyncio(Task[P, R]):
                 if self.is_current() and not task_for_this_call.cancelled():  # type: ignore
                     self._result.value = TaskResult[R](value=value, latest=value, _state=TaskState.FINISHED, progress=self._last_progress)
                 logger.info("setting result to %r", value)
-                try:
-                    call_event_loop.call_soon_threadsafe(future.set_result, value)
-                except Exception as e:
-                    if not self._is_future_orphaned(call_event_loop):
-                        logger.exception(
-                            "error setting result from for task %s. Original exception: %s\nReason for failing to set result: %s", self.function.__name__, e, e
-                        )
-                    else:
-                        logger.debug(
-                            "ignoring error setting result from for task %s. Original exception: %s\nReason for failing to set result: %s",
-                            self.function.__name__,
-                            e,
-                            e,
-                        )
+                self._finish_future_threadsafe(call_event_loop, future, lambda f: f.set_result(value), "result")
             except Exception as e:
                 if self.is_current():
                     logger.exception(e)
                     self._result.value = TaskResult[R](latest=self._last_value, exception=e, _state=TaskState.ERROR)
-                try:
-                    call_event_loop.call_soon_threadsafe(future.set_exception, e)
-                except Exception as e2:
-                    if not self._is_future_orphaned(call_event_loop):
-                        # the delivery failure has an unexpected cause, so we show it
-                        logger.exception(
-                            "error setting exception from for task %s. Original exception: %s\nReason for failing to set exception: %s",
-                            self.function.__name__,
-                            e,
-                            e2,
-                        )
-                    else:
-                        # the task exception itself was already logged above (when current)
-                        logger.debug(
-                            "ignoring error setting exception for task %s, nobody can await the future anymore: %s",
-                            self.function.__name__,
-                            e2,
-                        )
+                # bind to a fresh name: `e` is unbound when the except block exits,
+                # but the delivery lambda runs later on the call loop
+                exception = e
+                self._finish_future_threadsafe(call_event_loop, future, lambda f: f.set_exception(exception), "exception")
             # Although this seems like an easy way to handle cancellation, an early cancelled task will never execute
             # so this code will never execute, so we need to handle this in the cancel function in __call__
             # except asyncio.CancelledError as e:
             #    if self.is_current():
             #        self._result.value = TaskResult[R](latest=self._last_value, _state=TaskState.CANCELLED)
-            #    call_event_loop.call_soon_threadsafe(future.set_exception, e)
             # But... if we call cancel in our own task, we still need to do it from this place
-            except _CancelledErrorInOurTask as e:
-                try:
-                    # maybe there is a different way to get a full stack trace?
-                    raise asyncio.CancelledError() from e
-                except asyncio.CancelledError as e:
-                    if self.is_current():
-                        self._result.value = TaskResult[R](latest=self._last_value, _state=TaskState.CANCELLED)
-                    try:
-                        call_event_loop.call_soon_threadsafe(future.set_exception, e)
-                    except Exception as e2:
-                        if not self._is_future_orphaned(call_event_loop):
-                            logger.exception(
-                                "error setting exception from for task %s. Original exception: %s\nReason for failing to set exception: %s",
-                                self.function.__name__,
-                                e,
-                                e2,
-                            )
-                        else:
-                            logger.debug(
-                                "ignoring error setting exception for task %s, nobody can await the future anymore: %s",
-                                self.function.__name__,
-                                e2,
-                            )
+            except _CancelledErrorInOurTask:
+                if self.is_current():
+                    self._result.value = TaskResult[R](latest=self._last_value, _state=TaskState.CANCELLED)
+                self._finish_future_threadsafe(call_event_loop, future, lambda f: f.cancel(), "cancellation")
 
         await runner()
 

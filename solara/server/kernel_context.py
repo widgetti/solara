@@ -234,8 +234,14 @@ class VirtualKernelContext:
                 self.page_status[key] = PageStatus.CLOSED
             if self._last_kernel_cull_task:
                 self._last_kernel_cull_task.cancel()
+                # drop our reference: a cancelled task keeps its CancelledError whose
+                # traceback holds the kernel_cull frame, whose closure holds `self` -
+                # keeping the reference would turn that into a reference cycle through
+                # the whole context, which refcounting cannot free
+                self._last_kernel_cull_task = None
             if self._last_kernel_cull_future:
                 self._last_kernel_cull_future.cancel()
+                self._last_kernel_cull_future = None
             if self.closed_event.is_set():
                 logger.error("Tried to close a kernel context that is already closed: %s", self.id)
                 return
@@ -249,6 +255,9 @@ class VirtualKernelContext:
                     except Exception as e:
                         logger.exception("Could not close render context: %s", e)
                         # we want to continue, so we at least close all widgets
+                # drop the reference: anything that still (indirectly) references this
+                # closed context should not keep the whole render tree alive with it
+                self.app_object = None
             widgets.Widget.close_all()
             # what if we reference each other
             # import gc
@@ -269,6 +278,8 @@ class VirtualKernelContext:
                 if _ctx is self:
                     del current_context[key]
             self.closed_event.set()
+        if solara.server.settings.kernel.gc_after_close:
+            _schedule_gc_after_kernel_close()
 
     def _state_reset(self):
         state_directory = Path(".") / "states"
@@ -480,6 +491,42 @@ except RuntimeError:
     keep_alive_event_loop = asyncio.get_event_loop()
 
 contexts: Dict[str, VirtualKernelContext] = {}
+
+# Closed kernel contexts are reference cycles (widgets, reacton render contexts and the
+# IPython shell all reference each other), so plain refcounting cannot free them: they wait
+# for a generation-2 garbage collection. Under load that shows up as a memory sawtooth whose
+# peaks scale with per-kernel state (see docs/memory-usage-inspection.md). We therefore run
+# a gc shortly after a kernel closes - deferred to a background thread so the close path
+# (and the user awaiting closed_event) stays fast, and coalesced so a burst of closing
+# kernels (server shutdown, mass disconnect) triggers one collection, not hundreds.
+_gc_after_close_lock = threading.Lock()
+_gc_after_close_pending = False
+GC_AFTER_CLOSE_DELAY = 1.0  # seconds; also gives the closing code time to drop its own references
+
+
+def _schedule_gc_after_kernel_close():
+    global _gc_after_close_pending
+    with _gc_after_close_lock:
+        if _gc_after_close_pending:
+            return
+        _gc_after_close_pending = True
+
+    def collect():
+        global _gc_after_close_pending
+        time.sleep(GC_AFTER_CLOSE_DELAY)
+        with _gc_after_close_lock:
+            _gc_after_close_pending = False
+        import gc
+
+        gc.collect()
+
+    thread = threading.Thread(target=collect, daemon=True, name="solara-gc-after-kernel-close")
+    # the patched Thread captures the current kernel context at creation; this thread must
+    # not run inside the (closing) context, nor keep it alive until the collect is done
+    thread.current_context = None  # type: ignore
+    thread.start()
+
+
 # maps from thread key to VirtualKernelContext, if VirtualKernelContext is None, it exists, but is not set as current
 current_context: Dict[str, Optional[VirtualKernelContext]] = {}
 

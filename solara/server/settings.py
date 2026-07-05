@@ -111,6 +111,10 @@ class Kernel(BaseSettings):
     cull_timeout: str = "24h"
     max_count: Optional[int] = None
     threaded: bool = solara.util.has_threads
+    # Closed kernel contexts are reference cycles and otherwise wait for a gen-2 gc, which
+    # under load shows as a memory sawtooth (see docs/memory-usage-inspection.md). This runs
+    # a deferred, coalesced gc.collect() after a kernel closes so memory returns promptly.
+    gc_after_close: bool = True
     # Cap on live kernels a single session cookie may create. kernel_id is client-chosen and a
     # brand-new id accepts any cookie, so without this one session can spawn unbounded contexts,
     # threads and (with persistence) Redis keys. The default is far above any legitimate multi-tab
