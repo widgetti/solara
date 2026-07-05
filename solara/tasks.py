@@ -286,11 +286,17 @@ class TaskAsyncio(Task[P, R]):
                     try:
                         call_event_loop.call_soon_threadsafe(future.set_exception, e)
                     except Exception as e2:
-                        if not self._is_context_closed():
+                        if not self._is_future_orphaned(call_event_loop):
                             logger.exception(
                                 "error setting exception from for task %s. Original exception: %s\nReason for failing to set exception: %s",
                                 self.function.__name__,
                                 e,
+                                e2,
+                            )
+                        else:
+                            logger.debug(
+                                "ignoring error setting exception for task %s, nobody can await the future anymore: %s",
+                                self.function.__name__,
                                 e2,
                             )
                 except Exception as e:
@@ -298,11 +304,17 @@ class TaskAsyncio(Task[P, R]):
                     try:
                         call_event_loop.call_soon_threadsafe(future.set_exception, e)
                     except Exception as e2:
-                        if not self._is_context_closed():
+                        if not self._is_future_orphaned(call_event_loop):
                             logger.exception(
                                 "error setting exception from for task %s. Original exception: %s\nReason for failing to set exception: %s",
                                 self.function.__name__,
                                 e,
+                                e2,
+                            )
+                        else:
+                            logger.debug(
+                                "ignoring error setting exception for task %s, nobody can await the future anymore: %s",
+                                self.function.__name__,
                                 e2,
                             )
                     raise
@@ -327,6 +339,14 @@ class TaskAsyncio(Task[P, R]):
             return False
         return context.closed_event.is_set()
 
+    def _is_future_orphaned(self, call_event_loop: asyncio.AbstractEventLoop) -> bool:
+        # When a page disconnects, the event loop the task was called from (the websocket
+        # thread's loop) is closed while the kernel context stays alive until the cull
+        # timeout. A task finishing in that window cannot deliver its result to the future,
+        # but nothing can await that future anymore either (any awaiter lived on the same
+        # loop), so failing to deliver is expected and harmless, just like a closed context.
+        return call_event_loop.is_closed() or self._is_context_closed()
+
     async def _async_run(self, call_event_loop: asyncio.AbstractEventLoop, future: asyncio.Future, args, kwargs) -> None:
         self._start_event.wait()
 
@@ -346,7 +366,7 @@ class TaskAsyncio(Task[P, R]):
                 try:
                     call_event_loop.call_soon_threadsafe(future.set_result, value)
                 except Exception as e:
-                    if not self._is_context_closed():
+                    if not self._is_future_orphaned(call_event_loop):
                         logger.exception(
                             "error setting result from for task %s. Original exception: %s\nReason for failing to set result: %s", self.function.__name__, e, e
                         )
@@ -364,13 +384,21 @@ class TaskAsyncio(Task[P, R]):
                 try:
                     call_event_loop.call_soon_threadsafe(future.set_exception, e)
                 except Exception as e2:
-                    # we don't know if it is still useful to show this error, so we show it regardless if the context is closed or not
-                    logger.exception(
-                        "error setting exception from for task %s. Original exception: %s\nReason for failing to set exception: %s",
-                        self.function.__name__,
-                        e,
-                        e2,
-                    )
+                    if not self._is_future_orphaned(call_event_loop):
+                        # the delivery failure has an unexpected cause, so we show it
+                        logger.exception(
+                            "error setting exception from for task %s. Original exception: %s\nReason for failing to set exception: %s",
+                            self.function.__name__,
+                            e,
+                            e2,
+                        )
+                    else:
+                        # the task exception itself was already logged above (when current)
+                        logger.debug(
+                            "ignoring error setting exception for task %s, nobody can await the future anymore: %s",
+                            self.function.__name__,
+                            e2,
+                        )
             # Although this seems like an easy way to handle cancellation, an early cancelled task will never execute
             # so this code will never execute, so we need to handle this in the cancel function in __call__
             # except asyncio.CancelledError as e:
@@ -385,7 +413,22 @@ class TaskAsyncio(Task[P, R]):
                 except asyncio.CancelledError as e:
                     if self.is_current():
                         self._result.value = TaskResult[R](latest=self._last_value, _state=TaskState.CANCELLED)
-                    call_event_loop.call_soon_threadsafe(future.set_exception, e)
+                    try:
+                        call_event_loop.call_soon_threadsafe(future.set_exception, e)
+                    except Exception as e2:
+                        if not self._is_future_orphaned(call_event_loop):
+                            logger.exception(
+                                "error setting exception from for task %s. Original exception: %s\nReason for failing to set exception: %s",
+                                self.function.__name__,
+                                e,
+                                e2,
+                            )
+                        else:
+                            logger.debug(
+                                "ignoring error setting exception for task %s, nobody can await the future anymore: %s",
+                                self.function.__name__,
+                                e2,
+                            )
 
         await runner()
 

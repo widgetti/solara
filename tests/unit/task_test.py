@@ -1,4 +1,6 @@
 import asyncio
+import logging
+import threading
 import time
 import warnings
 
@@ -681,3 +683,61 @@ def test_task_decorator_warning_in_component():
             return solara.Text("ComponentWithTaskInMemo")
 
         solara.render_fixed(ComponentWithTaskInMemo(), handle_error=False)
+
+
+@pytest.mark.parametrize("fail", [False, True])
+def test_task_finishing_after_call_event_loop_closed_is_not_an_error(fail, caplog, monkeypatch):
+    # When a page disconnects, the websocket thread's event loop is closed while the
+    # kernel context (and a running task) stays alive until the cull timeout. A task
+    # finishing in that window cannot deliver its result to the future on the closed
+    # loop, but nothing can await that future anymore either, so this is expected
+    # shutdown noise, not an error.
+    monkeypatch.setattr(solara.tasks, "_using_solara_server", lambda: True)
+    proceed = threading.Event()
+    context_holder = {}
+
+    @solara.tasks.task
+    async def finishes():
+        while not proceed.is_set():
+            await asyncio.sleep(0.001)
+        if fail:
+            raise RuntimeError("task failed for a test")
+        return 42
+
+    def page_thread():
+        async def run():
+            context = kernel_context.VirtualKernelContext(id="task-loop-closed", kernel=kernel.Kernel(), session_id="session-loop-closed")
+            context_holder["context"] = context
+            with context:
+                finishes()
+
+        # like the websocket thread in solara.server.starlette: asyncio.run closes the loop on disconnect
+        asyncio.run(run())
+
+    try:
+        with caplog.at_level(logging.DEBUG, logger="solara.task"):
+            thread = threading.Thread(target=page_thread)
+            thread.start()
+            thread.join()
+            assert context_holder["context"].event_loop.is_closed()
+            assert not context_holder["context"].closed_event.is_set()
+            proceed.set()
+
+            def delivery_records():
+                return [record for record in caplog.records if record.getMessage().startswith("ignoring error setting")]
+
+            deadline = time.time() + 10
+            while time.time() < deadline and not delivery_records():
+                time.sleep(0.01)
+
+        records = delivery_records()
+        assert len(records) == 1
+        assert records[0].levelno == logging.DEBUG
+        delivery_errors = [record for record in caplog.records if record.levelno >= logging.ERROR and record.getMessage().startswith("error setting")]
+        assert not delivery_errors
+        if fail:
+            # the exception raised by the task itself should still be logged
+            assert any(record.levelno == logging.ERROR and "task failed for a test" in record.getMessage() for record in caplog.records)
+    finally:
+        with context_holder["context"]:
+            context_holder["context"].close()
