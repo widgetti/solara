@@ -272,6 +272,20 @@ Thread__init__ = threading.Thread.__init__
 Thread__bootstrap = threading.Thread._bootstrap  # type: ignore
 
 
+def _is_pool_worker_thread(args, kwargs) -> bool:
+    # a concurrent.futures.ThreadPoolExecutor grows its pool lazily: the worker
+    # thread is created by whoever happens to call submit() when no worker is idle.
+    # Pool workers are shared infrastructure that outlive the request that spawned
+    # them — inheriting the spawning kernel's context would pin that kernel's whole
+    # state for the lifetime of the pool, and any code on the worker would see an
+    # arbitrary, possibly closed, kernel context. Context must travel per submitted
+    # job (a contextvars copy or an explicit capture), not per worker thread.
+    target = kwargs.get("target")
+    if target is None and len(args) >= 2:
+        target = args[1]
+    return getattr(target, "__module__", None) == "concurrent.futures.thread" and getattr(target, "__qualname__", None) == "_worker"
+
+
 def WidgetContextAwareThread__init__(self, *args, **kwargs):
     Thread__init__(self, *args, **kwargs)
     with ThreadDebugInfo.lock:
@@ -280,7 +294,8 @@ def WidgetContextAwareThread__init__(self, *args, **kwargs):
     self.current_context = None
     # if we do this for the dummy threads, we got into a recursion
     # since threading.current_thread will call the _DummyThread constructor
-    if not ("name" in kwargs and kwargs["name"] is not None and "Dummy-" in kwargs["name"]):
+    is_dummy = "name" in kwargs and kwargs["name"] is not None and "Dummy-" in kwargs["name"]
+    if not is_dummy and not _is_pool_worker_thread(args, kwargs):
         try:
             self.current_context = kernel_context.get_current_context()
         except RuntimeError:
