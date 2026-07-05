@@ -2,6 +2,7 @@
 # in the future, we may want to move the esm features of ipyreact
 # into a separate package, and then we can import it unconditionally
 import logging
+import warnings
 import threading
 from collections import defaultdict
 from pathlib import Path
@@ -21,11 +22,18 @@ _import_map_per_kernel: Dict[str, ipyreact.importmap.ImportMap] = {}
 
 
 # in solara server, we'll monkey patch ipyreact.module with this
-def define_module(name: str, module: Optional[Path] = None, *, code: Optional[str] = None, url: Optional[str] = None):
+def define_module(name: str, module: Union[str, Path, None] = None, *, code: Optional[str] = None, url: Optional[str] = None):
     if sum(x is not None for x in (module, code, url)) != 1:
         raise TypeError("pass exactly one of module (a Path), code or url")
-    if module is not None and not isinstance(module, Path):
-        raise TypeError("module must be a Path; use url=... or code=... for strings")
+    if isinstance(module, str):
+        # the pre-0.6 ipyreact API: a plain str was module code
+        warnings.warn(
+            "passing module code as a plain str is deprecated, use code=... (or url=... for a url)",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        code = module
+        module = None
     source: Union[str, Path]
     if code is not None:
         source = _CODE_PREFIX + code
