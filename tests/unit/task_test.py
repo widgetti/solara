@@ -1,7 +1,9 @@
 import asyncio
+import gc
 import logging
 import threading
 import time
+import weakref
 import warnings
 
 import ipyvuetify as v
@@ -741,6 +743,94 @@ def test_task_finishing_after_call_event_loop_closed_is_not_an_error(fail, caplo
     finally:
         with context_holder["context"]:
             context_holder["context"].close()
+
+
+def test_use_task_unmounted_instance_is_collected(monkeypatch):
+    # use_task creates a Task instance per component mount. Registering the close-time
+    # cleanup with a strong reference (context.on_close(self._drop_call_state)) pinned
+    # every instance that ever ran - together with its ._last_value result - until the
+    # KERNEL closed. A long-lived session that mounts/unmounts use_task components then
+    # grows without bound. The registration must not keep an unmounted instance alive.
+    monkeypatch.setattr(solara.tasks, "_using_solara_server", lambda: True)
+
+    class Payload(list):
+        pass
+
+    payload_refs: list = []
+    show = solara.reactive(True)
+
+    @solara.component
+    def TaskUser():
+        async def work():
+            data = Payload(range(1000))
+            payload_refs.append(weakref.ref(data))
+            return data
+
+        result = use_task(work, dependencies=[])
+        solara.Text("done" if result.finished else "pending")
+
+    @solara.component
+    def Page():
+        if show.value:
+            TaskUser()
+        else:
+            solara.Text("hidden")
+
+    holder: dict = {}
+
+    def page_thread():
+        # like production: the kernel context's event loop is a RUNNING loop (the
+        # websocket thread's), so future-delivery callbacks actually get processed
+        async def run():
+            context = kernel_context.VirtualKernelContext(id="use-task-unmount", kernel=kernel.Kernel(), session_id="session-unmount")
+            holder["context"] = context
+            await run_in_context(context)
+
+        async def run_in_context(context):
+            with context:
+                box, rc = solara.render(Page(), handle_error=False)
+                n = 5
+                for _ in range(n):
+                    show.value = False
+                    show.value = True
+                    await asyncio.sleep(0.05)  # let task threads finish and deliveries drain
+                deadline = time.time() + 10
+                while len(payload_refs) < n + 1 and time.time() < deadline:
+                    await asyncio.sleep(0.01)
+                alive = len(payload_refs)
+                deadline = time.time() + 10
+                while time.time() < deadline:
+                    # pytest's LogCaptureHandler retains LogRecords whose args hold the
+                    # task results ("setting result to %r"); clear them or they pin the
+                    # payloads for the duration of the test
+                    for logger_obj in [logging.getLogger()] + [logging.getLogger(name) for name in logging.root.manager.loggerDict]:
+                        for handler in getattr(logger_obj, "handlers", []):
+                            if hasattr(handler, "records"):
+                                handler.records.clear()
+                    gc.collect()
+                    alive = sum(1 for ref in payload_refs if ref() is not None)
+                    if alive <= 1:  # only the currently mounted instance may hold one
+                        break
+                    await asyncio.sleep(0.05)
+                holder["alive"] = alive
+                rc.close()
+
+        try:
+            asyncio.run(run())
+        except BaseException as e:  # noqa: BLE001 - re-raised in the main thread
+            holder["exception"] = e
+
+    try:
+        thread = threading.Thread(target=page_thread)
+        thread.start()
+        thread.join()
+        if "exception" in holder:
+            raise holder["exception"]
+        alive = holder["alive"]
+        assert alive <= 1, f"unmounted use_task results are pinned: {alive}/{len(payload_refs)} alive while the kernel is still open"
+    finally:
+        with holder["context"]:
+            holder["context"].close()
 
 
 def test_task_async_future_receives_exception(monkeypatch):

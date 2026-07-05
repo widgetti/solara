@@ -32,6 +32,12 @@ alive* once you know something leaks.
 5. Verify cleanup independently of memory: an app-level counter endpoint
    (Solara: `/resourcez`) must return to baseline every cycle. "Memory not
    freed" is often just "cleanup didn't run".
+6. **Also churn WITHIN a session**: repeatedly create and destroy the app's
+   sub-resources while the session stays open (mount/unmount components,
+   open/close panels — `churn_app.py`). The session cycle only catches leaks
+   visible at session close; per-mount accumulation inside a live session is
+   invisible to it (that blind spot hid a real `use_task` leak, see the case
+   study below).
 
 ## Why the OS number does not tell the full story
 
@@ -138,14 +144,31 @@ The transferable core. Adapt the constants, keep the structure:
    - counters (sessions/threads/websockets) must return to baseline every
      cycle — if they don't, fix that first; the memory question is moot.
 
+**The second axis: churn within a session.** The cycle above varies the
+number of *sessions*; every leak it can catch is one that survives session
+close. State that accumulates per *component* (or per sub-resource) while
+the session stays open is invisible to it — closing the session frees the
+accumulation before the measurement can see it, and a handful of
+interactions per session is lost in the noise. So also run the protocol
+with a workload that repeatedly creates and destroys sub-resources inside
+each session (`churn_app.py`: every click mounts or unmounts a
+`use_task` + 4.5 MB payload subcomponent; drive it with
+`MEASURE_CLICKS=10` or more). Same read-out: idle-point plateau vs line.
+The object-level twin is a weakref test: mount/unmount N times in one live
+kernel and assert at most the mounted instance's payload stays alive
+(`tests/unit/task_test.py::test_use_task_unmounted_instance_is_collected`).
+
 Reference implementation in [memory-measurement/](memory-measurement/):
 
 - `click_app.py` — minimal one-button app (framework floor)
 - `kitchen_sink_app.py` — exercises reactive/computed/task/use_task/
-  use_reactive plus ~1 MB per-session payload; renders `ALL-DONE` when every
-  feature finished (the harness waits for it)
+  use_reactive plus ~4.5 MB per-session payload; renders `ALL-DONE` when
+  every feature finished (the harness waits for it)
+- `churn_app.py` — within-session churn: each click mounts/unmounts a
+  subcomponent holding a `use_task` + ~4.5 MB payload
 - `measure.py [app.py] [marker]` — host run (psutil + vmmap), prints per-cycle
-  table, writes `report-<app>.json`
+  table, writes `report-<app>.json`; `MEASURE_CLICKS`/`MEASURE_PORT` override
+  the defaults
 - `measure_docker.py [app.py] [marker]` — same protocol against a 512 MB
   `python:3.11-slim` container, reading cgroup v2 numbers (the browser stays
   on the host so the cgroup contains only the server)
@@ -415,6 +438,59 @@ pauses all threads — the unit test suite closes one context per test, and
 the GIL pauses broke timing-sensitive tests on loaded CI runners (hence the
 rendered-an-app gate).
 
+### Case study 2: the use_task leak the protocol missed
+
+After all of the above was measured, verified, and released, a user found a
+leak in `use_task` — a lesson in methodology, because every measurement and
+test above was green while it existed.
+
+**Why it was invisible**: every workload cycled *sessions* — mount, use
+briefly, close, assert everything freed. `use_task` leaked **per component
+mount**: each mount created a `Task` inside a `Singleton`, whose constructor
+registered a reset callback in the process-global `on_kernel_start` list and
+discarded the returned unregister-cleanup. Fine for module-level `@task`
+(one instance per process, the module pins it anyway); for `use_task` every
+mount permanently pinned a task instance plus its `._last_value` result. A
+session that mounts/unmounts such components grows without bound — but close
+the session and everything except the global registrations is freed, so
+close-path tests pass, and three clicks per session is invisible in the
+per-session noise. The kitchen-sink app never unmounted anything.
+
+**The fix** (`use_task` cleanup on unmount, solara #1180) had its own
+instructive race: clearing the kernel-store entries at unmount was not
+enough, because a worker thread *just finishing* re-created the entry via
+its result write. The cleanup must first drop the call state — making
+`is_current()` return `False`, which gates all result writes — then cancel,
+unregister, and clear.
+
+**Measured** (`churn_app.py`, 10 pages × 10 cycles × 5 mount/unmounts per
+page = 500 mounts, macOS physical footprint): with the leak, idle climbs
+`149 → 247 → 278 → 303 → 350 → 381 → ~390 MB` (peak 425 MB) and the first
+sessions cost 27 MB each; with the unmount cleanup, idle stays flat at
+~160–170 MB (peak 171 MB) and sessions cost ~0–2 MB at steady state. Same
+workload, 2.4× the memory — and still climbing — versus a plateau.
+
+**The general rules this adds**:
+
+- Sub-session resources need their own churn test: create/destroy them many
+  times *within* a live session (`churn_app.py` for the benchmark;
+  a weakref mount/unmount test for the object level).
+- Any registration in a long-lived registry (process-global lists,
+  session-scoped callback lists) must be paired with deregistration at the
+  registrant's *own* lifetime end — "the registry is cleaned at close" is
+  only true for objects whose lifetime matches the registry's. A bound
+  method in a callback list is a strong reference to the whole instance;
+  register a `weakref.WeakMethod` when the callback is a courtesy rather
+  than an ownership.
+- Cleanup that races a worker must first flip the flag the worker checks
+  (`is_current()`-style), then clear the state — clearing first re-leaks.
+
+One more diagnosis trap found on the way (py3.11+): `gc.get_referrers` on a
+coroutine's local shows the **coroutine object** as the referrer, not a
+frame — so diagnosis code running inside a coroutine finds itself and cannot
+be filtered by `f_code.co_name`. Put referrer-walking diagnosis in a
+separate plain function and filter by its function names.
+
 ### Leak or retention? The shape answers it
 
 Linux `anon` at the idle point of each click-app cycle:
@@ -468,6 +544,10 @@ Executing a "measure memory / find the leak" task, in order:
 5. **Judge by shape**: decaying increments = retention (healthy plateau);
    constant increments = leak (report MB/cycle); counters not returning to
    baseline = cleanup bug, fix before memory analysis.
+5b. **Run the churn variant too**: repeatedly create/destroy sub-resources
+   *inside* live sessions (component mount/unmount). The session cycle is
+   blind to per-mount accumulation — it freed everything at close before you
+   could see it (this hid a real `use_task` leak; see the case study).
 6. **If leak**: `memray flamegraph --leaks` (with `PYTHONMALLOC=malloc`) for
    *what allocated it*; weakref + objgraph per
    [memory-leak-detection.md](memory-leak-detection.md) for *why it is alive*.

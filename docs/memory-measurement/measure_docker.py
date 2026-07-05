@@ -22,11 +22,11 @@ import urllib.request
 
 from playwright.async_api import async_playwright
 
-PORT = 18766
+PORT = int(os.environ.get("MEASURE_PORT", "18766"))
 BASE = f"http://localhost:{PORT}"
 N_PAGES = 10
 CYCLES = 10
-CLICKS_PER_PAGE = 3
+CLICKS_PER_PAGE = int(os.environ.get("MEASURE_CLICKS", "3"))
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))  # the solara repo root
 NAME = "solara-mem"
