@@ -1,5 +1,11 @@
 # Solara Changelog
 
+## Version 1.59.1
+
+   * Bug Fix: Gzip + immutable CDN caching for both server entrypoints. [01561ad9](https://github.com/widgetti/solara/commit/01561ad9)
+   * Bug Fix: Free closed virtual kernels promptly instead of leaving them to the GC. [d1b67bec](https://github.com/widgetti/solara/commit/d1b67bec)
+   * Bug Fix (solara-assets): Prune dev artifacts to shrink the wheel from 56 MB to 34 MB. [2efeaa88](https://github.com/widgetti/solara/commit/2efeaa88) (Note: `solara-assets` 1.59.1 is not yet on PyPI — the project has hit PyPI's 10 GB per-project storage cap. `pip install solara-assets==1.59.0` still works.)
+
 ## Version 1.59.0
 
    * Feature: Kernel-aware ES module support for ipyvue. [ee243307](https://github.com/widgetti/solara/commit/ee243307)
