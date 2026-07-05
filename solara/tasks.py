@@ -1088,13 +1088,14 @@ def use_task(
                 # belongs to this component instance: drop everything that outlives the
                 # component, or a session that mounts/unmounts components leaks a task
                 # instance + its result per mount:
-                # 1. stop a still-running call, and drop the call state FIRST: that makes
-                #    is_current() False, so a worker thread that is just finishing skips its
-                #    result write instead of recreating the store entry we clear below
-                try:
-                    task_instance.cancel()
-                except RuntimeError:
-                    pass  # never called
+                # 1. drop the call state FIRST: that makes is_current() False, so a still
+                #    running call stops updating state, and a worker thread that is just
+                #    finishing skips its result write instead of recreating the store entry
+                #    we clear below. Deliberately no cancel(): its called-from-our-own-task
+                #    detection misfires when this cleanup runs inside the task's own render
+                #    cascade (a result write triggering the unmounting render), raising
+                #    _CancelledErrorInOurTask through the render machinery. An orphaned call
+                #    running to completion unobserved matches the pre-cleanup behavior.
                 task_instance._drop_call_state()  # type: ignore
                 singleton = task_instance._instance  # type: ignore
                 # 2. the process-global on_kernel_start registration (pins the instance forever)
