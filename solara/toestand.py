@@ -747,7 +747,11 @@ class Singleton(Reactive[S]):
 
             return cleanup
 
-        solara.lifecycle.on_kernel_start(reset)
+        # the registration appends to a process-global list, pinning self (and, through the
+        # kernel store, the per-kernel values) forever. Fine for module-level singletons -
+        # the module pins them anyway - but per-component-instance singletons (use_task)
+        # must call this cleanup on unmount or every mount leaks until process exit.
+        self._on_kernel_start_cleanup = solara.lifecycle.on_kernel_start(reset)
 
     def __set__(self, obj, value):
         raise AttributeError("Can't set a singleton")

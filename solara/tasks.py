@@ -284,10 +284,22 @@ class TaskAsyncio(Task[P, R]):
             self._context = weakref.ref(context)
             call_event_loop = context.event_loop
             if not self._drop_call_state_on_close_registered:
-                # the task instance is per kernel (it lives in a kernel store), so one
-                # registration covers all calls
+                # one registration covers all calls of this instance. Register weakly:
+                # use_task creates a Task instance per component mount, and a strong
+                # reference (a bound method) would pin every instance that ever ran -
+                # including its ._last_value result - until the KERNEL closes, growing
+                # without bound in a long-lived session that mounts/unmounts components.
+                # A collected instance took its call state with it, so there is nothing
+                # left to drop at close.
                 self._drop_call_state_on_close_registered = True
-                context.on_close(self._drop_call_state)
+                drop_call_state_ref = weakref.WeakMethod(self._drop_call_state)
+
+                def drop_call_state():
+                    drop = drop_call_state_ref()
+                    if drop is not None:
+                        drop()
+
+                context.on_close(drop_call_state)
         else:
             call_event_loop = _main_event_loop or asyncio.get_event_loop()
         try:
@@ -499,7 +511,21 @@ class TaskThreaded(Task[P, R]):
         cancel_event = getattr(self._local, "cancel_event", None)
         if cancel_event is not None and cancel_event.is_set():
             return False
+        if self._current_thread is None:
+            # the call state was dropped (component unmount): any still-running call is
+            # stale and should stop
+            return False
         return self._current_thread == threading.current_thread()
+
+    def _drop_call_state(self):
+        # See TaskAsyncio._drop_call_state: called when a use_task component unmounts, so
+        # a stale worker thread stops updating state (is_current() returns False) and the
+        # call bookkeeping does not outlive the component.
+        self._current_thread = None
+        self._current_cancel_event = None
+        self._last_finished_event = None
+        self._cancel = None
+        self._retry = None
 
     def _run(self, _last_finished_event, previous_thread: Optional[threading.Thread], cancel_event, args, kwargs) -> None:
         # use_thread has this as default, which can make code run 10x slower
@@ -1055,6 +1081,32 @@ def use_task(
         task_instance = solara.use_memo(create_task, dependencies=[])
         # we always update the function so we do not have stale data in the function
         task_instance.function = f  # type: ignore
+
+        def cleanup_on_unmount():
+            def cleanup():
+                # unlike a module-level @task (one instance per process), this task instance
+                # belongs to this component instance: drop everything that outlives the
+                # component, or a session that mounts/unmounts components leaks a task
+                # instance + its result per mount:
+                # 1. stop a still-running call, and drop the call state FIRST: that makes
+                #    is_current() False, so a worker thread that is just finishing skips its
+                #    result write instead of recreating the store entry we clear below
+                try:
+                    task_instance.cancel()
+                except RuntimeError:
+                    pass  # never called
+                task_instance._drop_call_state()  # type: ignore
+                singleton = task_instance._instance  # type: ignore
+                # 2. the process-global on_kernel_start registration (pins the instance forever)
+                singleton._on_kernel_start_cleanup()
+                # 3. this kernel's entries in the kernel stores (pinned until kernel close):
+                #    the instance itself, and its TaskResult (which holds .value/.latest)
+                singleton._storage.clear()
+                task_instance._result._storage.clear()  # type: ignore
+
+            return cleanup
+
+        solara.use_effect(cleanup_on_unmount, dependencies=[])
 
         def _prestart():
             if dependencies is not None:
