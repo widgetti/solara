@@ -724,7 +724,7 @@ def test_task_finishing_after_call_event_loop_closed_is_not_an_error(fail, caplo
             proceed.set()
 
             def delivery_records():
-                return [record for record in caplog.records if record.getMessage().startswith("ignoring error setting")]
+                return [record for record in caplog.records if record.getMessage().startswith("ignoring failure to deliver")]
 
             deadline = time.time() + 10
             while time.time() < deadline and not delivery_records():
@@ -733,7 +733,100 @@ def test_task_finishing_after_call_event_loop_closed_is_not_an_error(fail, caplo
         records = delivery_records()
         assert len(records) == 1
         assert records[0].levelno == logging.DEBUG
-        delivery_errors = [record for record in caplog.records if record.levelno >= logging.ERROR and record.getMessage().startswith("error setting")]
+        delivery_errors = [record for record in caplog.records if record.levelno >= logging.ERROR and record.getMessage().startswith("error delivering")]
+        assert not delivery_errors
+        if fail:
+            # the exception raised by the task itself should still be logged
+            assert any(record.levelno == logging.ERROR and "task failed for a test" in record.getMessage() for record in caplog.records)
+    finally:
+        with context_holder["context"]:
+            context_holder["context"].close()
+
+
+def test_task_async_future_receives_exception(monkeypatch):
+    # awaiting the future of a failing task must raise the task's exception
+    # (guards the delivery closure: the `except ... as e` name is unbound by the
+    # time the closure runs on the call loop, so it must capture a fresh binding)
+    monkeypatch.setattr(solara.tasks, "_using_solara_server", lambda: True)
+    holder: dict = {}
+
+    @solara.tasks.task
+    async def fails():
+        raise RuntimeError("boom for a test")
+
+    def page_thread():
+        async def run():
+            context = kernel_context.VirtualKernelContext(id="task-exception", kernel=kernel.Kernel(), session_id="session-exception")
+            holder["context"] = context
+            with context:
+                fails()
+                assert fails.current_future is not None  # type: ignore
+                try:
+                    await asyncio.wait_for(fails.current_future, timeout=10)  # type: ignore
+                except BaseException as e:
+                    holder["exception"] = e
+
+        asyncio.run(run())
+
+    try:
+        thread = threading.Thread(target=page_thread)
+        thread.start()
+        thread.join()
+        exception = holder.get("exception")
+        assert isinstance(exception, RuntimeError)
+        assert "boom for a test" in str(exception)
+    finally:
+        with holder["context"]:
+            holder["context"].close()
+
+
+@pytest.mark.parametrize("fail", [False, True])
+def test_task_finishing_after_future_cancelled_is_not_an_error(fail, caplog, monkeypatch):
+    # A page close or shutdown can cancel the pending future while the task thread's
+    # completion is already in flight. Delivering to a done future raises
+    # InvalidStateError inside the loop callback, which asyncio logs as an ERROR with
+    # the exception traceback attached - and exception tracebacks pin the coroutine
+    # frames and through them the whole kernel context in a reference cycle that waits
+    # for a gen-2 gc. The delivery must be skipped silently instead.
+    monkeypatch.setattr(solara.tasks, "_using_solara_server", lambda: True)
+    proceed = threading.Event()
+    context_holder = {}
+
+    @solara.tasks.task
+    async def finishes():
+        while not proceed.is_set():
+            await asyncio.sleep(0.001)
+        if fail:
+            raise RuntimeError("task failed for a test")
+        return 42
+
+    def page_thread():
+        async def run():
+            context = kernel_context.VirtualKernelContext(id="task-future-cancelled", kernel=kernel.Kernel(), session_id="session-future-cancelled")
+            context_holder["context"] = context
+            with context:
+                finishes()
+                future = finishes.current_future  # type: ignore
+                assert future is not None
+                future.cancel()
+                proceed.set()
+                # keep the loop alive so the delivery callback gets a chance to run (and misbehave)
+                for _ in range(200):
+                    await asyncio.sleep(0.005)
+                    if finishes.finished or finishes.error:
+                        break
+
+        asyncio.run(run())
+
+    try:
+        with caplog.at_level(logging.DEBUG):
+            thread = threading.Thread(target=page_thread)
+            thread.start()
+            thread.join()
+
+        asyncio_errors = [record for record in caplog.records if record.name == "asyncio" and record.levelno >= logging.ERROR]
+        assert not asyncio_errors
+        delivery_errors = [record for record in caplog.records if record.levelno >= logging.ERROR and record.getMessage().startswith("error delivering")]
         assert not delivery_errors
         if fail:
             # the exception raised by the task itself should still be logged
