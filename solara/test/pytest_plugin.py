@@ -38,8 +38,9 @@ logger = logging.getLogger("solara.pytest_plugin")
 
 # support for pytest-xdist
 worker = os.environ.get("PYTEST_XDIST_WORKER", "gw0")
-# +100 so we do not interfere with the solara integration tests, +1 worker id to avoid port conflicts with other workers
-TEST_PORT_START = int(os.environ.get("PORT", "18765")) + int(worker[2:]) + 100
+# +100 so we do not interfere with the solara integration tests, and 10 ports per worker id, since
+# each worker can run a solara, jupyter and voila server (+1 spacing would make workers collide)
+TEST_PORT_START = int(os.environ.get("PORT", "18765")) + int(worker[2:]) * 10 + 100
 
 TEST_HOST = solara.server.settings.main.host
 TIMEOUT = float(os.environ.get("SOLARA_PW_TIMEOUT", "18"))
@@ -308,6 +309,12 @@ def _solara_test(solara_server, solara_app, page_session: "playwright.sync_api.P
             if id in used_contexts:
                 # handle when run_event.wait(10) fails
                 del used_contexts[id]
+                # the page-close beacon from the browser is best-effort: the about:blank
+                # navigation can abort it (seen on loaded windows CI runners), and then the
+                # kernel context lingers until the cull timeout. Close it server-side instead
+                # of failing the teardown.
+                if not context.closed_event.wait(10):
+                    context.close(reason="page-close")
                 assert context.closed_event.wait(10)
 
 

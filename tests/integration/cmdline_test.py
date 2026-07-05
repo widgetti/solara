@@ -4,15 +4,15 @@ from pathlib import Path
 import playwright.sync_api
 
 import solara.server.server
-
-from . import conftest
+from solara.server.threaded import get_free_port
 
 HERE = Path(__file__).parent
 
 
 def test_run_widget(page_session: playwright.sync_api.Page):
-    port = conftest.TEST_PORT
-    conftest.TEST_PORT += 1
+    # an OS-assigned free port: this server does not need to be in the auth0 callback range,
+    # and taking TEST_PORT + 1 collides with other xdist workers
+    port = get_free_port()
     args = ["solara", "run", f"--port={port}", "--no-open", str(HERE / "app_widget.py") + ":button"]
     popen = subprocess.Popen(args, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
     host = "localhost"

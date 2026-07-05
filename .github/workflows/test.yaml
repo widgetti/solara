@@ -18,6 +18,9 @@ concurrency:
 env:
   SOLARA_TELEMETRY_SERVER_USER_ID: "install-test"
   SOLARA_TELEMETRY_MIXPANEL_TOKEN: adbf863d17cba80db608788e7fce9843
+  # without this, buffered output is lost when a process force-exits (e.g. os._exit on windows,
+  # pytest-timeout kills), which made CI failures undiagnosable
+  PYTHONUNBUFFERED: "1"
 
 defaults:
   run:
@@ -267,7 +270,6 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-          cache: "pip"
 
       - uses: actions/download-artifact@v6
         with:
@@ -300,11 +302,12 @@ jobs:
         id: install_no_lock
         run: |
           mkdir -p .ci-package-locks/pyinstaller
-          pip install `echo dist/*.whl`[all]
-          pip install `echo packages/solara-server/dist/*.whl`[all]
-          pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
+          command -v uv >/dev/null || pip install uv
           # pefile >= 2023.2.7 make pyinstaller incredibly slow https://github.com/erocarrera/pefile/issues/420
-          pip install "jupyterlab<4"  "pydantic<2" "playwright==1.50.0" pyinstaller pefile==2023.2.7
+          uv pip install --system `echo dist/*.whl`[all] \
+            `echo packages/solara-server/dist/*.whl`[all] \
+            `echo packages/solara-meta/dist/*.whl`[dev,documentation] \
+            "jupyterlab<4" "pydantic<2" "playwright==1.50.0" pyinstaller pefile==2023.2.7
           pip freeze --exclude solara --exclude solara-ui --exclude solara-server > ${{ env.LOCK_FILE_LOCATION }}
           git diff --quiet || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
           git diff | tee ${{ env.DIFF_FILE_LOCATION }}
@@ -313,16 +316,18 @@ jobs:
       - name: Install
         if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
         run: |
-          pip install -r ${{ env.LOCK_FILE_LOCATION }}
-          pip install `echo dist/*.whl`[all]
-          pip install `echo packages/solara-server/dist/*.whl`[all]
-          pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
+          command -v uv >/dev/null || pip install uv
+          uv pip install --system -r ${{ env.LOCK_FILE_LOCATION }} \
+            `echo dist/*.whl`[all] \
+            `echo packages/solara-server/dist/*.whl`[all] \
+            `echo packages/solara-meta/dist/*.whl`[dev,documentation]
 
       - name: Build standalone executable
         run: (cd pyinstaller/minimal; pyinstaller ./solara.spec --log-level DEBUG)
 
       - name: Install playwright
-        run: playwright install
+        # only chromium is used in these tests
+        run: playwright install chromium
 
       - name: Run solara server (pyinstaller)
         run: pyinstaller/minimal/dist/solara/solara --port 18765 &
@@ -385,7 +390,6 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-          cache: "pip"
 
       - uses: actions/download-artifact@v6
         with:
@@ -418,13 +422,16 @@ jobs:
         id: install_no_lock
         run: |
           mkdir -p .ci-package-locks/integration
-          pip install `echo dist/*.whl`[all]
-          pip install `echo packages/solara-server/dist/*.whl`[all]
-          pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets${{ matrix.ipywidgets_major }}]
-          pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
-          pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
-          pip install "jupyterlab<4"  "pydantic<2" "playwright==1.50.0" "ipywidgets~=${{ matrix.ipywidgets }}"
-          pip install pytest-retry
+          command -v uv >/dev/null || pip install uv
+          # uv: parallel downloads/installs, much faster than pip (biggest win on windows).
+          # pip freeze still reads the uv-installed packages fine (standard dist-info).
+          uv pip install --system `echo dist/*.whl`[all] \
+            `echo packages/solara-server/dist/*.whl`[all] \
+            `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets${{ matrix.ipywidgets_major }}] \
+            `echo packages/solara-meta/dist/*.whl`[dev,documentation] \
+            `echo packages/solara-enterprise/dist/*.whl`[ssg,auth] \
+            "jupyterlab<4" "pydantic<2" "playwright==1.50.0" "ipywidgets~=${{ matrix.ipywidgets }}" \
+            pytest-retry pytest-xdist
           pip freeze --exclude solara --exclude solara-ui --exclude solara-server --exclude pytest-ipywidgets --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
           git diff | tee ${{ env.DIFF_FILE_LOCATION }}
           [ -s ${{ env.DIFF_FILE_LOCATION }} ] && echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT" || echo "No dependencies changed"
@@ -432,15 +439,19 @@ jobs:
       - name: Install
         if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
         run: |
-          pip install -r ${{ env.LOCK_FILE_LOCATION }}
-          pip install `echo dist/*.whl`[all]
-          pip install `echo packages/solara-server/dist/*.whl`[all]
-          pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets${{ matrix.ipywidgets_major }}]
-          pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
-          pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
+          command -v uv >/dev/null || pip install uv
+          # pytest-xdist explicitly: existing lock files do not have it until the next lock refresh
+          uv pip install --system -r ${{ env.LOCK_FILE_LOCATION }} \
+            `echo dist/*.whl`[all] \
+            `echo packages/solara-server/dist/*.whl`[all] \
+            `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets${{ matrix.ipywidgets_major }}] \
+            `echo packages/solara-meta/dist/*.whl`[dev,documentation] \
+            `echo packages/solara-enterprise/dist/*.whl`[ssg,auth] \
+            pytest-xdist
 
       - name: Install playwright
-        run: playwright install
+        # only chromium is used in these tests
+        run: playwright install chromium
 
       - name: test
         if: github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true'
@@ -452,7 +463,9 @@ jobs:
         # TODO: we used to also run the (cheap) unittests, to get better coverage report, but that gives errors
         # it seems on CI that the default playwright timeout is not (always?) respected, also, if the --timeout argument
         # is shorter than the timeout of playwright, we get no good error message, summary: always keep above 30!
-        run: pytest tests/integration --timeout=360 --video=retain-on-failure --output=test-results -vv -s --log-cli-level=warning --retries 3
+        # -n 2: keep in sync with the port spacing in tests/integration/conftest.py — more workers
+        # would put ports outside the valid auth0 callback range (18765-18770)
+        run: pytest tests/integration -n 2 --timeout=360 --video=retain-on-failure --output=test-results -vv -s --log-cli-level=warning --retries 3
 
       - name: Upload Test artifacts
         if: always()
@@ -500,7 +513,6 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-          cache: "pip"
 
       - uses: actions/download-artifact@v6
         with:
@@ -526,14 +538,15 @@ jobs:
         if: github.event_name == 'schedule' || steps.prepare.outputs.LOCKS_EXIST == 'false'
         run: |
           mkdir -p .ci-package-locks/integration-vue3
-          pip install `echo dist/*.whl`[all]
-          pip install `echo packages/solara-server/dist/*.whl`[all]
-          pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets${{ matrix.ipywidgets_major }}]
-          pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
-          pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
-          pip install "jupyterlab<4" "playwright==1.50.0" "pydantic<2" "ipywidgets~=${{ matrix.ipywidgets }}"
-          pip install pytest-retry
-          pip install jupyter_core jupyter-packaging
+          command -v uv >/dev/null || pip install uv
+          uv pip install --system `echo dist/*.whl`[all] \
+            `echo packages/solara-server/dist/*.whl`[all] \
+            `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets${{ matrix.ipywidgets_major }}] \
+            `echo packages/solara-meta/dist/*.whl`[dev,documentation] \
+            `echo packages/solara-enterprise/dist/*.whl`[ssg,auth] \
+            "jupyterlab<4" "playwright==1.50.0" "pydantic<2" "ipywidgets~=${{ matrix.ipywidgets }}" \
+            pytest-retry jupyter_core jupyter-packaging
+          # separate command: --pre should only apply to ipyvue/ipyvuetify
           pip install --pre "ipyvue>=3" "ipyvuetify>=3"
           pip freeze --exclude solara --exclude solara-ui --exclude solara-server --exclude pytest-ipywidgets --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
           git diff | tee ${{ env.DIFF_FILE_LOCATION }}
@@ -542,12 +555,13 @@ jobs:
       - name: Install
         if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
         run: |
-          pip install -r ${{ env.LOCK_FILE_LOCATION }}
-          pip install `echo dist/*.whl`[all]
-          pip install `echo packages/solara-server/dist/*.whl`[all]
-          pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets${{ matrix.ipywidgets_major }}]
-          pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
-          pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
+          command -v uv >/dev/null || pip install uv
+          uv pip install --system -r ${{ env.LOCK_FILE_LOCATION }} \
+            `echo dist/*.whl`[all] \
+            `echo packages/solara-server/dist/*.whl`[all] \
+            `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets${{ matrix.ipywidgets_major }}] \
+            `echo packages/solara-meta/dist/*.whl`[dev,documentation] \
+            `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
 
       - name: Install playwright
         run: playwright install
@@ -604,7 +618,6 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
-          cache: "pip"
 
       - uses: actions/download-artifact@v6
         with:
@@ -624,12 +637,20 @@ jobs:
         if: github.event_name == 'schedule' || steps.prepare.outputs.LOCKS_EXIST == 'false'
         run: |
           mkdir -p .ci-package-locks/unit
-          pip install `echo dist/*.whl`[all]
-          pip install `echo packages/solara-server/dist/*.whl`[all]
-          pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all]
-          pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
-          pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
-          pip install "jupyterlab<4" diskcache redis "ipywidgets~=${{ matrix.ipywidgets }}"
+          command -v uv >/dev/null || pip install uv
+          # uv: parallel downloads/installs, much faster than pip (biggest win on windows).
+          # pip freeze still reads the uv-installed packages fine (standard dist-info).
+          # no jupyterlab and no pytest-ipywidgets extras: the unit tests never start
+          # voila/jupyter servers (integration does), and the jupyterlab<4 chain pins old
+          # native packages (y-py, pywinpty) that lack wheels on some windows pythons.
+          # --only-binary pywinpty: ipywidgets 7 still pulls it in via notebook, and its
+          # latest sdist neither parses nor builds on python 3.8 - resolve to a wheel instead
+          uv pip install --system --only-binary pywinpty `echo dist/*.whl`[all] \
+            `echo packages/solara-server/dist/*.whl`[all] \
+            `echo packages/pytest-ipywidgets/dist/*.whl` \
+            `echo packages/solara-meta/dist/*.whl`[dev,documentation] \
+            `echo packages/solara-enterprise/dist/*.whl`[ssg,auth] \
+            diskcache redis "ipywidgets~=${{ matrix.ipywidgets }}"
           pip freeze --exclude solara --exclude solara-ui --exclude solara-server --exclude pytest-ipywidgets --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
           git diff | tee ${{ env.DIFF_FILE_LOCATION }}
           [ -s ${{ env.DIFF_FILE_LOCATION }} ] && echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT" || echo "No dependencies changed"
@@ -637,12 +658,13 @@ jobs:
       - name: Install
         if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
         run: |
-          pip install -r ${{ env.LOCK_FILE_LOCATION }}
-          pip install `echo dist/*.whl`[all]
-          pip install `echo packages/solara-server/dist/*.whl`[all]
-          pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all]
-          pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
-          pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
+          command -v uv >/dev/null || pip install uv
+          uv pip install --system --only-binary pywinpty -r ${{ env.LOCK_FILE_LOCATION }} \
+            `echo dist/*.whl`[all] \
+            `echo packages/solara-server/dist/*.whl`[all] \
+            `echo packages/pytest-ipywidgets/dist/*.whl` \
+            `echo packages/solara-meta/dist/*.whl`[dev,documentation] \
+            `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
 
       - name: Start Redis
         if: ( github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true' ) && matrix.os != 'windows'

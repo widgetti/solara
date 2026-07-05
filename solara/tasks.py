@@ -263,6 +263,16 @@ class TaskAsyncio(Task[P, R]):
             call_event_loop = context.event_loop
         else:
             call_event_loop = _main_event_loop or asyncio.get_event_loop()
+        try:
+            running_loop: Optional[asyncio.AbstractEventLoop] = asyncio.get_running_loop()
+        except RuntimeError:
+            running_loop = None
+        if running_loop is not None and not call_event_loop.is_running():
+            # a future created on a loop that is not running can never be delivered: prefer the
+            # loop we are called from. In production this is a no-op (the kernel context's loop
+            # is the running loop), but under pytest-asyncio each test runs on a fresh loop while
+            # the (virtual) kernel context was created outside of it.
+            call_event_loop = running_loop
 
         self.current_future = future = call_event_loop.create_future()
 
