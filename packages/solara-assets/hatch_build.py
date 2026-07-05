@@ -21,6 +21,41 @@ packages = [
 ]
 
 
+# Per-package prune rules applied after npm pack, to keep the solara-assets
+# wheel under PyPI's 10 GB per-project storage cap.
+# Each entry is a list of glob patterns (relative to the package root) whose
+# matching files/directories are removed. Kept intentionally conservative:
+# only paths never referenced from solara's template/components.
+PRUNE_PATTERNS_ALL = [
+    # Source maps: only used by browsers with devtools open on the CDN host.
+    # Missing .map ⇒ devtools shows a benign "sourcemap not available".
+    "**/*.map",
+]
+PRUNE_PATTERNS_PER_PACKAGE = {
+    # echarts: solara only loads dist/echarts.js. The rest is dev/build stuff.
+    "echarts": ["lib", "types", "extension-src", "build"],
+    # mermaid: solara only loads dist/mermaid.min.js. mermaid.js is the 6+ MB
+    # unminified twin — nothing in the template/components points at it.
+    "mermaid": ["dist/mermaid.js"],
+}
+
+
+def prune_package(package_dir: pathlib.Path, package: str):
+    package_key = package.split("/")[-1]  # "@widgetti/foo" -> "foo"
+    patterns = list(PRUNE_PATTERNS_ALL) + PRUNE_PATTERNS_PER_PACKAGE.get(package_key, [])
+    removed_bytes = 0
+    for pattern in patterns:
+        for match in package_dir.glob(pattern):
+            if match.is_dir():
+                removed_bytes += sum(p.stat().st_size for p in match.rglob("*") if p.is_file())
+                shutil.rmtree(match)
+            elif match.is_file():
+                removed_bytes += match.stat().st_size
+                match.unlink()
+    if removed_bytes:
+        print(f"package: {package} pruned {removed_bytes // 1024} KB of dev artifacts")  # noqa
+
+
 def npm_pack(base_cache_dir: pathlib.Path, package: str, version: str):
     with tempfile.TemporaryDirectory() as temp_dir_name:
         target_directory = base_cache_dir / f"{package}@{version}"
@@ -39,6 +74,7 @@ def npm_pack(base_cache_dir: pathlib.Path, package: str, version: str):
                 package_file_name = package[1:].replace("/", "-")
             subprocess.check_call(f"tar xzf {package_file_name}-{version}.tgz", cwd=temp_dir_name, shell=True)
             shutil.move(str(pathlib.Path(temp_dir_name) / "package"), str(target_directory))
+            prune_package(target_directory, package)
         except Exception:
             # creating for convenience, to unpack a tarball
             # in the right directory
