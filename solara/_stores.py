@@ -57,6 +57,10 @@ class MutateDetectorStore(ValueBase[S]):
         public_value = cast(S, store_value.public)
         return public_value
 
+    def clear(self):
+        # remove the wrapped store's entry for the current scope (e.g. use_task unmount)
+        self._storage.clear()
+
     def set(self, value: S):
         self.check_mutations()
         self._ensure_public_exists()

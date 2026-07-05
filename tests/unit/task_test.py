@@ -784,6 +784,9 @@ def test_use_task_unmounted_instance_is_collected(monkeypatch):
         async def run():
             context = kernel_context.VirtualKernelContext(id="use-task-unmount", kernel=kernel.Kernel(), session_id="session-unmount")
             holder["context"] = context
+            await run_in_context(context)
+
+        async def run_in_context(context):
             with context:
                 box, rc = solara.render(Page(), handle_error=False)
                 n = 5
@@ -812,12 +815,17 @@ def test_use_task_unmounted_instance_is_collected(monkeypatch):
                 holder["alive"] = alive
                 rc.close()
 
-        asyncio.run(run())
+        try:
+            asyncio.run(run())
+        except BaseException as e:  # noqa: BLE001 - re-raised in the main thread
+            holder["exception"] = e
 
     try:
         thread = threading.Thread(target=page_thread)
         thread.start()
         thread.join()
+        if "exception" in holder:
+            raise holder["exception"]
         alive = holder["alive"]
         assert alive <= 1, f"unmounted use_task results are pinned: {alive}/{len(payload_refs)} alive while the kernel is still open"
     finally:
