@@ -640,12 +640,15 @@ jobs:
           command -v uv >/dev/null || pip install uv
           # uv: parallel downloads/installs, much faster than pip (biggest win on windows).
           # pip freeze still reads the uv-installed packages fine (standard dist-info).
+          # no jupyterlab and no pytest-ipywidgets extras: the unit tests never start
+          # voila/jupyter servers (integration does), and the jupyterlab<4 chain pins old
+          # native packages (y-py, pywinpty) that lack wheels on some windows pythons
           uv pip install --system `echo dist/*.whl`[all] \
             `echo packages/solara-server/dist/*.whl`[all] \
-            `echo packages/pytest-ipywidgets/dist/*.whl`[all] \
+            `echo packages/pytest-ipywidgets/dist/*.whl` \
             `echo packages/solara-meta/dist/*.whl`[dev,documentation] \
             `echo packages/solara-enterprise/dist/*.whl`[ssg,auth] \
-            "jupyterlab<4" diskcache redis "ipywidgets~=${{ matrix.ipywidgets }}"
+            diskcache redis "ipywidgets~=${{ matrix.ipywidgets }}"
           pip freeze --exclude solara --exclude solara-ui --exclude solara-server --exclude pytest-ipywidgets --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
           git diff | tee ${{ env.DIFF_FILE_LOCATION }}
           [ -s ${{ env.DIFF_FILE_LOCATION }} ] && echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT" || echo "No dependencies changed"
@@ -657,7 +660,7 @@ jobs:
           uv pip install --system -r ${{ env.LOCK_FILE_LOCATION }} \
             `echo dist/*.whl`[all] \
             `echo packages/solara-server/dist/*.whl`[all] \
-            `echo packages/pytest-ipywidgets/dist/*.whl`[all] \
+            `echo packages/pytest-ipywidgets/dist/*.whl` \
             `echo packages/solara-meta/dist/*.whl`[dev,documentation] \
             `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
 
