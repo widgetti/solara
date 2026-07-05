@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Set
+from typing import Dict, Set
 
 import playwright.sync_api
 import pytest
@@ -12,6 +12,7 @@ import solara.server.settings
 from solara.server import reload
 from solara.server.flask import ServerFlask
 from solara.server.starlette import ServerStarlette
+from solara.server.threaded import ServerBase
 
 reload.reloader.start()
 logger = logging.getLogger("solara-test.integration")
@@ -100,20 +101,28 @@ server_classes = {
 # override the fixure, and also test with flask
 
 
+# with xdist load scheduling, a parameterized session fixture is torn down and re-created on
+# every flask<->starlette param switch. Cache the servers instead: it keeps each server alive
+# (and its port, fixed per param - important for the auth0 callback range) for the whole
+# session, and avoids racing a test's page navigation against a server restart
+_servers: Dict[str, ServerBase] = {}
+
+
 @pytest.fixture(params=SERVERS, scope="session")
 def solara_server(request):
-    server_class = server_classes[request.param]
-    # a FIXED port per server param, not a drifting global counter: with xdist load scheduling
-    # this session fixture is torn down and re-created on every flask<->starlette param switch,
-    # and a counter would drift into the other worker's port range (and past the valid auth0
-    # callback ports, breaking the oauth tests)
-    webserver = server_class(TEST_PORT + SERVERS.index(request.param))
-
-    try:
+    name = request.param
+    if name not in _servers:
+        webserver = server_classes[name](TEST_PORT + SERVERS.index(name))
         webserver.serve_threaded()
         webserver.wait_until_serving()
-        yield webserver
-    finally:
+        _servers[name] = webserver
+    yield _servers[name]
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _stop_solara_servers():
+    yield
+    for webserver in _servers.values():
         webserver.stop_serving()
 
 
