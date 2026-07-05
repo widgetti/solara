@@ -303,3 +303,48 @@ For a complete example, you can take a look at:
   * [https://huggingface.co/spaces/solara-dev/template](https://huggingface.co/spaces/solara-dev/template)
   * [https://huggingface.co/spaces/giswqs/solara-template/tree/main](https://huggingface.co/spaces/giswqs/solara-template/tree/main)
   * [https://github.com/opengeos/solara-template](https://github.com/opengeos/solara-template)
+
+## HTTP compression and caching
+
+The Solara server compresses HTTP responses larger than 1KB with gzip. This matters
+in production: the main JavaScript bundle is ~2MB, and without compression every
+cold page load downloads all of it (~4x more than needed).
+
+Both entrypoints (`solara.server.starlette.app` and `solara.server.fastapi.app`)
+apply the same middleware stack, so this also holds when you embed Solara in your
+own Starlette or FastAPI application by mounting one of these apps.
+
+When a fronting proxy should do the compressing instead (nginx `gzip on`, Caddy
+`encode zstd gzip` — often faster, and zstd compresses better), turn the built-in
+compression off:
+
+```bash
+SOLARA_SERVER_HTTP_GZIP=false solara run sol.py --production
+```
+
+### Asset caching
+
+Assets served under `/_solara/cdn/` (the CDN proxy, on by default in production)
+are marked `Cache-Control: public, max-age=31536000, immutable` **when their path
+pins an exact package version**, e.g.
+`/_solara/cdn/@widgetti/solara-vuetify-app@10.1.1/dist/solara-vuetify-app8.min.js`.
+
+This is safe by construction:
+
+- npm forbids republishing a version, so the content behind an exact-version url
+  can never change at the origin.
+- every url Solara itself generates through the proxy pins an exact version, and
+  upgrading Solara changes that version — a new url, so browsers fetch the new
+  file. There is nothing to invalidate manually.
+- urls with a semver *range* (e.g. `pkg@^1/index.js`, only possible when
+  user code constructs such a url) are resolved by the CDN at fetch time and can
+  change content under the same url; those are deliberately **not** marked
+  immutable.
+
+If you point `SOLARA_ASSETS_CDN` at a custom origin, make sure it follows the same
+rule (an exact-version path always returns the same bytes); otherwise browsers may
+cache stale files for up to a year.
+
+Other asset routes have their own cache-busting and are unaffected:
+`/static/public` (content-hash `?v=` urls), and nbextensions (hash-versioned
+query arguments).

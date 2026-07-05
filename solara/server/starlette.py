@@ -2,6 +2,7 @@ import asyncio
 import concurrent.futures
 from contextlib import asynccontextmanager
 import hashlib
+import re
 import hmac
 import json
 import logging
@@ -685,15 +686,22 @@ class StaticCdn(StaticFilesOptionalAuth):
             return "", None
         return full_path, os.stat(full_path)
 
+    # exact npm version in the path (e.g. @10.1.1/ or @2.3.6/): npm forbids
+    # republishing a version, so the content behind such a url can never change
+    _exact_version = re.compile(r"@\d+\.\d+\.\d+(?:[-+][\w.]+)?/")
+
     async def get_response(self, path: str, scope):
         response = await super().get_response(path, scope)
-        # cdn urls embed the package version in the path (e.g.
-        # @widgetti/solara-vuetify-app@10.1.1/...), so any upgrade changes the
-        # url and the response can be cached forever. Without this, proxies and
-        # browsers re-download multi-MB bundles on every cold visit (and behind
-        # proxies that add a Set-Cookie, e.g. Cloud Run session affinity, the
-        # response is even marked private).
-        if response.status_code in (200, 304):
+        # All urls solara itself puts through this proxy pin an exact version
+        # (@widgetti/solara-vuetify-app@10.1.1/..., requirejs@2.3.6/...), so a
+        # solara upgrade changes the url and busts the cache by construction.
+        # Without this header, browsers re-download multi-MB bundles on every
+        # cold visit (and behind proxies that add a Set-Cookie, e.g. Cloud Run
+        # session affinity, the response is even marked private).
+        # Semver-RANGE urls (user-constructed, e.g. pkg@^1/...) are resolved by
+        # the cdn at fetch time and can change content under the same url, so
+        # they are deliberately not marked immutable.
+        if response.status_code in (200, 304) and self._exact_version.search(path):
             response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
         return response
 
