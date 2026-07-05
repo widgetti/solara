@@ -29,8 +29,14 @@ def test_flask_mount(page_session: playwright.sync_api.Page, solara_app, extra_i
     server = solara.server.flask.ServerFlask(port=0, flask_app=flask_app, url_prefix="/solara_mount")
     server.serve_threaded()
     server.wait_until_serving()
-    with extra_include_path(HERE), solara_app("flask_test"):
-        page_session.goto(f"{server.base_url}/solara_mount/")
-        page_session.locator("text=Mounted in flask").wait_for()
+    try:
+        with extra_include_path(HERE), solara_app("flask_test"):
+            page_session.goto(f"{server.base_url}/solara_mount/")
+            page_session.locator("text=Mounted in flask").wait_for()
+    finally:
+        # leave a dead page behind: its reconnect js can otherwise fire a late navigation that
+        # interrupts the next test's page_session.goto
+        page_session.goto("about:blank")
+        server.stop_serving()
         # assert page_session.text_content("p") == "Mounted in flask"
         # assert page_session.text_content("p") == "Mounted in flask"

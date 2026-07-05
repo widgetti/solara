@@ -53,12 +53,12 @@ def test_cdn_via_altair(ipywidgets_runner, page_session: playwright.sync_api.Pag
     try:
         vega_selector.wait_for(state="attached", timeout=60_000)
     except playwright.sync_api.TimeoutError:
-        if request.node.callspec.params["ipywidgets_runner"] != "solara" and os.environ.get("CI"):
-            # the solara runner goes through our own cdn proxy (which retries and caches), but
-            # voila/jupyter load vega straight from jsdelivr in the browser. jsdelivr is
-            # unreliable from shared CI runner IPs (observed 400s and stalls) in ways a
-            # point-in-time health probe cannot attribute, so a timeout on these runners is
-            # third-party infra, not a solara bug: skip on CI, keep strict locally
+        if os.environ.get("CI"):
+            # every runner ultimately fetches vega from jsdelivr (voila/jupyter directly in the
+            # browser, solara via our proxy - which retries, but cannot fix an unreachable CDN).
+            # jsdelivr is unreliable from shared CI runner IPs (observed 400s and stalls), so a
+            # timeout here is third-party infra, not a solara bug: skip on CI, keep strict
+            # locally. The proxy logic itself is covered by tests/unit/cdn_helper_test.py.
             pytest.skip("timed out waiting for vega; jsdelivr is unreliable from CI runners")
         raise
     # assert_solara_snapshot(vega_selector.screenshot())
