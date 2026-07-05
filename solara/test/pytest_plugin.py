@@ -309,7 +309,8 @@ def _solara_test(solara_server, solara_app, page_session: "playwright.sync_api.P
             if id in used_contexts:
                 # handle when run_event.wait(10) fails
                 del used_contexts[id]
-                assert context.closed_event.wait(10)
+                # 30s: 10s was not always enough on a loaded windows CI runner (2 xdist workers)
+                assert context.closed_event.wait(30)
 
 
 @pytest.fixture()

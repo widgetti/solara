@@ -4,6 +4,7 @@ from typing import Set
 
 import playwright.sync_api
 import pytest
+from _pytest.tmpdir import tmppath_result_key
 
 import solara.server.app
 import solara.server.server
@@ -14,6 +15,16 @@ from solara.server.starlette import ServerStarlette
 
 reload.reloader.start()
 logger = logging.getLogger("solara-test.integration")
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_teardown(item, nextitem):
+    # workaround for pytest-retry (<=1.7.0) x pytest (8.x): a retried test that uses tmp_path
+    # errors at teardown with KeyError on this stash key, turning a successfully retried flaky
+    # test into a hard failure. Seed the entry so the tmp_path finalizer always finds it.
+    item.stash.setdefault(tmppath_result_key, {})
+    yield
+
 
 worker = os.environ.get("PYTEST_XDIST_WORKER", "gw0")
 # each xdist worker runs its own flask and starlette server (see solara_server below), so workers
