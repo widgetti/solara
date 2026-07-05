@@ -28,10 +28,10 @@ def pytest_runtest_teardown(item, nextitem):
 
 
 worker = os.environ.get("PYTEST_XDIST_WORKER", "gw0")
-# each xdist worker runs its own flask and starlette server (see solara_server below), so workers
-# need to be at least 2 ports apart. Ports up to 18770 are a valid callback for auth0, which keeps
-# all ports valid with 2 workers.
-TEST_PORT = int(os.environ.get("PORT", "18765")) + int(worker[2:]) * 3
+# each xdist worker runs exactly one flask and one starlette server (cached for the whole
+# session, see solara_server below), so workers are spaced 2 ports apart. Ports up to 18770 are
+# a valid callback for auth0: 3 workers use 18765-18770 exactly, so do not raise -n beyond 3.
+TEST_PORT = int(os.environ.get("PORT", "18765")) + int(worker[2:]) * 2
 SERVER = os.environ.get("SOLARA_SERVER")
 if SERVER:
     SERVERS = [SERVER]

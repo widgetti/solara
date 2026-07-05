@@ -463,9 +463,9 @@ jobs:
         # TODO: we used to also run the (cheap) unittests, to get better coverage report, but that gives errors
         # it seems on CI that the default playwright timeout is not (always?) respected, also, if the --timeout argument
         # is shorter than the timeout of playwright, we get no good error message, summary: always keep above 30!
-        # -n 2: keep in sync with the port spacing in tests/integration/conftest.py — more workers
+        # -n 3: the maximum given the port spacing in tests/integration/conftest.py — more workers
         # would put ports outside the valid auth0 callback range (18765-18770)
-        run: pytest tests/integration -n 2 --timeout=360 --video=retain-on-failure --output=test-results -vv -s --log-cli-level=warning --retries 3
+        run: pytest tests/integration -n 3 --timeout=360 --video=retain-on-failure --output=test-results -vv -s --log-cli-level=warning --retries 3
 
       - name: Upload Test artifacts
         if: always()
