@@ -309,8 +309,13 @@ def _solara_test(solara_server, solara_app, page_session: "playwright.sync_api.P
             if id in used_contexts:
                 # handle when run_event.wait(10) fails
                 del used_contexts[id]
-                # 30s: 10s was not always enough on a loaded windows CI runner (2 xdist workers)
-                assert context.closed_event.wait(30)
+                # the page-close beacon from the browser is best-effort: the about:blank
+                # navigation can abort it (seen on loaded windows CI runners), and then the
+                # kernel context lingers until the cull timeout. Close it server-side instead
+                # of failing the teardown.
+                if not context.closed_event.wait(10):
+                    context.close(reason="page-close")
+                assert context.closed_event.wait(10)
 
 
 @pytest.fixture()
