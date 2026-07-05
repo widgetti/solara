@@ -834,3 +834,28 @@ def test_task_finishing_after_future_cancelled_is_not_an_error(fail, caplog, mon
     finally:
         with context_holder["context"]:
             context_holder["context"].close()
+
+
+def test_task_async_cancel_from_other_thread_wakes_sleeping_loop():
+    # a run_in_thread async task parks its private event loop in run_until_complete;
+    # cancelling from another thread (e.g. a kernel close callback) must wake that
+    # loop via call_soon_threadsafe — a plain Task.cancel() only lands when the
+    # current await finishes on its own (here: 20 seconds later)
+    started = threading.Event()
+    finished = threading.Event()
+
+    @solara.lab.task
+    async def sleeper():
+        started.set()
+        try:
+            await asyncio.sleep(20)
+        finally:
+            finished.set()
+
+    sleeper()
+    assert started.wait(5)
+    t0 = time.monotonic()
+    sleeper.cancel()
+    assert finished.wait(10), "cancel from another thread did not wake the sleeping task loop"
+    assert time.monotonic() - t0 < 5
+    assert sleeper.cancelled

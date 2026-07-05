@@ -64,11 +64,16 @@ except RuntimeError:
 
 
 def _get_current_task():
-    # asyncio.current_task() is not available in Python 3.6
-    if sys.version_info >= (3, 7):
-        return asyncio.current_task()
-    else:
-        return asyncio.Task.current_task()
+    try:
+        # asyncio.current_task() is not available in Python 3.6
+        if sys.version_info >= (3, 7):
+            return asyncio.current_task()
+        else:
+            return asyncio.Task.current_task()
+    except RuntimeError:
+        # called from a thread without a running event loop (e.g. Task.cancel()
+        # from a plain thread): there is no current task there
+        return None
 
 
 class TaskState(Enum):
@@ -251,7 +256,23 @@ class TaskAsyncio(Task[P, R]):
                     current_task.cancel()
                     self._result.value = TaskResult[R](latest=self._last_value, _state=TaskState.CANCELLED)
             else:
-                current_task.cancel()
+                try:
+                    running_loop: Optional[asyncio.AbstractEventLoop] = asyncio.get_running_loop()
+                except RuntimeError:
+                    running_loop = None
+                if running_loop is event_loop:
+                    current_task.cancel()
+                else:
+                    # asyncio.Task.cancel is not thread-safe. Called from another thread it
+                    # only appends the wakeup to the loop's ready queue without writing the
+                    # self-pipe, so a loop parked in run_until_complete on its own thread
+                    # (run_in_thread tasks awaiting e.g. asyncio.sleep) does not notice the
+                    # cancellation until its current await completes on its own.
+                    try:
+                        event_loop.call_soon_threadsafe(current_task.cancel)
+                    except RuntimeError:
+                        # the loop is already closed: the task's thread is gone with it
+                        pass
                 self._result.value = TaskResult[R](latest=self._last_value, _state=TaskState.CANCELLED)
 
         self._cancel = cancel
