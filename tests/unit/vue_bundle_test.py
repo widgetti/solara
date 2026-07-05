@@ -39,7 +39,8 @@ def test_write_entry_and_manifest(clean_state, tmp_path: Path):
 
     entry = vue_bundle.write_bundle_entry(tmp_path / "bundle", name="test-components")
     lines = entry.read_text().splitlines()
-    assert any("export { default as c_a_" in line and 'from "../app/components/a.vue";' in line for line in lines)
+    assert any('from "../app/components/a.vue";' in line for line in lines)
+    assert any(line.startswith("export const c_a_") and 'name: "a"' in line for line in lines)
     manifest = json.loads((tmp_path / "bundle" / "test-components-manifest.json").read_text())
     assert manifest["name"] == "test-components"
     entry_a = next(v for k, v in manifest["components"].items() if k.endswith("a.vue"))
