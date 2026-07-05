@@ -149,7 +149,9 @@ def test_double_reconnect_supersedes_stale_context(backend):
     # as superseded, create a fresh context, and restore B's latest value
     context_new = kc.initialize_virtual_kernel(session_id, kernel_id, Mock())
     assert context_new is not context_a
-    assert context_a.closed_event.is_set()
+    # the close can run on the flush worker thread, and the reconnect only checks _teardown_done,
+    # which is set at the start of close(): wait instead of is_set() (see state_redis_test.py)
+    assert context_a.closed_event.wait(timeout=5)
     assert context_a.close_reason == "superseded"
     assert context_new.state_persistence is not None
     with context_new:
@@ -185,7 +187,8 @@ def test_double_reconnect_supersedes_never_flushed_context(backend):
     # reconnect lands back on A's reuse branch: the never-flushed zombie must be superseded
     context_new = kc.initialize_virtual_kernel(session_id, kernel_id, Mock())
     assert context_new is not context_a
-    assert context_a.closed_event.is_set()
+    # wait instead of is_set(): the close may still be in progress on another thread
+    assert context_a.closed_event.wait(timeout=5)
     assert context_a.close_reason == "superseded"
     assert context_new.state_persistence is not None
     # the fresh context took over at a higher generation and starts from defaults (nothing stored)

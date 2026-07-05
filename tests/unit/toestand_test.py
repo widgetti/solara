@@ -1457,7 +1457,8 @@ def test_mutate_value_set_value_dataframe():
     assert reactive_df._storage.equals is solara.util.equals_pickle
     assert reactive_df._storage.equals(df, df_orig)
     reactive_df.value = df
-    df["a"][0] = 100
+    # .loc, not df["a"][0]: chained assignment is a silent no-op under pandas>=3 copy-on-write
+    df.loc[0, "a"] = 100
     assert not reactive_df._storage.equals(df, df_orig)
     with pytest.raises(ValueError, match="Reactive variable was set.*"):
         reactive_df._storage.check_mutations()  # type: ignore

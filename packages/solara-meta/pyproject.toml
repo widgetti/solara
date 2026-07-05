@@ -92,6 +92,7 @@ dev = [
     "playwright",
     "pytest-playwright",
     "polars",
+    "pyarrow",  # polars needs it to convert pandas>=3 dataframes (non-numpy-backed string columns)
     "numpy<2",
 ]
 

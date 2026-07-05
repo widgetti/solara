@@ -1,6 +1,7 @@
 import logging
 import pathlib
 import shutil
+import time
 
 import requests
 from solara.server.utils import path_is_child_of
@@ -10,6 +11,28 @@ import solara.settings
 logger = logging.getLogger("Solara.cdn")
 
 cdn_url_path = "_solara/cdn"
+
+
+def fetch_from_cdn(url) -> bytes:
+    # retry: a single failed attempt (the CDN rate-limiting CI runners, a network blip) used to
+    # become a 500 for the browser, permanently breaking the widget for that page load, since
+    # only a success is cached
+    last_status = None
+    for attempt in range(4):
+        if attempt:
+            time.sleep(2 ** (attempt - 1))  # 1, 2, 4 seconds
+        try:
+            response = requests.get(url, timeout=10)
+        except requests.RequestException as e:
+            logger.warning("Could not load URL: %r (%s)", url, e)
+            continue
+        if response.ok:
+            return response.content
+        last_status = response.status_code
+        logger.warning("Could not load URL: %r (status %s)", url, last_status)
+        if 400 <= last_status < 500 and last_status != 429:
+            break  # a permanent client error will not get better by retrying
+    raise Exception(f"Could not load URL: {url} (last status: {last_status})")
 
 
 def put_in_cache(base_cache_dir: pathlib.Path, path, data: bytes):
@@ -54,14 +77,9 @@ def get_data(base_cache_dir: pathlib.Path, path):
     if content:
         return content
 
-    url = get_cdn_url(path)
-    response = requests.get(url)
-    if response.ok:
-        put_in_cache(base_cache_dir, store_path, response.content)
-        return response.content
-    else:
-        logger.warning("Could not load URL: %r", url)
-        raise Exception(f"Could not load URL: {url}")
+    data = fetch_from_cdn(get_cdn_url(path))
+    put_in_cache(base_cache_dir, store_path, data)
+    return data
 
 
 def get_path(base_cache_dir: pathlib.Path, path) -> pathlib.Path:
@@ -80,12 +98,7 @@ def get_path(base_cache_dir: pathlib.Path, path) -> pathlib.Path:
             shutil.rmtree(cache_path)
         else:
             return cache_path
-    url = get_cdn_url(path)
-    response = requests.get(url)
-    if response.ok:
-        put_in_cache(base_cache_dir, store_path, response.content)
-        assert cache_path.exists(), f"Could not write to {cache_path}"
-        return cache_path
-    else:
-        logger.warning("Could not load URL: %r", url)
-        raise Exception(f"Could not load URL: {url}")
+    data = fetch_from_cdn(get_cdn_url(path))
+    put_in_cache(base_cache_dir, store_path, data)
+    assert cache_path.exists(), f"Could not write to {cache_path}"
+    return cache_path

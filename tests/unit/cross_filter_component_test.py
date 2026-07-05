@@ -80,7 +80,9 @@ def test_cross_filter_select(df_titanic):
     select.value = {"value": magic_value_missing}
     assert filter is not None
     df = df_titanic[filter]
-    assert list(df.cabin.unique()) in [[None], []]
+    # dtype- and library-agnostic missing check: pandas>=3 str columns give nan where object
+    # columns gave None, and this must also work on a vaex dataframe
+    assert all(pd.isna(value) for value in list(df.cabin.unique()))
 
     # changing column should clear filter
     rc.render(Test(column="boat"))

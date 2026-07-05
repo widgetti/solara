@@ -139,8 +139,9 @@ def test_watch_module_reload(tmpdir, kernel_context, extra_include_path, no_kern
             # change depending module
             with open(py_mod_file, "w") as f:
                 f.write("import ipyvuetify as v; page = v.Card.element(children=['second'])\n")
-            # wait for the event to trigger
-            reload.reloader.reload_event_next.wait()
+            # wait for the event to trigger, with a timeout so a missed event gives a clear
+            # failure instead of a pytest-timeout hang
+            assert reload.reloader.reload_event_next.wait(timeout=30), "timed out waiting for reload event after modifying somemod.py"
             # assert "somemod" not in sys.modules
             # breakpoint()
             result = app.run()

@@ -253,7 +253,10 @@ def test_e2e_double_reconnect_two_backends_one_server(monkeypatch):
     # superseded, creates a fresh context, and restores B's latest value through the Lua takeover
     context_new = kc.initialize_virtual_kernel(session_id, kernel_id, Mock())
     assert context_new is not context_a
-    assert context_a.closed_event.is_set()
+    # A's close can run on the flush worker thread (the orphan-concede path above), and the
+    # reconnect only checks _teardown_done, which is set at the *start* of close(). So the close
+    # may still be in progress here: wait instead of is_set() (flaked on slow Windows CI runners).
+    assert context_a.closed_event.wait(timeout=5)
     assert context_a.close_reason == "superseded"
     assert context_new.state_persistence is not None
     with context_new:

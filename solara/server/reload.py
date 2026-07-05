@@ -71,10 +71,13 @@ else:
             file = os.path.abspath(os.path.realpath(file))
             if file not in self.files:
                 logger.debug("Watching file %s", file)
-                if file in self.files:
-                    raise RuntimeError(f"{file} was already added")
-                self.files.append(file)
+                # record the mtime (in _watch_file) *before* publishing into self.files: the
+                # watchdog dispatcher thread checks `in self.files` and then reads
+                # self.mtimes[path] — the old order could raise a KeyError there, which killed
+                # the dispatcher thread and silently stopped hot-reload (flaked on macOS CI,
+                # where FSEvents delivers events from around stream start)
                 self._watch_file(file)
+                self.files.append(file)
 
         def _watch_file(self, file):
             self.mtimes[file] = os.path.getmtime(file)
@@ -115,8 +118,15 @@ else:
                     logger.debug("Ignore file modification: %s", event.src_path)
 
         def _handle_possible_change(self, path: str):
-            mtime_new = os.path.getmtime(path)
-            changed = mtime_new > self.mtimes[path]
+            # we are on the watchdog dispatcher thread: an escaping exception kills that thread
+            # and hot-reload silently stops working, so never raise here
+            try:
+                mtime_new = os.path.getmtime(path)
+            except OSError:
+                logger.debug("Could not stat %s (deleted/replaced?)", path)
+                return
+            mtime_old = self.mtimes.get(path)
+            changed = mtime_old is not None and mtime_new > mtime_old
             self.mtimes[path] = mtime_new
             if changed:
                 logger.debug("File modified: %s", path)

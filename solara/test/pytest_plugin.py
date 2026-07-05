@@ -326,6 +326,10 @@ class ServerVoila(ServerBase):
         super().__init__(port, host)
 
     def has_started(self):
+        # the thread only spawns the subprocess, so self.error cannot catch a dying server:
+        # fail fast with the real cause instead of waiting for the full startup timeout
+        if self.popen is not None and self.popen.poll() is not None:
+            raise RuntimeError(f"voila server process exited with return code {self.popen.returncode}")
         try:
             return requests.get(self.base_url).status_code // 100 in [2, 3]
         except requests.exceptions.ConnectionError:
@@ -361,6 +365,10 @@ class ServerJupyter(ServerBase):
         super().__init__(port, host)
 
     def has_started(self):
+        # the thread only spawns the subprocess, so self.error cannot catch a dying server:
+        # fail fast with the real cause instead of waiting for the full startup timeout
+        if self.popen is not None and self.popen.poll() is not None:
+            raise RuntimeError(f"jupyter server process exited with return code {self.popen.returncode}")
         try:
             return requests.get(self.base_url).status_code // 100 in [2, 3]
         except requests.exceptions.ConnectionError:
