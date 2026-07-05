@@ -412,6 +412,13 @@ def load_app_widget(app_state, app_script: AppScript, pathname: str):
         solara.server.esm.create_modules()
         solara.server.esm.create_import_map()
 
+    import ipyvue
+
+    if hasattr(ipyvue, "define_module"):
+        import solara.server.esm_vue
+
+        solara.server.esm_vue.create_modules()
+
     try:
         render_context = context.app_object
         app_state = app_state_initial

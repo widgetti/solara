@@ -38,7 +38,7 @@ def virtual_context(clean_esm_state):
 
 
 def test_create_modules_per_kernel_reuse(virtual_context):
-    esm.define_module("esm-test-module", "export default 1")
+    esm.define_module("esm-test-module", code="export default 1")
     widgets = esm.create_modules()
     widget = widgets["esm-test-module"]
     # a second call must reuse the same (live) widget for this kernel
@@ -46,7 +46,7 @@ def test_create_modules_per_kernel_reuse(virtual_context):
 
 
 def test_create_modules_recreates_closed_widget(virtual_context):
-    esm.define_module("esm-test-module", "export default 1")
+    esm.define_module("esm-test-module", code="export default 1")
     widget = esm.create_modules()["esm-test-module"]
     # context.restart() closes the kernel's widgets on (hot) reload; updating
     # a trait on a closed widget never reaches the browser, so create_modules
@@ -59,9 +59,9 @@ def test_create_modules_recreates_closed_widget(virtual_context):
 
 
 def test_redefine_module_updates_live_widget(virtual_context):
-    esm.define_module("esm-test-module", "export default 1")
+    esm.define_module("esm-test-module", code="export default 1")
     widget = esm.create_modules()["esm-test-module"]
-    esm.define_module("esm-test-module", "export default 2")
+    esm.define_module("esm-test-module", code="export default 2")
     assert esm.create_modules()["esm-test-module"] is widget
     assert widget.code == "export default 2"
 
@@ -80,7 +80,7 @@ def test_define_module_path_is_watched(clean_esm_state, tmp_path: Path, monkeypa
 def test_kernel_bookkeeping_dropped_on_close(clean_esm_state):
     context = kernel_context.VirtualKernelContext(id="esm-test-2", kernel=Kernel(), session_id="session-esm-2")
     with context:
-        esm.define_module("esm-test-module", "export default 1")
+        esm.define_module("esm-test-module", code="export default 1")
         esm.create_modules()
         esm.create_import_map()
         assert "esm-test-2" in esm._modules_added_per_kernel

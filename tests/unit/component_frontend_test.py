@@ -82,3 +82,17 @@ def test_component_vue_event():
 
     widget._handle_event(None, {"event": "event_foo", "data": 43}, [b"bar2"])
     mock.assert_called_with(43, [b"bar2"])
+
+
+def test_component_vue_esm_argument_validation():
+    import ipyvue
+
+    with pytest.raises(TypeError, match="either vue_path or esm_module"):
+        solara.component_vue()
+
+    with pytest.raises(TypeError, match="either vue_path or esm_module"):
+        solara.component_vue("component_vue_test.vue", esm_module="my-components")
+
+    if not hasattr(ipyvue, "define_module"):
+        with pytest.raises(RuntimeError, match="ES module support"):
+            solara.component_vue(esm_module="my-components")

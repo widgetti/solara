@@ -23,7 +23,7 @@ export default function({value, setValue, ...children}) {
     return React.createElement("button", {onClick: () => setValue(value + 1), children: `clicked ${value || 0}`})
 }
 """
-ipyreact.define_module("solara-test", test_js_code)
+ipyreact.define_module("solara-test", code=test_js_code)
 
 
 @solara.component
@@ -34,7 +34,7 @@ def Page():
 
 @solara.component
 def PageDefineDuringRun():
-    ipyreact.define_module("solara-test-dynamic", test_js_code)
+    ipyreact.define_module("solara-test-dynamic", code=test_js_code)
     value = solara.use_reactive(0)
     ipyreact.ValueWidget.element(_module="solara-test-dynamic", value=0, on_value=value.set)
 
