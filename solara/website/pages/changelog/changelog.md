@@ -1,5 +1,13 @@
 # Solara Changelog
 
+## Version 1.59.0
+
+   * Feature: Kernel-aware ES module support for ipyvue. [ee243307](https://github.com/widgetti/solara/commit/ee243307)
+   * Bug Fix: Do not log an error when a task finishes after its call loop closed. [d5f8d288](https://github.com/widgetti/solara/commit/d5f8d288)
+   * Bug Fix: Root causes of flaky CI tests and swallowed failure output. [287e565f](https://github.com/widgetti/solara/commit/287e565f)
+   * Bug Fix: Restructure client reconnect into a supersedable state machine. [37223de1](https://github.com/widgetti/solara/commit/37223de1)
+   * Bug Fix: Cache-bust the nodeps nbextension bundles. [091e5bb4](https://github.com/widgetti/solara/commit/091e5bb4)
+
 ## Version 1.58.2
 
    * Bug Fix: Purge stale comms on soft-remount and claim backend key on takeover miss (zombie-kernel fencing) to make state persistence robust against orphaned comms/kernels. [5a7e8767](https://github.com/widgetti/solara/commit/5a7e8767)
