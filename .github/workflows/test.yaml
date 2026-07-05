@@ -270,7 +270,6 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-          cache: "pip"
 
       - uses: actions/download-artifact@v6
         with:
@@ -303,11 +302,12 @@ jobs:
         id: install_no_lock
         run: |
           mkdir -p .ci-package-locks/pyinstaller
-          pip install `echo dist/*.whl`[all]
-          pip install `echo packages/solara-server/dist/*.whl`[all]
-          pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
+          command -v uv >/dev/null || pip install uv
           # pefile >= 2023.2.7 make pyinstaller incredibly slow https://github.com/erocarrera/pefile/issues/420
-          pip install "jupyterlab<4"  "pydantic<2" "playwright==1.50.0" pyinstaller pefile==2023.2.7
+          uv pip install --system `echo dist/*.whl`[all] \
+            `echo packages/solara-server/dist/*.whl`[all] \
+            `echo packages/solara-meta/dist/*.whl`[dev,documentation] \
+            "jupyterlab<4" "pydantic<2" "playwright==1.50.0" pyinstaller pefile==2023.2.7
           pip freeze --exclude solara --exclude solara-ui --exclude solara-server > ${{ env.LOCK_FILE_LOCATION }}
           git diff --quiet || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
           git diff | tee ${{ env.DIFF_FILE_LOCATION }}
@@ -316,10 +316,11 @@ jobs:
       - name: Install
         if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
         run: |
-          pip install -r ${{ env.LOCK_FILE_LOCATION }}
-          pip install `echo dist/*.whl`[all]
-          pip install `echo packages/solara-server/dist/*.whl`[all]
-          pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
+          command -v uv >/dev/null || pip install uv
+          uv pip install --system -r ${{ env.LOCK_FILE_LOCATION }} \
+            `echo dist/*.whl`[all] \
+            `echo packages/solara-server/dist/*.whl`[all] \
+            `echo packages/solara-meta/dist/*.whl`[dev,documentation]
 
       - name: Build standalone executable
         run: (cd pyinstaller/minimal; pyinstaller ./solara.spec --log-level DEBUG)
@@ -389,7 +390,6 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-          cache: "pip"
 
       - uses: actions/download-artifact@v6
         with:
@@ -422,8 +422,10 @@ jobs:
         id: install_no_lock
         run: |
           mkdir -p .ci-package-locks/integration
-          # one pip invocation: a single resolve is faster and avoids install-then-downgrade churn
-          pip install `echo dist/*.whl`[all] \
+          command -v uv >/dev/null || pip install uv
+          # uv: parallel downloads/installs, much faster than pip (biggest win on windows).
+          # pip freeze still reads the uv-installed packages fine (standard dist-info).
+          uv pip install --system `echo dist/*.whl`[all] \
             `echo packages/solara-server/dist/*.whl`[all] \
             `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets${{ matrix.ipywidgets_major }}] \
             `echo packages/solara-meta/dist/*.whl`[dev,documentation] \
@@ -437,8 +439,9 @@ jobs:
       - name: Install
         if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
         run: |
+          command -v uv >/dev/null || pip install uv
           # pytest-xdist explicitly: existing lock files do not have it until the next lock refresh
-          pip install -r ${{ env.LOCK_FILE_LOCATION }} \
+          uv pip install --system -r ${{ env.LOCK_FILE_LOCATION }} \
             `echo dist/*.whl`[all] \
             `echo packages/solara-server/dist/*.whl`[all] \
             `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets${{ matrix.ipywidgets_major }}] \
@@ -510,7 +513,6 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-          cache: "pip"
 
       - uses: actions/download-artifact@v6
         with:
@@ -536,14 +538,15 @@ jobs:
         if: github.event_name == 'schedule' || steps.prepare.outputs.LOCKS_EXIST == 'false'
         run: |
           mkdir -p .ci-package-locks/integration-vue3
-          pip install `echo dist/*.whl`[all]
-          pip install `echo packages/solara-server/dist/*.whl`[all]
-          pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets${{ matrix.ipywidgets_major }}]
-          pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
-          pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
-          pip install "jupyterlab<4" "playwright==1.50.0" "pydantic<2" "ipywidgets~=${{ matrix.ipywidgets }}"
-          pip install pytest-retry
-          pip install jupyter_core jupyter-packaging
+          command -v uv >/dev/null || pip install uv
+          uv pip install --system `echo dist/*.whl`[all] \
+            `echo packages/solara-server/dist/*.whl`[all] \
+            `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets${{ matrix.ipywidgets_major }}] \
+            `echo packages/solara-meta/dist/*.whl`[dev,documentation] \
+            `echo packages/solara-enterprise/dist/*.whl`[ssg,auth] \
+            "jupyterlab<4" "playwright==1.50.0" "pydantic<2" "ipywidgets~=${{ matrix.ipywidgets }}" \
+            pytest-retry jupyter_core jupyter-packaging
+          # separate command: --pre should only apply to ipyvue/ipyvuetify
           pip install --pre "ipyvue>=3" "ipyvuetify>=3"
           pip freeze --exclude solara --exclude solara-ui --exclude solara-server --exclude pytest-ipywidgets --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
           git diff | tee ${{ env.DIFF_FILE_LOCATION }}
@@ -552,12 +555,13 @@ jobs:
       - name: Install
         if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
         run: |
-          pip install -r ${{ env.LOCK_FILE_LOCATION }}
-          pip install `echo dist/*.whl`[all]
-          pip install `echo packages/solara-server/dist/*.whl`[all]
-          pip install `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets${{ matrix.ipywidgets_major }}]
-          pip install `echo packages/solara-meta/dist/*.whl`[dev,documentation]
-          pip install `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
+          command -v uv >/dev/null || pip install uv
+          uv pip install --system -r ${{ env.LOCK_FILE_LOCATION }} \
+            `echo dist/*.whl`[all] \
+            `echo packages/solara-server/dist/*.whl`[all] \
+            `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets${{ matrix.ipywidgets_major }}] \
+            `echo packages/solara-meta/dist/*.whl`[dev,documentation] \
+            `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
 
       - name: Install playwright
         run: playwright install
@@ -614,7 +618,6 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
-          cache: "pip"
 
       - uses: actions/download-artifact@v6
         with:
@@ -634,8 +637,10 @@ jobs:
         if: github.event_name == 'schedule' || steps.prepare.outputs.LOCKS_EXIST == 'false'
         run: |
           mkdir -p .ci-package-locks/unit
-          # one pip invocation: a single resolve is faster and avoids install-then-downgrade churn
-          pip install `echo dist/*.whl`[all] \
+          command -v uv >/dev/null || pip install uv
+          # uv: parallel downloads/installs, much faster than pip (biggest win on windows).
+          # pip freeze still reads the uv-installed packages fine (standard dist-info).
+          uv pip install --system `echo dist/*.whl`[all] \
             `echo packages/solara-server/dist/*.whl`[all] \
             `echo packages/pytest-ipywidgets/dist/*.whl`[all] \
             `echo packages/solara-meta/dist/*.whl`[dev,documentation] \
@@ -648,7 +653,8 @@ jobs:
       - name: Install
         if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
         run: |
-          pip install -r ${{ env.LOCK_FILE_LOCATION }} \
+          command -v uv >/dev/null || pip install uv
+          uv pip install --system -r ${{ env.LOCK_FILE_LOCATION }} \
             `echo dist/*.whl`[all] \
             `echo packages/solara-server/dist/*.whl`[all] \
             `echo packages/pytest-ipywidgets/dist/*.whl`[all] \
