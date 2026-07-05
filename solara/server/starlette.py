@@ -685,6 +685,18 @@ class StaticCdn(StaticFilesOptionalAuth):
             return "", None
         return full_path, os.stat(full_path)
 
+    async def get_response(self, path: str, scope):
+        response = await super().get_response(path, scope)
+        # cdn urls embed the package version in the path (e.g.
+        # @widgetti/solara-vuetify-app@10.1.1/...), so any upgrade changes the
+        # url and the response can be cached forever. Without this, proxies and
+        # browsers re-download multi-MB bundles on every cold visit (and behind
+        # proxies that add a Set-Cookie, e.g. Cloud Run session affinity, the
+        # response is even marked private).
+        if response.status_code in (200, 304):
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        return response
+
 
 def on_startup():
     appmod.ensure_apps_initialized()
@@ -921,7 +933,9 @@ async def resourcez(request: Request):
 
 
 middleware = [
-    Middleware(GZipMiddleware, minimum_size=1000),
+    # SOLARA_SERVER_HTTP_GZIP=false to disable, e.g. when a fronting proxy
+    # (nginx/caddy) does the compressing
+    *([Middleware(GZipMiddleware, minimum_size=1000)] if settings.server.http_gzip else []),
 ]
 
 if has_auth_support:
