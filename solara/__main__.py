@@ -761,5 +761,33 @@ def main():
     cli(args[1:])
 
 
+@cli.command()
+@click.argument("app", nargs=-1, required=True)
+@click.option("--output", default="vue-components/src", help="Directory for the generated entry and manifest.")
+@click.option("--name", default="app-components", help="Bundle (ES module) name.")
+def vue_bundle(app: typing.List[str], output: str, name: str):
+    """Generate a bundler entry + manifest for all component_vue templates.
+
+    APP is one or more python modules (my.app) or scripts (app.py) that are
+    imported so every @component_vue decorator runs; the generated
+    <name>-entry.js is then built by your bundler (e.g. vite, with vue
+    external), and the manifest is consumed at runtime via the
+    SOLARA_VUE_BUNDLES environment variable.
+    """
+    import importlib
+    import runpy
+    from pathlib import Path as _Path
+
+    from solara.components import vue_bundle as _vue_bundle
+
+    for target in app:
+        if target.endswith(".py"):
+            runpy.run_path(target)
+        else:
+            importlib.import_module(target)
+    entry = _vue_bundle.write_bundle_entry(_Path(output), name=name)
+    print(f"wrote {entry} and {entry.parent / (name + '-manifest.json')}")
+
+
 if __name__ == "__main__":
     main()
