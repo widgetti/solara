@@ -248,6 +248,7 @@ class VirtualKernelContext:
             logger.info("Shut down virtual kernel: %s", self.id)
             for f in reversed(self._on_close_callbacks):
                 f()
+            had_app = self.app_object is not None
             if self.app_object is not None:
                 if isinstance(self.app_object, reacton.core._RenderContext):
                     try:
@@ -278,7 +279,10 @@ class VirtualKernelContext:
                 if _ctx is self:
                     del current_context[key]
             self.closed_event.set()
-        if solara.server.settings.kernel.gc_after_close:
+        # only when the kernel rendered an app: a bare context holds nothing worth a full
+        # collection, and a gc storm from many short-lived contexts (e.g. the unit test
+        # suite closes one per test) pauses all threads, breaking timing-sensitive code
+        if had_app and solara.server.settings.kernel.gc_after_close:
             _schedule_gc_after_kernel_close()
 
     def _state_reset(self):
