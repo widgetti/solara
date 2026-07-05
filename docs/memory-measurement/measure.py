@@ -30,11 +30,11 @@ import urllib.request
 import psutil
 from playwright.async_api import async_playwright
 
-PORT = 18765
+PORT = int(os.environ.get("MEASURE_PORT", "18765"))
 BASE = f"http://localhost:{PORT}"
 N_PAGES = 10
 CYCLES = 10
-CLICKS_PER_PAGE = 3
+CLICKS_PER_PAGE = int(os.environ.get("MEASURE_CLICKS", "3"))
 HERE = os.path.dirname(os.path.abspath(__file__))
 APP = sys.argv[1] if len(sys.argv) > 1 else "click_app.py"
 MARKER = sys.argv[2] if len(sys.argv) > 2 else None
