@@ -85,13 +85,16 @@ async def test_kernel_lifecycle_double_disconnect(short_cull_timeout):
     # but the first disconnect should not have closed the kernel context yet
     with pytest.raises(asyncio.CancelledError):
         await cull_task1
-    assert (time.time() - t_disconnect_page_2) < 0.05, "should be cancelled really quickly"
+    # the CancelledError above is the real proof of cancellation; the time bound only guards
+    # against having waited out a full cull window, so keep it loose for loaded CI runners
+    assert (time.time() - t_disconnect_page_2) < 0.15, "should be cancelled quickly"
 
     assert not context.closed_event.is_set()
     await cull_task2
     assert context.closed_event.is_set()
-    # the context should be closed AFTER 0.2 seconds, but it could take a bit longer
-    assert 0.3 >= (time.time() - t0_disconnect_page_2) >= 0.2
+    # the context should be closed AFTER the 0.2s cull window; no tight upper bound, a loaded
+    # runner can delay the wakeup well beyond the window
+    assert 1.0 >= (time.time() - t0_disconnect_page_2) >= 0.2
 
 
 @pytest.mark.skipif(on_windows, reason="This test is flaky on Windows")

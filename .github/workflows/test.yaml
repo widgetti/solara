@@ -642,8 +642,10 @@ jobs:
           # pip freeze still reads the uv-installed packages fine (standard dist-info).
           # no jupyterlab and no pytest-ipywidgets extras: the unit tests never start
           # voila/jupyter servers (integration does), and the jupyterlab<4 chain pins old
-          # native packages (y-py, pywinpty) that lack wheels on some windows pythons
-          uv pip install --system `echo dist/*.whl`[all] \
+          # native packages (y-py, pywinpty) that lack wheels on some windows pythons.
+          # --only-binary pywinpty: ipywidgets 7 still pulls it in via notebook, and its
+          # latest sdist neither parses nor builds on python 3.8 - resolve to a wheel instead
+          uv pip install --system --only-binary pywinpty `echo dist/*.whl`[all] \
             `echo packages/solara-server/dist/*.whl`[all] \
             `echo packages/pytest-ipywidgets/dist/*.whl` \
             `echo packages/solara-meta/dist/*.whl`[dev,documentation] \
@@ -657,7 +659,7 @@ jobs:
         if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
         run: |
           command -v uv >/dev/null || pip install uv
-          uv pip install --system -r ${{ env.LOCK_FILE_LOCATION }} \
+          uv pip install --system --only-binary pywinpty -r ${{ env.LOCK_FILE_LOCATION }} \
             `echo dist/*.whl`[all] \
             `echo packages/solara-server/dist/*.whl`[all] \
             `echo packages/pytest-ipywidgets/dist/*.whl` \

@@ -81,7 +81,7 @@ dev = [
     "types-PyYAML",
     "objgraph",
     "pytest",
-    "pytest-tornasync",
+    "pytest-asyncio",  # replaces pytest-tornasync, which ran async tests on an implicit global loop
     "pytest-mock",
     "pytest-cov",
     "pytest-timeout",
