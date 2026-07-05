@@ -358,15 +358,26 @@ What this found in solara (all fixed by breaking the edge in the close path):
 - `context.app_object` kept referencing the closed render context. Fix:
   `close()` drops it after closing.
 
-What it found one layer down (**not yet fixed, lives in reacton**): the hook
+What it found one layer down (fixed in reacton,
+[widgetti/reacton#52](https://github.com/widgetti/reacton/pull/52)): the hook
 state tree stores `use_state` setter closures
 (`reacton.core._RenderContext.make_setter.<locals>.set_`) whose cells point
 back at the render context, and the setters are also captured by
 solara/ipywidgets callback closures. So the render tree — which owns
-`use_memo` payloads — stays one big cycle even after `rc.close()`. The clean
-upstream fix is for `make_setter` to capture the render context weakly (or
-for `close()` to tear down hook state). Until then the gc backstop below
-covers it.
+`use_memo` payloads — stayed one big cycle even after `rc.close()`.
+
+The fix is instructive because the obvious approach is **wrong**: capturing
+the render context weakly in those closures was tried in 2023 and reverted
+(reacton `cf61378`) — a setter can legitimately be the *only* reference
+keeping its component context alive (held by another component's callback
+after an unmount), and with weak captures, gc timing decides whether that
+setter still works. Instead, the closures keep their strong references and
+`rc.close()` now empties every component context (elements, children, hook
+state, effects — snapshotted before `_remove_element` detaches them, and
+*replacing* the containers rather than clearing them, since `state_get()`
+hands out the live state dicts). Whoever still holds a setter or handler
+after close keeps only a small hollow context alive, and `set_` /
+`force_update` are no-ops once the context is closing.
 
 And one non-solara ghost to know about: **playwright's sync API captures
 `inspect.stack()`** (`__pw_stack__`) on every `goto`/`click`/`wait_for`, so in
@@ -375,18 +386,34 @@ it) is retained by playwright, not by your server. A gc-disabled leak check
 cannot pass under playwright for this reason — do refcount-hygiene checks
 with the diagnostic above, and keep CI leak tests on the forced-gc pattern.
 
-The backstop: `settings.kernel.gc_after_close` (default on) schedules one
-deferred, coalesced `gc.collect()` on a background thread ~1 s after a kernel
-closes. **Measured** (kitchen-sink app, macOS physical footprint): with the
-fixes + backstop the idle level converges to a smooth ~170 MB plateau with
-peak 174 MB — versus a sawtooth peaking at 231 MB before. With the backstop
-disabled (`SOLARA_KERNEL_GC_AFTER_CLOSE=false`) the sawtooth returns
-(Linux `anon` 100→221 MB with drops), which is exactly the remaining reacton
-cycle at work. Two traps from implementing it: a thread started while a
-context closes must not inherit that context (solara patches `Thread` to
-propagate contexts, and a context whose `kernel` is already `None` hung
-`Thread.start()` forever), and the collect thread must not itself keep the
-closing context alive.
+The backstop: `settings.kernel.gc_after_close` (default on, only for kernels
+that actually rendered an app) schedules one deferred, coalesced
+`gc.collect()` on a background thread ~1 s after a kernel closes. With the
+reacton fix it is genuinely just insurance for reference cycles in *user*
+code — and for running against a reacton release that predates the fix,
+where disabling it brings the sawtooth back (measured: Linux `anon`
+100→221 MB with drops).
+
+**Measured on the merged fixes** (kitchen-sink app, 10 pages × 10 cycles):
+
+| Configuration | Idle level | Peak |
+|---|---|---|
+| Before the fixes | sawtooth, gen-2 gc lag | 231 MB (macOS footprint) |
+| solara + reacton fixes, backstop on | plateau ~168 MB | 180 MB |
+| solara + reacton fixes, **gc disabled** | plateau ~168 MB | 178 MB |
+| Linux cgroup `anon`, backstop on | plateau ~162 MB | ~162 MB |
+
+Memory returns after every close cycle in all fixed configurations — pure
+refcounting does the work; the gc-disabled and default runs are essentially
+identical.
+
+Two traps from implementing the backstop: a thread started while a context
+closes must not inherit that context (solara patches `Thread` to propagate
+contexts, and a context whose `kernel` is already `None` hung
+`Thread.start()` forever), and a gc storm from many short-lived contexts
+pauses all threads — the unit test suite closes one context per test, and
+the GIL pauses broke timing-sensitive tests on loaded CI runners (hence the
+rendered-an-app gate).
 
 ### Leak or retention? The shape answers it
 
