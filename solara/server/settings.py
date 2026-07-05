@@ -218,6 +218,9 @@ if is_mac_os_conda or is_wsl_windows:
 
 class Server(BaseSettings):
     ignore_nbextensions: List[str] = []
+    # gzip HTTP responses (SOLARA_SERVER_HTTP_GZIP=false when a fronting proxy
+    # like nginx/caddy does the compressing)
+    http_gzip: bool = True
 
     class Config:
         env_prefix = "solara_server_"
