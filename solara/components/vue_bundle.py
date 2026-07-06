@@ -18,6 +18,7 @@ responsibility; solara only generates text and checks it.
 import hashlib
 import json
 import os
+import pathlib
 import re
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -90,7 +91,7 @@ def write_bundle_entry(directory: Path, name: str = "app-components") -> Path:
     components = {}
     for i, vue_file in enumerate(_vue_files):
         export = _export_name(vue_file)
-        relative = os.path.relpath(vue_file, directory)
+        relative = pathlib.PurePath(os.path.relpath(vue_file, directory)).as_posix()
         lines.append(f'import _c{i} from "{relative}";')
         # give the component a devtools/debugging name; an explicit name in
         # the SFC wins (spread comes after)
