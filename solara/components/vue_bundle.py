@@ -28,6 +28,7 @@ _vue_files: List[Path] = []
 
 _manifests: Optional[Dict[str, Tuple[str, str]]] = None  # sha1 -> (module, export)
 _manifest_names: Dict[str, List[str]] = {}  # basename -> manifest names, for errors
+_loaded_bundles: List[str] = []  # manifest names, for errors
 
 
 def _sha1(path: Path) -> str:
@@ -48,6 +49,7 @@ def _load_manifests() -> Dict[str, Tuple[str, str]]:
             if not manifest_path.strip():
                 continue
             manifest = json.loads(Path(manifest_path.strip()).read_text(encoding="utf8"))
+            _loaded_bundles.append(manifest["name"])
             for file, entry in manifest["components"].items():
                 _manifests[entry["sha1"]] = (manifest["name"], entry["export"])
                 _manifest_names.setdefault(Path(file).name, []).append(manifest["name"])
@@ -67,7 +69,9 @@ def lookup(vue_file: Path) -> Tuple[str, str]:
         return entry
     if vue_file.name in _manifest_names:
         raise RuntimeError(f"{vue_file} changed since bundle {_manifest_names[vue_file.name]} was built, rebuild it (see write_bundle_entry)")
-    raise RuntimeError(f"{vue_file} is not in any bundle listed in SOLARA_VUE_BUNDLES")
+    raise RuntimeError(
+        f"{vue_file} is not in any of the bundles {_loaded_bundles} (from SOLARA_VUE_BUNDLES); regenerate and rebuild the bundle that should contain it"
+    )
 
 
 def _export_name(vue_file: Path) -> str:
