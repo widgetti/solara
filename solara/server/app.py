@@ -35,6 +35,37 @@ logger = logging.getLogger("solara.server.app")
 
 reload.reloader.start()
 
+_gc_frozen = False
+
+
+def _gc_freeze_startup_state():
+    """gc.freeze() the startup state once, right after the app first ran in the dummy kernel.
+
+    Everything alive at this point - imports, classes, module-level app state - lives for the
+    rest of the process, yet the garbage collector rescans it on every full collection. Freezing
+    moves it to a permanent generation that gc skips, so the collections that clean up session
+    reference cycles (including the kernel.gc_after_close backstop) stay proportional to live
+    session state instead of process size. The moment matters: no real kernel exists yet, so
+    nothing session-scoped can be frozen, and the collect() first prevents freezing startup
+    *garbage* into permanence. Objects created later (lazy imports, sessions) are unaffected.
+
+    Gated by settings.main.gc_freeze; the default (None) enables it only in production mode,
+    because in development hot reload would freeze each generation of stale app modules into a
+    permanent leak.
+    """
+    global _gc_frozen
+    enabled = settings.main.gc_freeze
+    if enabled is None:
+        enabled = settings.main.mode == "production"
+    if not enabled or _gc_frozen:
+        return
+    _gc_frozen = True
+    import gc
+
+    gc.collect()
+    gc.freeze()
+    logger.info("gc.freeze: %d startup objects moved out of the garbage collector's scanned generations", gc.get_freeze_count())
+
 
 class AppType(str, Enum):
     SCRIPT = "script"
@@ -119,6 +150,7 @@ class AppScript:
                 reload.reloader.root_path = package_root_path
         dummy_kernel_context.close()
         self._initialized = True
+        _gc_freeze_startup_state()
 
     def _execute(self):
         logger.info("Executing %s", self.name)
