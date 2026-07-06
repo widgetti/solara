@@ -1,5 +1,10 @@
 # Solara Changelog
 
+## Version 1.60.0
+
+   * Feature: Synchronous websocket frame writing, opt-in via `SOLARA_SERVER_SYNC_WS_WRITE=true`. Skips the event-loop hop when threads push widget updates, at the cost of blocking the sending thread on socket writes. [cceea3d4](https://github.com/widgetti/solara/commit/cceea3d4)
+   * Feature: `gc.freeze()` the startup state so GC cost tracks sessions, not total process size. [84e896bc](https://github.com/widgetti/solara/commit/84e896bc)
+
 ## Version 1.59.2
 
    * Bug Fix: `use_task` leaked a task instance and its result per component mount. [fe832b02](https://github.com/widgetti/solara/commit/fe832b02)
