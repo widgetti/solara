@@ -223,7 +223,7 @@ def component_vue(
             from . import vue_bundle
 
             vue_file = Path(inspect.getfile(func)).parent / vue_path
-            vue_bundle.record(vue_file)
+            vue_bundle.record(vue_file, func.__name__)
             if vue_bundle.enabled():
                 # serve the template from the precompiled bundle instead of
                 # shipping its source (see solara/components/vue_bundle.py)
