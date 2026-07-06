@@ -117,6 +117,13 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
     def __init__(self, ws: starlette.websockets.WebSocket, portal: Optional[anyio.from_thread.BlockingPortal]) -> None:
         self.ws = ws
         self.portal = portal
+        self.sync_writer = None
+        if settings.server.sync_ws_write:
+            from . import sync_ws_write
+
+            # frames are written synchronously from the sending thread; falls
+            # back to the default path (None) when unsupported, see the module
+            self.sync_writer = sync_ws_write.SyncFrameWriter.try_create(ws)
         self.to_send: List[Union[str, bytes]] = []
         # following https://docs.python.org/3/library/asyncio-task.html#asyncio.create_task
         # we store a strong reference
@@ -183,6 +190,12 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
             self.portal.call(_close_exc)
 
     def send_text(self, data: str) -> None:
+        if self.sync_writer is not None:
+            try:
+                self.sync_writer.send_text(data)
+            except OSError as e:
+                raise websocket.WebSocketDisconnect() from e
+            return
         if self.portal is None:
             task = self.event_loop.create_task(self._send_text_exc(data))
             self.tasks.add(task)
@@ -206,6 +219,12 @@ await to_thread.run_sync(my_update)
                     self.portal.call(self._send_text_exc, data)
 
     def send_bytes(self, data: bytes) -> None:
+        if self.sync_writer is not None:
+            try:
+                self.sync_writer.send_bytes(data)
+            except OSError as e:
+                raise websocket.WebSocketDisconnect() from e
+            return
         if self.portal is None:
             task = self.event_loop.create_task(self._send_bytes_exc(data))
             self.tasks.add(task)
