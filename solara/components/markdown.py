@@ -416,7 +416,7 @@ def Markdown(md_text: str, unsafe_solara_execute=False, style: Union[str, Dict, 
     if md_parser is None:
         assert md_self is not None
         md_parser = md_self
-    html = md_parser.convert(md_text)
+    html = solara.use_memo(lambda: md_parser.convert(md_text), dependencies=[md_text, md_parser, unsafe_solara_execute])
 
     def cleanup_wrapper():
         def cleanup():
