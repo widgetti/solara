@@ -104,6 +104,18 @@ if ipykernel_version >= (6, 18, 0):
                 self.kernel = None
             super().__init__(**kwargs)
 
+        def close(self, *args, **kwargs) -> None:
+            try:
+                super().close(*args, **kwargs)
+            except KeyError:
+                # A widget can be closed after its kernel closed (e.g. __del__ when the
+                # garbage collector finds it) or from a thread bound to a different kernel.
+                # get_comm_manager() is context-based, so it then resolves to a manager that
+                # never registered this comm, and upstream unregister_comm pops the comm id
+                # non-tolerantly. The comm is dead either way; the KeyError only buries real
+                # errors in teardown output as unraisable-exception noise.
+                pass
+
         def publish_msg(self, msg_type, data=None, metadata=None, buffers=None, **keys):
             if self.kernel is None or self.kernel.session is None:
                 return
