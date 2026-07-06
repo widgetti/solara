@@ -14,6 +14,7 @@ def clean_state(monkeypatch):
     vue_bundle._vue_files.clear()
     vue_bundle._manifests = None
     vue_bundle._manifest_names.clear()
+    vue_bundle._loaded_bundles.clear()
     monkeypatch.delenv("SOLARA_VUE_BUNDLES", raising=False)
     try:
         yield
@@ -22,6 +23,7 @@ def clean_state(monkeypatch):
         vue_bundle._vue_files.extend(files)
         vue_bundle._manifests = None
         vue_bundle._manifest_names.clear()
+        vue_bundle._loaded_bundles.clear()
 
 
 def _make_template(tmp_path: Path, name: str, source: str) -> Path:
@@ -65,7 +67,7 @@ def test_lookup_by_content_hash(clean_state, tmp_path: Path, monkeypatch):
 
     # missing: never bundled
     c = _make_template(tmp_path, "c.vue", "<template><div>c</div></template>")
-    with pytest.raises(RuntimeError, match="not in any bundle"):
+    with pytest.raises(RuntimeError, match=r"not in any of the bundles.*test-components"):
         vue_bundle.lookup(c)
 
 
