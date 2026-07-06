@@ -221,6 +221,11 @@ class Server(BaseSettings):
     # gzip HTTP responses (SOLARA_SERVER_HTTP_GZIP=false when a fronting proxy
     # like nginx/caddy does the compressing)
     http_gzip: bool = True
+    # write websocket frames synchronously from the sending thread instead of
+    # scheduling every message on the event loop (SOLARA_SERVER_SYNC_WS_WRITE).
+    # Requires uvicorn's websockets implementation; falls back to the default
+    # path (with a log message) when unavailable. See starlette.py.
+    sync_ws_write: bool = False
 
     class Config:
         env_prefix = "solara_server_"
