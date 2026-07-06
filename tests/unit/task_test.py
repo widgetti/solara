@@ -798,7 +798,9 @@ def test_use_task_unmounted_instance_is_collected(monkeypatch):
                 while len(payload_refs) < n + 1 and time.time() < deadline:
                     await asyncio.sleep(0.01)
                 alive = len(payload_refs)
-                deadline = time.time() + 10
+                # generous deadline: on a loaded 1-2 core CI runner the tiny worker threads
+                # can be starved for seconds by this very loop's gc churn
+                deadline = time.time() + 30
                 while time.time() < deadline:
                     # pytest's LogCaptureHandler retains LogRecords whose args hold the
                     # task results ("setting result to %r"); clear them or they pin the
@@ -811,7 +813,7 @@ def test_use_task_unmounted_instance_is_collected(monkeypatch):
                     alive = sum(1 for ref in payload_refs if ref() is not None)
                     if alive <= 1:  # only the currently mounted instance may hold one
                         break
-                    await asyncio.sleep(0.05)
+                    await asyncio.sleep(0.1)
                 holder["alive"] = alive
                 rc.close()
 

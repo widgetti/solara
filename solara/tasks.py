@@ -203,7 +203,25 @@ class Task(Generic[P, R], abc.ABC):
     def is_current(self) -> bool: ...
 
     def _prestart(self):
-        self._result.value = TaskResult[R](latest=self._last_value, _state=TaskState.STARTING)
+        self._set_result(TaskResult[R](latest=self._last_value, _state=TaskState.STARTING))
+
+    # set by _drop_call_state (use_task component unmount); a worker thread that already
+    # passed its is_current() check must not resurrect the cleared store entry
+    _call_state_dropped = False
+
+    def _set_result(self, result: "TaskResult[R]") -> None:
+        """Write the task result, without racing a use_task unmount cleanup.
+
+        The unmount cleanup clears this task's kernel-store entries, but a worker thread
+        that passed its is_current() check just before the cleanup ran would re-create the
+        entry with its write - pinning the result (and everything it references) until the
+        kernel closes. Re-checking after the write makes the last writer lose in every
+        interleaving: either the cleanup clears after our write, or we see the dropped flag
+        (set before the cleanup clears) and clear our own write again.
+        """
+        self._result.value = result
+        if self._call_state_dropped:
+            self._result._storage.clear()
 
 
 class _CancelledErrorInOurTask(BaseException):
@@ -254,7 +272,7 @@ class TaskAsyncio(Task[P, R]):
                     raise _CancelledErrorInOurTask()
                 else:
                     current_task.cancel()
-                    self._result.value = TaskResult[R](latest=self._last_value, _state=TaskState.CANCELLED)
+                    self._set_result(TaskResult[R](latest=self._last_value, _state=TaskState.CANCELLED))
             else:
                 try:
                     running_loop: Optional[asyncio.AbstractEventLoop] = asyncio.get_running_loop()
@@ -273,7 +291,7 @@ class TaskAsyncio(Task[P, R]):
                     except RuntimeError:
                         # the loop is already closed: the task's thread is gone with it
                         pass
-                self._result.value = TaskResult[R](latest=self._last_value, _state=TaskState.CANCELLED)
+                self._set_result(TaskResult[R](latest=self._last_value, _state=TaskState.CANCELLED))
 
         self._cancel = cancel
         self._retry = retry
@@ -349,12 +367,12 @@ class TaskAsyncio(Task[P, R]):
                     # selector file descriptor until the garbage collector gets to it
                     thread_event_loop.close()
 
-            self._result.value = TaskResult[R](latest=self._last_value, _state=TaskState.STARTING)
+            self._set_result(TaskResult[R](latest=self._last_value, _state=TaskState.STARTING))
             thread = threading.Thread(target=runs_in_thread, daemon=True, name=f"TaskAsyncio-{self.function.__name__}")
             thread.start()
         else:
             self.current_task = current_task = asyncio.create_task(self._async_run(call_event_loop, future, args, kwargs))
-            self._result.value = TaskResult[R](latest=self._last_value, _state=TaskState.STARTING)
+            self._set_result(TaskResult[R](latest=self._last_value, _state=TaskState.STARTING))
 
     def is_current(self):
         running_task = self.current_task
@@ -371,6 +389,9 @@ class TaskAsyncio(Task[P, R]):
         # the context graph into one big reference cycle that has to wait for a gen-2 gc
         # (measured as a memory sawtooth under load). Drop the call bookkeeping at close
         # so plain refcounting can free the context right away.
+        # The flag must be set before the cleanup clears the stores: a worker thread that
+        # passed its is_current() check re-checks it after writing (see _set_result).
+        self._call_state_dropped = True
         self.current_task = None
         self.current_future = None
         self._cancel = None
@@ -423,21 +444,21 @@ class TaskAsyncio(Task[P, R]):
         task_for_this_call = _get_current_task()
         assert task_for_this_call is not None
         if self.is_current():
-            self._result.value = TaskResult[R](latest=self._last_value, _state=TaskState.STARTING)
+            self._set_result(TaskResult[R](latest=self._last_value, _state=TaskState.STARTING))
 
         async def runner():
             try:
                 if self.is_current():
-                    self._result.value = TaskResult[R](latest=self._last_value, _state=TaskState.RUNNING)
+                    self._set_result(TaskResult[R](latest=self._last_value, _state=TaskState.RUNNING))
                 self._last_value = value = await self.function(*args, **kwargs)
                 if self.is_current() and not task_for_this_call.cancelled():  # type: ignore
-                    self._result.value = TaskResult[R](value=value, latest=value, _state=TaskState.FINISHED, progress=self._last_progress)
+                    self._set_result(TaskResult[R](value=value, latest=value, _state=TaskState.FINISHED, progress=self._last_progress))
                 logger.info("setting result to %r", value)
                 self._finish_future_threadsafe(call_event_loop, future, lambda f: f.set_result(value), "result")
             except Exception as e:
                 if self.is_current():
                     logger.exception(e)
-                    self._result.value = TaskResult[R](latest=self._last_value, exception=e, _state=TaskState.ERROR)
+                    self._set_result(TaskResult[R](latest=self._last_value, exception=e, _state=TaskState.ERROR))
                 # bind to a fresh name: `e` is unbound when the except block exits,
                 # but the delivery lambda runs later on the call loop
                 exception = e
@@ -450,7 +471,7 @@ class TaskAsyncio(Task[P, R]):
             # But... if we call cancel in our own task, we still need to do it from this place
             except _CancelledErrorInOurTask:
                 if self.is_current():
-                    self._result.value = TaskResult[R](latest=self._last_value, _state=TaskState.CANCELLED)
+                    self._set_result(TaskResult[R](latest=self._last_value, _state=TaskState.CANCELLED))
                 self._finish_future_threadsafe(call_event_loop, future, lambda f: f.cancel(), "cancellation")
 
         await runner()
@@ -504,7 +525,7 @@ class TaskThreaded(Task[P, R]):
             self._current_thread = current_thread = threading.Thread(
                 target=lambda: self._run(_last_finished_event, previous_thread, cancel_event, args, kwargs), daemon=False
             )
-        self._result.value = TaskResult[R](latest=self._last_value, _state=TaskState.STARTING)
+        self._set_result(TaskResult[R](latest=self._last_value, _state=TaskState.STARTING))
         current_thread.start()
 
     def is_current(self):
@@ -521,6 +542,7 @@ class TaskThreaded(Task[P, R]):
         # See TaskAsyncio._drop_call_state: called when a use_task component unmounts, so
         # a stale worker thread stops updating state (is_current() returns False) and the
         # call bookkeeping does not outlive the component.
+        self._call_state_dropped = True
         self._current_thread = None
         self._current_cancel_event = None
         self._last_finished_event = None
@@ -538,14 +560,14 @@ class TaskThreaded(Task[P, R]):
             if wait_on_previous:
                 if previous_thread and previous_thread.is_alive():
                     if self.is_current():
-                        self._result.value = TaskResult[R](latest=self._last_value, _state=TaskState.WAITING)
+                        self._set_result(TaskResult[R](latest=self._last_value, _state=TaskState.WAITING))
                     # don't start before the previous is stopped
                     try:
                         previous_thread.join()
                     except:  # noqa
                         pass
             if self.is_current():
-                self._result.value = TaskResult[R](latest=self._last_value, _state=TaskState.RUNNING)
+                self._set_result(TaskResult[R](latest=self._last_value, _state=TaskState.RUNNING))
             else:
                 # early stop
                 return
@@ -569,20 +591,20 @@ class TaskThreaded(Task[P, R]):
                                 with guard:
                                     self._last_value = value = next(generator)
                                     if self.is_current():
-                                        self._result.value = TaskResult[R](latest=value, value=value, _state=TaskState.RUNNING, progress=self._last_progress)
+                                        self._set_result(TaskResult[R](latest=value, value=value, _state=TaskState.RUNNING, progress=self._last_progress))
                             except StopIteration:
                                 break
                         if self.is_current():
-                            self._result.value = TaskResult[R](latest=self._last_value, _state=TaskState.FINISHED, progress=self._last_progress)
+                            self._set_result(TaskResult[R](latest=self._last_value, _state=TaskState.FINISHED, progress=self._last_progress))
                     else:
                         self._last_value = value
                         if self.is_current():
-                            self._result.value = TaskResult[R](latest=value, value=value, _state=TaskState.FINISHED, progress=self._last_progress)
+                            self._set_result(TaskResult[R](latest=value, value=value, _state=TaskState.FINISHED, progress=self._last_progress))
                 except Exception as e:
                     if self.is_current():
                         logger.exception(e)
                         self._last_value = None
-                        self._result.value = TaskResult[R](latest=self._last_value, exception=e, _state=TaskState.ERROR)
+                        self._set_result(TaskResult[R](latest=self._last_value, exception=e, _state=TaskState.ERROR))
                     return
                 except solara.util.CancelledError:
                     pass
@@ -593,7 +615,7 @@ class TaskThreaded(Task[P, R]):
                     self.running_thread = None
                     logger.info("thread done!")
                     if cancel_event.is_set():
-                        self._result.value = TaskResult[R](latest=self._last_value, _state=TaskState.CANCELLED)
+                        self._set_result(TaskResult[R](latest=self._last_value, _state=TaskState.CANCELLED))
                 _last_finished_event.set()
 
         try:
@@ -1087,23 +1109,29 @@ def use_task(
                 # unlike a module-level @task (one instance per process), this task instance
                 # belongs to this component instance: drop everything that outlives the
                 # component, or a session that mounts/unmounts components leaks a task
-                # instance + its result per mount:
-                # 1. drop the call state FIRST: that makes is_current() False, so a still
-                #    running call stops updating state, and a worker thread that is just
-                #    finishing skips its result write instead of recreating the store entry
-                #    we clear below. Deliberately no cancel(): its called-from-our-own-task
-                #    detection misfires when this cleanup runs inside the task's own render
-                #    cascade (a result write triggering the unmounting render), raising
-                #    _CancelledErrorInOurTask through the render machinery. An orphaned call
-                #    running to completion unobserved matches the pre-cleanup behavior.
-                task_instance._drop_call_state()  # type: ignore
+                # instance + its result per mount.
+                # Resolve the actual instance ONCE, before clearing anything: task_instance
+                # is a Proxy, and any attribute access on it after the singleton entry is
+                # cleared would make Singleton.get() re-create the entry via the factory.
                 singleton = task_instance._instance  # type: ignore
+                instance = singleton.value
+                # 1. drop the call state FIRST: that makes is_current() False, so a still
+                #    running call stops updating state, and a worker thread that already
+                #    passed its is_current() check re-clears its own write (see
+                #    Task._set_result). Deliberately no cancel(): its
+                #    called-from-our-own-task detection misfires when this cleanup runs
+                #    inside the task's own render cascade (a result write triggering the
+                #    unmounting render), raising _CancelledErrorInOurTask through the render
+                #    machinery. An orphaned call running to completion unobserved matches
+                #    the pre-cleanup behavior.
+                instance._drop_call_state()
                 # 2. the process-global on_kernel_start registration (pins the instance forever)
                 singleton._on_kernel_start_cleanup()
                 # 3. this kernel's entries in the kernel stores (pinned until kernel close):
-                #    the instance itself, and its TaskResult (which holds .value/.latest)
+                #    the TaskResult (which holds .value/.latest), then the instance itself -
+                #    the singleton entry LAST, so nothing re-creates it afterwards
+                instance._result._storage.clear()
                 singleton._storage.clear()
-                task_instance._result._storage.clear()  # type: ignore
 
             return cleanup
 
