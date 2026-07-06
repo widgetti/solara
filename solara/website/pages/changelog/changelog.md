@@ -1,5 +1,11 @@
 # Solara Changelog
 
+## Version 1.59.2
+
+   * Bug Fix: `use_task` leaked a task instance and its result per component mount. [fe832b02](https://github.com/widgetti/solara/commit/fe832b02)
+   * Bug Fix: Do not pin a kernel context in `ThreadPoolExecutor` worker threads. [e0bb13fc](https://github.com/widgetti/solara/commit/e0bb13fc)
+   * Bug Fix: Deliver cross-thread task cancellation via `call_soon_threadsafe`. [22cdd90b](https://github.com/widgetti/solara/commit/22cdd90b)
+
 ## Version 1.59.1
 
    * Bug Fix: Gzip + immutable CDN caching for both server entrypoints. [01561ad9](https://github.com/widgetti/solara/commit/01561ad9)
