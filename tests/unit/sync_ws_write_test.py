@@ -1,5 +1,6 @@
 """SyncFrameWriter: correct RFC6455 frames, single-writer locking, protocol funnel."""
 
+import os
 import socket
 import threading
 
@@ -8,6 +9,10 @@ import pytest
 websockets = pytest.importorskip("websockets")
 
 from solara.server.sync_ws_write import SyncFrameWriter, _find_websockets_protocol  # noqa: E402
+
+# the writer uses os.write on the socket fd: POSIX-only (and so is the feature;
+# on Windows try_create falls back to the default send path)
+fd_writes = pytest.mark.skipif(os.name != "posix", reason="os.write on sockets requires POSIX")
 
 
 class FakeProtocol:
@@ -45,6 +50,7 @@ def writer_and_peer():
     client_sock.close()
 
 
+@fd_writes
 def test_text_and_binary_frames(writer_and_peer):
     writer, _, peer = writer_and_peer
     writer.send_text("hello sync")
@@ -56,6 +62,7 @@ def test_text_and_binary_frames(writer_and_peer):
     assert (fin, opcode, payload) == (True, 0x2, b"\x00\x01binary")
 
 
+@fd_writes
 def test_large_frame_survives_partial_writes(writer_and_peer):
     writer, _, peer = writer_and_peer
     big = "x" * 300_000  # larger than default socketpair buffers -> EAGAIN path
@@ -74,6 +81,7 @@ def test_large_frame_survives_partial_writes(writer_and_peer):
     assert payload == big.encode()
 
 
+@fd_writes
 def test_protocol_control_frames_share_the_funnel(writer_and_peer):
     """ping/close written by the protocol go through the same patched writer."""
     writer, protocol, peer = writer_and_peer

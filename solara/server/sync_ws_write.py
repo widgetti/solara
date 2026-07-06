@@ -97,6 +97,11 @@ class SyncFrameWriter:
     @classmethod
     def try_create(cls, ws: Any) -> Optional["SyncFrameWriter"]:
         """ws is a starlette WebSocket; returns None (with one log) when unsupported."""
+        if os.name != "posix":
+            # os.write on a socket fileno is POSIX-only (Windows sockets are
+            # WSA handles, not CRT file descriptors)
+            _log_unavailable_once("synchronous socket writes require POSIX")
+            return None
         protocol = _find_websockets_protocol(getattr(ws, "_send", None))
         if protocol is None:
             _log_unavailable_once("uvicorn websockets protocol not found; wsproto or unknown server?")
