@@ -233,6 +233,13 @@ class MainSettings(BaseSettings):
     mode: str = "production"
     tracer: bool = False
     timing: bool = False
+    # gc.freeze() the startup state (imports, classes, module-level app state) after the app
+    # first ran in the dummy kernel: those objects live for the whole process anyway, and
+    # freezing moves them out of every later gc pass, so collections stay proportional to
+    # live session state instead of process size. None (default): on in production mode,
+    # off in development - hot reload would freeze each generation of stale app modules
+    # into a permanent leak. Purely a gc-cost optimization, no correctness impact.
+    gc_freeze: Optional[bool] = None
     root_path: Optional[str] = None  # e.g. /myapp (without trailing slash)
     base_url: str = ""  # e.g. https://myapp.solara.run/myapp/
     platform: str = sys.platform

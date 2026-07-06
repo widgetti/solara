@@ -527,6 +527,16 @@ starlette.
 - `SOLARA_KERNEL_CULL_TIMEOUT` — kernel cleanup delay after disconnect
   (default 24h; set `0.5s` in measurement runs).
 - `SOLARA_KERNELS_MAX_COUNT` — hard cap on kernels, prevents unbounded growth.
+- `SOLARA_GC_FREEZE` — `gc.freeze()` the startup state (imports, module-level
+  app state) after the app first ran in the dummy kernel, moving it out of
+  every later gc pass. Default: on in production mode, off in development
+  (hot reload would freeze stale app modules into a permanent leak).
+  **Measured** (1-CPU docker, ~250 MB module-level baseline, full collection
+  after every kernel close via `gc_after_close`): mean gen-2 pause 75.8 ms →
+  4.8 ms (16×), median 69.7 → 2.5 ms. The bigger the import baseline (torch,
+  pandas), the bigger the win: gc cost becomes proportional to live session
+  state instead of process size. Harness: `measure_gc_freeze.py` +
+  `gc_freeze_bench_app.py`. Not a leak fix — purely gc-pause cost.
 - Per-user state lives in the virtual kernel; per-kernel cost is dominated by
   your app's state, not the framework (~0.6 MB floor, see baselines).
 
