@@ -236,14 +236,24 @@ class TaskAsyncio(Task[P, R]):
     def cancel(self) -> None:
         if self._cancel:
             self._cancel()
-        else:
+        elif self.not_called:
             raise RuntimeError("Cannot cancel task, never started")
+        else:
+            # the task ran, but the call bookkeeping (including _cancel) is
+            # gone: _drop_call_state ran because the kernel context is closing,
+            # while the reactive state still reads pending. Cleanup code doing
+            # `if task.pending: task.cancel()` during that close must be a
+            # no-op, not an error - there is nothing left to cancel.
+            pass
 
     def retry(self):
         if self._retry:
             self._retry()
-        else:
+        elif self.not_called:
             raise RuntimeError("Cannot retry task, never started")
+        else:
+            # see cancel(): call state dropped at kernel close
+            pass
 
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> None:
         self._last_progress = None
