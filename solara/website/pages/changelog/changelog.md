@@ -1,5 +1,10 @@
 # Solara Changelog
 
+## Version 1.60.1
+
+   * Bug Fix: `task.cancel()` / `task.retry()` during kernel close must not raise. [2cc01de6](https://github.com/widgetti/solara/commit/2cc01de6)
+   * Refactor: Give `use_task` a component-scoped result store instead of cleanup code. [491b7650](https://github.com/widgetti/solara/commit/491b7650)
+
 ## Version 1.60.0
 
    * Feature: Synchronous websocket frame writing, opt-in via `SOLARA_SERVER_SYNC_WS_WRITE=true`. Skips the event-loop hop when threads push widget updates, at the cost of blocking the sending thread on socket writes. [cceea3d4](https://github.com/widgetti/solara/commit/cceea3d4)
