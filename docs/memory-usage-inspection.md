@@ -482,14 +482,60 @@ workload, 2.4× the memory — and still climbing — versus a plateau.
   method in a callback list is a strong reference to the whole instance;
   register a `weakref.WeakMethod` when the callback is a courtesy rather
   than an ownership.
-- Cleanup that races a worker must first flip the flag the worker checks
-  (`is_current()`-style), then clear the state — clearing first re-leaks.
 
 One more diagnosis trap found on the way (py3.11+): `gc.get_referrers` on a
 coroutine's local shows the **coroutine object** as the referrer, not a
 frame — so diagnosis code running inside a coroutine finds itself and cannot
 be filtered by `f_code.co_name`. Put referrer-walking diagnosis in a
 separate plain function and filter by its function names.
+
+### Case study 3: the resurrection race in the fix, and the structural cure
+
+The unmount cleanup above then produced its own leak — rarer, and only
+visible as a flaky CI failure of the unmount test (one identical commit:
+one run green, one run `2/6 payloads pinned` after 10 s of gc).
+
+**The pattern — cleanup racing an in-flight writer**: the cleanup cleared
+the kernel-store entries, but a worker thread that had already passed its
+`is_current()` gate completed its result write *afterwards*, re-creating
+the cleared entry with the payload inside — rooted until session close.
+Check-then-act gates do not protect against writes already in flight when
+the cleanup runs. A leak with this signature — *rare*, *never resolves
+under repeated gc*, in code where cleanup clears storage that workers also
+write — is a resurrection race. (The same hunt also surfaced a second
+resurrector: reading an attribute through a lazy factory-backed accessor
+(`Proxy → Singleton.get()`) after clearing re-created the entry too — know
+your accessors' side effects before using them in cleanup.)
+
+**How it was caught — make the flaky test self-diagnosing**: a leak that
+reproduces once per N CI runs is not debugged by reading CI logs. Recipe:
+
+1. Loop the exact failing configuration locally (`for i in $(seq 25); do
+   pytest ...; done`). A pass that takes anomalously long (10.8 s vs 0.7 s)
+   is the same bug barely resolving in time — count it as a hit.
+2. Instrument the test itself: when the weakrefs are still alive past a
+   threshold, dump the retainer chain (objgraph / referrer walk) *inside
+   the test*, then keep going. The failure now names the retainer instead
+   of just failing.
+3. Crank the reproduction rate with contention: run several pytest
+   processes in parallel — GIL churn widens every race window (4×30 runs
+   caught what 60 sequential runs missed).
+
+**The cure is structural, not a smarter cleanup** (solara #1186): the
+race — and the flag+recheck machinery needed to win it, and the ordering
+rules above — existed only because component-scoped state was stored in
+kernel-scoped storage. Scoping the storage to its owner (the result lives
+in a `SharedStore` *object* held by the component's hook state, as
+`use_reactive` always did) made unmount cleanup happen by refcount, deleted
+the cleanup code entirely, and turned the race harmless by construction: a
+late write lands in an object that is already garbage and can pin nothing
+beyond itself.
+
+**The rule**: when state and its storage have different lifetimes, every
+cleanup is a patch and every patch can race. Prefer storage whose lifetime
+*is* the owner's lifetime (an object held by the owner) over shared
+registries plus cleanup; reach for flip-flag-then-clear +
+recheck-after-write only when restructuring is genuinely not an option.
 
 ### Leak or retention? The shape answers it
 
@@ -561,6 +607,12 @@ Executing a "measure memory / find the leak" task, in order:
 6. **If leak**: `memray flamegraph --leaks` (with `PYTHONMALLOC=malloc`) for
    *what allocated it*; weakref + objgraph per
    [memory-leak-detection.md](memory-leak-detection.md) for *why it is alive*.
+6b. **If the leak is flaky** (one CI run in N; a rare test pass that takes
+   10× longer is the same hit): make the test self-diagnosing — dump the
+   retainer chain inside the test when weakrefs survive past a threshold —
+   and crank reproduction with parallel pytest processes (GIL contention
+   widens race windows). Rare + never-resolving-under-gc + cleanup that
+   clears storage workers also write = a resurrection race (case study 3).
 7. **If overuse (no leak, just big)**: memray flamegraph at peak for
    attribution; tracemalloc diff for Python-level growth; remember imports
    are a fixed ~tens-of-MB baseline.
@@ -578,7 +630,10 @@ is the one you started; a sawtooth curve (rise + periodic sharp drops) is
 gen-2 GC lag on reference cycles, not a leak; exception tracebacks pin every
 frame they passed through (strip `__traceback__` before storing exceptions);
 log-capture handlers in test harnesses retain those tracebacks and turn them
-into phantom flaky leaks — clear captured records inside the GC loop.
+into phantom flaky leaks — clear captured records inside the GC loop;
+cleanup that clears shared storage races in-flight writers (resurrection —
+case study 3), and lazy factory-backed accessors re-create what you just
+cleared — prefer storage scoped to the owner's lifetime over cleanup code.
 
 ## Which tool for which question
 
