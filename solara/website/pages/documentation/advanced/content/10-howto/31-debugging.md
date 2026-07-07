@@ -10,7 +10,7 @@ You can use the [python debugger](https://docs.python.org/3/library/pdb.html) to
 
 Simply add `breakpoint()` to your code, and trigger the code, and you will enter the debugger.
 
-```python
+```{.python pycafe-link}
 import solara
 
 clicks = solara.reactive(0)
