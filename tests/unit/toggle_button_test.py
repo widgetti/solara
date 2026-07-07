@@ -18,6 +18,9 @@ def test_toggle_buttons_single():
     assert group.v_model == 1
     group.v_model = 2
     assert value.value == "mies"
+    group.v_model = "aap"
+    assert value.value == "aap"
+    assert group.v_model == 0
     group.v_model = 3
     assert value.value is None
     # we don't want it to change the index to None
@@ -39,3 +42,6 @@ def test_toggle_buttons_multiple():
     group.v_model = [0, 2]
     assert value.value is not None
     assert value.value == ["aap", "mies"]
+    group.v_model = ["noot", "mies"]
+    assert value.value == ["noot", "mies"]
+    assert group.v_model == [1, 2]
