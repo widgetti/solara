@@ -117,14 +117,24 @@ class TaskResult(Generic[T]):
 
 
 class Task(Generic[P, R], abc.ABC):
-    def __init__(self, key: str):
-        self._result = solara.Reactive(
-            TaskResult[R](
-                value=None,
-                _state=TaskState.NOTCALLED,
-            ),
-            key="solara.tasks:TaskResult:" + key,
-        )
+    def __init__(self, key: Optional[str] = None, result: Optional[solara.Reactive] = None):
+        if result is not None:
+            # component-scoped (use_task): the result lives in an object owned by the
+            # component's hook state, so it dies with the component - no kernel-store
+            # entry to clean up on unmount, and a worker write that races the unmount
+            # cannot pin anything beyond the object itself
+            self._result: solara.Reactive = result
+        else:
+            # kernel-scoped (module-level @task): one instance per process, one value
+            # per kernel, living in the kernel store
+            assert key is not None
+            self._result = solara.Reactive(
+                TaskResult[R](
+                    value=None,
+                    _state=TaskState.NOTCALLED,
+                ),
+                key="solara.tasks:TaskResult:" + key,
+            )
         self._last_value: Optional[R] = None
         self._last_progress: Optional[float] = None
         self._latest = ref(self._result.fields.latest)
@@ -218,10 +228,10 @@ class TaskAsyncio(Task[P, R]):
     _context: Optional["weakref.ReferenceType[solara.server.kernel_context.VirtualKernelContext]"] = None
     _drop_call_state_on_close_registered = False
 
-    def __init__(self, run_in_thread: bool, function: Callable[P, Coroutine[Any, Any, R]], key: str):
+    def __init__(self, run_in_thread: bool, function: Callable[P, Coroutine[Any, Any, R]], key: Optional[str] = None, result: Optional[solara.Reactive] = None):
         self.run_in_thread = run_in_thread
         self.function = function
-        super().__init__(key)
+        super().__init__(key, result=result)
 
     def cancel(self) -> None:
         if self._cancel:
@@ -463,8 +473,8 @@ class TaskThreaded(Task[P, R]):
     _cancel: Optional[Callable[[], None]] = None
     _retry: Optional[Callable[[], None]] = None
 
-    def __init__(self, function: Callable[P, R], key: str):
-        super().__init__(key)
+    def __init__(self, function: Callable[P, R], key: Optional[str] = None, result: Optional[solara.Reactive] = None):
+        super().__init__(key, result=result)
         self.__qualname__ = function.__qualname__
         self.function = function
         self.lock = threading.Lock()
@@ -1076,38 +1086,41 @@ def use_task(
 
     def wrapper(f):
         def create_task() -> "Task[[], R]":
-            return task(f, prefer_threaded=prefer_threaded, check_for_render_context=False)
+            # Unlike a module-level @task (Proxy -> Singleton -> kernel store: one instance
+            # per process, one value per kernel), this task belongs to one component
+            # instance. Everything is therefore component-scoped by construction: the
+            # instance lives in this use_memo, and the result lives in a SharedStore
+            # OBJECT held by the instance - not in the kernel store dict. Unmount drops
+            # the hook state and everything dies by refcount: no lifecycle registration
+            # to undo, no store entries to clear, and a worker thread finishing after
+            # unmount writes into an object that is already garbage - it cannot pin
+            # anything beyond itself. (This mirrors how use_reactive scopes its state.)
+            from solara._stores import MutateDetectorStore, SharedStore, StoreValue, _PublicValueNotSet, _SetValueNotSet
+            from solara.toestand import ValueBase
+
+            initial = TaskResult[R](value=None, _state=TaskState.NOTCALLED)
+            store: ValueBase
+            if solara.settings.storage.mutation_detection is True:
+                shared_store = SharedStore[StoreValue[TaskResult[R]]](
+                    StoreValue[TaskResult[R]](
+                        private=initial, public=_PublicValueNotSet(), get_traceback=None, set_value=_SetValueNotSet(), set_traceback=None
+                    ),
+                    unwrap=lambda x: x.private,
+                )
+                store = MutateDetectorStore[TaskResult[R]](shared_store)
+            else:
+                store = SharedStore(initial)
+            result = solara.Reactive(store)
+            # no runtime generic subscription: TaskAsyncio[[], R] raises TypeError on
+            # Python <= 3.9 (ParamSpec arguments in subscripts are 3.10+ at runtime)
+            if inspect.iscoroutinefunction(f):
+                return cast("Task[[], R]", TaskAsyncio(prefer_threaded and has_threads, f, result=result))
+            else:
+                return cast("Task[[], R]", TaskThreaded(cast(Callable[[], R], f), result=result))
 
         task_instance = solara.use_memo(create_task, dependencies=[])
         # we always update the function so we do not have stale data in the function
         task_instance.function = f  # type: ignore
-
-        def cleanup_on_unmount():
-            def cleanup():
-                # unlike a module-level @task (one instance per process), this task instance
-                # belongs to this component instance: drop everything that outlives the
-                # component, or a session that mounts/unmounts components leaks a task
-                # instance + its result per mount:
-                # 1. drop the call state FIRST: that makes is_current() False, so a still
-                #    running call stops updating state, and a worker thread that is just
-                #    finishing skips its result write instead of recreating the store entry
-                #    we clear below. Deliberately no cancel(): its called-from-our-own-task
-                #    detection misfires when this cleanup runs inside the task's own render
-                #    cascade (a result write triggering the unmounting render), raising
-                #    _CancelledErrorInOurTask through the render machinery. An orphaned call
-                #    running to completion unobserved matches the pre-cleanup behavior.
-                task_instance._drop_call_state()  # type: ignore
-                singleton = task_instance._instance  # type: ignore
-                # 2. the process-global on_kernel_start registration (pins the instance forever)
-                singleton._on_kernel_start_cleanup()
-                # 3. this kernel's entries in the kernel stores (pinned until kernel close):
-                #    the instance itself, and its TaskResult (which holds .value/.latest)
-                singleton._storage.clear()
-                task_instance._result._storage.clear()  # type: ignore
-
-            return cleanup
-
-        solara.use_effect(cleanup_on_unmount, dependencies=[])
 
         def _prestart():
             if dependencies is not None:
