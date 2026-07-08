@@ -600,7 +600,9 @@ returned cleanup — a second permanent pin per runtime-created Computed.
    a constant ~22 MB/cycle line (≈ 1 MB × ~20 renders/cycle), while the
    harness reported `kernels after close: 0` on every single cycle. That is
    this leak class in one picture: the cleanup counters stay green and the
-   process grows without bound.
+   process grows without bound. **With the fix** (per-kernel listener-scope
+   purge at kernel close + kernel-scoped Singleton/Computed registrations):
+   the same run stays flat at ~130–142 MB for all 10 cycles.
 
 **Diagnosis traps found on the way** (each cost real time):
 

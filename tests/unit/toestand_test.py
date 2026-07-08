@@ -223,6 +223,42 @@ def test_scopes(no_kernel_context):
         rc2.close()
 
 
+def test_kernel_close_purges_subscription_residue(no_kernel_context):
+    # subscriptions made inside a kernel without a paired unsubscribe (e.g. by
+    # Computed's auto-subscribe machinery) must not outlive the kernel: the
+    # (listener, Context) tuples on process-lifetime stores pin the listener
+    # closures and everything they capture (memory-usage-inspection.md, case
+    # study 4). Same for the process-global on_kernel_start registrations that
+    # Singleton/Computed instances create.
+    import solara.lifecycle
+
+    registry_before = len(solara.lifecycle._on_kernel_start_callbacks)
+    store = Reactive("hello")  # process-lifetime store (module-level style)
+
+    kernel_shared = kernel.Kernel()
+    context = kernel_context.VirtualKernelContext(id="toestand-purge-1", kernel=kernel_shared, session_id="session-1")
+
+    with context:
+        # a Computed created inside a kernel (component-body style): reading it
+        # auto-subscribes to `store` under this kernel's scope, and both the
+        # Computed and its internal Singleton register on_kernel_start callbacks
+        computed = toestand.Computed(lambda: store.value + "!", key="purge-test")
+        assert computed.value == "hello!"
+        # a bare subscription whose cleanup is never called
+        store.subscribe(lambda value: None)
+        # Reactive delegates subscriptions to its storage
+        assert context.id in store._storage.listeners or context.id in store._storage.listeners2
+
+    assert len(solara.lifecycle._on_kernel_start_callbacks) > registry_before
+    context.close()
+
+    # the closed kernel's scope is gone from the store...
+    assert context.id not in store._storage.listeners
+    assert context.id not in store._storage.listeners2
+    # ...and the kernel-start registry is back at its previous size
+    assert len(solara.lifecycle._on_kernel_start_callbacks) == registry_before
+
+
 def test_scopes_restore(no_kernel_context):
     kernel1 = kernel.Kernel()
     kernel2 = kernel.Kernel()

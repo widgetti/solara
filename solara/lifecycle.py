@@ -40,7 +40,12 @@ def on_kernel_start(f: Callable[[], Optional[Callable[[], None]]]) -> Callable[[
             path = Path(path_str)
 
     def cleanup():
-        return _on_kernel_start_callbacks.remove(kce)
+        # idempotent: with kernel-scoped registrations (toestand Singleton/Computed)
+        # both the owner's own cleanup and the kernel-close cleanup may run
+        try:
+            _on_kernel_start_callbacks.remove(kce)
+        except ValueError:
+            pass
 
     kce = _on_kernel_callback_entry(f, path, module, cleanup)
     _on_kernel_start_callbacks.append(kce)

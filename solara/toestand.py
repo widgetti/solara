@@ -106,6 +106,8 @@ class ValueBase(Generic[T]):
         self.equals = equals
         self.listeners: Dict[str, Set[Tuple[Callable[[T], None], Optional[ContextManager]]]] = defaultdict(set)
         self.listeners2: Dict[str, Set[Tuple[Callable[[T, T], None], Optional[ContextManager]]]] = defaultdict(set)
+        # scope ids (kernel ids) for which a purge-at-kernel-close is registered
+        self._scope_purge_registered: Set[str] = set()
 
     # make sure all boolean operations give type errors
     if not solara.settings.main.allow_reactive_boolean:
@@ -185,9 +187,17 @@ class ValueBase(Generic[T]):
         context = Context(rc, kernel)
 
         self.listeners[scope_id].add((listener, context))
+        self._register_scope_purge(scope_id)
 
         def cleanup():
-            self.listeners[scope_id].remove((listener, context))
+            # discard, not remove: the scope purge at kernel close may have dropped
+            # this entry already, and effect cleanups run after on_close callbacks —
+            # a raising cleanup would abort the render context teardown
+            entries = self.listeners.get(scope_id)
+            if entries is not None:
+                entries.discard((listener, context))
+                if not entries:
+                    self.listeners.pop(scope_id, None)
 
         return cleanup
 
@@ -205,27 +215,72 @@ class ValueBase(Generic[T]):
             kernel = nullcontext()
         context = Context(rc, kernel)
         self.listeners2[scope_id].add((listener, context))
+        self._register_scope_purge(scope_id)
 
         def cleanup():
-            self.listeners2[scope_id].remove((listener, context))
+            entries = self.listeners2.get(scope_id)
+            if entries is not None:
+                entries.discard((listener, context))
+                if not entries:
+                    self.listeners2.pop(scope_id, None)
 
         return cleanup
+
+    def _register_scope_purge(self, scope_id: str):
+        """Purge this scope's listener entries when the kernel owning it closes.
+
+        Effect-managed subscriptions unsubscribe at close (rc.close runs effect
+        cleanups), but auto-subscribe machinery (e.g. Computed's
+        AutoSubscribeContextManager) subscribes outside any effect. Without this
+        purge, every kernel leaves its (listener, Context) tuples — and everything
+        the listener closures capture — behind on process-lifetime stores, forever
+        (docs/memory-usage-inspection.md, case study 4).
+
+        Only scopes owned by the closing kernel itself are purged: session scopes
+        (persist=True) are shared by all of a session's kernels and outlive each
+        of them — purging those would break live sibling kernels.
+        """
+        if not _using_solara_server():
+            return
+        import solara.server.kernel_context
+
+        if not solara.server.kernel_context.has_current_context():
+            return
+        kernel_context = solara.server.kernel_context.get_current_context()
+        if scope_id != kernel_context.id or scope_id in self._scope_purge_registered:
+            return
+        self._scope_purge_registered.add(scope_id)
+        # weakref: the kernel context must not keep kernel-scoped stores
+        # (e.g. from use_reactive) alive through this callback
+        store_ref = weakref.ref(self)
+
+        def purge():
+            store = store_ref()
+            if store is not None:
+                store._scope_purge_registered.discard(scope_id)
+                store.listeners.pop(scope_id, None)
+                store.listeners2.pop(scope_id, None)
+
+        kernel_context.on_close(purge)
 
     def fire(self, new: T, old: T):
         logger.info("value change from %s to %s, will fire events", old, new)
         scope_id = self._get_scope_key()
+        # .get instead of indexing: these are defaultdicts, and indexing would
+        # permanently materialize an empty set for every kernel that ever fires,
+        # growing the dicts by one entry per kernel for the process lifetime
         contexts = set()
-        for listener, context in self.listeners[scope_id].copy():
+        for listener, context in tuple(self.listeners.get(scope_id, ())):
             contexts.add(context)
-        for listener2, context in self.listeners2[scope_id].copy():
+        for listener2, context in tuple(self.listeners2.get(scope_id, ())):
             contexts.add(context)
         if contexts:
             for context in contexts:
                 with context or nullcontext():
-                    for listener, context_listener in self.listeners[scope_id].copy():
+                    for listener, context_listener in tuple(self.listeners.get(scope_id, ())):
                         if context == context_listener:
                             listener(new)
-                    for listener2, context_listener in self.listeners2[scope_id].copy():
+                    for listener2, context_listener in tuple(self.listeners2.get(scope_id, ())):
                         if context == context_listener:
                             listener2(new, old)
 
@@ -740,12 +795,38 @@ class Reactive(ValueBase[S]):
         return Computed(func, key=f.__qualname__)
 
 
+def _on_kernel_start_scoped_to_creator(f: Callable[[], Optional[Callable[[], None]]]) -> Callable[[], None]:
+    """on_kernel_start, but scoped to the creating kernel when there is one.
+
+    Module-level Singleton/Computed instances register at import time (no kernel
+    context) and live for the process — a process-global registration is right.
+    Instances created inside a kernel (a Computed in a component body, use_task's
+    Singleton) must not outlive it: unregister when that kernel closes. The
+    lifecycle cleanup is idempotent, so an earlier unmount cleanup (use_task) and
+    the kernel-close unregistration can both run.
+
+    The app script itself runs inside the short-lived "dummy" kernel context
+    (solara.server.app), so module-level instances of an app ARE created inside
+    a kernel — scoping to the dummy context would unregister every module-level
+    reset the moment startup finishes (and break hot reload). Skip it.
+    """
+    import solara.lifecycle
+
+    cleanup = solara.lifecycle.on_kernel_start(f)
+    if _using_solara_server():
+        import solara.server.kernel_context
+
+        if solara.server.kernel_context.has_current_context():
+            context = solara.server.kernel_context.get_current_context()
+            if context.id != "dummy":
+                context.on_close(cleanup)
+    return cleanup
+
+
 class Singleton(Reactive[S]):
     _storage: KernelStore[S]
 
     def __init__(self, factory: Callable[[], S], key=None):
-        import solara.lifecycle
-
         super().__init__(KernelStoreFactory(factory, key=key))
 
         # reset on kernel restart (e.g. hot reload)
@@ -759,7 +840,9 @@ class Singleton(Reactive[S]):
         # kernel store, the per-kernel values) forever. Fine for module-level singletons -
         # the module pins them anyway - but per-component-instance singletons (use_task)
         # must call this cleanup on unmount or every mount leaks until process exit.
-        self._on_kernel_start_cleanup = solara.lifecycle.on_kernel_start(reset)
+        # Instances created INSIDE a kernel additionally unregister at kernel close
+        # (unmount cleanups don't run when the whole kernel goes away).
+        self._on_kernel_start_cleanup = _on_kernel_start_scoped_to_creator(reset)
 
     def __set__(self, obj, value):
         raise AttributeError("Can't set a singleton")
@@ -769,8 +852,6 @@ class Computed(Reactive[S]):
     _storage: KernelStore[S]
 
     def __init__(self, f: Callable[[], S], key=None):
-        import solara.lifecycle
-
         self.f = f
 
         def on_change(*ignore):
@@ -789,14 +870,17 @@ class Computed(Reactive[S]):
 
         super().__init__(KernelStoreFactory(factory, key=key))
 
-        # reset on kernel restart (e.g. hot reload)
+        # reset on kernel restart (e.g. hot reload). Keep the cleanup (a discarded
+        # one can never be called: a Computed created inside a component pinned
+        # itself, its closures and their captures in the process-global list forever)
+        # and unregister at kernel close for kernel-created instances.
         def reset():
             def cleanup():
                 self._storage.clear()
 
             return cleanup
 
-        solara.lifecycle.on_kernel_start(reset)
+        self._on_kernel_start_cleanup = _on_kernel_start_scoped_to_creator(reset)
 
     def __repr__(self):
         value = super().__repr__()
