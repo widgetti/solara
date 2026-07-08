@@ -120,6 +120,8 @@ class VirtualKernelContext:
     _teardown_lock: threading.Lock = dataclasses.field(default_factory=threading.Lock)
     _teardown_done: bool = False
     _on_close_callbacks: List[Callable[[], None]] = dataclasses.field(default_factory=list)
+    # set once close() has drained the callbacks: later registrations run immediately
+    _on_close_callbacks_drained: bool = False
     lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
     event_loop: asyncio.AbstractEventLoop = dataclasses.field(default_factory=_get_or_create_event_loop)
 
@@ -136,12 +138,22 @@ class VirtualKernelContext:
             for f in reversed(self._on_close_callbacks):
                 f()
             self._on_close_callbacks.clear()
+            self._on_close_callbacks_drained = False
             self.__post_init__()
 
     def display(self, *args):
         print(args)  # noqa
 
     def on_close(self, f: Callable[[], None]):
+        if self._on_close_callbacks_drained:
+            # the context already closed: this registration comes from something
+            # created AFTER close — typically a lazy per-kernel factory re-creating a
+            # resource from a task thread or listener fire that raced teardown. The
+            # callback would never run, leaking whatever it was meant to clean up
+            # (e.g. a fresh AutoSubscribeContextManager resubscribing a dead scope),
+            # so run the cleanup immediately instead.
+            f()
+            return
         self._on_close_callbacks.append(f)
 
     async def __aenter__(self):
@@ -248,6 +260,7 @@ class VirtualKernelContext:
             logger.info("Shut down virtual kernel: %s", self.id)
             for f in reversed(self._on_close_callbacks):
                 f()
+            self._on_close_callbacks_drained = True
             had_app = self.app_object is not None
             if self.app_object is not None:
                 if isinstance(self.app_object, reacton.core._RenderContext):

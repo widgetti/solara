@@ -300,6 +300,38 @@ def test_ascm_no_resubscribe_after_close(no_kernel_context):
     assert total_listeners(store) == listeners_after_close
 
 
+def test_post_close_computed_access_leaves_no_residue(no_kernel_context):
+    # the OTHER resurrection path: a task thread still carrying the closed kernel
+    # context touches computed.value AFTER close. The lazy KernelStoreFactory then
+    # creates a FRESH AutoSubscribeContextManager — whose on_close registration
+    # lands on an already-closed context. on_close must run such late cleanups
+    # immediately, so the fresh manager is born closed and subscribes nothing.
+    store = Reactive("hello")
+
+    def total_listeners(value_base) -> int:
+        count = 0
+        current = value_base
+        while isinstance(current, toestand.ValueBase):
+            count += sum(len(entries) for entries in current.listeners.values())
+            count += sum(len(entries) for entries in current.listeners2.values())
+            current = getattr(current, "_storage", None)
+        return count
+
+    context = kernel_context.VirtualKernelContext(id="toestand-race-2", kernel=kernel.Kernel(), session_id="session-1")
+    with context:
+        computed = toestand.Computed(lambda: store.value + "!", key="race-test-2")
+        # deliberately never read computed.value while the kernel lives
+
+    context.close()
+    listeners_after_close = total_listeners(store)
+
+    # a thread that still holds the closed context computes the value late
+    with context:
+        assert computed.value == "hello!"
+
+    assert total_listeners(store) == listeners_after_close
+
+
 def test_computed_created_during_render_warns(no_kernel_context):
     toestand._warned_sites.clear()
 
