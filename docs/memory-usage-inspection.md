@@ -537,6 +537,104 @@ cleanup is a patch and every patch can race. Prefer storage whose lifetime
 registries plus cleanup; reach for flip-flag-then-clear +
 recheck-after-write only when restructuring is genuinely not an option.
 
+### Case study 4: subscription residue — the leak every green assertion missed
+
+Found in a large production solara app (July 2026) that leaked ~5 GB per
+16 GB instance per business day while *all* of the checks above stayed green:
+the cycle protocol showed only a small per-session cost locally, weakref
+tests confirmed 0 kernel contexts and 0 render trees survived close, and
+`/resourcez` counters returned to baseline every cycle. The production
+dashboard disagreed with every lab result.
+
+**Mechanism.** Every `ValueBase` (Reactive/Computed store) keeps per-scope
+listener dicts: `listeners[scope_id]` / `listeners2[scope_id]`, with
+`scope_id` = the kernel id for kernel-scoped subscriptions. Subscriptions
+made through `use_effect` unsubscribe at close (rc.close() runs effect
+cleanups). But `Computed`'s `AutoSubscribeContextManager` subscribes outside
+any effect — and *even a module-level Computed subscribes per kernel*,
+because its value is kernel-scoped. Nothing removes those entries at kernel
+close. Each dead entry is a `(listener, Context)` tuple pinning the listener
+closure and a `toestand.Context` (render-context + kernel-context refs) —
+plus everything the closure captured. A `@solara.lab.computed` defined
+*inside* a component body is the worst case: its closure captures the
+component's locals (in the production app: the page's full dataset), leaked
+once per render, forever. `Computed.__init__` also registers an
+`on_kernel_start` reset in the process-global callback list and discards the
+returned cleanup — a second permanent pin per runtime-created Computed.
+
+**Why every check missed it:**
+
+- The weakref assertions test *context/render-tree* survival. Dead listeners
+  do not pin the context — the kernel closes fine; the leak is a separate
+  closure graph hanging off process-lifetime stores. Green, and truthfully so.
+- Per-session cost: at lab scale the leaked closures are a few KB — they
+  disappeared into the accepted "allocator tail, decaying" reading. In
+  production the closures captured MB-scale page data, and allocator
+  fragmentation amplified the OS-level cost ~7× (2 MB/cycle of scattered
+  Python survivors held ~14 MB/cycle of arenas hostage — the "keep 0.1%,
+  return nothing" trap from the top of this document, live).
+
+**The two detection rules this adds:**
+
+1. **Counters, not just contexts: per-store listener totals must return to
+   baseline every cycle.** Enumerate module-level stores via `sys.modules`
+   (see `dump_module_store_listeners()` in
+   [leak_canary_app.py](memory-measurement/leak_canary_app.py)) and compare
+   scope/listener counts at every idle point. Any scope id that is not a
+   live kernel is residue. This is a pure object-count check — it needs no
+   memory measurement and catches the leak at natural (KB) scale.
+2. **Amplify before you measure: give the suspect lifecycle a big payload.**
+   The cycle protocol only sees what is large enough to clear the noise
+   floor, so make the canary large: `leak_canary_app.py` captures a 1 MB
+   payload *per render* in a component-scoped computed that reads a
+   module-level reactive (and since the reactive is shared, every click
+   re-renders every open page — each re-render leaks another captured
+   payload). If subscription residue exists, the idle-point series grows by
+   ~payload × renders per cycle — unmissable. (This generalizes the
+   kitchen-sink 4.5 MB payload: put the payload *inside the specific
+   closure/registration you suspect*, not just in kernel state.)
+
+   **Measured** (solara 1.60.1, macOS physical footprint, 10 pages × 10
+   cycles, 1 click/page): idle-point series
+   `122 → 139 → 161 → 185 → 209 → 224 → 247 → 272 → 291 → 315 → 338 MB` —
+   a constant ~22 MB/cycle line (≈ 1 MB × ~20 renders/cycle), while the
+   harness reported `kernels after close: 0` on every single cycle. That is
+   this leak class in one picture: the cleanup counters stay green and the
+   process grows without bound.
+
+**Diagnosis traps found on the way** (each cost real time):
+
+- **`gc.freeze` blinds the gc-based tools.** Production mode freezes startup
+  objects; frozen objects are invisible to `gc.get_objects()` and are not
+  reported by `gc.get_referrers()` — every referrer chain from a leaked
+  object dead-ended at "no referrers" because the holder (a module-level
+  store) was frozen, and `objgraph.find_backref_chain` found no path to any
+  module. For diagnosis, call `gc.unfreeze()` first (diagnosis process only)
+  — but expect the next trap.
+- **objgraph backref search does not scale past unfreeze**: BFS over ~850k
+  newly-visible objects is effectively O(N²) via repeated `get_referrers`
+  scans; it pinned a CPU for hours. Prefer scope-targeted counters (rule 1)
+  over generic backref walking on big heaps.
+- **Never `getattr`-sweep live objects.** A scan doing
+  `getattr(obj, "listeners", None)` over `gc.get_objects()` wedged the
+  server: proxy objects run arbitrary `__getattr__` (lock-taking, kernel
+  context access). Use `obj.__dict__.get(...)` or
+  `inspect.getattr_static`.
+- **Error paths that `repr` framework objects can be their own incident**:
+  one "could not close render context" log line embedded the full kernel
+  context repr — megabytes per line, 12 MB of log in one test run.
+
+**Fix guidance** (for solara itself, and for any framework with per-scope
+subscriptions on process-lifetime objects): purge a store's
+`listeners[scope_id]` entries when the *scope* dies (kernel close for
+kernel scopes). Two traps make the naive fix wrong: (1) session-scoped
+stores (`persist=True`) share one scope across all of a session's kernels —
+purging on kernel close breaks live sibling kernels; only purge scopes that
+die with the kernel. (2) close-ordering: `on_close` callbacks run before the
+render context's effect cleanups, so cleanups must tolerate
+already-removed entries (discard semantics), or the purge must run after
+teardown — a raising cleanup aborts the whole render-context close.
+
 ### Leak or retention? The shape answers it
 
 Linux `anon` at the idle point of each click-app cycle:
@@ -604,6 +702,13 @@ Executing a "measure memory / find the leak" task, in order:
    *inside* live sessions (component mount/unmount). The session cycle is
    blind to per-mount accumulation — it freed everything at close before you
    could see it (this hid a real `use_task` leak; see the case study).
+5c. **Check registry/subscription residue too**: per-store listener totals
+   (and any per-scope registry) must return to baseline every cycle —
+   context/render-tree weakrefs stay green while dead listener entries on
+   module-level stores pin arbitrary captured data (case study 4;
+   `dump_module_store_listeners()` in leak_canary_app.py). If a leak is
+   suspected but below the noise floor, amplify it: put a multi-MB payload
+   inside the specific closure/registration lifecycle you suspect.
 6. **If leak**: `memray flamegraph --leaks` (with `PYTHONMALLOC=malloc`) for
    *what allocated it*; weakref + objgraph per
    [memory-leak-detection.md](memory-leak-detection.md) for *why it is alive*.
@@ -633,7 +738,13 @@ log-capture handlers in test harnesses retain those tracebacks and turn them
 into phantom flaky leaks — clear captured records inside the GC loop;
 cleanup that clears shared storage races in-flight writers (resurrection —
 case study 3), and lazy factory-backed accessors re-create what you just
-cleared — prefer storage scoped to the owner's lifetime over cleanup code.
+cleared — prefer storage scoped to the owner's lifetime over cleanup code;
+`gc.freeze` (production default) hides frozen holders from `gc.get_objects`
+and `gc.get_referrers` — referrer chains dead-end at module-level stores
+unless you `gc.unfreeze()` first (diagnosis only); never `getattr`-sweep
+live objects (proxy `__getattr__` side effects wedge servers — use
+`__dict__.get`/`inspect.getattr_static`); objgraph backref BFS is unusable
+on ~1M-object heaps — use scope-targeted counters instead (case study 4).
 
 ## Which tool for which question
 
