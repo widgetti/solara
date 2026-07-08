@@ -266,6 +266,48 @@ def test_kernel_close_purges_subscription_residue(no_kernel_context):
     assert len(solara.lifecycle._on_kernel_start_callbacks) == registry_before
 
 
+def test_computed_created_during_render_warns(no_kernel_context):
+    toestand._warned_sites.clear()
+
+    @solara.component
+    def Page():
+        derived = toestand.Computed(lambda: 1 + 1, key="in-render-warn")
+        solara.Text(str(derived.value))
+
+    kernel_shared = kernel.Kernel()
+    context = kernel_context.VirtualKernelContext(id="toestand-warn-1", kernel=kernel_shared, session_id="session-1")
+    with context:
+        with pytest.warns(UserWarning, match="created during a render"):
+            box, rc = react.render(Page(), handle_error=False)
+    context.close()
+    toestand._warned_sites.clear()
+
+
+def test_unreleased_subscription_warns_at_kernel_close(no_kernel_context):
+    toestand._warned_sites.clear()
+    store = Reactive("hello")
+
+    context = kernel_context.VirtualKernelContext(id="toestand-warn-2", kernel=kernel.Kernel(), session_id="session-1")
+    with context:
+        store.subscribe(lambda value: None)  # cleanup never called
+    with pytest.warns(UserWarning, match="still active when its kernel closed"):
+        context.close()
+
+    # clean usage: cleanup called before close -> no warning
+    toestand._warned_sites.clear()
+    context2 = kernel_context.VirtualKernelContext(id="toestand-warn-3", kernel=kernel.Kernel(), session_id="session-1")
+    with context2:
+        unsubscribe = store.subscribe(lambda value: None)
+        unsubscribe()
+    import warnings as warnings_module
+
+    with warnings_module.catch_warnings(record=True) as records:
+        warnings_module.simplefilter("always")
+        context2.close()
+    assert not [r for r in records if "still active" in str(r.message)]
+    toestand._warned_sites.clear()
+
+
 def test_scopes_restore(no_kernel_context):
     kernel1 = kernel.Kernel()
     kernel2 = kernel.Kernel()
