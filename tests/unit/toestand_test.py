@@ -18,6 +18,7 @@ import solara as sol
 import solara.lab
 import solara.toestand as toestand
 import solara.server.kernel_context
+import solara.server.starlette  # noqa: F401  # makes _using_solara_server() True: kernel-scoped cleanups must take their real path
 from solara.server import kernel, kernel_context
 from solara.toestand import Reactive, Ref, State, use_sync_external_store
 import solara.settings
@@ -1937,3 +1938,123 @@ def test_init_lock_in_global_scope_uses_per_instance_lock(no_kernel_context):
     assert scope_id == "global"
     assert context is None  # no kernel context -> global scope, per-instance lock
     assert store.get() == "v"  # lazy init works through the global (per-instance) lock
+
+
+@pytest.mark.parametrize("attempt", range(4))
+def test_ascm_close_race_stress(no_kernel_context, attempt):
+    # empirically hunt the remaining resurrection window: recomputes racing kernel
+    # close must never leave listener entries under the dead kernel's scope
+    import threading
+
+    store = Reactive("v0")
+
+    def scopes(value_base):
+        out = set()
+        current = value_base
+        while isinstance(current, toestand.ValueBase):
+            out |= set(current.listeners) | set(current.listeners2)
+            current = getattr(current, "_storage", None)
+        return out
+
+    leaked = []
+    for i in range(25):
+        context = kernel_context.VirtualKernelContext(id=f"race-stress-{attempt}-{i}", kernel=kernel.Kernel(), session_id="race-stress-session")
+        with context:
+            computed = toestand.Computed(lambda: store.value + "!", key=f"stress-{attempt}-{i}")
+            assert computed.value
+
+        stop = threading.Event()
+
+        def churn():
+            n = 0
+            while not stop.is_set():
+                with context:
+                    try:
+                        store.value = f"v{n}"  # fires on_change -> recompute -> resubscribe
+                        computed.value
+                    except Exception:
+                        pass
+                n += 1
+
+        churner = threading.Thread(target=churn)
+        churner.start()
+        time.sleep(0.001 * (i % 5))  # jitter the close against the churn
+        context.close()
+        stop.set()
+        churner.join()
+        if context.id in scopes(store):
+            leaked.append(i)
+    assert not leaked, f"kernels leaked listener residue: {leaked}"
+
+
+def test_computed_overlapping_recompute_no_orphan(no_kernel_context):
+    # deterministic version of the production stepper: force two recomputes of the
+    # same Computed to overlap fully (a task thread fired the dependency while a
+    # render-side recompute was mid-compute: TaskAsyncio-login vs render, ~1% of
+    # kernels). In-place mutation of shared compute state orphaned the first
+    # thread's unsubscribe closures; the commit-chain design diffs them instead.
+    import threading
+
+    dep = Reactive("x")
+    dep2 = Reactive("y")  # only read during recomputes: forces a FRESH subscription
+    first_inside = threading.Event()
+    release_first = threading.Event()
+    recompute_mode = threading.local()
+
+    def compute():
+        if getattr(recompute_mode, "on", False):
+            value2 = dep2.value  # fresh subscribe happens here, before the block
+            if threading.current_thread().name == "t1":
+                first_inside.set()
+                release_first.wait(timeout=5)
+            return dep.value + value2
+        return dep.value + "!"
+
+    def total_listeners(value_base) -> int:
+        count = 0
+        current = value_base
+        while isinstance(current, toestand.ValueBase):
+            count += sum(len(entries) for entries in current.listeners.values())
+            count += sum(len(entries) for entries in current.listeners2.values())
+            current = getattr(current, "_storage", None)
+        return count
+
+    context = kernel_context.VirtualKernelContext(id="ascm-overlap-1", kernel=kernel.Kernel(), session_id="session-1")
+    computed = toestand.Computed(compute, key="overlap-test")
+    ascm_holder = []
+
+    def initial():
+        with context:
+            assert computed.value == "x!"
+            ascm_holder.append(computed._auto_subscriber.value)
+
+    threading.Thread(target=initial, name="t0").start()
+    for t in threading.enumerate():
+        if t.name == "t0":
+            t.join()
+
+    ascm = ascm_holder[0]
+
+    def recompute():
+        # simulate an on_change-driven recompute in a task thread
+        recompute_mode.on = True
+        with context:
+            with ascm:
+                compute()
+
+    t1 = threading.Thread(target=recompute, name="t1")
+    t1.start()
+    assert first_inside.wait(timeout=5)
+    # while t1 is mid-compute, a second thread completes a full recompute
+    t2 = threading.Thread(target=recompute, name="t2")
+    t2.start()
+    t2.join(timeout=5)
+    release_first.set()
+    t1.join(timeout=5)
+
+    # exactly one live subscription per dependency, and close removes them:
+    # in-place shared compute state instead orphans t1's fresh dep2 subscription
+    assert total_listeners(dep2) == 1
+    context.close()
+    assert total_listeners(dep2) == 0
+    assert total_listeners(dep) == 0
