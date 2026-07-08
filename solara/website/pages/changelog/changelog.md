@@ -1,5 +1,9 @@
 # Solara Changelog
 
+## Version 1.60.2
+
+   * Bug Fix: Purge per-kernel subscription residue at kernel close (#1189). [5a1cbbfc](https://github.com/widgetti/solara/commit/5a1cbbfc)
+
 ## Version 1.60.1
 
    * Bug Fix: `task.cancel()` / `task.retry()` during kernel close must not raise. [2cc01de6](https://github.com/widgetti/solara/commit/2cc01de6)
