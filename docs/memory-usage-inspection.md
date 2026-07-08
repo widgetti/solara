@@ -637,6 +637,34 @@ render context's effect cleanups, so cleanups must tolerate
 already-removed entries (discard semantics), or the purge must run after
 teardown — a raising cleanup aborts the whole render-context close.
 
+**Epilogue: the fix itself raced — twice.** With the owner cleanup shipped,
+a 25-cycle run of the same production app still leaked a constant
+~10 MB/cycle. The counters (not the memory numbers) named it: after gc with
+zero kernels, one surviving `AutoSubscribeContextManager` per (Computed,
+kernel) and their listener entries were back. Two lessons in reading that
+census:
+
+- **Subclass discrimination**: the Reacton (component) managers counted 0 —
+  their effect-cleanup path works — all survivors were the plain (Computed)
+  kind. One count split the search space in half.
+- **Per-owner arithmetic**: survivors ≈ instances × kernels means the
+  cleanup *ran and was undone*, not skipped. "Undone after it ran" has
+  exactly two shapes, both already in case study 3: a **write race** (a
+  recompute in a task thread re-subscribed between `unsubscribe_all` and
+  kernel death — fix: flip-flag-then-clear, and re-check the flag after the
+  subscribing write, undoing your own write if you lost) and **lazy-factory
+  resurrection** (a post-close `computed.value` access re-created a *fresh*
+  manager whose `on_close` registration landed on an already-closed context
+  and never ran — fix: `on_close` on a closed context runs the callback
+  immediately, so late-created resources are born closed). The first fix
+  halved the residue; the arithmetic on what remained pointed straight at
+  the second.
+
+The meta-rule: when a leak you fixed comes back at a rate proportional to
+(owners × scopes), do not re-diagnose from scratch — check the two
+resurrection shapes first, and write each as a deterministic
+fails-on-master test before fixing.
+
 ### Leak or retention? The shape answers it
 
 Linux `anon` at the idle point of each click-app cycle:
