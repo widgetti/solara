@@ -1221,6 +1221,11 @@ class AutoSubscribeContextManagerBase:
         self.subscribed = {}
         self.subscribed_previous_run = {}
         self.on_change = lambda: None
+        # set by unsubscribe_all: once the owner is done (component unmounted or
+        # kernel closed), add() must refuse to resubscribe — a recompute racing the
+        # cleanup (task threads, listener fires during teardown) would otherwise
+        # re-create the subscriptions on a dead scope, undoing the cleanup
+        self.closed = False
 
     def unsubscribe_previous(self):
         removed = set(self.subscribed_previous_run or set()) - set(self.subscribed)
@@ -1232,9 +1237,11 @@ class AutoSubscribeContextManagerBase:
 
     def unsubscribe_all(self):
         """Unsubscribe everything: the owner's end-of-life cleanup (unmount or kernel close)."""
+        # flip the flag FIRST: a concurrent add() checks it before and after writing
+        self.closed = True
         seen: Set[int] = set()
         for subscriptions in (self.subscribed, self.subscribed_previous_run):
-            for unsubscribe in subscriptions.values():
+            for unsubscribe in list(subscriptions.values()):
                 # the same unsubscribe closure can sit in both dicts
                 if id(unsubscribe) not in seen:
                     seen.add(id(unsubscribe))
@@ -1242,6 +1249,8 @@ class AutoSubscribeContextManagerBase:
             subscriptions.clear()
 
     def add(self, reactive: ValueBase):
+        if self.closed:
+            return
         relevant_reactive = reactive
         if isinstance(reactive, ValueSubField):
             root = reactive._root
@@ -1259,6 +1268,11 @@ class AutoSubscribeContextManagerBase:
                 with _managed_subscription():
                     unsubscribe = relevant_reactive.subscribe_change(lambda *args: self.on_change())
                 self.subscribed[relevant_reactive] = unsubscribe
+                if self.closed:
+                    # raced with unsubscribe_all: it may have missed our write — undo it
+                    # ourselves (unsubscribe is idempotent via discard semantics)
+                    unsubscribe()
+                    self.subscribed.pop(relevant_reactive, None)
             else:
                 self.subscribed[relevant_reactive] = self.subscribed_previous_run[relevant_reactive]
 

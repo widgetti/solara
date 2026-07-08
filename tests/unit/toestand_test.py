@@ -266,6 +266,40 @@ def test_kernel_close_purges_subscription_residue(no_kernel_context):
     assert len(solara.lifecycle._on_kernel_start_callbacks) == registry_before
 
 
+def test_ascm_no_resubscribe_after_close(no_kernel_context):
+    # a recompute racing the kernel-close cleanup (task threads, listener fires
+    # during teardown) must not re-create subscriptions on the dead scope —
+    # that would undo unsubscribe_all and re-leak (seen in production: one
+    # surviving AutoSubscribeContextManager per Computed per kernel)
+    store = Reactive("hello")
+
+    def total_listeners(value_base) -> int:
+        count = 0
+        current = value_base
+        while isinstance(current, toestand.ValueBase):
+            count += sum(len(entries) for entries in current.listeners.values())
+            count += sum(len(entries) for entries in current.listeners2.values())
+            current = getattr(current, "_storage", None)
+        return count
+
+    context = kernel_context.VirtualKernelContext(id="toestand-race-1", kernel=kernel.Kernel(), session_id="session-1")
+    with context:
+        computed = toestand.Computed(lambda: store.value + "!", key="race-test")
+        assert computed.value == "hello!"
+        ascm = computed._auto_subscriber.value
+        assert ascm.subscribed
+
+    context.close()
+    assert ascm.closed
+    assert not ascm.subscribed
+    listeners_after_close = total_listeners(store)
+
+    # the late recompute path calls add() on the closed manager
+    ascm.add(store)
+    assert not ascm.subscribed
+    assert total_listeners(store) == listeners_after_close
+
+
 def test_computed_created_during_render_warns(no_kernel_context):
     toestand._warned_sites.clear()
 
