@@ -133,7 +133,9 @@ def use_reactive(
             if on_change_ref.current and not updating.current:
                 on_change_ref.current(value)
 
-        return reactive_value.subscribe(forward)
+        # effect-managed: the returned unsubscribe runs on unmount/close
+        with solara.toestand._managed_subscription():
+            return reactive_value.subscribe(forward)
 
     def update():
         updating.current = True

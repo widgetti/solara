@@ -53,9 +53,61 @@ _DEBUG = False
 class ThreadLocal(threading.local):
     reactive_used: Optional[Set["ValueBase"]] = None
     reactive_watch: Optional[Callable[["ValueBase"], None]] = None
+    # True while solara-internal machinery subscribes: those owners guarantee cleanup,
+    # so the subscription-leak warning must not fire for them
+    managed_subscribe: bool = False
 
 
 thread_local = ThreadLocal()
+
+
+@contextlib.contextmanager
+def _managed_subscription():
+    """Mark subscriptions made in this block as managed (cleanup guaranteed by the caller)."""
+    previous = thread_local.managed_subscribe
+    thread_local.managed_subscribe = True
+    try:
+        yield
+    finally:
+        thread_local.managed_subscribe = previous
+
+
+@dataclasses.dataclass
+class _SubscriptionLeakCheck:
+    site: str
+    store_name: str
+    resolved: bool = False
+
+
+# per kernel context id: subscriptions to check for leaks when it closes
+# (popped by the on_close report; VirtualKernelContext itself is unhashable)
+_pending_subscription_checks: Dict[str, list] = {}
+_warned_sites: Set[str] = set()
+_internal_packages_paths = None
+
+
+def _warn_once(site: str, message: str):
+    if site in _warned_sites:
+        return
+    _warned_sites.add(site)
+    warnings.warn(message, UserWarning, stacklevel=3)
+
+
+def _app_call_site() -> Optional[str]:
+    """file:lineno of the nearest stack frame outside solara/reacton internals."""
+    global _internal_packages_paths
+    if _internal_packages_paths is None:
+        import react_ipywidgets
+        import reacton
+
+        _internal_packages_paths = tuple(os.path.dirname(mod.__file__ or "") + os.sep for mod in (solara, reacton, react_ipywidgets))
+    frame: Optional[FrameType] = sys._getframe(1)
+    while frame is not None:
+        filename = frame.f_code.co_filename
+        if not filename.startswith(_internal_packages_paths) and "importlib" not in filename:
+            return f"{filename}:{frame.f_lineno}"
+        frame = frame.f_back
+    return None
 
 
 # these hooks should go into react-ipywidgets
@@ -79,7 +131,12 @@ def use_sync_external_store(subscribe: Callable[[Callable[[], None]], Callable[[
             prev_state.current = new_state
             force_update()
 
-    react.use_effect(lambda: subscribe(on_store_change), [])
+    def subscribe_managed():
+        # effect-managed: reacton guarantees the returned cleanup runs on unmount/close
+        with _managed_subscription():
+            return subscribe(on_store_change)
+
+    react.use_effect(subscribe_managed, [])
     return state
 
 
@@ -185,9 +242,18 @@ class ValueBase(Generic[T]):
         context = Context(rc, kernel)
 
         self.listeners[scope_id].add((listener, context))
+        leak_check = self._track_subscription()
 
         def cleanup():
-            self.listeners[scope_id].remove((listener, context))
+            if leak_check is not None:
+                leak_check.resolved = True
+            entries = self.listeners.get(scope_id)
+            if entries is not None:
+                entries.discard((listener, context))
+                # prune the scope entry itself: unsubscribing must leave no residue,
+                # or every kernel that ever subscribed leaves an empty set behind
+                if not entries:
+                    del self.listeners[scope_id]
 
         return cleanup
 
@@ -205,27 +271,87 @@ class ValueBase(Generic[T]):
             kernel = nullcontext()
         context = Context(rc, kernel)
         self.listeners2[scope_id].add((listener, context))
+        leak_check = self._track_subscription()
 
         def cleanup():
-            self.listeners2[scope_id].remove((listener, context))
+            if leak_check is not None:
+                leak_check.resolved = True
+            entries = self.listeners2.get(scope_id)
+            if entries is not None:
+                entries.discard((listener, context))
+                if not entries:
+                    del self.listeners2[scope_id]
 
         return cleanup
+
+    def _track_subscription(self) -> Optional[_SubscriptionLeakCheck]:
+        """Warn (once per call site) for subscriptions still alive when their kernel closes.
+
+        A subscription made inside a kernel whose cleanup is never called outlives
+        the kernel forever on a process-lifetime store: the listeners dict entry pins
+        the listener closure and everything it captures (see
+        docs/memory-usage-inspection.md, case study 4). Solara's own subscription
+        owners (auto-subscribe, use_sync_external_store) always clean up and mark
+        themselves with _managed_subscription(); anything else made while a kernel
+        context is current gets tracked and reported at kernel close if its cleanup
+        never ran.
+        """
+        if thread_local.managed_subscribe or not _using_solara_server():
+            return None
+        if reacton.core.get_render_context(required=False) is not None:
+            # subscriptions made during a render (component bodies, effects) are
+            # component-managed: use_effect cleanups run on unmount and at close
+            return None
+        import solara.server.kernel_context
+
+        if not solara.server.kernel_context.has_current_context():
+            return None
+        kernel_context = solara.server.kernel_context.get_current_context()
+        if kernel_context.id == "dummy":
+            # the app script itself runs in the short-lived dummy context; module-level
+            # subscriptions made there are process-lifetime by intent
+            return None
+        site = _app_call_site()
+        if site is None:
+            return None
+        leak_check = _SubscriptionLeakCheck(site, repr(self))
+        checks = _pending_subscription_checks.setdefault(kernel_context.id, [])
+        checks.append(leak_check)
+        if len(checks) == 1:
+            kernel_id = kernel_context.id
+
+            def report():
+                for check in _pending_subscription_checks.pop(kernel_id, []):
+                    if not check.resolved:
+                        _warn_once(
+                            check.site,
+                            f"A subscription to {check.store_name} made at {check.site} was still active when "
+                            "its kernel closed. Store the unsubscribe function returned by "
+                            "subscribe()/subscribe_change() and call it (e.g. from a use_effect cleanup), "
+                            "otherwise the listener and everything it captures leak for the lifetime of the process.",
+                        )
+
+            kernel_context.on_close(report)
+        return leak_check
 
     def fire(self, new: T, old: T):
         logger.info("value change from %s to %s, will fire events", old, new)
         scope_id = self._get_scope_key()
+        # .get instead of indexing: these are defaultdicts, and indexing would
+        # permanently materialize an empty set for every kernel that ever fires,
+        # growing the dicts by one entry per kernel for the process lifetime
         contexts = set()
-        for listener, context in self.listeners[scope_id].copy():
+        for listener, context in tuple(self.listeners.get(scope_id, ())):
             contexts.add(context)
-        for listener2, context in self.listeners2[scope_id].copy():
+        for listener2, context in tuple(self.listeners2.get(scope_id, ())):
             contexts.add(context)
         if contexts:
             for context in contexts:
                 with context or nullcontext():
-                    for listener, context_listener in self.listeners[scope_id].copy():
+                    for listener, context_listener in tuple(self.listeners.get(scope_id, ())):
                         if context == context_listener:
                             listener(new)
-                    for listener2, context_listener in self.listeners2[scope_id].copy():
+                    for listener2, context_listener in tuple(self.listeners2.get(scope_id, ())):
                         if context == context_listener:
                             listener2(new, old)
 
@@ -740,12 +866,38 @@ class Reactive(ValueBase[S]):
         return Computed(func, key=f.__qualname__)
 
 
+def _on_kernel_start_scoped_to_creator(f: Callable[[], Optional[Callable[[], None]]]) -> Callable[[], None]:
+    """on_kernel_start, but scoped to the creating kernel when there is one.
+
+    Module-level Singleton/Computed instances register at import time (no kernel
+    context) and live for the process — a process-global registration is right.
+    Instances created inside a kernel (a Computed in a component body, use_task's
+    Singleton) must not outlive it: unregister when that kernel closes. The
+    lifecycle cleanup is idempotent, so an earlier unmount cleanup (use_task) and
+    the kernel-close unregistration can both run.
+
+    The app script itself runs inside the short-lived "dummy" kernel context
+    (solara.server.app), so module-level instances of an app ARE created inside
+    a kernel — scoping to the dummy context would unregister every module-level
+    reset the moment startup finishes (and break hot reload). Skip it.
+    """
+    import solara.lifecycle
+
+    cleanup = solara.lifecycle.on_kernel_start(f)
+    if _using_solara_server():
+        import solara.server.kernel_context
+
+        if solara.server.kernel_context.has_current_context():
+            context = solara.server.kernel_context.get_current_context()
+            if context.id != "dummy":
+                context.on_close(cleanup)
+    return cleanup
+
+
 class Singleton(Reactive[S]):
     _storage: KernelStore[S]
 
     def __init__(self, factory: Callable[[], S], key=None):
-        import solara.lifecycle
-
         super().__init__(KernelStoreFactory(factory, key=key))
 
         # reset on kernel restart (e.g. hot reload)
@@ -759,7 +911,9 @@ class Singleton(Reactive[S]):
         # kernel store, the per-kernel values) forever. Fine for module-level singletons -
         # the module pins them anyway - but per-component-instance singletons (use_task)
         # must call this cleanup on unmount or every mount leaks until process exit.
-        self._on_kernel_start_cleanup = solara.lifecycle.on_kernel_start(reset)
+        # Instances created INSIDE a kernel additionally unregister at kernel close
+        # (unmount cleanups don't run when the whole kernel goes away).
+        self._on_kernel_start_cleanup = _on_kernel_start_scoped_to_creator(reset)
 
     def __set__(self, obj, value):
         raise AttributeError("Can't set a singleton")
@@ -769,8 +923,15 @@ class Computed(Reactive[S]):
     _storage: KernelStore[S]
 
     def __init__(self, f: Callable[[], S], key=None):
-        import solara.lifecycle
-
+        if reacton.core.get_render_context(required=False) is not None:
+            site = _app_call_site()
+            if site is not None:
+                _warn_once(
+                    site,
+                    f"A Computed was created during a render ({site}). This creates a new Computed — and new "
+                    "registrations and subscriptions — on every render. Create it at module level, or use "
+                    "use_memo for values derived inside a component.",
+                )
         self.f = f
 
         def on_change(*ignore):
@@ -789,14 +950,17 @@ class Computed(Reactive[S]):
 
         super().__init__(KernelStoreFactory(factory, key=key))
 
-        # reset on kernel restart (e.g. hot reload)
+        # reset on kernel restart (e.g. hot reload). Keep the cleanup (a discarded
+        # one can never be called: a Computed created inside a component pinned
+        # itself, its closures and their captures in the process-global list forever)
+        # and unregister at kernel close for kernel-created instances.
         def reset():
             def cleanup():
                 self._storage.clear()
 
             return cleanup
 
-        solara.lifecycle.on_kernel_start(reset)
+        self._on_kernel_start_cleanup = _on_kernel_start_scoped_to_creator(reset)
 
     def __repr__(self):
         value = super().__repr__()
@@ -1066,6 +1230,17 @@ class AutoSubscribeContextManagerBase:
                 unsubscribe()
                 del self.subscribed_previous_run[reactive]
 
+    def unsubscribe_all(self):
+        """Unsubscribe everything: the owner's end-of-life cleanup (unmount or kernel close)."""
+        seen: Set[int] = set()
+        for subscriptions in (self.subscribed, self.subscribed_previous_run):
+            for unsubscribe in subscriptions.values():
+                # the same unsubscribe closure can sit in both dicts
+                if id(unsubscribe) not in seen:
+                    seen.add(id(unsubscribe))
+                    unsubscribe()
+            subscriptions.clear()
+
     def add(self, reactive: ValueBase):
         relevant_reactive = reactive
         if isinstance(reactive, ValueSubField):
@@ -1081,15 +1256,11 @@ class AutoSubscribeContextManagerBase:
         # and remove that field.
         if relevant_reactive not in self.subscribed:
             if relevant_reactive not in self.subscribed_previous_run:
-                unsubscribe = relevant_reactive.subscribe_change(lambda *args: self.on_change())
+                with _managed_subscription():
+                    unsubscribe = relevant_reactive.subscribe_change(lambda *args: self.on_change())
                 self.subscribed[relevant_reactive] = unsubscribe
             else:
                 self.subscribed[relevant_reactive] = self.subscribed_previous_run[relevant_reactive]
-
-    def unsubscribe_all(self):
-        for reactive in self.subscribed:
-            unsubscribe = self.subscribed[reactive]
-            unsubscribe()
 
     def __enter__(self):
         self.subscribed = {}
@@ -1226,6 +1397,16 @@ class AutoSubscribeContextManager(AutoSubscribeContextManagerBase):
     def __init__(self, on_change: Callable[[], None]):
         super().__init__()
         self.on_change = on_change
+        # This instance owns its subscriptions, and (for Computed) is created once
+        # per kernel: unsubscribe when that kernel closes, or every kernel leaves
+        # its subscriptions — pinning the on_change closure and everything it
+        # captures — behind on process-lifetime stores, forever
+        # (docs/memory-usage-inspection.md, case study 4).
+        if _using_solara_server():
+            import solara.server.kernel_context
+
+            if solara.server.kernel_context.has_current_context():
+                solara.server.kernel_context.get_current_context().on_close(self.unsubscribe_all)
 
 
 # alias for compatibility

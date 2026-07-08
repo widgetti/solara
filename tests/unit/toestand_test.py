@@ -223,6 +223,91 @@ def test_scopes(no_kernel_context):
         rc2.close()
 
 
+def test_kernel_close_purges_subscription_residue(no_kernel_context):
+    # subscriptions made inside a kernel without a paired unsubscribe (e.g. by
+    # Computed's auto-subscribe machinery) must not outlive the kernel: the
+    # (listener, Context) tuples on process-lifetime stores pin the listener
+    # closures and everything they capture (memory-usage-inspection.md, case
+    # study 4). Same for the process-global on_kernel_start registrations that
+    # Singleton/Computed instances create.
+    import solara.lifecycle
+
+    registry_before = len(solara.lifecycle._on_kernel_start_callbacks)
+    store = Reactive("hello")  # process-lifetime store (module-level style)
+
+    def listener_scopes(value_base) -> Set[str]:
+        # subscriptions land on one of the wrapped storages (which one depends on
+        # e.g. mutation detection); walk the chain and collect all scope ids
+        scopes: Set[str] = set()
+        current = value_base
+        while isinstance(current, toestand.ValueBase):
+            scopes |= set(current.listeners) | set(current.listeners2)
+            current = getattr(current, "_storage", None)
+        return scopes
+
+    kernel_shared = kernel.Kernel()
+    context = kernel_context.VirtualKernelContext(id="toestand-purge-1", kernel=kernel_shared, session_id="session-1")
+
+    with context:
+        # a Computed created inside a kernel (component-body style): reading it
+        # auto-subscribes to `store` under this kernel's scope, and both the
+        # Computed and its internal Singleton register on_kernel_start callbacks
+        computed = toestand.Computed(lambda: store.value + "!", key="purge-test")
+        assert computed.value == "hello!"
+        assert context.id in listener_scopes(store)
+
+    assert len(solara.lifecycle._on_kernel_start_callbacks) > registry_before
+    context.close()
+
+    # the closed kernel's scope is gone from the store (the Computed's
+    # AutoSubscribeContextManager unsubscribed itself at kernel close)...
+    assert context.id not in listener_scopes(store)
+    # ...and the kernel-start registry is back at its previous size
+    assert len(solara.lifecycle._on_kernel_start_callbacks) == registry_before
+
+
+def test_computed_created_during_render_warns(no_kernel_context):
+    toestand._warned_sites.clear()
+
+    @solara.component
+    def Page():
+        derived = toestand.Computed(lambda: 1 + 1, key="in-render-warn")
+        solara.Text(str(derived.value))
+
+    kernel_shared = kernel.Kernel()
+    context = kernel_context.VirtualKernelContext(id="toestand-warn-1", kernel=kernel_shared, session_id="session-1")
+    with context:
+        with pytest.warns(UserWarning, match="created during a render"):
+            box, rc = react.render(Page(), handle_error=False)
+    context.close()
+    toestand._warned_sites.clear()
+
+
+def test_unreleased_subscription_warns_at_kernel_close(no_kernel_context):
+    toestand._warned_sites.clear()
+    store = Reactive("hello")
+
+    context = kernel_context.VirtualKernelContext(id="toestand-warn-2", kernel=kernel.Kernel(), session_id="session-1")
+    with context:
+        store.subscribe(lambda value: None)  # cleanup never called
+    with pytest.warns(UserWarning, match="still active when its kernel closed"):
+        context.close()
+
+    # clean usage: cleanup called before close -> no warning
+    toestand._warned_sites.clear()
+    context2 = kernel_context.VirtualKernelContext(id="toestand-warn-3", kernel=kernel.Kernel(), session_id="session-1")
+    with context2:
+        unsubscribe = store.subscribe(lambda value: None)
+        unsubscribe()
+    import warnings as warnings_module
+
+    with warnings_module.catch_warnings(record=True) as records:
+        warnings_module.simplefilter("always")
+        context2.close()
+    assert not [r for r in records if "still active" in str(r.message)]
+    toestand._warned_sites.clear()
+
+
 def test_scopes_restore(no_kernel_context):
     kernel1 = kernel.Kernel()
     kernel2 = kernel.Kernel()
