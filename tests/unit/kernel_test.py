@@ -55,3 +55,28 @@ def test_comm_close_after_kernel_closed(kernel_context, no_kernel_context):
     # outside the context now: get_comm_manager() resolves to the global manager,
     # which never saw this comm
     c.close()
+
+
+def test_on_close_registration_during_close_runs(no_kernel_context):
+    # a close callback can create another per-kernel resource that registers its
+    # own on_close (e.g. a lazy factory re-created during teardown). Iterating the
+    # live callback list with reversed() silently skipped registrations that
+    # arrived mid-drain — the cleanup never ran, occasionally leaving a whole
+    # kernel's subscriptions behind. The drain must also run late arrivals.
+    from solara.server import kernel as kernel_mod
+    from solara.server.kernel_context import VirtualKernelContext
+
+    context = VirtualKernelContext(id="onclose-nested", kernel=kernel_mod.Kernel(), session_id="onclose-session")
+    ran = []
+
+    def outer():
+        context.on_close(lambda: ran.append("nested"))
+        ran.append("outer")
+
+    with context:
+        context.on_close(outer)
+    context.close()
+    assert ran == ["outer", "nested"]
+    # and registrations after close run immediately
+    context.on_close(lambda: ran.append("late"))
+    assert ran == ["outer", "nested", "late"]

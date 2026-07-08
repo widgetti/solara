@@ -135,16 +135,22 @@ class VirtualKernelContext:
     def restart(self):
         # should we do this, or maybe close the context and create a new one?
         with self:
-            for f in reversed(self._on_close_callbacks):
-                f()
-            self._on_close_callbacks.clear()
-            self._on_close_callbacks_drained = False
+            with self.lock:
+                while self._on_close_callbacks:
+                    self._on_close_callbacks.pop()()
+                self._on_close_callbacks_drained = False
             self.__post_init__()
 
     def display(self, *args):
         print(args)  # noqa
 
     def on_close(self, f: Callable[[], None]):
+        # deliberately lock-free: close() holds the context lock while draining, and a
+        # registrant may hold store/init locks — taking the context lock here can
+        # AB-BA deadlock against drain callbacks that touch those stores. The
+        # mid-drain race is closed by close() draining once more AFTER setting the
+        # drained flag: an append either lands before that second drain (and runs
+        # there) or observes the flag and runs immediately below.
         if self._on_close_callbacks_drained:
             # the context already closed: this registration comes from something
             # created AFTER close — typically a lazy per-kernel factory re-creating a
@@ -258,9 +264,17 @@ class VirtualKernelContext:
                 logger.error("Tried to close a kernel context that is already closed: %s", self.id)
                 return
             logger.info("Shut down virtual kernel: %s", self.id)
-            for f in reversed(self._on_close_callbacks):
-                f()
+            # while+pop instead of iterating: a callback can register further on_close
+            # callbacks (nested cleanups), and other threads can register while we
+            # drain — reversed() over the live list never visits items appended after
+            # it starts, silently losing those cleanups. pop() keeps LIFO order.
+            while self._on_close_callbacks:
+                self._on_close_callbacks.pop()()
             self._on_close_callbacks_drained = True
+            # cross-thread registrations that appended between the loop above and the
+            # flag write run here; later ones observe the flag and run in on_close
+            while self._on_close_callbacks:
+                self._on_close_callbacks.pop()()
             had_app = self.app_object is not None
             if self.app_object is not None:
                 if isinstance(self.app_object, reacton.core._RenderContext):
