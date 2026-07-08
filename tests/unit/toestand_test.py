@@ -235,6 +235,16 @@ def test_kernel_close_purges_subscription_residue(no_kernel_context):
     registry_before = len(solara.lifecycle._on_kernel_start_callbacks)
     store = Reactive("hello")  # process-lifetime store (module-level style)
 
+    def listener_scopes(value_base) -> Set[str]:
+        # subscriptions land on one of the wrapped storages (which one depends on
+        # e.g. mutation detection); walk the chain and collect all scope ids
+        scopes: Set[str] = set()
+        current = value_base
+        while isinstance(current, toestand.ValueBase):
+            scopes |= set(current.listeners) | set(current.listeners2)
+            current = getattr(current, "_storage", None)
+        return scopes
+
     kernel_shared = kernel.Kernel()
     context = kernel_context.VirtualKernelContext(id="toestand-purge-1", kernel=kernel_shared, session_id="session-1")
 
@@ -246,15 +256,13 @@ def test_kernel_close_purges_subscription_residue(no_kernel_context):
         assert computed.value == "hello!"
         # a bare subscription whose cleanup is never called
         store.subscribe(lambda value: None)
-        # Reactive delegates subscriptions to its storage
-        assert context.id in store._storage.listeners or context.id in store._storage.listeners2
+        assert context.id in listener_scopes(store)
 
     assert len(solara.lifecycle._on_kernel_start_callbacks) > registry_before
     context.close()
 
     # the closed kernel's scope is gone from the store...
-    assert context.id not in store._storage.listeners
-    assert context.id not in store._storage.listeners2
+    assert context.id not in listener_scopes(store)
     # ...and the kernel-start registry is back at its previous size
     assert len(solara.lifecycle._on_kernel_start_callbacks) == registry_before
 
