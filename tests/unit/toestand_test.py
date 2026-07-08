@@ -254,14 +254,13 @@ def test_kernel_close_purges_subscription_residue(no_kernel_context):
         # Computed and its internal Singleton register on_kernel_start callbacks
         computed = toestand.Computed(lambda: store.value + "!", key="purge-test")
         assert computed.value == "hello!"
-        # a bare subscription whose cleanup is never called
-        store.subscribe(lambda value: None)
         assert context.id in listener_scopes(store)
 
     assert len(solara.lifecycle._on_kernel_start_callbacks) > registry_before
     context.close()
 
-    # the closed kernel's scope is gone from the store...
+    # the closed kernel's scope is gone from the store (the Computed's
+    # AutoSubscribeContextManager unsubscribed itself at kernel close)...
     assert context.id not in listener_scopes(store)
     # ...and the kernel-start registry is back at its previous size
     assert len(solara.lifecycle._on_kernel_start_callbacks) == registry_before

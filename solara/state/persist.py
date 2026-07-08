@@ -27,6 +27,7 @@ import weakref
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Set, Tuple
 
 import solara.settings
+import solara.toestand
 import solara.util
 
 from . import derive
@@ -387,7 +388,9 @@ class KernelStatePersistence:
         inner = storage if isinstance(storage, KernelStore) else getattr(storage, "_storage", None)
         assert isinstance(inner, KernelStore), f"cannot watch reactive with storage {type(storage).__name__}"
         with self.context:
-            self._unsubscribers.append(inner.subscribe_change(_mark_dirty))
+            # managed: dispose() calls every unsubscriber
+            with solara.toestand._managed_subscription():
+                self._unsubscribers.append(inner.subscribe_change(_mark_dirty))
 
     def set_flush_scheduler(self, scheduler: Optional[Callable[[], None]]) -> None:
         """Install (or clear) the callback the write-behind worker arms on the clean->dirty edge."""
