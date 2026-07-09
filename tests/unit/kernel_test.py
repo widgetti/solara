@@ -80,3 +80,57 @@ def test_on_close_registration_during_close_runs(no_kernel_context):
     # and registrations after close run immediately
     context.on_close(lambda: ran.append("late"))
     assert ran == ["outer", "nested", "late"]
+
+
+def test_on_close_check_then_append_race_does_not_lose_callback(no_kernel_context):
+    # on_close() reads _on_close_callbacks_drained and THEN appends, non-atomically,
+    # while close() drains lock-free. A registrant that reads the flag as False can be
+    # preempted; close() then finishes BOTH drains and sets the flag; the registrant
+    # resumes and appends into a list nobody will ever drain -> the callback is lost.
+    # For a fresh AutoSubscribeContextManager.unsubscribe_all registered this way, the
+    # kernel's subscriptions leak under a dead context. Deterministic: block the
+    # registrant inside append until close() has fully returned.
+    import threading
+
+    from solara.server import kernel as kernel_mod
+    from solara.server.kernel_context import VirtualKernelContext
+
+    context = VirtualKernelContext(id="onclose-race", kernel=kernel_mod.Kernel(), session_id="onclose-race-session")
+
+    in_append = threading.Event()
+    may_proceed = threading.Event()
+
+    class BlockingAppendList(list):
+        armed = False
+
+        def append(self, item):
+            if self.armed:
+                self.armed = False  # only the first (raced) append blocks
+                in_append.set()
+                assert may_proceed.wait(timeout=5)
+            super().append(item)
+
+    blocking = BlockingAppendList()
+    blocking.extend(context._on_close_callbacks)  # preserve any on_kernel_start cleanups
+    context._on_close_callbacks = blocking
+
+    ran = []
+
+    def register():
+        # reads _on_close_callbacks_drained == False, then blocks inside append
+        context.on_close(lambda: ran.append("raced"))
+
+    blocking.armed = True
+    t = threading.Thread(target=register)
+    t.start()
+    assert in_append.wait(timeout=5)  # registrant read the flag False, now stuck in append
+
+    context.close()  # drains, sets the flag, second drain (empty), returns
+
+    may_proceed.set()  # let the append land AFTER close has finished
+    t.join(timeout=5)
+    assert not t.is_alive()
+
+    # the raced callback must still run: a correct on_close rechecks the drained flag
+    # after appending and runs the cleanup if close() finished in the meantime.
+    assert ran == ["raced"]

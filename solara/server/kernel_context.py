@@ -136,8 +136,15 @@ class VirtualKernelContext:
         # should we do this, or maybe close the context and create a new one?
         with self:
             with self.lock:
-                while self._on_close_callbacks:
-                    self._on_close_callbacks.pop()()
+                # defensive pop, same as close(): keeps restart robust against a
+                # concurrent on_close remove() rather than relying on the invariant
+                # that restart only runs on a live (drained=False) context.
+                while True:
+                    try:
+                        cb = self._on_close_callbacks.pop()
+                    except IndexError:
+                        break
+                    cb()
                 self._on_close_callbacks_drained = False
             self.__post_init__()
 
@@ -147,10 +154,7 @@ class VirtualKernelContext:
     def on_close(self, f: Callable[[], None]):
         # deliberately lock-free: close() holds the context lock while draining, and a
         # registrant may hold store/init locks — taking the context lock here can
-        # AB-BA deadlock against drain callbacks that touch those stores. The
-        # mid-drain race is closed by close() draining once more AFTER setting the
-        # drained flag: an append either lands before that second drain (and runs
-        # there) or observes the flag and runs immediately below.
+        # AB-BA deadlock against drain callbacks that touch those stores.
         if self._on_close_callbacks_drained:
             # the context already closed: this registration comes from something
             # created AFTER close — typically a lazy per-kernel factory re-creating a
@@ -161,6 +165,26 @@ class VirtualKernelContext:
             f()
             return
         self._on_close_callbacks.append(f)
+        # the flag read above and this append are not atomic, and close() drains
+        # lock-free: close() can set the flag AND finish its final drain between our
+        # read and our append, stranding f in a list nobody will drain again. Re-check;
+        # if we raced, remove and run f ourselves. Exactly once for a uniquely-registered
+        # callback: close()'s drain pops it or our remove() takes it — whoever empties the
+        # entry first wins, the other no-ops (ValueError / already gone). close()'s drain
+        # pops defensively so our remove() cannot crash it. list.remove is a single
+        # GIL-atomic scan+remove (safer here than a Python-level identity scan, which
+        # would reintroduce race points), but it matches by ==: this assumes registered
+        # callbacks are identity-distinct. solara's own on_close callers pass fresh
+        # closures / unique bound methods; a user on_kernel_start cleanup registered as
+        # value-equal duplicates is the only way to mis-target, which solara never does.
+        # Exactly-once here relies on CPython GIL atomicity of list append/pop/remove and
+        # the flag write ordering; revisit for a free-threaded (no-GIL) build.
+        if self._on_close_callbacks_drained:
+            try:
+                self._on_close_callbacks.remove(f)
+            except ValueError:
+                return  # close()'s drain already popped and ran it
+            f()
 
     async def __aenter__(self):
         stack = async_stack.get()
@@ -268,13 +292,24 @@ class VirtualKernelContext:
             # callbacks (nested cleanups), and other threads can register while we
             # drain — reversed() over the live list never visits items appended after
             # it starts, silently losing those cleanups. pop() keeps LIFO order.
-            while self._on_close_callbacks:
-                self._on_close_callbacks.pop()()
+            # Defensive pop: on_close()'s post-append recheck can remove() an entry
+            # concurrently, so a `while list: pop()` (non-atomic check-then-pop) could
+            # pop a just-emptied list — catch IndexError so a race never crashes teardown.
+            while True:
+                try:
+                    cb = self._on_close_callbacks.pop()
+                except IndexError:
+                    break
+                cb()
             self._on_close_callbacks_drained = True
             # cross-thread registrations that appended between the loop above and the
             # flag write run here; later ones observe the flag and run in on_close
-            while self._on_close_callbacks:
-                self._on_close_callbacks.pop()()
+            while True:
+                try:
+                    cb = self._on_close_callbacks.pop()
+                except IndexError:
+                    break
+                cb()
             had_app = self.app_object is not None
             if self.app_object is not None:
                 if isinstance(self.app_object, reacton.core._RenderContext):
