@@ -55,3 +55,38 @@ def test_comm_close_after_kernel_closed(kernel_context, no_kernel_context):
     # outside the context now: get_comm_manager() resolves to the global manager,
     # which never saw this comm
     c.close()
+
+
+def test_comm_info_request_filters_on_target_name():
+    # The widget manager's fetchAll (_loadFromKernel) asks for comms with
+    # target_name="jupyter.widget" and then sends request_state to every comm id
+    # in the reply. The solara.control comm (run/reload/app-status) must therefore
+    # never appear in that reply: it does not speak the widget protocol, so each
+    # leaked id produces an "Unknown comm method called on solara.control comm:
+    # request_state" error on the server (seen in production since the reconnect
+    # state machine started calling fetchAll on every hot reconnect).
+    from unittest.mock import Mock
+
+    from solara.server import kernel as kernel_mod
+    from solara.server.server import process_kernel_messages
+
+    kernel = kernel_mod.Kernel()
+    try:
+        websocket = Mock()
+        kernel.session.websockets.add(websocket)
+        kernel.shell_stream = kernel_mod.WebsocketStreamWrapper(websocket, "shell")
+        kernel.comm_manager.comms["widget-comm-id"] = Mock(target_name="jupyter.widget")  # type: ignore
+        kernel.comm_manager.comms["control-comm-id"] = Mock(target_name="solara.control")  # type: ignore
+
+        msg = kernel.session.msg("comm_info_request", content={"target_name": "jupyter.widget"})
+        msg["channel"] = "shell"
+        process_kernel_messages(kernel, msg)
+
+        replies = [json.loads(call.args[0]) for call in websocket.send.call_args_list]
+        comm_info_replies = [m for m in replies if m["header"]["msg_type"] == "comm_info_reply"]
+        assert len(comm_info_replies) == 1
+        comms = comm_info_replies[0]["content"]["comms"]
+        assert comms == {"widget-comm-id": {"target_name": "jupyter.widget"}}
+    finally:
+        kernel.comm_manager.comms.clear()  # type: ignore
+        kernel.close()

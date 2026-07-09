@@ -246,7 +246,10 @@ def process_kernel_messages(kernel: Kernel, msg: Dict) -> bool:
         return True
     elif msg_type in ["comm_info_request"]:
         content = msg["content"]
-        target_name = msg.get("target_name", None)
+        # target_name lives in the message CONTENT (Jupyter protocol); reading it from the
+        # top-level msg made the filter always None, so the reply leaked non-widget comms
+        # (solara.control) to the widget manager, which then request_state's them.
+        target_name = content.get("target_name", None)
 
         comms = {
             k: dict(target_name=v.target_name)
