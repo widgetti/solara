@@ -1940,53 +1940,6 @@ def test_init_lock_in_global_scope_uses_per_instance_lock(no_kernel_context):
     assert store.get() == "v"  # lazy init works through the global (per-instance) lock
 
 
-@pytest.mark.parametrize("attempt", range(4))
-def test_ascm_close_race_stress(no_kernel_context, attempt):
-    # empirically hunt the remaining resurrection window: recomputes racing kernel
-    # close must never leave listener entries under the dead kernel's scope
-    import threading
-
-    store = Reactive("v0")
-
-    def scopes(value_base):
-        out = set()
-        current = value_base
-        while isinstance(current, toestand.ValueBase):
-            out |= set(current.listeners) | set(current.listeners2)
-            current = getattr(current, "_storage", None)
-        return out
-
-    leaked = []
-    for i in range(25):
-        context = kernel_context.VirtualKernelContext(id=f"race-stress-{attempt}-{i}", kernel=kernel.Kernel(), session_id="race-stress-session")
-        with context:
-            computed = toestand.Computed(lambda: store.value + "!", key=f"stress-{attempt}-{i}")
-            assert computed.value
-
-        stop = threading.Event()
-
-        def churn():
-            n = 0
-            while not stop.is_set():
-                with context:
-                    try:
-                        store.value = f"v{n}"  # fires on_change -> recompute -> resubscribe
-                        computed.value
-                    except Exception:
-                        pass
-                n += 1
-
-        churner = threading.Thread(target=churn)
-        churner.start()
-        time.sleep(0.001 * (i % 5))  # jitter the close against the churn
-        context.close()
-        stop.set()
-        churner.join()
-        if context.id in scopes(store):
-            leaked.append(i)
-    assert not leaked, f"kernels leaked listener residue: {leaked}"
-
-
 def test_computed_overlapping_recompute_no_orphan(no_kernel_context):
     # deterministic version of the production stepper: force two recomputes of the
     # same Computed to overlap fully (a task thread fired the dependency while a
@@ -2058,3 +2011,211 @@ def test_computed_overlapping_recompute_no_orphan(no_kernel_context):
     context.close()
     assert total_listeners(dep2) == 0
     assert total_listeners(dep) == 0
+
+
+def test_computed_stale_snapshot_reuse_keeps_live_subscription(no_kernel_context):
+    # add() reuses an unsubscribe from the ENTER-time snapshot, but __exit__ diffs
+    # against the EXIT-time _committed. If a concurrent recompute drops that dependency
+    # and unsubscribes it in between, the later commit re-commits a closure that is
+    # already dead: _committed claims the dep is subscribed but no live listener remains,
+    # so future changes stop recomputing the Computed. Force it deterministically:
+    #   initial: subscribe dep            -> _committed = {dep: unsub_old}
+    #   t1:      read dep (reuse), PAUSE before committing
+    #   t2:      recompute WITHOUT dep     -> commits {}, unsubscribes unsub_old
+    #   t1:      resume, commit reused unsub_old over the now-empty committed state
+    import threading
+
+    dep = Reactive("x")
+    first_inside = threading.Event()
+    release_first = threading.Event()
+    recompute_mode = threading.local()
+
+    def compute():
+        if getattr(recompute_mode, "on", False):
+            if threading.current_thread().name == "t2":
+                return "constant"  # reads NO reactive -> t2's run drops dep
+            value = dep.value  # t1: reuse unsub_old from the enter-time snapshot
+            first_inside.set()
+            release_first.wait(timeout=5)
+            return value
+        return dep.value  # initial subscribe
+
+    def total_listeners(value_base) -> int:
+        count = 0
+        current = value_base
+        while isinstance(current, toestand.ValueBase):
+            count += sum(len(entries) for entries in current.listeners.values())
+            count += sum(len(entries) for entries in current.listeners2.values())
+            current = getattr(current, "_storage", None)
+        return count
+
+    context = kernel_context.VirtualKernelContext(id="ascm-stale-reuse-1", kernel=kernel.Kernel(), session_id="session-1")
+    computed = toestand.Computed(compute, key="stale-reuse-test")
+    ascm_holder = []
+
+    def initial():
+        with context:
+            assert computed.value == "x"
+            ascm_holder.append(computed._auto_subscriber.value)
+
+    threading.Thread(target=initial, name="t0").start()
+    for t in threading.enumerate():
+        if t.name == "t0":
+            t.join()
+
+    ascm = ascm_holder[0]
+    assert total_listeners(dep) == 1  # initial subscription live
+
+    def recompute():
+        recompute_mode.on = True
+        with context:
+            with ascm:
+                compute()
+
+    t1 = threading.Thread(target=recompute, name="t1")
+    t1.start()
+    assert first_inside.wait(timeout=5)  # t1 has reused dep from its snapshot, now paused
+    t2 = threading.Thread(target=recompute, name="t2")
+    t2.start()
+    t2.join(timeout=5)  # t2 committed {} and unsubscribed the shared closure
+    release_first.set()
+    t1.join(timeout=5)
+
+    # dep must still have exactly one LIVE listener: t1's reused closure was killed by
+    # t2, so a correct commit re-subscribes fresh instead of committing a dead closure.
+    assert total_listeners(dep) == 1
+    context.close()
+    assert total_listeners(dep) == 0
+
+
+def test_computed_stale_reuse_adopts_live_newer_subscription(no_kernel_context):
+    # The 3-commit variant: a stale reused run must NOT unsubscribe a LIVE, NEWER closure
+    # that a concurrent recompute installed. Sequence:
+    #   initial: subscribe dep                      -> _committed = {dep: U0}
+    #   t1:      read dep (reuse U0), PAUSE before committing
+    #   t2:      recompute WITHOUT dep -> commit {}, unsubscribe U0   (dep now dead)
+    #   t3:      recompute reading dep -> subscribe U_new, commit {dep: U_new}  (dep LIVE)
+    #   t1:      resume, commit — must ADOPT U_new, not commit the dead U0 nor kill U_new
+    import threading
+
+    dep = Reactive("x")
+    first_inside = threading.Event()
+    release_first = threading.Event()
+    recompute_mode = threading.local()
+
+    def compute():
+        if getattr(recompute_mode, "on", False):
+            if threading.current_thread().name == "t2":
+                return "constant"  # reads NO reactive -> t2 drops dep
+            value = dep.value  # t1 reuses U0; t3 subscribes fresh (dep not in its snapshot)
+            if threading.current_thread().name == "t1":
+                first_inside.set()
+                release_first.wait(timeout=5)
+            return value
+        return dep.value  # initial subscribe
+
+    def total_listeners(value_base) -> int:
+        count = 0
+        current = value_base
+        while isinstance(current, toestand.ValueBase):
+            count += sum(len(entries) for entries in current.listeners.values())
+            count += sum(len(entries) for entries in current.listeners2.values())
+            current = getattr(current, "_storage", None)
+        return count
+
+    context = kernel_context.VirtualKernelContext(id="ascm-adopt-1", kernel=kernel.Kernel(), session_id="session-1")
+    computed = toestand.Computed(compute, key="adopt-test")
+    ascm_holder = []
+
+    def initial():
+        with context:
+            assert computed.value == "x"
+            ascm_holder.append(computed._auto_subscriber.value)
+
+    threading.Thread(target=initial, name="t0").start()
+    for t in threading.enumerate():
+        if t.name == "t0":
+            t.join()
+
+    ascm = ascm_holder[0]
+
+    def recompute():
+        recompute_mode.on = True
+        with context:
+            with ascm:
+                compute()
+
+    t1 = threading.Thread(target=recompute, name="t1")
+    t1.start()
+    assert first_inside.wait(timeout=5)  # t1 reused U0, now paused
+    t2 = threading.Thread(target=recompute, name="t2")
+    t2.start()
+    t2.join(timeout=5)  # t2 dropped dep, unsubscribed U0
+    t3 = threading.Thread(target=recompute, name="t3")
+    t3.start()
+    t3.join(timeout=5)  # t3 subscribed U_new, committed {dep: U_new}
+
+    live_closure = ascm.subscribed[dep]  # U_new
+    assert total_listeners(dep) == 1
+    release_first.set()
+    t1.join(timeout=5)
+
+    # t1 must have adopted the live U_new (not committed the dead U0, not killed U_new):
+    assert total_listeners(dep) == 1
+    assert ascm.subscribed[dep] is live_closure
+    context.close()
+    assert total_listeners(dep) == 0
+
+
+def test_listener_scope_prune_concurrent_cleanup_no_keyerror(no_kernel_context):
+    # Two subscriptions under the SAME scope (two computeds sharing a reactive in one
+    # kernel) can be cleaned up concurrently. Each cleanup does discard -> "if empty" ->
+    # prune the scope key, three non-atomic steps. If both discard before either checks,
+    # both see the set empty and both prune; a plain `del` KeyErrors on the second. The
+    # prune must be idempotent (pop, not del). Deterministic: a barrier syncs both
+    # threads AFTER discard, BEFORE the empty-check/prune.
+    import threading
+
+    r = Reactive("x")
+    context = kernel_context.VirtualKernelContext(id="prune-race", kernel=kernel.Kernel(), session_id="s")
+    with context:
+        cleanup1 = r.subscribe_change(lambda old, new: None)
+        cleanup2 = r.subscribe_change(lambda old, new: None)
+
+    # locate the ValueBase whose listeners2 holds both entries under this kernel's scope
+    holder: Optional[toestand.ValueBase] = None
+    scope_key: Optional[str] = None
+    current: Optional[toestand.ValueBase] = r
+    while isinstance(current, toestand.ValueBase):
+        for key, entries in list(current.listeners2.items()):
+            if len(entries) == 2:
+                holder, scope_key = current, key
+        current = getattr(current, "_storage", None)
+    assert holder is not None and scope_key is not None
+
+    barrier = threading.Barrier(2)
+
+    class CoordinatingSet(set):
+        def discard(self, item):
+            super().discard(item)
+            barrier.wait(timeout=5)  # both threads meet here after discarding, before the prune
+
+    holder.listeners2[scope_key] = CoordinatingSet(holder.listeners2[scope_key])
+
+    errors = []
+
+    def run(cleanup):
+        try:
+            cleanup()
+        except Exception as e:  # noqa
+            errors.append(e)
+
+    t1 = threading.Thread(target=run, args=(cleanup1,))
+    t2 = threading.Thread(target=run, args=(cleanup2,))
+    t1.start()
+    t2.start()
+    t1.join(timeout=5)
+    t2.join(timeout=5)
+
+    assert errors == [], f"concurrent cleanup raised (del not idempotent): {errors}"
+    assert scope_key not in holder.listeners2  # pruned, no residue

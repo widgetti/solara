@@ -251,9 +251,12 @@ class ValueBase(Generic[T]):
             if entries is not None:
                 entries.discard((listener, context))
                 # prune the scope entry itself: unsubscribing must leave no residue,
-                # or every kernel that ever subscribed leaves an empty set behind
+                # or every kernel that ever subscribed leaves an empty set behind.
+                # pop(default), not del: two cleanups for the same scope (concurrent
+                # recomputes of two computeds sharing a reactive) can both observe the
+                # set empty and both prune — a plain del KeyErrors on the second.
                 if not entries:
-                    del self.listeners[scope_id]
+                    self.listeners.pop(scope_id, None)
 
         return cleanup
 
@@ -280,7 +283,7 @@ class ValueBase(Generic[T]):
             if entries is not None:
                 entries.discard((listener, context))
                 if not entries:
-                    del self.listeners2[scope_id]
+                    self.listeners2.pop(scope_id, None)  # idempotent under concurrent cleanup (see listeners above)
 
         return cleanup
 
@@ -1304,19 +1307,46 @@ class AutoSubscribeContextManagerBase:
         self._run_local.reactive_used_before = None
         self._run_local.previous_reactive_watch = None
         run = self._run_local.run
+        snapshot: Dict[ValueBase, Callable] = self._run_local.snapshot or {}
         self._run_local.run = None
         self._run_local.snapshot = None
         if run is None:
             return
-        # commit: swap the committed dict, then unsubscribe whatever the new state no
-        # longer holds. Every run dict enters the committed chain exactly once (under
-        # the lock), so concurrent commits diff against each other instead of
-        # orphaning: the loser's fresh subscriptions are removed by the next diff.
-        with self._commit_lock:
-            old = self._committed
-            closed = self.closed
-            if not closed:
-                self._committed = run
+        # commit invariant: _committed only ever holds LIVE closures, so old.get(r) read
+        # under the lock is a liveness oracle. Entries add() copied verbatim from the
+        # enter-time snapshot are "reused": their closure was live at __enter__, but a
+        # concurrent commit may have dropped and unsubscribed it since (the enter snapshot
+        # is stale vs the exit-time committed dict). Identity recovers the reused set with
+        # no bookkeeping in add(): every other entry is a closure we subscribed this run.
+        reused = {r for r, unsubscribe in run.items() if snapshot.get(r) is unsubscribe}
+        # For each reused dep, adopt whatever closure is currently live (pure dict work,
+        # under the lock); a dep with no live closure was genuinely orphaned by a
+        # concurrent drop and must be re-subscribed (user code, OUTSIDE the lock), after
+        # which we re-validate under the lock. Bounded: each pass either commits or
+        # converts >=1 reused dep to an owned fresh subscription (reused only shrinks).
+        old: Dict[ValueBase, Callable] = {}
+        while True:
+            need_subscribe = []
+            with self._commit_lock:
+                old = self._committed
+                closed = self.closed
+                if not closed:
+                    for reactive in reused:
+                        live = old.get(reactive)
+                        if live is not None:
+                            run[reactive] = live  # adopt the currently-live closure
+                        else:
+                            need_subscribe.append(reactive)  # orphaned: no live listener
+                    if not need_subscribe:
+                        self._committed = run
+            if closed or not need_subscribe:
+                break
+            for reactive in need_subscribe:
+                with _managed_subscription():
+                    run[reactive] = reactive.subscribe_change(lambda *args: self.on_change())
+                reused.discard(reactive)  # now a closure we own; never re-validated again
+        # diff outside the lock: unsubscribe whatever the new committed state no longer
+        # holds (adopted closures are `is` their old entry, so they survive the diff).
         for reactive, unsubscribe in old.items():
             if closed or run.get(reactive) is not unsubscribe:
                 unsubscribe()
