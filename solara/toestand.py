@@ -163,6 +163,19 @@ class ValueBase(Generic[T]):
         self.equals = equals
         self.listeners: Dict[str, Set[Tuple[Callable[[T], None], Optional[ContextManager]]]] = defaultdict(set)
         self.listeners2: Dict[str, Set[Tuple[Callable[[T, T], None], Optional[ContextManager]]]] = defaultdict(set)
+        # leaf lock guarding ONLY listeners/listeners2 mutations (subscribe's add and the
+        # cleanup's discard + empty-check + prune). Makes the empty-check and the prune
+        # atomic w.r.t. a concurrent subscribe, so a stale prune can no longer drop a
+        # freshly-added subscription (which would silently make a Computed stop updating).
+        # Held across set/dict ops only — never fire() or a user callback — and it acquires
+        # no other lock, so it is a strict leaf and cannot join a lock cycle (in particular
+        # it never re-opens the store-lock<->context.lock edge). set.add hashes the
+        # (listener, context) entry, but that is identity-based for every listener solara
+        # subscribes (functions/lambdas/bound methods) and Context.__hash__ is a pure id
+        # XOR, so no user code runs under the lock. A listener with a side-effecting
+        # __hash__ would break this — but that violates Python's data model everywhere a
+        # callable is put in a set/dict, not only here.
+        self._listeners_lock = threading.Lock()
 
     # make sure all boolean operations give type errors
     if not solara.settings.main.allow_reactive_boolean:
@@ -241,22 +254,25 @@ class ValueBase(Generic[T]):
             kernel = nullcontext()
         context = Context(rc, kernel)
 
-        self.listeners[scope_id].add((listener, context))
+        with self._listeners_lock:
+            self.listeners[scope_id].add((listener, context))
         leak_check = self._track_subscription()
 
         def cleanup():
             if leak_check is not None:
                 leak_check.resolved = True
-            entries = self.listeners.get(scope_id)
-            if entries is not None:
-                entries.discard((listener, context))
-                # prune the scope entry itself: unsubscribing must leave no residue,
-                # or every kernel that ever subscribed leaves an empty set behind.
-                # pop(default), not del: two cleanups for the same scope (concurrent
-                # recomputes of two computeds sharing a reactive) can both observe the
-                # set empty and both prune — a plain del KeyErrors on the second.
-                if not entries:
-                    self.listeners.pop(scope_id, None)
+            with self._listeners_lock:
+                entries = self.listeners.get(scope_id)
+                if entries is not None:
+                    entries.discard((listener, context))
+                    # prune the scope entry itself: unsubscribing must leave no residue,
+                    # or every kernel that ever subscribed leaves an empty set behind.
+                    # empty-check + prune run under _listeners_lock (the same lock the add
+                    # takes), so a concurrent subscribe cannot slip its add in between the
+                    # check and the prune and get dropped. pop(default) also no-ops if a
+                    # peer cleanup already pruned this scope.
+                    if not entries:
+                        self.listeners.pop(scope_id, None)
 
         return cleanup
 
@@ -273,17 +289,19 @@ class ValueBase(Generic[T]):
         else:
             kernel = nullcontext()
         context = Context(rc, kernel)
-        self.listeners2[scope_id].add((listener, context))
+        with self._listeners_lock:
+            self.listeners2[scope_id].add((listener, context))
         leak_check = self._track_subscription()
 
         def cleanup():
             if leak_check is not None:
                 leak_check.resolved = True
-            entries = self.listeners2.get(scope_id)
-            if entries is not None:
-                entries.discard((listener, context))
-                if not entries:
-                    self.listeners2.pop(scope_id, None)  # idempotent under concurrent cleanup (see listeners above)
+            with self._listeners_lock:
+                entries = self.listeners2.get(scope_id)
+                if entries is not None:
+                    entries.discard((listener, context))
+                    if not entries:  # atomic with the add under _listeners_lock (see listeners above)
+                        self.listeners2.pop(scope_id, None)
 
         return cleanup
 

@@ -2167,55 +2167,68 @@ def test_computed_stale_reuse_adopts_live_newer_subscription(no_kernel_context):
     assert total_listeners(dep) == 0
 
 
-def test_listener_scope_prune_concurrent_cleanup_no_keyerror(no_kernel_context):
-    # Two subscriptions under the SAME scope (two computeds sharing a reactive in one
-    # kernel) can be cleaned up concurrently. Each cleanup does discard -> "if empty" ->
-    # prune the scope key, three non-atomic steps. If both discard before either checks,
-    # both see the set empty and both prune; a plain `del` KeyErrors on the second. The
-    # prune must be idempotent (pop, not del). Deterministic: a barrier syncs both
-    # threads AFTER discard, BEFORE the empty-check/prune.
+def test_listener_scope_prune_atomic_vs_concurrent_subscribe(no_kernel_context):
+    # The prune-vs-subscribe race: a cleanup that finds a scope empty and prunes it must
+    # not drop a subscription a concurrent subscribe adds between the empty-check and the
+    # prune. Without the leaf lock that add lands in the about-to-be-pruned set and is
+    # silently lost (the subscriber goes deaf to the reactive). Force the exact
+    # interleaving: stall the cleanup inside pop() (after the empty-check) while it holds
+    # _listeners_lock, then subscribe on another thread. With the lock the add blocks
+    # until the prune finishes and then re-creates the scope, so it survives.
     import threading
+    from collections import defaultdict
 
     r = Reactive("x")
-    context = kernel_context.VirtualKernelContext(id="prune-race", kernel=kernel.Kernel(), session_id="s")
+    context = kernel_context.VirtualKernelContext(id="prune-sub-race", kernel=kernel.Kernel(), session_id="s")
     with context:
-        cleanup1 = r.subscribe_change(lambda old, new: None)
-        cleanup2 = r.subscribe_change(lambda old, new: None)
+        cleanup_a = r.subscribe_change(lambda old, new: None)
 
-    # locate the ValueBase whose listeners2 holds both entries under this kernel's scope
     holder: Optional[toestand.ValueBase] = None
     scope_key: Optional[str] = None
     current: Optional[toestand.ValueBase] = r
     while isinstance(current, toestand.ValueBase):
         for key, entries in list(current.listeners2.items()):
-            if len(entries) == 2:
+            if len(entries) == 1:
                 holder, scope_key = current, key
         current = getattr(current, "_storage", None)
     assert holder is not None and scope_key is not None
 
-    barrier = threading.Barrier(2)
+    in_pop = threading.Event()
+    proceed = threading.Event()
+    added = threading.Event()
 
-    class CoordinatingSet(set):
-        def discard(self, item):
-            super().discard(item)
-            barrier.wait(timeout=5)  # both threads meet here after discarding, before the prune
+    class PausingPopDict(defaultdict):
+        armed = False
 
-    holder.listeners2[scope_key] = CoordinatingSet(holder.listeners2[scope_key])
+        def pop(self, *args, **kwargs):
+            if self.armed:
+                self.armed = False
+                in_pop.set()
+                proceed.wait(timeout=5)
+            return super().pop(*args, **kwargs)
 
-    errors = []
+    holder.listeners2 = PausingPopDict(set, holder.listeners2)
+    holder.listeners2.armed = True
 
-    def run(cleanup):
-        try:
-            cleanup()
-        except Exception as e:  # noqa
-            errors.append(e)
+    def run_cleanup():
+        cleanup_a()  # discard 'a' -> empty -> pop [pauses inside pop, holding _listeners_lock]
 
-    t1 = threading.Thread(target=run, args=(cleanup1,))
-    t2 = threading.Thread(target=run, args=(cleanup2,))
-    t1.start()
-    t2.start()
-    t1.join(timeout=5)
-    t2.join(timeout=5)
+    def run_subscribe():
+        with context:
+            r.subscribe_change(lambda old, new: None)  # the racing add
+        added.set()
 
-    assert errors == [], f"concurrent cleanup raised (del not idempotent): {errors}"
-    assert scope_key not in holder.listeners2  # pruned, no residue
+    tc = threading.Thread(target=run_cleanup, name="cleanup")
+    tc.start()
+    assert in_pop.wait(timeout=5)  # cleanup paused inside pop (holding the lock on fixed code)
+    ts = threading.Thread(target=run_subscribe, name="subscribe")
+    ts.start()
+    # buggy: the add lands in the doomed set and completes quickly; fixed: the add blocks
+    # on _listeners_lock and does not complete (this wait times out).
+    added.wait(timeout=0.5)
+    proceed.set()
+    tc.join(timeout=5)
+    ts.join(timeout=5)
+
+    # the racing subscription must be live: exactly one entry under the scope
+    assert len(holder.listeners2.get(scope_key, set())) == 1
