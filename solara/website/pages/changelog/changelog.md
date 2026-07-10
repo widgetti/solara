@@ -1,5 +1,10 @@
 # Solara Changelog
 
+## Version 1.60.3
+
+   * Bug Fix: Release reactive subscriptions and kernel-scoped state without restart/close races or deadlocks. [db6eaf64](https://github.com/widgetti/solara/commit/db6eaf64)
+   * Bug Fix: Filter `comm_info_request` replies by `target_name` so control comms are not exposed to the widget manager. [9a684a82](https://github.com/widgetti/solara/commit/9a684a82)
+
 ## Version 1.60.2
 
    * Bug Fix: Purge per-kernel subscription residue at kernel close (#1189). [5a1cbbfc](https://github.com/widgetti/solara/commit/5a1cbbfc)
