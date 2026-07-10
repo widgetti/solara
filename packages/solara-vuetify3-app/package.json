@@ -17,7 +17,7 @@
     "@widgetti/solara-widget-manager8": "file:../solara-widget-manager8",
     "material-design-icons-iconfont": "^5.0.1",
     "typeface-roboto": "0.0.54",
-    "vue": "^3.3.4",
+    "vue": "^3.5.39",
     "vuetify": "3.5.18"
   },
   "devDependencies": {

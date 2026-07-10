@@ -3,6 +3,7 @@
     <h4>{{d.agg}}</h4>
       <div style="padding: 0px">
       <table class="pivottable">
+        <tbody>
         <tr v-for="(header, i) in d.headers_x">
           <th v-for="axis in Math.max(0, d.y.length-1)"></th>
           <th>{{d.x[i]}}</th>
@@ -30,17 +31,17 @@
         </tr>
 
         <tr>
-          <th>Total </td>
+          <th>Total </th>
           <th v-for="axis in Math.max(0, d.y.length-1)"></th>
           <td v-for="value in d.values_x">{{value}} </td>
           <td>
             {{d.total}}
           </td>
         </tr>
+        </tbody>
       </table>
       </div>
   </div>
-</div>
 </template>
 
 <script id="pivottable-vaex">
