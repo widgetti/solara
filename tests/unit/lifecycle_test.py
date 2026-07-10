@@ -1,5 +1,6 @@
 import asyncio
 import sys
+import threading
 import time
 from unittest.mock import Mock
 
@@ -117,29 +118,39 @@ async def test_kernel_lifecycle_close_single(close_first, short_cull_timeout):
 
 @pytest.mark.skipif(on_windows, reason="This test is flaky on Windows")
 @pytest.mark.parametrize("close_first", [True, False])
-async def test_kernel_lifecycle_close_while_disconnected(close_first, short_cull_timeout):
+async def test_kernel_lifecycle_close_while_disconnected(close_first, monkeypatch):
+    real_sleep = asyncio.sleep
+    cull_started = threading.Event()
+    release_cull = threading.Event()
+
+    async def controlled_cull_sleep(delay):
+        cull_started.set()
+        while not release_cull.is_set():
+            await real_sleep(0.01)
+
+    monkeypatch.setattr(asyncio, "sleep", controlled_cull_sleep)
     # a reconnect should be possible within the reconnect window
     websocket = Mock()
     context = kernel_context.initialize_virtual_kernel(f"session-id-1-{close_first}", f"kernel-id-1-{close_first}", websocket)
     context.page_connect("page-id-1")
     cull_task_1 = context.page_disconnect("page-id-1")
-    await asyncio.sleep(0.1)
-    # after 0.1 we connect again, but close it directly
+    assert cull_started.wait(timeout=5)
     context.page_connect("page-id-2")
+    with pytest.raises(asyncio.CancelledError):
+        await cull_task_1
+    cull_started.clear()
     if close_first:
         cull_task_2 = context.page_close("page-id-2")
-        await asyncio.sleep(0.01)
+        assert cull_started.wait(timeout=5)
         context.page_disconnect("page-id-2")
     else:
         context.page_disconnect("page-id-2")
-        await asyncio.sleep(0.01)
+        assert cull_started.wait(timeout=5)
+        cull_started.clear()
         cull_task_2 = context.page_close("page-id-2")
+        assert cull_started.wait(timeout=5)
     assert cull_task_2 is not None
     assert not context.closed_event.is_set()
-    await asyncio.sleep(0.15)
-    # but even though we closed, the first page is still in the disconnected state
-    with pytest.raises(asyncio.CancelledError):
-        await cull_task_1
-    assert not context.closed_event.is_set()
+    release_cull.set()
     await cull_task_2
     assert context.closed_event.is_set()
