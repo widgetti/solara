@@ -1,7 +1,12 @@
 import ipyvuetify as v
+from pathlib import Path
 
 import solara
+from solara.components.datatable import DataTableWidget
+from solara.components.file_browser import FileListWidget
+from solara.components.sql_code import SqlCodeWidget
 from solara.util import IPYVUETIFY_V3
+from solara.widgets import GridLayout
 
 
 def test_alert_props_match_installed_ipyvuetify():
@@ -97,3 +102,47 @@ def test_details_uses_available_panel_components():
         assert rc.find(v.ExpansionPanelHeader).widget.children == ["summary"]
         assert rc.find(v.ExpansionPanelContent).widget.children == ["details"]
     rc.close()
+
+
+def test_datatable_uses_version_specific_template():
+    widget = DataTableWidget()
+    assert ("v-data-table-server" in widget.template.template) is IPYVUETIFY_V3
+
+
+def test_datatable_default_options_are_renderable():
+    widget = DataTableWidget()
+    assert widget.options == {"page": 1, "itemsPerPage": 20, "sortBy": []}
+
+
+def test_gridlayout_uses_version_specific_template():
+    widget = GridLayout()
+    assert ('v-model:layout="grid_layout"' in widget.template.template) is IPYVUETIFY_V3
+
+
+def test_file_list_uses_version_specific_template():
+    widget = FileListWidget()
+    assert ('class="solara-file-list-row"' in widget.template.template) is IPYVUETIFY_V3
+
+
+def test_sql_code_uses_version_specific_template():
+    widget = SqlCodeWidget()
+    assert ("<v-subheader" not in widget.template.template) is IPYVUETIFY_V3
+
+
+def test_server_widget_mount_bridge_guards_vue3_registration():
+    source = (Path(solara.__file__).parent / "server/static/main-vuetify.js").read_text()
+    assert "component: undefined" in source
+    assert "if (Vue.h && ['VueTemplateModel', 'VuetifyTemplateModel', 'HtmlModel'].includes(model.get('_model_name')))" in source
+    assert "Vue.markRaw" in source
+
+
+def test_server_connection_overlay_uses_boolean_model_value():
+    source = (Path(solara.__file__).parent / "server/templates/solara.html.j2").read_text()
+    assert "(connectionStatus != 'connected') && wasConnected" in source
+
+
+def test_server_normalizes_themes_for_each_vuetify_major():
+    server_template = (Path(solara.__file__).parent / "server/templates/solara.html.j2").read_text()
+    widget_bridge = (Path(solara.__file__).parent / "server/static/main-vuetify.js").read_text()
+    assert "themes: vuetifyThemesV2" in server_template
+    assert widget_bridge.count("themes: widgetThemes()") == 2

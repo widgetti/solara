@@ -5,7 +5,7 @@ import reacton
 import reacton.ipyvuetify as v
 import solara
 import solara.widgets
-from solara.util import _combine_classes
+from solara.util import IPYVUETIFY_V3, _combine_classes
 
 Navigator = reacton.core.ComponentWidget(solara.widgets.Navigator)
 GridDraggable = reacton.core.ComponentWidget(solara.widgets.GridLayout)
@@ -17,6 +17,10 @@ GridLayout = GridDraggable
 def ListItem(title, icon_name: str = None, children=[], value=None):
     if value is None:
         value = title
+    if IPYVUETIFY_V3:
+        if children:
+            return v.ListGroup(children=children, title=title, prepend_icon=icon_name, value=True)
+        return v.ListItem(value=value, title=title, prepend_icon=icon_name)
     if children:
         with v.ListItemContent() as main:
             v.ListItemTitle(children=[title])
@@ -62,18 +66,32 @@ def ui_checkbox(label, value=True, key=None, disabled=False, **kwargs):
 def ui_slider(value=1, label="", min=0, max=100, key=None, tick_labels=None, thumb_label=None, disabled=False, **kwargs):
     key = key or str(value) + str(label)
     value, set_value = solara.use_state(value, key)
-    v.Slider(
-        v_model=value,
-        label=label,
-        min=min,
-        max=max,
-        on_v_model=set_value,
-        ticks=tick_labels is not None,
-        tick_labels=tick_labels,
-        thumb_label=thumb_label,
-        disabled=disabled,
-        **kwargs,
-    )
+    if IPYVUETIFY_V3:
+        v.Slider(
+            v_model=value,
+            label=label,
+            min=min,
+            max=max,
+            on_v_model=set_value,
+            show_ticks=tick_labels is not None,
+            ticks=tick_labels or [],
+            thumb_label=thumb_label,
+            disabled=disabled,
+            **kwargs,
+        )
+    else:
+        v.Slider(
+            v_model=value,
+            label=label,
+            min=min,
+            max=max,
+            on_v_model=set_value,
+            ticks=tick_labels is not None,
+            tick_labels=tick_labels,
+            thumb_label=thumb_label,
+            disabled=disabled,
+            **kwargs,
+        )
     return value
 
 
@@ -326,8 +344,10 @@ def Code(path, path_header=None):
 
     with v.ExpansionPanels() as main:
         with v.ExpansionPanel():
-            with v.ExpansionPanelHeader(children=["View source"]):
-                pass
-            with v.ExpansionPanelContent(children=[md]):
-                pass
+            if IPYVUETIFY_V3:
+                v.ExpansionPanelTitle(children=["View source"])
+                v.ExpansionPanelText(children=[md])
+            else:
+                v.ExpansionPanelHeader(children=["View source"])
+                v.ExpansionPanelContent(children=[md])
     return main

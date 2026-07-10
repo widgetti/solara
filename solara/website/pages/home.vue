@@ -479,7 +479,7 @@ body {
     align-items: stretch;
 
     color: var(--color-text);
-    font-family: "Roboto, sans-serif";
+    font-family: "Roboto", sans-serif;
     font-style: normal;
     font-weight: 500;
 }
@@ -1166,12 +1166,18 @@ module.exports = {
         document.querySelectorAll('a').forEach(this.setupRouter);
     },
     destroyed() {
-        // when ssg is on, this css is not getting removed
-        if(document.getElementById('ipyvue-solara-website-homepage')) {
-            document.getElementById('ipyvue-solara-website-homepage').remove();
-        }
+        this.cleanup();
+    },
+    unmounted() {
+        this.cleanup();
     },
     methods: {
+        cleanup() {
+        // when ssg is on, this css is not getting removed
+            if(document.getElementById('ipyvue-solara-website-homepage')) {
+                document.getElementById('ipyvue-solara-website-homepage').remove();
+            }
+        },
         setupRouter(a) {
             let href = a.attributes['href'].value;
             if(href.startsWith("./")) {

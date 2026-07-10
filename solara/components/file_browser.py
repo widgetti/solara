@@ -16,6 +16,7 @@ except ModuleNotFoundError:
 
 import solara
 from solara.components import Div
+from solara.util import IPYVUETIFY_V3
 
 T = TypeVar("T")
 logger = logging.getLogger(__name__)
@@ -34,7 +35,7 @@ def list_dir(path, filter: Callable[[Path], bool] = lambda x: True, directory_fi
 
 
 class FileListWidget(vy.VuetifyTemplate):
-    template_file = (__file__, "file_list_widget.vue")
+    template_file = (__file__, "file_list_widget_v3.vue" if IPYVUETIFY_V3 else "file_list_widget.vue")
 
     files = traitlets.List(cast(List[Dict], [])).tag(sync=True)
     clicked = traitlets.Dict(allow_none=True, default_value=None).tag(sync=True)

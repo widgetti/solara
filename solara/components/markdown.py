@@ -119,7 +119,8 @@ module.exports = {
                     {left: "$", right: "$", display: false},
                     {left: "\\[", right: "\\]", display: true},
                     {left: "\\(", right: "\\)", display: false}
-                ]
+                ],
+                ignoredClasses: ["solara-markdown-output", "jupyter-widgets"]
             };
         if (window.renderMathInElement) {
             window.renderMathInElement(this.$el, this.latexSettings);

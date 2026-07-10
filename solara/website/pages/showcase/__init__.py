@@ -1,6 +1,13 @@
 import solara
+from solara.util import IPYVUETIFY_V3
 
 title = "Showcase"
+
+
+def _github_icon():
+    if IPYVUETIFY_V3:
+        return solara.v.Icon(children=["mdi-github-circle"], size="x-large", class_="mr-2")
+    return solara.v.Icon(children=["mdi-github-circle"], x_large=True, class_="mr-2")
 
 
 @solara.component
@@ -17,7 +24,7 @@ def Page():
                 solara.Image("https://dxhl76zpt6fap.cloudfront.net/public/showcase/wanderlust/thumbnail.png", width="100%")
             with solara.v.Html(tag="a", attributes={"href": "https://github.com/widgetti/wanderlust", "target": "_blank"}):
                 with solara.Row(style={"min-height": "24px"}):
-                    solara.v.Icon(children=["mdi-github-circle"], x_large=True, class_="mr-2")
+                    _github_icon()
 
         with solara.Card("Domino Code Assist", style={"height": "100%"}):
             solara.Markdown(
@@ -51,7 +58,11 @@ def Page():
                 solara.Image("https://user-images.githubusercontent.com/1765949/237517090-8f7242b1-3189-4c5b-abd3-0f0986292ade.png", width="100%")
             with rv.Html(tag="a", attributes={"href": "https://github.com/Ben-Epstein/", "target": "_blank"}):
                 with rv.ListItem(class_="grow"):
-                    with rv.ListItemAvatar(color="grey darken-3"):
+                    if IPYVUETIFY_V3:
+                        avatar = rv.Avatar(color="grey darken-3", start=True)
+                    else:
+                        avatar = rv.ListItemAvatar(color="grey darken-3")
+                    with avatar:
                         rv.Img(
                             class_="elevation-6",
                             src=img,
@@ -81,25 +92,25 @@ def Page():
                 solara.Image("https://dxhl76zpt6fap.cloudfront.net/public/showcase/solarathon_2023_team_2/thumbnail.png", width="100%")
             with solara.v.Html(tag="a", attributes={"href": "https://github.com/alonsosilvaallende/solarathon", "target": "_blank"}):
                 with solara.Row(style={"min-height": "24px"}):
-                    solara.v.Icon(children=["mdi-github-circle"], x_large=True, class_="mr-2")
+                    _github_icon()
 
         with solara.Card("Team 4: Live Cryptocurrency Dashboard", style={"height": "100%"}):
             with solara.Link("./solarathon_2023_team_4"):
                 solara.Image("https://dxhl76zpt6fap.cloudfront.net/public/showcase/solarathon_2023_team_4/thumbnail.png", width="100%")
             with solara.v.Html(tag="a", attributes={"href": "https://github.com/theeldermillenial/solarathon", "target": "_blank"}):
                 with solara.Row(style={"min-height": "24px"}):
-                    solara.v.Icon(children=["mdi-github-circle"], x_large=True, class_="mr-2")
+                    _github_icon()
 
         with solara.Card("Team 5: Sports Video Analysis", style={"height": "100%"}):
             with solara.Link("./solarathon_2023_team_5"):
                 solara.Image("https://dxhl76zpt6fap.cloudfront.net/public/showcase/solarathon_2023_team_5/thumbnail.png", width="100%")
             with solara.v.Html(tag="a", attributes={"href": "https://github.com/FelipeCabelloE/solarathon-team5/", "target": "_blank"}):
                 with solara.Row(style={"min-height": "24px"}):
-                    solara.v.Icon(children=["mdi-github-circle"], x_large=True, class_="mr-2")
+                    _github_icon()
 
         with solara.Card("Team 6: Automatic FAQ Creator", style={"height": "100%"}):
             with solara.Link("./solarathon_2023_team_6"):
                 solara.Image("https://dxhl76zpt6fap.cloudfront.net/public/showcase/solarathon_2023_team_6/thumbnail.png", width="100%")
             with solara.v.Html(tag="a", attributes={"href": "https://github.com/silvhua/solarathon-faq-creator", "target": "_blank"}):
                 with solara.Row(style={"min-height": "24px"}):
-                    solara.v.Icon(children=["mdi-github-circle"], x_large=True, class_="mr-2")
+                    _github_icon()

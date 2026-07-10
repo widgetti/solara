@@ -5,6 +5,7 @@ import solara
 import solara.lab
 from solara.lab.components.input_date import use_close_menu
 from solara.components.input import _use_input_type
+from solara.util import IPYVUETIFY_V3
 
 
 @solara.component
@@ -113,6 +114,10 @@ def InputTime(
     )
 
     use_close_menu(input, timepicker_is_open)
+
+    # Vuetify 3 currently has no TimePicker. Keep manual time entry working.
+    if IPYVUETIFY_V3:
+        return input
 
     with solara.lab.Menu(
         activator=input,

@@ -15,11 +15,12 @@ from typing import Callable
 
 import numpy as np
 import solara
+from solara.util import IPYVUETIFY_V3
 
 seed = solara.reactive(42)
 
 
-@solara.component_vue("mycard.vue")
+@solara.component_vue("mycard_v3.vue" if IPYVUETIFY_V3 else "mycard.vue")
 def MyCard(
     event_goto_report: Callable[[dict], None],
     value=[1, 10, 30, 20, 3],

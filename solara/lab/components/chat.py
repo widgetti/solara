@@ -5,6 +5,7 @@ from typing_extensions import Literal
 
 import solara
 from solara.components.input import use_change
+from solara.util import IPYVUETIFY_V3
 
 
 @solara.component
@@ -82,18 +83,32 @@ def ChatInput(
                 send_callback(message)
                 set_message("")
 
-        message_input = solara.v.TextField(
-            label="Type a message...",
-            v_model=message,
-            on_v_model=set_message,
-            rounded=True,
-            filled=True,
-            hide_details=True,
-            autofocus=autofocus,
-            style_="flex-grow: 1;" + input_text_style_flat,
-            disabled=disabled or disabled_input,
-            class_=" ".join(input_text_classes),
-        )
+        if IPYVUETIFY_V3:
+            message_input = solara.v.TextField(
+                label="Type a message...",
+                v_model=message,
+                on_v_model=set_message,
+                rounded=True,
+                variant="filled",
+                hide_details=True,
+                autofocus=autofocus,
+                style_="flex-grow: 1;" + input_text_style_flat,
+                disabled=disabled or disabled_input,
+                class_=" ".join(input_text_classes),
+            )
+        else:
+            message_input = solara.v.TextField(
+                label="Type a message...",
+                v_model=message,
+                on_v_model=set_message,
+                rounded=True,
+                filled=True,
+                hide_details=True,
+                autofocus=autofocus,
+                style_="flex-grow: 1;" + input_text_style_flat,
+                disabled=disabled or disabled_input,
+                class_=" ".join(input_text_classes),
+            )
 
         use_change(message_input, send, update_events=["keyup.enter"])
 

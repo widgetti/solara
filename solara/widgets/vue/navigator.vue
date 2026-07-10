@@ -32,6 +32,9 @@ modules.export = {
     window.removeEventListener("hashchange", this.onHashChange);
     window.removeEventListener("solara.pageReady", this.onPageLoad);
   },
+  unmounted() {
+    this.$options.destroyed.call(this);
+  },
   methods: {
     onScroll() {
       window.history.replaceState(

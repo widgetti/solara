@@ -8,6 +8,7 @@ It also shows an optional filter to narrow down the results.
 import solara
 from solara import use_fetch
 from solara.alias import rv
+from solara.util import IPYVUETIFY_V3
 
 github_url = solara.util.github_url(__file__)
 pokemon_base_url = "https://raw.githubusercontent.com/jherr/pokemon/0722479d4153b1db0d0326956b08b37f44a95a5f"
@@ -42,7 +43,10 @@ def Page():
                             name = pokemon["name"]
                             url = f"{pokemon_base_url}/{pokemon['image']}"
                             # TODO: how to do this with solara
-                            rv.Img(src=url, contain=True, max_height="200px")
+                            if IPYVUETIFY_V3:
+                                rv.Img(src=url, cover=False, max_height="200px")
+                            else:
+                                rv.Img(src=url, contain=True, max_height="200px")
                             solara.Text(name)
             else:
                 with solara.Div():

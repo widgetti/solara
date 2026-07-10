@@ -20,6 +20,9 @@ module.exports = {
             this.observer.disconnect();
         }
     },
+    unmounted() {
+        this.$options.destroyed.call(this);
+    },
     watch: {
         spec() {
             this.do_plot_debounced();
@@ -33,7 +36,7 @@ module.exports = {
             require(['vega', 'vega-lite', 'vega-embed'], (vega, vl, vegaEmbed) => {
                 (async () => {
                     const spec = {
-                        ...this.spec,
+                        ...JSON.parse(JSON.stringify(this.spec)),
                         "renderer": "svg",
                     };
                     if (spec.width === "container") {
