@@ -65,7 +65,7 @@
         <v-progress-linear :style="{visibility: (kernelBusyLong && isMounted) ? 'visible' : 'hidden'}"
             :indeterminate="kernelBusyLong && isMounted"
             absolute></v-progress-linear>
-        <v-alert v-if="needsRefresh || cancelAutoRefresh" type="warning" :border="vue3 ? 'start' : 'left'"
+        <v-alert v-if="vue3 && (needsRefresh || cancelAutoRefresh)" type="warning" border="start"
             style="position: absolute; right: 0px; z-index: 100; left: 0px;">
             <span v-if="needsRefresh">Could not restore session. Please refresh the page.</span>
             <span v-else>App is disconnected, and may not function properly. Please refresh the page.</span>

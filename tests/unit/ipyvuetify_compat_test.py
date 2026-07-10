@@ -141,6 +141,11 @@ def test_server_connection_overlay_uses_boolean_model_value():
     assert "(connectionStatus != 'connected') && wasConnected" in source
 
 
+def test_server_reconnect_alert_is_vue3_only():
+    source = (Path(solara.__file__).parent / "server/templates/solara.html.j2").read_text()
+    assert '<v-alert v-if="vue3 && (needsRefresh || cancelAutoRefresh)"' in source
+
+
 def test_server_normalizes_themes_for_each_vuetify_major():
     server_template = (Path(solara.__file__).parent / "server/templates/solara.html.j2").read_text()
     widget_bridge = (Path(solara.__file__).parent / "server/static/main-vuetify.js").read_text()
