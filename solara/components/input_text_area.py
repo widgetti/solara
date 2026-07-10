@@ -2,6 +2,7 @@ from typing import Callable, Optional, Union, List
 from .input import use_change
 import solara
 from solara.alias import rv as v
+from solara.util import IPYVUETIFY_V3
 
 
 @solara.component
@@ -79,22 +80,40 @@ def InputTextArea(
         messages.append(error)
     elif message:
         messages.append(message)
-    text_area = v.Textarea(
-        v_model=reactive_value.value,
-        on_v_model=on_v_model,
-        label=label,
-        disabled=disabled,
-        error=bool(error),
-        messages=messages,
-        solo=True,
-        hide_details=hide_details,
-        outlined=True,
-        rows=rows,
-        auto_grow=auto_grow,
-        dense=dense,
-        placeholder=placeholder if placeholder is not None else "",
-        prefix=prefix if prefix is not None else "",
-        suffix=suffix if suffix is not None else "",
-    )
+    if IPYVUETIFY_V3:
+        text_area = v.Textarea(
+            v_model=reactive_value.value,
+            on_v_model=on_v_model,
+            label=label,
+            disabled=disabled,
+            error=bool(error),
+            messages=messages,
+            variant="outlined",
+            hide_details=hide_details,
+            rows=rows,
+            auto_grow=auto_grow,
+            density="compact" if dense else None,
+            placeholder=placeholder if placeholder is not None else "",
+            prefix=prefix if prefix is not None else "",
+            suffix=suffix if suffix is not None else "",
+        )
+    else:
+        text_area = v.Textarea(
+            v_model=reactive_value.value,
+            on_v_model=on_v_model,
+            label=label,
+            disabled=disabled,
+            error=bool(error),
+            messages=messages,
+            solo=True,
+            hide_details=hide_details,
+            outlined=True,
+            rows=rows,
+            auto_grow=auto_grow,
+            dense=dense,
+            placeholder=placeholder if placeholder is not None else "",
+            prefix=prefix if prefix is not None else "",
+            suffix=suffix if suffix is not None else "",
+        )
     use_change(text_area, set_value_cast, enabled=not continuous_update, update_events=update_events)
     return text_area

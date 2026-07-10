@@ -4,6 +4,7 @@ import reacton
 import reacton.ipyvuetify as v
 
 import solara
+from solara.util import IPYVUETIFY_V3
 
 
 @reacton.value_component(bool)
@@ -44,7 +45,5 @@ def Checkbox(
     """
     reactive_value = solara.use_reactive(value, on_value)
     del value, on_value
-    children = []
-    if label is not None:
-        children = [label]
+    children = [label] if label is not None and not IPYVUETIFY_V3 else []
     return v.Checkbox(label=label, v_model=reactive_value.value, on_v_model=reactive_value.set, disabled=disabled, style_=style, children=children)
