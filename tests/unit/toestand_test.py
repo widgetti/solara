@@ -1,8 +1,10 @@
 import dataclasses
+import gc
 import logging
 import threading
 import time
 import unittest.mock
+import weakref
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Set, TypeVar, cast
 
@@ -228,8 +230,8 @@ def test_kernel_close_purges_subscription_residue(no_kernel_context):
     # Computed's auto-subscribe machinery) must not outlive the kernel: the
     # (listener, Context) tuples on process-lifetime stores pin the listener
     # closures and everything they capture (memory-usage-inspection.md, case
-    # study 4). Same for the process-global on_kernel_start registrations that
-    # Singleton/Computed instances create.
+    # study 4). Kernel-created Singleton/Computed instances must also stay out
+    # of the process-global on_kernel_start registry.
     import solara.lifecycle
 
     registry_before = len(solara.lifecycle._on_kernel_start_callbacks)
@@ -256,7 +258,7 @@ def test_kernel_close_purges_subscription_residue(no_kernel_context):
         assert computed.value == "hello!"
         assert context.id in listener_scopes(store)
 
-    assert len(solara.lifecycle._on_kernel_start_callbacks) > registry_before
+    assert len(solara.lifecycle._on_kernel_start_callbacks) == registry_before
     context.close()
 
     # the closed kernel's scope is gone from the store (the Computed's
@@ -264,6 +266,449 @@ def test_kernel_close_purges_subscription_residue(no_kernel_context):
     assert context.id not in listener_scopes(store)
     # ...and the kernel-start registry is back at its previous size
     assert len(solara.lifecycle._on_kernel_start_callbacks) == registry_before
+
+
+def _listener_count(value_base, scope_id: str) -> int:
+    count = 0
+    current = value_base
+    while isinstance(current, toestand.ValueBase):
+        count += len(current.listeners.get(scope_id, ()))
+        count += len(current.listeners2.get(scope_id, ()))
+        current = getattr(current, "_storage", None)
+    return count
+
+
+def test_auto_subscribe_overlapping_runs_do_not_orphan_cleanup(no_kernel_context, monkeypatch):
+    monkeypatch.setattr(toestand, "_using_solara_server", lambda: True)
+    dependency = Reactive("old")
+    fresh = Reactive("fresh")
+    context = kernel_context.VirtualKernelContext(id="overlap", kernel=kernel.Kernel(), session_id="session")
+
+    with context:
+        manager = toestand.AutoSubscribeContextManager(lambda: None)
+        with manager:
+            assert dependency.value == "old"
+
+    first_entered = threading.Event()
+    release_first = threading.Event()
+    second_finished = threading.Event()
+    errors = []
+
+    def recompute(first: bool):
+        try:
+            with context, manager:
+                assert fresh.value == "fresh"
+                if first:
+                    first_entered.set()
+                    assert release_first.wait(timeout=5)
+        except BaseException as error:
+            errors.append(error)
+        finally:
+            if not first:
+                second_finished.set()
+
+    first = threading.Thread(target=recompute, args=(True,))
+    second = threading.Thread(target=recompute, args=(False,))
+    first.start()
+    assert first_entered.wait(timeout=5)
+    second.start()
+    assert second_finished.wait(timeout=5)
+    release_first.set()
+    first.join(timeout=5)
+
+    assert not first.is_alive()
+    assert not second.is_alive()
+    if errors:
+        raise errors[0]
+    assert _listener_count(fresh, context.id) == 1
+
+    context.close()
+    assert _listener_count(dependency, context.id) == 0
+    assert _listener_count(fresh, context.id) == 0
+
+
+@pytest.mark.parametrize("read_before_close", [False, True])
+def test_auto_subscribe_close_cleans_active_run(no_kernel_context, monkeypatch, read_before_close):
+    monkeypatch.setattr(toestand, "_using_solara_server", lambda: True)
+    store = Reactive("value")
+    context = kernel_context.VirtualKernelContext(id=f"active-{read_before_close}", kernel=kernel.Kernel(), session_id="session")
+    with context:
+        manager = toestand.AutoSubscribeContextManager(lambda: None)
+
+    entered = threading.Event()
+    release = threading.Event()
+    errors = []
+
+    def run():
+        try:
+            with context, manager:
+                if read_before_close:
+                    assert store.value == "value"
+                entered.set()
+                assert release.wait(timeout=5)
+                if not read_before_close:
+                    assert store.value == "value"
+        except BaseException as error:
+            errors.append(error)
+
+    thread = threading.Thread(target=run)
+    thread.start()
+    assert entered.wait(timeout=5)
+    context.close()
+    assert _listener_count(store, context.id) == 0
+
+    release.set()
+    thread.join(timeout=5)
+    assert not thread.is_alive()
+    if errors:
+        raise errors[0]
+    assert _listener_count(store, context.id) == 0
+
+
+def test_auto_subscribe_cleanup_is_unlocked_and_failure_isolated(caplog):
+    manager = toestand.AutoSubscribeContextManager(lambda: None)
+    acquired = threading.Event()
+    errors = []
+
+    def acquire_manager_lock():
+        def acquire():
+            try:
+                manager._subscription_lock.acquire()
+                acquired.set()
+            except BaseException as error:
+                errors.append(error)
+
+        thread = threading.Thread(target=acquire)
+        thread.start()
+        thread.join(timeout=5)
+        if acquired.is_set():
+            manager._subscription_lock.release()
+        assert not thread.is_alive()
+        if errors:
+            raise errors[0]
+
+    def fail():
+        raise RuntimeError("unsubscribe failed")
+
+    manager.subscribed = {
+        cast(toestand.ValueBase, object()): acquire_manager_lock,
+        cast(toestand.ValueBase, object()): fail,
+    }
+    with caplog.at_level(logging.ERROR):
+        manager.unsubscribe_all()
+
+    assert acquired.is_set()
+    assert "unsubscribe failed" in caplog.text
+
+
+def test_listener_prune_is_atomic_with_subscribe(no_kernel_context, monkeypatch):
+    from collections import defaultdict
+
+    monkeypatch.setattr(toestand, "_using_solara_server", lambda: True)
+    store = Reactive("value")
+    context = kernel_context.VirtualKernelContext(id="listener-prune", kernel=kernel.Kernel(), session_id="session")
+    holder = cast(toestand.ValueBase, getattr(store._storage, "_storage", store._storage))
+    pruning = threading.Event()
+    proceed = threading.Event()
+    added = threading.Event()
+    cleanups = []
+    errors = []
+
+    class PausingDict(defaultdict):
+        def pop(self, *args, **kwargs):
+            pruning.set()
+            assert proceed.wait(timeout=5)
+            return super().pop(*args, **kwargs)
+
+        def __delitem__(self, key):
+            pruning.set()
+            assert proceed.wait(timeout=5)
+            return super().__delitem__(key)
+
+    holder.listeners2 = PausingDict(set)
+    with context:
+        unsubscribe = holder.subscribe_change(lambda old, new: None)
+
+    cleanup_thread = threading.Thread(target=lambda: unsubscribe())
+
+    def subscribe():
+        try:
+            with context:
+                cleanups.append(holder.subscribe_change(lambda old, new: None))
+            added.set()
+        except BaseException as error:
+            errors.append(error)
+
+    subscribe_thread = threading.Thread(target=subscribe)
+    cleanup_thread.start()
+    assert pruning.wait(timeout=5)
+    subscribe_thread.start()
+    assert not added.wait(timeout=0.2)
+    proceed.set()
+    cleanup_thread.join(timeout=5)
+    subscribe_thread.join(timeout=5)
+
+    assert not cleanup_thread.is_alive()
+    assert not subscribe_thread.is_alive()
+    if errors:
+        raise errors[0]
+    assert len(holder.listeners2.get(context.id, ())) == 1
+    cleanups[0]()
+    context.close()
+
+
+def test_listener_user_code_runs_outside_listener_lock():
+    store = Reactive("value")
+    completed = threading.Event()
+
+    class Listener:
+        def __call__(self, value):
+            def subscribe_and_cleanup():
+                cleanup = store.subscribe(lambda value: None)
+                cleanup()
+                completed.set()
+
+            thread = threading.Thread(target=subscribe_and_cleanup)
+            thread.start()
+            thread.join(timeout=5)
+            assert not thread.is_alive()
+
+        def __hash__(self):
+            raise RuntimeError("listener hash must not be used")
+
+    cleanup = store.subscribe(Listener())
+    store.value = "changed"
+    cleanup()
+    assert completed.is_set()
+
+
+def test_post_close_computed_access_leaves_no_residue(no_kernel_context, monkeypatch):
+    monkeypatch.setattr(toestand, "_using_solara_server", lambda: True)
+    store = Reactive("hello")
+    context = kernel_context.VirtualKernelContext(id="computed-closed", kernel=kernel.Kernel(), session_id="session")
+    with context:
+        computed = toestand.Computed(lambda: store.value + "!", key="computed-closed")
+
+    context.close()
+    with context:
+        assert computed.value == "hello!"
+    assert _listener_count(store, context.id) == 0
+
+
+def test_kernel_created_computed_survives_repeated_restart(no_kernel_context, monkeypatch):
+    monkeypatch.setattr(toestand, "_using_solara_server", lambda: True)
+    dependency = Reactive("a")
+    context = kernel_context.VirtualKernelContext(id="computed-restart", kernel=kernel.Kernel(), session_id="session")
+
+    with context:
+        computed = toestand.Computed(lambda: dependency.value + "!", key="computed-restart")
+        assert computed.value == "a!"
+    for value in ["b", "c"]:
+        context.restart()
+        with context:
+            dependency.value = value
+            assert computed.value == value + "!"
+        assert _listener_count(dependency, context.id) == 1
+    context.close()
+
+
+def test_restart_releases_transient_computed_payload(no_kernel_context, monkeypatch):
+    monkeypatch.setattr(toestand, "_using_solara_server", lambda: True)
+    store = Reactive("value")
+    context = kernel_context.VirtualKernelContext(id="generation-release", kernel=kernel.Kernel(), session_id="session")
+    with context:
+        assert store.value == "value"
+    baseline = len(context.user_dicts)
+
+    class Payload(list):
+        pass
+
+    payload = Payload(range(1000))
+
+    def read(payload: Payload = payload):
+        return (payload, store.value)[1]
+
+    with context:
+        computed = toestand.Computed(read, key="generation-release")
+        assert computed.value == "value"
+    computed_ref = weakref.ref(computed)
+    payload_ref = weakref.ref(payload)
+
+    context.restart()
+    del computed, payload, read
+    gc.collect()
+
+    assert computed_ref() is None
+    assert payload_ref() is None
+    assert len(context.user_dicts) == baseline
+    context.close()
+
+
+def test_unread_kernel_computed_is_not_rooted(no_kernel_context, monkeypatch):
+    monkeypatch.setattr(toestand, "_using_solara_server", lambda: True)
+    context = kernel_context.VirtualKernelContext(id="computed-unread", kernel=kernel.Kernel(), session_id="session")
+
+    class Payload(list):
+        pass
+
+    payload = Payload(range(1000))
+
+    def read(payload: Payload = payload):
+        return payload
+
+    with context:
+        computed = toestand.Computed(read, key="computed-unread")
+    computed_ref = weakref.ref(computed)
+    payload_ref = weakref.ref(payload)
+    del computed, payload, read
+    gc.collect()
+
+    assert computed_ref() is None
+    assert payload_ref() is None
+    context.close()
+
+
+def test_read_transient_computed_is_released_before_restart(no_kernel_context, monkeypatch):
+    monkeypatch.setattr(toestand, "_using_solara_server", lambda: True)
+    dependency = Reactive("value")
+    context = kernel_context.VirtualKernelContext(id="computed-transient", kernel=kernel.Kernel(), session_id="session")
+    with context:
+        assert dependency.value == "value"
+    baseline = len(context.user_dicts)
+    callbacks_before = len(context._on_close_callbacks)
+
+    class Payload(list):
+        pass
+
+    payload = Payload(range(1000))
+
+    def read(payload: Payload = payload):
+        return (payload, dependency.value)[1]
+
+    with context:
+        computed = toestand.Computed(read, key="computed-transient")
+        assert computed.value == "value"
+    computed_ref = weakref.ref(computed)
+    payload_ref = weakref.ref(payload)
+    del computed, payload, read
+    gc.collect()
+
+    assert computed_ref() is None
+    assert payload_ref() is None
+    assert _listener_count(dependency, context.id) == 0
+    assert len(context.user_dicts) == baseline
+    assert len(context._on_close_callbacks) == callbacks_before
+    context.close()
+
+
+def test_discarded_singleton_releases_kernel_value(no_kernel_context, monkeypatch):
+    monkeypatch.setattr(toestand, "_using_solara_server", lambda: True)
+    context = kernel_context.VirtualKernelContext(id="singleton-transient", kernel=kernel.Kernel(), session_id="session")
+    baseline = len(context.user_dicts)
+
+    class Payload(list):
+        pass
+
+    payload = Payload(range(1000))
+
+    def create(payload: Payload = payload):
+        return payload
+
+    with context:
+        singleton = toestand.Singleton(create, key="singleton-transient")
+        assert singleton.value is payload
+    payload_ref = weakref.ref(payload)
+    del singleton, payload, create
+    gc.collect()
+
+    assert payload_ref() is None
+    assert len(context.user_dicts) == baseline
+    context.close()
+
+
+def test_discarded_reactive_releases_kernel_value(no_kernel_context, monkeypatch):
+    monkeypatch.setattr(toestand, "_using_solara_server", lambda: True)
+    context = kernel_context.VirtualKernelContext(id="reactive-transient", kernel=kernel.Kernel(), session_id="session")
+
+    class Payload(list):
+        pass
+
+    payload = Payload(range(1000))
+    with context:
+        reactive = Reactive(payload, key="reactive-transient")
+        stored_payload = reactive.value
+    payload_ref = weakref.ref(payload)
+    stored_payload_ref = weakref.ref(stored_payload)
+    del reactive, payload, stored_payload
+    gc.collect()
+
+    assert payload_ref() is None
+    assert stored_payload_ref() is None
+    assert not context.user_dicts
+    context.close()
+
+
+def test_discarded_singleton_preserves_shared_explicit_key(no_kernel_context, monkeypatch):
+    monkeypatch.setattr(toestand, "_using_solara_server", lambda: True)
+    calls = 0
+
+    def create():
+        nonlocal calls
+        calls += 1
+        return object()
+
+    permanent = toestand.Singleton(create, key="shared-explicit-key")
+    context = kernel_context.VirtualKernelContext(id="shared-key", kernel=kernel.Kernel(), session_id="session")
+    with context:
+        value = permanent.value
+        transient = toestand.Singleton(create, key="shared-explicit-key")
+        assert transient.value is value
+    del transient
+    gc.collect()
+    with context:
+        assert permanent.value is value
+    assert calls == 1
+    context.close()
+
+
+def test_manager_created_outside_kernel_binds_on_first_use(no_kernel_context, monkeypatch):
+    monkeypatch.setattr(toestand, "_using_solara_server", lambda: True)
+    store = Reactive("value")
+    manager = toestand.AutoSubscribeContextManager(lambda: None)
+    context = kernel_context.VirtualKernelContext(id="manager-first-use", kernel=kernel.Kernel(), session_id="session")
+
+    with context, manager:
+        assert store.value == "value"
+    context.close()
+
+    assert manager._closed
+    assert _listener_count(store, context.id) == 0
+
+
+def test_failed_run_keeps_last_valid_dependencies(no_kernel_context, monkeypatch):
+    monkeypatch.setattr(toestand, "_using_solara_server", lambda: True)
+    valid = Reactive(1)
+    partial = Reactive(10)
+    fail = False
+    context = kernel_context.VirtualKernelContext(id="computed-failure", kernel=kernel.Kernel(), session_id="session")
+
+    def calculate():
+        if fail:
+            partial.value
+            raise RuntimeError("calculation failed")
+        return valid.value
+
+    with context:
+        computed = toestand.Computed(calculate, key="computed-failure")
+        assert computed.value == 1
+        manager = computed._auto_subscriber.value
+        fail = True
+        with pytest.raises(RuntimeError, match="calculation failed"):
+            valid.value = 2
+
+    assert valid in manager.subscribed
+    assert partial not in manager.subscribed
+    context.close()
 
 
 def test_computed_created_during_render_warns(no_kernel_context):
@@ -296,9 +741,13 @@ def test_unreleased_subscription_warns_at_kernel_close(no_kernel_context):
     # clean usage: cleanup called before close -> no warning
     toestand._warned_sites.clear()
     context2 = kernel_context.VirtualKernelContext(id="toestand-warn-3", kernel=kernel.Kernel(), session_id="session-1")
+    callbacks_before = len(context2._on_close_callbacks)
     with context2:
-        unsubscribe = store.subscribe(lambda value: None)
-        unsubscribe()
+        for _ in range(10):
+            unsubscribe = store.subscribe(lambda value: None)
+            unsubscribe()
+    assert len(context2._on_close_callbacks) == callbacks_before
+    assert context2.id not in toestand._pending_subscription_checks
     import warnings as warnings_module
 
     with warnings_module.catch_warnings(record=True) as records:
