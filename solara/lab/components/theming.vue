@@ -46,15 +46,21 @@ module.exports = {
             return this.theme_dark === true ? 'dark' : this.theme_dark === false ? 'light' : 'auto';
         },
         initTheme() {
-            storedTheme = JSON.parse(localStorage.getItem(':solara:theme.variant'));
+            const storedTheme = JSON.parse(localStorage.getItem(':solara:theme.variant'));
             return storedTheme === 'dark' ? true : storedTheme === 'light' ? false : null;
         },
         setTheme() {
-            if ( window.solara && this.theme_dark === null ) {
-                this.$vuetify.theme.dark = this.prefersDarkScheme();
-                return;
+            const dark = window.solara && this.theme_dark === null ? this.prefersDarkScheme() : this.theme_dark;
+            const vuetifyTheme = this.$vuetify.theme;
+            if (vuetifyTheme.global) {
+                if (vuetifyTheme.global.name && typeof vuetifyTheme.global.name === 'object') {
+                    vuetifyTheme.global.name.value = dark ? 'dark' : 'light';
+                } else {
+                    vuetifyTheme.global.name = dark ? 'dark' : 'light';
+                }
+            } else {
+                vuetifyTheme.dark = dark;
             }
-            this.$vuetify.theme.dark = this.theme_dark;
         },
         prefersDarkScheme() {
             return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches

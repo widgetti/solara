@@ -12,6 +12,7 @@ import solara.lab
 import traitlets
 from solara.lab.hooks.dataframe import use_df_column_names, df_row_names
 from solara.lab.utils.dataframe import df_len, df_records, df_slice
+from solara.util import IPYVUETIFY_V3
 
 from .. import CellAction, ColumnAction
 
@@ -30,7 +31,7 @@ def _drop_keys_from_list_of_mappings(drop):
 
 
 class DataTableWidget(v.VuetifyTemplate):
-    template_file = os.path.realpath(os.path.join(os.path.dirname(__file__), "datatable.vue"))
+    template_file = os.path.realpath(os.path.join(os.path.dirname(__file__), "datatable_v3.vue" if IPYVUETIFY_V3 else "datatable.vue"))
 
     total_length = traitlets.CInt().tag(sync=True)
     checked = traitlets.List(cast(List[Any], [])).tag(sync=True)  # indices of which rows are selected
@@ -43,7 +44,7 @@ class DataTableWidget(v.VuetifyTemplate):
     items = traitlets.Any().tag(sync=True)  # the data, a list of dict
     headers = traitlets.Any().tag(sync=True)
     headers_selections = traitlets.Any().tag(sync=True)
-    options = traitlets.Any().tag(sync=True)
+    options = traitlets.Dict(default_value={"page": 1, "itemsPerPage": 20, "sortBy": []}).tag(sync=True)
     items_per_page = traitlets.CInt(11).tag(sync=True)
     selections = traitlets.Any([]).tag(sync=True)
     selection_colors = traitlets.Any([]).tag(sync=True)
@@ -110,7 +111,10 @@ def DataTable(
             item[column] = format(dfs, column, i + i1, records[i][column])
         items.append(item)
 
-    headers = [{"text": name, "value": name, "sortable": False} for name in columns]
+    if IPYVUETIFY_V3:
+        headers = [{"title": name, "key": name, "sortable": False} for name in columns]
+    else:
+        headers = [{"text": name, "value": name, "sortable": False} for name in columns]
     column_actions_callbacks = [k.on_click for k in column_actions]
     cell_actions_callbacks = [k.on_click for k in cell_actions]
     column_actions = [replace(k, on_click=None) for k in column_actions]

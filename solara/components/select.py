@@ -5,7 +5,7 @@ import reacton.core
 
 import solara
 from solara.alias import rv
-from solara.util import _combine_classes
+from solara.util import IPYVUETIFY_V3, _combine_classes
 
 T = TypeVar("T")
 
@@ -108,9 +108,19 @@ def Select(
     del value, on_value
     style_flat = solara.util._flatten_style(style)
     class_ = _combine_classes(classes)
-    return cast(
-        reacton.core.ValueElement[v.Select, T],
-        rv.Select(
+    if IPYVUETIFY_V3:
+        select = rv.Select(
+            v_model=reactive_value.value,
+            on_v_model=reactive_value.set,
+            items=values,
+            label=label,
+            density="compact" if dense else None,
+            disabled=disabled,
+            class_=class_,
+            style_=style_flat,
+        )
+    else:
+        select = rv.Select(
             v_model=reactive_value.value,
             on_v_model=reactive_value.set,
             items=values,
@@ -119,8 +129,8 @@ def Select(
             disabled=disabled,
             class_=class_,
             style_=style_flat,
-        ),
-    )
+        )
+    return cast(reacton.core.ValueElement[v.Select, T], select)
 
 
 @solara.value_component(None)
@@ -166,9 +176,20 @@ def SelectMultiple(
     del values, on_value
     style_flat = solara.util._flatten_style(style)
     class_ = _combine_classes(classes)
-    return cast(
-        reacton.core.ValueElement[v.Select, List[T]],
-        rv.Select(
+    if IPYVUETIFY_V3:
+        select = rv.Select(
+            v_model=reactive_values.value,
+            on_v_model=reactive_values.set,
+            items=all_values,
+            label=label,
+            multiple=True,
+            density="compact" if dense else None,
+            disabled=disabled,
+            class_=class_,
+            style_=style_flat,
+        )
+    else:
+        select = rv.Select(
             v_model=reactive_values.value,
             on_v_model=reactive_values.set,
             items=all_values,
@@ -178,5 +199,5 @@ def SelectMultiple(
             disabled=disabled,
             class_=class_,
             style_=style_flat,
-        ),
-    )
+        )
+    return cast(reacton.core.ValueElement[v.Select, List[T]], select)

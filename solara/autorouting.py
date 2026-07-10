@@ -24,7 +24,7 @@ DEBUG = False
 
 solara_root = Path(solara.__file__).parent
 
-DefaultLayout = solara.AppLayout
+DefaultLayout: Any = solara.AppLayout  # type: ignore[has-type]
 _redirects: Dict[str, str] = {}
 
 

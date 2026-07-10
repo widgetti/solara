@@ -7,6 +7,7 @@ import pymdownx.superfences
 
 import solara
 from solara.components.markdown import formatter, _no_deep_copy_emojione
+from solara.util import IPYVUETIFY_V3
 
 
 # We want to separate metadata from the markdown files before rendering them, which solara.Markdown doesn't support
@@ -94,6 +95,6 @@ def MarkdownWithMetadata(content: str, unsafe_solara_execute=True):
         MarkdownNavigation(id="markdown-to-navigate").key("markdown-nav" + str(hash(content)))
 
 
-@solara.component_vue("markdown_nav.vue")
+@solara.component_vue("markdown_nav_v3.vue" if IPYVUETIFY_V3 else "markdown_nav.vue")
 def MarkdownNavigation(id: str):
     pass

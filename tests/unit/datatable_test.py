@@ -10,6 +10,7 @@ import polars as pl
 import pandas as pd
 
 from solara.components.datatable import DataTable, DataTableWidget
+from solara.util import IPYVUETIFY_V3
 
 
 HERE = Path(__file__).parent
@@ -57,3 +58,6 @@ def test_render(df):
     widget, rc = solara.render_fixed(Test(), handle_error=False)
     assert isinstance(widget, DataTableWidget)
     assert len(widget.items) == 20
+    expected_keys = {"title", "key", "sortable"} if IPYVUETIFY_V3 else {"text", "value", "sortable"}
+    assert set(widget.headers[0]) == expected_keys
+    assert ("v-data-table-server" in widget.template.template) is IPYVUETIFY_V3

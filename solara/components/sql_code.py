@@ -4,10 +4,11 @@ import ipyvue
 import traitlets
 
 import solara
+from solara.util import IPYVUETIFY_V3
 
 
 class SqlCodeWidget(ipyvue.VueTemplate):
-    template_file = (__file__, "sql_code.vue")
+    template_file = (__file__, "sql_code_v3.vue" if IPYVUETIFY_V3 else "sql_code.vue")
 
     label = traitlets.Unicode("").tag(sync=True)
     query = traitlets.Unicode(allow_none=True, default_value=None).tag(sync=True)

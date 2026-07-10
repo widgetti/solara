@@ -65,14 +65,15 @@
         <v-progress-linear :style="{visibility: (kernelBusyLong && isMounted) ? 'visible' : 'hidden'}"
             :indeterminate="kernelBusyLong && isMounted"
             absolute></v-progress-linear>
-        <v-alert v-if="needsRefresh || cancelAutoRefresh" type="warning" border="left"
+        <v-alert v-if="needsRefresh || cancelAutoRefresh" type="warning" :border="vue3 ? 'start' : 'left'"
             style="position: absolute; right: 0px; z-index: 100; left: 0px;">
-            App is disconnected, and may not function properly. Please refresh the page.
+            <span v-if="needsRefresh">Could not restore session. Please refresh the page.</span>
+            <span v-else>App is disconnected, and may not function properly. Please refresh the page.</span>
         </v-alert>
         {% endraw -%}
         {# {% include "transition-domino.html" %} #}
         {% include "loader-" ~ theme.loader ~ ".html" %}
-        <v-overlay style="z-index: 100002;" :value="(connectionStatus != 'connected') & wasConnected">
+        <v-overlay style="z-index: 100002;" v-bind="vue3 ? { modelValue: (connectionStatus != 'connected') && wasConnected } : { value: (connectionStatus != 'connected') && wasConnected }">
             <v-progress-circular indeterminate size="128" style="text-align: center;">Server
                 disconnected.</v-progress-circular>
         </v-overlay>
@@ -80,14 +81,14 @@
         <!-- soft-remount indicator (§6.2/§6.3): while the app re-runs on the new instance the mount
              point is withheld from the DOM (see the loader templates), so we show a spinner here
              instead of letting the empty mount-point placeholder flash through. Not the full loader. -->
-        <v-overlay style="z-index: 100001;" :value="remounting" opacity="0.9">
+        <v-overlay style="z-index: 100001;" v-bind="vue3 ? { modelValue: remounting } : { value: remounting }" opacity="0.9">
             <div style="text-align: center;">
                 <v-progress-circular indeterminate size="64" width="4"></v-progress-circular>
                 <div style="margin-top: 16px;">Restoring session…</div>
             </div>
         </v-overlay>
 
-        <v-dialog v-model="needsRefresh" width="500">
+        <v-dialog v-if="!vue3" v-model="needsRefresh" width="500">
             <v-card>
                 <v-card-title class="text-h5 grey lighten-2">Please refresh the page</v-card-title>
 
@@ -241,6 +242,7 @@
         }
     </script>
     {% block after_pre_rendered_html %}{% endblock %}
+    {{ resources.include_js("/static/assets/theme.js") }}
     {% if vue3 == True %}
         <link href="{{cdn}}/@widgetti/solara-vuetify3-app@5.1.1/dist/fonts.css" rel="stylesheet"></link>
         {% if production %}
@@ -278,7 +280,6 @@
     </script>
 
     {{ resources.include_js("/static/assets/custom.js") }}
-    {{ resources.include_js("/static/assets/theme.js") }}
 
     <script src="{{cdn}}/requirejs@2.3.6/require.js" crossorigin="anonymous">
     </script>
@@ -322,9 +323,22 @@
             },
             mounted() {
                 document.querySelector('#app').removeAttribute("style");
+                const setVuetifyTheme = (dark) => {
+                    if (Vue.version.startsWith('3')) {
+                        const name = this.$vuetify.theme.global.name;
+                        if (name && typeof name === 'object') {
+                            name.value = dark ? 'dark' : 'light';
+                        } else {
+                            this.$vuetify.theme.global.name = dark ? 'dark' : 'light';
+                        }
+                    } else {
+                        this.$vuetify.theme.dark = dark;
+                    }
+                };
+                setVuetifyTheme(inDarkMode());
                 // listen to change in preferred color scheme (e.g if choosing dark in OSX)
                 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
-                    this.$vuetify.theme.dark = inDarkMode();
+                    setVuetifyTheme(inDarkMode());
                 });
                 document.getElementById('pre-render-theme').remove();
             },
@@ -422,6 +436,7 @@
                     solaraDebugMessages: [],
                     outputMessages: [],
                     theme: theme,
+                    vue3: Vue.version.startsWith('3'),
                     debug: debug,
                     connectionStatus: null,
                     wasConnected: false,
@@ -443,6 +458,9 @@
             }
         };
         const vue3 = Vue.version.startsWith('3');
+        const vuetifyThemesV2 = Object.fromEntries(
+            Object.entries(vuetifyThemes).map(([name, theme]) => [name, theme.colors || theme])
+        );
         if(vue3) {
             var app = Vue.createApp(appComponent).use(vuetifyPlugin)
                 .component("jupyter-widget-mount-point", jupyterWidgetMountPoint)
@@ -455,7 +473,7 @@
                 vuetify: new Vuetify({
                     theme: {
                         dark: inDarkMode(),
-                        themes: vuetifyThemes,
+                        themes: vuetifyThemesV2,
                     },
                 }),
                 ...appComponent,

@@ -4,6 +4,7 @@ import requests
 
 from typing import Any, Dict, Optional
 import solara
+from solara.util import IPYVUETIFY_V3
 
 
 postmark_api_key = None
@@ -123,22 +124,22 @@ def Contact(
         """
     )
 
-    with solara.v.Snackbar(
-        v_model=error.value is not None,
-        timeout=5000,
-        on_v_model=lambda *_: error.set(None),
-        left=True,
-        color="error",
-    ):
+    if IPYVUETIFY_V3:
+        error_snackbar = solara.v.Snackbar(
+            v_model=error.value is not None, timeout=5000, on_v_model=lambda *_: error.set(None), location="bottom start", color="error"
+        )
+    else:
+        error_snackbar = solara.v.Snackbar(v_model=error.value is not None, timeout=5000, on_v_model=lambda *_: error.set(None), left=True, color="error")
+    with error_snackbar:
         solara.Markdown(error.value or "", style={"--dark-color-text": "white", "--color-text": "white"})
         solara.Button(icon=True, icon_name="mdi-close", color="white", on_click=lambda: error.set(None))
 
-    with solara.v.Snackbar(
-        v_model=success.value,
-        timeout=5000,
-        on_v_model=lambda *_: success.set(False),
-        left=True,
-        color="success",
-    ):
+    if IPYVUETIFY_V3:
+        success_snackbar = solara.v.Snackbar(
+            v_model=success.value, timeout=5000, on_v_model=lambda *_: success.set(False), location="bottom start", color="success"
+        )
+    else:
+        success_snackbar = solara.v.Snackbar(v_model=success.value, timeout=5000, on_v_model=lambda *_: success.set(False), left=True, color="success")
+    with success_snackbar:
         solara.Markdown("Your message has been sent!", style={"--dark-color-text": "white", "--color-text": "white"})
         solara.Button(icon=True, icon_name="mdi-close", color="white", on_click=lambda: success.set(False))

@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 import ipyvuetify as vw
 import solara
 from solara.lab.components.input_time import InputTime
+from solara.util import IPYVUETIFY_V3
 
 now = dt.time(14, 30)
 later = dt.time(16, 45)
@@ -152,6 +153,11 @@ def test_input_time_on_open_value():
     on_value = MagicMock()
     el = InputTime(value=now, label="label", on_value=on_value, on_open_value=on_open_value)
     box, rc = solara.render(el, handle_error=False)
+    if IPYVUETIFY_V3:
+        rc.find(vw.VuetifyTemplate).assert_empty()
+        assert on_open_value.call_count == 0
+        rc.close()
+        return
     menu = rc.find(vw.VuetifyTemplate)
     assert menu is not None
 

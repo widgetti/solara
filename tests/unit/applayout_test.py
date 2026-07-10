@@ -1,6 +1,7 @@
 import ipyvuetify as v
 
 import solara
+from solara.util import IPYVUETIFY_V3
 
 
 def test_sidebar():
@@ -79,6 +80,8 @@ def test_sidebar():
         return main
 
     box, rc = solara.render(Layout(), handle_error=False)
+    app_bar = rc.find(v.AppBar).widget
+    assert (app_bar.theme == "dark") if IPYVUETIFY_V3 else (app_bar.dark is True)
     assert len(rc.find(v.NavigationDrawer).find(v.Btn, children=["Hi1"])) == 1
     rc.find(v.ToolbarTitle, children=["Scatter plot"]).assert_not_empty()
     assert set_content is not None

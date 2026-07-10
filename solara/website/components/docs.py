@@ -1,4 +1,6 @@
 import solara
+from solara.util import IPYVUETIFY_V3
+
 from .markdown import MarkdownWithMetadata
 from .breadcrumbs import BreadCrumbs
 
@@ -84,14 +86,24 @@ def WithCode(route_current):
             with solara.Card("Example", margin=0, classes=["mt-8"]):
                 component()
                 github_url = solara.util.github_url(route_current.module.__file__)
-                solara.Button(
-                    label="View source",
-                    icon_name="mdi-github-circle",
-                    attributes={"href": github_url, "target": "_blank"},
-                    text=True,
-                    outlined=True,
-                    class_="mt-8",
-                )
+                if IPYVUETIFY_V3:
+                    solara.Button(
+                        label="View source",
+                        icon_name="mdi-github-circle",
+                        attributes={"href": github_url, "target": "_blank"},
+                        outlined=True,
+                        color="var(--color-grey)",
+                        class_="mt-8",
+                    )
+                else:
+                    solara.Button(
+                        label="View source",
+                        icon_name="mdi-github-circle",
+                        attributes={"href": github_url, "target": "_blank"},
+                        text=True,
+                        outlined=True,
+                        class_="mt-8",
+                    )
     return main
 
 
