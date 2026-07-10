@@ -44,4 +44,7 @@ def ProgressLinear(
     if value is False:
         style_flat = "visibility: hidden;" + style_flat
     class_ = solara.util._combine_classes(classes)
-    v.ProgressLinear(indeterminate=indeterminate, value=value if value is not True else None, color=color, style_=style_flat, class_=class_)
+    if solara.util.IPYVUETIFY_V3:
+        v.ProgressLinear(indeterminate=indeterminate, model_value=value if value is not True else None, color=color, style_=style_flat, class_=class_)
+    else:
+        v.ProgressLinear(indeterminate=indeterminate, value=value if value is not True else None, color=color, style_=style_flat, class_=class_)

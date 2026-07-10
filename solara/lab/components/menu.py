@@ -2,10 +2,26 @@ from typing import Callable, Dict, List, Optional, Union
 
 import solara
 from solara.components.component_vue import component_vue
+from solara.util import IPYVUETIFY_V3
 
 
 @component_vue("menu.vue")
 def MenuWidget(
+    activator: List[solara.Element],
+    show_menu: bool,
+    on_show_menu: Optional[Callable] = None,
+    close_on_content_click: bool = True,
+    children: List[solara.Element] = [],
+    style: Optional[str] = None,
+    context: bool = False,
+    use_absolute: bool = True,
+    use_activator_width: bool = True,
+):
+    pass
+
+
+@component_vue("menu_v3.vue")
+def MenuWidgetV3(
     activator: List[solara.Element],
     show_menu: bool,
     on_show_menu: Optional[Callable] = None,
@@ -62,13 +78,15 @@ def ClickMenu(
     if not isinstance(activator, list):
         activator = [activator]
 
-    return MenuWidget(
-        activator=activator,
-        children=children,
-        show_menu=open_reactive.value,
-        on_show_menu=open_reactive.set,
-        style=style_flat,
-    )
+    if IPYVUETIFY_V3:
+        return MenuWidgetV3(
+            activator=activator,
+            children=children,
+            show_menu=open_reactive.value,
+            on_show_menu=open_reactive.set,
+            style=style_flat,
+        )
+    return MenuWidget(activator=activator, children=children, show_menu=open_reactive.value, on_show_menu=open_reactive.set, style=style_flat)
 
 
 @solara.component
@@ -114,14 +132,16 @@ def ContextMenu(
     if not isinstance(activator, list):
         activator = [activator]
 
-    return MenuWidget(
-        activator=activator,
-        children=children,
-        show_menu=open_reactive.value,
-        on_show_menu=open_reactive.set,
-        style=style_flat,
-        context=True,
-    )
+    if IPYVUETIFY_V3:
+        return MenuWidgetV3(
+            activator=activator,
+            children=children,
+            show_menu=open_reactive.value,
+            on_show_menu=open_reactive.set,
+            style=style_flat,
+            context=True,
+        )
+    return MenuWidget(activator=activator, children=children, show_menu=open_reactive.value, on_show_menu=open_reactive.set, style=style_flat, context=True)
 
 
 @solara.component
@@ -169,6 +189,17 @@ def Menu(
     if not isinstance(activator, list):
         activator = [activator]
 
+    if IPYVUETIFY_V3:
+        return MenuWidgetV3(
+            activator=activator,
+            children=children,
+            show_menu=open_reactive.value,
+            on_show_menu=open_reactive.set,
+            close_on_content_click=close_on_content_click,
+            style=style_flat,
+            use_absolute=False,
+            use_activator_width=use_activator_width,
+        )
     return MenuWidget(
         activator=activator,
         children=children,

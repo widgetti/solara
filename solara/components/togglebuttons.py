@@ -6,7 +6,7 @@ from typing_extensions import Literal
 
 import solara
 from solara.alias import rv
-from solara.util import _combine_classes
+from solara.util import IPYVUETIFY_V3, _combine_classes
 
 T = TypeVar("T")
 
@@ -134,9 +134,31 @@ def ToggleButtonsSingle(
             value = values[index] if index is not None else None
         reactive_value.set(value)
 
+    if IPYVUETIFY_V3:
+        toggle = rv.BtnToggle(
+            children=children,
+            multiple=False,
+            mandatory=mandatory,
+            v_model=index,
+            on_v_model=on_index,
+            density="compact" if dense else None,
+            class_=class_,
+            style_=style_flat,
+        )
+    else:
+        toggle = rv.BtnToggle(
+            children=children,
+            multiple=False,
+            mandatory=mandatory,
+            v_model=index,
+            on_v_model=on_index,
+            dense=dense,
+            class_=class_,
+            style_=style_flat,
+        )
     return cast(
         reacton.core.ValueElement[v.BtnToggle, T],
-        rv.BtnToggle(children=children, multiple=False, mandatory=mandatory, v_model=index, on_v_model=on_index, dense=dense, class_=class_, style_=style_flat),
+        toggle,
     )
 
 
@@ -192,9 +214,29 @@ def ToggleButtonsMultiple(
         value = [allvalues[k] for k in indices]
         reactive_value.set(value)
 
+    if IPYVUETIFY_V3:
+        toggle = rv.BtnToggle(
+            children=children,
+            multiple=True,
+            mandatory=mandatory,
+            v_model=indices,
+            on_v_model=on_indices,
+            density="compact" if dense else None,
+            class_=class_,
+            style_=style_flat,
+        )
+    else:
+        toggle = rv.BtnToggle(
+            children=children,
+            multiple=True,
+            mandatory=mandatory,
+            v_model=indices,
+            on_v_model=on_indices,
+            dense=dense,
+            class_=class_,
+            style_=style_flat,
+        )
     return cast(
         reacton.core.ValueElement[v.BtnToggle, List[T]],
-        rv.BtnToggle(
-            children=children, multiple=True, mandatory=mandatory, v_model=indices, on_v_model=on_indices, dense=dense, class_=class_, style_=style_flat
-        ),
+        toggle,
     )

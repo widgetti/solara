@@ -3,6 +3,7 @@ from typing import Callable, Dict, List, Optional, Union
 import reacton.ipyvuetify as v
 
 import solara
+from solara.util import IPYVUETIFY_V3
 
 
 @solara.value_component(bool)
@@ -56,7 +57,7 @@ def Switch(
     reactive_value = solara.use_reactive(value, on_value)
     del value, on_value
 
-    if label:
+    if label and not IPYVUETIFY_V3:
         children = [label] + children
 
     return v.Switch(
