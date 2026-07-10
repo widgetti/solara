@@ -37,4 +37,4 @@ repos:
       - id: mypy
         pass_filenames: false
         args: [--explicit-package-bases, .]
-        additional_dependencies: [types-requests, types-markdown, types-PyYAML, types-filelock, types-cachetools, types-redis, types-python-dateutil, types-pycurl, reacton, types-six, types-decorator, ipython, ipykernel]
+        additional_dependencies: [types-requests, types-markdown, types-PyYAML, types-filelock, types-cachetools, types-redis, types-python-dateutil, types-pycurl, "reacton @ git+https://github.com/widgetti/reacton.git@6526c42f458f95e5125356ec09cde8411646d899", types-six, types-decorator, ipython, ipykernel]
