@@ -46,6 +46,7 @@ def test_input_date_single(solara_test, page_session: Page):
     input.click()
     page_session.wait_for_timeout(350)
     expect(date_picker_popup(page_session)).to_be_visible()
+    expect(page_session.locator(".v-date-picker")).to_have_css("width", "328px")
     today_button = page_session.get_by_role("button", name=date.strftime("%d").lstrip("0"), exact=True)
     # We click it, but it does not trigger a change, so we don't auto close
     # Do we want to change this behaviour, and still close it?
