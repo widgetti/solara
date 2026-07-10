@@ -23,6 +23,7 @@ import solara
 
 SOLARA_ALLOW_OTHER_TRACER = os.environ.get("SOLARA_ALLOW_OTHER_TRACER", False) in (True, "True", "true", "1")
 ipyvuetify_major_version = int(ipyvuetify.__version__.split(".")[0])
+IPYVUETIFY_V3 = ipyvuetify_major_version == 3
 ipywidgets_major = int(ipywidgets.__version__.split(".")[0])
 
 try:
