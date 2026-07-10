@@ -353,7 +353,7 @@ def read_root(
         content, hash = solara.util.get_file_hash(filepath)
         content_utf8 = content.decode("utf-8")
         url = f"{root_path}{path}?v={hash}"
-        # main-vuetify.js must be embedded on the Jupyter server extension page,
+        # main-vuetify.js must be embedded on the Jupyter ipypopout page,
         # where /solara/static/main-vuetify.js is not a valid static asset URL.
         embed = (len(content) < 1024 * 10 or path == "/static/main-vuetify.js") and b"currentScript" not in content
         if embed:
