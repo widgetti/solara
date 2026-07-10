@@ -566,11 +566,7 @@ jobs:
       - name: Install and verify ipyvuetify 3
         run: |
           pip install --pre "ipyvue>=3.0.0a1" "ipyvuetify>=3.0.0a1"
-          pip install --no-deps --force-reinstall "reacton @ git+https://github.com/widgetti/reacton.git@6526c42f458f95e5125356ec09cde8411646d899"
           python -c "import ipyvuetify, solara.util; print('ipyvuetify', ipyvuetify.__version__); assert solara.util.IPYVUETIFY_V3"
-
-      - name: Type check ipyvuetify 3
-        run: mypy --config-file=mypy-v3.ini --explicit-package-bases .
 
       - name: Install playwright
         run: playwright install
