@@ -547,7 +547,7 @@ jobs:
             "jupyterlab<4" "playwright==1.50.0" "pydantic<2" "ipywidgets~=${{ matrix.ipywidgets }}" \
             pytest-retry jupyter_core jupyter-packaging
           # separate command: --pre should only apply to ipyvue/ipyvuetify
-          pip install --pre "ipyvue>=3" "ipyvuetify>=3"
+          pip install --pre "ipyvue>=3.0.0a1" "ipyvuetify>=3.0.0a1"
           pip freeze --exclude solara --exclude solara-ui --exclude solara-server --exclude pytest-ipywidgets --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
           git diff | tee ${{ env.DIFF_FILE_LOCATION }}
           [ -s ${{ env.DIFF_FILE_LOCATION }} ] && echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT" || echo "No dependencies changed"
@@ -565,7 +565,7 @@ jobs:
 
       - name: Install and verify ipyvuetify 3
         run: |
-          pip install --pre "ipyvue>=3" "ipyvuetify>=3"
+          pip install --pre "ipyvue>=3.0.0a1" "ipyvuetify>=3.0.0a1"
           pip install --no-deps --force-reinstall "reacton @ git+https://github.com/widgetti/reacton.git@6526c42f458f95e5125356ec09cde8411646d899"
           python -c "import ipyvuetify, solara.util; print('ipyvuetify', ipyvuetify.__version__); assert solara.util.IPYVUETIFY_V3"
 
