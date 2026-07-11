@@ -79,7 +79,7 @@ jsonschema-specifications==2025.9.1
 jupyter-events==0.12.1
 jupyter-leaflet==0.20.0
 jupyter-lsp==2.3.1
-jupyter_builder==1.0.2
+jupyter_builder==1.1.0
 jupyter_client==8.9.1
 jupyter_core==5.9.1
 jupyter_server==2.20.0
@@ -160,7 +160,7 @@ pyzmq==27.1.0
 reacton==1.10.2
 redis==8.0.1
 referencing==0.37.0
-regex==2026.6.28
+regex==2026.7.10
 requests==2.34.2
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
@@ -198,7 +198,7 @@ userpath==1.9.2
 uv==0.11.28
 uvicorn==0.51.0
 vega-datasets==0.9.0
-virtualenv==21.6.0
+virtualenv==21.6.1
 watchdog==6.0.0
 watchfiles==1.2.0
 wcwidth==0.8.2

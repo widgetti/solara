@@ -181,7 +181,7 @@ pyzmq==27.1.0
 reacton==1.10.2
 redis==8.0.1
 referencing==0.37.0
-regex==2026.6.28
+regex==2026.7.10
 requests==2.34.2
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
@@ -224,7 +224,7 @@ vaex-hdf5==0.15.0
 vaex-jupyter==0.9.0
 vaex-viz==0.6.0
 vega-datasets==0.9.0
-virtualenv==21.6.0
+virtualenv==21.6.1
 watchdog==6.0.0
 watchfiles==1.2.0
 wcwidth==0.8.2
