@@ -6,7 +6,7 @@ argon2-cffi==25.1.0
 argon2-cffi-bindings==25.1.0
 arrow==1.4.0
 ast_serialize==0.6.0
-asttokens==3.0.1
+asttokens==3.0.2
 async-lru==2.3.0
 attrs==26.1.0
 Authlib==1.7.2
@@ -184,9 +184,9 @@ tornado==6.5.7
 tqdm==4.68.4
 traitlets==5.15.1
 traittypes==0.2.3
-types-Markdown==3.10.2.20260518
+types-Markdown==3.10.2.20260712
 types-PyYAML==6.0.12.20260518
-types-requests==2.33.0.20260518
+types-requests==2.33.0.20260712
 typing-inspection==0.4.2
 typing_extensions==4.16.0
 tzdata==2026.3

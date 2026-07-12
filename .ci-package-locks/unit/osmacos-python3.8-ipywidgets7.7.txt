@@ -7,7 +7,7 @@ appnope==0.1.4
 argon2-cffi==25.1.0
 argon2-cffi-bindings==21.2.0
 arrow==1.4.0
-asttokens==3.0.1
+asttokens==3.0.2
 async-lru==2.0.4
 async-timeout==5.0.1
 attrs==25.3.0

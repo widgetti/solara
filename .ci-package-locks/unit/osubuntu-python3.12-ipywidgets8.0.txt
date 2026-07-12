@@ -3,7 +3,7 @@ annotated-types==0.7.0
 anyio==4.14.1
 anywidget==0.11.0
 ast_serialize==0.6.0
-asttokens==3.0.1
+asttokens==3.0.2
 attrs==26.1.0
 Authlib==1.7.2
 beautifulsoup4==4.15.0
@@ -149,9 +149,9 @@ tornado==6.5.7
 tqdm==4.68.4
 traitlets==5.15.1
 traittypes==0.2.3
-types-Markdown==3.10.2.20260518
+types-Markdown==3.10.2.20260712
 types-PyYAML==6.0.12.20260518
-types-requests==2.33.0.20260518
+types-requests==2.33.0.20260712
 typing-inspection==0.4.2
 typing_extensions==4.16.0
 urllib3==2.7.0
