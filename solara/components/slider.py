@@ -364,6 +364,8 @@ def SliderValue(
     index, set_index = solara.use_state(values.index(reactive_value.value), key="index")
 
     def on_index(index):
+        # Vuetify 3 may serialize the slider value as a float.
+        index = int(index)
         set_index(index)
         value = values[index]
         reactive_value.set(value)
@@ -373,10 +375,11 @@ def SliderValue(
             v_model=index,
             on_v_model=on_index,
             show_ticks=True,
-            ticks=values,
+            ticks={index: str(value) for index, value in enumerate(values)},
             label=label,
             min=0,
             max=len(values) - 1,
+            step=1,
             density="default",
             hide_details=True,
             disabled=disabled,
