@@ -42,3 +42,20 @@ def test_float_slider():
     assert get_tick_labels(solara.FloatSlider, 3, 5, 0.3, tick_labels="end_points") == ["3", *middle_empty_str, "5"]
     assert get_tick_labels(solara.FloatSlider, 3, 5, 0.3) is None
     assert get_tick_labels(solara.FloatSlider, 3, 5, 0.3, tick_labels=reference_ticks) == reference_ticks
+
+
+def test_value_slider_uses_version_specific_ticks_and_accepts_float_index():
+    value = solara.reactive("two")
+    _, rc = solara.render(solara.SliderValue("value", value=value, values=["one", "two", "three"]), handle_error=False)
+    slider = rc.find(vw.Slider).widget
+
+    if IPYVUETIFY_V3:
+        assert slider.ticks == {0: "one", 1: "two", 2: "three"}
+        assert slider.step == 1
+        slider.v_model = 2.0
+    else:
+        assert slider.tick_labels == ["one", "two", "three"]
+        slider.v_model = 2
+
+    assert value.value == "three"
+    rc.close()

@@ -151,3 +151,16 @@ def test_server_normalizes_themes_for_each_vuetify_major():
     widget_bridge = (Path(solara.__file__).parent / "server/static/main-vuetify.js").read_text()
     assert "themes: vuetifyThemesV2" in server_template
     assert widget_bridge.count("themes: widgetThemes()") == 2
+
+
+def test_theme_colors_accept_vuetify_2_and_vuetify_3_shapes():
+    from solara.lab.components.theming import _set_theme, theme
+
+    original_primary = theme.themes.light.primary
+    try:
+        _set_theme({"light": {"primary": "#111111"}})
+        assert theme.themes.light.primary == "#111111"
+        _set_theme({"light": {"dark": False, "colors": {"primary": "#222222"}}})
+        assert theme.themes.light.primary == "#222222"
+    finally:
+        theme.themes.light.primary = original_primary

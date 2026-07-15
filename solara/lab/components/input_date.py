@@ -209,7 +209,6 @@ def InputDate(
             solara.v.DatePicker(
                 v_model=date_standard_str,
                 on_v_model=set_date_cast,
-                style_="width: 100%;",
                 max=max_date,  # type: ignore
                 min=min_date,  # type: ignore
                 view_mode="month" if date_picker_type == "month" else None,
@@ -423,7 +422,6 @@ def InputDateRange(
                 v_model=date_standard_strings,
                 on_v_model=set_dates_cast,
                 multiple=True,
-                style_="width: 100%;",
                 max=max_date,  # type: ignore
                 min=min_date,  # type: ignore
                 view_mode="month" if date_picker_type == "month" else None,
