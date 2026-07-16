@@ -1,3 +1,4 @@
+from copy import deepcopy
 from typing import Any, Callable, Dict, Union, cast
 
 import ipyvuetify.Themes
@@ -7,7 +8,24 @@ import solara
 from solara.components.component_vue import component_vue
 from solara.tasks import Proxy
 
-theme = Proxy(Theme)
+
+_original_theme = ipyvuetify.Themes.theme
+
+
+def _create_theme() -> Theme:
+    """Create a per-kernel theme using ipyvuetify's current colors as defaults."""
+    new_theme = Theme()
+
+    for theme_type, source_colors in _original_theme.themes.__dict__.items():
+        target_colors = getattr(new_theme.themes, theme_type)
+        for name in source_colors.traits(sync=True):
+            if not name.startswith("_"):
+                setattr(target_colors, name, deepcopy(getattr(source_colors, name)))
+
+    return new_theme
+
+
+theme = Proxy(_create_theme)
 ipyvuetify.Themes.theme = cast(ipyvuetify.Themes.Theme, theme)
 
 
