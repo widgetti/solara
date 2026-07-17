@@ -425,12 +425,14 @@ jobs:
           command -v uv >/dev/null || pip install uv
           # uv: parallel downloads/installs, much faster than pip (biggest win on windows).
           # pip freeze still reads the uv-installed packages fine (standard dist-info).
+          # TODO: remove the ipyreact pin once a release includes replacement-model cache invalidation.
           uv pip install --system `echo dist/*.whl`[all] \
             `echo packages/solara-server/dist/*.whl`[all] \
             `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets${{ matrix.ipywidgets_major }}] \
             `echo packages/solara-meta/dist/*.whl`[dev,documentation] \
             `echo packages/solara-enterprise/dist/*.whl`[ssg,auth] \
             "jupyterlab<4" "pydantic<2" "playwright==1.50.0" "ipywidgets~=${{ matrix.ipywidgets }}" \
+            "ipyreact<0.6.0" \
             pytest-retry pytest-xdist
           pip freeze --exclude solara --exclude solara-ui --exclude solara-server --exclude pytest-ipywidgets --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
           git diff | tee ${{ env.DIFF_FILE_LOCATION }}
@@ -441,12 +443,14 @@ jobs:
         run: |
           command -v uv >/dev/null || pip install uv
           # pytest-xdist explicitly: existing lock files do not have it until the next lock refresh
+          # TODO: remove the ipyreact pin once a release includes replacement-model cache invalidation.
           uv pip install --system -r ${{ env.LOCK_FILE_LOCATION }} \
             `echo dist/*.whl`[all] \
             `echo packages/solara-server/dist/*.whl`[all] \
             `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets${{ matrix.ipywidgets_major }}] \
             `echo packages/solara-meta/dist/*.whl`[dev,documentation] \
             `echo packages/solara-enterprise/dist/*.whl`[ssg,auth] \
+            "ipyreact<0.6.0" \
             pytest-xdist
 
       - name: Install playwright
