@@ -128,7 +128,7 @@ notebook==6.5.4
 notebook_shim==0.2.4
 numpy==1.26.4
 objgraph==3.6.2
-openai==2.45.0
+openai==2.46.0
 overrides==7.7.0
 packaging==26.2
 pandas==2.3.3
@@ -188,7 +188,7 @@ rfc3987-syntax==1.1.0
 rich==15.0.0
 rich-click==1.9.8
 rpds-py==0.27.1
-ruff==0.15.21
+ruff==0.15.22
 Send2Trash==2.1.0
 simple-websocket==1.1.0
 simplejson==4.1.1
@@ -206,7 +206,7 @@ tinycss2==1.4.0
 tomli==2.4.1
 toolz==1.1.0
 tornado==6.5.7
-tqdm==4.68.4
+tqdm==4.69.0
 traitlets==5.15.1
 traittypes==0.2.3
 types-Markdown==3.10.0.20251106

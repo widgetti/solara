@@ -1,9 +1,9 @@
 cfgv==3.5.0
 distlib==0.4.3
-filelock==3.30.0
+filelock==3.31.0
 identify==2.6.19
 nodeenv==1.10.0
-platformdirs==4.10.0
+platformdirs==4.10.1
 pre_commit==4.6.0
 python-discovery==1.4.4
 PyYAML==6.0.3
