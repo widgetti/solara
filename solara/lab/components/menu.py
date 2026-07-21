@@ -62,12 +62,16 @@ def ClickMenu(
     if not isinstance(activator, list):
         activator = [activator]
 
-    return MenuWidget(
-        activator=activator,
-        children=children,
-        show_menu=open_reactive.value,
-        on_show_menu=open_reactive.set,
-        style=style_flat,
+    activator_wrapper = solara.v.Html(tag="div", v_bind="x.props", children=activator)
+    return solara.v.Menu(
+        v_model=open_reactive.value,
+        on_v_model=open_reactive.set,
+        v_slots=[{"name": "activator", "variable": "x", "children": activator_wrapper}],
+        close_on_content_click=True,
+        location="bottom",
+        offset=4,
+        children=[solara.v.List(children=children, style_="padding: 0;")],
+        style_=style_flat,
     )
 
 
@@ -114,13 +118,33 @@ def ContextMenu(
     if not isinstance(activator, list):
         activator = [activator]
 
-    return MenuWidget(
-        activator=activator,
-        children=children,
-        show_menu=open_reactive.value,
-        on_show_menu=open_reactive.set,
-        style=style_flat,
-        context=True,
+    activator_wrapper = solara.v.Html(tag="div", children=activator)
+
+    def add_context_menu_handler():
+        widget = solara.get_widget(activator_wrapper)
+
+        def open_menu(*ignore):
+            open_reactive.set(True)
+
+        widget.on_event("contextmenu.prevent", open_menu)
+
+        def cleanup():
+            widget.on_event("contextmenu.prevent", open_menu, remove=True)
+
+        return cleanup
+
+    solara.use_effect(add_context_menu_handler, [activator_wrapper])
+
+    return solara.v.Menu(
+        v_model=open_reactive.value,
+        on_v_model=open_reactive.set,
+        v_slots=[{"name": "activator", "variable": "x", "children": activator_wrapper}],
+        close_on_content_click=True,
+        open_on_click=False,
+        location="bottom",
+        offset=4,
+        children=[solara.v.List(children=children, style_="padding: 0;")],
+        style_=style_flat,
     )
 
 
@@ -169,13 +193,16 @@ def Menu(
     if not isinstance(activator, list):
         activator = [activator]
 
-    return MenuWidget(
-        activator=activator,
-        children=children,
-        show_menu=open_reactive.value,
-        on_show_menu=open_reactive.set,
+    activator_wrapper = solara.v.Html(tag="div", v_bind="x.props", children=activator)
+    min_width = None if use_activator_width else "auto"
+    return solara.v.Menu(
+        v_model=open_reactive.value,
+        on_v_model=open_reactive.set,
+        v_slots=[{"name": "activator", "variable": "x", "children": activator_wrapper}],
         close_on_content_click=close_on_content_click,
-        style=style_flat,
-        use_absolute=False,
-        use_activator_width=use_activator_width,
+        location="bottom",
+        offset=4,
+        min_width=min_width,
+        children=[solara.v.List(children=children, style_="padding: 0;")],
+        style_=style_flat,
     )

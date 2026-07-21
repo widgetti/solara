@@ -218,11 +218,11 @@ def PivotTableCard(
         with rv.CardTitle(children=["Pivot table"]):
             pass
         with rv.CardText():
-            with rv.Btn(v_on="x.on", icon=True, absolute=True, style_="right: 10px; top: 10px") as btn:
+            with rv.Btn(v_on="x.on", icon=True, position="absolute", style_="right: 10px; top: 10px") as btn:
                 rv.Icon(children=["mdi-settings"])
             with rv.Dialog(v_slots=[{"name": "activator", "variable": "x", "children": btn}]):
                 with rv.Sheet():
-                    with rv.Container(pa_4=True, ma_0=True):
+                    with rv.Container(class_="pa-4 ma-0"):
                         with rv.Row():
                             with rv.Col():
                                 with rv.Card(elevation=2):

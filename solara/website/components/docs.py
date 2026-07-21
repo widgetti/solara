@@ -88,8 +88,8 @@ def WithCode(route_current):
                     label="View source",
                     icon_name="mdi-github-circle",
                     attributes={"href": github_url, "target": "_blank"},
-                    text=True,
                     outlined=True,
+                    color="var(--color-grey)",
                     class_="mt-8",
                 )
     return main

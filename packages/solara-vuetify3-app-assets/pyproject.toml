@@ -1,0 +1,27 @@
+[build-system]
+requires = ["hatchling==1.26.3"]
+build-backend = "hatchling.build"
+
+[project]
+name = "solara-vuetify3-app-assets"
+version = "2.0.0a3"
+description = "Prebuilt Vuetify 3 frontend assets for Solara"
+readme = "README.md"
+authors = [{name = "Maarten A. Breddels", email = "maartenbreddels@gmail.com"}]
+license = {text = "MIT"}
+requires-python = ">=3.8"
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+]
+
+[project.urls]
+Home = "https://www.github.com/widgetti/solara"
+
+[tool.hatch.build.targets.wheel]
+bypass-selection = true
+include = ["share/solara/cdn/**"]
+
+[tool.hatch.build.targets.wheel.shared-data]
+"../solara-vuetify3-app/dist" = "share/solara/cdn/@widgetti/solara-vuetify3-app@5.0.2/dist"
+"../solara-vuetify3-app/package.json" = "share/solara/cdn/@widgetti/solara-vuetify3-app@5.0.2/package.json"

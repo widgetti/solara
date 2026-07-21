@@ -87,7 +87,7 @@ def ChatInput(
             v_model=message,
             on_v_model=set_message,
             rounded=True,
-            filled=True,
+            variant="filled",
             hide_details=True,
             autofocus=autofocus,
             style_="flex-grow: 1;" + input_text_style_flat,

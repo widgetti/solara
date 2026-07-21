@@ -76,8 +76,9 @@ def SliderInt(
         max=max,
         step=step,
         thumb_label=thumb_label,
-        tick_labels=updated_tick_labels,
-        dense=False,
+        show_ticks=updated_tick_labels is not None,
+        ticks=updated_tick_labels or [],
+        density="default",
         hide_details=True,
         disabled=disabled,
     )
@@ -145,8 +146,9 @@ def SliderRangeInt(
             max=max,
             step=step,
             thumb_label=thumb_label,
-            tick_labels=updated_tick_labels,
-            dense=False,
+            show_ticks=updated_tick_labels is not None,
+            ticks=updated_tick_labels or [],
+            density="default",
             hide_details=True,
             disabled=disabled,
         ),
@@ -212,8 +214,9 @@ def SliderFloat(
         max=max,
         step=step,
         thumb_label=thumb_label,
-        tick_labels=updated_tick_labels,
-        dense=False,
+        show_ticks=updated_tick_labels is not None,
+        ticks=updated_tick_labels or [],
+        density="default",
         hide_details=True,
         disabled=disabled,
     )
@@ -281,8 +284,9 @@ def SliderRangeFloat(
             max=max,
             step=step,
             thumb_label=thumb_label,
-            tick_labels=updated_tick_labels,
-            dense=False,
+            show_ticks=updated_tick_labels is not None,
+            ticks=updated_tick_labels or [],
+            density="default",
             hide_details=True,
             disabled=disabled,
         ),
@@ -327,6 +331,7 @@ def SliderValue(
     index, set_index = solara.use_state(values.index(reactive_value.value), key="index")
 
     def on_index(index):
+        index = int(index)
         set_index(index)
         value = values[index]
         reactive_value.set(value)
@@ -336,12 +341,13 @@ def SliderValue(
         rv.Slider(
             v_model=index,
             on_v_model=on_index,
-            ticks=True,
-            tick_labels=values,
+            show_ticks=True,
+            ticks={index: str(value) for index, value in enumerate(values)},
             label=label,
             min=0,
             max=len(values) - 1,
-            dense=False,
+            step=1,
+            density="default",
             hide_details=True,
             disabled=disabled,
         ),

@@ -1,13 +1,15 @@
+from typing import Any, List, Optional
+
 import ipyvuetify as vw
 
 import solara
 
 
-def get_tick_labels(clazz, min, max, step, **kwargs) -> list:
+def get_tick_labels(clazz, min, max, step, **kwargs) -> Optional[List[Any]]:
     el = clazz(label="label", min=min, max=max, step=step, **kwargs)
     _, rc = solara.render(el, handle_error=False)
     switch = rc.find(vw.Slider)
-    labels = switch.widget.tick_labels
+    labels = switch.widget.ticks if switch.widget.show_ticks else None
     rc.close()
 
     return labels
@@ -25,7 +27,9 @@ def test_float_slider():
     reference_ticks = [3.0, 3.5, 4.0, 4.5, 5.0]
     middle_empty_str = [""] * (len(reference_ticks) - 2)
     assert get_tick_labels(solara.FloatSlider, 3, 5, 0.5, tick_labels="end_points") == ["3", *middle_empty_str, "5"]
-    assert list(map(float, get_tick_labels(solara.FloatSlider, 3, 5, 0.5, tick_labels=True))) == reference_ticks
+    tick_labels = get_tick_labels(solara.FloatSlider, 3, 5, 0.5, tick_labels=True)
+    assert tick_labels is not None
+    assert list(map(float, tick_labels)) == reference_ticks
     assert get_tick_labels(solara.FloatSlider, 3, 5, 0.5) is None
     assert get_tick_labels(solara.FloatSlider, 3, 5, 0.5, tick_labels=reference_ticks) == reference_ticks
 

@@ -31,14 +31,14 @@ def test_tabs_basics(lazy):
 
     box, rc = solara.render(Test(), handle_error=False)
     assert len(rc.find(v.Tab)) == 2
-    assert len(rc.find(v.TabsItems)) == 1
+    assert len(rc.find(v.Window)) == 1
     if lazy:
-        assert len(rc.find(v.TabItem)) == 2
+        assert len(rc.find(v.WindowItem)) == 2
         assert len(rc.find(v.SkeletonLoader)) == 0
         assert len(rc.find(v.Slider)) == 1
         assert len(rc.find(v.TextField)) == 0
     else:
-        assert len(rc.find(v.TabItem)) == 2
+        assert len(rc.find(v.WindowItem)) == 2
         assert len(rc.find(v.SkeletonLoader)) == 0
         assert len(rc.find(v.SkeletonLoader)) == 0
         assert len(rc.find(v.Slider)) == 1

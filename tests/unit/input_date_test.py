@@ -52,6 +52,18 @@ def test_input_date():
     assert input.widget.v_model == dt.date(2023, 10, 17).strftime("%Y/%m/%d")
 
 
+def test_input_date_accepts_date_picker_datetime():
+    on_value = MagicMock()
+    el = InputDate(value=today, label="label", on_value=on_value)
+    box, rc = solara.render(el, handle_error=False)
+    input = rc.find(vw.DatePicker)
+
+    input.widget.v_model = "2018-09-01T22:00:00.000Z"
+
+    expected = dt.datetime.fromisoformat("2018-09-01T22:00:00.000+00:00").astimezone().date()
+    assert on_value.call_args[0][0] == expected
+
+
 def test_input_date_optional():
     on_value = MagicMock()
     on_v_model = MagicMock()
@@ -146,3 +158,22 @@ def test_input_date_range():
     assert on_value.call_args[0][0] == tuple([dt.date(2023, 10, 17), tomorrow])
     assert not text_field.widget.error
     assert text_field.widget.v_model == f"{dt.date(2023, 10, 17).strftime('%Y/%m/%d')} - {tomorrow.strftime('%Y/%m/%d')}"
+
+    input.widget.v_model = ["2018-09-01T22:00:00.000Z", "2018-09-02T22:00:00.000Z"]
+    expected = tuple(
+        [
+            dt.datetime.fromisoformat("2018-09-01T22:00:00.000+00:00").astimezone().date(),
+            dt.datetime.fromisoformat("2018-09-02T22:00:00.000+00:00").astimezone().date(),
+        ]
+    )
+    assert on_value.call_args[0][0] == expected
+
+
+def test_input_date_range_empty():
+    el = InputDateRange(value=tuple(), label="label")
+    box, rc = solara.render(el, handle_error=False)
+    text_field = rc.find(vw.TextField)
+
+    assert text_field.widget.error
+    assert text_field.widget.label == "label (Please select two dates)"
+    assert text_field.widget.v_model == ""

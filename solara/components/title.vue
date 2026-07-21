@@ -9,7 +9,7 @@ module.exports = {
     window._solaraTitles.push(this);
     this.updateTitle();
   },
-  destroyed() {
+  unmounted() {
     window._solaraTitles.splice(window._solaraTitles.indexOf(this), 1);
     if (window._solaraTitles.length) {
       window._solaraTitles[0].updateTitle();

@@ -21,12 +21,12 @@ def UserCard():
         if user_info:
             # based on https://v2.vuetifyjs.com/en/components/cards/#props
             with v.Card(width="400px"):
-                with v.ListItem(three_line=True):
-                    with v.ListItemContent():
+                with v.ListItem(lines="three"):
+                    with sl.Column(gap="0"):
                         sl.Div("Logged in", class_="text-overline mb-4")
                         v.ListItemTitle(children=[user_info["email"]])
                         v.ListItemSubtitle(children=["You are now logged in, log out via the app bar, or the button below"])
-                    with v.ListItemAvatar():
+                    with v.Avatar():
                         auth.Avatar()
 
                 with v.CardActions():

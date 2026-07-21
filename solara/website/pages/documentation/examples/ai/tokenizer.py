@@ -37,12 +37,12 @@ tokens_filter = solara.reactive("")
 def GithubAvatar(name: str, handle: str, img: str):
     with solara.v.Html(tag="a", attributes={"href": f"https://github.com/{handle}/", "target": "_blank"}):
         with solara.v.ListItem(class_="pa-0"):
-            with solara.v.ListItemAvatar(color="grey darken-3"):
+            with solara.v.Avatar(color="grey darken-3", start=True):
                 solara.v.Img(
                     class_="elevation-6",
                     src=img,
                 )
-            with solara.v.ListItemContent():
+            with solara.Column(gap="0"):
                 solara.v.ListItemTitle(children=["By " + name])
 
 

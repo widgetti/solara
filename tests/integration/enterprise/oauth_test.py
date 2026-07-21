@@ -19,19 +19,19 @@ def test_oauth_from_app_auth0(page_session: playwright.sync_api.Page, solara_ser
         settings.oauth.api_base_url = settings.AUTH0_TEST_API_BASE_URL
         settings.oauth.logout_path = settings.AUTH0_LOGOUT_PATH
         page_session.goto(solara_server.base_url + "/documentation/examples/general/login_oauth")
-        page_session.locator("_vue=v-btn >> text=Login").click()
+        page_session.get_by_role("button", name="Login").click()
         page_session.locator('css=input[name="username"]').fill(os.environ["AUTH0_USERNAME"])
         page_session.locator('css=input[name="password"]').fill(os.environ["AUTH0_PASSWORD"])
         page_session.locator('css=button[name="action"]').nth(-1).click()
-        page_session.locator("_vue=v-btn >> text=Logout").click()
+        page_session.get_by_role("button", name="Logout").click()
         # do another round, we've
-        page_session.locator("_vue=v-btn >> text=Login").click()
+        page_session.get_by_role("button", name="Login").click()
         page_session.locator('css=input[name="username"]').fill(os.environ["AUTH0_USERNAME"])
         page_session.locator('css=input[name="password"]').fill(os.environ["AUTH0_PASSWORD"])
         page_session.locator('css=button[name="action"]').nth(-1).click()
-        page_session.locator("_vue=v-btn >> text=Logout").click()
-        page_session.locator("_vue=v-btn >> text=Login").wait_for()
-        page_session.locator("_vue=v-btn >> text=Login").wait_for()
+        page_session.get_by_role("button", name="Logout").click()
+        page_session.get_by_role("button", name="Login").wait_for()
+        page_session.get_by_role("button", name="Login").wait_for()
 
 
 @pytest.mark.skip(reason="Fief support is deprecated for now")
@@ -43,12 +43,12 @@ def test_oauth_from_app_fief(page_session: playwright.sync_api.Page, solara_serv
         settings.oauth.api_base_url = settings.FIEF_TEST_API_BASE_URL
         settings.oauth.logout_path = settings.FIEF_LOGOUT_PATH
         page_session.goto(solara_server.base_url + "/documentation/examples/general/login_oauth")
-        page_session.locator("_vue=v-btn >> text=Login").click()
+        page_session.get_by_role("button", name="Login").click()
         page_session.locator('css=input[name="email"]').fill(os.environ["FIEF_USERNAME"])
         page_session.locator('css=input[name="password"]').fill(os.environ["FIEF_PASSWORD"])
         page_session.locator('css=button[type="submit"]').click()
-        page_session.locator("_vue=v-btn >> text=Logout").click()
-        page_session.locator("_vue=v-btn >> text=Login").wait_for()
+        page_session.get_by_role("button", name="Logout").click()
+        page_session.get_by_role("button", name="Login").wait_for()
 
 
 @pytest.mark.skipif(not bool(os.environ.get("AUTH0_PASSWORD")), reason="AUTH0_PASSWORD not set")

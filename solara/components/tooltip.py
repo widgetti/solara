@@ -47,8 +47,9 @@ def Tooltip(
 
     solara.use_effect(set_v_on, children)
 
+    content_props = {"style": f"background-color: {color};"} if color is not None else None
     return v.Tooltip(
-        bottom=True,
+        location="bottom",
         v_slots=[
             {
                 "name": "activator",
@@ -56,6 +57,6 @@ def Tooltip(
                 "children": children,
             }
         ],
-        color=color,
+        content_props=content_props,
         children=[tooltip],
     )

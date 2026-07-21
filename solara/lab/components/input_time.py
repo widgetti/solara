@@ -120,14 +120,18 @@ def InputTime(
         open_value=timepicker_is_open,
         use_activator_width=False,
     ):
-        with solara.v.TimePicker(
-            ampm_in_title=twelve_hour_clock,
-            v_model=time_standard_str,
-            on_v_model=set_time_cast,
-            format="24hr" if not twelve_hour_clock else "ampm",
-            allowed_minutes=allowed_minutes,
-            use_seconds=use_seconds,
-            style_="width: 100%;",
-        ):
-            if len(children) > 0:
-                solara.display(*children)
+        TimePicker = getattr(solara.v, "TimePicker", None)
+        if TimePicker is not None:
+            with TimePicker(
+                ampm_in_title=twelve_hour_clock,
+                v_model=time_standard_str,
+                on_v_model=set_time_cast,
+                format="24hr" if not twelve_hour_clock else "ampm",
+                allowed_minutes=allowed_minutes,
+                use_seconds=use_seconds,
+                style_="width: 100%;",
+            ):
+                if len(children) > 0:
+                    solara.display(*children)
+        elif len(children) > 0:
+            solara.display(*children)

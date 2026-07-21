@@ -28,7 +28,7 @@ def DownloadFile(file_path=file_path, url=url, expected_size=expected_size, on_d
         # with w.VBox() as main:
         with rv.Row():
             with rv.Col(cols=1):
-                progressbar = rv.ProgressLinear(value=download.progress * 100, color="primary", striped=True, height=20)
+                progressbar = rv.ProgressLinear(model_value=download.progress * 100, color="primary", striped=True, height=20)
             # with rv.Col(cols=1):
             #     MarkdownIt(f'{status}')
     return main

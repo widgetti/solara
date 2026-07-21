@@ -119,7 +119,8 @@ module.exports = {
                     {left: "$", right: "$", display: false},
                     {left: "\\[", right: "\\]", display: true},
                     {left: "\\(", right: "\\)", display: false}
-                ]
+                ],
+                ignoredClasses: ["solara-markdown-output", "jupyter-widgets"]
             };
         if (window.renderMathInElement) {
             window.renderMathInElement(this.$el, this.latexSettings);
@@ -224,16 +225,6 @@ module.exports = {
         },
         getCdn() {
             return this.cdn || (window.solara ? window.solara.cdn : `${this.getJupyterBaseUrl()}_solara/cdn`);
-        }
-    },
-    updated() {
-        // if the html gets update, re-run mermaid
-        this.mermaid.init();
-
-        if(window.MathJax && MathJax.Hub) {
-            MathJax.Hub.Queue(['Typeset', MathJax.Hub, this.$el]);
-        } else {
-            window.renderMathInElement(this.$el, this.latexSettings);
         }
     }
 }
@@ -425,7 +416,7 @@ def Markdown(md_text: str, unsafe_solara_execute=False, style: Union[str, Dict, 
     if md_parser is None:
         assert md_self is not None
         md_parser = md_self
-    html = md_parser.convert(md_text)
+    html = solara.use_memo(lambda: md_parser.convert(md_text), dependencies=[md_text, md_parser, unsafe_solara_execute])
 
     def cleanup_wrapper():
         def cleanup():
