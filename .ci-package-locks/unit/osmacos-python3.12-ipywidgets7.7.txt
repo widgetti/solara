@@ -40,7 +40,7 @@ distro==1.9.0
 executing==2.2.1
 fakeredis==2.36.2
 fastjsonschema==2.21.2
-filelock==3.31.1
+filelock==3.31.2
 Flask==3.1.3
 flask-sock==0.7.0
 folium==0.20.0
@@ -125,8 +125,8 @@ platformdirs==4.10.1
 playwright==1.61.0
 plotly==6.9.0
 pluggy==1.6.0
-polars==1.42.1
-polars-runtime-32==1.42.1
+polars==1.43.0
+polars-runtime-32==1.43.0
 pre_commit==4.6.0
 prometheus_client==0.25.0
 prompt_toolkit==3.0.52
@@ -193,7 +193,7 @@ typing_extensions==4.16.0
 tzdata==2026.3
 uri-template==1.3.0
 urllib3==2.7.0
-uv==0.11.29
+uv==0.11.30
 uvicorn==0.51.0
 vega-datasets==0.9.0
 virtualenv==21.6.1
