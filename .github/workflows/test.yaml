@@ -80,6 +80,9 @@ jobs:
       - name: Build solara-assets
         run: (cd packages/solara-assets; hatch build)
 
+      - name: Build solara-vuetify3-app-assets
+        run: (cd packages/solara-vuetify3-app-assets; hatch build -t wheel)
+
       - name: Build solara-server
         run: (cd packages/solara-server; hatch build)
 
@@ -100,6 +103,7 @@ jobs:
           path: |
             dist
             packages/solara-assets/dist
+            packages/solara-vuetify3-app-assets/dist
             packages/solara-server/dist
             packages/solara-meta/dist
             packages/pytest-ipywidgets/dist
@@ -133,6 +137,13 @@ jobs:
             --region "$AWS_REGION"
 
           aws s3 cp packages/solara-server/dist/ "s3://${S3_BUCKET}/packages/solara-server/" \
+            --recursive \
+            --exclude "*" \
+            --include "*.whl" \
+            --endpoint-url "$AWS_ENDPOINT_URL_S3" \
+            --region "$AWS_REGION"
+
+          aws s3 cp packages/solara-vuetify3-app-assets/dist/ "s3://${S3_BUCKET}/packages/solara-vuetify3-app-assets/" \
             --recursive \
             --exclude "*" \
             --include "*.whl" \

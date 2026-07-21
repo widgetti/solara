@@ -1,0 +1,4 @@
+/cdn/
+/dist/
+__pycache__/
+*.pyc
