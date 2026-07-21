@@ -10,7 +10,7 @@ authors = [{name = "Maarten A. Breddels", email = "maartenbreddels@gmail.com"}]
 license = {file = "LICENSE"}
 requires-python = ">=3.8"
 classifiers = ["License :: OSI Approved :: MIT License"]
-version = "2.0.0a2"
+version = "2.0.0a3"
 dynamic = ["description"]
 dependencies = [
     "solara-ui",
