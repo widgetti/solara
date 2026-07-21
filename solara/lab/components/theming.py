@@ -1,4 +1,5 @@
-from typing import Callable, Dict, Union, cast
+from copy import deepcopy
+from typing import Any, Callable, Dict, Union, cast
 
 import ipyvuetify.Themes
 from ipyvuetify.Themes import Theme
@@ -7,7 +8,24 @@ import solara
 from solara.components.component_vue import component_vue
 from solara.tasks import Proxy
 
-theme = Proxy(Theme)
+
+_original_theme = ipyvuetify.Themes.theme
+
+
+def _create_theme() -> Theme:
+    """Create a per-kernel theme using ipyvuetify's current colors as defaults."""
+    new_theme = Theme()
+
+    for theme_type, source_colors in _original_theme.themes.__dict__.items():
+        target_colors = getattr(new_theme.themes, theme_type)
+        for name in source_colors.traits(sync=True):
+            if not name.startswith("_"):
+                setattr(target_colors, name, deepcopy(getattr(source_colors, name)))
+
+    return new_theme
+
+
+theme = Proxy(_create_theme)
 ipyvuetify.Themes.theme = cast(ipyvuetify.Themes.Theme, theme)
 
 
@@ -25,14 +43,17 @@ def use_dark_effective():
     return solara.use_trait_observe(theme, "dark_effective")
 
 
-def _set_theme(themes: Union[Dict[str, Dict[str, str]], None]):
+def _set_theme(themes: Union[Dict[str, Dict[str, Any]], None]):
     if themes is None:
         return
 
     for theme_type in themes.keys():
         widget = getattr(theme.themes, theme_type)
+        # Vuetify 3 nests color values under ``colors``; Vuetify 2 uses the
+        # flat mapping directly.
+        colors = themes[theme_type].get("colors", themes[theme_type])
         with widget.hold_trait_notifications():
-            for k, v in themes[theme_type].items():
+            for k, v in colors.items():
                 setattr(widget, k, v)
 
 

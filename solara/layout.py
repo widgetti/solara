@@ -1,6 +1,7 @@
 import reacton.ipyvuetify as v
 import solara
 from solara.kitchensink import vue
+from solara.util import IPYVUETIFY_V3
 
 
 @solara.component
@@ -19,11 +20,19 @@ def LayoutApp(children=[], left=None, right=None, open_left=False, open_right=Fa
     open_right, set_open_right = solara.use_state(open_right)
     with v.Html(tag="div") as main:
         if left:
-            with v.NavigationDrawer(absolute=True, right=False, width="min-content", v_model=open_left):
+            if IPYVUETIFY_V3:
+                drawer = v.NavigationDrawer(absolute=True, location="left", width="min-content", v_model=open_left)
+            else:
+                drawer = v.NavigationDrawer(absolute=True, right=False, width="min-content", v_model=open_left)
+            with drawer:
                 AppIcon(open_left, on_click=lambda: set_open_left(not open_left))
                 with v.Html(tag="div", children=[left]):
                     pass
-        with v.Toolbar(dense=True, class_="elevation-3", dark=False):
+        if IPYVUETIFY_V3:
+            toolbar = v.Toolbar(density="compact", class_="elevation-3")
+        else:
+            toolbar = v.Toolbar(dense=True, class_="elevation-3", dark=False)
+        with toolbar:
             if left:
                 AppIcon(open_left, on_click=lambda: set_open_left(not open_left))
             v.ToolbarTitle(children=[title])
@@ -35,7 +44,11 @@ def LayoutApp(children=[], left=None, right=None, open_left=False, open_right=Fa
         with v.Row():
             v.Col(cols=12, children=[*children])
         if right:
-            with v.NavigationDrawer(absolute=True, right=True, width="min-content", v_model=open_right):
+            if IPYVUETIFY_V3:
+                drawer = v.NavigationDrawer(absolute=True, location="right", width="min-content", v_model=open_right)
+            else:
+                drawer = v.NavigationDrawer(absolute=True, right=True, width="min-content", v_model=open_right)
+            with drawer:
                 with v.Btn(icon=True) as btn:
                     vue.use_event(btn, "click", lambda *_ignore: set_open_right(not open_right))
                     v.Icon(children=["mdi-settings"])

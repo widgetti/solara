@@ -2,6 +2,7 @@ from typing import Callable, Dict, List, Optional, TypeVar, Union
 
 import solara
 from solara import v
+from solara.util import IPYVUETIFY_V3
 
 
 @solara.component
@@ -36,7 +37,10 @@ def Tab(
     if label is not None:
         tab_children = [label] + tab_children
     if icon_name:
-        tab_children = [v.Icon(left=bool(label), children=[icon_name])] + tab_children
+        if IPYVUETIFY_V3:
+            tab_children = [v.Icon(start=bool(label), children=[icon_name])] + tab_children
+        else:
+            tab_children = [v.Icon(left=bool(label), children=[icon_name])] + tab_children
     style_flat = solara.util._flatten_style(style)
     class_ = solara.util._combine_classes(classes)
     # note: children is not used, it is only used in the Tabs component
@@ -238,37 +242,42 @@ def Tabs(
     if align not in ["left", "start", "center", "right", "end"]:
         raise ValueError(f"Tabs align must be one of 'left', 'start', 'center', 'right', 'end', but is {align}")
 
-    with v.Tabs(
-        v_model=reactive_value.value,
-        on_v_model=on_v_model,
-        centered=align == "center",
-        right=align in ["right", "end"],
-        children=children,
-        vertical=vertical,
-        color=color,
-        background_color=background_color,
-        show_arrows=True,
-        grow=grow,
-        dark=dark,
-    ) as tabs:
-        v.TabsSlider(color=slider_color)
-        if has_content:
-            with v.TabsItems(v_model=reactive_value.value, on_v_model=on_v_model):
-                for i, child in enumerate(children):
-                    if not lazy or reactive_value.value == i:
-                        v.TabItem(children=child.kwargs.get("children", []), value=i)
-                    else:
-                        v.TabItem(
-                            value=i,
-                            children=[
-                                # Nice idea, but by using the widget interface the tab does not change without binding using
-                                # v-model. So we would need to implement this using a vuetify template.
-                                # v.SkeletonLoader(
-                                #     class_="mx-auto",
-                                #     max_width="300",
-                                #     type="card",
-                                # )
-                            ],
-                        )
+    if IPYVUETIFY_V3:
+        with v.Tabs(
+            v_model=reactive_value.value,
+            on_v_model=on_v_model,
+            align_tabs="center" if align == "center" else "end" if align in ["right", "end"] else "start",
+            children=children,
+            direction="vertical" if vertical else None,
+            color=color,
+            bg_color=background_color,
+            slider_color=slider_color,
+            show_arrows=True,
+            grow=grow,
+            class_="v-theme--dark" if dark else None,
+        ) as tabs:
+            if has_content:
+                with v.Window(v_model=reactive_value.value, on_v_model=on_v_model):
+                    for i, child in enumerate(children):
+                        v.WindowItem(children=child.kwargs.get("children", []) if not lazy or reactive_value.value == i else [], value=i)
+    else:
+        with v.Tabs(
+            v_model=reactive_value.value,
+            on_v_model=on_v_model,
+            centered=align == "center",
+            right=align in ["right", "end"],
+            children=children,
+            vertical=vertical,
+            color=color,
+            background_color=background_color,
+            show_arrows=True,
+            grow=grow,
+            dark=dark,
+        ) as tabs:
+            v.TabsSlider(color=slider_color)
+            if has_content:
+                with v.TabsItems(v_model=reactive_value.value, on_v_model=on_v_model):
+                    for i, child in enumerate(children):
+                        v.TabItem(children=child.kwargs.get("children", []) if not lazy or reactive_value.value == i else [], value=i)
 
     return tabs

@@ -8,9 +8,19 @@ import reacton
 import solara
 import solara.lab
 from solara.components.input import _use_input_type
+from solara.util import IPYVUETIFY_V3
 
 
 logger = logging.getLogger(__name__)
+
+
+def _parse_date_picker_value(value: str, internal_date_format: str) -> dt.date:
+    if "T" in value:
+        datetime_value = dt.datetime.fromisoformat(value.replace("Z", "+00:00"))
+        if datetime_value.tzinfo is not None:
+            datetime_value = datetime_value.astimezone()
+        return datetime_value.date()
+    return dt.datetime.strptime(value, internal_date_format).date()
 
 
 def use_close_menu(el: reacton.core.Element, is_open: solara.Reactive[bool]):
@@ -136,7 +146,7 @@ def InputDate(
 
     def set_date_cast(new_value: Optional[str]):
         if new_value:
-            date_value = dt.datetime.strptime(new_value, internal_date_format).date()
+            date_value = _parse_date_picker_value(new_value, internal_date_format)
             datepicker_is_open.set(False)
             value_reactive.value = date_value
 
@@ -154,21 +164,38 @@ def InputDate(
 
     if error_message:
         label += f" ({error_message})"
-    input = solara.v.TextField(
-        label=label,
-        v_model=internal_value,
-        on_v_model=set_value_cast,
-        append_icon="mdi-calendar",
-        error=bool(error_message),
-        style_="min-width: 290px;" + style_flat,
-        class_=", ".join(classes) if classes else "",
-        dense=dense,
-        hide_details=hide_details,
-        placeholder=placeholder if placeholder is not None else "",
-        prefix=prefix if prefix is not None else "",
-        suffix=suffix if suffix is not None else "",
-        clearable=clearable,
-    )
+    if IPYVUETIFY_V3:
+        input = solara.v.TextField(
+            label=label,
+            v_model=internal_value,
+            on_v_model=set_value_cast,
+            append_icon="mdi-calendar",
+            error=bool(error_message),
+            style_="min-width: 290px;" + style_flat,
+            class_=", ".join(classes) if classes else "",
+            density="compact" if dense else None,
+            hide_details=hide_details,
+            placeholder=placeholder if placeholder is not None else "",
+            prefix=prefix if prefix is not None else "",
+            suffix=suffix if suffix is not None else "",
+            clearable=clearable,
+        )
+    else:
+        input = solara.v.TextField(
+            label=label,
+            v_model=internal_value,
+            on_v_model=set_value_cast,
+            append_icon="mdi-calendar",
+            error=bool(error_message),
+            style_="min-width: 290px;" + style_flat,
+            class_=", ".join(classes) if classes else "",
+            dense=dense,
+            hide_details=hide_details,
+            placeholder=placeholder if placeholder is not None else "",
+            prefix=prefix if prefix is not None else "",
+            suffix=suffix if suffix is not None else "",
+            clearable=clearable,
+        )
 
     use_close_menu(input, datepicker_is_open)
 
@@ -178,17 +205,26 @@ def InputDate(
         open_value=datepicker_is_open,
         use_activator_width=False,
     ):
-        with solara.v.DatePicker(
-            v_model=date_standard_str,
-            on_v_model=set_date_cast,
-            first_day_of_week=first_day_of_the_week,
-            style_="width: 100%;",
-            max=max_date,  # type: ignore
-            min=min_date,  # type: ignore
-            type=date_picker_type,
-            children=children,
-        ):
-            pass
+        if IPYVUETIFY_V3:
+            solara.v.DatePicker(
+                v_model=date_standard_str,
+                on_v_model=set_date_cast,
+                max=max_date,  # type: ignore
+                min=min_date,  # type: ignore
+                view_mode="month" if date_picker_type == "month" else None,
+                children=children,
+            )
+        else:
+            solara.v.DatePicker(
+                v_model=date_standard_str,
+                on_v_model=set_date_cast,
+                first_day_of_week=first_day_of_the_week,
+                style_="width: 100%;",
+                max=max_date,  # type: ignore
+                min=min_date,  # type: ignore
+                type=date_picker_type,
+                children=children,
+            )
 
 
 @solara.component
@@ -321,13 +357,13 @@ def InputDateRange(
     def dates_to_string(dates: Tuple[Optional[dt.date], Optional[dt.date]]):
         string_dates = [date.strftime(date_format) if date is not None else "" for date in dates]
         if (len(dates) < 2 or dates[1] is None) and not optional:
-            return string_dates[0], f"Please select two {date_picker_type}s"
+            return string_dates[0] if string_dates else "", f"Please select two {date_picker_type}s"
         return " - ".join(string_dates), None
 
     def set_dates_cast(values):
         date_value = cast(
             Tuple[Optional[dt.date], Optional[dt.date]],
-            tuple([(dt.datetime.strptime(item, internal_date_format).date() if item is not None else None) for item in values]),
+            tuple([(_parse_date_picker_value(item, internal_date_format) if item is not None else None) for item in values]),
         )
         if len(date_value) > 1 and date_value[1] is not None:
             datepicker_is_open.set(False)
@@ -341,20 +377,36 @@ def InputDateRange(
 
     if error_message:
         label += f" ({error_message})"
-    input = solara.v.TextField(
-        label=label,
-        v_model=string_dates,
-        append_icon="mdi-calendar",
-        error=bool(error_message),
-        style_="min-width: 290px;" + style_flat,
-        readonly=True,
-        class_=", ".join(classes) if classes else "",
-        dense=dense,
-        hide_details=hide_details,
-        placeholder=placeholder if placeholder is not None else "",
-        prefix=prefix if prefix is not None else "",
-        suffix=suffix if suffix is not None else "",
-    )
+    if IPYVUETIFY_V3:
+        input = solara.v.TextField(
+            label=label,
+            v_model=string_dates,
+            append_icon="mdi-calendar",
+            error=bool(error_message),
+            style_="min-width: 290px;" + style_flat,
+            readonly=True,
+            class_=", ".join(classes) if classes else "",
+            density="compact" if dense else None,
+            hide_details=hide_details,
+            placeholder=placeholder if placeholder is not None else "",
+            prefix=prefix if prefix is not None else "",
+            suffix=suffix if suffix is not None else "",
+        )
+    else:
+        input = solara.v.TextField(
+            label=label,
+            v_model=string_dates,
+            append_icon="mdi-calendar",
+            error=bool(error_message),
+            style_="min-width: 290px;" + style_flat,
+            readonly=True,
+            class_=", ".join(classes) if classes else "",
+            dense=dense,
+            hide_details=hide_details,
+            placeholder=placeholder if placeholder is not None else "",
+            prefix=prefix if prefix is not None else "",
+            suffix=suffix if suffix is not None else "",
+        )
 
     # We include closing on tab in case users want to skip the field with tab
     use_close_menu(input, datepicker_is_open)
@@ -365,15 +417,25 @@ def InputDateRange(
         open_value=datepicker_is_open,
         use_activator_width=False,
     ):
-        with solara.v.DatePicker(
-            v_model=date_standard_strings,
-            on_v_model=set_dates_cast,
-            range=True,
-            first_day_of_week=first_day_of_the_week,
-            style_="width: 100%;",
-            max=max_date,  # type: ignore
-            min=min_date,  # type: ignore
-            type=date_picker_type,
-            children=children,
-        ):
-            pass
+        if IPYVUETIFY_V3:
+            solara.v.DatePicker(
+                v_model=date_standard_strings,
+                on_v_model=set_dates_cast,
+                multiple=True,
+                max=max_date,  # type: ignore
+                min=min_date,  # type: ignore
+                view_mode="month" if date_picker_type == "month" else None,
+                children=children,
+            )
+        else:
+            solara.v.DatePicker(
+                v_model=date_standard_strings,
+                on_v_model=set_dates_cast,
+                range=True,
+                first_day_of_week=first_day_of_the_week,
+                style_="width: 100%;",
+                max=max_date,  # type: ignore
+                min=min_date,  # type: ignore
+                type=date_picker_type,
+                children=children,
+            )

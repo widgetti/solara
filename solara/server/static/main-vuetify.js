@@ -4,6 +4,7 @@ var jupyterWidgetMountPoint = {
         return {
             renderFn: undefined,
             elem: undefined,
+            component: undefined,
         }
     },
     props: ['mount-id'],
@@ -11,11 +12,19 @@ var jupyterWidgetMountPoint = {
         requestWidget(this.mountId);
     },
     mounted() {
-        const vue3 = Vue.version.startsWith('3');
         requestWidget(this.mountId)
-            .then(widgetView => {
-                if (['VuetifyView', 'VuetifyTemplateView'].includes(widgetView.model.get('_view_name'))) {
-                    this.renderFn = createElement => widgetView.vueRender(createElement);
+            .then(async widgetView => {
+                const model = widgetView.model;
+                if (['VuetifyView', 'VuetifyTemplateView'].includes(model.get('_view_name'))) {
+                    if (Vue.h && ['VueTemplateModel', 'VuetifyTemplateModel', 'HtmlModel'].includes(model.get('_model_name'))) {
+                        await registerVueComponents(this, widgetView);
+                    }
+                    if (Vue.h) {
+                        const component = widgetView.vueComponent();
+                        this.component = Vue.markRaw ? Vue.markRaw(component) : component;
+                    } else {
+                        this.renderFn = createElement => widgetView.vueRender(createElement);
+                    }
                 } else {
                     while (this.$el.firstChild) {
                         this.$el.removeChild(this.$el.firstChild);
@@ -31,6 +40,9 @@ var jupyterWidgetMountPoint = {
     render(createElement) {
         // in vue3 we have Vue.h, otherwise fall back to createElement (vue2)
         let h = Vue.h || createElement;
+        if (this.component) {
+            return h(this.component);
+        }
         if (this.renderFn) {
             /* workaround for v-menu click */
             if (!this.elem) {
@@ -42,6 +54,34 @@ var jupyterWidgetMountPoint = {
             [h('v-chip', `[${this.mountId}]`)]);
     }
 };
+
+function widgetThemes() {
+    return Object.fromEntries(
+        Object.entries(vuetifyThemes).map(([name, theme]) => [name, theme.colors || theme])
+    );
+}
+
+async function registerVueComponents(vueComponent, widgetView) {
+    const app = vueComponent.$.appContext.app;
+    await loadWidgetModule('jupyter-vue', jupyterVue =>
+        jupyterVue.addApp(app, widgetView.model.widget_manager)
+    );
+    if (widgetView.model.get('_view_module') === 'jupyter-vuetify') {
+        await loadWidgetModule('jupyter-vuetify', jupyterVuetify =>
+            jupyterVuetify.addApp(app)
+        );
+    }
+}
+
+function loadWidgetModule(name, callback) {
+    return new Promise(resolve => {
+        if (!requirejs.defined(name) && !requirejs.specified(name)) {
+            resolve();
+            return;
+        }
+        requirejs([name], module => resolve(callback(module)), () => resolve());
+    });
+}
 
 const widgetResolveFns = {};
 const widgetPromises = {};
@@ -116,6 +156,9 @@ async function solaraInit(mountId, appName) {
     mountId = mountId || 'content';
     define("vue", [], () => Vue);
     define("vuetify", [], () => Vuetify);
+    if (typeof vuetifyPlugin !== "undefined") {
+        define("solara-vuetify-plugin", [], () => ({ vuetifyPlugin }));
+    }
     cookies = getCookiesMap(document.cookie);
     const searchParams = new URLSearchParams(window.location.search);
     let kernelId = searchParams.get('kernelid') || generateUuid()
@@ -391,7 +434,7 @@ async function solaraInit(mountId, appName) {
             } else {
                 // pushState routing makes the boot-time path stale - recompute from the live URL now
                 const path = window.location.pathname.slice(solara.rootPath.length) + window.location.search;
-                modelId = await manager.run(appName, { path, dark: inDarkMode(), themes: vuetifyThemes });
+                modelId = await manager.run(appName, { path, dark: inDarkMode(), themes: widgetThemes() });
             }
             if (superseded()) {
                 // the socket dropped again (or a newer cycle took over) during the rebuild -
@@ -580,7 +623,7 @@ async function solaraInit(mountId, appName) {
     if (kernelId && widgetModelId) {
         await widgetManager.fetchAll();
     } else {
-        widgetModelId = await widgetManager.run(appName, {path, dark: inDarkMode(), themes: vuetifyThemes});
+        widgetModelId = await widgetManager.run(appName, {path, dark: inDarkMode(), themes: widgetThemes()});
     }
     await solaraMount(widgetManager, mountId, widgetModelId);
     viewMounted = true;

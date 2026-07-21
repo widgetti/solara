@@ -77,18 +77,31 @@ def Style(value: Union[str, Path] = ""):
     # so that we create a new component if the value changes
     # but we do not remove the css of a component with the same value
     key = uuid + "-" + hash
+    marker = f"solara-style-{key}"
     # ipyvue does not remove the css itself, so we need to do it manually
     script = (
         """
 <script>
 module.exports = {
   destroyed() {
-    document.getElementById("ipyvue-%s").remove();
+    this.cleanup();
+  },
+  unmounted() {
+    this.cleanup();
+  },
+  methods: {
+    cleanup() {
+      document.querySelectorAll("style").forEach((style) => {
+        if (style.textContent.includes("%s")) {
+          style.remove();
+        }
+      });
+    },
   },
 };
 </script>
     """
-        % key
+        % marker
     )
 
     template = f"""
@@ -98,6 +111,7 @@ module.exports = {
 </template>
 {script}
 <style id="{key}">
+/* {marker} */
 {css_content}
 </style>
     """

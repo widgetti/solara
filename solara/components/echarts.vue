@@ -29,6 +29,9 @@ module.exports = {
       this.resizeObserver.disconnect();
     }
   },
+  beforeUnmount() {
+    this.$options.beforeDestroy.call(this);
+  },
   watch: {
     option() {
       // notMerge, otherwise we're left with axes etc

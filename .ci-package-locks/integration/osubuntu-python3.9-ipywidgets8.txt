@@ -71,7 +71,7 @@ ipydatawidgets==4.3.5
 ipykernel==6.31.0
 ipyleaflet==0.20.0
 ipympl==0.10.0
-ipyreact==0.6.0
+ipyreact==0.5.0
 ipython==8.18.1
 ipython-genutils==0.2.0
 ipyvolume==0.6.3

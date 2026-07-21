@@ -1,7 +1,7 @@
 import math
 import os
 from datetime import date, datetime, timedelta
-from typing import Callable, List, Optional, Tuple, TypeVar, Union, cast
+from typing import Any, Callable, List, Optional, Tuple, TypeVar, Union, cast
 
 import ipyvue
 import ipyvuetify
@@ -11,8 +11,93 @@ from typing_extensions import Literal
 
 import solara
 from solara.alias import rv
+from solara.util import IPYVUETIFY_V3
 
 T = TypeVar("T")
+
+
+def _slider(
+    v_model: Any,
+    on_v_model: Callable[[Any], None],
+    label: str,
+    min: float,
+    max: float,
+    step: float,
+    thumb_label: Union[bool, Literal["always"]],
+    tick_labels: Optional[List[str]],
+    disabled: bool,
+):
+    if IPYVUETIFY_V3:
+        return rv.Slider(
+            v_model=v_model,
+            on_v_model=on_v_model,
+            label=label,
+            min=min,
+            max=max,
+            step=step,
+            thumb_label=thumb_label,
+            show_ticks=tick_labels is not None,
+            ticks=tick_labels or [],
+            density="default",
+            hide_details=True,
+            disabled=disabled,
+        )
+    return rv.Slider(
+        v_model=v_model,
+        on_v_model=on_v_model,
+        label=label,
+        min=min,
+        max=max,
+        step=step,
+        thumb_label=thumb_label,
+        # The generated v1 wrapper misses the trait's allow_none=True.
+        tick_labels=cast(List[Any], tick_labels),
+        dense=False,
+        hide_details=True,
+        disabled=disabled,
+    )
+
+
+def _range_slider(
+    v_model: Any,
+    on_v_model: Callable[[Any], None],
+    label: str,
+    min: float,
+    max: float,
+    step: float,
+    thumb_label: Union[bool, Literal["always"]],
+    tick_labels: Optional[List[str]],
+    disabled: bool,
+):
+    if IPYVUETIFY_V3:
+        return rv.RangeSlider(
+            v_model=v_model,
+            on_v_model=on_v_model,
+            label=label,
+            min=min,
+            max=max,
+            step=step,
+            thumb_label=thumb_label,
+            show_ticks=tick_labels is not None,
+            ticks=tick_labels or [],
+            density="default",
+            hide_details=True,
+            disabled=disabled,
+        )
+    return rv.RangeSlider(
+        v_model=v_model,
+        on_v_model=on_v_model,
+        label=label,
+        min=min,
+        max=max,
+        step=step,
+        thumb_label=thumb_label,
+        # The generated v1 wrapper misses the trait's allow_none=True.
+        tick_labels=cast(List[Any], tick_labels),
+        dense=False,
+        hide_details=True,
+        disabled=disabled,
+    )
 
 
 @solara.value_component(int)
@@ -68,19 +153,7 @@ def SliderInt(
 
     updated_tick_labels = _produce_tick_labels(tick_labels, min, max, step)
 
-    return rv.Slider(
-        v_model=reactive_value.value,
-        on_v_model=set_value_cast,
-        label=label,
-        min=min,
-        max=max,
-        step=step,
-        thumb_label=thumb_label,
-        tick_labels=updated_tick_labels,
-        dense=False,
-        hide_details=True,
-        disabled=disabled,
-    )
+    return _slider(reactive_value.value, set_value_cast, label, min, max, step, thumb_label, updated_tick_labels, disabled)
 
 
 @solara.value_component(None)
@@ -137,19 +210,7 @@ def SliderRangeInt(
 
     return cast(
         reacton.core.ValueElement[ipyvuetify.RangeSlider, Tuple[int, int]],
-        rv.RangeSlider(
-            v_model=reactive_value.value,
-            on_v_model=set_value_cast,
-            label=label,
-            min=min,
-            max=max,
-            step=step,
-            thumb_label=thumb_label,
-            tick_labels=updated_tick_labels,
-            dense=False,
-            hide_details=True,
-            disabled=disabled,
-        ),
+        _range_slider(reactive_value.value, set_value_cast, label, min, max, step, thumb_label, updated_tick_labels, disabled),
     )
 
 
@@ -204,19 +265,7 @@ def SliderFloat(
 
     updated_tick_labels = _produce_tick_labels(tick_labels, min, max, step)
 
-    return rv.Slider(
-        v_model=reactive_value.value,
-        on_v_model=set_value_cast,
-        label=label,
-        min=min,
-        max=max,
-        step=step,
-        thumb_label=thumb_label,
-        tick_labels=updated_tick_labels,
-        dense=False,
-        hide_details=True,
-        disabled=disabled,
-    )
+    return _slider(reactive_value.value, set_value_cast, label, min, max, step, thumb_label, updated_tick_labels, disabled)
 
 
 @solara.value_component(None)
@@ -273,19 +322,7 @@ def SliderRangeFloat(
 
     return cast(
         reacton.core.ValueElement[ipyvuetify.RangeSlider, Tuple[float, float]],
-        rv.RangeSlider(
-            v_model=reactive_value.value,
-            on_v_model=set_value_cast,
-            label=label,
-            min=min,
-            max=max,
-            step=step,
-            thumb_label=thumb_label,
-            tick_labels=updated_tick_labels,
-            dense=False,
-            hide_details=True,
-            disabled=disabled,
-        ),
+        _range_slider(reactive_value.value, set_value_cast, label, min, max, step, thumb_label, updated_tick_labels, disabled),
     )
 
 
@@ -327,13 +364,28 @@ def SliderValue(
     index, set_index = solara.use_state(values.index(reactive_value.value), key="index")
 
     def on_index(index):
+        # Vuetify 3 may serialize the slider value as a float.
+        index = int(index)
         set_index(index)
         value = values[index]
         reactive_value.set(value)
 
-    return cast(
-        reacton.core.ValueElement[ipyvuetify.Slider, T],
-        rv.Slider(
+    if IPYVUETIFY_V3:
+        slider = rv.Slider(
+            v_model=index,
+            on_v_model=on_index,
+            show_ticks=True,
+            ticks={index: str(value) for index, value in enumerate(values)},
+            label=label,
+            min=0,
+            max=len(values) - 1,
+            step=1,
+            density="default",
+            hide_details=True,
+            disabled=disabled,
+        )
+    else:
+        slider = rv.Slider(
             v_model=index,
             on_v_model=on_index,
             ticks=True,
@@ -344,8 +396,8 @@ def SliderValue(
             dense=False,
             hide_details=True,
             disabled=disabled,
-        ),
-    )
+        )
+    return cast(reacton.core.ValueElement[ipyvuetify.Slider, T], slider)
 
 
 class DateSliderWidget(ipyvue.VueTemplate):

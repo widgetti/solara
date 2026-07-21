@@ -3,6 +3,7 @@ from typing import Optional, Union
 import reacton.ipyvuetify as v
 
 import solara
+from solara.util import IPYVUETIFY_V3
 
 
 @solara.component
@@ -43,19 +44,15 @@ def Tooltip(
         for child in children:
             widget = solara.get_widget(child)
             # this only works on vue/vuetify components
-            widget.v_on = "tooltip.on"  # type: ignore
+            if IPYVUETIFY_V3:
+                widget.v_bind = "tooltip.props"  # type: ignore
+            else:
+                widget.v_on = "tooltip.on"  # type: ignore
 
     solara.use_effect(set_v_on, children)
 
-    return v.Tooltip(
-        bottom=True,
-        v_slots=[
-            {
-                "name": "activator",
-                "variable": "tooltip",
-                "children": children,
-            }
-        ],
-        color=color,
-        children=[tooltip],
-    )
+    v_slots = [{"name": "activator", "variable": "tooltip", "children": children}]
+    if IPYVUETIFY_V3:
+        content_props = {"style": f"background-color: {color};"} if color is not None else None
+        return v.Tooltip(location="bottom", content_props=content_props, v_slots=v_slots, children=[tooltip])
+    return v.Tooltip(bottom=True, color=color, v_slots=v_slots, children=[tooltip])

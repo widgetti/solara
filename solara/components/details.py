@@ -1,5 +1,9 @@
 import solara
 from solara.alias import rv
+from solara.util import IPYVUETIFY_V3
+
+if IPYVUETIFY_V3:
+    from ipyvuetify.components import ExpansionPanelText, ExpansionPanelTitle  # type: ignore[attr-defined]
 
 
 @solara.component
@@ -51,6 +55,10 @@ def Details(summary="Summary", children=[], expand=False):
 
     with rv.ExpansionPanels(v_model=0 if expand else None, on_v_model=on_v_model) as main:
         with rv.ExpansionPanel():
-            rv.ExpansionPanelHeader(children=[summary])
-            rv.ExpansionPanelContent(children=children)
+            if IPYVUETIFY_V3:
+                ExpansionPanelTitle(children=[summary])
+                ExpansionPanelText(children=children)
+            else:
+                rv.ExpansionPanelHeader(children=[summary])
+                rv.ExpansionPanelContent(children=children)
     return main
