@@ -15,6 +15,8 @@ def MenuWidget(
     context: bool = False,
     use_absolute: bool = True,
     use_activator_width: bool = True,
+    offset_y: bool = True,
+    offset_x: bool = False,
 ):
     pass
 
@@ -133,6 +135,8 @@ def Menu(
     children: List[solara.Element] = [],
     style: Optional[Union[str, Dict[str, str]]] = None,
     use_activator_width: bool = True,
+    offset_x: bool = False,
+    offset_y: bool = True,
 ):
     """
     Show a pop-up menu by clicking on the `activator` element. The menu appears below the `activator` element.
@@ -160,6 +164,8 @@ def Menu(
     * style: CSS style to apply. Applied directly onto the `v-menu` component.
     * use_activator_width: If True, the menu will have a minimum width equal to the activator element.
       If False, the menu width will be determined by the content.
+    * offset_x: If True, the menu will be offset from the activator element in the x direction.
+    * offset_y: If True, the menu will be offset from the activator element in the y direction.
     """
     open_reactive = solara.use_reactive(open_value, on_open_value)
     del open_value
@@ -178,4 +184,6 @@ def Menu(
         style=style_flat,
         use_absolute=False,
         use_activator_width=use_activator_width,
+        offset_x=offset_x,
+        offset_y=offset_y,
     )
