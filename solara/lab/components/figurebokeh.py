@@ -33,14 +33,14 @@ class SafeBokehModel(BokehModel):
             if self in registry:  # only remove if we are in the registry
                 document.remove_on_change(self)
 
-    def _sync_model(self, model, content, buffers) -> None:
+    def _sync_model(self, _model, content, _buffers) -> None:
         """Drops frontend events that fail to deserialize.
 
         An event can reference a model already removed or replaced server side,
         which otherwise raises DeserializationError from ipywidgets
         """
         try:
-            super()._sync_model(model, content, buffers)
+            super()._sync_model(_model, content, _buffers)
         except DeserializationError:
             return
 
