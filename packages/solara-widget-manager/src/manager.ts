@@ -149,6 +149,30 @@ export class WidgetManager extends JupyterLabManager {
     await this._loadFromKernel();
   }
 
+  /**
+   * Dispose all widget models WITHOUT sending comm_close messages.
+   *
+   * Used on solara's soft-remount after a reconnect lands on a fresh kernel:
+   * the old comms belong to a kernel that no longer exists, so closing them
+   * over the wire is one wasted message per widget (answered server-side by a
+   * benign "No such comm" warning). model.close(true) (comm_closed=true) means
+   * "the other side already closed", so the model tears down locally only.
+   *
+   * Mirrors @jupyter-widgets/base's own clear_state(), but with close(true).
+   */
+  async clearStateLocal(): Promise<void> {
+    // _models is private in @jupyter-widgets/base's ManagerBase, hence the cast.
+    const models: { [id: string]: any } = await base.resolvePromisesDict((this as any)._models);
+    Object.keys(models).forEach((id) => {
+      try {
+        models[id].close(true);
+      } catch (e) {
+        console.warn('solara clearStateLocal: model.close(true) failed', e);
+      }
+    });
+    (this as any)._models = Object.create(null);
+  }
+
   async run(appName: string, args: any) {
     let { path } = args;
     // used for routing

@@ -1,3 +1,4 @@
+import contextvars
 import sys
 import abc
 import asyncio
@@ -6,7 +7,9 @@ import functools
 import inspect
 import logging
 import threading
+import warnings
 from enum import Enum
+import typing
 from typing import (
     Any,
     Callable,
@@ -19,12 +22,14 @@ from typing import (
     cast,
     overload,
 )
+import weakref
 
 import typing_extensions
 
 import solara
 import solara.util
 from solara.toestand import Singleton
+from solara import _using_solara_server
 
 from .toestand import Ref as ref
 
@@ -34,6 +39,11 @@ else:
     from typing_extensions import Literal
 
 
+# Import kernel_context for typing only
+if typing.TYPE_CHECKING:
+    import solara.server.kernel_context
+
+
 R = TypeVar("R")
 T = TypeVar("T")
 P = typing_extensions.ParamSpec("P")
@@ -41,6 +51,29 @@ P = typing_extensions.ParamSpec("P")
 logger = logging.getLogger("solara.task")
 
 has_threads = solara.util.has_threads
+_main_event_loop: Optional[asyncio.AbstractEventLoop] = None
+try:
+    # this will be the event loop in Jupyter/IPython
+    # on Python >=3.12, get_running_loop() is preferred
+    if sys.version_info >= (3, 12):
+        _main_event_loop = asyncio.get_running_loop()
+    else:
+        _main_event_loop = asyncio.get_event_loop()
+except RuntimeError:
+    pass
+
+
+def _get_current_task():
+    try:
+        # asyncio.current_task() is not available in Python 3.6
+        if sys.version_info >= (3, 7):
+            return asyncio.current_task()
+        else:
+            return asyncio.Task.current_task()
+    except RuntimeError:
+        # called from a thread without a running event loop (e.g. Task.cancel()
+        # from a plain thread): there is no current task there
+        return None
 
 
 class TaskState(Enum):
@@ -84,14 +117,24 @@ class TaskResult(Generic[T]):
 
 
 class Task(Generic[P, R], abc.ABC):
-    def __init__(self, key: str):
-        self._result = solara.Reactive(
-            TaskResult[R](
-                value=None,
-                _state=TaskState.NOTCALLED,
-            ),
-            key="solara.tasks:TaskResult:" + key,
-        )
+    def __init__(self, key: Optional[str] = None, result: Optional[solara.Reactive] = None):
+        if result is not None:
+            # component-scoped (use_task): the result lives in an object owned by the
+            # component's hook state, so it dies with the component - no kernel-store
+            # entry to clean up on unmount, and a worker write that races the unmount
+            # cannot pin anything beyond the object itself
+            self._result: solara.Reactive = result
+        else:
+            # kernel-scoped (module-level @task): one instance per process, one value
+            # per kernel, living in the kernel store
+            assert key is not None
+            self._result = solara.Reactive(
+                TaskResult[R](
+                    value=None,
+                    _state=TaskState.NOTCALLED,
+                ),
+                key="solara.tasks:TaskResult:" + key,
+            )
         self._last_value: Optional[R] = None
         self._last_progress: Optional[float] = None
         self._latest = ref(self._result.fields.latest)
@@ -182,26 +225,37 @@ class TaskAsyncio(Task[P, R]):
     current_future: Optional[asyncio.Future] = None
     _cancel: Optional[Callable[[], None]] = None
     _retry: Optional[Callable[[], None]] = None
+    _context: Optional["weakref.ReferenceType[solara.server.kernel_context.VirtualKernelContext]"] = None
+    _drop_call_state_on_close_registered = False
 
-    def __init__(self, run_in_thread: bool, function: Callable[P, Coroutine[Any, Any, R]], key: str):
+    def __init__(self, run_in_thread: bool, function: Callable[P, Coroutine[Any, Any, R]], key: Optional[str] = None, result: Optional[solara.Reactive] = None):
         self.run_in_thread = run_in_thread
         self.function = function
-        super().__init__(key)
+        super().__init__(key, result=result)
 
     def cancel(self) -> None:
         if self._cancel:
             self._cancel()
-        else:
+        elif self.not_called:
             raise RuntimeError("Cannot cancel task, never started")
+        else:
+            # the task ran, but the call bookkeeping (including _cancel) is
+            # gone: _drop_call_state ran because the kernel context is closing,
+            # while the reactive state still reads pending. Cleanup code doing
+            # `if task.pending: task.cancel()` during that close must be a
+            # no-op, not an error - there is nothing left to cancel.
+            pass
 
     def retry(self):
         if self._retry:
             self._retry()
-        else:
+        elif self.not_called:
             raise RuntimeError("Cannot retry task, never started")
+        else:
+            # see cancel(): call state dropped at kernel close
+            pass
 
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> None:
-        self.current_future = future = asyncio.Future[R]()
         self._last_progress = None
         current_task: asyncio.Task[None]
         if self.current_task:
@@ -214,7 +268,7 @@ class TaskAsyncio(Task[P, R]):
             event_loop = current_task.get_loop()
             # cancel after cancel is a no-op
             self._cancel = lambda: None
-            if asyncio.current_task() == current_task:
+            if _get_current_task() == current_task:
                 if event_loop == asyncio.get_event_loop():
                     # we got called in our own task and event loop
                     raise _CancelledErrorInOurTask()
@@ -222,29 +276,101 @@ class TaskAsyncio(Task[P, R]):
                     current_task.cancel()
                     self._result.value = TaskResult[R](latest=self._last_value, _state=TaskState.CANCELLED)
             else:
-                current_task.cancel()
+                try:
+                    running_loop: Optional[asyncio.AbstractEventLoop] = asyncio.get_running_loop()
+                except RuntimeError:
+                    running_loop = None
+                if running_loop is event_loop:
+                    current_task.cancel()
+                else:
+                    # asyncio.Task.cancel is not thread-safe. Called from another thread it
+                    # only appends the wakeup to the loop's ready queue without writing the
+                    # self-pipe, so a loop parked in run_until_complete on its own thread
+                    # (run_in_thread tasks awaiting e.g. asyncio.sleep) does not notice the
+                    # cancellation until its current await completes on its own.
+                    try:
+                        event_loop.call_soon_threadsafe(current_task.cancel)
+                    except RuntimeError:
+                        # the loop is already closed: the task's thread is gone with it
+                        pass
                 self._result.value = TaskResult[R](latest=self._last_value, _state=TaskState.CANCELLED)
 
         self._cancel = cancel
         self._retry = retry
-        call_event_loop = asyncio.get_event_loop()
+        if _using_solara_server():
+            import solara.server.kernel_context
+
+            context = solara.server.kernel_context.get_current_context()
+            self._context = weakref.ref(context)
+            call_event_loop = context.event_loop
+            if not self._drop_call_state_on_close_registered:
+                # one registration covers all calls of this instance. Register weakly:
+                # use_task creates a Task instance per component mount, and a strong
+                # reference (a bound method) would pin every instance that ever ran -
+                # including its ._last_value result - until the KERNEL closes, growing
+                # without bound in a long-lived session that mounts/unmounts components.
+                # A collected instance took its call state with it, so there is nothing
+                # left to drop at close.
+                self._drop_call_state_on_close_registered = True
+                drop_call_state_ref = weakref.WeakMethod(self._drop_call_state)
+
+                def drop_call_state():
+                    drop = drop_call_state_ref()
+                    if drop is not None:
+                        drop()
+
+                context.on_close(drop_call_state)
+        else:
+            call_event_loop = _main_event_loop or asyncio.get_event_loop()
+        try:
+            running_loop: Optional[asyncio.AbstractEventLoop] = asyncio.get_running_loop()
+        except RuntimeError:
+            running_loop = None
+        if running_loop is not None and not call_event_loop.is_running():
+            # a future created on a loop that is not running can never be delivered: prefer the
+            # loop we are called from. In production this is a no-op (the kernel context's loop
+            # is the running loop), but under pytest-asyncio each test runs on a fresh loop while
+            # the (virtual) kernel context was created outside of it.
+            call_event_loop = running_loop
+
+        self.current_future = future = call_event_loop.create_future()
 
         if self.run_in_thread:
             thread_event_loop = asyncio.new_event_loop()
-            self.current_task = current_task = thread_event_loop.create_task(self._async_run(call_event_loop, future, args, kwargs))
+
+            def create_task():
+                # remove the stack, since this thread starts with a fresh stack
+                import solara.server.kernel_context
+
+                solara.server.kernel_context.async_stack.set(None)
+                return thread_event_loop.create_task(self._async_run(call_event_loop, future, args, kwargs))
+
+            new_context = contextvars.copy_context()
+            self.current_task = current_task = new_context.run(create_task)
 
             def runs_in_thread():
                 try:
-                    thread_event_loop.run_until_complete(current_task)
-                except asyncio.CancelledError as e:
-                    call_event_loop.call_soon_threadsafe(future.set_exception, e)
-                except Exception as e:
-                    logger.exception("error running in thread")
-                    call_event_loop.call_soon_threadsafe(future.set_exception, e)
-                    raise
+                    try:
+                        thread_event_loop.run_until_complete(current_task)
+                    except asyncio.CancelledError:
+                        # deliver the cancellation via future.cancel(): awaiters still get a
+                        # CancelledError, but no exception object (with a traceback that pins
+                        # the coroutine frames and the kernel context) crosses the thread.
+                        self._finish_future_threadsafe(call_event_loop, future, lambda f: f.cancel(), "cancellation")
+                    except Exception as e:
+                        logger.exception("error running in thread")
+                        # bind to a fresh name: `e` is unbound when the except block exits,
+                        # but the delivery lambda runs later on the call loop
+                        exception = e
+                        self._finish_future_threadsafe(call_event_loop, future, lambda f: f.set_exception(exception), "exception")
+                        raise
+                finally:
+                    # each call creates a fresh event loop; not closing it would leak its
+                    # selector file descriptor until the garbage collector gets to it
+                    thread_event_loop.close()
 
             self._result.value = TaskResult[R](latest=self._last_value, _state=TaskState.STARTING)
-            thread = threading.Thread(target=runs_in_thread)
+            thread = threading.Thread(target=runs_in_thread, daemon=True, name=f"TaskAsyncio-{self.function.__name__}")
             thread.start()
         else:
             self.current_task = current_task = asyncio.create_task(self._async_run(call_event_loop, future, args, kwargs))
@@ -252,15 +378,70 @@ class TaskAsyncio(Task[P, R]):
 
     def is_current(self):
         running_task = self.current_task
-        assert running_task is not None
-        return (self.current_task == asyncio.current_task()) and not running_task.cancelled()
+        if running_task is None:
+            # the kernel context closed (which drops the call state): any still-running
+            # call is stale and should stop
+            return False
+        return (self.current_task == _get_current_task()) and not running_task.cancelled()
+
+    def _drop_call_state(self):
+        # A finished or cancelled asyncio.Task keeps its contextvars copy (which references
+        # the kernel context) and its exception traceback (which pins coroutine frames)
+        # alive. Keeping the task in `current_task` after the kernel context closes turns
+        # the context graph into one big reference cycle that has to wait for a gen-2 gc
+        # (measured as a memory sawtooth under load). Drop the call bookkeeping at close
+        # so plain refcounting can free the context right away.
+        self.current_task = None
+        self.current_future = None
+        self._cancel = None
+        self._retry = None
+
+    def _is_context_closed(self):
+        if self._context is None:
+            return False
+        context = self._context()
+        if context is None:
+            return False
+        return context.closed_event.is_set()
+
+    def _is_future_orphaned(self, call_event_loop: asyncio.AbstractEventLoop) -> bool:
+        # When a page disconnects, the event loop the task was called from (the websocket
+        # thread's loop) is closed while the kernel context stays alive until the cull
+        # timeout. A task finishing in that window cannot deliver its result to the future,
+        # but nothing can await that future anymore either (any awaiter lived on the same
+        # loop), so failing to deliver is expected and harmless, just like a closed context.
+        return call_event_loop.is_closed() or self._is_context_closed()
+
+    def _finish_future_threadsafe(self, call_event_loop: asyncio.AbstractEventLoop, future: asyncio.Future, finish: Callable[[asyncio.Future], Any], what: str):
+        """Complete the future from the task's thread, tolerating the expected shutdown races.
+
+        The future can already be done (a page close or shutdown cancelled it while our
+        completion was in flight) and the call loop can be closed (page close): both are
+        normal races, and completing a done future would raise InvalidStateError inside
+        the loop callback — asyncio then logs that with the exception traceback attached,
+        and exception tracebacks pin every frame they passed through (including the whole
+        kernel context), creating large reference cycles that stay around until a gen-2
+        gc. So we check done() inside the loop callback and skip delivery silently.
+        """
+
+        def deliver():
+            if not future.done():
+                finish(future)
+
+        try:
+            call_event_loop.call_soon_threadsafe(deliver)
+        except Exception as e:
+            if not self._is_future_orphaned(call_event_loop):
+                # the delivery failure has an unexpected cause, so we show it
+                logger.exception("error delivering %s for task %s: %s", what, self.function.__name__, e)
+            else:
+                logger.debug("ignoring failure to deliver %s for task %s, nobody can await the future anymore: %s", what, self.function.__name__, e)
 
     async def _async_run(self, call_event_loop: asyncio.AbstractEventLoop, future: asyncio.Future, args, kwargs) -> None:
         self._start_event.wait()
 
-        task_for_this_call = asyncio.current_task()
+        task_for_this_call = _get_current_task()
         assert task_for_this_call is not None
-
         if self.is_current():
             self._result.value = TaskResult[R](latest=self._last_value, _state=TaskState.STARTING)
 
@@ -272,27 +453,25 @@ class TaskAsyncio(Task[P, R]):
                 if self.is_current() and not task_for_this_call.cancelled():  # type: ignore
                     self._result.value = TaskResult[R](value=value, latest=value, _state=TaskState.FINISHED, progress=self._last_progress)
                 logger.info("setting result to %r", value)
-                call_event_loop.call_soon_threadsafe(future.set_result, value)
+                self._finish_future_threadsafe(call_event_loop, future, lambda f: f.set_result(value), "result")
             except Exception as e:
                 if self.is_current():
                     logger.exception(e)
                     self._result.value = TaskResult[R](latest=self._last_value, exception=e, _state=TaskState.ERROR)
-                call_event_loop.call_soon_threadsafe(future.set_exception, e)
+                # bind to a fresh name: `e` is unbound when the except block exits,
+                # but the delivery lambda runs later on the call loop
+                exception = e
+                self._finish_future_threadsafe(call_event_loop, future, lambda f: f.set_exception(exception), "exception")
             # Although this seems like an easy way to handle cancellation, an early cancelled task will never execute
             # so this code will never execute, so we need to handle this in the cancel function in __call__
             # except asyncio.CancelledError as e:
             #    if self.is_current():
             #        self._result.value = TaskResult[R](latest=self._last_value, _state=TaskState.CANCELLED)
-            #    call_event_loop.call_soon_threadsafe(future.set_exception, e)
             # But... if we call cancel in our own task, we still need to do it from this place
-            except _CancelledErrorInOurTask as e:
-                try:
-                    # maybe there is a different way to get a full stack trace?
-                    raise asyncio.CancelledError() from e
-                except asyncio.CancelledError as e:
-                    if self.is_current():
-                        self._result.value = TaskResult[R](latest=self._last_value, _state=TaskState.CANCELLED)
-                    call_event_loop.call_soon_threadsafe(future.set_exception, e)
+            except _CancelledErrorInOurTask:
+                if self.is_current():
+                    self._result.value = TaskResult[R](latest=self._last_value, _state=TaskState.CANCELLED)
+                self._finish_future_threadsafe(call_event_loop, future, lambda f: f.cancel(), "cancellation")
 
         await runner()
 
@@ -304,8 +483,8 @@ class TaskThreaded(Task[P, R]):
     _cancel: Optional[Callable[[], None]] = None
     _retry: Optional[Callable[[], None]] = None
 
-    def __init__(self, function: Callable[P, R], key: str):
-        super().__init__(key)
+    def __init__(self, function: Callable[P, R], key: Optional[str] = None, result: Optional[solara.Reactive] = None):
+        super().__init__(key, result=result)
         self.__qualname__ = function.__qualname__
         self.function = function
         self.lock = threading.Lock()
@@ -352,7 +531,21 @@ class TaskThreaded(Task[P, R]):
         cancel_event = getattr(self._local, "cancel_event", None)
         if cancel_event is not None and cancel_event.is_set():
             return False
+        if self._current_thread is None:
+            # the call state was dropped (component unmount): any still-running call is
+            # stale and should stop
+            return False
         return self._current_thread == threading.current_thread()
+
+    def _drop_call_state(self):
+        # See TaskAsyncio._drop_call_state: called when a use_task component unmounts, so
+        # a stale worker thread stops updating state (is_current() returns False) and the
+        # call bookkeeping does not outlive the component.
+        self._current_thread = None
+        self._current_cancel_event = None
+        self._last_finished_event = None
+        self._cancel = None
+        self._retry = None
 
     def _run(self, _last_finished_event, previous_thread: Optional[threading.Thread], cancel_event, args, kwargs) -> None:
         # use_thread has this as default, which can make code run 10x slower
@@ -453,6 +646,7 @@ def task(
     f: None = None,
     *,
     prefer_threaded: bool = ...,
+    check_for_render_context: bool = ...,
 ) -> Callable[[Callable[P, R]], Task[P, R]]: ...
 
 
@@ -461,6 +655,7 @@ def task(
     f: Callable[P, Union[Coroutine[Any, Any, R], R]],
     *,
     prefer_threaded: bool = ...,
+    check_for_render_context: bool = ...,
 ) -> Task[P, R]: ...
 
 
@@ -468,6 +663,7 @@ def task(
     f: Union[None, Callable[P, Union[Coroutine[Any, Any, R], R]]] = None,
     *,
     prefer_threaded: bool = True,
+    check_for_render_context: bool = True,
 ) -> Union[Callable[[Callable[P, R]], Task[P, R]], Task[P, R]]:
     """Decorator to turn a function or coroutine function into a task.
 
@@ -681,20 +877,87 @@ def task(
         This ensures that even when a coroutine functions calls a blocking function the UI is still responsive.
         On platform where threads are not supported (like Pyodide / WASM / Emscripten / PyScript), a coroutine
         function will always run in the current event loop.
+    - `check_for_render_context` - bool: If true, we will check if we are in a render context, and if so, we will
+        warn you that you should probably be using `use_task` instead of `task`.
 
     ```
 
     """
 
+    def check_if_we_should_use_use_task():
+        import reacton.core
+
+        in_reacton_context = reacton.core.get_render_context(required=False) is not None
+        if not in_reacton_context:
+            # We are not in a reacton context, so we should not (and cannot) use use_task
+            return
+        from .toestand import _find_outside_solara_frame
+
+        frame = _find_outside_solara_frame()
+        if frame is None:
+            # We cannot determine which frame we are in, just skip this check
+            return
+        import inspect
+
+        tb = inspect.getframeinfo(frame)
+        msg = """You are calling task(...) from a component, while you should probably be using use_task.
+
+Reason:
+- task(...) creates a new task object on every render, and should only be used outside of a component.
+- use_task(...) returns the same task object on every render, and should be used inside a component.
+
+Example:
+@solara.component
+def Page():
+    @task  # This is wrong, this creates a new task object on every render
+    def my_task():
+        ...
+
+Instead, you should do:
+@solara.component
+def Page():
+    @use_task
+    def my_task():
+        ...
+
+"""
+        if tb:
+            if tb.code_context:
+                code = tb.code_context[0]
+            else:
+                code = "<No code context available>"
+            msg += f"This warning was triggered from:\n{tb.filename}:{tb.lineno}\n{code.strip()}"
+
+        # Check if the call is within a use_memo context by inspecting the call stack
+        if frame:
+            caller_frame = frame.f_back
+            # Check a few frames up the stack (e.g., up to 5) for 'use_memo'
+            for _ in range(5):
+                if caller_frame is None:
+                    break
+                func_name = caller_frame.f_code.co_name
+                module_name = caller_frame.f_globals.get("__name__", "")
+                if func_name == "use_memo" and (module_name.startswith("solara.") or module_name.startswith("reacton.")):
+                    # We are in a use_memo (or a context that should not trigger the warning)
+                    return
+                caller_frame = caller_frame.f_back
+
+        warnings.warn(msg)
+
     def wrapper(f: Union[None, Callable[P, Union[Coroutine[Any, Any, R], R]]]) -> Task[P, R]:
+        if check_for_render_context:
+            check_if_we_should_use_use_task()
         # we use wraps to make the key of the reactive variable more unique
         # and less likely to mixup during hot reloads
+        assert f is not None
+        key = solara.toestand._create_key_callable(f)
+
         @functools.wraps(f)  # type: ignore
         def create_task():
             if inspect.iscoroutinefunction(f):
-                return TaskAsyncio[P, R](prefer_threaded and has_threads, f, key=solara.toestand._create_key_callable(create_task))
+                return TaskAsyncio[P, R](prefer_threaded and has_threads, f, key=key)
             else:
-                return TaskThreaded[P, R](cast(Callable[P, R], f), key=solara.toestand._create_key_callable(create_task))
+                return TaskThreaded[P, R](cast(Callable[P, R], f), key=key)
 
         return cast(Task[P, R], Proxy(create_task))
 
@@ -714,17 +977,7 @@ def use_task(
     dependencies: Literal[None] = ...,
     raise_error=...,
     prefer_threaded=...,
-) -> Callable[[Callable[[], R]], "Task[[], R]"]: ...
-
-
-@overload
-def use_task(
-    f: Callable[[], R],
-    *,
-    dependencies: Literal[None] = ...,
-    raise_error=...,
-    prefer_threaded=...,
-) -> "Task[[], R]": ...
+) -> Callable[[Callable[P, R]], "Task[P, R]"]: ...
 
 
 @overload
@@ -747,13 +1000,23 @@ def use_task(
 ) -> "Task[[], R]": ...
 
 
+@overload
 def use_task(
-    f: Union[None, Callable[[], R]] = None,
+    f: Callable[P, R],
+    *,
+    dependencies: Literal[None] = ...,
+    raise_error=...,
+    prefer_threaded=...,
+) -> "Task[P, R]": ...
+
+
+def use_task(
+    f: Union[None, Callable[P, R]] = None,
     *,
     dependencies: Union[None, List] = [],
     raise_error=True,
     prefer_threaded=True,
-) -> Union[Callable[[Callable[[], R]], "Task[[], R]"], "Task[[], R]"]:
+) -> Union[Callable[[Callable[P, R]], "Task[P, R]"], "Task[P, R]"]:
     """A hook that runs a function or coroutine function as a task and returns the result.
 
     Allows you to run code in the background, with the UI available to the user. This is useful for long running tasks,
@@ -833,7 +1096,37 @@ def use_task(
 
     def wrapper(f):
         def create_task() -> "Task[[], R]":
-            return task(f, prefer_threaded=prefer_threaded)
+            # Unlike a module-level @task (Proxy -> Singleton -> kernel store: one instance
+            # per process, one value per kernel), this task belongs to one component
+            # instance. Everything is therefore component-scoped by construction: the
+            # instance lives in this use_memo, and the result lives in a SharedStore
+            # OBJECT held by the instance - not in the kernel store dict. Unmount drops
+            # the hook state and everything dies by refcount: no lifecycle registration
+            # to undo, no store entries to clear, and a worker thread finishing after
+            # unmount writes into an object that is already garbage - it cannot pin
+            # anything beyond itself. (This mirrors how use_reactive scopes its state.)
+            from solara._stores import MutateDetectorStore, SharedStore, StoreValue, _PublicValueNotSet, _SetValueNotSet
+            from solara.toestand import ValueBase
+
+            initial = TaskResult[R](value=None, _state=TaskState.NOTCALLED)
+            store: ValueBase
+            if solara.settings.storage.mutation_detection is True:
+                shared_store = SharedStore[StoreValue[TaskResult[R]]](
+                    StoreValue[TaskResult[R]](
+                        private=initial, public=_PublicValueNotSet(), get_traceback=None, set_value=_SetValueNotSet(), set_traceback=None
+                    ),
+                    unwrap=lambda x: x.private,
+                )
+                store = MutateDetectorStore[TaskResult[R]](shared_store)
+            else:
+                store = SharedStore(initial)
+            result = solara.Reactive(store)
+            # no runtime generic subscription: TaskAsyncio[[], R] raises TypeError on
+            # Python <= 3.9 (ParamSpec arguments in subscripts are 3.10+ at runtime)
+            if inspect.iscoroutinefunction(f):
+                return cast("Task[[], R]", TaskAsyncio(prefer_threaded and has_threads, f, result=result))
+            else:
+                return cast("Task[[], R]", TaskThreaded(cast(Callable[[], R], f), result=result))
 
         task_instance = solara.use_memo(create_task, dependencies=[])
         # we always update the function so we do not have stale data in the function

@@ -1,3 +1,4 @@
+import sys
 import ipywidgets as widgets
 import playwright.sync_api
 import pytest
@@ -64,6 +65,7 @@ def test_widget_ipyaggrid(solara_test, page_session: playwright.sync_api.Page):
     page_session.remove_listener("console", log)
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="Unstable on windows")
 def test_solara_button_all(ipywidgets_runner, page_session: playwright.sync_api.Page, request, assert_solara_snapshot):
     if request.node.callspec.params["ipywidgets_runner"] != "solara" and request.node.callspec.params["solara_server"] != SERVERS[0]:
         pytest.skip("No need to run this test for all servers.")

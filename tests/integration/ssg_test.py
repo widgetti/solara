@@ -1,4 +1,7 @@
 import threading
+import sys
+import pytest
+
 from pathlib import Path
 from typing import Optional
 
@@ -33,6 +36,7 @@ def SSG():
     return main
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="Skip on Windows, fails with playwright saying navigation was interrupted")
 def test_ssg(page_session: playwright.sync_api.Page, solara_server, solara_app, tmpdir):
     global text
     global context

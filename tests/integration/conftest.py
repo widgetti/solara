@@ -1,9 +1,10 @@
 import logging
 import os
-from typing import Set
+from typing import Dict, Set
 
 import playwright.sync_api
 import pytest
+from _pytest.tmpdir import tmppath_result_key
 
 import solara.server.app
 import solara.server.server
@@ -11,12 +12,26 @@ import solara.server.settings
 from solara.server import reload
 from solara.server.flask import ServerFlask
 from solara.server.starlette import ServerStarlette
+from solara.server.threaded import ServerBase
 
 reload.reloader.start()
 logger = logging.getLogger("solara-test.integration")
 
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_teardown(item, nextitem):
+    # workaround for pytest-retry (<=1.7.0) x pytest (8.x): a retried test that uses tmp_path
+    # errors at teardown with KeyError on this stash key, turning a successfully retried flaky
+    # test into a hard failure. Seed the entry so the tmp_path finalizer always finds it.
+    item.stash.setdefault(tmppath_result_key, {})
+    yield
+
+
 worker = os.environ.get("PYTEST_XDIST_WORKER", "gw0")
-TEST_PORT = int(os.environ.get("PORT", "18765")) + int(worker[2:])  # up to 18770 is a valid callback for auth0
+# each xdist worker runs its own flask and starlette server (see solara_server below), so workers
+# need to be at least 2 ports apart. Ports up to 18770 are a valid callback for auth0, which keeps
+# all ports valid with 2 workers.
+TEST_PORT = int(os.environ.get("PORT", "18765")) + int(worker[2:]) * 3
 SERVER = os.environ.get("SOLARA_SERVER")
 if SERVER:
     SERVERS = [SERVER]
@@ -86,18 +101,28 @@ server_classes = {
 # override the fixure, and also test with flask
 
 
+# with xdist load scheduling, a parameterized session fixture is torn down and re-created on
+# every flask<->starlette param switch. Cache the servers instead: it keeps each server alive
+# (and its port, fixed per param - important for the auth0 callback range) for the whole
+# session, and avoids racing a test's page navigation against a server restart
+_servers: Dict[str, ServerBase] = {}
+
+
 @pytest.fixture(params=SERVERS, scope="session")
 def solara_server(request):
-    server_class = server_classes[request.param]
-    global TEST_PORT
-    webserver = server_class(TEST_PORT)
-    TEST_PORT += 1
-
-    try:
+    name = request.param
+    if name not in _servers:
+        webserver = server_classes[name](TEST_PORT + SERVERS.index(name))
         webserver.serve_threaded()
         webserver.wait_until_serving()
-        yield webserver
-    finally:
+        _servers[name] = webserver
+    yield _servers[name]
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _stop_solara_servers():
+    yield
+    for webserver in _servers.values():
         webserver.stop_serving()
 
 

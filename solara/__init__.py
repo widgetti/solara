@@ -1,6 +1,6 @@
 """Build webapps using IPywidgets"""
 
-__version__ = "1.44.0"
+__version__ = "1.60.3"
 github_url = "https://github.com/widgetti/solara"
 git_branch = "master"
 
@@ -51,6 +51,7 @@ except ModuleNotFoundError:
 from . import util
 
 from .reactive import *
+from .state.persist import PersistConfig
 
 from .datatypes import *
 from .hooks import *
@@ -65,6 +66,8 @@ from .routing import use_route, use_router, use_route_level, find_route, use_pat
 from .autorouting import generate_routes, generate_routes_directory, RenderPage, RoutingProvider, DefaultLayout
 from .checks import check_jupyter
 from .scope import get_kernel_id, get_session_id
+from .lifecycle import kernel_closed_event  # noqa: F401
+from .state import state_generation  # noqa: F401
 
 
 def display(*objs, **kwargs):

@@ -90,6 +90,33 @@ def test_get_data_secure(tmp_path_factory: TempPathFactory):
     with pytest.raises(PermissionError):
         get_data(base_cache_dir, "project/../../secret")
 
+    # test that we cannot access sibling directories with similar prefixes
+    sibling_dir = root_dir / "cdn_sibling"
+    sibling_dir.mkdir()
+    (sibling_dir / "secret").write_bytes(b"not allowed")
+    with pytest.raises(PermissionError):
+        get_data(base_cache_dir, "../cdn_sibling/secret")
+
+
+def test_path_is_child_of_symlink(tmp_path: Path):
+    # symlinks should be allowed, this is needed for editable installs
+    from solara.server.utils import path_is_child_of
+
+    allowed = tmp_path / "allowed"
+    allowed.mkdir()
+
+    actual = tmp_path / "actual_package"
+    actual.mkdir()
+    (actual / "file.py").write_text("content")
+
+    # Create symlink inside allowed pointing outside
+    symlink = allowed / "symlink"
+    symlink.symlink_to("../actual_package")
+
+    # The path accessed via allowed/symlink/file.py should be allowed
+    test_path = allowed / "symlink" / "file.py"
+    assert path_is_child_of(test_path, allowed)
+
 
 def test_redirect(tmp_path_factory):
     base_cache_dir = tmp_path_factory.mktemp("cdn")

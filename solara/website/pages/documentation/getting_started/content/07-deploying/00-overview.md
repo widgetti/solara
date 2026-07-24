@@ -5,3 +5,5 @@ description: Solara apps can be easily either self hosted, or hosted on a variet
 # Deploying a solara app
 
 A Solara app can be [self hosted](/documentation/getting_started/deploying/self-hosted) or [cloud hosted](/documentation/getting_started/deploying/cloud-hosted).
+
+When running across multiple instances, see [Scaling out with state persistence](/documentation/getting_started/deploying/state-persistence) to recover sessions after a crash, scale-in or deploy.

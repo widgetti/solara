@@ -1,4 +1,5 @@
 import dataclasses
+import hashlib
 import importlib.util
 import logging
 import os
@@ -8,6 +9,7 @@ import threading
 import traceback
 import warnings
 import weakref
+import html
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional, cast
@@ -15,6 +17,7 @@ from typing import Any, Dict, List, Optional, cast
 import ipywidgets as widgets
 import reacton
 from reacton.core import Element, render
+from reacton import ipywidgets
 
 import solara
 import solara.lifecycle
@@ -26,11 +29,42 @@ from .utils import pdb_guard
 
 WebSocket = Any
 apps: Dict[str, "AppScript"] = {}
-thread_lock = threading.Lock()
+thread_lock = threading.RLock()
 
 logger = logging.getLogger("solara.server.app")
 
 reload.reloader.start()
+
+_gc_frozen = False
+
+
+def _gc_freeze_startup_state():
+    """gc.freeze() the startup state once, right after the app first ran in the dummy kernel.
+
+    Everything alive at this point - imports, classes, module-level app state - lives for the
+    rest of the process, yet the garbage collector rescans it on every full collection. Freezing
+    moves it to a permanent generation that gc skips, so the collections that clean up session
+    reference cycles (including the kernel.gc_after_close backstop) stay proportional to live
+    session state instead of process size. The moment matters: no real kernel exists yet, so
+    nothing session-scoped can be frozen, and the collect() first prevents freezing startup
+    *garbage* into permanence. Objects created later (lazy imports, sessions) are unaffected.
+
+    Gated by settings.main.gc_freeze; the default (None) enables it only in production mode,
+    because in development hot reload would freeze each generation of stale app modules into a
+    permanent leak.
+    """
+    global _gc_frozen
+    enabled = settings.main.gc_freeze
+    if enabled is None:
+        enabled = settings.main.mode == "production"
+    if not enabled or _gc_frozen:
+        return
+    _gc_frozen = True
+    import gc
+
+    gc.collect()
+    gc.freeze()
+    logger.info("gc.freeze: %d startup objects moved out of the garbage collector's scanned generations", gc.get_freeze_count())
 
 
 class AppType(str, Enum):
@@ -116,6 +150,7 @@ class AppScript:
                 reload.reloader.root_path = package_root_path
         dummy_kernel_context.close()
         self._initialized = True
+        _gc_freeze_startup_state()
 
     def _execute(self):
         logger.info("Executing %s", self.name)
@@ -134,7 +169,7 @@ class AppScript:
             routes = solara.generate_routes_directory(self.path)
 
             if any(name for name in sys.modules.keys() if name.startswith(self.name)):
-                logger.warn(
+                logger.warning(
                     f"Directory {self.name} is also used as a package. This can cause modules to be loaded twice, and might "
                     "cause unexpected behavior. If you run solara from a different directory (e.g. the parent directory) you "
                     "can avoid this ambiguity."
@@ -232,12 +267,22 @@ class AppScript:
 
     def run(self):
         self.check()
-        if reload.reloader.requires_reload or self._first_execute_app is None:
+        if self._first_execute_app is None:
             with thread_lock:
-                if reload.reloader.requires_reload or self._first_execute_app is None:
-                    self._first_execute_app = None
-                    self._first_execute_app = self._execute()
-                    print("Re-executed app", self.name)  # noqa
+                if self._first_execute_app is None:
+                    try:
+                        self._first_execute_app = self._execute()
+                        print("Re-executed app", self.name)  # noqa
+                    except Exception as e:
+                        error = ""
+                        error = "".join(traceback.format_exception(None, e, e.__traceback__))
+                        print(error, file=sys.stdout, flush=True)  # noqa
+
+                        error = html.escape(error)
+                        self._first_execute_app = ipywidgets.HTML(value=f"<pre>{error}</pre>", layout=ipywidgets.Layout(overflow="auto"))
+                        # We now ran the app again, might contain new imports
+
+                        print("Failed to execute app, fix the error and save the file to reload")  # noqa
                     # We now ran the app again, might contain new imports
                     patch.patch_heavy_imports()
 
@@ -319,10 +364,16 @@ class AppScript:
                         except Exception as e:
                             logger.exception("Could not close render context: %s", e)
 
+            self._first_execute_app = None
+            self.run()
+
             # ask all contexts/users to reload
             for context in context_values:
                 with context:
-                    context.reload()
+                    try:
+                        context.reload()
+                    except Exception:
+                        logger.exception("Could not reload context %s", context.id)
 
 
 def _run_app(
@@ -393,6 +444,13 @@ def load_app_widget(app_state, app_script: AppScript, pathname: str):
         solara.server.esm.create_modules()
         solara.server.esm.create_import_map()
 
+    import ipyvue
+
+    if hasattr(ipyvue, "define_module"):
+        import solara.server.esm_vue
+
+        solara.server.esm_vue.create_modules()
+
     try:
         render_context = context.app_object
         app_state = app_state_initial
@@ -433,6 +491,61 @@ def load_themes(themes: Dict[str, Dict[str, str]], dark: bool):
     theme.dark_effective = dark
 
 
+def client_version() -> str:
+    """Opaque short hash identifying the served client assets (design §6.1).
+
+    The pip-shipped JS/templates are version-locked to the package, so a hash of the version
+    string is a sufficient bundle identity. The client compares the value baked into its page
+    (``solara.clientVersion``) against this value in the ``app-status`` reply; a mismatch means
+    the browser runs JS from a different server build and must hard-refresh instead of
+    soft-remounting on stale assets.
+    """
+    return hashlib.sha256(solara.__version__.encode("utf-8")).hexdigest()[:12]
+
+
+def _can_recover(context: "kernel_context.VirtualKernelContext") -> bool:
+    """Whether the client may soft-remount on this reconnect instead of showing the dialog (§6.1).
+
+    True iff a state backend is configured OR ``auto_remount`` is forced on (apps whose state is
+    fully URL/DB-derived need no backend), AND ``auto_remount`` is not forced off, AND the context
+    did not bail out during restore (a recovery-failed context must hard-refresh, §4.3).
+    """
+    import solara.server.settings
+    import solara.state
+
+    auto_remount = solara.server.settings.state.auto_remount
+    if auto_remount is False:
+        return False
+    manager = context.state_persistence
+    if manager is not None and manager.recovery_failed:
+        # Normally a recovery-failed context must hard-refresh (§4.3). But when bail-outs are
+        # STORMING - a systemic cause (schema_tag bump, non-uniform secret_keys across replicas)
+        # that fails every reconnecting session - a fleet-wide refresh dialog is worse than a
+        # silent fresh start. The bail-out storm valve (§4.3) flips those users to a soft-remount:
+        # their state is already gone (the poisoned hash was deleted), so this only trades a manual
+        # refresh for an automatic one, and never costs a recoverable user anything.
+        if solara.state.stats().bailout_storm_active(solara.server.settings.state.bailout_storm_threshold):
+            logger.warning("bail-out storm active; soft-remounting kernel %s fresh instead of showing the refresh dialog", context.id)
+            return True
+        return False
+    if auto_remount is True:
+        return True
+    return solara.state.get_backend() is not None
+
+
+def _last_restore(manager) -> Dict[str, Any]:
+    """The client-facing restore outcome (§6.4). ``off`` when there is no persistence manager."""
+    if manager is None:
+        return {"status": "off", "failedKey": None, "cause": None, "nFields": 0}
+    return manager.last_restore
+
+
+def eviction_enabled() -> bool:
+    # fail-closed (§6.4): dev/test-only kernel eviction, refused in production even when the
+    # test flag is on. Shared by the ws comm method below and the HTTP route in starlette.py.
+    return settings.state.test_eviction and settings.main.mode != "production"
+
+
 def solara_comm_target(comm, msg_first):
     app: Optional[AppScript] = None
 
@@ -466,12 +579,25 @@ def solara_comm_target(comm, msg_first):
         elif method == "app-status":
             context = kernel_context.get_current_context()
             # if there is no container, we never ran the app
-            if context.container is not None:
-                logger.info("app-status check: %s app started", context.id)
-                comm.send({"method": "app-status", "started": True})
-            else:
-                logger.info("app-status check: %s app not started", context.id)
-                comm.send({"method": "app-status", "started": False})
+            started = context.container is not None
+            reply = {
+                "method": "app-status",
+                "started": started,
+                # the root container's model id. A client whose rebuild was interrupted (socket
+                # drop between run() and the mount) has no view left but finds started=true here
+                # on its next reconnect; this id lets it RE-ATTACH to the running app (fetchAll +
+                # mount, the popout path) instead of resyncing state into a viewless page.
+                "containerId": context.container._model_id if context.container is not None else None,
+                # whether the client may soft-remount instead of showing the refresh dialog (§6.1)
+                "canRecover": _can_recover(context),
+                # opaque asset hash; a mismatch with the client's baked-in solara.clientVersion
+                # means the browser runs a different bundle and must hard-refresh (§6.1)
+                "clientVersion": client_version(),
+                # restore outcome for solara.debug.lastRestore / observability (§6.4)
+                "lastRestore": _last_restore(context.state_persistence),
+            }
+            logger.info("app-status check: %s app %s", context.id, "started" if started else "not started")
+            comm.send(reply)
 
         elif method == "reload":
             from solara.lab.components.theming import _get_theme, theme
@@ -487,13 +613,34 @@ def solara_comm_target(comm, msg_first):
                 load_themes(theme_dict, current_theme.dark_effective)
                 load_app_widget(context.state, app, path)
                 comm.send({"method": "finished"})
+        elif method == "evict":
+            # Dev/test-only kernel eviction, the server half of solara.debug.simulateFailover()
+            # (§6.4). It arrives over the kernel's own websocket, so unlike the HTTP evict route
+            # it inherently executes on the instance that OWNS the kernel - behind a round-robin
+            # load balancer the HTTP route lands on an arbitrary instance and 404s on every
+            # non-owner. Ownership needs no cookie check here either: this comm only exists on
+            # the connection that authenticated for this kernel. Fails closed like the route.
+            context = kernel_context.get_current_context()
+            if not eviction_enabled():
+                comm.send({"method": "evict", "status": "refused"})
+            else:
+                # reply BEFORE closing: sends are synchronous onto the websocket, and close()
+                # tears down the session (which also closes the socket server-side)
+                comm.send({"method": "evict", "status": "evicted"})
+                # close() from a separate thread: it closes this kernel's session and dispatch
+                # machinery, which must not happen re-entrantly from the kernel's own message
+                # thread that is executing this handler
+                threading.Thread(target=lambda: context.close(reason="evicted"), name=f"evict-{context.id}", daemon=True).start()
         else:
             logger.error("Unknown comm method called on solara.control comm: %s", method)
 
     def reload():
         comm = comm_ref()
-        assert comm is not None
         context = kernel_context.get_current_context()
+        if comm is None:
+            # client is gone (page closed/navigated); nothing to reload
+            logger.debug(f"No control comm for context {context.id}, skipping reload")
+            return
         # we don't reload the app ourself, we send a message to the client
         # this ensures that we don't run code of any client that for some reason is connected
         # but not working anymore. And it indirectly passes a message from the current thread

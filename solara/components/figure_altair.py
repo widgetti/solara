@@ -25,11 +25,15 @@ def FigureAltair(
 
     with alt.renderers.enable("mimetype"):
         bundle = chart._repr_mimebundle_()[0]
-        key4 = "application/vnd.vegalite.v4+json"
-        key5 = "application/vnd.vegalite.v5+json"
-        if key4 not in bundle and key5 not in bundle:
-            raise KeyError(f"{key4} and {key5} not in mimebundle:\n\n{bundle}")
-        spec = bundle.get(key5, bundle.get(key4))
+        # Find the Vega-Lite spec from the bundle (supports v4, v5, v6+)
+        # MIME type format varies: v4/v5 use "+json" suffix, v6 uses ".json"
+        spec = None
+        for key in bundle:
+            if key.startswith("application/vnd.vegalite.v"):
+                spec = bundle[key]
+                break
+        if spec is None:
+            raise KeyError(f"No Vega-Lite MIME type found in mimebundle: {list(bundle.keys())}")
         return solara.widgets.VegaLite.element(
             spec=spec, on_click=on_click, listen_to_click=on_click is not None, on_hover=on_hover, listen_to_hover=on_hover is not None
         )

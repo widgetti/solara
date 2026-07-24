@@ -8,6 +8,7 @@ name = "solara-ui"
 readme = "README.md"
 authors = [{name = "Maarten A. Breddels", email = "maartenbreddels@gmail.com"}]
 license = {file = "LICENSE"}
+requires-python = ">=3.8"
 classifiers = ["License :: OSI Approved :: MIT License"]
 dynamic = ["version", "description"]
 packages = [
@@ -20,6 +21,7 @@ dependencies = [
     "ipyvue>=1.9.0",
     "requests",
     "humanize",
+    "executing",
 ]
 
 [project.urls]
@@ -69,11 +71,16 @@ markdown = [
     "markdown",
     "pymdown-extensions",
     "pygments",
-    "pygments==2.10; python_version < '3.7'",
 ]
 
 cache = [
     "cachetools"
+]
+
+# the redis state backend for opt-in reactive state persistence (imported lazily, only when
+# SOLARA_STATE_BACKEND=redis). Not a hard dependency. Covers Valkey/KeyDB/Dragonfly via redis-py.
+redis = [
+    "redis>=4.2"
 ]
 
 extra = [
@@ -93,7 +100,12 @@ line-length = 160
 [tool.pytest.ini_options]
 addopts = "--ignore=tests/integration/app_widget.py  --ignore=tests/unit/solara_test_apps"
 timeout = 180
-
+# auto: run every async def test via pytest-asyncio, so the pytest.mark.asyncio marks are
+# optional (pytest-tornasync used to pick them up implicitly before we migrated to pytest-asyncio)
+asyncio_mode = "auto"
+filterwarnings = [
+    'ignore:.*pyzmq now works with default tornado and asyncio eventloops.*:DeprecationWarning',
+]
 
 [tool.codespell]
 skip='equis-in-vidi.md,substiterat-vati.md,.*,solara/website/build,*.svg,highlight-dark.css,packages/**/dist/*,node_modules,packages/solara-assets,package*.json,tsconfig.tsbuildinfo,*.csv'

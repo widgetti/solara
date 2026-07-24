@@ -1,6 +1,10 @@
 import dataclasses
+import gc
+import logging
 import threading
+import time
 import unittest.mock
+import weakref
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Set, TypeVar, cast
 
@@ -219,6 +223,538 @@ def test_scopes(no_kernel_context):
         rc1.close()
     with context2:
         rc2.close()
+
+
+def test_kernel_close_purges_subscription_residue(no_kernel_context):
+    # subscriptions made inside a kernel without a paired unsubscribe (e.g. by
+    # Computed's auto-subscribe machinery) must not outlive the kernel: the
+    # (listener, Context) tuples on process-lifetime stores pin the listener
+    # closures and everything they capture (memory-usage-inspection.md, case
+    # study 4). Kernel-created Singleton/Computed instances must also stay out
+    # of the process-global on_kernel_start registry.
+    import solara.lifecycle
+
+    registry_before = len(solara.lifecycle._on_kernel_start_callbacks)
+    store = Reactive("hello")  # process-lifetime store (module-level style)
+
+    def listener_scopes(value_base) -> Set[str]:
+        # subscriptions land on one of the wrapped storages (which one depends on
+        # e.g. mutation detection); walk the chain and collect all scope ids
+        scopes: Set[str] = set()
+        current = value_base
+        while isinstance(current, toestand.ValueBase):
+            scopes |= set(current.listeners) | set(current.listeners2)
+            current = getattr(current, "_storage", None)
+        return scopes
+
+    kernel_shared = kernel.Kernel()
+    context = kernel_context.VirtualKernelContext(id="toestand-purge-1", kernel=kernel_shared, session_id="session-1")
+
+    with context:
+        # a Computed created inside a kernel (component-body style): reading it
+        # auto-subscribes to `store` under this kernel's scope, and both the
+        # Computed and its internal Singleton register on_kernel_start callbacks
+        computed = toestand.Computed(lambda: store.value + "!", key="purge-test")
+        assert computed.value == "hello!"
+        assert context.id in listener_scopes(store)
+
+    assert len(solara.lifecycle._on_kernel_start_callbacks) == registry_before
+    context.close()
+
+    # the closed kernel's scope is gone from the store (the Computed's
+    # AutoSubscribeContextManager unsubscribed itself at kernel close)...
+    assert context.id not in listener_scopes(store)
+    # ...and the kernel-start registry is back at its previous size
+    assert len(solara.lifecycle._on_kernel_start_callbacks) == registry_before
+
+
+def _listener_count(value_base, scope_id: str) -> int:
+    count = 0
+    current = value_base
+    while isinstance(current, toestand.ValueBase):
+        count += len(current.listeners.get(scope_id, ()))
+        count += len(current.listeners2.get(scope_id, ()))
+        current = getattr(current, "_storage", None)
+    return count
+
+
+def test_auto_subscribe_overlapping_runs_do_not_orphan_cleanup(no_kernel_context, monkeypatch):
+    monkeypatch.setattr(toestand, "_using_solara_server", lambda: True)
+    dependency = Reactive("old")
+    fresh = Reactive("fresh")
+    context = kernel_context.VirtualKernelContext(id="overlap", kernel=kernel.Kernel(), session_id="session")
+
+    with context:
+        manager = toestand.AutoSubscribeContextManager(lambda: None)
+        with manager:
+            assert dependency.value == "old"
+
+    first_entered = threading.Event()
+    release_first = threading.Event()
+    second_finished = threading.Event()
+    errors = []
+
+    def recompute(first: bool):
+        try:
+            with context, manager:
+                assert fresh.value == "fresh"
+                if first:
+                    first_entered.set()
+                    assert release_first.wait(timeout=5)
+        except BaseException as error:
+            errors.append(error)
+        finally:
+            if not first:
+                second_finished.set()
+
+    first = threading.Thread(target=recompute, args=(True,))
+    second = threading.Thread(target=recompute, args=(False,))
+    first.start()
+    assert first_entered.wait(timeout=5)
+    second.start()
+    assert second_finished.wait(timeout=5)
+    release_first.set()
+    first.join(timeout=5)
+
+    assert not first.is_alive()
+    assert not second.is_alive()
+    if errors:
+        raise errors[0]
+    assert _listener_count(fresh, context.id) == 1
+
+    context.close()
+    assert _listener_count(dependency, context.id) == 0
+    assert _listener_count(fresh, context.id) == 0
+
+
+@pytest.mark.parametrize("read_before_close", [False, True])
+def test_auto_subscribe_close_cleans_active_run(no_kernel_context, monkeypatch, read_before_close):
+    monkeypatch.setattr(toestand, "_using_solara_server", lambda: True)
+    store = Reactive("value")
+    context = kernel_context.VirtualKernelContext(id=f"active-{read_before_close}", kernel=kernel.Kernel(), session_id="session")
+    with context:
+        manager = toestand.AutoSubscribeContextManager(lambda: None)
+
+    entered = threading.Event()
+    release = threading.Event()
+    errors = []
+
+    def run():
+        try:
+            with context, manager:
+                if read_before_close:
+                    assert store.value == "value"
+                entered.set()
+                assert release.wait(timeout=5)
+                if not read_before_close:
+                    assert store.value == "value"
+        except BaseException as error:
+            errors.append(error)
+
+    thread = threading.Thread(target=run)
+    thread.start()
+    assert entered.wait(timeout=5)
+    context.close()
+    assert _listener_count(store, context.id) == 0
+
+    release.set()
+    thread.join(timeout=5)
+    assert not thread.is_alive()
+    if errors:
+        raise errors[0]
+    assert _listener_count(store, context.id) == 0
+
+
+def test_auto_subscribe_cleanup_is_unlocked_and_failure_isolated(caplog):
+    manager = toestand.AutoSubscribeContextManager(lambda: None)
+    acquired = threading.Event()
+    errors = []
+
+    def acquire_manager_lock():
+        def acquire():
+            try:
+                manager._subscription_lock.acquire()
+                acquired.set()
+            except BaseException as error:
+                errors.append(error)
+
+        thread = threading.Thread(target=acquire)
+        thread.start()
+        thread.join(timeout=5)
+        if acquired.is_set():
+            manager._subscription_lock.release()
+        assert not thread.is_alive()
+        if errors:
+            raise errors[0]
+
+    def fail():
+        raise RuntimeError("unsubscribe failed")
+
+    manager.subscribed = {
+        cast(toestand.ValueBase, object()): acquire_manager_lock,
+        cast(toestand.ValueBase, object()): fail,
+    }
+    with caplog.at_level(logging.ERROR):
+        manager.unsubscribe_all()
+
+    assert acquired.is_set()
+    assert "unsubscribe failed" in caplog.text
+
+
+def test_listener_prune_is_atomic_with_subscribe(no_kernel_context, monkeypatch):
+    from collections import defaultdict
+
+    monkeypatch.setattr(toestand, "_using_solara_server", lambda: True)
+    store = Reactive("value")
+    context = kernel_context.VirtualKernelContext(id="listener-prune", kernel=kernel.Kernel(), session_id="session")
+    holder = cast(toestand.ValueBase, getattr(store._storage, "_storage", store._storage))
+    pruning = threading.Event()
+    proceed = threading.Event()
+    added = threading.Event()
+    cleanups = []
+    errors = []
+
+    class PausingDict(defaultdict):
+        def pop(self, *args, **kwargs):
+            pruning.set()
+            assert proceed.wait(timeout=5)
+            return super().pop(*args, **kwargs)
+
+        def __delitem__(self, key):
+            pruning.set()
+            assert proceed.wait(timeout=5)
+            return super().__delitem__(key)
+
+    holder.listeners2 = PausingDict(set)
+    with context:
+        unsubscribe = holder.subscribe_change(lambda old, new: None)
+
+    cleanup_thread = threading.Thread(target=lambda: unsubscribe())
+
+    def subscribe():
+        try:
+            with context:
+                cleanups.append(holder.subscribe_change(lambda old, new: None))
+            added.set()
+        except BaseException as error:
+            errors.append(error)
+
+    subscribe_thread = threading.Thread(target=subscribe)
+    cleanup_thread.start()
+    assert pruning.wait(timeout=5)
+    subscribe_thread.start()
+    assert not added.wait(timeout=0.2)
+    proceed.set()
+    cleanup_thread.join(timeout=5)
+    subscribe_thread.join(timeout=5)
+
+    assert not cleanup_thread.is_alive()
+    assert not subscribe_thread.is_alive()
+    if errors:
+        raise errors[0]
+    assert len(holder.listeners2.get(context.id, ())) == 1
+    cleanups[0]()
+    context.close()
+
+
+def test_listener_user_code_runs_outside_listener_lock():
+    store = Reactive("value")
+    completed = threading.Event()
+
+    class Listener:
+        def __call__(self, value):
+            def subscribe_and_cleanup():
+                cleanup = store.subscribe(lambda value: None)
+                cleanup()
+                completed.set()
+
+            thread = threading.Thread(target=subscribe_and_cleanup)
+            thread.start()
+            thread.join(timeout=5)
+            assert not thread.is_alive()
+
+        def __hash__(self):
+            raise RuntimeError("listener hash must not be used")
+
+    cleanup = store.subscribe(Listener())
+    store.value = "changed"
+    cleanup()
+    assert completed.is_set()
+
+
+def test_post_close_computed_access_leaves_no_residue(no_kernel_context, monkeypatch):
+    monkeypatch.setattr(toestand, "_using_solara_server", lambda: True)
+    store = Reactive("hello")
+    context = kernel_context.VirtualKernelContext(id="computed-closed", kernel=kernel.Kernel(), session_id="session")
+    with context:
+        computed = toestand.Computed(lambda: store.value + "!", key="computed-closed")
+
+    context.close()
+    with context:
+        assert computed.value == "hello!"
+    assert _listener_count(store, context.id) == 0
+
+
+def test_kernel_created_computed_survives_repeated_restart(no_kernel_context, monkeypatch):
+    monkeypatch.setattr(toestand, "_using_solara_server", lambda: True)
+    dependency = Reactive("a")
+    context = kernel_context.VirtualKernelContext(id="computed-restart", kernel=kernel.Kernel(), session_id="session")
+
+    with context:
+        computed = toestand.Computed(lambda: dependency.value + "!", key="computed-restart")
+        assert computed.value == "a!"
+    for value in ["b", "c"]:
+        context.restart()
+        with context:
+            dependency.value = value
+            assert computed.value == value + "!"
+        assert _listener_count(dependency, context.id) == 1
+    context.close()
+
+
+def test_restart_releases_transient_computed_payload(no_kernel_context, monkeypatch):
+    monkeypatch.setattr(toestand, "_using_solara_server", lambda: True)
+    store = Reactive("value")
+    context = kernel_context.VirtualKernelContext(id="generation-release", kernel=kernel.Kernel(), session_id="session")
+    with context:
+        assert store.value == "value"
+    baseline = len(context.user_dicts)
+
+    class Payload(list):
+        pass
+
+    payload = Payload(range(1000))
+
+    def read(payload: Payload = payload):
+        return (payload, store.value)[1]
+
+    with context:
+        computed = toestand.Computed(read, key="generation-release")
+        assert computed.value == "value"
+    computed_ref = weakref.ref(computed)
+    payload_ref = weakref.ref(payload)
+
+    context.restart()
+    del computed, payload, read
+    gc.collect()
+
+    assert computed_ref() is None
+    assert payload_ref() is None
+    assert len(context.user_dicts) == baseline
+    context.close()
+
+
+def test_unread_kernel_computed_is_not_rooted(no_kernel_context, monkeypatch):
+    monkeypatch.setattr(toestand, "_using_solara_server", lambda: True)
+    context = kernel_context.VirtualKernelContext(id="computed-unread", kernel=kernel.Kernel(), session_id="session")
+
+    class Payload(list):
+        pass
+
+    payload = Payload(range(1000))
+
+    def read(payload: Payload = payload):
+        return payload
+
+    with context:
+        computed = toestand.Computed(read, key="computed-unread")
+    computed_ref = weakref.ref(computed)
+    payload_ref = weakref.ref(payload)
+    del computed, payload, read
+    gc.collect()
+
+    assert computed_ref() is None
+    assert payload_ref() is None
+    context.close()
+
+
+def test_read_transient_computed_is_released_before_restart(no_kernel_context, monkeypatch):
+    monkeypatch.setattr(toestand, "_using_solara_server", lambda: True)
+    dependency = Reactive("value")
+    context = kernel_context.VirtualKernelContext(id="computed-transient", kernel=kernel.Kernel(), session_id="session")
+    with context:
+        assert dependency.value == "value"
+    baseline = len(context.user_dicts)
+    callbacks_before = len(context._on_close_callbacks)
+
+    class Payload(list):
+        pass
+
+    payload = Payload(range(1000))
+
+    def read(payload: Payload = payload):
+        return (payload, dependency.value)[1]
+
+    with context:
+        computed = toestand.Computed(read, key="computed-transient")
+        assert computed.value == "value"
+    computed_ref = weakref.ref(computed)
+    payload_ref = weakref.ref(payload)
+    del computed, payload, read
+    gc.collect()
+
+    assert computed_ref() is None
+    assert payload_ref() is None
+    assert _listener_count(dependency, context.id) == 0
+    assert len(context.user_dicts) == baseline
+    assert len(context._on_close_callbacks) == callbacks_before
+    context.close()
+
+
+def test_discarded_singleton_releases_kernel_value(no_kernel_context, monkeypatch):
+    monkeypatch.setattr(toestand, "_using_solara_server", lambda: True)
+    context = kernel_context.VirtualKernelContext(id="singleton-transient", kernel=kernel.Kernel(), session_id="session")
+    baseline = len(context.user_dicts)
+
+    class Payload(list):
+        pass
+
+    payload = Payload(range(1000))
+
+    def create(payload: Payload = payload):
+        return payload
+
+    with context:
+        singleton = toestand.Singleton(create, key="singleton-transient")
+        assert singleton.value is payload
+    payload_ref = weakref.ref(payload)
+    del singleton, payload, create
+    gc.collect()
+
+    assert payload_ref() is None
+    assert len(context.user_dicts) == baseline
+    context.close()
+
+
+def test_discarded_reactive_releases_kernel_value(no_kernel_context, monkeypatch):
+    monkeypatch.setattr(toestand, "_using_solara_server", lambda: True)
+    context = kernel_context.VirtualKernelContext(id="reactive-transient", kernel=kernel.Kernel(), session_id="session")
+
+    class Payload(list):
+        pass
+
+    payload = Payload(range(1000))
+    with context:
+        reactive = Reactive(payload, key="reactive-transient")
+        stored_payload = reactive.value
+    payload_ref = weakref.ref(payload)
+    stored_payload_ref = weakref.ref(stored_payload)
+    del reactive, payload, stored_payload
+    gc.collect()
+
+    assert payload_ref() is None
+    assert stored_payload_ref() is None
+    assert not context.user_dicts
+    context.close()
+
+
+def test_discarded_singleton_preserves_shared_explicit_key(no_kernel_context, monkeypatch):
+    monkeypatch.setattr(toestand, "_using_solara_server", lambda: True)
+    calls = 0
+
+    def create():
+        nonlocal calls
+        calls += 1
+        return object()
+
+    permanent = toestand.Singleton(create, key="shared-explicit-key")
+    context = kernel_context.VirtualKernelContext(id="shared-key", kernel=kernel.Kernel(), session_id="session")
+    with context:
+        value = permanent.value
+        transient = toestand.Singleton(create, key="shared-explicit-key")
+        assert transient.value is value
+    del transient
+    gc.collect()
+    with context:
+        assert permanent.value is value
+    assert calls == 1
+    context.close()
+
+
+def test_manager_created_outside_kernel_binds_on_first_use(no_kernel_context, monkeypatch):
+    monkeypatch.setattr(toestand, "_using_solara_server", lambda: True)
+    store = Reactive("value")
+    manager = toestand.AutoSubscribeContextManager(lambda: None)
+    context = kernel_context.VirtualKernelContext(id="manager-first-use", kernel=kernel.Kernel(), session_id="session")
+
+    with context, manager:
+        assert store.value == "value"
+    context.close()
+
+    assert manager._closed
+    assert _listener_count(store, context.id) == 0
+
+
+def test_failed_run_keeps_last_valid_dependencies(no_kernel_context, monkeypatch):
+    monkeypatch.setattr(toestand, "_using_solara_server", lambda: True)
+    valid = Reactive(1)
+    partial = Reactive(10)
+    fail = False
+    context = kernel_context.VirtualKernelContext(id="computed-failure", kernel=kernel.Kernel(), session_id="session")
+
+    def calculate():
+        if fail:
+            partial.value
+            raise RuntimeError("calculation failed")
+        return valid.value
+
+    with context:
+        computed = toestand.Computed(calculate, key="computed-failure")
+        assert computed.value == 1
+        manager = computed._auto_subscriber.value
+        fail = True
+        with pytest.raises(RuntimeError, match="calculation failed"):
+            valid.value = 2
+
+    assert valid in manager.subscribed
+    assert partial not in manager.subscribed
+    context.close()
+
+
+def test_computed_created_during_render_warns(no_kernel_context):
+    toestand._warned_sites.clear()
+
+    @solara.component
+    def Page():
+        derived = toestand.Computed(lambda: 1 + 1, key="in-render-warn")
+        solara.Text(str(derived.value))
+
+    kernel_shared = kernel.Kernel()
+    context = kernel_context.VirtualKernelContext(id="toestand-warn-1", kernel=kernel_shared, session_id="session-1")
+    with context:
+        with pytest.warns(UserWarning, match="created during a render"):
+            box, rc = react.render(Page(), handle_error=False)
+    context.close()
+    toestand._warned_sites.clear()
+
+
+def test_unreleased_subscription_warns_at_kernel_close(no_kernel_context):
+    toestand._warned_sites.clear()
+    store = Reactive("hello")
+
+    context = kernel_context.VirtualKernelContext(id="toestand-warn-2", kernel=kernel.Kernel(), session_id="session-1")
+    with context:
+        store.subscribe(lambda value: None)  # cleanup never called
+    with pytest.warns(UserWarning, match="still active when its kernel closed"):
+        context.close()
+
+    # clean usage: cleanup called before close -> no warning
+    toestand._warned_sites.clear()
+    context2 = kernel_context.VirtualKernelContext(id="toestand-warn-3", kernel=kernel.Kernel(), session_id="session-1")
+    callbacks_before = len(context2._on_close_callbacks)
+    with context2:
+        for _ in range(10):
+            unsubscribe = store.subscribe(lambda value: None)
+            unsubscribe()
+    assert len(context2._on_close_callbacks) == callbacks_before
+    assert context2.id not in toestand._pending_subscription_checks
+    import warnings as warnings_module
+
+    with warnings_module.catch_warnings(record=True) as records:
+        warnings_module.simplefilter("always")
+        context2.close()
+    assert not [r for r in records if "still active" in str(r.message)]
+    toestand._warned_sites.clear()
 
 
 def test_scopes_restore(no_kernel_context):
@@ -974,7 +1510,7 @@ def test_reactive_auto_subscribe_sub():
     ref.value += 1
     assert rc.find(v.Alert).widget.children[0] == "2 bears around here"
     assert reactive_used == {ref}
-    # now check that we didn't listen to the while object, just count changes
+    # now check that we didn't listen to the whole object, just count changes
     renders_before = renders
     Ref(bears.fields.type).value = "pink"
     assert renders == renders_before
@@ -1303,6 +1839,8 @@ def test_computed_reload(no_kernel_context):
             module = route.module
             assert text.widget.v_model == "3.0"
             solara.server.reload.reloader.requires_reload = True
+            assert solara.server.reload.reloader.on_change is not None
+            solara.server.reload.reloader.on_change("notimportant.py")
             kernel_context.restart()
         solara.toestand.KernelStore._type_counter.clear()
         c = app.run()
@@ -1453,7 +1991,332 @@ def test_mutate_value_set_value_dataframe():
     assert reactive_df._storage.equals is solara.util.equals_pickle
     assert reactive_df._storage.equals(df, df_orig)
     reactive_df.value = df
-    df["a"][0] = 100
+    # .loc, not df["a"][0]: chained assignment is a silent no-op under pandas>=3 copy-on-write
+    df.loc[0, "a"] = 100
     assert not reactive_df._storage.equals(df, df_orig)
     with pytest.raises(ValueError, match="Reactive variable was set.*"):
         reactive_df._storage.check_mutations()  # type: ignore
+
+
+# Lazy initialization in KernelStore.get() is guarded by a lock. Originally one global
+# class-level lock guarded *every* store; it was then split per-store; and finally made
+# per-(reactive, kernel) by living on the kernel context (keyed by storage_key) for kernel
+# scopes, with a per-instance lock kept for the global scope. These tests pin down the
+# resulting properties: different stores don't block each other, the same store in different
+# kernels doesn't serialize, and the deadlock-diagnostic timeout still fires for genuine
+# same-scope contention.
+#
+# The threaded tests are deterministic (handoff via threading.Event; completion is observed
+# via a "done" event with a generous timeout rather than a tight join window, so a correct
+# run never flakes on a slow CI box) and self-cleaning (a finally block releases every lock
+# so even a failing run leaves no thread stuck holding a lock, which would poison later tests).
+
+
+def test_lazy_init_lock_is_per_store():
+    """A store's lazy init must not block an unrelated store's lazy init.
+
+    Thread 1 enters store A's ``initial_value`` and parks there while holding A's init lock.
+    The main thread then asks an unrelated store B for its value; with a per-store lock B
+    initializes immediately, with a global lock B blocks behind A (``b_done`` never fires).
+    """
+    a_initializing = threading.Event()
+    release_a = threading.Event()
+    b_done = threading.Event()
+    b_value: List[str] = []
+
+    def factory_a():
+        a_initializing.set()  # we are inside A.get(), holding A's init lock
+        assert release_a.wait(timeout=10), "test bug: A was never released"
+        return "a"
+
+    store_a = toestand.KernelStoreFactory(factory_a, key="per-store-lock-a")
+    store_b = toestand.KernelStoreFactory(lambda: "b", key="per-store-lock-b")
+    # distinct stores must not share an init lock; the threaded handoff below proves B does not
+    # block on A (see test_init_lock_distinct_per_kernel for the per-kernel object-identity check)
+
+    def get_b():
+        b_value.append(store_b.get())
+        b_done.set()
+
+    t1 = threading.Thread(target=store_a.get, daemon=True)
+    t2 = threading.Thread(target=get_b, daemon=True)
+    try:
+        t1.start()
+        assert a_initializing.wait(timeout=10), "thread 1 never entered A's initial_value"
+        # A is parked mid-init holding its init lock. B is a different store and must not block.
+        t2.start()
+        assert b_done.wait(timeout=10), "store B's lazy init blocked on store A's — the init lock is shared (global) across stores"
+        assert b_value == ["b"]
+    finally:
+        release_a.set()
+        t1.join(timeout=10)
+        t2.join(timeout=10)
+
+
+def test_lazy_init_does_not_deadlock_across_stores_via_user_lock():
+    """A store whose ``initial_value`` takes a user lock must not deadlock another store.
+
+    ``initial_value`` runs arbitrary user code, which may acquire a lock the application
+    already has. That sets up a lock-ordering inversion against the init lock::
+
+        main thread : user_lock -> init lock   (holds user lock, then reads store A)
+        b    thread : init lock  -> user_lock   (reads store B, whose init takes user lock)
+
+    With one global init lock the two stores alias the same lock, so the two orderings form
+    an A/B–B/A deadlock. With a per-store lock no shared lock exists.
+
+    ``user_lock`` is acquired with a timeout inside the factory so that, on the buggy
+    (global-lock) code, the deadlock resolves itself after the assertion instead of hanging
+    the whole test session.
+    """
+    user_lock = threading.Lock()
+    b_holds_init_lock = threading.Event()
+    a_done = threading.Event()
+    a_value: List[str] = []
+
+    def factory_b():
+        # initial_value that "calls a lock"; runs while holding store B's init lock
+        b_holds_init_lock.set()
+        if user_lock.acquire(timeout=15):
+            user_lock.release()
+        return "b"
+
+    def get_a():
+        a_value.append(store_a.get())
+        a_done.set()
+
+    store_a = toestand.KernelStoreFactory(lambda: "a", key="deadlock-a")
+    store_b = toestand.KernelStoreFactory(factory_b, key="deadlock-b")
+
+    t_b = threading.Thread(target=store_b.get, daemon=True)
+    t_a = threading.Thread(target=get_a, daemon=True)
+
+    user_lock.acquire()
+    try:
+        t_b.start()
+        assert b_holds_init_lock.wait(timeout=10), "store B never reached its initial_value"
+        # store B now holds its init lock and is blocked on user_lock (held by us).
+        # Reading the unrelated store A must not need store B's lock.
+        t_a.start()
+        assert a_done.wait(timeout=10), "reading store A blocked while store B was initializing — the init lock is shared (global) across stores"
+        assert a_value == ["a"]
+    finally:
+        user_lock.release()  # let store B's initial_value finish
+        t_b.join(timeout=15)
+        t_a.join(timeout=15)
+
+
+def test_init_lock_timeout_logs_error(monkeypatch):
+    """A stuck init lock logs a throttled error naming the variable, with thread stacks.
+
+    One thread parks inside ``initial_value`` (holding the init lock); a second thread then
+    reads the same store, times out acquiring the lock, and should log an error that keeps
+    retrying until the first thread is released.
+
+    The record is captured by our own handler (appended *before* the event is set) instead of
+    via ``caplog``, to avoid racing the record's propagation to caplog's root handler.
+    """
+    monkeypatch.setattr(solara.settings.storage, "init_lock_timeout", 0.05)
+    monkeypatch.setattr(solara.settings.storage, "init_lock_warning_cooldown", 60.0)
+
+    holding = threading.Event()
+    release = threading.Event()
+    logged = threading.Event()
+    captured: List[logging.LogRecord] = []
+
+    def factory():
+        holding.set()
+        assert release.wait(timeout=10), "test bug: holder was never released"
+        return "value"
+
+    store = toestand.KernelStoreFactory(factory, key="init-lock-timeout")
+
+    class _Handler(logging.Handler):
+        def emit(self, record):
+            if record.levelno >= logging.ERROR:
+                captured.append(record)
+                logged.set()
+
+    handler = _Handler()
+    logging.getLogger("solara.toestand").addHandler(handler)
+
+    holder = threading.Thread(target=store.get, daemon=True)
+    waiter_result: List[str] = []
+    waiter = threading.Thread(target=lambda: waiter_result.append(store.get()), daemon=True)
+    try:
+        holder.start()
+        assert holding.wait(timeout=10), "holder never entered initial_value"
+        waiter.start()
+        assert logged.wait(timeout=10), "no timeout error was logged while the init lock was held"
+        message = captured[0].getMessage()
+        assert "init-lock-timeout" in message  # names the variable
+        assert "Thread stacks:" in message  # dumps stacks so the stuck thread is visible
+    finally:
+        release.set()
+        logging.getLogger("solara.toestand").removeHandler(handler)
+        holder.join(timeout=10)
+        waiter.join(timeout=10)
+    assert waiter_result == ["value"]  # the waiting get() still completed once the lock was released
+
+
+def test_init_lock_warning_cooldown(monkeypatch, caplog):
+    """Repeated timeouts for the same store are throttled to one warning per cooldown."""
+    monkeypatch.setattr(solara.settings.storage, "init_lock_warning_cooldown", 60.0)
+    store = toestand.KernelStoreFactory(lambda: "value", key="init-lock-cooldown")
+
+    with caplog.at_level(logging.ERROR, logger="solara.toestand"):
+        store._warn_init_lock_timeout(0.05, "scope")
+        store._warn_init_lock_timeout(0.05, "scope")  # within cooldown -> suppressed
+        assert len(caplog.records) == 1
+        # pretend the previous warning happened longer ago than the cooldown
+        store._init_lock_warning_time = time.monotonic() - 61.0
+        store._warn_init_lock_timeout(0.05, "scope")
+        assert len(caplog.records) == 2
+
+
+def test_init_lock_timeout_disabled(monkeypatch, caplog):
+    """A non-positive timeout disables the warning and waits indefinitely (no error logged)."""
+    monkeypatch.setattr(solara.settings.storage, "init_lock_timeout", 0.0)
+
+    holding = threading.Event()
+    release = threading.Event()
+    waiter_done = threading.Event()
+    result: List[str] = []
+
+    def factory():
+        holding.set()
+        assert release.wait(timeout=10), "test bug: holder was never released"
+        return "value"
+
+    store = toestand.KernelStoreFactory(factory, key="init-lock-disabled")
+
+    # one thread holds the init lock by parking inside initial_value; another then reads the
+    # same store and must block silently (no warning) because the timeout is disabled
+    def get_waiter():
+        result.append(store.get())
+        waiter_done.set()
+
+    holder = threading.Thread(target=store.get, daemon=True)
+    waiter = threading.Thread(target=get_waiter, daemon=True)
+    try:
+        with caplog.at_level(logging.ERROR, logger="solara.toestand"):
+            holder.start()
+            assert holding.wait(timeout=10), "holder never entered initial_value"
+            waiter.start()
+            # while the holder holds the lock the waiter can never finish, regardless of timing,
+            # and with the timeout disabled it must not log a warning either
+            assert not waiter_done.wait(timeout=0.3)
+            assert caplog.records == []
+    finally:
+        release.set()
+        assert waiter_done.wait(timeout=10), "waiter did not complete after the lock was released"
+        holder.join(timeout=10)
+        waiter.join(timeout=10)
+    assert result == ["value"]
+
+
+def test_init_lock_released_when_initial_value_raises():
+    """If initial_value() raises, the init lock is released so a later get() can retry."""
+    calls: List[int] = []
+
+    def factory():
+        calls.append(1)
+        if len(calls) == 1:
+            raise RuntimeError("boom")
+        return "value"
+
+    store = toestand.KernelStoreFactory(factory, key="init-lock-raise")
+    with pytest.raises(RuntimeError, match="boom"):
+        store.get()
+    # the lock must be free again — prove it from another thread so RLock reentrancy can't mask a leak
+    done = threading.Event()
+    result: List[str] = []
+
+    def retry():
+        result.append(store.get())
+        done.set()
+
+    t = threading.Thread(target=retry, daemon=True)
+    t.start()
+    assert done.wait(timeout=10), "init lock leaked after initial_value raised"
+    t.join(timeout=10)
+    assert result == ["value"]
+    assert len(calls) == 2
+
+
+def test_init_lock_is_per_kernel(no_kernel_context):
+    """Initializing the same reactive in two different kernels must not serialize.
+
+    Kernel 1 parks inside the factory while holding kernel 1's init lock for the reactive;
+    kernel 2 initializing the SAME reactive must proceed immediately because it uses kernel 2's
+    own (per-context) lock. With a per-instance lock shared across kernels, kernel 2 would block
+    behind kernel 1 and ``k2_done`` would never fire.
+    """
+    kernel_shared = kernel.Kernel()
+    context1 = kernel_context.VirtualKernelContext(id="oc-kernel-1", kernel=kernel_shared, session_id="s1")
+    context2 = kernel_context.VirtualKernelContext(id="oc-kernel-2", kernel=kernel_shared, session_id="s2")
+
+    k1_initializing = threading.Event()
+    release_k1 = threading.Event()
+    k2_done = threading.Event()
+    k2_value: List[str] = []
+
+    def factory():
+        ctx = solara.server.kernel_context.get_current_context()
+        if ctx.id == "oc-kernel-1":
+            k1_initializing.set()
+            assert release_k1.wait(timeout=10), "test bug: kernel 1 never released"
+        return f"value-{ctx.id}"
+
+    store = toestand.KernelStoreFactory(factory, key="per-kernel-init")
+
+    def init_k1():
+        with context1:
+            store.get()
+
+    def init_k2():
+        with context2:
+            k2_value.append(store.get())
+            k2_done.set()
+
+    t1 = threading.Thread(target=init_k1, daemon=True)
+    t2 = threading.Thread(target=init_k2, daemon=True)
+    try:
+        t1.start()
+        assert k1_initializing.wait(timeout=10), "kernel 1 never entered the factory"
+        # kernel 1 is parked mid-init holding kernel 1's lock; kernel 2 must not block on it
+        t2.start()
+        assert k2_done.wait(timeout=10), "kernel 2 blocked behind kernel 1 — the init lock is shared across kernels"
+        assert k2_value == ["value-oc-kernel-2"]
+    finally:
+        release_k1.set()
+        t1.join(timeout=10)
+        t2.join(timeout=10)
+
+
+def test_init_lock_distinct_per_kernel(no_kernel_context):
+    """Each kernel gets its own init lock for the same reactive, living on the context."""
+    kernel_shared = kernel.Kernel()
+    context1 = kernel_context.VirtualKernelContext(id="oc-distinct-1", kernel=kernel_shared, session_id="s1")
+    context2 = kernel_context.VirtualKernelContext(id="oc-distinct-2", kernel=kernel_shared, session_id="s2")
+    store = toestand.KernelStoreFactory(lambda: "v", key="per-kernel-distinct")
+
+    with context1:
+        assert store.get() == "v"
+    with context2:
+        assert store.get() == "v"
+
+    key = store.storage_key
+    # the lock lives on the context (so it dies with the context — no leak) and is distinct per kernel
+    assert key in context1.init_locks
+    assert key in context2.init_locks
+    assert context1.init_locks[key] is not context2.init_locks[key]
+
+
+def test_init_lock_in_global_scope_uses_per_instance_lock(no_kernel_context):
+    """With no kernel context, the scope is global and lazy init uses the per-instance lock."""
+    store = toestand.KernelStoreFactory(lambda: "v", key="global-scope-init")
+    scope_dict, scope_id, context = store._get_dict()
+    assert scope_id == "global"
+    assert context is None  # no kernel context -> global scope, per-instance lock
+    assert store.get() == "v"  # lazy init works through the global (per-instance) lock

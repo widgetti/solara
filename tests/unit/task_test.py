@@ -1,5 +1,10 @@
 import asyncio
+import gc
+import logging
+import threading
 import time
+import weakref
+import warnings
 
 import ipyvuetify as v
 import pytest
@@ -588,3 +593,425 @@ async def test_use_task_async(prefer_threaded):
             raise TimeoutError("took too long, state = " + str(task._state))
     assert task._state == TaskState.FINISHED
     assert last_value == 99
+
+
+@solara.lab.task
+async def task_run_async():
+    print("running task_run_async")
+    return 42
+
+
+@solara.lab.task
+def task_threaded_run_async():
+    print("running task_threaded_run_async!")
+    task_run_async()
+
+
+def test_run_async_task_from_threaded():
+    @solara.component
+    def Test():
+        with solara.Column():
+            if task_threaded_run_async.error:
+                solara.Error("Error: " + str(task_threaded_run_async.exception))
+            elif task_run_async.finished:
+                solara.Info("Done: " + str(task_run_async.value))
+            else:
+                solara.Button("Run", on_click=lambda: task_threaded_run_async())
+
+    box, rc = solara.render(Test(), handle_error=False)
+    button = rc.find(v.Btn, children=["Run"]).widget
+    button.click()
+    rc.find(children=["Done: 42"]).wait_for()
+
+
+def test_update_while_rendering():
+    some_reactive_var = solara.reactive(10)
+
+    @solara.lab.task
+    def update_task():
+        print("execute update_task")
+        time.sleep(0.1)
+        # this update will happen before the render of Child2 is finished
+        some_reactive_var.value = 20
+        print("update_task done")
+
+    @solara.component
+    def Child1():
+        print("rendering child1 with value", some_reactive_var.value)
+
+    @solara.component
+    def Child2():
+        print("rendering child2 with value", some_reactive_var.value)
+        solara.Text(f"value = {some_reactive_var.value}")
+        time.sleep(0.2)
+
+    @solara.component
+    def Test():
+        print("rendering parent with value", some_reactive_var.value)
+        # solara.use_effect(update_task, [])
+        if update_task.not_called:
+            update_task()
+        with solara.Column():
+            Child1()
+            Child2()
+
+    box, rc = solara.render(Test(), handle_error=False)
+    rc.find(children=["value = 20"]).wait_for(timeout=3)
+
+
+def test_task_decorator_warning_in_component():
+    with pytest.warns(UserWarning, match=r"You are calling task.*"):
+
+        @solara.component
+        def ComponentWithTask():
+            @solara.tasks.task
+            def my_task_in_component():
+                return "done"
+
+            return solara.Text("ComponentWithTask")
+
+        solara.render(ComponentWithTask(), handle_error=False)
+
+    # Test that no warning is issued when task is used with use_memo
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")  # Treat all warnings as errors
+
+        @solara.component
+        def ComponentWithTaskInMemo():
+            def my_job_for_memo():
+                return "done"
+
+            solara.use_memo(lambda: solara.tasks.task(my_job_for_memo), dependencies=[])
+            return solara.Text("ComponentWithTaskInMemo")
+
+        solara.render_fixed(ComponentWithTaskInMemo(), handle_error=False)
+
+
+@pytest.mark.parametrize("fail", [False, True])
+def test_task_finishing_after_call_event_loop_closed_is_not_an_error(fail, caplog, monkeypatch):
+    # When a page disconnects, the websocket thread's event loop is closed while the
+    # kernel context (and a running task) stays alive until the cull timeout. A task
+    # finishing in that window cannot deliver its result to the future on the closed
+    # loop, but nothing can await that future anymore either, so this is expected
+    # shutdown noise, not an error.
+    monkeypatch.setattr(solara.tasks, "_using_solara_server", lambda: True)
+    proceed = threading.Event()
+    context_holder = {}
+
+    @solara.tasks.task
+    async def finishes():
+        while not proceed.is_set():
+            await asyncio.sleep(0.001)
+        if fail:
+            raise RuntimeError("task failed for a test")
+        return 42
+
+    def page_thread():
+        async def run():
+            context = kernel_context.VirtualKernelContext(id="task-loop-closed", kernel=kernel.Kernel(), session_id="session-loop-closed")
+            context_holder["context"] = context
+            with context:
+                finishes()
+
+        # like the websocket thread in solara.server.starlette: asyncio.run closes the loop on disconnect
+        asyncio.run(run())
+
+    try:
+        with caplog.at_level(logging.DEBUG, logger="solara.task"):
+            thread = threading.Thread(target=page_thread)
+            thread.start()
+            thread.join()
+            assert context_holder["context"].event_loop.is_closed()
+            assert not context_holder["context"].closed_event.is_set()
+            proceed.set()
+
+            def delivery_records():
+                return [record for record in caplog.records if record.getMessage().startswith("ignoring failure to deliver")]
+
+            deadline = time.time() + 10
+            while time.time() < deadline and not delivery_records():
+                time.sleep(0.01)
+
+        records = delivery_records()
+        assert len(records) == 1
+        assert records[0].levelno == logging.DEBUG
+        delivery_errors = [record for record in caplog.records if record.levelno >= logging.ERROR and record.getMessage().startswith("error delivering")]
+        assert not delivery_errors
+        if fail:
+            # the exception raised by the task itself should still be logged
+            assert any(record.levelno == logging.ERROR and "task failed for a test" in record.getMessage() for record in caplog.records)
+    finally:
+        with context_holder["context"]:
+            context_holder["context"].close()
+
+
+def test_use_task_unmounted_instance_is_collected(monkeypatch):
+    # use_task creates a Task instance per component mount. Registering the close-time
+    # cleanup with a strong reference (context.on_close(self._drop_call_state)) pinned
+    # every instance that ever ran - together with its ._last_value result - until the
+    # KERNEL closed. A long-lived session that mounts/unmounts use_task components then
+    # grows without bound. The registration must not keep an unmounted instance alive.
+    monkeypatch.setattr(solara.tasks, "_using_solara_server", lambda: True)
+
+    class Payload(list):
+        pass
+
+    payload_refs: list = []
+    show = solara.reactive(True)
+
+    @solara.component
+    def TaskUser():
+        async def work():
+            data = Payload(range(1000))
+            payload_refs.append(weakref.ref(data))
+            return data
+
+        result = use_task(work, dependencies=[])
+        solara.Text("done" if result.finished else "pending")
+
+    @solara.component
+    def Page():
+        if show.value:
+            TaskUser()
+        else:
+            solara.Text("hidden")
+
+    holder: dict = {}
+
+    def page_thread():
+        # like production: the kernel context's event loop is a RUNNING loop (the
+        # websocket thread's), so future-delivery callbacks actually get processed
+        async def run():
+            context = kernel_context.VirtualKernelContext(id="use-task-unmount", kernel=kernel.Kernel(), session_id="session-unmount")
+            holder["context"] = context
+            await run_in_context(context)
+
+        async def run_in_context(context):
+            with context:
+                box, rc = solara.render(Page(), handle_error=False)
+                n = 5
+                for _ in range(n):
+                    show.value = False
+                    show.value = True
+                    await asyncio.sleep(0.05)  # let task threads finish and deliveries drain
+                deadline = time.time() + 10
+                while len(payload_refs) < n + 1 and time.time() < deadline:
+                    await asyncio.sleep(0.01)
+                alive = len(payload_refs)
+                # generous deadline: on a loaded 1-2 core CI runner the tiny worker threads
+                # can be starved for seconds by this very loop's gc churn
+                deadline = time.time() + 30
+                while time.time() < deadline:
+                    # pytest's LogCaptureHandler retains LogRecords whose args hold the
+                    # task results ("setting result to %r"); clear them or they pin the
+                    # payloads for the duration of the test
+                    for logger_obj in [logging.getLogger()] + [logging.getLogger(name) for name in logging.root.manager.loggerDict]:
+                        for handler in getattr(logger_obj, "handlers", []):
+                            if hasattr(handler, "records"):
+                                handler.records.clear()
+                    gc.collect()
+                    alive = sum(1 for ref in payload_refs if ref() is not None)
+                    if alive <= 1:  # only the currently mounted instance may hold one
+                        break
+                    await asyncio.sleep(0.1)
+                holder["alive"] = alive
+                rc.close()
+
+        try:
+            asyncio.run(run())
+        except BaseException as e:  # noqa: BLE001 - re-raised in the main thread
+            holder["exception"] = e
+
+    try:
+        thread = threading.Thread(target=page_thread)
+        thread.start()
+        thread.join()
+        if "exception" in holder:
+            raise holder["exception"]
+        alive = holder["alive"]
+        assert alive <= 1, f"unmounted use_task results are pinned: {alive}/{len(payload_refs)} alive while the kernel is still open"
+    finally:
+        with holder["context"]:
+            holder["context"].close()
+
+
+def test_task_async_future_receives_exception(monkeypatch):
+    # awaiting the future of a failing task must raise the task's exception
+    # (guards the delivery closure: the `except ... as e` name is unbound by the
+    # time the closure runs on the call loop, so it must capture a fresh binding)
+    monkeypatch.setattr(solara.tasks, "_using_solara_server", lambda: True)
+    holder: dict = {}
+
+    @solara.tasks.task
+    async def fails():
+        raise RuntimeError("boom for a test")
+
+    def page_thread():
+        async def run():
+            context = kernel_context.VirtualKernelContext(id="task-exception", kernel=kernel.Kernel(), session_id="session-exception")
+            holder["context"] = context
+            with context:
+                fails()
+                assert fails.current_future is not None  # type: ignore
+                try:
+                    await asyncio.wait_for(fails.current_future, timeout=10)  # type: ignore
+                except BaseException as e:
+                    holder["exception"] = e
+
+        asyncio.run(run())
+
+    try:
+        thread = threading.Thread(target=page_thread)
+        thread.start()
+        thread.join()
+        exception = holder.get("exception")
+        assert isinstance(exception, RuntimeError)
+        assert "boom for a test" in str(exception)
+    finally:
+        with holder["context"]:
+            holder["context"].close()
+
+
+@pytest.mark.parametrize("fail", [False, True])
+def test_task_finishing_after_future_cancelled_is_not_an_error(fail, caplog, monkeypatch):
+    # A page close or shutdown can cancel the pending future while the task thread's
+    # completion is already in flight. Delivering to a done future raises
+    # InvalidStateError inside the loop callback, which asyncio logs as an ERROR with
+    # the exception traceback attached - and exception tracebacks pin the coroutine
+    # frames and through them the whole kernel context in a reference cycle that waits
+    # for a gen-2 gc. The delivery must be skipped silently instead.
+    monkeypatch.setattr(solara.tasks, "_using_solara_server", lambda: True)
+    proceed = threading.Event()
+    context_holder = {}
+
+    @solara.tasks.task
+    async def finishes():
+        while not proceed.is_set():
+            await asyncio.sleep(0.001)
+        if fail:
+            raise RuntimeError("task failed for a test")
+        return 42
+
+    def page_thread():
+        async def run():
+            context = kernel_context.VirtualKernelContext(id="task-future-cancelled", kernel=kernel.Kernel(), session_id="session-future-cancelled")
+            context_holder["context"] = context
+            with context:
+                finishes()
+                future = finishes.current_future  # type: ignore
+                assert future is not None
+                future.cancel()
+                proceed.set()
+                # keep the loop alive so the delivery callback gets a chance to run (and misbehave)
+                for _ in range(200):
+                    await asyncio.sleep(0.005)
+                    if finishes.finished or finishes.error:
+                        break
+
+        asyncio.run(run())
+
+    try:
+        with caplog.at_level(logging.DEBUG):
+            thread = threading.Thread(target=page_thread)
+            thread.start()
+            thread.join()
+
+        asyncio_errors = [record for record in caplog.records if record.name == "asyncio" and record.levelno >= logging.ERROR]
+        assert not asyncio_errors
+        delivery_errors = [record for record in caplog.records if record.levelno >= logging.ERROR and record.getMessage().startswith("error delivering")]
+        assert not delivery_errors
+        if fail:
+            # the exception raised by the task itself should still be logged
+            assert any(record.levelno == logging.ERROR and "task failed for a test" in record.getMessage() for record in caplog.records)
+    finally:
+        with context_holder["context"]:
+            context_holder["context"].close()
+
+
+def test_task_async_cancel_from_other_thread_wakes_sleeping_loop():
+    # a run_in_thread async task parks its private event loop in run_until_complete;
+    # cancelling from another thread (e.g. a kernel close callback) must wake that
+    # loop via call_soon_threadsafe — a plain Task.cancel() only lands when the
+    # current await finishes on its own (here: 20 seconds later)
+    started = threading.Event()
+    finished = threading.Event()
+
+    @solara.lab.task
+    async def sleeper():
+        started.set()
+        try:
+            await asyncio.sleep(20)
+        finally:
+            finished.set()
+
+    sleeper()
+    assert started.wait(5)
+    t0 = time.monotonic()
+    sleeper.cancel()
+    assert finished.wait(10), "cancel from another thread did not wake the sleeping task loop"
+    assert time.monotonic() - t0 < 5
+    assert sleeper.cancelled
+
+
+def test_cancel_after_context_close_is_a_noop(monkeypatch):
+    # At kernel close, _drop_call_state (registered via context.on_close) drops the
+    # call bookkeeping - including _cancel - while the reactive state still reads
+    # pending. App code commonly guards on-close cleanup with
+    # `if task.pending: task.cancel()`; arriving a moment after the drop must be a
+    # no-op, not "RuntimeError: Cannot cancel task, never started".
+    monkeypatch.setattr(solara.tasks, "_using_solara_server", lambda: True)
+    proceed = threading.Event()
+    context_holder = {}
+
+    @solara.tasks.task
+    async def runs_forever():
+        while not proceed.is_set():
+            await asyncio.sleep(0.001)
+
+    outcome: dict = {}
+
+    def app_like_guard():
+        # what app cleanup does during kernel close. on_close callbacks run
+        # LIFO, so registering this BEFORE the task starts makes it run AFTER
+        # _drop_call_state (registered at task start) - the production order
+        # where the call bookkeeping is gone but the state still reads pending
+        try:
+            if runs_forever.pending:
+                runs_forever.cancel()
+            outcome["ok"] = True
+        except RuntimeError as e:
+            outcome["error"] = str(e)
+
+    def page_thread():
+        async def run():
+            context = kernel_context.VirtualKernelContext(id="task-cancel-after-close", kernel=kernel.Kernel(), session_id="session-cancel-after-close")
+            context_holder["context"] = context
+            with context:
+                context.on_close(app_like_guard)
+                runs_forever()
+
+        asyncio.run(run())
+
+    try:
+        thread = threading.Thread(target=page_thread)
+        thread.start()
+        thread.join()
+        context = context_holder["context"]
+        with context:
+            assert runs_forever.pending
+        proceed.set()
+        with context:
+            context.close()
+        assert outcome == {"ok": True}, outcome
+    finally:
+        proceed.set()
+
+    # a genuinely never-started task still raises (misuse detection unchanged)
+    @solara.tasks.task
+    async def never_started():
+        pass
+
+    with pytest.raises(RuntimeError, match="never started"):
+        never_started.cancel()
+    with pytest.raises(RuntimeError, match="never started"):
+        never_started.retry()

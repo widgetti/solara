@@ -10,7 +10,7 @@ def Page():
             """
         # TESSA by Planeto
 
-        [Planeto](https://planeto-energy.ch/) developed a tool called [TESSA](https://planeto-energy.ch/solution/) for district heating & cooling planning.
+        [Planeto](https://planeto-energy.ch/) developed a tool called TESSA for district heating & cooling planning.
 
         TESSA was prototyped in the Jupyter notebook using ipywidgets. Using solara, they are able to bring TESSA into production using the
         same technology stack.

@@ -27,6 +27,22 @@ ipykernel_major = int(ipykernel.__version__.split(".")[0])
 jsonmodule = json
 
 
+class _NoSuchCommFilter(logging.Filter):
+    # A soft-remount tears down the client's old widget manager, which sends comm_close/comm_msg
+    # for the previous kernel's comms over the reconnected socket - but that socket now serves a
+    # fresh kernel that never knew those comm ids, so the `comm` package logs "No such comm: <id>"
+    # once per widget. The kernel already handles this correctly (ignores the message); the log
+    # line is pure noise on every failover. Drop only that benign message - keep the meaningful
+    # "No such comm target registered" error, which signals a genuinely missing comm target.
+    def filter(self, record: logging.LogRecord) -> bool:
+        message = record.getMessage()
+        return not (message.startswith("No such comm: ") and "target" not in message)
+
+
+# the `comm` package (comm.base_comm) logs on the "Comm" logger; install the filter once at import
+logging.getLogger("Comm").addFilter(_NoSuchCommFilter())
+
+
 # from jupyter_client/jsonutil.py
 def _ensure_tzinfo(dt: datetime) -> datetime:
     """Ensure a datetime object has tzinfo
@@ -87,6 +103,18 @@ if ipykernel_version >= (6, 18, 0):
             else:
                 self.kernel = None
             super().__init__(**kwargs)
+
+        def close(self, *args, **kwargs) -> None:
+            try:
+                super().close(*args, **kwargs)
+            except KeyError:
+                # A widget can be closed after its kernel closed (e.g. __del__ when the
+                # garbage collector finds it) or from a thread bound to a different kernel.
+                # get_comm_manager() is context-based, so it then resolves to a manager that
+                # never registered this comm, and upstream unregister_comm pops the comm id
+                # non-tolerantly. The comm is dead either way; the KeyError only buries real
+                # errors in teardown output as unraisable-exception noise.
+                pass
 
         def publish_msg(self, msg_type, data=None, metadata=None, buffers=None, **keys):
             if self.kernel is None or self.kernel.session is None:
@@ -227,8 +255,10 @@ def send_websockets(websockets: Set[websocket.WebsocketWrapper], binary_msg):
             logger.exception("Error sending message: %s, closing websocket", e)
             try:
                 ws.close()
-            except Exception as e:  # noqa
-                logger.exception("Error closing websocket: %s", e)
+            except websocket.WebSocketDisconnect:
+                pass  # was already closed, which triggered the original exception
+            except Exception as e2:  # noqa
+                logger.exception("Error closing websocket: %s %s", e, e2)
             try:
                 # websocket can be modified by another thread
                 websockets.remove(ws)

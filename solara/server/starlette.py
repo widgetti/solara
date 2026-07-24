@@ -1,11 +1,18 @@
 import asyncio
+import concurrent.futures
+from contextlib import asynccontextmanager
+import hashlib
+import re
+import hmac
 import json
 import logging
 import math
 import os
+import secrets
 from pathlib import Path
 import sys
 import threading
+import time
 import typing
 from typing import Any, Dict, List, Optional, Set, Union, cast
 from uuid import uuid4
@@ -17,7 +24,7 @@ import uvicorn.server
 import websockets.legacy.http
 import websockets.exceptions
 
-from solara.server.utils import path_is_child_of
+from solara.server.utils import path_is_child_of, redact_id
 
 try:
     import solara_enterprise
@@ -47,6 +54,8 @@ from starlette.middleware.gzip import GZipMiddleware
 from starlette.requests import HTTPConnection, Request
 from starlette.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from starlette.routing import Mount, Route, WebSocketRoute
+from urllib.parse import parse_qs
+
 from starlette.staticfiles import StaticFiles
 from starlette.types import Receive, Scope, Send
 
@@ -108,6 +117,13 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
     def __init__(self, ws: starlette.websockets.WebSocket, portal: Optional[anyio.from_thread.BlockingPortal]) -> None:
         self.ws = ws
         self.portal = portal
+        self.sync_writer = None
+        if settings.server.sync_ws_write:
+            from . import sync_ws_write
+
+            # frames are written synchronously from the sending thread; falls
+            # back to the default path (None) when unsupported, see the module
+            self.sync_writer = sync_ws_write.SyncFrameWriter.try_create(ws)
         self.to_send: List[Union[str, bytes]] = []
         # following https://docs.python.org/3/library/asyncio-task.html#asyncio.create_task
         # we store a strong reference
@@ -132,31 +148,54 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
         # and re-raise it as a websocket.WebSocketDisconnect
         try:
             await self.ws.send_bytes(data)
-        except (websockets.exceptions.ConnectionClosed, starlette.websockets.WebSocketDisconnect, RuntimeError) as e:
+        except RuntimeError as e:
             # starlette throws a RuntimeError once you call send after the connection is closed
-            if isinstance(e, RuntimeError) and "close message" in repr(e):
+            # or RuntimeError: Unexpected ASGI message 'websocket.send', after sending 'websocket.close' or response already completed.
+            # from uvicorn.protocols.websockets.websockets_impl.py
+            if "close message" in repr(e) or "websocket.close" in repr(e):
                 raise websocket.WebSocketDisconnect() from e
             else:
                 raise
+        except (websockets.exceptions.ConnectionClosed, starlette.websockets.WebSocketDisconnect, RuntimeError) as e:
+            raise websocket.WebSocketDisconnect() from e
 
     async def _send_text_exc(self, data: str):
         # make sures we catch the starlette/websockets specific exception
         # and re-raise it as a websocket.WebSocketDisconnect
         try:
             await self.ws.send_text(data)
-        except (websockets.exceptions.ConnectionClosed, starlette.websockets.WebSocketDisconnect, RuntimeError) as e:
-            if isinstance(e, RuntimeError) and "close message" in repr(e):
+        except RuntimeError as e:
+            if "close message" in repr(e) or "websocket.close" in repr(e):
                 raise websocket.WebSocketDisconnect() from e
             else:
                 raise
+        except (websockets.exceptions.ConnectionClosed, starlette.websockets.WebSocketDisconnect, RuntimeError) as e:
+            raise websocket.WebSocketDisconnect() from e
 
     def close(self):
+        async def _close_exc():
+            try:
+                await self.ws.close()
+            except RuntimeError as e:
+                if "close message" in repr(e) or "websocket.close" in repr(e):
+                    raise websocket.WebSocketDisconnect() from e
+                else:
+                    raise
+            except (websockets.exceptions.ConnectionClosed, starlette.websockets.WebSocketDisconnect, RuntimeError) as e:
+                raise websocket.WebSocketDisconnect() from e
+
         if self.portal is None:
-            asyncio.ensure_future(self.ws.close())
+            asyncio.ensure_future(_close_exc())
         else:
-            self.portal.call(self.ws.close)
+            self.portal.call(_close_exc)
 
     def send_text(self, data: str) -> None:
+        if self.sync_writer is not None:
+            try:
+                self.sync_writer.send_text(data)
+            except OSError as e:
+                raise websocket.WebSocketDisconnect() from e
+            return
         if self.portal is None:
             task = self.event_loop.create_task(self._send_text_exc(data))
             self.tasks.add(task)
@@ -180,6 +219,12 @@ await to_thread.run_sync(my_update)
                     self.portal.call(self._send_text_exc, data)
 
     def send_bytes(self, data: bytes) -> None:
+        if self.sync_writer is not None:
+            try:
+                self.sync_writer.send_bytes(data)
+            except OSError as e:
+                raise websocket.WebSocketDisconnect() from e
+            return
         if self.portal is None:
             task = self.event_loop.create_task(self._send_bytes_exc(data))
             self.tasks.add(task)
@@ -213,9 +258,9 @@ await to_thread.run_sync(my_update)
                 fut = self.portal.spawn_task(self.ws.receive)
 
             message = await asyncio.wrap_future(fut)
-        if "text" in message:
+        if message.get("text") is not None:
             return message["text"]
-        elif "bytes" in message:
+        elif message.get("bytes") is not None:
             return message["bytes"]
         elif message.get("type") == "websocket.disconnect":
             raise websocket.WebSocketDisconnect()
@@ -308,7 +353,9 @@ async def _kernel_connection(ws: starlette.websockets.WebSocket):
         logger.error("no kernel_id")
         await ws.close()
         return
-    logger.info("Solara kernel requested for session_id=%s kernel_id=%s", session_id, kernel_id)
+    # redact both: raw session_id (the cookie) + kernel_id together are a state-theft credential
+    # once persistence is on (design §5.6). redact_id is stable so log lines still correlate.
+    logger.info("Solara kernel requested for session=%s kernel=%s", redact_id(session_id), redact_id(kernel_id))
     await ws.accept()
     with WebsocketDebugInfo.lock:
         WebsocketDebugInfo.connecting -= 1
@@ -370,9 +417,57 @@ def close(request: Request):
     page_id = request.query_params["session_id"]
     context = kernel_context.contexts.get(kernel_id, None)
     if context is not None:
-        context.page_close(page_id)
+        # ADDITIVE: only tighten this route when a state backend is configured. Without persistence
+        # a tab-close deletes no durable state, so the original (unauthenticated) behavior is kept -
+        # this route is byte-for-byte unchanged for deployments that do not opt into persistence.
+        import solara.state as _solara_state
+
+        if _solara_state.get_backend() is None:
+            context.page_close(page_id)
+        else:
+            # With persistence on, page_close() fenced-DELETEs the persisted state (§5.4), so it must
+            # not be an unauthenticated primitive: an attacker who learns a kernel_id + page_id could
+            # otherwise erase another session's saved state. A real same-origin unload beacon carries
+            # the session cookie; verify it (as the evict route does). On a missing/mismatched cookie,
+            # skip the close - the kernel just culls later.
+            session_id = request.cookies.get(server.COOKIE_KEY_SESSION_ID)
+            if session_id and session_id == context.session_id:
+                context.page_close(page_id)
+            else:
+                logger.warning("refused close for kernel %s: session cookie missing or mismatched", redact_id(kernel_id))
     response = HTMLResponse(content="", status_code=200)
     return response
+
+
+def _eviction_enabled() -> bool:
+    # fail-closed (§6.4): only in an explicitly test-enabled, non-production deployment
+    return appmod.eviction_enabled()
+
+
+async def evict(request: Request):
+    """Dev/test-only kernel eviction over HTTP (§6.4).
+
+    ``solara.debug.simulateFailover()`` sends evict over the kernel websocket instead (the
+    ``solara.control`` comm in app.py) so it reaches the owning instance behind any load
+    balancer; this route only serves out-of-band tooling that holds the session cookie but no
+    websocket, and only works when it happens to hit the owning instance.
+
+    Removes a kernel context from this process so a subsequent reconnect exercises the REAL restore
+    path in a single process (with a shared/memory backend that flushes-and-leaves on close). Fails
+    closed: 404 when disabled or the kernel is unknown, 403 on a session-ownership mismatch (unlike
+    the unauthenticated close route, this verifies the requester's solara-session-id cookie).
+    """
+    kernel_id = request.path_params["kernel_id"]
+    if not _eviction_enabled():
+        return Response(status_code=404)
+    context = kernel_context.contexts.get(kernel_id, None)
+    if context is None:
+        return Response(status_code=404)
+    session_id = request.cookies.get(server.COOKIE_KEY_SESSION_ID)
+    if not session_id or session_id != context.session_id:
+        return Response(status_code=403)
+    context.close(reason="evicted")
+    return Response(status_code=200)
 
 
 async def root(request: Request, fullpath: str = ""):
@@ -564,6 +659,18 @@ class StaticPublic(StaticFilesOptionalAuth):
         self.all_directories = self.get_directories(None, None)
         return super().lookup_path(*args, **kwargs)
 
+    async def get_response(self, path: str, scope):
+        response = await super().get_response(path, scope)
+        # requests versioned with the current content hash (?v=..., see
+        # solara.server.esm_vue.versioned_url) can be cached forever: any
+        # change to the file changes the url
+        query = parse_qs(scope.get("query_string", b"").decode())
+        version = query.get("v", [None])[0]
+        if version is not None and response.status_code in (200, 304):
+            if version == server.public_url_content_hash(path):
+                response.headers["Cache-Control"] = "max-age=31536000, immutable"
+        return response
+
     def get_directories(
         self,
         directory: Union[str, "os.PathLike[str]", None] = None,
@@ -598,27 +705,163 @@ class StaticCdn(StaticFilesOptionalAuth):
             return "", None
         return full_path, os.stat(full_path)
 
+    # exact npm version in the path (e.g. @10.1.1/ or @2.3.6/): npm forbids
+    # republishing a version, so the content behind such a url can never change
+    _exact_version = re.compile(r"@\d+\.\d+\.\d+(?:[-+][\w.]+)?/")
+
+    async def get_response(self, path: str, scope):
+        response = await super().get_response(path, scope)
+        # All urls solara itself puts through this proxy pin an exact version
+        # (@widgetti/solara-vuetify-app@10.1.1/..., requirejs@2.3.6/...), so a
+        # solara upgrade changes the url and busts the cache by construction.
+        # Without this header, browsers re-download multi-MB bundles on every
+        # cold visit (and behind proxies that add a Set-Cookie, e.g. Cloud Run
+        # session affinity, the response is even marked private).
+        # Semver-RANGE urls (user-constructed, e.g. pkg@^1/...) are resolved by
+        # the cdn at fetch time and can change content under the same url, so
+        # they are deliberately not marked immutable.
+        if response.status_code in (200, 304) and self._exact_version.search(path):
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        return response
+
 
 def on_startup():
     appmod.ensure_apps_initialized()
+    # fail fast on a misconfigured state-persistence deployment (secrets/pickle gate; §5.6)
+    try:
+        import solara.state as solara_state
+
+        solara_state.validate_state_settings()
+    except Exception:
+        logger.exception("invalid state-persistence configuration")
+        raise
+    # the dev/test-only kernel-eviction route must never be live in production (§6.4, fail-closed)
+    if settings.state.test_eviction and settings.main.mode == "production":
+        logger.error("SOLARA_STATE_TEST_EVICTION is enabled but mode is 'production': the kernel-eviction route stays DISABLED. Never enable it in production.")
     # TODO: configure and set max number of threads
     # see https://github.com/encode/starlette/issues/1724
     telemetry.server_start()
 
 
+def _drain_state_workers(deadline_seconds: float = 5.0) -> None:
+    """One bounded, batched, parallel pass draining every kernel's flush worker (§5.3).
+
+    On SIGTERM uvicorn's lifespan teardown closes every context; doing N serial timeout-bounded
+    final flushes would blow any grace window under a correlated Redis brownout. So flush all
+    workers in parallel under one global deadline first; the subsequent per-context close loop
+    then finds persistence already drained and skips the I/O.
+    """
+    import solara.state as solara_state
+
+    if solara_state.get_backend() is None:
+        return
+    workers = [c.state_flush_worker for c in list(kernel_context.contexts.values()) if getattr(c, "state_flush_worker", None) is not None]
+    if not workers:
+        return
+    deadline = time.monotonic() + deadline_seconds
+    pool = concurrent.futures.ThreadPoolExecutor(max_workers=min(32, len(workers)), thread_name_prefix="solara-state-shutdown")
+
+    def _close_worker(worker):
+        remaining = max(0.0, deadline - time.monotonic())
+        try:
+            worker.close(timeout=remaining)
+        except Exception:  # noqa
+            logger.exception("error draining state flush worker on shutdown")
+
+    try:
+        futures = [pool.submit(_close_worker, worker) for worker in workers]
+        for future in futures:
+            remaining = max(0.0, deadline - time.monotonic())
+            try:
+                future.result(timeout=remaining)
+            except Exception:  # noqa - hard cap: never let shutdown hang
+                pass
+    finally:
+        # wait=False: do not block past the deadline on a hung worker (Python 3.8: no cancel_futures)
+        pool.shutdown(wait=False)
+
+
 def on_shutdown():
+    # bounded, batched final flush BEFORE the close loop, so the closes below skip backend I/O.
+    # TODO: uvicorn waits for websocket connections indefinitely by default, so this lifespan
+    # teardown may not run until Kubernetes SIGKILLs. Ship deployments with uvicorn's
+    # timeout_graceful_shutdown set (documented against terminationGracePeriodSeconds). It is not
+    # currently exposed as a solara CLI flag; pass it via a custom uvicorn Config / gunicorn worker.
+    try:
+        _drain_state_workers()
+    except Exception:  # noqa
+        logger.exception("error draining state workers on shutdown")
     # shutdown all kernels
     for context in list(kernel_context.contexts.values()):
         try:
-            context.close()
+            context.close(reason="server-shutdown")
         except:  # noqa
             logger.exception("error closing kernel on shutdown")
     telemetry.server_stop()
 
 
+@asynccontextmanager
+async def lifespan(app):
+    """Lifespan context manager for Starlette (replaces on_startup/on_shutdown)."""
+    on_startup()
+    yield
+    on_shutdown()
+
+
 def readyz(request: Request):
     json, status = server.readyz()
     return JSONResponse(json, status_code=status)
+
+
+def _sanitize_for_json(value):
+    """Convert infinite values to None for JSON serialization."""
+    if isinstance(value, (int, float)) and math.isinf(value):
+        return None
+    return value
+
+
+# Per-process salt for redacting persist key labels on /resourcez: stable across scrapes of THIS
+# process (a hot key correlates over time) but not reversible and not guessable. Deliberately not
+# the state secret - resourcez must not couple to the crypto module, and cross-instance label
+# correlation is not a goal (scrapers hit one instance at a time).
+_RESOURCEZ_LABEL_SALT = secrets.token_bytes(16)
+
+
+def _resourcez_full_detail_allowed(request: Request) -> bool:
+    """Whether this caller may see the identifier-bearing /resourcez breakdowns.
+
+    Non-production (dev on localhost): always. Production: only with a valid bearer token when
+    SOLARA_RESOURCEZ_TOKEN is configured; otherwise the caller gets aggregates + hashed labels.
+    A missing/wrong token degrades to the redacted view (never an error) so a misconfigured
+    scraper loses detail rather than breaking. /readyz is never gated (liveness probe).
+    """
+    if settings.main.mode != "production":
+        return True
+    token = settings.main.resourcez_token
+    if not token:
+        return False
+    header = request.headers.get("authorization", "")
+    scheme, _, presented = header.partition(" ")
+    if scheme.lower() != "bearer" or not presented:
+        return False
+    return hmac.compare_digest(presented, token)
+
+
+def _redact_sync_labels(state_stats: Dict[str, Any]) -> Dict[str, Any]:
+    """Replace persist key names in the sync_by_key table with a salted hash.
+
+    Persist keys can embed identifiers (the recommended pattern is ``key=f"user:{id}:..."``), so
+    the raw label is PII on an ops endpoint. The numbers (syncs/bytes) are kept - a runaway key is
+    still visible as a hot hash. Kernel ids are already truncated upstream and left as-is.
+    """
+    rows = state_stats.get("sync_by_key")
+    if not rows:
+        return state_stats
+    redacted = dict(state_stats)
+    redacted["sync_by_key"] = [
+        {**row, "key": "sha256:" + hashlib.sha256(_RESOURCEZ_LABEL_SALT + str(row.get("key", "")).encode("utf-8")).hexdigest()[:12]} for row in rows
+    ]
+    return redacted
 
 
 async def resourcez(request: Request):
@@ -647,17 +890,32 @@ async def resourcez(request: Request):
         "has_disconnected": len([k for k in contexts if kernel_context.PageStatus.DISCONNECTED in k.page_status.values()]),
         "has_closed": len([k for k in contexts if kernel_context.PageStatus.CLOSED in k.page_status.values()]),
         "limiter": {
-            "total_tokens": limiter.total_tokens,
-            "borrowed_tokens": limiter.borrowed_tokens,
-            "available_tokens": limiter.available_tokens,
+            "total_tokens": _sanitize_for_json(limiter.total_tokens),
+            "borrowed_tokens": _sanitize_for_json(limiter.borrowed_tokens),
+            "available_tokens": _sanitize_for_json(limiter.available_tokens),
         },
     }
     default_limiter = anyio.to_thread.current_default_thread_limiter()
     data["anyio.to_thread.limiter"] = {
-        "total_tokens": default_limiter.total_tokens,
-        "borrowed_tokens": default_limiter.borrowed_tokens,
-        "available_tokens": default_limiter.available_tokens,
+        "total_tokens": _sanitize_for_json(default_limiter.total_tokens),
+        "borrowed_tokens": _sanitize_for_json(default_limiter.borrowed_tokens),
+        "available_tokens": _sanitize_for_json(default_limiter.available_tokens),
     }
+    # state-persistence health (§7a): cheap, no backend I/O - "is the feature on right now?"
+    import solara.state as solara_state
+
+    # verbose widens the sync tables (top 10 -> top 100 keys/kernels by bytes)
+    state_stats = solara_state.stats().as_dict(verbose=verbose)
+    # The aggregate counters are safe to expose everywhere; only the per-key breakdown carries
+    # identifiers. In production without a bearer token, hash the key labels (keep the numbers).
+    if not _resourcez_full_detail_allowed(request):
+        state_stats = _redact_sync_labels(state_stats)
+    if solara_state.get_backend() is None:
+        data["state"] = {"status": "off", "circuit_breaker": "closed", **state_stats}
+    else:
+        breaker_state = solara_state.get_breaker().state
+        degraded = breaker_state != "closed" or state_stats.get("backend_last_error") is not None
+        data["state"] = {"status": "degraded" if degraded else "healthy", "circuit_breaker": breaker_state, **state_stats}
     if verbose:
         try:
             import psutil
@@ -702,7 +960,9 @@ async def resourcez(request: Request):
 
 
 middleware = [
-    Middleware(GZipMiddleware, minimum_size=1000),
+    # SOLARA_SERVER_HTTP_GZIP=false to disable, e.g. when a fronting proxy
+    # (nginx/caddy) does the compressing
+    *([Middleware(GZipMiddleware, minimum_size=1000)] if settings.server.http_gzip else []),
 ]
 
 if has_auth_support:
@@ -734,6 +994,8 @@ routes = [
     Route("/", endpoint=root),
     Route("/{fullpath}", endpoint=root),
     Route("/_solara/api/close/{kernel_id}", endpoint=close, methods=["POST"]),
+    # dev/test-only, fail-closed (§6.4): the handler returns 404 unless explicitly enabled
+    Route("/_solara/api/evict/{kernel_id}", endpoint=evict, methods=["POST"]),
     # only enable when the proxy is turned on, otherwise if the directory does not exists we will get an exception
     *([Mount(f"/{cdn_url_path}", app=StaticCdn(directory=settings.assets.proxy_cache_dir))] if solara.settings.assets.proxy else []),
     Mount(f"{prefix}/static/public", app=StaticPublic()),
@@ -743,7 +1005,7 @@ routes = [
     Route("/{fullpath:path}", endpoint=root),
 ]
 
-app = Starlette(routes=routes, on_startup=[on_startup], on_shutdown=[on_shutdown], middleware=middleware)
+app = Starlette(routes=routes, lifespan=lifespan, middleware=middleware)
 
 # Uncomment the lines below to test solara mouted under a subpath
 # def myroot(request: Request):

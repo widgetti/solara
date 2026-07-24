@@ -58,7 +58,7 @@ def _FileDrop(
 
         set_wired_files(cast(typing.List[FileInfo], real.get_files()))
 
-    solara.use_side_effect(wire_files, [file_info])
+    solara.use_effect(wire_files, [file_info])
 
     def handle_file(cancel: threading.Event):
         if not wired_files:

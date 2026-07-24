@@ -272,6 +272,20 @@ Thread__init__ = threading.Thread.__init__
 Thread__bootstrap = threading.Thread._bootstrap  # type: ignore
 
 
+def _is_pool_worker_thread(args, kwargs) -> bool:
+    # a concurrent.futures.ThreadPoolExecutor grows its pool lazily: the worker
+    # thread is created by whoever happens to call submit() when no worker is idle.
+    # Pool workers are shared infrastructure that outlive the request that spawned
+    # them — inheriting the spawning kernel's context would pin that kernel's whole
+    # state for the lifetime of the pool, and any code on the worker would see an
+    # arbitrary, possibly closed, kernel context. Context must travel per submitted
+    # job (a contextvars copy or an explicit capture), not per worker thread.
+    target = kwargs.get("target")
+    if target is None and len(args) >= 2:
+        target = args[1]
+    return getattr(target, "__module__", None) == "concurrent.futures.thread" and getattr(target, "__qualname__", None) == "_worker"
+
+
 def WidgetContextAwareThread__init__(self, *args, **kwargs):
     Thread__init__(self, *args, **kwargs)
     with ThreadDebugInfo.lock:
@@ -280,7 +294,8 @@ def WidgetContextAwareThread__init__(self, *args, **kwargs):
     self.current_context = None
     # if we do this for the dummy threads, we got into a recursion
     # since threading.current_thread will call the _DummyThread constructor
-    if not ("name" in kwargs and "Dummy-" in kwargs["name"]):
+    is_dummy = "name" in kwargs and kwargs["name"] is not None and "Dummy-" in kwargs["name"]
+    if not is_dummy and not _is_pool_worker_thread(args, kwargs):
         try:
             self.current_context = kernel_context.get_current_context()
         except RuntimeError:
@@ -302,6 +317,11 @@ def _WidgetContextAwareThread__bootstrap(self):
     if not hasattr(self, "current_context"):
         # this happens when a thread was running before we patched
         return Thread__bootstrap(self)
+    if self.current_context and self.current_context.kernel is None:
+        # the context closed between thread creation and start (close() sets kernel to
+        # None): run without a kernel context instead of crashing before _started is
+        # set, which would hang the Thread.start() caller forever
+        self.current_context = None
     if self.current_context:
         # we need to call this manually, because set_context_for_thread
         # uses this, and the original _bootstrap calls it too late for us
@@ -369,6 +389,22 @@ def patch_ipyreact():
     ipyreact.importmap._update_import_map = lambda: None
 
 
+def patch_ipyvue_esm():
+    import ipyvue
+
+    if not hasattr(ipyvue, "define_module"):
+        # ipyvue without ES module support
+        return
+
+    import ipyvue.esm
+
+    from . import esm_vue
+
+    ipyvue.esm.define_module = esm_vue.define_module
+    ipyvue.esm.get_module_names = esm_vue.get_module_names
+    ipyvue.define_module = esm_vue.define_module
+
+
 @solara.util.once
 def patch_matplotlib():
     import matplotlib
@@ -406,6 +442,13 @@ def patch_matplotlib():
         def _get(self, key):
             # same as _get
             return self[key]
+
+        def clear(self):
+            # in matplotlib .clear is effectively a no-op
+            # see https://github.com/matplotlib/matplotlib/issues/25855
+            pass
+            # in the future, we may want to clear the context dict if this is fixed
+            # self._get_context_dict().clear()
 
         def _get_context_dict(self) -> dict:
             if not self._was_initialized:
@@ -458,6 +501,8 @@ def patch():
         pass
     else:
         patch_ipyreact()
+
+    patch_ipyvue_esm()
 
     if "MPLBACKEND" not in os.environ:
         if ipykernel_version_major < 6:

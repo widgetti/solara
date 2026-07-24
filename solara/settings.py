@@ -57,6 +57,7 @@ class MainSettings(BaseSettings):
     allow_reactive_boolean: bool = True
     # TODO: also change default_container in solara/components/__init__.py
     default_container: Optional[str] = "Column"
+    allow_global_context: bool = True
 
     class Config:
         env_prefix = "solara_"
@@ -67,6 +68,14 @@ class MainSettings(BaseSettings):
 class Storage(BaseSettings):
     mutation_detection: Optional[bool] = None  # True/False, or None to auto determine
     factory: str = "solara.toestand.default_storage"
+    init_lock_timeout: float = Field(
+        2.0,
+        title="Seconds to wait for a reactive variable's initialization lock before logging a possible-deadlock warning (<=0 or NaN disables the warning and waits indefinitely)",
+    )
+    init_lock_warning_cooldown: float = Field(
+        60.0,
+        title="Minimum seconds between repeated initialization-lock timeout warnings for the same reactive variable",
+    )
 
     def get_factory(self):
         return solara.util.import_item(self.factory)
@@ -84,3 +93,15 @@ storage = Storage()
 
 if main.check_hooks not in ["off", "warn", "raise"]:
     raise ValueError(f"Invalid value for check_hooks: {main.check_hooks}, expected one of ['off', 'warn', 'raise']")
+
+
+def __getattr__(name):
+    # `state` (state persistence) is defined in solara.server.settings - it is a server-only
+    # feature and its knobs are coupled to server siblings (kernel.cull_timeout,
+    # session.secret_key, main.mode) - but it stays reachable as solara.settings.state too.
+    # PEP 562 keeps the import lazy so this module never eagerly pulls in server modules.
+    if name == "state":
+        import solara.server.settings
+
+        return solara.server.settings.state
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

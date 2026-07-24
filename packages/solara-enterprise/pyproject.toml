@@ -8,17 +8,18 @@ authors = [
     {name = "Maarten A. Breddels", email = "maartenbreddels@gmail.com"},
     {name = "Mario Buikhuizen", email = "mariobuikhuizen@gmail.com"}]
 license = {file = "LICENSE"}
+requires-python = ">=3.8"
 classifiers = ["License :: Free for non-commercial use"]
 dynamic = ["version", "description"]
 dependencies = [
-    "solara-ui==1.44.0",
-    "solara-server==1.44.0",
+    "solara-ui==1.60.3",
+    "solara-server==1.60.3",
 ]
 
 [project.optional-dependencies]
 ssg = [
     "beautifulsoup4",
-    "playwright; python_version > '3.6'",
+    "playwright",
 ]
 
 cache = [

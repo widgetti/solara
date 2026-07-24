@@ -8,15 +8,16 @@ name = "solara"
 readme = "main.README.md"
 authors = [{name = "Maarten A. Breddels", email = "maartenbreddels@gmail.com"}]
 license = {file = "LICENSE"}
+requires-python = ">=3.8"
 classifiers = ["License :: OSI Approved :: MIT License"]
 dynamic = ["description"]
-version = "1.44.0"
+version = "1.60.3"
 packages = [
     { include = "solara" }
 ]
 dependencies = [
-    "solara-ui[all]==1.44.0",
-    "solara-server[starlette,dev]==1.44.0"
+    "solara-ui[all]==1.60.3",
+    "solara-server[starlette,dev]==1.60.3"
 ]
 
 [project.urls]
@@ -31,12 +32,16 @@ all = [
     "solara[dev]"
 ]
 
+redis = [
+    "solara-ui[redis]"
+]
+
 assets = [
-    "solara-assets==1.44.0"
+    "solara-assets==1.60.3"
 ]
 
 documentation = [
-    "bqplot",
+    "bqplot<0.13",  # reacton 1.10 references bqplot.marks.ScatterGL, which 0.13 moved to bqplot-gl
     "altair",
     "folium",
     "ipycanvas",
@@ -46,28 +51,28 @@ documentation = [
     "vega_datasets",
     "openai",
     "plotly",
-    "vaex-core",
-    "vaex-hdf5",
-    "tiktoken; python_version > '3.6'",
+    "vaex-core ; python_version < '3.11'",
+    "vaex-hdf5 ; python_version < '3.11'",
+    "tiktoken; python_version >= '3.9'",
     "numpy<2",
 ]
 
 # for backwards compatibility to support solara[pytest]
 pytest = [
-    "pytest-ipywidgets[all]==1.44.0"
+    "pytest-ipywidgets[all]==1.60.3"
 ]
 
 # for backwards compatibility to support solara[dev]
 dev = [
     "codespell",
     "python-dotenv",
-    "bqplot",
+    "bqplot<0.13",  # reacton 1.10 references bqplot.marks.ScatterGL, which 0.13 moved to bqplot-gl
     "bqplot-image-gl",
     "ipyaggrid",
-    "ipyreact; python_version > '3.6'",
-    "vaex-core",
-    "vaex-hdf5",
-    "vaex-jupyter",
+    "ipyreact",
+    "vaex-core ; python_version < '3.11'",
+    "vaex-hdf5 ; python_version < '3.11'",
+    "vaex-jupyter ; python_version < '3.11'",
     "mypy",
     "mdit-py-plugins",
     "plotly",
@@ -76,16 +81,18 @@ dev = [
     "types-PyYAML",
     "objgraph",
     "pytest",
+    "pytest-asyncio",  # replaces pytest-tornasync, which ran async tests on an implicit global loop
     "pytest-mock",
     "pytest-cov",
     "pytest-timeout",
+    "fakeredis[lua]",  # in-process redis (with Lua) for the state-backend contract + failover tests
     "pre-commit",
-    "ruff; python_version > '3.6'",
+    "ruff",
     "bump2version",
-    "dask[dataframe]; python_version < '3.7'",
-    "playwright; python_version > '3.6'",
-    "pytest-playwright; python_version > '3.6'",
+    "playwright",
+    "pytest-playwright",
     "polars",
+    "pyarrow",  # polars needs it to convert pandas>=3 dataframes (non-numpy-backed string columns)
     "numpy<2",
 ]
 

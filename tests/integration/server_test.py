@@ -231,6 +231,14 @@ def test_cdn_secure(solara_server, solara_app, extra_include_path):
         response = requests.get(url)
         assert response.status_code == 404
 
+        # test sibling directory with similar prefix
+        sibling_dir = settings.assets.proxy_cache_dir.parent / (settings.assets.proxy_cache_dir.name + "_sibling")
+        sibling_dir.mkdir(exist_ok=True)
+        (sibling_dir / "secret").write_text("not allowed")
+        url = cdn_url + "/..%2f" + sibling_dir.name + "%2fsecret"
+        response = requests.get(url)
+        assert response.status_code == 404
+
 
 def test_nbextension_secure(solara_server, solara_app, extra_include_path):
     nbextensions_url = solara_server.base_url + "/jupyter/nbextensions"

@@ -1,3 +1,6 @@
+import pytest
+
+pytest.importorskip("vaex")
 import vaex
 
 import solara

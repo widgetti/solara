@@ -1,5 +1,178 @@
 # Solara Changelog
 
+## Version 1.60.3
+
+   * Bug Fix: Release reactive subscriptions and kernel-scoped state without restart/close races or deadlocks. [db6eaf64](https://github.com/widgetti/solara/commit/db6eaf64)
+   * Bug Fix: Filter `comm_info_request` replies by `target_name` so control comms are not exposed to the widget manager. [9a684a82](https://github.com/widgetti/solara/commit/9a684a82)
+
+## Version 1.60.2
+
+   * Bug Fix: Purge per-kernel subscription residue at kernel close (#1189). [5a1cbbfc](https://github.com/widgetti/solara/commit/5a1cbbfc)
+
+## Version 1.60.1
+
+   * Bug Fix: `task.cancel()` / `task.retry()` during kernel close must not raise. [2cc01de6](https://github.com/widgetti/solara/commit/2cc01de6)
+   * Refactor: Give `use_task` a component-scoped result store instead of cleanup code. [491b7650](https://github.com/widgetti/solara/commit/491b7650)
+
+## Version 1.60.0
+
+   * Feature: Synchronous websocket frame writing, opt-in via `SOLARA_SERVER_SYNC_WS_WRITE=true`. Skips the event-loop hop when threads push widget updates, at the cost of blocking the sending thread on socket writes. [cceea3d4](https://github.com/widgetti/solara/commit/cceea3d4)
+   * Feature: `gc.freeze()` the startup state so GC cost tracks sessions, not total process size. [84e896bc](https://github.com/widgetti/solara/commit/84e896bc)
+
+## Version 1.59.2
+
+   * Bug Fix: `use_task` leaked a task instance and its result per component mount. [fe832b02](https://github.com/widgetti/solara/commit/fe832b02)
+   * Bug Fix: Do not pin a kernel context in `ThreadPoolExecutor` worker threads. [e0bb13fc](https://github.com/widgetti/solara/commit/e0bb13fc)
+   * Bug Fix: Deliver cross-thread task cancellation via `call_soon_threadsafe`. [22cdd90b](https://github.com/widgetti/solara/commit/22cdd90b)
+
+## Version 1.59.1
+
+   * Bug Fix: Gzip + immutable CDN caching for both server entrypoints. [01561ad9](https://github.com/widgetti/solara/commit/01561ad9)
+   * Bug Fix: Free closed virtual kernels promptly instead of leaving them to the GC. [d1b67bec](https://github.com/widgetti/solara/commit/d1b67bec)
+   * Bug Fix (solara-assets): Prune dev artifacts to shrink the wheel from 56 MB to 34 MB. [2efeaa88](https://github.com/widgetti/solara/commit/2efeaa88) (Note: `solara-assets` 1.59.1 is not yet on PyPI — the project has hit PyPI's 10 GB per-project storage cap. `pip install solara-assets==1.59.0` still works.)
+
+## Version 1.59.0
+
+   * Feature: Kernel-aware ES module support for ipyvue. [ee243307](https://github.com/widgetti/solara/commit/ee243307)
+   * Bug Fix: Do not log an error when a task finishes after its call loop closed. [d5f8d288](https://github.com/widgetti/solara/commit/d5f8d288)
+   * Bug Fix: Root causes of flaky CI tests and swallowed failure output. [287e565f](https://github.com/widgetti/solara/commit/287e565f)
+   * Bug Fix: Restructure client reconnect into a supersedable state machine. [37223de1](https://github.com/widgetti/solara/commit/37223de1)
+   * Bug Fix: Cache-bust the nodeps nbextension bundles. [091e5bb4](https://github.com/widgetti/solara/commit/091e5bb4)
+
+## Version 1.58.2
+
+   * Bug Fix: Purge stale comms on soft-remount and claim backend key on takeover miss (zombie-kernel fencing) to make state persistence robust against orphaned comms/kernels. [5a7e8767](https://github.com/widgetti/solara/commit/5a7e8767)
+
+## Version 1.58.1
+
+   * Bug Fix: Make ES module (`define_module`) hot reload survive in-place app reload. [c5ab5e36](https://github.com/widgetti/solara/commit/c5ab5e36)
+
+## Version 1.58.0
+
+   * Feature: Opt-in reactive state persistence — survive load-balancer failover without the refresh dialog. Enable with `solara.settings.session.persist = True` (or `SOLARA_SESSION_PERSIST=true`). [489c5573](https://github.com/widgetti/solara/commit/489c5573)
+   * Bump `@widgetti/solara-vuetify-app` → 10.1.0 and `@widgetti/solara-vuetify3-app` → 5.1.0 (new `clearStateLocal` in the widget-manager for cleaner soft-remount after reconnect to a fresh kernel).
+
+## Version 1.57.6
+
+   * Bug Fix: Scope reactive lazy-init lock per `(variable, kernel)` instead of one global lock, fixing a possible deadlock when initializers themselves access reactive state. [28b80125](https://github.com/widgetti/solara/commit/28b80125)
+
+## Version 1.57.5
+
+   * Bug Fix: Stop the busy indicator animation while hidden. [b882606c](https://github.com/widgetti/solara/commit/b882606c)
+   * Bug Fix: Check for `_create_comm` attribute on comm to support newer ipykernel. [4804a0e4](https://github.com/widgetti/solara/commit/4804a0e4)
+
+## Version 1.57.4
+
+   * Bug Fix: Handle Python 3.12+ `get_event_loop` RuntimeError in `VirtualKernelContext`. [437baab0](https://github.com/widgetti/solara/commit/437baab0)
+   * Bug Fix: Don't resolve symlinks when navigating up in `FileBrowser`. [fccfcab2](https://github.com/widgetti/solara/commit/fccfcab2)
+   * Bug Fix: Use `lifespan` instead of `on_startup`/`on_shutdown` for Starlette 1.0 compatibility. [1a19f8a2](https://github.com/widgetti/solara/commit/1a19f8a2)
+
+## Version 1.57.3
+
+   * Bug Fix: Detect conditional hook usage when hook is used as a decorator. [71e34b8f](https://github.com/widgetti/solara/commit/71e34b8f)
+
+## Version 1.57.2
+
+   * Security Fix: Ensure proper path boundary check in `path_is_child_of` to prevent path traversal (CVE-2026-24008). [a2222216](https://github.com/widgetti/solara/commit/a2222216)
+   * Bug Fix: Memory leak in `AutoSubscribeContextManager` and `Context`. [ef99f18a](https://github.com/widgetti/solara/commit/ef99f18a)
+
+## Version 1.57.1
+
+   * Bug Fix: Support Altair 6+ Vega-Lite MIME types in `FigureAltair`. [724c01c8](https://github.com/widgetti/solara/commit/724c01c8)
+
+## Version 1.57.0
+
+   * Feature: Add `watch` option to `FileBrowser` for automatic file change detection. [a0c75202](https://github.com/widgetti/solara/commit/a0c75202)
+   * Bug Fix: Prevent `FileBrowser` from using relative paths for directory sync. [7be73e88](https://github.com/widgetti/solara/commit/7be73e88)
+
+## Version 1.56.0
+
+   * Feature: On disconnect and reconnect, force a page reload. [8d6fb2f1](https://github.com/widgetti/solara/commit/8d6fb2f1)
+   * Feature: Allow `data` function in `FileDownload` to be a coroutine. [a395f090](https://github.com/widgetti/solara/commit/a395f090)
+   * Breaking change: Drop Python 3.7 support. [abd9400d](https://github.com/widgetti/solara/commit/abd9400d)
+
+## Version 1.55.1
+
+   * Bug Fix: False positive for returns in async defs for hook use validation. [67381dc6](https://github.com/widgetti/solara/commit/67381dc6)
+
+## Version 1.55.0
+
+   * Feature: Allows tasks to have their own kernel context. [3a97835a](https://github.com/widgetti/solara/commit/3a97835a)
+   * Bug Fix: Python 3.14 compatibility - fix RuntimeError in BaseSettings iteration. [4bf31d5a](https://github.com/widgetti/solara/commit/4bf31d5a)
+
+## Version 1.54.0
+
+   * Feature: Use different port in `pytest-ipywidgets` for different workers in `pytest-xdist`. [7e924e21](https://github.com/widgetti/solara/commit/7e924e21)
+
+## Version 1.53.0
+
+   * Feature: With `--log-level=info` we can see where a reactive variable was set. [771df82f](https://github.com/widgetti/solara/commit/771df82f)
+   * Bug Fix: Hash and search were flipped, causing strange URLs/locations. [375fd9ba](https://github.com/widgetti/solara/commit/375fd9ba)
+
+## Version 1.52.0
+
+   * Feature: In Vue template, support both `event_foo` and `foo` to avoid LLM confusion. [3ba93278](https://github.com/widgetti/solara/commit/3ba93278)
+   * Feature: Allow custom serializers in Vue components. [cd1beabb](https://github.com/widgetti/solara/commit/cd1beabb)
+   * Bug Fix: Exclude breaking ipykernel releases. [9858c013](https://github.com/widgetti/solara/commit/9858c013)
+   * Bug Fix: Support modern versions of uvicorn. [ce2abebd](https://github.com/widgetti/solara/commit/ce2abebd)
+
+## Version 1.51.1
+
+   * Bug Fix: Enhance thread init patching to handle latest anyio (4.10.0) which may not populate name field properly. [93f78c6f](https://github.com/widgetti/solara/commit/93f78c6f)
+
+## Version 1.51.0
+
+   * Feature: Configure the initial title before the app runs/loads. [4515a8c3](https://github.com/widgetti/solara/commit/4515a8c3)
+   * Bug Fix: Do not crash on `use_close_menu`. [d0032943](https://github.com/widgetti/solara/commit/d0032943)
+
+## Version 1.50.1
+
+   * Bug Fix: `FileBrowser` could go two directories up if ".." was selected. [68e99e58](https://github.com/widgetti/solara/commit/68e99e58)
+   * Bug Fix: Tornado async gives no issues with event loops. [6706f6ed](https://github.com/widgetti/solara/commit/6706f6ed)
+
+## Version 1.50.0
+
+   * Feature: Support `Optional[str]` / optional for `InputText`. [814a8a6c](https://github.com/widgetti/solara/commit/814a8a6c)
+   * Feature: Give more control over the underlying Vuetify text input. [c5b47a84](https://github.com/widgetti/solara/commit/c5b47a84)
+   * Bug Fix: Sanitize infinite values in `/resourcez` JSON response. [6aacbff4](https://github.com/widgetti/solara/commit/6aacbff4)
+
+## Version 1.49.0
+
+   * Feature: Control selected file or directory externally in `FileBrowser`. [73a26dde](https://github.com/widgetti/solara/commit/73a26dde)
+   * Feature: Support relative paths in `FileBrowser`. [4b172244](https://github.com/widgetti/solara/commit/4b172244)
+
+## Version 1.48.0
+
+   * Feature: Expose `col_num` and `row_height` options for `GridLayout`. [8f40eeb5](https://github.com/widgetti/solara/commit/8f40eeb5)
+   * Feature: Warn if task is being called from a component. [e454b953](https://github.com/widgetti/solara/commit/e454b953)
+   * Bug Fix: Decrease `chunk_size` for `FileDrop` to 1MB to avoid Modal max 2MB limit. [fa65d5a1](https://github.com/widgetti/solara/commit/fa65d5a1)
+   * Bug Fix: Resolve logger warnings. [#1059](https://github.com/widgetti/solara/pull/1059)
+   * Bug Fix: A `use_task` with `dependencies=None` (user called) can have arguments. [da2f8cfe](https://github.com/widgetti/solara/commit/da2f8cfe)
+
+## Version 1.47.0
+
+   * Feature: Add `on_layer_updated` to `GridLayout`. [1163b89d](https://github.com/widgetti/solara/commit/1163b89d)
+   * Bug Fix: Classes were not applied to `ColumnsResponsive` when `wrap` was `False`. [ce879dad](https://github.com/widgetti/solara/commit/ce879dad)
+   * Bug Fix: Tasks did not have a stable key, causing hot reloads to miss values. [e1567f9d](https://github.com/widgetti/solara/commit/e1567f9d)
+   * Bug Fix: Re-run app on hot reload before running `on_kernel_start` callbacks. [cf4f5c1a](https://github.com/widgetti/solara/commit/cf4f5c1a)
+   * Bug Fix: Display port in runtime error when server is running. [cafe757c](https://github.com/widgetti/solara/commit/cafe757c)
+
+## Version 1.46.0
+
+   * Feature: When tasks fail to set results, handle it gracefully. [e6c1ce07](https://github.com/widgetti/solara/commit/e6c1ce07)
+   * Bug Fix: Follow ASGI spec and also check if text or bytes are `None` (Modal fix). [396c58ac](https://github.com/widgetti/solara/commit/396c58ac)
+   * Bug Fix: Make task threads daemon, so the Solara server can stop when tasks are running. [da346063](https://github.com/widgetti/solara/commit/da346063)
+
+## Version 1.45.0
+
+   * Bug Fix: Correctly handle expected websocket errors instead of logging them. [#1013](https://github.com/widgetti/solara/pull/1013)
+   * Bug Fix: Ensure component re-renders correctly when a reactive variable is updated from another thread during rendering. [#1030](https://github.com/widgetti/solara/pull/1030)
+   * Bug Fix: Allow calling async tasks from within threaded tasks. [#1029](https://github.com/widgetti/solara/pull/1029)
+   * Bug Fix: Replace deprecated `use_side_effect` calls with `use_effect`. [#1026](https://github.com/widgetti/solara/pull/1026)
+   * Bug Fix(pytest-ipywidgets): Support `pytest-playwright` version 0.7.0. [#1006](https://github.com/widgetti/solara/pull/1006)
+   * Docs: Ensure Twitter/OpenGraph meta tags are present on documentation pages. [#998](https://github.com/widgetti/solara/pull/998)
+   * Breaking change: Drop support for Python 3.6 due to CI runner deprecation. [#1032](https://github.com/widgetti/solara/pull/1032)
+
 ## Version 1.44.0
 
    * Feature: Separate `disable_send` and `disable_input` to allow typing but not sending or vice versa for the `ChatInput` component. [86fc2ad](https://github.com/widgetti/solara/commit/86fc2ad88a89ffe134eaa6700a8c416bcab036b4).

@@ -1,4 +1,5 @@
 import datetime as dt
+import logging
 from typing import Callable, Dict, List, Optional, Tuple, Union, cast
 
 import ipyvue
@@ -9,6 +10,9 @@ import solara.lab
 from solara.components.input import _use_input_type
 
 
+logger = logging.getLogger(__name__)
+
+
 def use_close_menu(el: reacton.core.Element, is_open: solara.Reactive[bool]):
     is_open_ref = solara.use_ref(is_open)
     is_open_ref.current = is_open
@@ -17,7 +21,11 @@ def use_close_menu(el: reacton.core.Element, is_open: solara.Reactive[bool]):
         def close_menu(*ignore_args):
             is_open_ref.current.set(False)
 
-        widget = cast(ipyvue.VueWidget, solara.get_widget(el))
+        try:
+            widget = cast(ipyvue.VueWidget, solara.get_widget(el))
+        except Exception:
+            logger.exception("Error getting widget for use_close_menu")
+            return
         widget.on_event("keyup.enter", close_menu)
         widget.on_event("keydown.tab", close_menu)
 
@@ -46,6 +54,12 @@ def InputDate(
     date_picker_type: str = "date",
     min_date: Optional[str] = None,
     max_date: Optional[str] = None,
+    dense: bool = False,
+    hide_details: Union[str, bool] = "auto",
+    placeholder: Optional[str] = None,
+    prefix: Optional[str] = None,
+    suffix: Optional[str] = None,
+    clearable: bool = False,
 ):
     """
     Show a textfield, which when clicked, opens a datepicker. The input date should be of type `datetime.date`.
@@ -84,6 +98,12 @@ def InputDate(
     * date_picker_type: Sets the type of the datepicker. Use `"date"` for date selection or `"month"` for month selection. Defaults to `"date"`.
     * min_date: Earliest allowed date/month (ISO 8601 format). If not specified, there is no limit.
     * max_date: Latest allowed date/month (ISO 8601 format). If not specified, there is no limit.
+    * dense: Reduces the input height.
+    * hide_details: Hides hint and validation errors. When set to 'auto', messages will be rendered only if there's a message (hint, error message, counter value etc) to display.
+    * placeholder: Sets the input's placeholder text.
+    * prefix: Displays prefix text.
+    * suffix: Displays suffix text.
+    * clearable: Whether the input can be cleared.
     """
     value_reactive = solara.use_reactive(value, on_value)  # type: ignore
     del value, on_value
@@ -142,6 +162,12 @@ def InputDate(
         error=bool(error_message),
         style_="min-width: 290px;" + style_flat,
         class_=", ".join(classes) if classes else "",
+        dense=dense,
+        hide_details=hide_details,
+        placeholder=placeholder if placeholder is not None else "",
+        prefix=prefix if prefix is not None else "",
+        suffix=suffix if suffix is not None else "",
+        clearable=clearable,
     )
 
     use_close_menu(input, datepicker_is_open)
@@ -157,12 +183,12 @@ def InputDate(
             on_v_model=set_date_cast,
             first_day_of_week=first_day_of_the_week,
             style_="width: 100%;",
-            max=max_date,
-            min=min_date,
+            max=max_date,  # type: ignore
+            min=min_date,  # type: ignore
             type=date_picker_type,
+            children=children,
         ):
-            if len(children) > 0:
-                solara.display(*children)
+            pass
 
 
 @solara.component
@@ -182,6 +208,11 @@ def InputDateRange(
     min_date: Optional[str] = None,
     max_date: Optional[str] = None,
     sort: Optional[bool] = False,
+    dense: bool = False,
+    hide_details: Union[str, bool] = "auto",
+    placeholder: Optional[str] = None,
+    prefix: Optional[str] = None,
+    suffix: Optional[str] = None,
 ):
     """
     Show a textfield, which when clicked, opens a datepicker that allows users to select a range of dates by choosing a starting and ending date.
@@ -224,6 +255,11 @@ def InputDateRange(
     * max_date: Latest allowed date/month (ISO 8601 format). If not specified, there is no limit.
     * sort: If True, selected dates will be sorted in ascending order, regardless of the order they were picked. If False, preserves the order the
     dates were selected.
+    * dense: Reduces the input height.
+    * hide_details: Hides hint and validation errors. When set to 'auto', messages will be rendered only if there's a message (hint, error message, counter value etc) to display.
+    * placeholder: Sets the input's placeholder text.
+    * prefix: Displays prefix text.
+    * suffix: Displays suffix text.
 
     ## A More Advanced Example
 
@@ -313,6 +349,11 @@ def InputDateRange(
         style_="min-width: 290px;" + style_flat,
         readonly=True,
         class_=", ".join(classes) if classes else "",
+        dense=dense,
+        hide_details=hide_details,
+        placeholder=placeholder if placeholder is not None else "",
+        prefix=prefix if prefix is not None else "",
+        suffix=suffix if suffix is not None else "",
     )
 
     # We include closing on tab in case users want to skip the field with tab
@@ -330,10 +371,9 @@ def InputDateRange(
             range=True,
             first_day_of_week=first_day_of_the_week,
             style_="width: 100%;",
-            max=max_date,
-            min=min_date,
+            max=max_date,  # type: ignore
+            min=min_date,  # type: ignore
             type=date_picker_type,
+            children=children,
         ):
-            if len(children) > 0:
-                for el in children:
-                    solara.display(el)
+            pass

@@ -1,0 +1,22 @@
+# Caddy 2 round-robin load balancer for the state-persistence failover demo.
+#
+# Two solara backends (ports 8765 and 8766) share one Redis. Caddy assigns each NEW
+# connection to a backend in turn, so a websocket reconnect after a disconnect lands on the
+# OTHER backend - the exact cross-instance failover this feature recovers from.
+#
+# Caddy 2 proxies websockets transparently (no extra config needed).
+#
+# Run with:  caddy run --config ./Caddyfile
+# Then open: http://localhost:8000
+
+:8000 {
+	reverse_proxy localhost:8765 localhost:8766 {
+		lb_policy round_robin
+		# Failover needs health-checking, or a dead backend keeps getting its turn in the
+		# rotation: lb_try_duration retries the other backend within the same request when one
+		# refuses (so the first reconnect after a crash still lands somewhere alive), and
+		# fail_duration passively marks a backend down so the rotation skips it afterwards.
+		lb_try_duration 5s
+		fail_duration 30s
+	}
+}

@@ -9,11 +9,12 @@ import sys
 import textwrap
 import threading
 import typing
+import tempfile
 import urllib.parse
 import uuid
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Callable, Dict, Generator, List, Union
+from typing import Any, Callable, Dict, Generator, List, Union, cast
 
 import ipywidgets as widgets
 import pytest
@@ -34,7 +35,13 @@ if typing.TYPE_CHECKING:
 
 logger = logging.getLogger("solara.pytest_plugin")
 
-TEST_PORT_START = int(os.environ.get("PORT", "18765")) + 100  # do not interfere with the solara integration tests
+
+# support for pytest-xdist
+worker = os.environ.get("PYTEST_XDIST_WORKER", "gw0")
+# +100 so we do not interfere with the solara integration tests, and 10 ports per worker id, since
+# each worker can run a solara, jupyter and voila server (+1 spacing would make workers collide)
+TEST_PORT_START = int(os.environ.get("PORT", "18765")) + int(worker[2:]) * 10 + 100
+
 TEST_HOST = solara.server.settings.main.host
 TIMEOUT = float(os.environ.get("SOLARA_PW_TIMEOUT", "18"))
 PYTEST_IPYWIDGETS_SOLARA_APP_WAIT_TIMEOUT = int(os.environ.get("PYTEST_IPYWIDGETS_SOLARA_APP_WAIT_TIMEOUT", "10"))
@@ -55,74 +62,143 @@ def solara_server(pytestconfig: Any, request):
         webserver.stop_serving()
 
 
-@pytest.fixture(scope="session")
-def context_session(
-    browser: "playwright.sync_api.Browser",
-    browser_context_args: Dict,
-    pytestconfig: Any,
-    request: pytest.FixtureRequest,
-) -> Generator["playwright.sync_api.BrowserContext", None, None]:
-    from playwright.sync_api import Error, Page
-    from pytest_playwright.pytest_playwright import _build_artifact_test_folder
-    from slugify import slugify  # type: ignore
+try:
+    from pytest_playwright.pytest_playwright import connect_options  # noqa
 
-    pages: List[Page] = []
-    context = browser.new_context(**browser_context_args)
-    context.on("page", lambda page: pages.append(page))
+    has_pytest_070 = True
+except ImportError:
+    has_pytest_070 = False
 
-    tracing_option = pytestconfig.getoption("--tracing")
-    capture_trace = tracing_option in ["on", "retain-on-failure"]
-    if capture_trace:
-        context.tracing.start(
-            title=slugify(request.node.nodeid),
-            screenshots=True,
-            snapshots=True,
-            sources=True,
-        )
 
-    # decrease timeout from 30s to 10s
-    context.set_default_timeout(TIMEOUT * 1000)
-    yield context
+if has_pytest_070:
+    # pytest-playwright >= 0.7.0
+    from pytest_playwright.pytest_playwright import Browser, CreateContextCallback, BrowserContext, Playwright, ArtifactsRecorder, _truncate_file_name
+    from slugify import slugify
 
-    # If request.node is missing rep_call, then some error happened during execution
-    # that prevented teardown, but should still be counted as a failure
-    failed = request.node.rep_call.failed if hasattr(request.node, "rep_call") else True
+    @pytest.fixture(scope="session")
+    def output_path_session(pytestconfig: Any, request: pytest.FixtureRequest) -> str:
+        output_dir = Path(pytestconfig.getoption("--output")).absolute()
+        return os.path.join(output_dir, _truncate_file_name(slugify(request.node.nodeid)))
 
-    if capture_trace:
-        retain_trace = tracing_option == "on" or (failed and tracing_option == "retain-on-failure")
-        if retain_trace:
-            trace_path = _build_artifact_test_folder(pytestconfig, request, "trace.zip")
-            context.tracing.stop(path=trace_path)
-        else:
-            context.tracing.stop()
+    @pytest.fixture(scope="session")
+    def _artifacts_recorder_session(
+        request: pytest.FixtureRequest,
+        output_path_session: str,
+        playwright: Playwright,
+        pytestconfig: Any,
+        _pw_artifacts_folder: tempfile.TemporaryDirectory,
+    ) -> Generator["ArtifactsRecorder", None, None]:
+        artifacts_recorder = ArtifactsRecorder(pytestconfig, request, output_path_session, playwright, _pw_artifacts_folder)
+        yield artifacts_recorder
+        # If request.node is missing rep_call, then some error happened during execution
+        # that prevented teardown, but should still be counted as a failure
+        failed = request.node.rep_call.failed if hasattr(request.node, "rep_call") else True
+        artifacts_recorder.did_finish_test(failed)
 
-    screenshot_option = pytestconfig.getoption("--screenshot")
-    capture_screenshot = screenshot_option == "on" or (failed and screenshot_option == "only-on-failure")
-    if capture_screenshot:
-        for index, page in enumerate(pages):
-            human_readable_status = "failed" if failed else "finished"
-            screenshot_path = _build_artifact_test_folder(pytestconfig, request, f"test-{human_readable_status}-{index + 1}.png")
-            try:
-                page.screenshot(timeout=5000, path=screenshot_path)
-            except Error:
-                pass
+    @pytest.fixture(scope="session")
+    def new_context_session(
+        browser: Browser,
+        browser_context_args: Dict,
+        _artifacts_recorder_session: "ArtifactsRecorder",
+        request: pytest.FixtureRequest,
+    ) -> Generator[CreateContextCallback, None, None]:
+        browser_context_args = browser_context_args.copy()
+        context_args_marker = next(request.node.iter_markers("browser_context_args"), None)
+        additional_context_args = context_args_marker.kwargs if context_args_marker else {}
+        browser_context_args.update(additional_context_args)
+        contexts: List[BrowserContext] = []
 
-    context.close()
+        def _new_context(**kwargs: Any) -> BrowserContext:
+            context = browser.new_context(**browser_context_args, **kwargs)
+            original_close = context.close
 
-    video_option = pytestconfig.getoption("--video")
-    preserve_video = video_option == "on" or (failed and video_option == "retain-on-failure")
-    if preserve_video:
-        for page in pages:
-            video = page.video
-            if not video:
-                continue
-            try:
-                video_path = video.path()
-                file_name = os.path.basename(video_path)
-                video.save_as(path=_build_artifact_test_folder(pytestconfig, request, file_name))
-            except Error:
-                # Silent catch empty videos.
-                pass
+            def _close_wrapper(*args: Any, **kwargs: Any) -> None:
+                contexts.remove(context)
+                _artifacts_recorder_session.on_will_close_browser_context(context)
+                original_close(*args, **kwargs)
+
+            context.close = _close_wrapper
+            contexts.append(context)
+            _artifacts_recorder_session.on_did_create_browser_context(context)
+            return context
+
+        yield cast(CreateContextCallback, _new_context)
+        for context in contexts.copy():
+            context.close()
+
+    @pytest.fixture(scope="session")
+    def context_session(new_context_session):
+        return new_context_session()
+else:
+
+    @pytest.fixture(scope="session")
+    def context_session(
+        browser: "playwright.sync_api.Browser",
+        browser_context_args: Dict,
+        pytestconfig: Any,
+        request: pytest.FixtureRequest,
+    ) -> Generator["playwright.sync_api.BrowserContext", None, None]:
+        from playwright.sync_api import Error, Page
+        from pytest_playwright.pytest_playwright import _build_artifact_test_folder
+        from slugify import slugify  # type: ignore
+
+        pages: List[Page] = []
+        context = browser.new_context(**browser_context_args)
+        context.on("page", lambda page: pages.append(page))
+
+        tracing_option = pytestconfig.getoption("--tracing")
+        capture_trace = tracing_option in ["on", "retain-on-failure"]
+        if capture_trace:
+            context.tracing.start(
+                title=slugify(request.node.nodeid),
+                screenshots=True,
+                snapshots=True,
+                sources=True,
+            )
+
+        # decrease timeout from 30s to 10s
+        context.set_default_timeout(TIMEOUT * 1000)
+        yield context
+
+        # If request.node is missing rep_call, then some error happened during execution
+        # that prevented teardown, but should still be counted as a failure
+        failed = request.node.rep_call.failed if hasattr(request.node, "rep_call") else True
+
+        if capture_trace:
+            retain_trace = tracing_option == "on" or (failed and tracing_option == "retain-on-failure")
+            if retain_trace:
+                trace_path = _build_artifact_test_folder(pytestconfig, request, "trace.zip")
+                context.tracing.stop(path=trace_path)
+            else:
+                context.tracing.stop()
+
+        screenshot_option = pytestconfig.getoption("--screenshot")
+        capture_screenshot = screenshot_option == "on" or (failed and screenshot_option == "only-on-failure")
+        if capture_screenshot:
+            for index, page in enumerate(pages):
+                human_readable_status = "failed" if failed else "finished"
+                screenshot_path = _build_artifact_test_folder(pytestconfig, request, f"test-{human_readable_status}-{index + 1}.png")
+                try:
+                    page.screenshot(timeout=5000, path=screenshot_path)
+                except Error:
+                    pass
+
+        context.close()
+
+        video_option = pytestconfig.getoption("--video")
+        preserve_video = video_option == "on" or (failed and video_option == "retain-on-failure")
+        if preserve_video:
+            for page in pages:
+                video = page.video
+                if not video:
+                    continue
+                try:
+                    video_path = video.path()
+                    file_name = os.path.basename(video_path)
+                    video.save_as(path=_build_artifact_test_folder(pytestconfig, request, file_name))
+                except Error:
+                    # Silent catch empty videos.
+                    pass
 
 
 # page fixture that keeps open all the time, is faster
@@ -233,6 +309,12 @@ def _solara_test(solara_server, solara_app, page_session: "playwright.sync_api.P
             if id in used_contexts:
                 # handle when run_event.wait(10) fails
                 del used_contexts[id]
+                # the page-close beacon from the browser is best-effort: the about:blank
+                # navigation can abort it (seen on loaded windows CI runners), and then the
+                # kernel context lingers until the cull timeout. Close it server-side instead
+                # of failing the teardown.
+                if not context.closed_event.wait(10):
+                    context.close(reason="page-close")
                 assert context.closed_event.wait(10)
 
 
@@ -251,6 +333,10 @@ class ServerVoila(ServerBase):
         super().__init__(port, host)
 
     def has_started(self):
+        # the thread only spawns the subprocess, so self.error cannot catch a dying server:
+        # fail fast with the real cause instead of waiting for the full startup timeout
+        if self.popen is not None and self.popen.poll() is not None:
+            raise RuntimeError(f"voila server process exited with return code {self.popen.returncode}")
         try:
             return requests.get(self.base_url).status_code // 100 in [2, 3]
         except requests.exceptions.ConnectionError:
@@ -264,7 +350,7 @@ class ServerVoila(ServerBase):
 
     def serve(self):
         if self.has_started():
-            raise RuntimeError("Jupyter server already running, use lsof -i :{self.port} to find the process and kill it")
+            raise RuntimeError(f"Jupyter server already running, use lsof -i :{self.port} to find the process and kill it")
         cmd = (
             "voila --no-browser --VoilaTest.log_level=DEBUG --Voila.port_retries=0 --VoilaExecutor.timeout=240"
             f' --Voila.port={self.port} --show_tracebacks=True "{self.notebook_path}" --enable_nbextensions=True'
@@ -286,6 +372,10 @@ class ServerJupyter(ServerBase):
         super().__init__(port, host)
 
     def has_started(self):
+        # the thread only spawns the subprocess, so self.error cannot catch a dying server:
+        # fail fast with the real cause instead of waiting for the full startup timeout
+        if self.popen is not None and self.popen.poll() is not None:
+            raise RuntimeError(f"jupyter server process exited with return code {self.popen.returncode}")
         try:
             return requests.get(self.base_url).status_code // 100 in [2, 3]
         except requests.exceptions.ConnectionError:

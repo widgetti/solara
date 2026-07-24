@@ -1,14 +1,24 @@
+import asyncio
 import os
 from os.path import isfile, join
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Union, cast
+from typing import Callable, Dict, List, Optional, TypeVar, Union, cast
+import logging
 
 import humanize
 import ipyvuetify as vy
 import traitlets
 
+try:
+    import watchfiles
+except ModuleNotFoundError:
+    watchfiles = None  # type: ignore
+
 import solara
 from solara.components import Div
+
+T = TypeVar("T")
+logger = logging.getLogger(__name__)
 
 
 def list_dir(path, filter: Callable[[Path], bool] = lambda x: True, directory_first: bool = False) -> List[dict]:
@@ -48,9 +58,30 @@ class FileListWidget(vy.VuetifyTemplate):
         return name in [k["name"] for k in self.files]
 
 
+def use_reactive_or_value(
+    value: Union[T, solara.Reactive[T]], on_value: Optional[Callable[[T], None]] = None, value_name="value", on_value_name="on_value", use_internal_value=False
+):
+    def hookup_on_value():
+        if isinstance(value, solara.Reactive) and on_value:
+            return value.subscribe(on_value)
+
+    solara.use_effect(hookup_on_value, [isinstance(value, solara.Reactive), on_value])
+    internal_value, set_internal_value = solara.use_state(value.value if isinstance(value, solara.Reactive) else value)
+    if use_internal_value:
+        return internal_value, set_internal_value
+    if isinstance(value, solara.Reactive):
+        return value.value, value.set
+    elif on_value:
+        return value, on_value
+    else:
+        logger.warning("You should provide an %s callback if you are not using a reactive value, otherwise %s input will not update", on_value_name, value_name)
+        return value, lambda x: None
+
+
 @solara.component
 def FileBrowser(
     directory: Union[None, str, Path, solara.Reactive[Path]] = None,
+    selected: Union[None, Path, solara.Reactive[Optional[Path]]] = None,
     on_directory_change: Optional[Callable[[Path], None]] = None,
     on_path_select: Optional[Callable[[Optional[Path]], None]] = None,
     on_file_open: Optional[Callable[[Path], None]] = None,
@@ -59,6 +90,7 @@ def FileBrowser(
     on_file_name: Optional[Callable[[str], None]] = None,
     start_directory=None,
     can_select=False,
+    watch: bool = False,
 ):
     """File/directory browser at the server side.
 
@@ -75,7 +107,8 @@ def FileBrowser(
 
     ## Arguments
 
-     * `directory`: The directory to start in. If `None` the current working directory is used.
+     * `directory`: The directory to start in. If `None`, the current working directory is used.
+     * `selected`: The selected file or directory. If `None`, no file or directory is selected (requires `can_select=True`).
      * `on_directory_change`: Depends on mode, see above.
      * `on_path_select`: Depends on mode, see above.
      * `on_file_open`: Depends on mode, see above.
@@ -83,6 +116,8 @@ def FileBrowser(
      * `directory_first`: If `True` directories are shown before files. Default: `False`.
      * `on_file_name`: (deprecated) Use on_file_open instead.
      * `start_directory`: (deprecated) Use directory instead.
+     * `watch`: If `True`, watch the current directory for file changes and automatically refresh the file list.
+        Requires the `watchfiles` package to be installed.
     """
     if start_directory is not None:
         directory = start_directory  # pragma: no cover
@@ -90,13 +125,70 @@ def FileBrowser(
         directory = os.getcwd()  # pragma: no cover
     if isinstance(directory, str):
         directory = Path(directory)
+    # directory = directory.resolve()
     current_dir = solara.use_reactive(directory)
-    selected, set_selected = solara.use_state(None)
     double_clicked, set_double_clicked = solara.use_state(None)
     warning, set_warning = solara.use_state(cast(Optional[str], None))
     scroll_pos_stack, set_scroll_pos_stack = solara.use_state(cast(List[int], []))
     scroll_pos, set_scroll_pos = solara.use_state(0)
-    selected, set_selected = solara.use_state(None)
+    # Counter to trigger re-render when files change
+    file_change_counter, set_file_change_counter = solara.use_state(0)
+    selected_private, set_selected_private = use_reactive_or_value(
+        selected,
+        on_value=on_path_select if can_select else lambda x: None,
+        value_name="selected",
+        on_value_name="on_path_select",
+        use_internal_value=not can_select,
+    )
+    # remove so we don't accidentally use it
+    del selected
+
+    def sync_directory_from_selected():
+        if selected_private is not None:
+            # if we select a file, we need to make sure the directory is correct
+            # NOTE: although we expect a Path, abuse might make it a string
+            if isinstance(selected_private, Path):
+                # Only sync directory from selected if the path is absolute.
+                # Relative paths would resolve against the process CWD, not the
+                # current directory shown in the FileBrowser, leading to incorrect paths.
+                if selected_private.is_absolute():
+                    # Note that we do not call .resolve() before using .parent, otherwise /some/path/.. will
+                    # set the current directory to /, moving up two levels.
+                    current_dir.value = selected_private.parent.resolve()
+
+    solara.use_effect(sync_directory_from_selected, [selected_private])
+
+    def watch_directory():
+        if not watch:
+            return
+        if not watchfiles:
+            logger.warning("watchfiles not installed, cannot watch directory")
+            return
+
+        # Check if there's a running event loop before creating the coroutine
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            # No running event loop (e.g., in unit tests or non-server environments)
+            logger.warning("No running event loop, cannot watch directory for changes")
+            return
+
+        dir_to_watch = current_dir.value
+
+        async def watch_task():
+            try:
+                async for _ in watchfiles.awatch(dir_to_watch):
+                    logger.debug("Directory %s changed, refreshing file list", dir_to_watch)
+                    set_file_change_counter(lambda x: x + 1)
+            except RuntimeError:
+                pass  # swallow the RuntimeError: Already borrowed errors from watchfiles
+            except Exception:
+                logger.exception("Error watching directory")
+
+        future = asyncio.create_task(watch_task())
+        return future.cancel
+
+    solara.use_effect(watch_directory, [watch, current_dir.value])
 
     def change_dir(new_dir: Path):
         if os.access(new_dir, os.R_OK):
@@ -114,14 +206,19 @@ def FileBrowser(
                 on_path_select(None)
             return
         if item["name"] == "..":
-            new_dir = current_dir.value.parent
+            if current_dir.value.is_symlink():
+                new_dir = current_dir.value.parent
+            elif any([d.is_symlink() for d in current_dir.value.parents]):
+                new_dir = current_dir.value.parent
+            else:
+                new_dir = current_dir.value.resolve().parent
             action_change_directory = (can_select and double_click) or (not can_select and not double_click)
             if action_change_directory and change_dir(new_dir):
                 if scroll_pos_stack:
                     last_pos = scroll_pos_stack[-1]
                     set_scroll_pos_stack(scroll_pos_stack[:-1])
                     set_scroll_pos(last_pos)
-                set_selected(None)
+                set_selected_private(None)
                 set_double_clicked(None)
                 if on_path_select and can_select:
                     on_path_select(None)
@@ -142,7 +239,7 @@ def FileBrowser(
                 if change_dir(path):
                     set_scroll_pos_stack(scroll_pos_stack + [scroll_pos])
                     set_scroll_pos(0)
-                set_selected(None)
+                set_selected_private(None)
             set_double_clicked(None)
             if on_path_select and can_select:
                 on_path_select(None)
@@ -153,7 +250,7 @@ def FileBrowser(
             raise RuntimeError("Combination should not happen")  # pragma: no cover
 
     def on_click(item):
-        set_selected(item)
+        set_selected_private(item["name"] if item else None)
         on_item(item, False)
 
     def on_double_click(item):
@@ -163,12 +260,20 @@ def FileBrowser(
         # otherwise we can ignore it, single click will handle it
 
     files = [{"name": "..", "is_file": False}] + list_dir(current_dir.value, filter=filter, directory_first=directory_first)
+    clicked = (
+        {
+            "name": selected_private.name if isinstance(selected_private, Path) else selected_private,
+            "is_file": isinstance(selected_private, Path),
+            "size": None,
+        }
+        if selected_private is not None
+        else None
+    )
     with Div(class_="solara-file-browser") as main:
-        Div(children=[str(current_dir.value)])
+        Div(children=[str(current_dir.value.resolve())])
         FileListWidget.element(
             files=files,
-            selected=selected,
-            clicked=selected,
+            clicked=clicked,
             on_clicked=on_click,
             double_clicked=double_clicked,
             on_double_clicked=on_double_click,

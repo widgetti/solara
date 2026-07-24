@@ -7,17 +7,24 @@ on:
   push:
     tags:
       - "@widgetti/solara-vuetify3-app@*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 20
           registry-url: "https://registry.npmjs.org"
+      - name: Update npm (need >=11.5.1 for OIDC / trusted publisher)
+        run: npm install -g npm@latest
       - name: Build the JS packages
         run: |
           cd packages
@@ -37,7 +44,6 @@ jobs:
           cd packages/solara-vuetify3-app
           echo $PRE_RELEASE
           if [[ $PRE_RELEASE == "true" ]]; then export TAG="next"; else export TAG="latest"; fi
-          npm publish --tag ${TAG} --access public
+          npm publish --tag ${TAG} --access public --provenance
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           PRE_RELEASE: ${{ github.event.release.prerelease }}

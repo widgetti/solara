@@ -9,13 +9,17 @@
     <link rel="icon" type="image/png" sizes="any" href="{{root_path}}/static/assets/favicon.png">
     <link rel="icon" type="image/svg+xml" href="{{root_path}}/static/assets/favicon.svg">
 
+    {% for url in resources.module_urls -%}
+    {# start fetching ES modules (ipyvue.define_module) while the kernel starts #}
+    <link rel="modulepreload" href="{{ url }}" />
+    {% endfor -%}
     {% block header %}
 
     {{ pre_rendered_css | safe }}
     {% if vue3 == True %}
-    <link href="{{cdn}}/@widgetti/solara-vuetify3-app@5.0.2/dist/main{{ipywidget_major_version}}.css" rel="stylesheet" class="solara-template-css"></link>
+    <link href="{{cdn}}/@widgetti/solara-vuetify3-app@5.1.1/dist/main{{ipywidget_major_version}}.css" rel="stylesheet" class="solara-template-css"></link>
     {% else %}
-    <link href="{{cdn}}/@widgetti/solara-vuetify-app@10.0.3/dist/main{{ipywidget_major_version}}.css" rel="stylesheet" class="solara-template-css"></link>
+    <link href="{{cdn}}/@widgetti/solara-vuetify-app@10.1.1/dist/main{{ipywidget_major_version}}.css" rel="stylesheet" class="solara-template-css"></link>
     {% endif %}
 
 
@@ -58,7 +62,8 @@
 {% raw -%}
 <script type="x-template" id="vue-app-template" style="display: none">
     <v-app :key="forceUpdateTrigger" :class="loadingPage ? 'solara-page-loading' : ''">
-        <v-progress-linear :style="{visibility: (kernelBusyLong && isMounted) ? 'visible' : 'hidden'}" indeterminate
+        <v-progress-linear :style="{visibility: (kernelBusyLong && isMounted) ? 'visible' : 'hidden'}"
+            :indeterminate="kernelBusyLong && isMounted"
             absolute></v-progress-linear>
         <v-alert v-if="needsRefresh || cancelAutoRefresh" type="warning" border="left"
             style="position: absolute; right: 0px; z-index: 100; left: 0px;">
@@ -70,6 +75,16 @@
         <v-overlay style="z-index: 100002;" :value="(connectionStatus != 'connected') & wasConnected">
             <v-progress-circular indeterminate size="128" style="text-align: center;">Server
                 disconnected.</v-progress-circular>
+        </v-overlay>
+
+        <!-- soft-remount indicator (§6.2/§6.3): while the app re-runs on the new instance the mount
+             point is withheld from the DOM (see the loader templates), so we show a spinner here
+             instead of letting the empty mount-point placeholder flash through. Not the full loader. -->
+        <v-overlay style="z-index: 100001;" :value="remounting" opacity="0.9">
+            <div style="text-align: center;">
+                <v-progress-circular indeterminate size="64" width="4"></v-progress-circular>
+                <div style="margin-top: 16px;">Restoring session…</div>
+            </div>
         </v-overlay>
 
         <v-dialog v-model="needsRefresh" width="500">
@@ -227,24 +242,28 @@
     </script>
     {% block after_pre_rendered_html %}{% endblock %}
     {% if vue3 == True %}
-        <link href="{{cdn}}/@widgetti/solara-vuetify3-app@5.0.2/dist/fonts.css" rel="stylesheet"></link>
+        <link href="{{cdn}}/@widgetti/solara-vuetify3-app@5.1.1/dist/fonts.css" rel="stylesheet"></link>
         {% if production %}
-        <script src="{{cdn}}/@widgetti/solara-vuetify3-app@5.0.2/dist/solara-vuetify-app{{ipywidget_major_version}}.min.js"></script>
+        <script src="{{cdn}}/@widgetti/solara-vuetify3-app@5.1.1/dist/solara-vuetify-app{{ipywidget_major_version}}.min.js"></script>
         {% else %}
-        <script src="{{cdn}}/@widgetti/solara-vuetify3-app@5.0.2/dist/solara-vuetify-app{{ipywidget_major_version}}.js"></script>
+        <script src="{{cdn}}/@widgetti/solara-vuetify3-app@5.1.1/dist/solara-vuetify-app{{ipywidget_major_version}}.js"></script>
         {% endif %}
     {% else %}
-        <link href="{{cdn}}/@widgetti/solara-vuetify-app@10.0.3/dist/fonts.css" rel="stylesheet" fetchpriority="low"></link>
+        <link href="{{cdn}}/@widgetti/solara-vuetify-app@10.1.1/dist/fonts.css" rel="stylesheet" fetchpriority="low"></link>
         {% if production %}
-        <script src="{{cdn}}/@widgetti/solara-vuetify-app@10.0.3/dist/solara-vuetify-app{{ipywidget_major_version}}.min.js"></script>
+        <script src="{{cdn}}/@widgetti/solara-vuetify-app@10.1.1/dist/solara-vuetify-app{{ipywidget_major_version}}.min.js"></script>
         {% else %}
-        <script src="{{cdn}}/@widgetti/solara-vuetify-app@10.0.3/dist/solara-vuetify-app{{ipywidget_major_version}}.js"></script>
+        <script src="{{cdn}}/@widgetti/solara-vuetify-app@10.1.1/dist/solara-vuetify-app{{ipywidget_major_version}}.js"></script>
         {% endif %}
     {% endif %}
     <script>
         solara.rootPath = {{ root_path | tojson | safe}};
         solara.jupyterRootPath = {{ jupyter_root_path | tojson | safe}};
         solara.cdn = {{ cdn | tojson | safe }};
+        solara.forceRefresh = {{ force_refresh | tojson | safe }};
+        // opaque asset hash; compared against the app-status reply on reconnect to decide
+        // soft-remount vs hard-refresh (design §6.1)
+        solara.clientVersion = {{ client_version | tojson | safe }};
         // the vue templates expect it to not have a trailing slash
         solara.cdn = solara.cdn.replace(/\/$/, '');
         // keep this for backwards compatibility
@@ -310,11 +329,6 @@
                 document.getElementById('pre-render-theme').remove();
             },
             methods: {
-                stateReset() {
-                    console.log('reset')
-                    msg = { "type": "state_reset", "reason": "user command" }
-                    wsWatchdog.send(JSON.stringify(msg))
-                },
                 setCancelAutoRefresh() {
                     this.needsRefresh = false;
                     this.cancelAutoRefresh = true;
@@ -364,7 +378,9 @@
                     }
                 },
                 needsRefresh: function (value) {
-                    if (this.needsRefresh && !this.cancelAutoRefresh && !solara.production) {
+                    if(solara.forceRefresh) {
+                        this.reload();
+                    } else if (this.needsRefresh && !this.cancelAutoRefresh && !solara.production) {
                         console.log('value for needRefresh', value);
                         setTimeout(() => {
                             console.log('this.autoRefreshCount', this.autoRefreshCount)
@@ -409,6 +425,10 @@
                     debug: debug,
                     connectionStatus: null,
                     wasConnected: false,
+                    // soft-remount state (§6.2): remountKey is bound as :key on the mount point so
+                    // bumping it destroys/recreates it; remounting drives the "Restoring session…" indicator
+                    remountKey: 0,
+                    remounting: false,
                     needsRefresh: false,
                     cancelAutoRefresh: false,
                     autoRefreshCount: 3,
@@ -461,7 +481,9 @@
                 },
                 // Add cache busting to the urlArgs to ensure latest versions of nbextensions are loaded
                 urlArgs: function (id, url) {
-                    const extensionName = id.replace("/static/nbextensions/", "").replace(".js", "");
+                    // the nodeps bundles ship in the extension's directory, which is
+                    // what gets hashed, so version them with the extension's hash
+                    const extensionName = id.replace(/^\/?(static\/)?nbextensions\//, "").replace(".js", "").replace(/\/nodeps$/, "/extension");
                     if (nbextensionHashes[extensionName] !== undefined) {
                         // Check if the url already has a query string, if so, append the hash as an additional parameter
                         return (url.indexOf('?') === -1 ? '?' : '&') + nbextensionHashes[extensionName];

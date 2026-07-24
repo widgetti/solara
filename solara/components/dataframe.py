@@ -76,7 +76,7 @@ def Table(df, n=5):
             output_real.outputs = tuple()
             output_real.append_display_data(df)
 
-    solara.use_side_effect(output)
+    solara.use_effect(output)
     return output_c
 
 
@@ -204,7 +204,7 @@ def ScatterCard(df, x=None, y=None, color=None):
     dff = df
     if filter:
         dff = df[filter]
-    columns = df.get_column_names()
+    columns = use_df_column_names(df)
     max_points = 1000
     floats = [k for k in columns if df[k].dtype == float]
     #     flots = df.get_column_names()
@@ -353,7 +353,7 @@ def HeatmapCard(df, x=None, y=None, debounce=True):
     selection = filter
     # print("unfiltered", dff is df)
 
-    items = df.get_column_names()
+    items = use_df_column_names(df)
     floats = [k for k in items if df[k].dtype == float]
 
     with v.Card(elevation=2, height=cardheight) as main:

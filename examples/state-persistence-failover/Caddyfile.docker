@@ -1,0 +1,10 @@
+# Caddy config for the docker-compose path (backends are service names on port 8765).
+# See the top-level Caddyfile for the run.sh (localhost) path and for why the health-checking
+# directives matter: without them round-robin keeps routing to a crashed backend.
+:8000 {
+	reverse_proxy solara1:8765 solara2:8765 {
+		lb_policy round_robin
+		lb_try_duration 5s
+		fail_duration 30s
+	}
+}

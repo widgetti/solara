@@ -69,6 +69,11 @@ def test_dataframe(page_session: playwright.sync_api.Page, solara_server, solara
         datatable_value_counts = page_session.locator(".solara-data-table").nth(1)
         datatable_value_counts.wait_for()
 
+        # scroll and wait for stability of test
+        datatable_value_counts.locator("th >> text=species_id >> _vue=v-icon").wait_for()
+        datatable_value_counts.locator("th >> text=species_id >> _vue=v-icon").scroll_into_view_if_needed()
+        page_session.wait_for_timeout(1000)
+
         # open the species hover menu
         datatable_value_counts.locator("th >> text=species_id >> _vue=v-icon").hover()
         page_session.locator("text=Value counts for species_id").wait_for()

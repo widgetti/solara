@@ -10,14 +10,17 @@ import concurrent.futures
 import contextlib
 import dataclasses
 import enum
+from collections import defaultdict
 import logging
 import os
 import pickle
+import re
 import threading
 import time
 import typing
+import weakref
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, cast
+from typing import Any, Callable, DefaultDict, Dict, List, Optional, Tuple, Union, cast
 
 import ipywidgets as widgets
 import reacton
@@ -29,6 +32,7 @@ import solara.util
 from . import kernel, websocket
 from .. import lifecycle
 from .kernel import Kernel, WebsocketStreamWrapper
+from .utils import redact_id
 
 WebSocket = Any
 logger = logging.getLogger("solara.server.app")
@@ -39,12 +43,35 @@ class Local(threading.local):
 
 
 local = Local()
+# same idea, but for `async with ...`
+if typing.TYPE_CHECKING:
+    async_stack = contextvars.ContextVar[Union[Tuple[Union[None, "VirtualKernelContext"], ...], None]](name="async_stack", default=None)
+else:
+    async_stack = contextvars.ContextVar("async_stack", default=None)
 
 
 class PageStatus(enum.Enum):
     CONNECTED = "connected"
     DISCONNECTED = "disconnected"
     CLOSED = "closed"
+
+
+class _LifecycleState(enum.Enum):
+    OPEN = "open"
+    RESTARTING = "restarting"
+    CLOSING = "closing"
+    CLOSED = "closed"
+
+
+def _get_or_create_event_loop() -> asyncio.AbstractEventLoop:
+    # On Python 3.12+, asyncio.get_event_loop() raises RuntimeError when called
+    # from the main thread after asyncio.run() has cleaned up the loop.
+    try:
+        return asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        return loop
 
 
 @dataclasses.dataclass
@@ -63,11 +90,31 @@ class VirtualKernelContext:
     # see patch.py
     templates: Dict[str, Widget] = dataclasses.field(default_factory=dict)
     user_dicts: Dict[str, Dict] = dataclasses.field(default_factory=dict)
+    # Per-reactive RLocks guarding lazy initialization of a reactive variable's value in this
+    # kernel's user_dicts (see solara.toestand.KernelStore), keyed by storage_key and created on
+    # first access. Relies on defaultdict's GIL-atomic create, so concurrent first-access returns
+    # the same lock (a no-GIL build could create two, which only risks a benign double-init).
+    # Living on the context (rather than on the process-global KernelStore instance) means the
+    # same reactive initializing in different kernels uses different locks (no cross-kernel
+    # serialization), and they die with the context (no leak).
+    init_locks: DefaultDict[str, threading.RLock] = dataclasses.field(default_factory=lambda: defaultdict(threading.RLock))
     # anything we need to attach to the context
     # e.g. for a react app the render context, so that we can store/restore the state
     app_object: Optional[Any] = None
     reload: Callable = lambda: None  # noqa: E731
     state: Any = None
+    # per-kernel opt-in state-persistence manager (solara.state.persist.KernelStatePersistence),
+    # attached after a successful backend takeover; None when persistence is off. The restore
+    # seam in solara.toestand.KernelStore.get() reads it; the server wiring that populates it
+    # lands in commit 2 of the state-persistence feature.
+    state_persistence: Optional[Any] = None
+    # the per-kernel debounced write-behind flush worker (solara.state.KernelFlushWorker),
+    # reachable so close()/on_shutdown can drain it OUTSIDE context.lock (the deadlock contract,
+    # §5.3) and so a ws reconnect can call new_epoch() on it (§5.5). None when persistence is off.
+    state_flush_worker: Optional[Any] = None
+    # why this context was closed: "page-close" | "cull" | "superseded" | "server-shutdown" |
+    # "evicted" | "unknown". Drives the reason-gated fenced delete (§5.4) and is logged/asserted.
+    close_reason: str = "unknown"
     container: Optional[DOMWidget] = None
     # we track which pages are connected to implement kernel culling
     page_status: Dict[str, PageStatus] = dataclasses.field(default_factory=dict)
@@ -75,8 +122,17 @@ class VirtualKernelContext:
     _last_kernel_cull_task: "Optional[asyncio.Future[None]]" = None
     _last_kernel_cull_future: "Optional[concurrent.futures.Future[None]]" = None
     closed_event: threading.Event = dataclasses.field(default_factory=threading.Event)
+    # guards persistence teardown so concurrent closes (cull vs page-close vs superseded) run it
+    # exactly once, WITHOUT waiting on self.lock (teardown does backend I/O that must stay
+    # off-lock, §5.3). A plain lock + flag rather than the racy outside-lock closed_event check.
+    _teardown_lock: threading.Lock = dataclasses.field(default_factory=threading.Lock)
+    _teardown_done: bool = False
     _on_close_callbacks: List[Callable[[], None]] = dataclasses.field(default_factory=list)
+    _lifecycle_lock: threading.Lock = dataclasses.field(default_factory=threading.Lock)
+    _lifecycle_state: _LifecycleState = _LifecycleState.OPEN
+    _generation_stores: Dict[int, Tuple["weakref.ReferenceType[Any]", str, Optional[Callable[[Any], None]], bool]] = dataclasses.field(default_factory=dict)
     lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
+    event_loop: asyncio.AbstractEventLoop = dataclasses.field(default_factory=_get_or_create_event_loop)
 
     def __post_init__(self):
         with self:
@@ -86,18 +142,134 @@ class VirtualKernelContext:
                     self.on_close(cleanup)
 
     def restart(self):
-        # should we do this, or maybe close the context and create a new one?
-        with self:
-            for f in reversed(self._on_close_callbacks):
-                f()
-            self._on_close_callbacks.clear()
-            self.__post_init__()
+        with self._lifecycle_lock:
+            if self._lifecycle_state is not _LifecycleState.OPEN:
+                return
+            self._lifecycle_state = _LifecycleState.RESTARTING
+            callbacks = self._on_close_callbacks
+            self._on_close_callbacks = []
+
+        error = self._run_close_callbacks(callbacks)
+        try:
+            self._clear_generation_stores()
+            with self._lifecycle_lock:
+                initialize = self._lifecycle_state is _LifecycleState.RESTARTING
+            if initialize:
+                self.__post_init__()
+        except BaseException as caught:
+            if error is None:
+                error = caught
+        finally:
+            with self._lifecycle_lock:
+                if self._lifecycle_state is _LifecycleState.RESTARTING:
+                    self._lifecycle_state = _LifecycleState.OPEN
+                    finish_close = False
+                else:
+                    finish_close = self._lifecycle_state is _LifecycleState.CLOSING
+            if finish_close:
+                self._finish_close()
+        if error is not None:
+            raise error
 
     def display(self, *args):
         print(args)  # noqa
 
     def on_close(self, f: Callable[[], None]):
-        self._on_close_callbacks.append(f)
+        with self._lifecycle_lock:
+            if self._lifecycle_state is _LifecycleState.CLOSED:
+                run_now = True
+            else:
+                self._on_close_callbacks.append(f)
+                run_now = False
+        if run_now:
+            error = self._run_close_callbacks([f])
+            if error is not None:
+                raise error
+
+        context_ref = weakref.ref(self)
+
+        def unregister():
+            context = context_ref()
+            if context is None:
+                return
+            with context._lifecycle_lock:
+                for index, callback in enumerate(context._on_close_callbacks):
+                    if callback is f:
+                        del context._on_close_callbacks[index]
+                        break
+
+        return unregister
+
+    def track_generation_store(self, store: Any, cleanup: Optional[Callable[[Any], None]] = None, *, owned: bool = True) -> None:
+        store_id = id(store)
+        with self._lifecycle_lock:
+            existing = self._generation_stores.get(store_id)
+            if existing is not None:
+                if owned and not existing[3]:
+                    self._generation_stores[store_id] = (existing[0], existing[1], cleanup, True)
+                return
+            context_ref = weakref.ref(self)
+
+            def release(_ref):
+                context = context_ref()
+                if context is not None:
+                    context.release_generation_store(store_id)
+
+            self._generation_stores[store_id] = (weakref.ref(store, release), store.storage_key, cleanup, owned)
+
+    def release_generation_store(self, store_id: int) -> None:
+        with self._lifecycle_lock:
+            entry = self._generation_stores.pop(store_id, None)
+            if entry is None:
+                return
+            _, key, cleanup, _ = entry
+            if any(other_key == key for _, other_key, _, _ in self._generation_stores.values()):
+                return
+            value = self.user_dicts.pop(key, None)
+        if cleanup is not None and value is not None:
+            cleanup(value)
+
+    def _clear_generation_stores(self) -> None:
+        with self._lifecycle_lock:
+            owned_keys = {key for _, key, _, owned in self._generation_stores.values() if owned}
+            persistent_keys = {key for _, key, _, owned in self._generation_stores.values() if not owned}
+            keys = owned_keys - persistent_keys
+            values = [self.user_dicts.pop(key, None) for key in keys]
+        values.clear()
+
+    def _run_close_callbacks(self, callbacks: List[Callable[[], None]]):
+        fatal: Optional[BaseException] = None
+        with self:
+            for callback in reversed(callbacks):
+                try:
+                    callback()
+                except (KeyboardInterrupt, SystemExit) as error:
+                    if fatal is None:
+                        fatal = error
+                except BaseException:
+                    logger.exception("Kernel close callback failed for %s", self.id)
+        return fatal
+
+    def is_closing(self) -> bool:
+        with self._lifecycle_lock:
+            return self._lifecycle_state in (_LifecycleState.CLOSING, _LifecycleState.CLOSED)
+
+    async def __aenter__(self):
+        stack = async_stack.get()
+        if stack is None:
+            stack = ()
+        key = get_current_thread_key()
+        async_stack.set(stack + (current_context.get(key, None),))
+        new_key = get_current_thread_key()
+        current_context[new_key] = self
+
+    async def __aexit__(self, *args):
+        key = get_current_thread_key()
+        assert local.kernel_context_stack is not None
+        stack = async_stack.get()
+        assert stack is not None
+        current_context[key] = stack[-1]
+        async_stack.set(stack[:-1])
 
     def __enter__(self):
         if local.kernel_context_stack is None:
@@ -111,44 +283,147 @@ class VirtualKernelContext:
         assert local.kernel_context_stack is not None
         current_context[key] = local.kernel_context_stack.pop()
 
-    def close(self):
-        with self, self.lock:
-            for key in self.page_status:
-                self.page_status[key] = PageStatus.CLOSED
-            if self._last_kernel_cull_task:
-                self._last_kernel_cull_task.cancel()
-            if self._last_kernel_cull_future:
-                self._last_kernel_cull_future.cancel()
-            if self.closed_event.is_set():
-                logger.error("Tried to close a kernel context that is already closed: %s", self.id)
-                return
-            logger.info("Shut down virtual kernel: %s", self.id)
-            for f in reversed(self._on_close_callbacks):
-                f()
-            if self.app_object is not None:
-                if isinstance(self.app_object, reacton.core._RenderContext):
+    def _teardown_persistence(self, reason: str) -> None:
+        """Drain the flush worker and reason-gate the fenced delete (§5.3/§5.4/§12).
+
+        MUST run BEFORE ``close()`` acquires ``self.lock``: the worker's final flush does backend
+        I/O and the delete is a backend call - doing either under ``context.lock`` is the documented
+        deadlock (docs/reactive-initialization-lock-deadlock.md). Wrapped so a persistence failure
+        never breaks close(). Idempotent (the worker's own close() and manager detach guard reruns).
+        """
+        worker = self.state_flush_worker
+        manager = self.state_persistence
+        if worker is None and manager is None:
+            return
+        import solara.state as solara_state
+        from solara.state.stats import log_close
+
+        deleted = False
+        try:
+            # bounded final flush (flush-and-leave for every reason); manager.close() detaches
+            if worker is not None:
+                worker.close(timeout=2.0)
+            elif manager is not None:
+                manager.close()
+            # read the owned generation AFTER the final flush (the rejection protocol may have
+            # re-taken during it), and only if persistence is still enabled for this kernel
+            generation = manager.generation if manager is not None else None
+            disabled = manager.disabled if manager is not None else True
+            # Reason-gated fenced delete (§5.4): only a genuine tab close removes the hash; every
+            # other reason flushes-and-leaves so the TTL (or a later failover) reclaims it - an
+            # unconditional delete here would wipe every session on a rolling deploy / superseded
+            # takeover / cull (the §12 blocker).
+            if reason == "page-close" and generation and not disabled:
+                backend = solara_state.get_backend()
+                breaker = solara_state.get_breaker()
+                if backend is not None and breaker.allow():
                     try:
-                        self.app_object.close()
-                    except Exception as e:
-                        logger.exception("Could not close render context: %s", e)
-                        # we want to continue, so we at least close all widgets
-            widgets.Widget.close_all()
-            # what if we reference each other
-            # import gc
-            # gc.collect()
-            self.kernel.close()
-            self.kernel = None  # type: ignore
-            if self.id in contexts:
-                del contexts[self.id]
-            del current_context[get_current_thread_key()]
-            # We saw in memleak_test that there are sometimes other entries in current_context
-            # In which _DummyThread's reference this context, so we remove those references too
-            # TODO: Think about what to do with those Threads
-            _contexts = current_context.copy()
-            for key, _ctx in _contexts.items():
-                if _ctx is self:
-                    del current_context[key]
-            self.closed_event.set()
+                        deleted = backend.delete(self.id, generation=generation)
+                        breaker.record_success()
+                    except Exception:  # noqa
+                        breaker.record_failure()
+                        logger.exception("failed to delete state for kernel %s on close", self.id)
+            log_close(reason, deleted=deleted)
+        except Exception:  # noqa
+            logger.exception("state persistence teardown failed for kernel %s", self.id)
+
+    def close(self, reason: str = "unknown"):
+        with self._lifecycle_lock:
+            if self._lifecycle_state in (_LifecycleState.CLOSING, _LifecycleState.CLOSED):
+                return
+            restart_owns_close = self._lifecycle_state is _LifecycleState.RESTARTING
+            self._lifecycle_state = _LifecycleState.CLOSING
+            self.close_reason = reason
+        if restart_owns_close:
+            return
+        self._finish_close()
+
+    def _finish_close(self):
+        fatal: Optional[BaseException] = None
+        run_teardown = False
+        with self._teardown_lock:
+            if not self._teardown_done:
+                self._teardown_done = True
+                run_teardown = True
+        if run_teardown:
+            try:
+                self._teardown_persistence(self.close_reason)
+            except (KeyboardInterrupt, SystemExit) as error:
+                fatal = error
+            except BaseException:
+                logger.exception("State persistence teardown was cancelled for kernel %s", self.id)
+
+        with self:
+            with self.lock:
+                for key in self.page_status:
+                    self.page_status[key] = PageStatus.CLOSED
+                if self._last_kernel_cull_task:
+                    self._last_kernel_cull_task.cancel()
+                    self._last_kernel_cull_task = None
+                if self._last_kernel_cull_future:
+                    self._last_kernel_cull_future.cancel()
+                    self._last_kernel_cull_future = None
+                had_app = self.app_object is not None
+                app_object = self.app_object
+                kernel_to_close = self.kernel
+
+            logger.info("Shut down virtual kernel: %s", self.id)
+            while True:
+                with self._lifecycle_lock:
+                    if not self._on_close_callbacks:
+                        break
+                    callbacks = self._on_close_callbacks
+                    self._on_close_callbacks = []
+                callback_fatal = self._run_close_callbacks(callbacks)
+                if fatal is None:
+                    fatal = callback_fatal
+            self._clear_generation_stores()
+
+            with self.lock:
+                if self.app_object is app_object:
+                    self.app_object = None
+            cleanup_steps = [("widgets", widgets.Widget.close_all), ("kernel", kernel_to_close.close)]
+            if isinstance(app_object, reacton.core._RenderContext):
+                cleanup_steps.insert(0, ("render context", app_object.close))
+            for label, cleanup in cleanup_steps:
+                try:
+                    cleanup()
+                except (KeyboardInterrupt, SystemExit) as error:
+                    if fatal is None:
+                        fatal = error
+                except BaseException:
+                    logger.exception("Could not close %s", label)
+            with self.lock:
+                self.kernel = None  # type: ignore
+
+        if contexts.get(self.id) is self:
+            with _init_lock:
+                if contexts.get(self.id) is self:
+                    del contexts[self.id]
+        for key, context in list(current_context.items()):
+            if context is self:
+                del current_context[key]
+
+        while True:
+            with self._lifecycle_lock:
+                if self._on_close_callbacks:
+                    callbacks = self._on_close_callbacks
+                    self._on_close_callbacks = []
+                else:
+                    self._lifecycle_state = _LifecycleState.CLOSED
+                    self.closed_event.set()
+                    break
+            callback_fatal = self._run_close_callbacks(callbacks)
+            if fatal is None:
+                fatal = callback_fatal
+
+        # only when the kernel rendered an app: a bare context holds nothing worth a full
+        # collection, and a gc storm from many short-lived contexts (e.g. the unit test
+        # suite closes one per test) pauses all threads, breaking timing-sensitive code
+        if had_app and solara.server.settings.kernel.gc_after_close:
+            _schedule_gc_after_kernel_close()
+        if fatal is not None:
+            raise fatal
 
     def _state_reset(self):
         state_directory = Path(".") / "states"
@@ -174,11 +449,11 @@ class VirtualKernelContext:
                 pickle.dump(state, f)
 
     def page_connect(self, page_id: str):
-        if self.closed_event.is_set():
+        if self.is_closing():
             raise RuntimeError("Cannot connect a page to a closed kernel")
         logger.info("Connect page %s for kernel %s", page_id, self.id)
         with self.lock:
-            if self.closed_event.is_set():
+            if self.is_closing():
                 raise RuntimeError("Cannot connect a page to a closed kernel")
             if page_id in self.page_status and self.page_status.get(page_id) == PageStatus.CLOSED:
                 raise RuntimeError("Cannot connect a page that is already closed")
@@ -187,20 +462,38 @@ class VirtualKernelContext:
                 logger.info("Cancelling previous kernel cull task for virtual kernel %s", self.id)
                 self._last_kernel_cull_task.cancel()
 
+    def _cull_timeout_seconds(self) -> float:
+        """The cull timeout for this kernel (design §5.4).
+
+        With a genuinely *shared* backend and an attached, enabled persistence manager, an
+        orphaned (disconnected) kernel need not linger 24h: its state outlives it in the shared
+        store, so cull after the shortened ``SOLARA_STATE_ORPHAN_CULL_TIMEOUT``. The memory
+        backend (shared=False) and the persistence-off case keep today's ``kernel.cull_timeout`` -
+        there shortening would only lose state (state and kernel die together).
+        """
+        import solara.state as solara_state
+
+        backend = solara_state.get_backend()
+        manager = self.state_persistence
+        if backend is not None and backend.shared and manager is not None and not manager.disabled:
+            return solara.util.parse_timedelta(solara.server.settings.state.orphan_cull_timeout)
+        return solara.util.parse_timedelta(solara.server.settings.kernel.cull_timeout)
+
     def _bump_kernel_cull(self):
         async def kernel_cull():
             try:
-                cull_timeout_sleep_seconds = solara.util.parse_timedelta(solara.server.settings.kernel.cull_timeout)
+                cull_timeout_sleep_seconds = self._cull_timeout_seconds()
                 logger.info("Scheduling kernel cull, will wait for max %s before shutting down the virtual kernel %s", cull_timeout_sleep_seconds, self.id)
                 await asyncio.sleep(cull_timeout_sleep_seconds)
                 logger.info("Timeout reached, checking if we should be shutting down virtual kernel %s", self.id)
                 with self.lock:
                     has_connected_pages = PageStatus.CONNECTED in self.page_status.values()
-                    if has_connected_pages:
-                        logger.info("We have (re)connected pages, keeping the virtual kernel %s alive", self.id)
-                    else:
-                        logger.info("No connected pages, and timeout reached, shutting down virtual kernel %s", self.id)
-                        self.close()
+                if has_connected_pages:
+                    logger.info("We have (re)connected pages, keeping the virtual kernel %s alive", self.id)
+                else:
+                    logger.info("No connected pages, and timeout reached, shutting down virtual kernel %s", self.id)
+                    # close() OUTSIDE self.lock: its persistence teardown does backend I/O (§5.3)
+                    self.close(reason="cull")
                 if current_event_loop is not None and future is not None:
                     try:
                         current_event_loop.call_soon_threadsafe(future.set_result, None)
@@ -295,13 +588,14 @@ class VirtualKernelContext:
             future.set_result(None)
 
         logger.info("page status: %s", self.page_status)
+        should_close = False
         with self.lock:
             if self.closed_event.is_set():
                 logger.info("Kernel %s was already closed when page %s attempted to close", self.id, page_id)
-                return
+                return future
             if self.page_status[page_id] == PageStatus.CLOSED:
                 logger.info("Page %s already closed for kernel %s", page_id, self.id)
-                return
+                return future
             self.page_status[page_id] = PageStatus.CLOSED
             logger.info("Close page %s for kernel %s", page_id, self.id)
             has_connected_pages = PageStatus.CONNECTED in self.page_status.values()
@@ -312,10 +606,14 @@ class VirtualKernelContext:
             if has_disconnected_pages:
                 future = self._bump_kernel_cull()
             if not (has_connected_pages or has_disconnected_pages):
-                logger.info("No connected or disconnected pages, shutting down virtual kernel %s", self.id)
-                self.close()
+                should_close = True
             else:
                 logger.info("Still have connected or disconnected pages, keeping virtual kernel %s alive", self.id)
+        if should_close:
+            # a genuine tab close: close() OUTSIDE self.lock (persistence teardown does backend
+            # I/O, §5.3) with reason="page-close" so the fenced delete removes the hash (§5.4)
+            logger.info("No connected or disconnected pages, shutting down virtual kernel %s", self.id)
+            self.close(reason="page-close")
         return future
 
 
@@ -337,6 +635,42 @@ except RuntimeError:
     keep_alive_event_loop = asyncio.get_event_loop()
 
 contexts: Dict[str, VirtualKernelContext] = {}
+
+# Closed kernel contexts are reference cycles (widgets, reacton render contexts and the
+# IPython shell all reference each other), so plain refcounting cannot free them: they wait
+# for a generation-2 garbage collection. Under load that shows up as a memory sawtooth whose
+# peaks scale with per-kernel state (see docs/memory-usage-inspection.md). We therefore run
+# a gc shortly after a kernel closes - deferred to a background thread so the close path
+# (and the user awaiting closed_event) stays fast, and coalesced so a burst of closing
+# kernels (server shutdown, mass disconnect) triggers one collection, not hundreds.
+_gc_after_close_lock = threading.Lock()
+_gc_after_close_pending = False
+GC_AFTER_CLOSE_DELAY = 1.0  # seconds; also gives the closing code time to drop its own references
+
+
+def _schedule_gc_after_kernel_close():
+    global _gc_after_close_pending
+    with _gc_after_close_lock:
+        if _gc_after_close_pending:
+            return
+        _gc_after_close_pending = True
+
+    def collect():
+        global _gc_after_close_pending
+        time.sleep(GC_AFTER_CLOSE_DELAY)
+        with _gc_after_close_lock:
+            _gc_after_close_pending = False
+        import gc
+
+        gc.collect()
+
+    thread = threading.Thread(target=collect, daemon=True, name="solara-gc-after-kernel-close")
+    # the patched Thread captures the current kernel context at creation; this thread must
+    # not run inside the (closing) context, nor keep it alive until the collect is done
+    thread.current_context = None  # type: ignore
+    thread.start()
+
+
 # maps from thread key to VirtualKernelContext, if VirtualKernelContext is None, it exists, but is not set as current
 current_context: Dict[str, Optional[VirtualKernelContext]] = {}
 
@@ -363,6 +697,7 @@ else:
 
 
 def get_current_thread_key() -> str:
+    # consider renaming this to get_current_context_key
     if not solara.server.settings.kernel.threaded:
         if async_context_id is not None:
             try:
@@ -374,6 +709,13 @@ def get_current_thread_key() -> str:
     else:
         thread = threading.current_thread()
         key = get_thread_key(thread)
+        # this signals we are using `async with context`, which means we are interested in task-local context
+        stack = async_stack.get()
+        if stack is not None and len(stack) > 0:
+            current_task = asyncio.current_task()
+            if current_task is not None:
+                task_key = current_task.get_name()
+                key = f"{key}-task:{task_key}"
     return key
 
 
@@ -436,31 +778,268 @@ def without_context():
         current_context[thread_key] = context
 
 
-def initialize_virtual_kernel(session_id: str, kernel_id: str, websocket: websocket.WebsocketWrapper):
-    from solara.server import app as appmodule
+# guards the check-and-reserve of a context slot in initialize_virtual_kernel (§5.1). It is
+# deliberately NOT held across the backend takeover I/O: the slot is reserved first, then the
+# takeover runs off-lock (no backend I/O under any lock).
+_init_lock = threading.Lock()
 
-    if kernel_id in contexts:
-        logger.info("reusing virtual kernel: %s", kernel_id)
-        context = contexts[kernel_id]
-        if context.session_id != session_id:
-            logger.critical("Session id mismatch when reusing kernel (hack attempt?): %s != %s", context.session_id, session_id)
-            websocket.send_text("Session id mismatch when reusing kernel (hack attempt?)")
-            # to avoid very fast reconnects (we are in a thread anyway)
-            time.sleep(0.5)
-            raise ValueError("Session id mismatch")
-        kernel = context.kernel
-    else:
-        kernel = Kernel()
-        logger.info("new virtual kernel: %s", kernel_id)
-        context = contexts[kernel_id] = VirtualKernelContext(id=kernel_id, session_id=session_id, kernel=kernel, control_sockets=[], widgets={}, templates={})
+# kernel_id becomes a backend key (and cluster hash-tag), so persistence only accepts a safe
+# charset + bounded length: this covers UUIDs and ordinary custom ids while rejecting Redis glob
+# metacharacters (*?[]), cluster hash-tags ({}), the ':' key separator, and whitespace/control
+# chars that could escape the keyspace, pollute operator SCAN/DEL patterns, or inject into logs.
+_KERNEL_ID_RE = re.compile(r"\A[A-Za-z0-9._-]{1,128}\Z")
 
-        with context:
-            widgets.register_comm_target(kernel)
-            appmodule.register_solara_comm_target(kernel)
+# takeovers run on this pool so a slow/hung backend cannot block the connect path past the hard
+# deadline (§5.1); a hung future keeps running and its late completion fenced-deletes the hash.
+_takeover_executor: "Optional[concurrent.futures.ThreadPoolExecutor]" = None
+_takeover_executor_lock = threading.Lock()
+
+
+def _get_takeover_executor() -> "concurrent.futures.ThreadPoolExecutor":
+    global _takeover_executor
+    if _takeover_executor is None:
+        with _takeover_executor_lock:
+            if _takeover_executor is None:
+                _takeover_executor = concurrent.futures.ThreadPoolExecutor(thread_name_prefix="solara-state-takeover")
+    return _takeover_executor
+
+
+def _has_connected_page(context: VirtualKernelContext) -> bool:
+    # lock-free snapshot read (§5.3): the flush worker calls this off the hot path
+    return PageStatus.CONNECTED in tuple(context.page_status.values())
+
+
+def _restore_on_connect(context: VirtualKernelContext, backend, session_id: str) -> None:
+    """Run the atomic backend takeover for a fresh context and attach persistence (§5.1/§5.3).
+
+    Never blocks past ``state.connect_timeout`` and never raises: any failure degrades to today's
+    behavior (a fresh, unpersisted kernel). Called OUTSIDE ``_init_lock`` (backend I/O).
+    """
+    import solara.state as solara_state
+    from solara.state.stats import log_restore
+
+    kernel_id = context.id
+    # kernel_id is client-supplied (the URL path, overridable via ?kernelid=) and becomes the
+    # backend key. Reject anything outside the safe charset so a crafted id cannot inject into
+    # the keyspace; such a kernel simply runs unpersisted (degrade, never fail the connection).
+    if not _KERNEL_ID_RE.match(kernel_id):
+        logger.warning("state restore skipped for kernel %s: kernel id outside the safe charset", kernel_id)
+        return
+
+    breaker = solara_state.get_breaker()
+    shmac = solara_state.session_hmac(session_id)  # primary: what the manager WRITES on flush (sign-first)
+    shmac_candidates = solara_state.session_hmacs(session_id)  # verify-ANY set for takeover (key rotation)
+    schema_tag = solara_state.effective_schema_tag()
+    stats = solara_state.stats()
+
+    # breaker gates restores too (§5.3): during a brownout, skip the takeover read instantly
+    # instead of paying the deadline on every connect of a deploy herd.
+    if not breaker.allow():
+        stats.incr("restore_attempts")
+        log_restore("timeout", kernel=kernel_id)
+        logger.info("state restore skipped for kernel %s (circuit breaker open)", kernel_id)
+        return
+
+    timeout = float(solara.server.settings.state.connect_timeout)
+    future = _get_takeover_executor().submit(backend.takeover, kernel_id, shmac_candidates, schema_tag)
+    try:
+        result = future.result(timeout=timeout)
+    except concurrent.futures.TimeoutError:
+        # claim-or-delete (§5.1/§12 zombie fix): we degrade to an unpersisted kernel now, but the
+        # takeover already bumped (or will bump) the generation in the backend. Leaving the hash
+        # readable would let a LATER failover silently roll the user back to this pre-timeout
+        # snapshot after they diverged. So when the late takeover finally completes, use its result
+        # ONLY to fenced-delete the hash (fire-and-forget on the executor thread that completes it).
+        breaker.record_failure()
+        stats.incr("restore_attempts")
+        stats.record_backend_error("takeover timeout")
+        log_restore("timeout", kernel=kernel_id)
+
+        def _claim_or_delete(fut: "concurrent.futures.Future") -> None:
+            try:
+                res = fut.result()
+            except Exception:  # noqa
+                return
+            if res.reason in ("restored", "miss", "schema-reset") and res.generation:
+                try:
+                    backend.delete(kernel_id, generation=res.generation)
+                except Exception:  # noqa
+                    logger.exception("late takeover claim-or-delete failed for kernel %s", kernel_id)
+
+        future.add_done_callback(_claim_or_delete)
+        return
+    except Exception:  # noqa
+        breaker.record_failure()
+        stats.incr("restore_attempts")
+        stats.record_backend_error("takeover raised")
+        log_restore("timeout", kernel=kernel_id)
+        logger.exception("state takeover raised for kernel %s", kernel_id)
+        return
+
+    breaker.record_success()
+    if result.generation == 0:  # identity-mismatch (§5.1) - mirrors the in-memory hijack guard
+        stats.incr("restore_attempts")
+        logger.warning("state takeover identity mismatch for kernel %s (session hijack?); serving unpersisted", kernel_id)
+        return
+
+    try:
+        manager = solara_state.attach(
+            context,
+            backend,
+            session_hmac=shmac,
+            schema_tag=schema_tag,
+            generation=result.generation,
+            envelopes=result.fields,
+            restore_reason=result.reason,
+        )
+    except Exception:  # noqa - e.g. PersistKeyError from an unresolved class-body persist=True
+        logger.exception("state attach failed for kernel %s; serving unpersisted", kernel_id)
+        return
+
+    if manager.recovery_failed:
+        # all-or-nothing bail-out happened inside attach (§4.3): keep the manager (it exposes the
+        # recovery-failed state for a future canRecover:false) but do NOT start a worker - the
+        # kernel runs fresh.
+        return
+
+    worker = solara_state.KernelFlushWorker(
+        manager,
+        breaker=breaker,
+        has_connected_page=lambda: _has_connected_page(context),
+        on_superseded=lambda: context.close(reason="superseded"),
+    )
+    context.state_flush_worker = worker
+    worker.start()
+
+
+def _reuse_context_is_stale(context: VirtualKernelContext, backend) -> bool:
+    """Whether a reused in-memory context has been superseded in the shared backend (§5.1).
+
+    A fast double reconnect can land back on an instance whose old context is still alive after
+    another instance took over in between; resuming it blindly would roll the user back. Compare
+    the remembered generation with the backend's. On a peek failure or an open breaker, serve
+    in-memory (the documented TOCTOU closure: the fenced write path catches real mismatches).
+    Never raises. Called OUTSIDE ``_init_lock`` (backend I/O).
+    """
+    import solara.state as solara_state
+
+    manager = context.state_persistence
+    if manager is None or manager.disabled:
+        return False
+    breaker = solara_state.get_breaker()
+    if not breaker.allow():
+        return False
+    try:
+        # The redis backend builds its client with socket_timeout/socket_connect_timeout set to
+        # state.connect_timeout, so peek_generation (a single HGET) is bounded at the client level
+        # even on the reuse branch - a hung Redis cannot block the reconnect path. The breaker
+        # additionally bounds sustained brownouts.
+        stored = backend.peek_generation(context.id)
+        breaker.record_success()
+    except Exception:  # noqa
+        breaker.record_failure()
+        logger.exception("peek_generation failed for kernel %s; serving in-memory", context.id)
+        return False
+    if stored is None:
+        return False
+    return stored != manager.generation
+
+
+def _wire_kernel_streams(context: VirtualKernelContext, websocket: websocket.WebsocketWrapper) -> None:
     with context:
         assert has_current_context()
-        assert kernel is Kernel.instance()
-        kernel.shell_stream = WebsocketStreamWrapper(websocket, "shell")
-        kernel.control_stream = WebsocketStreamWrapper(websocket, "control")
-        kernel.session.websockets.add(websocket)
+        assert context.kernel is Kernel.instance()
+        context.kernel.shell_stream = WebsocketStreamWrapper(websocket, "shell")
+        context.kernel.control_stream = WebsocketStreamWrapper(websocket, "control")
+        context.kernel.session.websockets.add(websocket)
+
+
+def initialize_virtual_kernel(session_id: str, kernel_id: str, websocket: websocket.WebsocketWrapper):
+    from solara.server import app as appmodule
+    import solara.state as solara_state
+
+    backend = solara_state.get_backend()
+
+    # Reserve or find the context slot under a small lock (no backend I/O here, §5.1). A brand-new
+    # context is created and registered immediately - the slot is "reserved" - so a concurrent
+    # reconnect for the same kernel finds it via the reuse branch (its state_persistence is still
+    # None then -> not stale) instead of racing a second takeover, while the takeover I/O itself
+    # runs off-lock below.
+    with _init_lock:
+        context = contexts.get(kernel_id)
+        # A context whose close() has begun must not be reused. After an evict/cull/supersede the
+        # client reconnects on the SAME kernel id (the socket dropped); it needs a FRESH context
+        # that restores from the backend, not the doomed one - reusing it would race close() and
+        # raise "Cannot connect a page to a closed kernel" in page_connect once closed_event is
+        # set. is_closing() also covers close delegated to an in-progress restart, before teardown
+        # begins. close() guards its own `del contexts` by identity, so overwriting the slot below
+        # is safe.
+        if context is not None and (context.is_closing() or context._teardown_done or context.closed_event.is_set()):
+            context = None
+        mismatch = context is not None and context.session_id != session_id
+        newly_created = False
+        if context is None:
+            # Bound how many live kernels one session cookie may create (client-chosen kernel_id +
+            # any-cookie-accepted-on-new-id would otherwise be an unbounded context/thread/redis-key
+            # amplifier). Reconnects reuse an existing kernel and never reach here, so this only
+            # gates genuinely new kernels. Cookieless clients each get a unique session id, so they
+            # never accumulate under one session.
+            # ADDITIVE: the durable-redis-key amplification this bounds only exists with persistence,
+            # so only enforce the cap when a backend is configured - kernel creation is byte-for-byte
+            # unchanged for deployments that do not opt into persistence.
+            max_per_session = solara.server.settings.kernel.max_per_session
+            if max_per_session and backend is not None:
+                live_for_session = sum(1 for c in contexts.values() if c.session_id == session_id)
+                if live_for_session >= max_per_session:
+                    logger.warning(
+                        "session %s already has %d live kernels (max_per_session=%d); refusing new kernel %s",
+                        redact_id(session_id),
+                        live_for_session,
+                        max_per_session,
+                        redact_id(kernel_id),
+                    )
+                    raise RuntimeError("too many live kernels for this session")
+            kernel = Kernel()
+            logger.info("new virtual kernel: %s", kernel_id)
+            context = contexts[kernel_id] = VirtualKernelContext(
+                id=kernel_id, session_id=session_id, kernel=kernel, control_sockets=[], widgets={}, templates={}
+            )
+            newly_created = True
+
+    if mismatch:
+        assert context is not None
+        # redact both session ids: they are bearer credentials for takeover once persistence is on.
+        # The client message must NOT echo them back either (it reaches an attacker's browser).
+        logger.critical(
+            "Session id mismatch when reusing kernel (hack attempt?): %s != %s",
+            redact_id(context.session_id),
+            redact_id(session_id),
+        )
+        websocket.send_text("Session id mismatch when reusing kernel (hack attempt?)")
+        # to avoid very fast reconnects (we are in a thread anyway)
+        time.sleep(0.5)
+        raise ValueError("Session id mismatch")
+
+    if newly_created:
+        with context:
+            widgets.register_comm_target(context.kernel)
+            appmodule.register_solara_comm_target(context.kernel)
+        if backend is not None:
+            _restore_on_connect(context, backend, session_id)
+    else:
+        # reuse branch (§5.1): verify ownership against the shared backend before serving
+        if backend is not None and context.state_persistence is not None and _reuse_context_is_stale(context, backend):
+            logger.info("virtual kernel %s superseded (generation mismatch); recreating with a fresh takeover", kernel_id)
+            # close the stale context (flush-and-leave; backend I/O, so OUTSIDE _init_lock), which
+            # frees the slot, then recurse to run the normal atomic takeover + restore.
+            context.close(reason="superseded")
+            return initialize_virtual_kernel(session_id, kernel_id, websocket)
+        logger.info("reusing virtual kernel: %s", kernel_id)
+        worker = context.state_flush_worker
+        if worker is not None:
+            # a genuine client reconnect starts a new connection epoch: reset the one-re-takeover
+            # budget of the rejection protocol (§5.5)
+            worker.new_epoch()
+
+    _wire_kernel_streams(context, websocket)
     return context

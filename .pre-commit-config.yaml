@@ -11,10 +11,11 @@ repos:
       - id: trailing-whitespace
         exclude: .bumpversion.cfg
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.19.1
+    rev: v3.21.2
     hooks:
     -   id: pyupgrade
         args: [--py36-plus]
+        language_version: python3.12
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.1
     hooks:
@@ -24,14 +25,14 @@ repos:
         additional_dependencies:
           - tomli
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.9.4
+    rev: v0.11.11
     hooks:
       - id: ruff
         stages: [pre-commit]
       - id: ruff-format
         stages: [pre-commit]
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.14.1
+    rev: v1.15.0
     hooks:
       - id: mypy
         pass_filenames: false

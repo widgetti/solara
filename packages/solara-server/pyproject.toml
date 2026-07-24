@@ -8,8 +8,9 @@ name = "solara-server"
 readme = "README.md"
 authors = [{name = "Maarten A. Breddels", email = "maartenbreddels@gmail.com"}]
 license = {file = "LICENSE"}
+requires-python = ">=3.8"
 classifiers = ["License :: OSI Approved :: MIT License"]
-version = "1.44.0"
+version = "1.60.3"
 dynamic = ["description"]
 dependencies = [
     "solara-ui",
@@ -17,7 +18,7 @@ dependencies = [
     "click>=7.1.0",
     "rich_click",
     "filelock",
-    "ipykernel",
+    "ipykernel!=7.0.0,!=7.0.1",
     "nbformat",
     "jupyter_client",
 ]
@@ -33,7 +34,7 @@ all = [
     "solara-server[flask]",
 ]
 dev = [
-    "watchfiles; python_version > '3.6'",
+    "watchfiles",
     "watchdog",
 ]
 starlette = [

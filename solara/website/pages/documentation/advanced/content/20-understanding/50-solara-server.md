@@ -41,6 +41,8 @@ Each virtual kernel runs in its own thread, this ensures that one particular use
 
 In setups with multiple workers, it's possible for a page to (re)connect to a different worker than its original. This can happen after a lost network connection is restored, or when [ipypopout](https://github.com/widgetti/ipypopout) is used, since ipypopout creates a new connection, which can end up at a different worker. This can result in a loss of the virtual kernel, since it lives on the worker that was first connected to. The Solara app will then initiate a fresh start, or simply fail when ipypopout is used. To prevent this scenario, a sticky session configuration is recommended, ensuring consistent client-worker connections. A load balancer, such as [nginx](https://www.nginx.com/), can be used to achieve this. Note that using multiple workers (e.g. by using gunicorn) cannot work since a connection will be made to a different worker each time.
 
+Sticky sessions remain the routing fast path, but they cannot help when the original worker is *gone* — a crash, an autoscaler scale-in, spot reclamation, or a rolling deploy whose sessions outlive the drain window. For those cases you can opt selected reactive variables into a shared backend (Redis), so a fresh worker restores them and the client re-mounts without the refresh dialog. See [State persistence and failover recovery](/documentation/advanced/understanding/state-persistence) for the application-side API and recovery model, and [Scaling out with state persistence](/documentation/getting_started/deploying/state-persistence) for the Redis and operations setup.
+
 If you have questions about setting this up, or require assistance, please [contact us](https://solara.dev/docs/contact).
 
 ## Sessions

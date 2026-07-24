@@ -174,13 +174,17 @@ async def app_loop(
                 t1 = time.time()
                 # we don't want to have the kernel closed while we are processing a message
                 # therefore we use this mutex that is also used in the context.close method
+                shutdown = False
                 with context.lock:
                     if context.closed_event.is_set():
                         return
                     if not process_kernel_messages(kernel, msg):
-                        # if we shut down the kernel, we do not keep the page session alive
-                        context.close()
-                        return
+                        shutdown = True
+                if shutdown:
+                    # if we shut down the kernel, we do not keep the page session alive. close()
+                    # OUTSIDE context.lock: its persistence teardown does backend I/O (§5.3)
+                    context.close()
+                    return
                 t2 = time.time()
                 if settings.main.timing:
                     widgets_ids_after = set(patch.widgets)
@@ -242,7 +246,10 @@ def process_kernel_messages(kernel: Kernel, msg: Dict) -> bool:
         return True
     elif msg_type in ["comm_info_request"]:
         content = msg["content"]
-        target_name = msg.get("target_name", None)
+        # target_name lives in the message CONTENT (Jupyter protocol); reading it from the
+        # top-level msg made the filter always None, so the reply leaked non-widget comms
+        # (solara.control) to the widget manager, which then request_state's them.
+        target_name = content.get("target_name", None)
 
         comms = {
             k: dict(target_name=v.target_name)
@@ -360,8 +367,28 @@ def read_root(
                 code = f'<script src="{url}"></script>'
         return Markup(code)
 
+    module_urls = []
+    try:
+        import ipyvue
+
+        if hasattr(ipyvue, "define_module"):
+            from solara.server import esm_vue
+
+            module_urls += esm_vue.get_module_urls()
+    except ModuleNotFoundError:
+        pass
+    try:
+        import ipyreact  # noqa: F401
+
+        from solara.server import esm
+
+        module_urls += esm.get_module_urls()
+    except ModuleNotFoundError:
+        pass
+
     resources = {
         "theme": "light",
+        "module_urls": module_urls,
         "nbextensions": nbextensions,
         "nbextensions_hashes": nbextensions_hashes,
         "include_css": include_css,
@@ -371,7 +398,7 @@ def read_root(
     pre_rendered_html = ""
     pre_rendered_css = ""
     pre_rendered_metas = ""
-    title = "Solara ☀️"
+    title = settings.theme.title
     if ssg_data is not None:
         pre_rendered_html = ssg_data["html"]
         pre_rendered_css = "\n".join(ssg_data["styles"])
@@ -392,6 +419,10 @@ def read_root(
         "path": path,
         "root_path": root_path,
         "jupyter_root_path": jupyter_root_path,
+        "force_refresh": settings.theme.force_refresh,
+        # opaque asset hash baked into the page; the client compares it against the app-status
+        # reply on reconnect to decide soft-remount vs hard-refresh (design §6.1)
+        "client_version": app.client_version(),
         "resources": resources,
         "theme": settings.theme.dict(),
         "production": settings.main.mode == "production",
@@ -422,6 +453,58 @@ def find_prefixed_directory(path):
 
 
 @solara.memoize(storage=cache_memory)
+def public_directories() -> List[Path]:
+    from . import app as appmod
+
+    return [app.directory.parent / "public" for app in appmod.apps.values()]
+
+
+_public_hash_cache: Dict[str, Tuple[Tuple[float, int], str]] = {}
+
+
+def public_url_content_hash(filename: str) -> Optional[str]:
+    """Content hash of a file served at /static/public/<filename>, or None.
+
+    Memoized on (mtime, size), so rebuilt bundles get a fresh hash.
+    """
+    for directory in public_directories():
+        path = (directory / filename).resolve()
+        if not str(path).startswith(str(directory.resolve())):
+            return None
+        if path.exists():
+            stat = path.stat()
+            key = str(path)
+            cached = _public_hash_cache.get(key)
+            if cached and cached[0] == (stat.st_mtime, stat.st_size):
+                return cached[1]
+            if sys.version_info[:2] < (3, 9):
+                h = hashlib.new("md5")
+            else:
+                h = hashlib.new("md5", usedforsecurity=False)  # type: ignore
+            h.update(path.read_bytes())
+            digest = h.hexdigest()[:12]
+            _public_hash_cache[key] = ((stat.st_mtime, stat.st_size), digest)
+            return digest
+    return None
+
+
+_PUBLIC_PREFIX = "/static/public/"
+
+
+def versioned_url(url: str) -> str:
+    """Append ?v=<content-hash> to urls solara serves itself.
+
+    The same url is used for the modulepreload hint in the page and the
+    Module widget, so the preload always hits the cache; StaticPublic sends
+    long-lived cache headers when the hash matches (see starlette.py).
+    Urls with an existing query string and external urls pass through.
+    """
+    if not url.startswith(_PUBLIC_PREFIX) or "?" in url:
+        return url
+    digest = public_url_content_hash(url[len(_PUBLIC_PREFIX) :])
+    return f"{url}?v={digest}" if digest else url
+
+
 def get_nbextensions_directories() -> List[Path]:
     from jupyter_core.paths import jupyter_path
 
