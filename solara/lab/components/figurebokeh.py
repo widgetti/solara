@@ -84,6 +84,15 @@ def FigureBokeh(
     * dependencies: List of dependencies to watch for changes, if None, will rerender when `fig` is changed.
     * light_theme: The name or `bokeh.themes.Theme` object to use for light mode. Defaults to `"light_minimal"`.
     * dark_theme: The name or `bokeh.themes.Theme` object to use for dark mode. Defaults to `"dark_minimal"`.
+
+    ## Pitfalls
+    - Bokeh does not support an axis type change, so changing axes via high-level interface `x_axis_type`, etc doesnt work.
+        - log workaround: update `x_scale` and/or `y_scale` of figure via a `use_effect`
+        - categorical workaround: scale/map data server-side + update tickers directly, see the scatter-bokeh.py example
+    - JS-side selection events on a `Tool` will fail to link to attributes of any `bokeh.model` if it is regenerated with each render.
+        - Occurs on `bokeh.model.tools` instances with a callback like `CustomJS(args=dict(object=object))`, such as `object.selected.indices` or similar from a `ColumnDataSource` upon a selection.
+        - Workaround: `use_memo` models with callbacks to exclude from regeneration, then use `use_effect` or similar for attribute updates.
+
     """
     # state variables
     loaded = solara.use_reactive(False)
