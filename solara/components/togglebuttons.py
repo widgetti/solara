@@ -119,7 +119,12 @@ def ToggleButtonsSingle(
     # not allowed to be passed to use_reactive. We also do not allow this by using our overloads, but this information seems lost at this point by
     # the typechecker
     reactive_value = solara.use_reactive(value, on_value)  # type: ignore
-    children = [solara.Button(label=str(value)) for value in values] + children
+    if IPYVUETIFY_V3:
+        # vuetify 3 matches group items by value; a button without one falls back
+        # to its index, so the model value would never select anything
+        children = [solara.Button(label=str(value), value=value) for value in values] + children
+    else:
+        children = [solara.Button(label=str(value)) for value in values] + children
     values = values + [_get_button_value(button) for button in children]  # type: ignore
     # When mandatory = True, index should not be None, but we are letting the front-end take care of setting index to 0 because of a bug
     # (see https://github.com/widgetti/solara/issues/282)
@@ -206,7 +211,11 @@ def ToggleButtonsMultiple(
     style_flat = solara.util._flatten_style(style)
     # See comment regarding typing issue in ToggleButtonsSingle
     reactive_value = solara.use_reactive(value, on_value)  # type: ignore
-    children = [solara.Button(label=str(value)) for value in values] + children
+    if IPYVUETIFY_V3:
+        # see ToggleButtonsSingle: vuetify 3 selects group items by value
+        children = [solara.Button(label=str(value), value=value) for value in values] + children
+    else:
+        children = [solara.Button(label=str(value)) for value in values] + children
     allvalues = values + [_get_button_value(button) for button in children]
     if IPYVUETIFY_V3:
         toggle = rv.BtnToggle(

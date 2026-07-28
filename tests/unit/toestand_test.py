@@ -17,6 +17,7 @@ from typing_extensions import TypedDict
 import solara
 import solara.toestand
 import solara as sol
+from solara.util import IPYVUETIFY_V3
 import solara.lab
 import solara.toestand as toestand
 import solara.server.kernel_context
@@ -1120,11 +1121,11 @@ def test_simplest():
 
     box, rc = react.render(Test(), handle_error=False)
     assert rc._find(v.Alert).widget.children[0] == "Using theme light"
-    assert rc._find(v.BtnToggle).widget.v_model == 1
+    assert rc._find(v.BtnToggle).widget.v_model == ("light" if IPYVUETIFY_V3 else 1)
     theme_accessor.set("dark")
     assert rc._find(v.Alert).widget.children[0] == "Using theme dark"
-    assert rc._find(v.BtnToggle).widget.v_model == 0
-    rc._find(v.BtnToggle).widget.v_model = 1
+    assert rc._find(v.BtnToggle).widget.v_model == ("dark" if IPYVUETIFY_V3 else 0)
+    rc._find(v.BtnToggle).widget.v_model = "light" if IPYVUETIFY_V3 else 1
     assert rc._find(v.Alert).widget.children[0] == "Using theme light"
     renders_before = renders
     settings.update(bears=3)
