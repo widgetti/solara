@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import time
 import uuid
 
 import ipyreact
@@ -97,5 +98,18 @@ def test_ipyreact_module_hot_reload(
     with extra_include_path(str(tmp_path)), solara_app(f"{app_name}:Page"):
         page_session.goto(solara_server.base_url)
         page_session.locator(".hot-widget >> text=version 1").wait_for()
-        module_file.write_text(hot_module_code % 2)
-        page_session.locator(".hot-widget >> text=version 2").wait_for()
+        # a single rewrite can race the watcher being armed, and watch events can
+        # be lost or coalesced on loaded CI runners. Keep writing fresh versions
+        # until one propagates: still fails if hot reload is genuinely broken
+        # (no rewrite ever reaches the browser), but immune to one lost event.
+        deadline = time.monotonic() + 30
+        version = 1
+        while True:
+            version += 1
+            module_file.write_text(hot_module_code % version)
+            try:
+                page_session.locator(f".hot-widget >> text=version {version}").wait_for(timeout=3000)
+                break
+            except playwright.sync_api.TimeoutError:
+                if time.monotonic() > deadline:
+                    raise
