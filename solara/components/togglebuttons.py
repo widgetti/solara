@@ -21,6 +21,31 @@ def _get_button_value(button: reacton.core.Element):
     return value
 
 
+def _get_real_children(element: reacton.core.Element) -> List[reacton.core.Element]:
+    # Some elements, like menus and tooltips have a v_slots attribute that contains the children
+    if "v_slots" in element.kwargs and element.kwargs["v_slots"]:
+        children = []
+        for slot in element.kwargs["v_slots"]:
+            if slot["name"] == "activator":
+                children.extend(slot["children"])
+        return children
+    else:
+        return element.kwargs.get(element.child_prop_name, [])
+
+
+def _get_child_values(children: List[reacton.core.Element]):
+    values = []
+    for child in children:
+        child_widget = solara.get_widget(child)
+        if isinstance(child_widget, v.Btn):
+            values.append(_get_button_value(child))
+        else:
+            nested_children = _get_real_children(child)
+            if len(nested_children) > 0:
+                values.extend(_get_child_values(nested_children))
+    return values
+
+
 @overload
 @solara.value_component(None)
 def ToggleButtonsSingle(
@@ -120,18 +145,25 @@ def ToggleButtonsSingle(
     # the typechecker
     reactive_value = solara.use_reactive(value, on_value)  # type: ignore
     children = [solara.Button(label=str(value)) for value in values] + children
-    values = values + [_get_button_value(button) for button in children]  # type: ignore
+    all_values: solara.Reactive[List[T]] = solara.use_reactive([])
     # When mandatory = True, index should not be None, but we are letting the front-end take care of setting index to 0 because of a bug
     # (see https://github.com/widgetti/solara/issues/282)
     # TODO: set index to 0 on python side (after #282 is resolved)
-    index, set_index = solara.use_state_or_update(values.index(reactive_value.value) if reactive_value.value in values else None, key="index")
+    index, set_index = solara.use_state_or_update(
+        all_values.value.index(reactive_value.value) if reactive_value.value in all_values.value else None, key="index"
+    )
+
+    def update_values():
+        all_values.set(_get_child_values(children))
+
+    solara.use_effect(update_values, children)
 
     def on_index(index):
         set_index(index)
         if mandatory:
-            value = values[index]
+            value = all_values.value[index]
         else:
-            value = values[index] if index is not None else None
+            value = all_values.value[index] if index is not None else None
         reactive_value.set(value)
 
     return cast(
@@ -184,12 +216,19 @@ def ToggleButtonsMultiple(
     # See comment regarding typing issue in ToggleButtonsSingle
     reactive_value = solara.use_reactive(value, on_value)  # type: ignore
     children = [solara.Button(label=str(value)) for value in values] + children
-    allvalues = values + [_get_button_value(button) for button in children]
-    indices, set_indices = solara.use_state_or_update([allvalues.index(k) for k in reactive_value.value], key="index")
+    allvalues: solara.Reactive[List[T]] = solara.use_reactive([])
+    indices, set_indices = solara.use_state_or_update(cast(List[int], []), key="index")
+
+    def update_values():
+        values = _get_child_values(children)
+        allvalues.set(values)
+        set_indices([values.index(item) for item in reactive_value.value])
+
+    solara.use_effect(update_values, children)
 
     def on_indices(indices):
         set_indices(indices)
-        value = [allvalues[k] for k in indices]
+        value = [allvalues.value[k] for k in indices]
         reactive_value.set(value)
 
     return cast(
