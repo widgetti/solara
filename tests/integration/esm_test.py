@@ -97,7 +97,7 @@ def test_ipyreact_module_hot_reload(
     (tmp_path / f"{app_name}.py").write_text(hot_app_code)
     with extra_include_path(str(tmp_path)), solara_app(f"{app_name}:Page"):
         page_session.goto(solara_server.base_url)
-        page_session.locator(".hot-widget >> text=version 1").wait_for()
+        page_session.locator('.hot-widget >> text="version 1"').wait_for()
         # a single rewrite can race the watcher being armed, and watch events can
         # be lost or coalesced on loaded CI runners. Keep writing fresh versions
         # until one propagates: still fails if hot reload is genuinely broken
@@ -108,7 +108,10 @@ def test_ipyreact_module_hot_reload(
             version += 1
             module_file.write_text(hot_module_code % version)
             try:
-                page_session.locator(f".hot-widget >> text=version {version}").wait_for(timeout=3000)
+                # exact match (text= is substring: "version 2" would also match
+                # "version 20"); generous window so a slow - not lost - reload
+                # on a loaded runner still counts before we move the target
+                page_session.locator(f'.hot-widget >> text="version {version}"').wait_for(timeout=6000)
                 break
             except playwright.sync_api.TimeoutError:
                 if time.monotonic() > deadline:
