@@ -711,9 +711,51 @@ jobs:
           path: ./**/${{ env.LOCK_FILE_LOCATION }}
           include-hidden-files: true
 
+  unit-test-vue3:
+    needs: [build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - uses: actions/download-artifact@v6
+        with:
+          name: solara-builds
+
+      - name: Install
+        run: |
+          command -v uv >/dev/null || pip install uv
+          uv pip install --system `echo dist/*.whl`[all] \
+            `echo packages/solara-server/dist/*.whl`[all] \
+            `echo packages/pytest-ipywidgets/dist/*.whl` \
+            `echo packages/solara-meta/dist/*.whl`[dev,documentation] \
+            `echo packages/solara-enterprise/dist/*.whl`[ssg,auth] \
+            diskcache redis "ipywidgets~=8.0"
+          # ipyvuetify 3 is prerelease only, so it needs an explicit specifier
+          uv pip install --system --prerelease=allow "ipyvuetify>=3.0.0a1" "ipyvue>=3.0.0a1"
+          python -c "import ipyvuetify, ipyvue; print('ipyvuetify', ipyvuetify.__version__, 'ipyvue', ipyvue.__version__)"
+          python -c "from solara.util import IPYVUETIFY_V3; assert IPYVUETIFY_V3, 'expected ipyvuetify 3'"
+
+      - name: Start Redis
+        uses: shogo82148/actions-setup-redis@v1.51.0
+
+      - name: Run unit tests
+        run: |
+          # otherwise Python's inspect cannot find the source code
+          mv solara _solara
+          # smaller scope than the ipyvuetify 1 matrix on purpose: no doctests and
+          # no solara 2.0 mode yet, those can be added once this stays green
+          pytest tests/unit --timeout=60 --session-timeout=600 -v
+
   update-ci-package-locks:
     needs:
-      [build, code-quality, integration-test, integration-test-vue3, unit-test]
+      [build, code-quality, integration-test, integration-test-vue3, unit-test, unit-test-vue3]
     runs-on: ubuntu-latest
 
     steps:
@@ -755,6 +797,7 @@ jobs:
         integration-test,
         integration-test-vue3,
         unit-test,
+        unit-test-vue3,
       ]
     runs-on: ubuntu-latest
     permissions:
