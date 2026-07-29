@@ -581,12 +581,12 @@ jobs:
         # TODO: we used to also run the (cheap) unittests, to get better coverage report, but that gives errors
         # it seems on CI that the default playwright timeout is not (always?) respected, also, if the --timeout argument
         # is shorter than the timeout of playwright, we get no good error message, summary: always keep above 30!
-        # grown one file at a time: everything listed here must stay green on
-        # ipyvuetify 3, the rest of tests/integration is still vuetify 2 only.
-        # not included yet: input_date_test (the vuetify 3 date picker ignores
-        # first_day_of_week/style_ and maps date_picker_type to view_mode) and
-        # router_test::test_docs_basics
-        run: pytest tests/integration/widget_test.py tests/integration/error_test.py tests/integration/menu_test.py tests/integration/router_test.py --deselect tests/integration/router_test.py::test_docs_basics --timeout=360 --video=retain-on-failure --output=test-results -vv -s --log-cli-level=warning --retries 3
+        # the whole suite runs on ipyvuetify 3, minus the tests that still fail
+        # there: the date picker ignores first_day_of_week/style_ and maps
+        # date_picker_type to view_mode, the api docs pages (file browser,
+        # style, cross filter, dataframe), the docs router/route listings and
+        # the reconnect dialog. Shrink this list, do not grow it.
+        run: pytest tests/integration -n 2 --deselect tests/integration/api_test.py::test_api_file_browser --deselect tests/integration/api_test.py::test_api_style --deselect tests/integration/api_test.py::test_api_cross_filter_select --deselect tests/integration/api_test.py::test_dataframe --deselect tests/integration/input_date_test.py::test_input_date_single --deselect tests/integration/input_date_test.py::test_input_date_range --deselect tests/integration/reconnect_test.py::test_reconnect_fail --deselect tests/integration/router_test.py::test_docs_basics --deselect tests/integration/server_test.py::test_docs_routes --timeout=360 --video=retain-on-failure --output=test-results -vv -s --log-cli-level=warning --retries 3
 
       - name: Upload Test artifacts
         if: always()
