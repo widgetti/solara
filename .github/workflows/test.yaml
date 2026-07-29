@@ -545,7 +545,7 @@ jobs:
             `echo packages/solara-meta/dist/*.whl`[dev,documentation] \
             `echo packages/solara-enterprise/dist/*.whl`[ssg,auth] \
             "jupyterlab<4" "playwright==1.50.0" "pydantic<2" "ipywidgets~=${{ matrix.ipywidgets }}" \
-            pytest-retry jupyter_core jupyter-packaging
+            pytest-retry pytest-xdist jupyter_core jupyter-packaging
           # separate command: --pre should only apply to ipyvue/ipyvuetify
           pip install --pre "ipyvue>=3.0.0a1" "ipyvuetify>=3.0.0a1"
           pip freeze --exclude solara --exclude solara-ui --exclude solara-server --exclude pytest-ipywidgets --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
@@ -556,12 +556,14 @@ jobs:
         if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
         run: |
           command -v uv >/dev/null || pip install uv
+          # pytest-xdist explicitly: the lock predates it
           uv pip install --system -r ${{ env.LOCK_FILE_LOCATION }} \
             `echo dist/*.whl`[all] \
             `echo packages/solara-server/dist/*.whl`[all] \
             `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets${{ matrix.ipywidgets_major }}] \
             `echo packages/solara-meta/dist/*.whl`[dev,documentation] \
-            `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
+            `echo packages/solara-enterprise/dist/*.whl`[ssg,auth] \
+            pytest-xdist
 
       - name: Install and verify ipyvuetify 3
         run: |
