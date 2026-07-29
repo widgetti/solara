@@ -67,7 +67,9 @@
             absolute></v-progress-linear>
         <v-alert v-if="needsRefresh || cancelAutoRefresh" type="warning" :border="vue3 ? 'start' : 'left'"
             style="position: absolute; right: 0px; z-index: 100; left: 0px;">
-            <span v-if="needsRefresh">Could not restore session. Please refresh the page.</span>
+            <!-- vuetify 2 shows the same message in the refresh dialog below, so keep
+                 the generic text there to avoid saying it twice -->
+            <span v-if="vue3 && needsRefresh">Could not restore session. Please refresh the page.</span>
             <span v-else>App is disconnected, and may not function properly. Please refresh the page.</span>
         </v-alert>
         {% endraw -%}
