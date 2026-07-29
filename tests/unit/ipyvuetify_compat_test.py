@@ -111,7 +111,10 @@ def test_datatable_uses_version_specific_template():
 
 def test_datatable_default_options_are_renderable():
     widget = DataTableWidget()
-    assert widget.options == {"page": 1, "itemsPerPage": 20, "sortBy": []}
+    # vuetify 3 needs a shaped object to render, vuetify 2 keeps its own
+    # defaults (and accepted None before, so it still has to)
+    assert widget.options == ({"page": 1, "itemsPerPage": 20, "sortBy": []} if IPYVUETIFY_V3 else None)
+    assert DataTableWidget(options=None).options is None
 
 
 def test_gridlayout_uses_version_specific_template():

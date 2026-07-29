@@ -44,7 +44,8 @@ class DataTableWidget(v.VuetifyTemplate):
     items = traitlets.Any().tag(sync=True)  # the data, a list of dict
     headers = traitlets.Any().tag(sync=True)
     headers_selections = traitlets.Any().tag(sync=True)
-    options = traitlets.Dict(default_value={"page": 1, "itemsPerPage": 20, "sortBy": []}).tag(sync=True)
+    # vuetify 3 needs a shaped object, vuetify 2 keeps its own defaults from None
+    options = traitlets.Any(default_value={"page": 1, "itemsPerPage": 20, "sortBy": []} if IPYVUETIFY_V3 else None).tag(sync=True)
     items_per_page = traitlets.CInt(11).tag(sync=True)
     selections = traitlets.Any([]).tag(sync=True)
     selection_colors = traitlets.Any([]).tag(sync=True)

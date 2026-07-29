@@ -220,7 +220,8 @@ def PivotTableCard(
             pass
         with rv.CardText():
             if IPYVUETIFY_V3:
-                settings_button = rv.Btn(v_on="x.on", icon=True, position="absolute", style_="right: 10px; top: 10px")
+                # the ipyvuetify 3 wrapper signature misses the inherited v_bind trait
+                settings_button = rv.Btn(v_bind="x.props", icon=True, position="absolute", style_="right: 10px; top: 10px")  # type: ignore[call-arg]
             else:
                 settings_button = rv.Btn(v_on="x.on", icon=True, absolute=True, style_="right: 10px; top: 10px")
             with settings_button as btn:
