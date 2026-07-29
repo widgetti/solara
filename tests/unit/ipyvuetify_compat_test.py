@@ -141,9 +141,12 @@ def test_server_connection_overlay_uses_boolean_model_value():
     assert "(connectionStatus != 'connected') && wasConnected" in source
 
 
-def test_server_reconnect_alert_is_vue3_only():
+def test_server_reconnect_alert_shows_on_both_vuetify_majors():
+    # the alert is the only disconnect indicator left once the vuetify 2 dialog
+    # is dismissed (cancelAutoRefresh), so it must not be vue3 only
     source = (Path(solara.__file__).parent / "server/templates/solara.html.j2").read_text()
-    assert '<v-alert v-if="vue3 && (needsRefresh || cancelAutoRefresh)"' in source
+    assert '<v-alert v-if="needsRefresh || cancelAutoRefresh"' in source
+    assert ":border=\"vue3 ? 'start' : 'left'\"" in source
 
 
 def test_server_normalizes_themes_for_each_vuetify_major():
