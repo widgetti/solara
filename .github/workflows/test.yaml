@@ -581,7 +581,9 @@ jobs:
         # TODO: we used to also run the (cheap) unittests, to get better coverage report, but that gives errors
         # it seems on CI that the default playwright timeout is not (always?) respected, also, if the --timeout argument
         # is shorter than the timeout of playwright, we get no good error message, summary: always keep above 30!
-        run: pytest tests/integration/widget_test.py --timeout=360 --video=retain-on-failure --output=test-results -vv -s --log-cli-level=warning --retries 3
+        # grown one file at a time: everything listed here must stay green on
+        # ipyvuetify 3, the rest of tests/integration is still vuetify 2 only
+        run: pytest tests/integration/widget_test.py tests/integration/router_test.py tests/integration/error_test.py tests/integration/menu_test.py tests/integration/input_date_test.py --timeout=360 --video=retain-on-failure --output=test-results -vv -s --log-cli-level=warning --retries 3
 
       - name: Upload Test artifacts
         if: always()
