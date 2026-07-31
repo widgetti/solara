@@ -585,13 +585,10 @@ jobs:
         # is shorter than the timeout of playwright, we get no good error message, summary: always keep above 30!
         # the whole suite runs on ipyvuetify 3, minus the tests that still fail
         # there: the date picker ignores first_day_of_week/style_ and maps
-        # date_picker_type to view_mode, the api docs pages (file browser,
-        # style, cross filter, dataframe), the docs router/route listings and
-        # the reconnect dialog. The auth0 login flow and ipyreact module hot
-        # reload also only fail here, both pass on ipyvuetify 1 (hot reload
-        # with ipyreact 0.6.1, so it is not the stale module bug).
-        # Shrink this list, do not grow it.
-        run: pytest tests/integration -n 2 --deselect tests/integration/api_test.py::test_api_file_browser --deselect tests/integration/api_test.py::test_api_style --deselect tests/integration/api_test.py::test_api_cross_filter_select --deselect tests/integration/api_test.py::test_dataframe --deselect tests/integration/input_date_test.py::test_input_date_single --deselect tests/integration/input_date_test.py::test_input_date_range --deselect tests/integration/reconnect_test.py::test_reconnect_fail --deselect tests/integration/router_test.py::test_docs_basics --deselect tests/integration/server_test.py::test_docs_routes --deselect tests/integration/enterprise/oauth_test.py::test_oauth_from_app_auth0 --deselect tests/integration/esm_test.py::test_ipyreact_module_hot_reload --timeout=360 --video=retain-on-failure --output=test-results -vv -s --log-cli-level=warning --retries 3
+        # date_picker_type to view_mode, the reconnect dialog, the auth0 login
+        # flow and ipyreact module hot reload (with ipyreact 0.6.1, so not the
+        # stale module bug). Shrink this list, do not grow it.
+        run: pytest tests/integration -n 2 --deselect tests/integration/input_date_test.py::test_input_date_single --deselect tests/integration/input_date_test.py::test_input_date_range --deselect tests/integration/reconnect_test.py::test_reconnect_fail --deselect tests/integration/enterprise/oauth_test.py::test_oauth_from_app_auth0 --deselect tests/integration/esm_test.py::test_ipyreact_module_hot_reload --timeout=360 --video=retain-on-failure --output=test-results -vv -s --log-cli-level=warning --retries 3
 
       - name: Upload Test artifacts
         if: always()

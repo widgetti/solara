@@ -17,15 +17,21 @@ if IPYVUETIFY_V3:
                 all_routes = route.children
                 break
 
+        # vuetify 3 registers list groups and list items in one id namespace, and
+        # a section's overview child has the same path as its group, so groups
+        # get their own prefix
+        def group_id(path: str) -> str:
+            return "group:" + path
+
         opened = []
         for route in all_routes:
             path_top_level = "/documentation/" + route.path
             if router.path.startswith(path_top_level):
-                opened.append(path_top_level)
+                opened.append(group_id(path_top_level))
                 for item in route.children:
                     path_sub = "/documentation/" + route.path + "/" + item.path
                     if router.path.startswith(path_sub):
-                        opened.append(path_sub)
+                        opened.append(group_id(path_sub))
 
         with solara.v.List(
             class_="docs-sidebar-list",
@@ -51,7 +57,7 @@ if IPYVUETIFY_V3:
                     # v_bind is inherited from the Vue widget base but missing from the generated wrapper signature.
                     activator = solara.v.ListItem(title=route.label, style_="padding: 0 20px;", v_bind="x.props")  # type: ignore[call-arg]
                     with solara.v.ListGroup(
-                        value=path_top_level,
+                        value=group_id(path_top_level),
                         v_slots=[{"name": "activator", "variable": "x", "children": activator}],
                     ):
                         for item in route.children:
@@ -68,7 +74,7 @@ if IPYVUETIFY_V3:
                                     v_bind="x.props",
                                 )
                                 with solara.v.ListGroup(
-                                    value=path_sub,
+                                    value=group_id(path_sub),
                                     subgroup=True,
                                     v_slots=[{"name": "activator", "variable": "x", "children": activator}],
                                 ):
