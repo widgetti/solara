@@ -13,6 +13,21 @@ def menu_of(page: Page):
     return page.locator(".v-overlay__content") if IPYVUETIFY_V3 else page.get_by_role("menu")
 
 
+def dismiss_menu(page: Page):
+    # the vuetify 3 picker is larger and covers the point the vuetify 2 test
+    # clicks, and its menu has no scrim to click through, so close it with the
+    # keyboard there
+    if IPYVUETIFY_V3:
+        page.keyboard.press("Escape")
+    else:
+        page.mouse.click(400, 400)
+
+
+def label_of(page: Page):
+    # vuetify 3 renders a floating label and an aria-hidden one
+    return page.locator(".test-class label").first
+
+
 def day_button(page: Page, day: str):
     # vuetify 3 labels the day buttons with the full date ("Wednesday, January
     # 1, 2024"), so the accessible name is never just the day number
@@ -62,7 +77,7 @@ def test_input_date_single(solara_test, page_session: Page):
     input.click()
     page_session.wait_for_timeout(350)
     expect(menu_of(page_session)).to_be_visible()
-    page_session.mouse.click(400, 400)
+    dismiss_menu(page_session)
     page_session.wait_for_timeout(350)
     expect(menu_of(page_session)).not_to_be_visible()
 
@@ -100,15 +115,15 @@ def test_input_date_range(solara_test, page_session: Page):
     today_button = day_button(page_session, date.strftime("%d").lstrip("0"))
     today_button.click()
     page_session.wait_for_timeout(350)
-    expect(page_session.locator(".test-class label")).to_contain_text("label (Please select two dates)")
+    expect(label_of(page_session)).to_contain_text("label (Please select two dates)")
     expect(menu_of(page_session)).to_be_visible()
     tomorrow_button = day_button(page_session, date2.strftime("%d").lstrip("0"))
     tomorrow_button.click()
     page_session.wait_for_timeout(350)
-    expect(page_session.locator(".test-class label")).not_to_contain_text("(Please select two dates)")
+    expect(label_of(page_session)).not_to_contain_text("(Please select two dates)")
     expect(menu_of(page_session)).not_to_be_visible()
     input.click()
-    page_session.mouse.click(400, 400)
+    dismiss_menu(page_session)
     page_session.wait_for_timeout(350)
     expect(menu_of(page_session)).not_to_be_visible()
 
