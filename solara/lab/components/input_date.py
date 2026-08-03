@@ -209,8 +209,11 @@ def InputDate(
             solara.v.DatePicker(
                 v_model=date_standard_str,
                 on_v_model=set_date_cast,
+                first_day_of_week=first_day_of_the_week,
+                style_="width: 100%;",
                 max=max_date,  # type: ignore
                 min=min_date,  # type: ignore
+                # vuetify 3 dropped type=, view_mode only picks the view to show
                 view_mode="month" if date_picker_type == "month" else None,
                 children=children,
             )
@@ -422,8 +425,11 @@ def InputDateRange(
                 v_model=date_standard_strings,
                 on_v_model=set_dates_cast,
                 multiple=True,
+                first_day_of_week=first_day_of_the_week,
+                style_="width: 100%;",
                 max=max_date,  # type: ignore
                 min=min_date,  # type: ignore
+                # vuetify 3 dropped type=, view_mode only picks the view to show
                 view_mode="month" if date_picker_type == "month" else None,
                 children=children,
             )
