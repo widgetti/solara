@@ -1,4 +1,5 @@
 import datetime as dt
+import re
 from typing import List
 from unittest.mock import MagicMock
 
@@ -10,6 +11,14 @@ from solara.util import IPYVUETIFY_V3
 def menu_of(page: Page):
     # vuetify 3 does not put role=menu on the overlay content like vuetify 2 did
     return page.locator(".v-overlay__content") if IPYVUETIFY_V3 else page.get_by_role("menu")
+
+
+def day_button(page: Page, day: str):
+    # vuetify 3 labels the day buttons with the full date ("Wednesday, January
+    # 1, 2024"), so the accessible name is never just the day number
+    if IPYVUETIFY_V3:
+        return page.locator(".v-date-picker-month__day-btn").filter(has_text=re.compile(rf"^{day}$"))
+    return page.get_by_role("button", name=day, exact=True)
 
 
 date = dt.date(2018, 9, 1)
@@ -39,13 +48,13 @@ def test_input_date_single(solara_test, page_session: Page):
     input.click()
     page_session.wait_for_timeout(350)
     expect(menu_of(page_session)).to_be_visible()
-    today_button = page_session.get_by_role("button", name=date.strftime("%d").lstrip("0"), exact=True)
+    today_button = day_button(page_session, date.strftime("%d").lstrip("0"))
     # We click it, but it does not trigger a change, so we don't auto close
     # Do we want to change this behaviour, and still close it?
     today_button.click()
     page_session.wait_for_timeout(350)
     expect(menu_of(page_session)).to_be_visible()
-    tomorrow_button = page_session.get_by_role("button", name=date2.strftime("%d").lstrip("0"), exact=True)
+    tomorrow_button = day_button(page_session, date2.strftime("%d").lstrip("0"))
     tomorrow_button.click()
     page_session.wait_for_timeout(350)
     expect(menu_of(page_session)).not_to_be_visible()
@@ -88,12 +97,12 @@ def test_input_date_range(solara_test, page_session: Page):
     input.click()
     page_session.wait_for_timeout(350)
     expect(menu_of(page_session)).to_be_visible()
-    today_button = page_session.get_by_role("button", name=date.strftime("%d").lstrip("0"), exact=True)
+    today_button = day_button(page_session, date.strftime("%d").lstrip("0"))
     today_button.click()
     page_session.wait_for_timeout(350)
     expect(page_session.locator(".test-class label")).to_contain_text("label (Please select two dates)")
     expect(menu_of(page_session)).to_be_visible()
-    tomorrow_button = page_session.get_by_role("button", name=date2.strftime("%d").lstrip("0"), exact=True)
+    tomorrow_button = day_button(page_session, date2.strftime("%d").lstrip("0"))
     tomorrow_button.click()
     page_session.wait_for_timeout(350)
     expect(page_session.locator(".test-class label")).not_to_contain_text("(Please select two dates)")
