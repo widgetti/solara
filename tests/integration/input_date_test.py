@@ -24,8 +24,10 @@ def dismiss_menu(page: Page):
 
 
 def label_of(page: Page):
-    # vuetify 3 renders a floating label and an aria-hidden one
-    return page.locator(".test-class label").first
+    # vuetify 3 renders a floating label and an aria-hidden one; keep the strict
+    # locator on vuetify 2, where there is exactly one
+    label = page.locator(".test-class label")
+    return label.first if IPYVUETIFY_V3 else label
 
 
 def day_button(page: Page, day: str):

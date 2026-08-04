@@ -4,9 +4,11 @@
 
    * Feature: Support ipyvuetify 3 / Vuetify 3 next to ipyvuetify 1, selected by the installed ipyvuetify version (`solara.util.IPYVUETIFY_V3`). ipyvuetify 3 is a prerelease, so `pip install solara` keeps installing ipyvuetify 1 and that code path is unchanged. [84b45547](https://github.com/widgetti/solara/commit/84b45547)
    * Feature: Run the unit tests and the integration tests on ipyvuetify 3 in CI. [767c539b](https://github.com/widgetti/solara/commit/767c539b)
-   * Bug Fix: The disconnect alert disappeared on Vuetify 2 once the refresh dialog was dismissed. [730c4dcd](https://github.com/widgetti/solara/commit/730c4dcd)
-   * Bug Fix: `DataTableWidget.options` no longer rejects `None`, and Vuetify 2 keeps its own page size instead of 20. [d5be79df](https://github.com/widgetti/solara/commit/d5be79df)
+   * Bug Fix: Keep the configured theme colors in per-kernel themes. [f819327a](https://github.com/widgetti/solara/commit/f819327a)
+   * Bug Fix: `solara.Style` could raise while cleaning up its stylesheet; it now finds the stylesheet by a marker instead of an element id, at the cost of scanning the document's style tags on unmount. [efea3911](https://github.com/widgetti/solara/commit/efea3911)
+   * Bug Fix: `DataTableWidget.options` accepts `None` again, and Vuetify 2 keeps its own page size. [d5be79df](https://github.com/widgetti/solara/commit/d5be79df)
    * Bug Fix: The documentation sidebar gave list groups and list items the same id, which Vuetify 3 rejects. [5f900425](https://github.com/widgetti/solara/commit/5f900425)
+   * Behavior: The warning alerts in the vaex `DataFrame` cards use `solara.Warning`, so they lose the `prominent` style and the explicit `mdi-alert` icon.
    * Behavior: Markdown conversion is memoized, so executable markdown re-runs only when its source or parser changes.
    * Behavior: KaTeX skips `solara-markdown-output` and `jupyter-widgets`, so math inside live markdown output and inside widgets is no longer typeset.
    * Behavior: `assets/theme.js` is loaded before `assets/custom.js` and its default has the nested Vuetify 3 shape (flat overrides keep working); a `custom.js` that assigns `vuetifyThemes` now wins.

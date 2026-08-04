@@ -461,7 +461,7 @@
         };
         const vue3 = Vue.version.startsWith('3');
         const vuetifyThemesV2 = Object.fromEntries(
-            Object.entries(vuetifyThemes).map(([name, theme]) => [name, theme.colors || theme])
+            Object.entries(vuetifyThemes || {}).map(([name, theme]) => [name, theme.colors || theme])
         );
         if(vue3) {
             var app = Vue.createApp(appComponent).use(vuetifyPlugin)

@@ -57,7 +57,7 @@ var jupyterWidgetMountPoint = {
 
 function widgetThemes() {
     return Object.fromEntries(
-        Object.entries(vuetifyThemes).map(([name, theme]) => [name, theme.colors || theme])
+        Object.entries(vuetifyThemes || {}).map(([name, theme]) => [name, theme.colors || theme])
     );
 }
 
