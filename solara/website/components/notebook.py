@@ -70,7 +70,9 @@ def execute_notebook(path: Path):
 def NotebookExecute(notebook_path: Path, show_last_expressions=False, auto_show_page=False):
     import IPython.core.pylabtools as pylabtools
 
-    shell = IPython.get_ipython().kernel.shell
+    ipython = IPython.get_ipython()
+    assert ipython is not None, "NotebookExecute needs to run in a kernel"
+    shell = ipython.kernel.shell  # type: ignore[attr-defined]
 
     # TODO: there is a change the cleanup will not be called
     pylabtools.select_figure_formats(shell, ["png"])
