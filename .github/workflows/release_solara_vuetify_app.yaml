@@ -24,7 +24,8 @@ jobs:
           node-version: 20
           registry-url: "https://registry.npmjs.org"
       - name: Update npm (need >=11.5.1 for OIDC / trusted publisher)
-        run: npm install -g npm@latest
+        # not npm@latest: npm 12 requires node >= 22.22, newer than this runner
+        run: npm install -g npm@^11
       - name: Build the JS packages
         run: |
           cd packages
