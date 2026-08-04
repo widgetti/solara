@@ -1,6 +1,6 @@
 # Solara Changelog
 
-## Unreleased
+## Version 1.61.0
 
    * Feature: Support ipyvuetify 3 / Vuetify 3 next to ipyvuetify 1, selected by the installed ipyvuetify version (`solara.util.IPYVUETIFY_V3`). ipyvuetify 3 is a prerelease, so `pip install solara` keeps installing ipyvuetify 1 and that code path is unchanged. [84b45547](https://github.com/widgetti/solara/commit/84b45547)
    * Feature: Run the unit tests and the integration tests on ipyvuetify 3 in CI. [767c539b](https://github.com/widgetti/solara/commit/767c539b)
