@@ -4,6 +4,8 @@ import solara
 import solara.lab
 from solara.alias import rv
 from solara.server import settings
+from solara.util import IPYVUETIFY_V3
+
 from .algolia import Algolia
 
 
@@ -25,9 +27,13 @@ def Header(
         #         "div",
         #         unsafe_innerHTML="<a href='https://github.com/widgetti/solara' target='_blank' >Star us on github 🤩</a>",
         #     )
-        with solara.v.AppBar(
-            tag="header", flat=True, clipped_left=True, style_="background-color: transparent; border-bottom: 1px solid var(--color-border-appbar);"
-        ):
+        if IPYVUETIFY_V3:
+            header = solara.v.Toolbar(tag="header", flat=True, style_="background-color: transparent; border-bottom: 1px solid var(--color-border-appbar);")
+        else:
+            header = solara.v.AppBar(
+                tag="header", flat=True, clipped_left=True, style_="background-color: transparent; border-bottom: 1px solid var(--color-border-appbar);"
+            )
+        with header:
             if route_current is not None and route_current.module is not None and hasattr(route_current.module, "Sidebar"):
                 with solara.Button(icon=True, class_="hidden-md-and-up", on_click=lambda: on_toggle_left_menu and on_toggle_left_menu()):
                     rv.Icon(children=["mdi-menu"])
@@ -68,7 +74,7 @@ def Header(
             with rv.Btn(icon=True, tag="a", class_="d-none d-md-flex", attributes={"href": "https://discord.solara.dev", "target": "_blank"}):
                 rv.Icon(children=["mdi-discord"])
 
-            with solara.v.Html(tag="div", class_="d-none d-md-flex"):
+            with solara.v.Html(tag="div", class_="header-theme-toggle d-none d-md-flex"):
                 solara.lab.ThemeToggle()
 
             # with solara.Button(icon=True, class_="hidden-md-and-up", on_click=lambda: on_toggle_right_menu and on_toggle_right_menu()):

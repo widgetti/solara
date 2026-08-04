@@ -15,6 +15,9 @@ module.exports = {
       window._solaraTitles[0].updateTitle();
     }
   },
+  unmounted() {
+    this.$options.destroyed.call(this);
+  },
   watch: {
     title() {
       this.updateTitle();

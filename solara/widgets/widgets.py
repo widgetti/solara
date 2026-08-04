@@ -5,6 +5,8 @@ import ipyvuetify as v
 import ipywidgets
 import traitlets
 
+from solara.util import IPYVUETIFY_V3
+
 __all__ = [
     "VegaLite",
     "Navigator",
@@ -45,7 +47,7 @@ class Navigator(v.VuetifyTemplate):
 
 
 class GridLayout(v.VuetifyTemplate):
-    template_file = os.path.join(os.path.dirname(__file__), "vue/gridlayout.vue")
+    template_file = os.path.join(os.path.dirname(__file__), "vue/gridlayout_v3.vue" if IPYVUETIFY_V3 else "vue/gridlayout.vue")
     gridlayout_loaded = traitlets.Bool(False).tag(sync=True)
     items = traitlets.Union([traitlets.List(), traitlets.Dict()], default_value=[]).tag(sync=True, **ipywidgets.widget_serialization)
     grid_layout = traitlets.List(default_value=cast(List[Dict], [])).tag(sync=True)

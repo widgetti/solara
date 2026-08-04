@@ -6,11 +6,13 @@
 from types import ModuleType
 from typing import Optional
 
-auth: Optional[ModuleType]
+auth: Optional[ModuleType] = None
 try:
-    from solara_enterprise import auth
+    from solara_enterprise import auth as enterprise_auth
+
+    auth = enterprise_auth
 except ImportError:
-    auth = None
+    pass
 from solara.website.components import NoPage
 from solara.website.utils import apidoc
 

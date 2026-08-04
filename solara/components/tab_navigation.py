@@ -1,5 +1,6 @@
 import solara
 from solara.alias import rv, rvue
+from solara.util import IPYVUETIFY_V3
 
 
 @solara.component
@@ -24,14 +25,20 @@ def TabNavigation(children=[], vertical=False, **kwargs):
 
     tab_index = all_routes.index(route_current) if route_current is not None else 0
 
-    with rv.Tabs(v_model=tab_index, vertical=vertical, **kwargs) as main:
+    if IPYVUETIFY_V3:
+        tabs = rv.Tabs(v_model=tab_index, direction="vertical" if vertical else None, **kwargs)
+    else:
+        tabs = rv.Tabs(v_model=tab_index, vertical=vertical, **kwargs)
+    with tabs as main:
         for i, route in enumerate(all_routes):
             path = solara.resolve_path(route)
             LinkTab(path, route.label or "No title")
         if route_current is None:
             return solara.Error("Page does not exist")
 
-        with rv.TabsItems(v_model=tab_index, children=children):
-            pass
+        if IPYVUETIFY_V3:
+            rv.Window(v_model=tab_index, children=children)
+        else:
+            rv.TabsItems(v_model=tab_index, children=children)
 
     return main

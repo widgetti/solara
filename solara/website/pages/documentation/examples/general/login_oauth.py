@@ -4,12 +4,15 @@ from typing import Optional
 
 import reacton.ipyvuetify as v
 
-auth: Optional[ModuleType]
+auth: Optional[ModuleType] = None
 try:
-    from solara_enterprise import auth
+    from solara_enterprise import auth as enterprise_auth
+
+    auth = enterprise_auth
 except ImportError:
-    auth = None
+    pass
 import solara as sl
+from solara.util import IPYVUETIFY_V3
 
 
 @sl.component
@@ -21,13 +24,22 @@ def UserCard():
         if user_info:
             # based on https://v2.vuetifyjs.com/en/components/cards/#props
             with v.Card(width="400px"):
-                with v.ListItem(three_line=True):
-                    with v.ListItemContent():
-                        sl.Div("Logged in", class_="text-overline mb-4")
-                        v.ListItemTitle(children=[user_info["email"]])
-                        v.ListItemSubtitle(children=["You are now logged in, log out via the app bar, or the button below"])
-                    with v.ListItemAvatar():
-                        auth.Avatar()
+                if IPYVUETIFY_V3:
+                    with v.ListItem(lines="three"):
+                        with sl.Column(gap="0"):
+                            sl.Div("Logged in", class_="text-overline mb-4")
+                            v.ListItemTitle(children=[user_info["email"]])
+                            v.ListItemSubtitle(children=["You are now logged in, log out via the app bar, or the button below"])
+                        with v.Avatar():
+                            auth.Avatar()
+                else:
+                    with v.ListItem(three_line=True):
+                        with v.ListItemContent():
+                            sl.Div("Logged in", class_="text-overline mb-4")
+                            v.ListItemTitle(children=[user_info["email"]])
+                            v.ListItemSubtitle(children=["You are now logged in, log out via the app bar, or the button below"])
+                        with v.ListItemAvatar():
+                            auth.Avatar()
 
                 with v.CardActions():
                     sl.Button("logout", icon_name="mdi-logout", href=auth.get_logout_url(), text=True)

@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import solara
+from solara.util import IPYVUETIFY_V3
 from solara.website.components.sidebar import Sidebar
 
 _title = "Documentation"
@@ -11,7 +12,7 @@ Sidebar = Sidebar
 route_order = ["/", "getting_started", "examples", "components", "api", "advanced", "faq"]
 
 
-@solara.component_vue(str(HERE.parent.parent / "components" / "algolia_api.vue"))
+@solara.component_vue(str(HERE.parent.parent / "components" / ("algolia_api_v3.vue" if IPYVUETIFY_V3 else "algolia_api.vue")))
 def Algolia():
     pass
 
@@ -37,7 +38,10 @@ def Page():
                                 },
                             ):
                                 solara.HTML(tag="h2", unsafe_innerHTML=route.label, style={"color": "white", "display": "block", "flex-grow": "1"})
-                                solara.v.Icon(children=["mdi-arrow-right"], color="var(--color-grey-light)", x_large=True, class_="docs-card-icon")
+                                if IPYVUETIFY_V3:
+                                    solara.v.Icon(children=["mdi-arrow-right"], color="var(--color-grey-light)", size="x-large", class_="docs-card-icon")
+                                else:
+                                    solara.v.Icon(children=["mdi-arrow-right"], color="var(--color-grey-light)", x_large=True, class_="docs-card-icon")
                 with solara.Column(gap="10px", style={"flex-wrap": "wrap", "max-width": "80%"}):
                     solara.HTML(tag="h2", unsafe_innerHTML="How to use our documentation:", style={"padding": "1.5rem"})
                     solara.Markdown(

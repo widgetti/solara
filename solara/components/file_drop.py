@@ -21,7 +21,7 @@ class FileInfo(TypedDict):
 
 class FileDropZone(FileInput):
     # override to narrow traitlet of FileInput
-    template = traitlets.Instance(Template).tag(sync=True, **widget_serialization)
+    template = traitlets.Instance(Template).tag(sync=True, **widget_serialization)  # type: ignore[assignment]
     template_file = (__file__, "file_drop.vue")
     items = traitlets.List(default_value=cast(List[Any], [])).tag(sync=True)
     label = traitlets.Unicode().tag(sync=True)

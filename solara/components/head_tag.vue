@@ -20,6 +20,9 @@ module.exports = {
       tags[0].updateElement();
     }
   },
+  unmounted() {
+    this.$options.destroyed.call(this);
+  },
   watch: {
     tagname() {
       this.updateElement();

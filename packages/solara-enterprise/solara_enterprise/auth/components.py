@@ -2,6 +2,7 @@ from typing import Optional, Union
 
 import reacton.ipyvuetify as v
 import solara
+from solara.util import IPYVUETIFY_V3
 
 from .. import auth, license
 
@@ -65,7 +66,11 @@ def AvatarMenu(image_url: Optional[str] = None, size: Union[int, str] = 40, colo
     if not children:
         children = [solara.Button("logout", icon_name="mdi-logout", href=auth.get_logout_url(), text=True)]
 
-    with v.Menu(v_slots=[{"name": "activator", "children": activator, "variable": "x"}], offset_y=True) as menu:
+    if IPYVUETIFY_V3:
+        menu_element = v.Menu(v_slots=[{"name": "activator", "children": activator, "variable": "x"}], location="bottom", offset="8")
+    else:
+        menu_element = v.Menu(v_slots=[{"name": "activator", "children": activator, "variable": "x"}], offset_y=True)
+    with menu_element as menu:
         with v.List():
             for child in children:
                 with v.ListItem(children=[child]):

@@ -545,9 +545,9 @@ jobs:
             `echo packages/solara-meta/dist/*.whl`[dev,documentation] \
             `echo packages/solara-enterprise/dist/*.whl`[ssg,auth] \
             "jupyterlab<4" "playwright==1.50.0" "pydantic<2" "ipywidgets~=${{ matrix.ipywidgets }}" \
-            pytest-retry jupyter_core jupyter-packaging
+            pytest-retry pytest-xdist jupyter_core jupyter-packaging
           # separate command: --pre should only apply to ipyvue/ipyvuetify
-          pip install --pre "ipyvue>=3" "ipyvuetify>=3"
+          pip install --pre "ipyvue>=3.0.0a1" "ipyvuetify>=3.0.0a1"
           pip freeze --exclude solara --exclude solara-ui --exclude solara-server --exclude pytest-ipywidgets --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
           git diff | tee ${{ env.DIFF_FILE_LOCATION }}
           [ -s ${{ env.DIFF_FILE_LOCATION }} ] && echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT" || echo "No dependencies changed"
@@ -556,12 +556,19 @@ jobs:
         if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
         run: |
           command -v uv >/dev/null || pip install uv
+          # pytest-xdist explicitly: the lock predates it
           uv pip install --system -r ${{ env.LOCK_FILE_LOCATION }} \
             `echo dist/*.whl`[all] \
             `echo packages/solara-server/dist/*.whl`[all] \
             `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets${{ matrix.ipywidgets_major }}] \
             `echo packages/solara-meta/dist/*.whl`[dev,documentation] \
-            `echo packages/solara-enterprise/dist/*.whl`[ssg,auth]
+            `echo packages/solara-enterprise/dist/*.whl`[ssg,auth] \
+            pytest-xdist
+
+      - name: Install and verify ipyvuetify 3
+        run: |
+          pip install --pre "ipyvue>=3.0.0a1" "ipyvuetify>=3.0.0a1"
+          python -c "import ipyvuetify, solara.util; print('ipyvuetify', ipyvuetify.__version__); assert solara.util.IPYVUETIFY_V3"
 
       - name: Install playwright
         run: playwright install
@@ -576,7 +583,14 @@ jobs:
         # TODO: we used to also run the (cheap) unittests, to get better coverage report, but that gives errors
         # it seems on CI that the default playwright timeout is not (always?) respected, also, if the --timeout argument
         # is shorter than the timeout of playwright, we get no good error message, summary: always keep above 30!
-        run: pytest tests/integration/widget_test.py --timeout=360 --video=retain-on-failure --output=test-results -vv -s --log-cli-level=warning --retries 3
+        # the whole suite runs on ipyvuetify 3, minus the tests that still fail
+        # there: the documentation pages (api docs, docs router/routes - the
+        # duplicate list ids are fixed, the remaining cause is not diagnosed),
+        # the date range picker (the second selection does not clear the
+        # 'select two dates' label there), the reconnect dialog, the auth0 login
+        # flow and ipyreact module hot reload (fixed in ipyvue, drop this one
+        # once that ships). Shrink this list, do not grow it.
+        run: pytest tests/integration -n 2 --deselect tests/integration/api_test.py::test_api_file_browser --deselect tests/integration/api_test.py::test_api_style --deselect tests/integration/api_test.py::test_api_cross_filter_select --deselect tests/integration/api_test.py::test_dataframe --deselect tests/integration/router_test.py::test_docs_basics --deselect tests/integration/server_test.py::test_docs_routes --deselect tests/integration/input_date_test.py::test_input_date_range --deselect tests/integration/reconnect_test.py::test_reconnect_fail --deselect tests/integration/enterprise/oauth_test.py::test_oauth_from_app_auth0 --deselect tests/integration/esm_test.py::test_ipyreact_module_hot_reload --timeout=360 --video=retain-on-failure --output=test-results -vv -s --log-cli-level=warning --retries 3
 
       - name: Upload Test artifacts
         if: always()
@@ -668,7 +682,7 @@ jobs:
 
       - name: Start Redis
         if: ( github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true' ) && matrix.os != 'windows'
-        uses: shogo82148/actions-setup-redis@v1.45.0
+        uses: shogo82148/actions-setup-redis@v1.51.0
 
       - name: Run unit tests
         if: github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true'
@@ -706,9 +720,51 @@ jobs:
           path: ./**/${{ env.LOCK_FILE_LOCATION }}
           include-hidden-files: true
 
+  unit-test-vue3:
+    needs: [build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - uses: actions/download-artifact@v6
+        with:
+          name: solara-builds
+
+      - name: Install
+        run: |
+          command -v uv >/dev/null || pip install uv
+          uv pip install --system `echo dist/*.whl`[all] \
+            `echo packages/solara-server/dist/*.whl`[all] \
+            `echo packages/pytest-ipywidgets/dist/*.whl` \
+            `echo packages/solara-meta/dist/*.whl`[dev,documentation] \
+            `echo packages/solara-enterprise/dist/*.whl`[ssg,auth] \
+            diskcache redis "ipywidgets~=8.0"
+          # ipyvuetify 3 is prerelease only, so it needs an explicit specifier
+          uv pip install --system --prerelease=allow "ipyvuetify>=3.0.0a1" "ipyvue>=3.0.0a1"
+          python -c "import ipyvuetify, ipyvue; print('ipyvuetify', ipyvuetify.__version__, 'ipyvue', ipyvue.__version__)"
+          python -c "from solara.util import IPYVUETIFY_V3; assert IPYVUETIFY_V3, 'expected ipyvuetify 3'"
+
+      - name: Start Redis
+        uses: shogo82148/actions-setup-redis@v1.51.0
+
+      - name: Run unit tests
+        run: |
+          # otherwise Python's inspect cannot find the source code
+          mv solara _solara
+          # smaller scope than the ipyvuetify 1 matrix on purpose: no doctests and
+          # no solara 2.0 mode yet, those can be added once this stays green
+          pytest tests/unit --timeout=60 --session-timeout=600 -v
+
   update-ci-package-locks:
     needs:
-      [build, code-quality, integration-test, integration-test-vue3, unit-test]
+      [build, code-quality, integration-test, integration-test-vue3, unit-test, unit-test-vue3]
     runs-on: ubuntu-latest
 
     steps:
@@ -750,6 +806,7 @@ jobs:
         integration-test,
         integration-test-vue3,
         unit-test,
+        unit-test-vue3,
       ]
     runs-on: ubuntu-latest
     permissions:

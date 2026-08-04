@@ -7,6 +7,7 @@ from typing_extensions import Literal
 
 import solara
 from solara.alias import rv as v
+from solara.util import IPYVUETIFY_V3
 
 T = TypeVar("T")
 
@@ -189,24 +190,44 @@ def InputText(
         messages.append(error)
     elif message:
         messages.append(message)
-    text_field = v.TextField(
-        v_model=reactive_value.value,
-        on_v_model=on_v_model,
-        label=label,
-        disabled=disabled,
-        type="password" if password else "text",
-        error=bool(error),
-        messages=messages,
-        class_=classes_flat,
-        style_=style_flat,
-        autofocus=autofocus,
-        dense=dense,
-        hide_details=hide_details,
-        placeholder=placeholder if placeholder is not None else "",
-        prefix=prefix if prefix is not None else "",
-        suffix=suffix if suffix is not None else "",
-        clearable=clearable,
-    )
+    if IPYVUETIFY_V3:
+        text_field = v.TextField(
+            v_model=reactive_value.value,
+            on_v_model=on_v_model,
+            label=label,
+            disabled=disabled,
+            type="password" if password else "text",
+            error=bool(error),
+            messages=messages,
+            class_=classes_flat,
+            style_=style_flat,
+            autofocus=autofocus,
+            density="compact" if dense else None,
+            hide_details=hide_details,
+            placeholder=placeholder if placeholder is not None else "",
+            prefix=prefix if prefix is not None else "",
+            suffix=suffix if suffix is not None else "",
+            clearable=clearable,
+        )
+    else:
+        text_field = v.TextField(
+            v_model=reactive_value.value,
+            on_v_model=on_v_model,
+            label=label,
+            disabled=disabled,
+            type="password" if password else "text",
+            error=bool(error),
+            messages=messages,
+            class_=classes_flat,
+            style_=style_flat,
+            autofocus=autofocus,
+            dense=dense,
+            hide_details=hide_details,
+            placeholder=placeholder if placeholder is not None else "",
+            prefix=prefix if prefix is not None else "",
+            suffix=suffix if suffix is not None else "",
+            clearable=clearable,
+        )
     use_change(text_field, set_value_cast, enabled=not continuous_update, update_events=update_events)
     return text_field
 
@@ -568,24 +589,39 @@ def _InputNumeric(
 
     if error:
         label += f" ({error})"
-    text_field = v.TextField(
-        v_model=internal_value,
-        on_v_model=on_v_model,
-        label=label,
-        disabled=disabled,
-        # we are not using the number type, since we cannot validate invalid input
-        # see https://stackoverflow.blog/2022/12/26/why-the-number-input-is-the-worst-input/
-        # type="number",
-        hide_details=hide_details,
-        clearable=clearable,
-        error=bool(error),
-        class_=classes_flat,
-        style_=style_flat,
-        autofocus=autofocus,
-        dense=dense,
-        placeholder=placeholder if placeholder is not None else "",
-        prefix=prefix if prefix is not None else "",
-        suffix=suffix if suffix is not None else "",
-    )
+    if IPYVUETIFY_V3:
+        text_field = v.TextField(
+            v_model=internal_value,
+            on_v_model=on_v_model,
+            label=label,
+            disabled=disabled,
+            hide_details=hide_details,
+            clearable=clearable,
+            error=bool(error),
+            class_=classes_flat,
+            style_=style_flat,
+            autofocus=autofocus,
+            density="compact" if dense else None,
+            placeholder=placeholder if placeholder is not None else "",
+            prefix=prefix if prefix is not None else "",
+            suffix=suffix if suffix is not None else "",
+        )
+    else:
+        text_field = v.TextField(
+            v_model=internal_value,
+            on_v_model=on_v_model,
+            label=label,
+            disabled=disabled,
+            hide_details=hide_details,
+            clearable=clearable,
+            error=bool(error),
+            class_=classes_flat,
+            style_=style_flat,
+            autofocus=autofocus,
+            dense=dense,
+            placeholder=placeholder if placeholder is not None else "",
+            prefix=prefix if prefix is not None else "",
+            suffix=suffix if suffix is not None else "",
+        )
     use_change(text_field, set_value_cast, enabled=not continuous_update)
     return text_field
