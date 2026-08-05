@@ -548,7 +548,10 @@ jobs:
             pytest-retry pytest-xdist jupyter_core jupyter-packaging
           # separate command: --pre should only apply to ipyvue/ipyvuetify
           pip install --pre "ipyvue>=3.0.0a1" "ipyvuetify>=3.0.0a1"
-          pip freeze --exclude solara --exclude solara-ui --exclude solara-server --exclude pytest-ipywidgets --exclude solara-enterprise > ${{ env.LOCK_FILE_LOCATION }}
+          # ipyvue/ipyvuetify are installed separately with --pre; locking their
+          # alphas here makes the lock unsatisfiable against vaex-jupyter
+          pip freeze --exclude solara --exclude solara-ui --exclude solara-server --exclude pytest-ipywidgets --exclude solara-enterprise \
+            | grep -vE "^(ipyvue|ipyvuetify)==" > ${{ env.LOCK_FILE_LOCATION }}
           git diff | tee ${{ env.DIFF_FILE_LOCATION }}
           [ -s ${{ env.DIFF_FILE_LOCATION }} ] && echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT" || echo "No dependencies changed"
 

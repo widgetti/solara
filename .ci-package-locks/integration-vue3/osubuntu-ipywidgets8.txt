@@ -76,8 +76,6 @@ ipyreact==0.6.1
 ipython==8.18.1
 ipython-genutils==0.2.0
 ipyvolume==0.6.3
-ipyvue==3.0.0a9
-ipyvuetify==3.0.0a6
 ipywebrtc==0.6.0
 ipywidgets==8.1.8
 isoduration==20.11.0
