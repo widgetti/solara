@@ -39,7 +39,9 @@ fonttools==4.63.0
 greenlet==3.5.5
 h11==0.16.0
 httpcore==1.0.9
+httpcore2==2.10.0
 httpx==0.28.1
+httpx2==2.10.0
 humanize==4.16.0
 identify==2.6.19
 idna==3.18
@@ -84,7 +86,7 @@ nest-asyncio2==1.7.2
 nodeenv==1.10.0
 numpy==1.26.4
 objgraph==3.6.2
-openai==2.53.0
+openai==3.0.0
 packaging==26.3
 pandas==3.0.5
 parso==0.8.7
@@ -148,6 +150,7 @@ tornado==6.5.8
 tqdm==4.70.0
 traitlets==5.16.1
 traittypes==0.2.3
+truststore==0.10.4
 types-Markdown==3.10.2.20260712
 types-PyYAML==6.0.12.20260724
 types-requests==2.33.0.20260712
