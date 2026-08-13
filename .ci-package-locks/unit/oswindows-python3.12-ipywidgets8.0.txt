@@ -17,7 +17,7 @@ cachetools==7.1.7
 certifi==2026.7.22
 cffi==2.1.1
 cfgv==3.5.0
-charset-normalizer==3.4.9
+charset-normalizer==3.5.0
 click==8.4.2
 codespell==2.4.3
 colorama==0.4.6
@@ -55,8 +55,8 @@ ipyleaflet==0.20.0
 ipyreact==0.6.1
 ipython==9.16.1
 ipython_pygments_lexers==1.1.1
-ipyvue==1.12.0
-ipyvuetify==1.11.3
+ipyvue==3.0.0
+ipyvuetify==3.0.0
 ipywidgets==8.1.8
 itsdangerous==2.2.0
 jedi==0.20.0
@@ -123,7 +123,7 @@ pytest-mock==3.15.1
 pytest-playwright==0.9.0
 pytest-timeout==2.4.0
 python-dateutil==2.9.0.post0
-python-discovery==1.5.1
+python-discovery==1.5.2
 python-dotenv==1.2.2
 python-slugify==8.0.4
 PyYAML==6.0.3
@@ -155,13 +155,13 @@ truststore==0.10.4
 types-Markdown==3.10.2.20260712
 types-PyYAML==6.0.12.20260724
 types-requests==2.33.0.20260712
-typing-inspection==0.4.3
+typing-inspection==0.4.4
 typing_extensions==4.16.0
 tzdata==2026.3
 urllib3==2.7.0
 userpath==1.9.2
 uv==0.12.3
-uvicorn==0.52.1
+uvicorn==0.52.2
 vega-datasets==0.9.0
 virtualenv==21.7.4
 watchdog==6.0.0
