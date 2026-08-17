@@ -148,10 +148,10 @@ pytest-base-url==2.1.0
 pytest-cov==7.1.0
 pytest-mock==3.15.1
 pytest-playwright==0.9.0
-pytest-timeout==2.4.0
+pytest-timeout==2.5.0
 python-dateutil==2.9.0.post0
 python-discovery==1.5.2
-python-dotenv==1.2.2
+python-dotenv==1.2.3
 python-json-logger==4.2.0
 python-slugify==8.0.4
 PyYAML==6.0.3
