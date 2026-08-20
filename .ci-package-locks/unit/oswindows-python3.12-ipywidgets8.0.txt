@@ -29,7 +29,6 @@ cycler==0.12.1
 debugpy==1.8.21
 diskcache==5.6.3
 distlib==0.4.3
-distro==1.9.0
 executing==2.2.1
 fakeredis==2.37.1
 fastjsonschema==2.22.2
@@ -88,7 +87,7 @@ nest-asyncio2==1.7.2
 nodeenv==1.10.0
 numpy==1.26.4
 objgraph==3.6.2
-openai==3.3.0
+openai==3.3.1
 packaging==26.3
 pandas==3.0.5
 parso==0.8.7
@@ -160,7 +159,7 @@ tzdata==2026.3
 urllib3==2.7.0
 userpath==1.9.2
 uv==0.12.5
-uvicorn==0.52.3
+uvicorn==0.52.4
 vega-datasets==0.9.0
 virtualenv==21.7.4
 watchdog==6.0.0

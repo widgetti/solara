@@ -36,7 +36,6 @@ debugpy==1.8.21
 defusedxml==0.7.1
 diskcache==5.6.3
 distlib==0.4.3
-distro==1.9.0
 executing==2.2.1
 fakeredis==2.37.1
 fastjsonschema==2.22.2
@@ -114,7 +113,7 @@ notebook==7.6.2
 notebook_shim==0.2.4
 numpy==1.26.4
 objgraph==3.6.2
-openai==3.3.0
+openai==3.3.1
 packaging==26.3
 pandas==3.0.5
 pandocfilters==1.5.1
@@ -197,7 +196,7 @@ uri-template==1.3.0
 urllib3==2.7.0
 userpath==1.9.2
 uv==0.12.5
-uvicorn==0.52.3
+uvicorn==0.52.4
 vega-datasets==0.9.0
 virtualenv==21.7.4
 watchdog==6.0.0
