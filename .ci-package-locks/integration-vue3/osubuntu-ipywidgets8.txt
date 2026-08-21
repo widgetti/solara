@@ -176,7 +176,7 @@ python-slugify==8.0.4
 pythreejs==2.4.2
 pytz==2026.3.post1
 PyYAML==6.0.3
-pyzmq==27.1.0
+pyzmq==27.2.0
 reacton==1.10.2
 redis==7.0.1
 referencing==0.36.2
@@ -188,7 +188,7 @@ rfc3987-syntax==1.1.0
 rich==15.0.0
 rich-click==1.9.8
 rpds-py==0.27.1
-ruff==0.16.3
+ruff==0.16.4
 Send2Trash==2.1.0
 simple-websocket==1.1.0
 simplejson==4.1.1

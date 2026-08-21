@@ -3,7 +3,7 @@ annotated-types==0.8.0
 anyio==4.14.2
 anywidget==0.11.0
 argon2-cffi==25.1.0
-argon2-cffi-bindings==25.1.0
+argon2-cffi-bindings==26.1.0
 arrow==1.4.0
 ast_serialize==0.8.0
 asttokens==3.0.2
@@ -101,7 +101,7 @@ mistune==3.3.4
 mkdocs-pycafe==0.3.0
 mypy==2.3.1
 mypy_extensions==1.1.0
-narwhals==2.24.0
+narwhals==2.25.0
 nbclient==0.11.0
 nbconvert==7.17.1
 nbformat==5.11.1
@@ -154,7 +154,7 @@ python-dotenv==1.2.3
 python-json-logger==4.2.0
 python-slugify==8.0.4
 PyYAML==6.0.3
-pyzmq==27.1.0
+pyzmq==27.2.0
 reacton==1.10.2
 redis==8.1.0
 referencing==0.37.0
@@ -166,7 +166,7 @@ rfc3987-syntax==1.1.0
 rich==15.0.0
 rich-click==1.9.8
 rpds-py==2026.6.3
-ruff==0.16.3
+ruff==0.16.4
 Send2Trash==2.1.0
 simple-websocket==1.1.0
 simplejson==4.1.1
