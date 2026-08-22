@@ -12,7 +12,7 @@ from .cross_filter import (  # noqa: F401
 )
 from .datatable import DataTable, DataFrame  # noqa: F401 F403
 from .details import Details  # noqa: F401 F403
-from .file_browser import FileBrowser  # noqa: F401 F403
+from .file_browser import FileBrowser, FileBrowserMultiple  # noqa: F401 F403
 from .image import Image  # noqa: F401 F403
 from .markdown import Markdown, MarkdownIt  # noqa: F401 F403
 from .slider import (  # noqa: F401 F403
