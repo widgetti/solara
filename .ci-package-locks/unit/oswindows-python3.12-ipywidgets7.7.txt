@@ -140,7 +140,7 @@ pydantic==2.13.4
 pydantic_core==2.46.4
 pyee==13.0.1
 Pygments==2.21.0
-pymdown-extensions==11.0.1
+pymdown-extensions==11.0.2
 pyparsing==3.3.2
 pytest==9.1.1
 pytest-asyncio==1.4.0

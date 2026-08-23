@@ -159,7 +159,7 @@ pyee==12.1.1
 Pygments==2.21.0
 pyinstaller==6.22.2
 pyinstaller-hooks-contrib==2026.6
-pymdown-extensions==11.0.1
+pymdown-extensions==11.0.2
 pyparsing==3.3.2
 pytest==9.1.1
 pytest-asyncio==1.4.0
