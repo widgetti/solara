@@ -1,6 +1,6 @@
 cfgv==3.5.0
 distlib==0.4.3
-filelock==3.32.3
+filelock==3.32.4
 identify==2.6.19
 nodeenv==1.10.0
 platformdirs==4.11.3
