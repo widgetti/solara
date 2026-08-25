@@ -126,8 +126,8 @@ platformdirs==4.11.3
 playwright==1.62.0
 plotly==6.9.0
 pluggy==1.6.0
-polars==1.43.2
-polars-runtime-32==1.43.2
+polars==1.44.0
+polars-runtime-32==1.44.0
 pre_commit==4.6.2
 prometheus_client==0.26.0
 prompt_toolkit==3.0.53
@@ -150,7 +150,7 @@ pytest-mock==3.15.1
 pytest-playwright==0.9.0
 pytest-timeout==2.4.0
 python-dateutil==2.9.0.post0
-python-discovery==1.5.2
+python-discovery==1.5.3
 python-dotenv==1.2.3
 python-json-logger==4.2.0
 python-slugify==8.0.4
@@ -198,7 +198,7 @@ userpath==1.9.2
 uv==0.12.5
 uvicorn==0.52.4
 vega-datasets==0.9.0
-virtualenv==21.7.4
+virtualenv==21.7.5
 watchdog==6.0.0
 watchfiles==1.2.0
 wcwidth==0.8.2

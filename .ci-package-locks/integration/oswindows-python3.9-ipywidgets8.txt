@@ -169,7 +169,7 @@ pytest-retry==1.7.0
 pytest-timeout==2.4.0
 pytest-xdist==3.8.0
 python-dateutil==2.9.0.post0
-python-discovery==1.5.2
+python-discovery==1.5.3
 python-dotenv==1.2.1
 python-json-logger==4.0.0
 python-slugify==8.0.4
@@ -226,7 +226,7 @@ vaex-hdf5==0.15.0
 vaex-jupyter==0.9.0
 vaex-viz==0.6.0
 vega-datasets==0.9.0
-virtualenv==21.7.4
+virtualenv==21.7.5
 voila==0.5.11
 watchdog==6.0.0
 watchfiles==1.1.1
