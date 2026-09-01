@@ -18,7 +18,7 @@ To get inspiration for writing tests that cover component logic and their intera
 
 The following example demonstrates how to test a simple Solara component using pytest:
 
-```python
+```{.python pycafe-link}
 import solara
 import ipyvuetify as v
 
@@ -60,7 +60,7 @@ pytest tests/unit/test_docs_no_browser_simple.py
 
 When widgets are embedded in a larger widget tree, it becomes cumbersome to find the widget you are looking for using `.children[0].children[1]...` etc. For this use case we can use the `rc.find` method to look for a particular widget. This API is inspired on the playwright API, and is a convenient way to find a widget in the widget tree.
 
-```python
+```{.python pycafe-link}
 import solara
 import ipyvuetify as v
 
@@ -112,7 +112,7 @@ as correlate the testing code back to the application code. Having unique meta_r
 
 When a [`solara.lab.task`](https://solara.dev/api/task) is executed, a new thread will spawn, which will likely update the UI somewhere in the future. We can wait for the UI to update using the `wait_for` method on the finder object. This method will poll the widget tree, waiting for the widget to appear. If the timeout is reached, the test will fail.
 
-```python
+```{.python pycafe-link}
 import solara
 import solara.lab
 import ipyvuetify as v
@@ -171,7 +171,7 @@ $ playwright install chromium
 
 The most convenient way to test a widget, is by including the `solara_test` fixture in your test function arguments. Here's an example:
 
-```python
+```{.python pycafe-link}
 import ipywidgets as widgets
 import playwright.sync_api
 from IPython.display import display
@@ -212,7 +212,7 @@ Python variable.
 
 The following example uses a polling technique to check if a state change happened on the Python side.
 
-```python
+```{.python pycafe-link}
 import ipywidgets as widgets
 import playwright.sync_api
 from IPython.display import display
@@ -256,7 +256,7 @@ Sometimes, state changes on the Python side emit an event that we can capture. I
 we can use a `concurrent.futures.Future` to block until the state change happens. This is a more
 efficient way to wait for a state change than polling.
 
-```python
+```{.python pycafe-link}
 import ipywidgets as widgets
 from concurrent.futures import Future
 import playwright.sync_api
@@ -310,7 +310,7 @@ def test_event_with_polling(solara_test, page_session: playwright.sync_api.Page)
 
 In case you want to test your component in the multiple Jupyter environments (e.g., Jupyter Notebook, Jupyter Lab, Voila, and Solara) to ensure it renders correctly, use the `ipywidgets_runner` fixture to run code snippets. Here's an example:
 
-```python
+```{.python pycafe-link}
 import ipywidgets as widgets
 import playwright.sync_api
 from IPython.display import display
