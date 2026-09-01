@@ -14,10 +14,8 @@ def Page():
     def increment():
         set_count(count + 1)
 
-    with solara.VBox() as main:
-        with solara.HBox():
-            solara.Button(label=f"Clicked {count} times", on_click=increment, icon_name="mdi-thumb-up")
-    return main
+    with solara.HBox():
+        solara.Button(label=f"Clicked {count} times", on_click=increment, icon_name="mdi-thumb-up")
 
 
 __doc__ += apidoc(solara.Button.f)  # type: ignore
