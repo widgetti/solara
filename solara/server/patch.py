@@ -59,7 +59,10 @@ class FakeIPython:
             pdb.post_mortem()
         etype, value, tb = sys.exc_info()
         traceback_string = "".join(traceback.format_exception(etype, value, tb))
-        logger.error("Uncaught exception: %s", traceback_string)
+        # keep the message short and pass the exception via exc_info: error trackers (e.g. Sentry)
+        # group on the log message, so formatting the traceback into it puts every uncaught
+        # exception of every app into a single issue.
+        logger.error("Uncaught exception", exc_info=value)
         msg = {
             "type": "exception",
             "traceback": traceback_string,
