@@ -36,7 +36,11 @@ module.exports = {
     option() {
       // notMerge, otherwise we're left with axes etc
       // see https://echarts.apache.org/en/api.html#echartsInstance.setOption
-      this.chart.setOption(this.option, true);
+      // chart is initialized asynchronously after the echarts CDN import
+      // resolves in mounted(); guard against the watcher firing first.
+      if (this.chart) {
+        this.chart.setOption(this.option, true);
+      }
     },
   },
   methods: {
