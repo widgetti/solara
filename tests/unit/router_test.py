@@ -1,4 +1,4 @@
-from typing import Callable, Optional
+from typing import Callable, List, Optional
 
 import ipyvue as vue
 import ipyvuetify as v
@@ -167,3 +167,41 @@ def test_toggle_buttons_single():
     assert rc._find(v.Btn).widget.children[0] == "kiwi"
     set_path("/fruit/wumpa")
     assert rc._find(v.Btn).widget.children[0] == "Error!"
+
+
+def test_routing_provider_navigator_widget_stable():
+    """The Navigator widget of RoutingProvider is created once and reused for the whole app lifetime.
+
+    The effect that looks the widget up runs only once (empty dependencies). Re-running it on every
+    render would queue a lookup of an element of a render pass that may never be reconciled, which
+    raises from inside the effect and replaces the app by a traceback (widgetti/reacton#54).
+    """
+    import solara.widgets
+
+    push: Callable[[str], None] = lambda x: None  # noqa: E731
+    seen_paths: List[str] = []
+
+    @solara.component
+    def Child():
+        nonlocal push
+        router = solara.use_router()
+        push = router.push
+        seen_paths.append(router.path)
+        return solara.Text(router.path)
+
+    box, rc = solara.render(solara.RoutingProvider(children=[Child()], routes=routes, pathname="/"), handle_error=False)
+    navigator = rc.find(solara.widgets.Navigator).widget
+    assert navigator.location == "/"
+    assert seen_paths == ["/"]
+
+    for path in ["/fruit", "/contact", "/fruit"]:
+        push(path)
+        # the same widget, updated in place, not a new one
+        assert rc.find(solara.widgets.Navigator).widget is navigator
+        assert navigator.location == path
+        assert seen_paths[-1] == path
+
+    # a navigation started by the browser (the widget sets its own location) also keeps the widget
+    navigator.location = "/contact"
+    assert rc.find(solara.widgets.Navigator).widget is navigator
+    assert seen_paths[-1] == "/contact"

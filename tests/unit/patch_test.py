@@ -72,3 +72,31 @@ def test_pool_worker_thread_does_not_pin_kernel_context(no_kernel_context):
         assert context_ref() is None
     finally:
         executor.shutdown(wait=False)
+
+
+def test_showtraceback_logs_exception_with_exc_info(no_kernel_context, caplog):
+    import logging
+    import traceback
+
+    from solara.server import patch
+
+    kernel1 = kernel.Kernel()
+    context = kernel_context.VirtualKernelContext(id="showtraceback-1", kernel=kernel1, session_id="session-1")
+    fake_ipython = patch.FakeIPython(context)
+
+    with caplog.at_level(logging.ERROR, logger="solara.server.patch"):
+        try:
+            raise ValueError("some app error")
+        except ValueError:
+            fake_ipython.showtraceback()
+
+    records = [record for record in caplog.records if record.name == "solara.server.patch"]
+    assert len(records) == 1
+    record = records[0]
+    # the message stays short and the exception travels via exc_info, so error trackers group
+    # per exception type instead of putting every uncaught exception in a single issue
+    assert record.getMessage() == "Uncaught exception"
+    assert record.exc_info is not None
+    assert record.exc_info[0] is ValueError
+    assert "some app error" in "".join(traceback.format_exception(*record.exc_info))
+    context.close()

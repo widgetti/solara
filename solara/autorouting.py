@@ -115,15 +115,24 @@ def RoutingProvider(children: List[reacton.core.Element] = [], routes: List[sola
     solara.routing.router_context.provide(solara.routing.Router(path, routes=routes, set_path=set_path_with_redirect))
 
     def get_nav_widget():
-        # not sure why get_widget(nav) does not work
-        nav_widget.current = solara.get_widget(main).children[0]  # type: ignore
+        # get_widget(nav) did not work when this was written (2023, "not sure why"): reacton's
+        # get_widget only searched the current component context, and nav is reconciled in the
+        # VBox component's child context. reacton 1.7.2 (dfdca66) made it search child contexts,
+        # and solara requires reacton>=1.9, so the detour via get_widget(main).children[0] is gone.
+        nav_widget.current = solara.get_widget(nav)  # type: ignore
 
     import solara.widgets as w
 
     nav_widget = solara.use_ref(cast(Optional[w.Navigator], None))
     if nav_widget.current:
         nav_widget.current.location = path
-    solara.use_effect(get_nav_widget)
+    # run once: the root element of this component is always the same VBox at the same slot, so
+    # reacton updates those widgets in place instead of replacing them, and the Navigator widget
+    # stays the same object for the lifetime of the app. Running the effect on every render would
+    # queue a widget lookup for an element of a render pass that is never reconciled, get_widget
+    # then raises from inside the effect and the traceback replaces the whole app
+    # (see widgetti/reacton#54, fixed in reacton 1.10.3).
+    solara.use_effect(get_nav_widget, [])
 
     if solara.checks.should_perform_solara_check():
         children = [solara.checks.SolaraCheck(), *children]
