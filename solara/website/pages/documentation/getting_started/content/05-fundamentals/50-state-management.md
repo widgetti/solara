@@ -102,7 +102,7 @@ a = 1
 b = a
 # a.value = 2  # ERROR: numbers are immutable
 a = 2  # instead, re-assign a new value, the number 1 will not change
-assert b == 1 # b is still 1
+assert b == 1  # b is still 1
 ```
 However, many objects in Python are mutable, including lists and dictionaries or potentially user defined classes. This means that you can change the value of a list, dictionary, or user defined class in place without creating a new object.
 ```python

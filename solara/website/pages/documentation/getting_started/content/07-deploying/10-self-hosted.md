@@ -78,6 +78,7 @@ import solara.server.flask
 app = Flask(__name__)
 app.register_blueprint(solara.server.flask.blueprint, url_prefix="/solara/")
 
+
 @app.route("/")
 def hello_world():
     return "<p>Hello, World!</p>"
@@ -178,8 +179,9 @@ If you use Voila, [you can use those deployment options](https://voila.readthedo
 Make sure you run a notebook where you display the app, e.g.
 ```python
 @solara.component
-def Page():
-    ...
+def Page(): ...
+
+
 element = Page()
 display(element)
 ```
@@ -201,9 +203,12 @@ import solara
 @solara.component
 def ButtonClick(label="Hi"):
     clicks, set_clicks = solara.use_state(0)
+
     def increment():
         set_clicks(clicks + 1)
+
     return solara.Button(f"{label}: Clicked {clicks} times", on_click=increment)
+
 
 # this creates just an element, Panel doesn't know what to do with that
 element = ButtonClick("Solara+Panel")
