@@ -63,6 +63,36 @@ class _LifecycleState(enum.Enum):
     CLOSED = "closed"
 
 
+async def _run_in_thread(func: Callable[[], Any], name: str) -> Any:
+    """Run ``func`` on a fresh (unbounded) daemon thread and await its result.
+
+    Not an executor: a pool would let a handful of wedged kernels exhaust it and stall
+    the rest again. The thread runs without a kernel context (the loop thread has none).
+    """
+    loop = asyncio.get_running_loop()
+    future: "asyncio.Future[Any]" = loop.create_future()
+
+    def deliver(setter: Callable[[], None]) -> None:
+        try:
+            loop.call_soon_threadsafe(lambda: None if future.done() else setter())
+        except RuntimeError:
+            pass  # loop closed (testing)
+
+    def run() -> None:
+        try:
+            result = func()
+        except BaseException as error:  # noqa
+            exception = error  # `error` is unbound once the except block exits
+            deliver(lambda: future.set_exception(exception))
+        else:
+            deliver(lambda: future.set_result(result))
+
+    thread = threading.Thread(target=run, name=name, daemon=True)
+    thread.current_context = None  # type: ignore  # see patch.WidgetContextAwareThread__init__
+    thread.start()
+    return await future
+
+
 def _get_or_create_event_loop() -> asyncio.AbstractEventLoop:
     # On Python 3.12+, asyncio.get_event_loop() raises RuntimeError when called
     # from the main thread after asyncio.run() has cleaned up the loop.
@@ -288,7 +318,7 @@ class VirtualKernelContext:
 
         MUST run BEFORE ``close()`` acquires ``self.lock``: the worker's final flush does backend
         I/O and the delete is a backend call - doing either under ``context.lock`` is the documented
-        deadlock (docs/reactive-initialization-lock-deadlock.md). Wrapped so a persistence failure
+        deadlock (docs/deadlock-rules.md). Wrapped so a persistence failure
         never breaks close(). Idempotent (the worker's own close() and manager detach guard reruns).
         """
         worker = self.state_flush_worker
@@ -328,15 +358,25 @@ class VirtualKernelContext:
             logger.exception("state persistence teardown failed for kernel %s", self.id)
 
     def close(self, reason: str = "unknown"):
+        if self._begin_close(reason):
+            self._finish_close()
+
+    def _begin_close(self, reason: str) -> bool:
+        """Mark the kernel as closing; True when the caller must run ``_finish_close``.
+
+        Split from close() so the decision to close and the CLOSING mark can happen under
+        the same ``self.lock`` hold: page_connect checks ``is_closing()`` under ``self.lock``,
+        so a decision made under the lock and a mark set after releasing it leave a window in
+        which a reconnect marks a page CONNECTED on a kernel that is about to die
+        (docs/tla/SolaraLifecycle.tla shows the interleaving). Cheap: no I/O, no other lock.
+        """
         with self._lifecycle_lock:
             if self._lifecycle_state in (_LifecycleState.CLOSING, _LifecycleState.CLOSED):
-                return
+                return False
             restart_owns_close = self._lifecycle_state is _LifecycleState.RESTARTING
             self._lifecycle_state = _LifecycleState.CLOSING
             self.close_reason = reason
-        if restart_owns_close:
-            return
-        self._finish_close()
+        return not restart_owns_close
 
     def _finish_close(self):
         fatal: Optional[BaseException] = None
@@ -402,7 +442,10 @@ class VirtualKernelContext:
                     del contexts[self.id]
         for key, context in list(current_context.items()):
             if context is self:
-                del current_context[key]
+                # pop, not del: a thread exiting right now removes its own key
+                # (clear_context_for_thread), and a KeyError here would abort the
+                # close before closed_event is set, hanging everyone waiting on it
+                current_context.pop(key, None)
 
         while True:
             with self._lifecycle_lock:
@@ -486,14 +529,44 @@ class VirtualKernelContext:
                 logger.info("Scheduling kernel cull, will wait for max %s before shutting down the virtual kernel %s", cull_timeout_sleep_seconds, self.id)
                 await asyncio.sleep(cull_timeout_sleep_seconds)
                 logger.info("Timeout reached, checking if we should be shutting down virtual kernel %s", self.id)
-                with self.lock:
-                    has_connected_pages = PageStatus.CONNECTED in self.page_status.values()
-                if has_connected_pages:
-                    logger.info("We have (re)connected pages, keeping the virtual kernel %s alive", self.id)
+                this_task = asyncio.current_task()
+
+                def cull() -> bool:
+                    # Runs on its own thread, OFF keep_alive_event_loop: that loop is shared by
+                    # every kernel's cull task, and both the self.lock below and close() (self.lock,
+                    # close callbacks, the render lock) can block for as long as an event handler
+                    # runs. One kernel wedged in a handler would stall the cull of every other
+                    # kernel in the process, which is a process-wide leak (docs/deadlock-rules.md).
+                    with self.lock:
+                        if PageStatus.CONNECTED in self.page_status.values():
+                            return False
+                        if self._last_kernel_cull_task is this_task:
+                            # we are that task (and that future): nothing for close() to cancel.
+                            # Cancelling ourselves while we await the close would cancel the
+                            # future the caller of page_disconnect is awaiting.
+                            self._last_kernel_cull_task = None
+                            self._last_kernel_cull_future = None
+                        # mark CLOSING under the same lock hold as the decision, so a reconnect
+                        # racing us sees is_closing() and gets a fresh kernel (see _begin_close)
+                        owns_close = self._begin_close("cull")
+                    # the rest OUTSIDE self.lock: its persistence teardown does backend I/O (§5.3)
+                    if owns_close:
+                        self._finish_close()
+                    return True
+
+                try:
+                    closed = await _run_in_thread(cull, name=f"solara-kernel-cull-{self.id}")
+                except asyncio.CancelledError:
+                    raise
+                except BaseException:  # noqa
+                    # a failing close must still resolve the future the page_disconnect caller
+                    # awaits (below), or that caller waits forever
+                    logger.exception("Error while culling virtual kernel %s", self.id)
                 else:
-                    logger.info("No connected pages, and timeout reached, shutting down virtual kernel %s", self.id)
-                    # close() OUTSIDE self.lock: its persistence teardown does backend I/O (§5.3)
-                    self.close(reason="cull")
+                    if closed:
+                        logger.info("No connected pages, and timeout reached, shut down virtual kernel %s", self.id)
+                    else:
+                        logger.info("We have (re)connected pages, keeping the virtual kernel %s alive", self.id)
                 if current_event_loop is not None and future is not None:
                     try:
                         current_event_loop.call_soon_threadsafe(future.set_result, None)
@@ -509,12 +582,6 @@ class VirtualKernelContext:
                     except RuntimeError:
                         pass  # event loop already closed, happens during testing
                 raise
-
-        async def create_task():
-            task = asyncio.create_task(kernel_cull())
-            # create a reference to the task so we can cancel it later
-            self._last_kernel_cull_task = task
-            await task
 
         with self.lock:
             future: "Optional[asyncio.Future[None]]" = None
@@ -606,14 +673,15 @@ class VirtualKernelContext:
             if has_disconnected_pages:
                 future = self._bump_kernel_cull()
             if not (has_connected_pages or has_disconnected_pages):
-                should_close = True
+                # a genuine tab close, reason="page-close" so the fenced delete removes the
+                # hash (§5.4). Mark CLOSING here, under the lock of the decision (see
+                # _begin_close); the teardown itself runs OUTSIDE self.lock (backend I/O, §5.3)
+                should_close = self._begin_close("page-close")
             else:
                 logger.info("Still have connected or disconnected pages, keeping virtual kernel %s alive", self.id)
         if should_close:
-            # a genuine tab close: close() OUTSIDE self.lock (persistence teardown does backend
-            # I/O, §5.3) with reason="page-close" so the fenced delete removes the hash (§5.4)
             logger.info("No connected or disconnected pages, shutting down virtual kernel %s", self.id)
-            self.close(reason="page-close")
+            self._finish_close()
         return future
 
 
@@ -696,16 +764,31 @@ else:
     async_context_id = None
 
 
+def _async_context_key() -> Optional[str]:
+    """The non-threaded-mode context key, or None on a thread where it was never set.
+
+    The ContextVar is set per websocket task (starlette.py) and once on the importing
+    thread ("default"). A plain thread starts with an empty contextvars context, so on the
+    threads that close kernels (cull, evict, shutdown) it is unset: raising there would
+    abort close() before closed_event is set (docs/deadlock-rules.md, rule 6). Fall back
+    to a thread-based key instead; a shared default would let two closing threads clobber
+    each other's entry in current_context and pin a closed context.
+    """
+    if async_context_id is None:
+        raise RuntimeError("No threading support, and no contextvars support (Python 3.6 is not supported for this)")
+    try:
+        return async_context_id.get()
+    except LookupError:
+        return None
+
+
 def get_current_thread_key() -> str:
     # consider renaming this to get_current_context_key
     if not solara.server.settings.kernel.threaded:
-        if async_context_id is not None:
-            try:
-                key = async_context_id.get()
-            except LookupError:
-                raise RuntimeError("no kernel context set")
-        else:
-            raise RuntimeError("No threading support, and no contextvars support (Python 3.6 is not supported for this)")
+        key = _async_context_key()
+        if key is None:
+            thread = threading.current_thread()
+            key = thread._name + str(thread._ident)  # type: ignore
     else:
         thread = threading.current_thread()
         key = get_thread_key(thread)
@@ -721,8 +804,9 @@ def get_current_thread_key() -> str:
 
 def get_thread_key(thread: threading.Thread) -> str:
     if not solara.server.settings.kernel.threaded:
-        if async_context_id is not None:
-            return async_context_id.get()
+        key = _async_context_key()
+        if key is not None:
+            return key
     thread_key = thread._name + str(thread._ident)  # type: ignore
     return thread_key
 

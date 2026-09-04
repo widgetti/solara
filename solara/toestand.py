@@ -5,6 +5,7 @@ import logging
 import os
 import sys
 import threading
+import functools
 import time
 import traceback
 import weakref
@@ -392,15 +393,39 @@ class ValueBase(Generic[T]):
                         if context == entry.context:
                             entry.listener(new, old)
 
+    def _set_deferred(self, value: T) -> Optional[Callable[[], None]]:
+        """Store ``value`` without firing listeners.
+
+        Returns the deferred ``fire`` call when the value changed, else None. This is
+        the primitive for callers that hold ``self.lock`` for a read-modify-write
+        (``update``, field sets): listeners must fire AFTER the lock is released. A
+        listener runs arbitrary code, typically a render, which takes reacton's
+        render lock; a rendering thread that sets (or, with mutation detection,
+        even reads) the same reactive needs our lock: firing under the lock is an
+        ABBA deadlock between a background thread and the render thread.
+
+        Ordering: two threads writing the same reactive at once may notify in the
+        other order than they stored (the second writer can fire first). Plain
+        ``.value = x`` never ordered its notifications either, and every listener
+        solara itself installs re-reads the store instead of using the argument.
+        Listeners that must see the latest value should read it, not the argument.
+
+        The default keeps third-party stores working: set and fire inline.
+        """
+        self.set(value)
+        return None
+
     def update(self, _f=None, **kwargs):
-        if _f is not None:
-            assert not kwargs
-            with self.lock:
-                kwargs = _f(self.get())
         with self.lock:
             # important to have this part thread-safe
+            if _f is not None:
+                assert not kwargs
+                kwargs = _f(self.get())
             new = self.merge(self.get(), **kwargs)
-            self.set(new)
+            fire = self._set_deferred(new)
+        # listeners fire outside the lock, see _set_deferred
+        if fire is not None:
+            fire()
 
     def use_value(self) -> T:
         # .use with the default argument doesn't give good type inference
@@ -573,7 +598,7 @@ class KernelStore(ValueBase[S], ABC):
         if self.storage_key in scope_dict:
             del scope_dict[self.storage_key]
 
-    def set(self, value: S):
+    def _set_deferred(self, value: S) -> Optional[Callable[[], None]]:
         scope_dict, scope_id, context = self._get_dict()
         if not solara.settings.main.allow_global_context and scope_id == "global":
             raise RuntimeError(
@@ -581,7 +606,7 @@ class KernelStore(ValueBase[S], ABC):
             )
         old = self.get()
         if self.equals(old, value):
-            return
+            return None
         scope_dict[self.storage_key] = value
 
         if _DEBUG:
@@ -592,7 +617,12 @@ class KernelStore(ValueBase[S], ABC):
             print("change old", old)  # noqa
             print("change new", value)  # noqa
 
-        self.fire(value, old)
+        return functools.partial(self.fire, value, old)
+
+    def set(self, value: S):
+        fire = self._set_deferred(value)
+        if fire is not None:
+            fire()
 
     @abstractmethod
     def initial_value(self) -> S:
@@ -879,6 +909,11 @@ class Reactive(ValueBase[S]):
             raise ValueError("Can't set a reactive to itself")
         self._storage.set(value)
 
+    def _set_deferred(self, value: S) -> Optional[Callable[[], None]]:
+        if value is self:
+            raise ValueError("Can't set a reactive to itself")
+        return self._storage._set_deferred(value)
+
     def get(self, add_watch=None) -> S:
         if add_watch is not None:
             warnings.warn("add_watch is deprecated, use .peek()", DeprecationWarning)
@@ -1143,6 +1178,9 @@ class ReactiveField(Reactive[T]):
     def set(self, value: T):
         self._field.set(value)
 
+    def _set_deferred(self, value: T) -> Optional[Callable[[], None]]:
+        return self._field._set_deferred(value)
+
     def update(self, *args, **kwargs):
         ValueBase.update(cast(ValueBase, self), *args, **kwargs)
 
@@ -1167,6 +1205,14 @@ class FieldBase:
         raise NotImplementedError
 
     def set(self, value):
+        # the read-modify-write up the field chain happens under the root's lock, but
+        # the listeners fire after it is released (see ValueBase._set_deferred)
+        with self._lock:
+            fire = self._set_deferred(value)
+        if fire is not None:
+            fire()
+
+    def _set_deferred(self, value) -> Optional[Callable[[], None]]:
         raise NotImplementedError
 
 
@@ -1189,8 +1235,8 @@ class Fields(FieldBase):
             return obj
         return self._parent.peek()
 
-    def set(self, value):
-        self._parent.set(value)
+    def _set_deferred(self, value) -> Optional[Callable[[], None]]:
+        return self._parent._set_deferred(value)
 
     def __repr__(self):
         return repr(self._parent)
@@ -1210,14 +1256,13 @@ class FieldAttr(FieldBase):
         obj = self._parent.peek(obj)
         return getattr(obj, self.key)
 
-    def set(self, value):
-        with self._lock:
-            parent_value = self._parent.peek()
-            if isinstance(self.key, str):
-                parent_value = merge_state(parent_value, **{self.key: value})
-                self._parent.set(parent_value)
-            else:
-                raise TypeError(f"Type of key {self.key!r} is not supported")
+    def _set_deferred(self, value) -> Optional[Callable[[], None]]:
+        parent_value = self._parent.peek()
+        if isinstance(self.key, str):
+            parent_value = merge_state(parent_value, **{self.key: value})
+            return self._parent._set_deferred(parent_value)
+        else:
+            raise TypeError(f"Type of key {self.key!r} is not supported")
 
     def __str__(self):
         return f".{self.key}"
@@ -1240,17 +1285,16 @@ class FieldItem(FieldBase):
         obj = self._parent.peek(obj)
         return getitem(obj, self.key)
 
-    def set(self, value):
-        with self._lock:
-            parent_value = self._parent.peek()
-            if isinstance(self.key, int) and isinstance(parent_value, (list, tuple)):
-                parent_type = type(parent_value)
-                parent_value = parent_value.copy()  # type: ignore
-                parent_value[self.key] = value
-                self._parent.set(parent_type(parent_value))
-            else:
-                parent_value = merge_state(parent_value, **{self.key: value})
-                self._parent.set(parent_value)
+    def _set_deferred(self, value) -> Optional[Callable[[], None]]:
+        parent_value = self._parent.peek()
+        if isinstance(self.key, int) and isinstance(parent_value, (list, tuple)):
+            parent_type = type(parent_value)
+            parent_value = parent_value.copy()  # type: ignore
+            parent_value[self.key] = value
+            return self._parent._set_deferred(parent_type(parent_value))
+        else:
+            parent_value = merge_state(parent_value, **{self.key: value})
+            return self._parent._set_deferred(parent_value)
 
 
 @dataclasses.dataclass(eq=False)
