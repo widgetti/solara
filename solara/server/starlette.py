@@ -1,4 +1,5 @@
 import asyncio
+import functools
 import concurrent.futures
 from contextlib import asynccontextmanager
 import hashlib
@@ -8,6 +9,7 @@ import json
 import logging
 import math
 import os
+import queue
 import secrets
 from pathlib import Path
 import sys
@@ -246,8 +248,8 @@ await to_thread.run_sync(my_update)
                     task = self.event_loop.create_task(self._send_bytes_exc(data))
                     self.tasks.add(task)
                     task.add_done_callback(self.tasks.discard)
-
-                self.portal.call(self._send_bytes_exc, data)
+                else:
+                    self.portal.call(self._send_bytes_exc, data)
 
     async def receive(self):
         if self.portal is None:
@@ -468,8 +470,21 @@ async def evict(request: Request):
     session_id = request.cookies.get(server.COOKIE_KEY_SESSION_ID)
     if not session_id or session_id != context.session_id:
         return Response(status_code=403)
-    context.close(reason="evicted")
+    # never close a kernel ON the event loop thread, see _off_loop
+    await _off_loop(functools.partial(context.close, reason="evicted"))
     return Response(status_code=200)
+
+
+async def _off_loop(func):
+    """Run blocking kernel teardown on a worker thread, never on the event loop.
+
+    In threaded mode the kernel's message thread holds ``context.lock`` for the whole
+    duration of an event handler (server.py, app_loop), and every widget update it makes
+    is a ``portal.call`` that needs this event loop to run. ``context.close()`` blocks on
+    that same lock. Calling close() from a coroutine therefore deadlocks whenever a
+    handler is busy: the loop waits for the lock, the handler waits for the loop.
+    """
+    return await asyncio.get_running_loop().run_in_executor(None, func)
 
 
 async def root(request: Request, fullpath: str = ""):
@@ -794,12 +809,62 @@ def on_shutdown():
     except Exception:  # noqa
         logger.exception("error draining state workers on shutdown")
     # shutdown all kernels
-    for context in list(kernel_context.contexts.values()):
-        try:
-            context.close(reason="server-shutdown")
-        except:  # noqa
-            logger.exception("error closing kernel on shutdown")
+    _close_all_contexts()
     telemetry.server_stop()
+
+
+def _close_all_contexts(deadline_seconds: Optional[float] = None) -> None:
+    """Close every kernel at shutdown, in parallel and under one deadline.
+
+    close() waits for ``context.lock``, which an event handler holds for as long as it
+    runs. Closing serially would let one kernel with a long handler push the whole
+    shutdown past the orchestrator's grace period (then the process is SIGKILLed with
+    nothing else cleaned up). So close all kernels at once, wait at most the deadline
+    (settings.server.shutdown_close_timeout), and log the ones that did not make it:
+    their handler thread was going to die with the process anyway. The state-persistence
+    flush already ran in _drain_state_workers, so an unfinished close loses no state.
+
+    Daemon threads, not a ThreadPoolExecutor: the interpreter joins executor workers at
+    exit (even after shutdown(wait=False)), so a close still blocked on a handler's lock
+    would hold the process until SIGKILL, defeating the deadline. Daemon threads are
+    abandoned at exit. A bounded number of workers pull from a queue, so a process with
+    thousands of kernels does not create thousands of threads.
+    """
+    if deadline_seconds is None:
+        deadline_seconds = settings.server.shutdown_close_timeout
+    contexts = list(kernel_context.contexts.values())
+    if not contexts:
+        return
+    deadline = time.monotonic() + deadline_seconds
+    todo: "queue.SimpleQueue[kernel_context.VirtualKernelContext]" = queue.SimpleQueue()
+    for context in contexts:
+        todo.put(context)
+    closed: Set[str] = set()
+    closed_lock = threading.Lock()
+    all_done = threading.Event()
+
+    def worker():
+        while True:
+            try:
+                context = todo.get_nowait()
+            except queue.Empty:
+                return
+            try:
+                context.close(reason="server-shutdown")
+            except BaseException:  # noqa - a close failure must not take the other closes down
+                logger.exception("error closing kernel %s on shutdown", context.id)
+            with closed_lock:
+                closed.add(context.id)
+                if len(closed) == len(contexts):
+                    all_done.set()
+
+    for index in range(min(32, len(contexts))):
+        threading.Thread(target=worker, name=f"solara-shutdown-close-{index}", daemon=True).start()
+    all_done.wait(max(0.0, deadline - time.monotonic()))
+    with closed_lock:
+        left = [context.id for context in contexts if context.id not in closed]
+    for kernel_id in left:
+        logger.warning("kernel %s did not close within the shutdown deadline (%.0fs), leaving it to the process exit", kernel_id, deadline_seconds)
 
 
 @asynccontextmanager
@@ -807,7 +872,10 @@ async def lifespan(app):
     """Lifespan context manager for Starlette (replaces on_startup/on_shutdown)."""
     on_startup()
     yield
-    on_shutdown()
+    # off the loop: with uvicorn's timeout_graceful_shutdown a kernel can still be inside an
+    # event handler here (its thread outlives the cancelled websocket task), and closing it
+    # from this thread would deadlock the shutdown, see _off_loop
+    await _off_loop(on_shutdown)
 
 
 def readyz(request: Request):

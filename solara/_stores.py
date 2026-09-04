@@ -3,6 +3,7 @@ import dataclasses
 import inspect
 import sys
 import threading
+import functools
 from typing import Callable, ContextManager, Generic, Optional, Union, cast, Any
 import warnings
 
@@ -62,6 +63,11 @@ class MutateDetectorStore(ValueBase[S]):
         self._storage.clear()
 
     def set(self, value: S):
+        fire = self._set_deferred(value)
+        if fire is not None:
+            fire()
+
+    def _set_deferred(self, value: S) -> Optional[Callable[[], None]]:
         self.check_mutations()
         self._ensure_public_exists()
         private = copy.deepcopy(value)
@@ -72,7 +78,7 @@ class MutateDetectorStore(ValueBase[S]):
         else:
             frame_info = None
         store_value = StoreValue(private=private, public=_PublicValueNotSet(), get_traceback=None, set_value=value, set_traceback=frame_info)
-        self._storage.set(store_value)
+        return self._storage._set_deferred(store_value)
 
     def check_mutations(self):
         self._storage._check_mutation()
@@ -284,10 +290,15 @@ reactive_df = solara.reactive(df, equals=solara.util.equals_pickle)
         return "GLOBAL"
 
     def set(self, value: S):
+        fire = self._set_deferred(value)
+        if fire is not None:
+            fire()
+
+    def _set_deferred(self, value: S) -> Optional[Callable[[], None]]:
         self._check_mutation()
         old = self.get()
         if self.equals(old, value):
-            return
+            return None
         self._value = value
 
         if _DEBUG:
@@ -298,4 +309,4 @@ reactive_df = solara.reactive(df, equals=solara.util.equals_pickle)
             print("change old", old)  # noqa
             print("change new", value)  # noqa
 
-        self.fire(value, old)
+        return functools.partial(self.fire, value, old)

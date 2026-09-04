@@ -140,7 +140,7 @@ class KernelFlushWorker:
         CONTRACT: **call this OUTSIDE ``context.lock``.** :meth:`flush_now` snapshots under the
         reactive lock (never ``context.lock``) and writes to the backend outside every lock,
         so holding ``context.lock`` here would risk the documented I/O-under-lock deadlock
-        (docs/reactive-initialization-lock-deadlock.md). The server wires this single call as
+        (docs/deadlock-rules.md). The server wires this single call as
         the context's ``on_close`` for a persistence-enabled kernel.
         """
         if self._closed:
