@@ -82,9 +82,11 @@ Unit tests use `solara.render_fixed()` for testing components:
 ```python
 import solara
 
+
 @solara.component
 def Test():
     return solara.FileBrowser(tmpdir, watch=True)
+
 
 div, rc = solara.render_fixed(Test(), handle_error=False)
 # Access widgets via div.children

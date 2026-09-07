@@ -19,7 +19,7 @@ def Page():
     if x < 10:
         y, set_y = solara.use_state(2)  # state 'slot' 2
     else:
-        y, set_y = solara.use_state("foo") # *also* state 'slot' 2
+        y, set_y = solara.use_state("foo")  # *also* state 'slot' 2
     solara.Text("Done")
 ```
 
@@ -153,6 +153,7 @@ import solara
 def Page():
     def inner():
         solara.use_state(1)  # will use_state always be called? Difficult to analyze, so don't do it
+
     inner()
     solara.Text("Done")
 ```

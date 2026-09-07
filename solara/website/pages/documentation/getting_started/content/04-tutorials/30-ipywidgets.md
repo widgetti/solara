@@ -26,6 +26,7 @@ clicks = 0
 
 print("I get run at startup, and for every page request")
 
+
 def on_click(button):
     global clicks
     clicks += 1
@@ -80,7 +81,6 @@ classic ipywidgets.
 Use the [.widget(...)](/documentation/api/utilities/widget) method on a component to create a widget that can be used in your existing classic ipywidget application.
 
 ```python
-
 import ipywidgets as widgets
 
 import solara
