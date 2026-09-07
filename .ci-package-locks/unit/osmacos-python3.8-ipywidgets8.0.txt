@@ -152,7 +152,7 @@ redis==6.1.1
 referencing==0.35.1
 requests==2.32.4
 rich==14.3.4
-rich-click==1.9.8
+rich-click==1.9.9
 rpds-py==0.20.1
 ruff==0.16.6
 simple-websocket==1.1.0

@@ -1,9 +1,9 @@
 altair==6.2.2
 annotated-types==0.8.0
-anyio==4.15.0
+anyio==4.15.1
 anywidget==0.11.0
 appnope==1.0.0
-ast_serialize==0.9.0
+ast_serialize==0.10.0
 asttokens==3.0.2
 attrs==26.1.0
 Authlib==1.8.0
@@ -133,7 +133,7 @@ referencing==0.37.0
 regex==2026.9.3
 requests==2.34.2
 rich==15.0.0
-rich-click==1.9.8
+rich-click==1.9.9
 rpds-py==2026.6.3
 ruff==0.16.6
 simple-websocket==1.1.0
@@ -151,8 +151,8 @@ traitlets==5.16.1
 traittypes==0.2.3
 truststore==0.10.4
 types-Markdown==3.10.2.20260712
-types-PyYAML==6.0.12.20260815
-types-requests==2.33.0.20260712
+types-PyYAML==6.0.12.20260906
+types-requests==2.33.0.20260906
 typing-inspection==0.4.4
 typing_extensions==4.16.0
 urllib3==2.7.0
