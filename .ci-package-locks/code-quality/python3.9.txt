@@ -8,4 +8,4 @@ pre_commit==4.3.0
 python-discovery==1.6.0
 PyYAML==6.0.3
 typing_extensions==4.16.0
-virtualenv==21.7.8
+virtualenv==21.7.9
