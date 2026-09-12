@@ -72,7 +72,7 @@ lupa==2.8
 Markdown==3.10.3
 markdown-it-py==4.2.0
 MarkupSafe==3.0.3
-matplotlib==3.11.1
+matplotlib==3.11.2
 matplotlib-inline==0.2.2
 mdit-py-plugins==0.6.1
 mdurl==0.1.2
