@@ -29,7 +29,7 @@ def test_api_file_browser(page_session: playwright.sync_api.Page, solara_server,
     with solara_app("solara.website.pages"):
         page_session.goto(solara_server.base_url + "/documentation/components/")
         page_session.locator(".v-card >> text=File Browser").first.click()
-        page_session.locator("text=You are in directory").wait_for()
+        page_session.locator("text=Selected paths:").wait_for()
 
 
 def test_api_matplotlib(page_session: playwright.sync_api.Page, solara_server, solara_app):
