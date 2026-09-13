@@ -51,7 +51,7 @@ state is lost.
 | Dev hot-reload re-runs the app in the **same** kernel over **live** comms — its machinery does not transfer to a fresh-kernel remount, but proves remount-without-reload is supported | `app.py:491-504` |
 | Clean close vs connection loss are already distinguished: `page_close` (beacon `POST /_solara/api/close/{kernel_id}`) vs `page_disconnect` + cull timer (`kernel.cull_timeout`, default 24h) | `kernel_context.py:219-359`, `starlette.py:769` |
 | Redis precedent and core/enterprise split: `cache_type_map` keeps `memory` in core, `redis` in `solara_enterprise.cache.redis`, imported lazily | `cache.py:265-292` |
-| Documented deadlock precedent: never do blocking I/O under a store lock | `docs/reactive-initialization-lock-deadlock.md` |
+| Documented deadlock precedent: never do blocking I/O under a store lock | `docs/deadlock-rules.md` |
 
 ## 3. Design overview
 
