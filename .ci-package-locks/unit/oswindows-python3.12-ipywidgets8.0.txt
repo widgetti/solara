@@ -60,7 +60,7 @@ ipywidgets==8.1.9
 itsdangerous==2.2.0
 jedi==0.20.0
 Jinja2==3.1.6
-jiter==0.16.0
+jiter==0.17.0
 joserfc==1.7.5
 jsonschema==4.26.0
 jsonschema-specifications==2025.9.1
@@ -155,7 +155,7 @@ types-PyYAML==6.0.12.20260906
 types-requests==2.33.0.20260906
 typing-inspection==0.4.4
 typing_extensions==4.16.0
-tzdata==2026.3
+tzdata==2026.4
 urllib3==2.7.0
 userpath==1.9.2
 uv==0.12.13
