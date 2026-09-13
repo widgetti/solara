@@ -120,6 +120,50 @@ For urls solara serves itself this enables aggressive caching without staleness:
 The same applies to ipyreact modules. During development, prefer the `Path` form: the file
 is watched, so a bundler in watch mode gives in-place hot reload.
 
+## Bundling all component_vue templates
+
+`@solara.component_vue` records every template it is given, so solara can generate the
+bundler input for the whole application:
+
+```bash
+solara vue-bundle app.py --output vue-components/src --name app-components
+# writes app-components-entry.js (one named export per template)
+# and app-components-manifest.json (content hash -> export)
+```
+
+Build the entry with vite (`vue` external — ipyvue provides it via the import map):
+
+```js
+// vue-components/vite.config.mjs
+import { defineConfig } from "vite";
+import vue from "@vitejs/plugin-vue"; // or @vitejs/plugin-vue2 on the vue2 stack
+
+export default defineConfig({
+  plugins: [vue()],
+  build: {
+    lib: { entry: "src/app-components-entry.js", formats: ["es"], fileName: () => "app-components.mjs" },
+    rollupOptions: { external: ["vue"] },
+    // debugging: external map next to the bundle for url-served production
+    // bundles; use "inline" when serving the module file-backed (blob urls
+    // cannot resolve a relative sourceMappingURL)
+    sourcemap: true,
+  },
+});
+```
+
+Then define the module (as above) and turn the mode on:
+
+```bash
+SOLARA_VUE_BUNDLES=vue-components/src/app-components-manifest.json solara run app.py
+```
+
+With the variable set, `component_vue` resolves every template through the manifests
+instead of shipping its source: lookup is by content hash, so a template edited after
+the bundle was built is a hard error (stale bundle) rather than silent drift. Unset,
+everything behaves as before — that is the development mode, with per-template hot
+reload. Each generated export carries the template's file name as the component
+`name`, so vue devtools and warnings stay readable.
+
 ## Using a precompiled component as a tag
 
 An export can also be used as a tag inside any other template via the `components` dict.
