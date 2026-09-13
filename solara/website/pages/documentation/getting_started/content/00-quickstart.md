@@ -73,6 +73,7 @@ From Jupyter Notebook (classic) or Jupyter Lab, navigate to the same directory a
 
 ```python
 from sol import Page
+
 display(Page())
 ```
 
