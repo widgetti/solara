@@ -153,7 +153,7 @@ requests==2.32.4
 rich==14.3.4
 rich-click==1.9.9
 rpds-py==0.20.1
-ruff==0.16.7
+ruff==0.16.8
 simple-websocket==1.1.0
 simplejson==4.1.2
 six==1.17.0
