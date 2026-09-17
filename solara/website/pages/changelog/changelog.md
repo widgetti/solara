@@ -1,5 +1,13 @@
 # Solara Changelog
 
+## Version 1.62.0
+
+- Feature: Add `FileBrowserMultiple` for selecting multiple files and directories with `Path` values. [#1162](https://github.com/widgetti/solara/pull/1162)
+- Bug Fix: Run the router widget lookup once to prevent errors during repeated renders. [#1198](https://github.com/widgetti/solara/pull/1198)
+- Bug Fix: Include exception information in error logs so error trackers can group exceptions correctly. [#1198](https://github.com/widgetti/solara/pull/1198)
+- Bug Fix: Guard ECharts updates until the chart has initialized. [#1201](https://github.com/widgetti/solara/pull/1201)
+- Compatibility: Support AnyIO 4.15 and Plotly 7, including the available Plotly map functions. [#1199](https://github.com/widgetti/solara/pull/1199)
+
 ## Version 1.61.0
 
    * Feature: Support ipyvuetify 3 / Vuetify 3 next to ipyvuetify 1, selected by the installed ipyvuetify version (`solara.util.IPYVUETIFY_V3`). ipyvuetify 3 is a prerelease, so `pip install solara` keeps installing ipyvuetify 1 and that code path is unchanged. [84b45547](https://github.com/widgetti/solara/commit/84b45547)
