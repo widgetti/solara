@@ -7,6 +7,8 @@
 - Bug Fix: Include exception information in error logs so error trackers can group exceptions correctly. [#1198](https://github.com/widgetti/solara/pull/1198)
 - Bug Fix: Guard ECharts updates until the chart has initialized. [#1201](https://github.com/widgetti/solara/pull/1201)
 - Compatibility: Support AnyIO 4.15 and Plotly 7, including the available Plotly map functions. [#1199](https://github.com/widgetti/solara/pull/1199)
+- Packaging: `solara-assets` 1.62.0 is unavailable on PyPI because the project has reached its storage limit.
+  The latest available asset package is 1.58.2.
 
 ## Version 1.61.0
 
