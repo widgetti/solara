@@ -226,6 +226,10 @@ class Server(BaseSettings):
     # Requires uvicorn's websockets implementation; falls back to the default
     # path (with a log message) when unavailable. See starlette.py.
     sync_ws_write: bool = False
+    # at shutdown every kernel is closed in parallel; a kernel whose event handler still
+    # runs holds its lock and cannot be closed, so wait at most this many seconds
+    # (SOLARA_SERVER_SHUTDOWN_CLOSE_TIMEOUT) before letting the process exit take it
+    shutdown_close_timeout: float = 10.0
 
     class Config:
         env_prefix = "solara_server_"

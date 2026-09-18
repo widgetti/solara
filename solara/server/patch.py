@@ -329,13 +329,25 @@ def _WidgetContextAwareThread__bootstrap(self):
         # we need to call this manually, because set_context_for_thread
         # uses this, and the original _bootstrap calls it too late for us
         self._set_ident()
-        if kernel_context.async_context_id is not None:
-            kernel_context.async_context_id.set(self.current_context.id)
-        kernel_context.set_context_for_thread(self.current_context, self)
-        shell = self.current_context.kernel.shell
-        display_pub = shell.display_pub
-        display_in_reacton_hook = shell.display_in_reacton_hook
-        display_pub.register_hook(display_in_reacton_hook)
+        try:
+            if kernel_context.async_context_id is not None:
+                kernel_context.async_context_id.set(self.current_context.id)
+            kernel_context.set_context_for_thread(self.current_context, self)
+            shell = self.current_context.kernel.shell
+            display_pub = shell.display_pub
+            display_in_reacton_hook = shell.display_in_reacton_hook
+            display_pub.register_hook(display_in_reacton_hook)
+        except BaseException:  # noqa
+            # same hang as above, but the close is half way (kernel.close() already tore
+            # down the shell, kernel is not None yet): anything raised here happens before
+            # Thread._bootstrap marks the thread as started, so the start() caller would
+            # wait forever. Log, and run without a kernel context.
+            logger.exception("Could not bind thread %s to its kernel context, running without one", self._name)
+            self.current_context = None
+            try:
+                kernel_context.clear_context_for_thread(self)
+            except BaseException:  # noqa - must not raise either, same hang
+                pass
     try:
         context = self.current_context or solara.util.nullcontext()
         with pdb_guard(), context:
