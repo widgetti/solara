@@ -138,7 +138,7 @@ pytest-mock==3.14.1
 pytest-playwright==0.5.2
 pytest-timeout==2.4.0
 python-dateutil==2.9.0.post0
-python-discovery==1.6.0
+python-discovery==1.6.1
 python-dotenv==1.0.1
 python-slugify==8.0.4
 python-utils==3.8.2
@@ -176,7 +176,7 @@ types-requests==2.32.0.20241016
 typing_extensions==4.13.2
 tzdata==2026.4
 urllib3==2.2.3
-uv==0.12.15
+uv==0.12.16
 uvicorn==0.33.0
 vaex-core==4.17.1
 vaex-hdf5==0.15.0
@@ -186,7 +186,7 @@ vega-datasets==0.9.0
 virtualenv==21.4.3
 watchdog==4.0.2
 watchfiles==0.24.0
-wcwidth==0.8.3
+wcwidth==0.8.4
 websockets==13.1
 Werkzeug==3.0.6
 widgetsnbextension==4.0.16

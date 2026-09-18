@@ -59,7 +59,7 @@ httpcore2==2.13.0
 httpx2==2.13.0
 humanize==4.16.0
 identify==2.6.19
-idna==3.19
+idna==3.20
 importlib_metadata==9.0.1
 iniconfig==2.3.0
 ipyaggrid==0.5.4
@@ -127,7 +127,7 @@ notebook==6.5.4
 notebook_shim==0.2.4
 numpy==1.26.4
 objgraph==3.6.2
-openai==3.14.1
+openai==3.15.0
 overrides==7.7.0
 packaging==26.3
 pandas==2.3.3
@@ -138,7 +138,7 @@ pathspec==1.1.1
 pefile==2023.2.7
 pexpect==4.9.0
 pillow==12.3.0
-platformdirs==4.11.9
+platformdirs==4.11.10
 playwright==1.50.0
 plotly==7.1.0
 pluggy==1.6.0
@@ -215,7 +215,7 @@ typing_extensions==4.16.0
 tzdata==2026.4
 uri-template==1.3.0
 urllib3==2.8.0
-uv==0.12.15
+uv==0.12.16
 uvicorn==0.53.0
 vaex-core==4.19.0
 vaex-hdf5==0.15.0
@@ -225,7 +225,7 @@ vega-datasets==0.9.0
 virtualenv==16.7.12
 watchdog==6.0.0
 watchfiles==1.2.0
-wcwidth==0.8.3
+wcwidth==0.8.4
 webcolors==25.10.0
 webencodings==0.6.1
 websocket-client==1.9.2
