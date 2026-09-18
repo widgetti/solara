@@ -61,7 +61,9 @@ You can define your own `Layout` component in the `__init__.py` file in the same
 
 
 For instance, putting the following `Layout` component in `__init__.py` will give you effectively the same [AppLayout](/documentation/components/layout/app_layout):
-```python
+
+```{.python pycafe-link}
+import solara
 @solara.component
 def Layout(children=[]):
     print("I get called before the Page component gets rendered")
@@ -72,7 +74,8 @@ def Layout(children=[]):
 ### No Layout
 If you do not want to have any layout, you can disable it using:
 
-```python
+```{.python pycafe-link}
+import solara
 @solara.component
 def Layout(children=[]):
     # there will only be 1 child, which is the Page()
@@ -86,7 +89,9 @@ This layout leaves every page responsible for creating its own header, footer, a
 
 In case you want to set up your own layout system, which sets up navigation as well, this example may get you started. It may help
 to [understand routing](/documentation/advanced/understanding/routing).
-```python
+
+```{.python pycafe-link}
+import solara
 @solara.component
 def Layout(children=[]):
     # Note that children being passed here for this example will be a Page() element.

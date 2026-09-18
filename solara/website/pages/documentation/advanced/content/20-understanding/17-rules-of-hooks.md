@@ -9,7 +9,7 @@ Hooks are Python function whose name start with `use_`. The most used hook is [u
 Hooks can only be called at the top level of a function component or a custom hook. They cannot be called inside loops, conditions, or nested functions.
 The reason for this is that hooks rely on the order in which they are called to maintain state between renders. If a hook is called conditionally, it may not be called on every render, which can mix up the states.
 
-```python
+```{.python pycafe-link}
 import solara
 
 
@@ -30,7 +30,7 @@ The rules of hooks are checked by Solara, if you break the rules, you will get a
 
 ## Example
 
-```python
+```{.python pycafe-link}
 import solara
 
 
@@ -53,7 +53,7 @@ Make sure you understand the consequences of this, by reading about the rules of
 
 As the warning suggests, you can suppress the warning by adding `# noqa: SH103` to the line that breaks the rules.
 
-```python
+```{.python pycafe-link}
 import solara
 
 
@@ -67,7 +67,7 @@ def Page():
 
 The warning can also be suppressed for the whole component by adding `# noqa: SH103` to the function definition.
 
-```python
+```{.python pycafe-link}
 import solara
 
 

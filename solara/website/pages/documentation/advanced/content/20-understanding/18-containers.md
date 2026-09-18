@@ -9,7 +9,7 @@ description: Solara allows for using python with statements to populate your UIs
 ## Introduction
 Some components, such as our favorite `ClickButton` only add logic on top of an existing component:
 
-```solara
+```{.python pycafe-link}
 import solara
 
 
@@ -30,7 +30,7 @@ Page = ClickButton
 ## Containers with children
 However, more sophisticated components will add multiple components together into a container component, let's take a look at an example.
 
-```solara
+```{.python pycafe-link}
 import solara
 
 
@@ -64,7 +64,7 @@ Here we use an [HBox](/documentation/components/layout/hbox) to lay out two chil
 
 Because using container components is so common, we created a more convenient way to pass children to components and made your code look neater and more structured as well (avoiding nested lists).
 
-```solara
+```{.python pycafe-link}
 import solara
 
 
@@ -112,7 +112,7 @@ All Reacton or Solara components return elements that can be used as context man
 Adding children using context managers work at any level, you can nest Rows and Columns [or any other containers](/api#components).
 
 
-```solara
+```{.python pycafe-link}
 import solara
 
 
@@ -148,7 +148,7 @@ a [Column](/documentation/components/layout/column). The only benefit of returni
 which can be useful for testing purposes. Users should probably never return an element, but use the automatic
 container feature.
 
-```solara
+```{.python pycafe-link}
 import solara
 
 
