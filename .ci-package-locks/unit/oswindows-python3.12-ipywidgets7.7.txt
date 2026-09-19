@@ -113,7 +113,7 @@ notebook==7.6.2
 notebook_shim==0.2.4
 numpy==1.26.4
 objgraph==3.6.2
-openai==3.15.0
+openai==3.16.2
 packaging==26.3
 pandas==3.0.6
 pandocfilters==1.5.1
@@ -195,10 +195,10 @@ tzdata==2026.4
 uri-template==1.3.0
 urllib3==2.8.0
 userpath==1.9.2
-uv==0.12.16
+uv==0.12.17
 uvicorn==0.53.0
 vega-datasets==0.9.0
-virtualenv==21.7.14
+virtualenv==21.7.16
 watchdog==6.0.0
 watchfiles==1.2.0
 wcwidth==0.8.4
