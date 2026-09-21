@@ -158,7 +158,7 @@ pydantic==1.10.26
 pyee==12.1.1
 Pygments==2.21.0
 pymdown-extensions==10.21.3
-pyparsing==3.3.2
+pyparsing==3.3.3
 pytest==8.4.2
 pytest-asyncio==1.2.0
 pytest-base-url==2.1.0
@@ -226,7 +226,7 @@ vaex-hdf5==0.15.0
 vaex-jupyter==0.9.0
 vaex-viz==0.6.0
 vega-datasets==0.9.0
-virtualenv==21.7.16
+virtualenv==21.9.0
 voila==0.3.8
 watchdog==6.0.0
 watchfiles==1.1.1
