@@ -369,14 +369,15 @@ jobs:
         # just ubuntu and windows give enough confidence
         # osx should work fine (and we test that locally often)
         os: [ubuntu, windows]
-        # just 1 version, it's heavy
-        python-version: [3.9]
         ipywidgets_major: ["7", "8"]
         include:
           - ipywidgets_major: "7"
             ipywidgets: "7.7"
+            python-version: "3.9"
           - ipywidgets_major: "8"
             ipywidgets: "8.0"
+            # AnyIO 4.14 requires Python >=3.10.
+            python-version: "3.10"
     env:
       LOCK_FILE_LOCATION: .ci-package-locks/integration/os${{ matrix.os }}-python${{ matrix.python-version }}-ipywidgets${{ matrix.ipywidgets_major }}.txt
       DIFF_FILE_LOCATION: diff-integration-os${{ matrix.os }}-python${{ matrix.python-version }}-ipywidgets${{ matrix.ipywidgets_major }}.txt
@@ -497,7 +498,7 @@ jobs:
         # osx should work fine (and we test that locally often)
         os: [ubuntu]
         # just 1 version, it's heavy
-        python-version: [3.9]
+        python-version: ["3.10"]
         ipywidgets_major: ["8"]
         include:
           - ipywidgets_major: "8"
