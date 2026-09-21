@@ -78,26 +78,30 @@ routes = [
         path="docs",  # matches '/docs'
         children=[
             # route level == 2
-            solara.Route(path="basics", children=[  # matches '/docs/basics'
-                # route level == 3
-                solara.Route(path="react"),      # matches '/docs/basics/react'
-                solara.Route(path="ipywidgets"), # matches '/docs/basics/ipywidgets'
-                solara.Route(path="solara"),     # matches '/docs/basics/solara'
-            ]),
-            solara.Route(path="advanced")  # matches '/docs/advanced'
+            solara.Route(
+                path="basics",
+                children=[  # matches '/docs/basics'
+                    # route level == 3
+                    solara.Route(path="react"),  # matches '/docs/basics/react'
+                    solara.Route(path="ipywidgets"),  # matches '/docs/basics/ipywidgets'
+                    solara.Route(path="solara"),  # matches '/docs/basics/solara'
+                ],
+            ),
+            solara.Route(path="advanced"),  # matches '/docs/advanced'
         ],
     ),
     solara.Route(
         path="blog",
         # route level == 1
         children=[
-            solara.Route(path="/"),   # matches '/blog'
-            solara.Route(path="foo"), # matches '/blog/foo'
-            solara.Route(path="bar"), # matches '/blog/bar'
+            solara.Route(path="/"),  # matches '/blog'
+            solara.Route(path="foo"),  # matches '/blog/foo'
+            solara.Route(path="bar"),  # matches '/blog/bar'
         ],
     ),
-    solara.Route(path="contact")  # matches '/contact'
+    solara.Route(path="contact"),  # matches '/contact'
 ]
+
 
 # Lets assume our pathname is `/docs/basics/react`,
 @solara.component
@@ -108,7 +112,7 @@ def Page():
     # routes_current_level is [routes[0], routes[1], routes[2], routes[3]], i.e.:
     #    [solara.Route(path="/"), solara.Route(path="docs", children=[...]),
     #     solara.Route(path="blog", children=[...]), solara.Route(path="contact")]
-    if route_current is None: # no matching route
+    if route_current is None:  # no matching route
         return solara.Error("oops, page not found")
     else:
         # we could render some top level navigation here based on route_current_level and route_current
@@ -129,12 +133,11 @@ def MyFirstLevelChildComponent():
     # route_current is routes[1].children[0], i.e. solara.Route(path="basics", children=[...])
     # routes_current_level is [routes[1].children[0], routes[1].children[1]], i.e.:
     #    [solara.Route(path="basics", children=[...]), solara.Route(path="advanced")]
-    if route_current is None: # no matching route
+    if route_current is None:  # no matching route
         return solara.Error("oops, page not found")
     else:
         # we could render some mid level navigation here based on route_current_level and route_current
         return MySecondLevelChildComponent()
-
 ```
 
 And the `MySecondLevelChildComponent` component is responsible for rendering the third level navigation:
@@ -147,7 +150,7 @@ def MySecondLevelChildComponent():
     # route_current is routes[1].children[0].children[0], i.e. solara.Route(path="react")
     # routes_current_level is [routes[1].children[0].children[0], routes[1].children[0].children[1], routes[1].children[0].children[2]], i.e.
     #    [solara.Route(path="react"), solara.Route(path="ipywidgets"), solara.Route(path="solara")]
-    if route_current is None: # no matching route
+    if route_current is None:  # no matching route
         return solara.Error("oops, page not found")
     else:
         # we could render some mid level navigation here based on route_current_level and route_current
@@ -159,7 +162,6 @@ def MySecondLevelChildComponent():
             return DocsBasicSolara()
         else:
             return solara.Error("oops, not possible!")
-
 ```
 
 From this code, we can see we are free how we transform the routes into the state of the UI (i.e. which components are rendered).
@@ -180,7 +182,7 @@ routes = [
         children=demo.routes,
         label="Demo",
     ),
-    ...
+    ...,
 ]
 ```
 
@@ -201,8 +203,7 @@ Therefore you should never use the `route.path` for navigation since the route o
 Using [`resolve_path`](/documentation/api/routing/resolve_path) we can request the full url for navigation.
 
 ```python
-def resolve_path(path_or_route: Union[str, solara.Route], level=0) -> str:
-    ...
+def resolve_path(path_or_route: Union[str, solara.Route], level=0) -> str: ...
 ```
 
 We can pass this full URL to the [`solara.Link`](/documentation/components/advanced/link) component, e.g. like:
