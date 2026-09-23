@@ -40,6 +40,7 @@ else:
 
 import solara
 import solara.settings
+from solara.components.html_component_assets import get_component_asset
 from solara.server.threaded import ServerBase
 
 from . import app as appmod
@@ -184,6 +185,20 @@ def public(path):
         if file.exists():
             return send_from_directory(directory, path)
     return flask.Response("not found", status=404)
+
+
+@blueprint.route("/static/html-components/<name>")
+def html_component_asset(name):
+    if not allowed():
+        abort(401)
+    asset = get_component_asset(name)
+    if asset is None:
+        return flask.Response("not found", status=404)
+    content, media_type = asset
+    response = flask.Response(content, mimetype=media_type)
+    response.headers["Cache-Control"] = "max-age=31536000, immutable"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    return response
 
 
 @blueprint.route("/static/assets/<path:path>")

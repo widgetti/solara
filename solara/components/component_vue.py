@@ -9,59 +9,9 @@ import traitlets
 import typing_extensions
 
 import solara
+from solara.components.component_widget import widget_from_signature
 
 P = typing_extensions.ParamSpec("P")
-
-default_to_json = widgets.widget_serialization["to_json"]
-default_from_json = widgets.widget_serialization["from_json"]
-
-
-def _widget_from_signature(
-    classname,
-    base_class: Type[widgets.Widget],
-    func: Callable[..., None],
-    event_prefix: str,
-    tags: Dict[str, Any],
-    to_json: Dict[str, Callable[[Any, widgets.Widget], Any]],
-    from_json: Dict[str, Callable[[Any, widgets.Widget], Any]],
-) -> Type[widgets.Widget]:
-    classprops: Dict[str, Any] = {}
-
-    parameters = inspect.signature(func).parameters
-    for name, param in parameters.items():
-        if name.startswith("event_"):
-            event_name = name[6:]
-            event_name_full = name  # LLM's are quick stubborn in wanting to call `event_foo` instead of `foo`
-
-            def event_handler(self, data, buffers=None, event_name=event_name, param=param):
-                callback = self._event_callbacks.get(event_name, param.default)
-                if not callback:
-                    # support 'event_foo'
-                    callback = self._event_callbacks.get(event_name_full, None)
-                if callback:
-                    if buffers:
-                        callback(data, buffers)
-                    else:
-                        callback(data)
-
-            classprops[f"vue_{event_name}"] = event_handler
-            classprops[f"vue_{event_name_full}"] = event_handler
-        elif name.startswith("on_") and name[3:] in parameters:
-            # callback, will be handled by reacton
-            continue
-        else:
-            if param.default == inspect.Parameter.empty:
-                trait = traitlets.Any()
-            else:
-                trait = traitlets.Any(default_value=param.default)
-            tag = dict(sync=True, to_json=to_json.get(name, default_to_json), from_json=from_json.get(name, default_from_json))
-            tag.update(**tags.get(name, {}))
-            classprops[name] = trait.tag(**tag)
-    # maps event_foo to a callable
-    classprops["_event_callbacks"] = traitlets.Dict(default_value={})
-
-    widget_class = type(classname, (base_class,), classprops)
-    return widget_class
 
 
 def _widget_vue(
@@ -97,7 +47,7 @@ def _widget_vue(
                 template_file = (os.path.abspath(inspect.getfile(func)), vue_path)
 
         base_class = VuetifyWidgetSolara if vuetify else VueWidgetSolara
-        widget_class = _widget_from_signature("VueWidgetSolaraSub", base_class, func, "vue_", to_json=to_json, from_json=from_json, tags=tags)
+        widget_class = widget_from_signature("VueWidgetSolaraSub", base_class, func, "vue_", to_json=to_json, from_json=from_json, tags=tags)
 
         return widget_class
 
