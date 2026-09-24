@@ -1,5 +1,12 @@
 # Solara Changelog
 
+## Version 1.62.1
+
+- Bug Fix: Restore file selection, opening, and directory navigation in file browsers with Vuetify 3. [#1203](https://github.com/widgetti/solara/pull/1203)
+- Bug Fix: Build documentation pages with the same widget versions as the production server.
+- Packaging: `solara-assets` 1.62.1 remains unavailable on PyPI after an upload failure.
+  The project remains at its storage limit, and the latest available asset package is 1.58.2.
+
 ## Version 1.62.0
 
 - Feature: Add `FileBrowserMultiple` for selecting multiple files and directories with `Path` values. [#1162](https://github.com/widgetti/solara/pull/1162)
