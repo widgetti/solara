@@ -63,6 +63,7 @@ from starlette.types import Receive, Scope, Send
 
 import solara
 import solara.settings
+from solara.components.html_component_assets import get_component_asset
 from solara.server.threaded import ServerBase
 
 from . import app as appmod
@@ -631,6 +632,23 @@ class StaticFilesOptionalAuth(StaticFiles):
         await super().__call__(scope, receive, send)
 
 
+async def html_component_asset(request: Request) -> Response:
+    """Serve only CSS and JS sections registered by native HTML components."""
+    if settings.oauth.private and not has_auth_support:
+        raise RuntimeError("SOLARA_OAUTH_PRIVATE requires solara-enterprise")
+    if has_auth_support and settings.oauth.private and not request.user.is_authenticated:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    asset = get_component_asset(request.path_params["name"])
+    if asset is None:
+        raise HTTPException(status_code=404, detail="Not found")
+    content, media_type = asset
+    return Response(
+        content=content,
+        media_type=media_type,
+        headers={"Cache-Control": "max-age=31536000, immutable", "X-Content-Type-Options": "nosniff"},
+    )
+
+
 class StaticNbFiles(StaticFilesOptionalAuth):
     def get_directories(
         self,
@@ -996,6 +1014,7 @@ routes = [
     Route("/", endpoint=root),
     Route("/{fullpath}", endpoint=root),
     Route("/_solara/api/close/{kernel_id}", endpoint=close, methods=["POST"]),
+    Route("/static/html-components/{name}", endpoint=html_component_asset),
     # dev/test-only, fail-closed (§6.4): the handler returns 404 unless explicitly enabled
     Route("/_solara/api/evict/{kernel_id}", endpoint=evict, methods=["POST"]),
     # only enable when the proxy is turned on, otherwise if the directory does not exists we will get an exception
