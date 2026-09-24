@@ -1,4 +1,6 @@
+import threading
 from pathlib import Path
+from typing import List, cast
 
 import playwright.sync_api
 import pytest
@@ -71,3 +73,122 @@ def test_file_browser_open_events(solara_test, page_session: playwright.sync_api
     page_session.locator(".solara-file-list-dir").filter(has_text="subdir").click()
     page_session.locator(".solara-file-list-file").filter(has_text="nested.txt").click()
     playwright.sync_api.expect(page_session.locator(".opened-path")).to_have_text("nested.txt")
+
+
+def test_file_browser_multiple_modifiers(solara_test, page_session: playwright.sync_api.Page, tmp_path: Path):
+    for name in ["a.txt", "b.txt", "c.txt", "d.txt", "z.txt"]:
+        (tmp_path / name).write_text(name)
+
+    @solara.component
+    def Page():
+        selection = solara.use_reactive("none")
+        solara.FileBrowserMultiple(
+            tmp_path,
+            on_paths_select=lambda paths: selection.set(",".join(path.name for path in paths) or "none"),
+        )
+        solara.Text(selection.value, classes=["selected-paths"])
+
+    solara.display(Page())
+    files = page_session.locator(".solara-file-list-file")
+    selection = page_session.locator(".selected-paths")
+    files.filter(has_text="z.txt").click(modifiers=["Shift"])
+    playwright.sync_api.expect(selection).to_have_text("z.txt")
+    files.filter(has_text="b.txt").click()
+    files.filter(has_text="d.txt").click(modifiers=["Shift"])
+    playwright.sync_api.expect(selection).to_have_text("z.txt,b.txt,c.txt,d.txt")
+    playwright.sync_api.expect(page_session.locator(".solara-file-list-selected .solara-file-list-file")).to_have_text(
+        ["b.txt - 5 Bytes", "c.txt - 5 Bytes", "d.txt - 5 Bytes", "z.txt - 5 Bytes"]
+    )
+
+    # Resize and reverse the range while retaining the selection from before Shift.
+    files.filter(has_text="c.txt").click(modifiers=["Shift"])
+    playwright.sync_api.expect(selection).to_have_text("z.txt,b.txt,c.txt")
+    files.filter(has_text="a.txt").click(modifiers=["Shift", "ControlOrMeta"])
+    playwright.sync_api.expect(selection).to_have_text("z.txt,b.txt,a.txt")
+    files.filter(has_text="a.txt").click(modifiers=["Shift"])
+    playwright.sync_api.expect(selection).to_have_text("z.txt,b.txt,a.txt")
+
+    files.filter(has_text="c.txt").click(modifiers=["ControlOrMeta"])
+    playwright.sync_api.expect(selection).to_have_text("z.txt,b.txt,a.txt,c.txt")
+    files.filter(has_text="c.txt").click(modifiers=["ControlOrMeta"])
+    playwright.sync_api.expect(selection).to_have_text("z.txt,b.txt,a.txt")
+
+
+def test_file_browser_range_highlights_before_callback(solara_test, page_session: playwright.sync_api.Page, tmp_path: Path):
+    for name in ["a.txt", "b.txt", "c.txt", "d.txt"]:
+        (tmp_path / name).write_text(name)
+    block = threading.Event()
+    entered = threading.Event()
+    release = threading.Event()
+
+    @solara.component
+    def Page():
+        selection = solara.use_reactive("none")
+
+        def on_select(paths):
+            if block.is_set():
+                entered.set()
+                assert release.wait(10)
+            selection.set(",".join(path.name for path in paths) or "none")
+
+        solara.FileBrowserMultiple(tmp_path, on_paths_select=on_select)
+        solara.Text(selection.value, classes=["selected-paths"])
+
+    solara.display(Page())
+    files = page_session.locator(".solara-file-list-file")
+    selection = page_session.locator(".selected-paths")
+    highlighted = page_session.locator(".solara-file-list-selected .solara-file-list-file")
+    files.filter(has_text="a.txt").click()
+    playwright.sync_api.expect(selection).to_have_text("a.txt")
+    block.set()
+    try:
+        files.filter(has_text="d.txt").click(modifiers=["Shift"])
+        assert entered.wait(2)
+        playwright.sync_api.expect(highlighted).to_have_text(["a.txt - 5 Bytes", "b.txt - 5 Bytes", "c.txt - 5 Bytes", "d.txt - 5 Bytes"])
+        files.filter(has_text="b.txt").click(modifiers=["Shift"])
+        playwright.sync_api.expect(highlighted).to_have_text(["a.txt - 5 Bytes", "b.txt - 5 Bytes"])
+        files.filter(has_text="d.txt").click(modifiers=["Shift"])
+        playwright.sync_api.expect(highlighted).to_have_text(["a.txt - 5 Bytes", "b.txt - 5 Bytes", "c.txt - 5 Bytes", "d.txt - 5 Bytes"])
+        playwright.sync_api.expect(selection).to_have_text("a.txt")
+    finally:
+        release.set()
+    playwright.sync_api.expect(selection).to_have_text("a.txt,b.txt,c.txt,d.txt")
+    files.filter(has_text="c.txt").click(modifiers=["Shift"])
+    playwright.sync_api.expect(selection).to_have_text("a.txt,b.txt,c.txt")
+    playwright.sync_api.expect(highlighted).to_have_text(["a.txt - 5 Bytes", "b.txt - 5 Bytes", "c.txt - 5 Bytes"])
+
+
+def test_file_browser_range_anchor_resets(solara_test, page_session: playwright.sync_api.Page, tmp_path: Path):
+    subdir = tmp_path / "subdir"
+    subdir.mkdir()
+    for directory in [tmp_path, subdir]:
+        for name in ["a.txt", "b.txt", "c.txt"]:
+            (directory / name).write_text(name)
+
+    @solara.component
+    def Page():
+        location = solara.use_reactive(tmp_path)
+        selected = solara.use_reactive(cast(List[Path], []))
+        solara.FileBrowserMultiple(location, selected=selected)
+        solara.Button("Clear selection", on_click=lambda: selected.set([]))
+        solara.Button("Change directory", on_click=lambda: location.set(subdir))
+        solara.Text(",".join(str(path.relative_to(tmp_path)) for path in selected.value) or "none", classes=["selected-paths"])
+
+    solara.display(Page())
+    files = page_session.locator(".solara-file-list-file")
+    selection = page_session.locator(".selected-paths")
+    files.filter(has_text="a.txt").click()
+    files.filter(has_text="c.txt").click(modifiers=["Shift"])
+    playwright.sync_api.expect(selection).to_have_text("a.txt,b.txt,c.txt")
+    page_session.get_by_role("button", name="Clear selection", exact=True).click()
+    playwright.sync_api.expect(selection).to_have_text("none")
+    files.filter(has_text="c.txt").click(modifiers=["Shift"])
+    playwright.sync_api.expect(selection).to_have_text("c.txt")
+    page_session.get_by_role("button", name="Change directory", exact=True).click()
+    playwright.sync_api.expect(page_session.locator(".solara-file-browser")).to_contain_text(str(subdir))
+    files.filter(has_text="a.txt").click(modifiers=["Shift"])
+    playwright.sync_api.expect(selection).to_have_text("c.txt," + str(Path("subdir") / "a.txt"))
+    files.filter(has_text="a.txt").dblclick()
+    playwright.sync_api.expect(selection).to_have_text("none")
+    files.filter(has_text="c.txt").click(modifiers=["Shift"])
+    playwright.sync_api.expect(selection).to_have_text(str(Path("subdir") / "c.txt"))
