@@ -2,7 +2,8 @@
     <v-menu
         v-model="show_menu"
         :absolute="use_absolute"
-        offset-y
+        :offset-y="offset_y"
+        :offset-x="offset_x"
         :close-on-content-click="close_on_content_click"
         :min-width="use_activator_width ? null : 'auto'"
     >
