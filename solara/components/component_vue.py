@@ -216,6 +216,19 @@ def component_vue(
         raise RuntimeError("esm_module requires ipyvue with ES module support")
 
     def decorator(func: Callable[P, None]):
+        nonlocal vue_path, esm_module, esm_export
+        if vue_path is not None:
+            from pathlib import Path
+
+            from . import vue_bundle
+
+            vue_file = Path(inspect.getfile(func)).parent / vue_path
+            vue_bundle.record(vue_file, func.__name__)
+            if vue_bundle.enabled():
+                # serve the template from the precompiled bundle instead of
+                # shipping its source (see solara/components/vue_bundle.py)
+                esm_module, esm_export = vue_bundle.lookup(vue_file)
+                vue_path = None
         VueWidgetSolaraSub = _widget_vue(
             vue_path, vuetify=vuetify, to_json=to_json, from_json=from_json, tags=tags, esm_module=esm_module, esm_export=esm_export
         )(func)
