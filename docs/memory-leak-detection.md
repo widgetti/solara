@@ -320,6 +320,11 @@ Manual BFS/DFS over `gc.get_referrers()` produces overwhelming output — lists 
   - `count(typename)` — count live instances of a type
 - **`sys.getrefcount()`** (stdlib) — check how many references exist to an object (note: the call itself adds one)
 
+## Related
+
+- `docs/deadlock-rules.md`: the lock inventory and the rules that keep kernel close, culling and reactive updates from deadlocking. A wedged kernel is also a leak: it can never be culled.
+- `docs/memory-usage-inspection.md`: the measurement handbook (process-level numbers, the cycle protocol, case studies).
+
 ## Configuration
 
 - `SOLARA_KERNEL_CULL_TIMEOUT` — how long to wait before cleaning up a disconnected kernel (default: 24h, set to near-zero in tests)
