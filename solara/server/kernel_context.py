@@ -1035,6 +1035,11 @@ def initialize_virtual_kernel(session_id: str, kernel_id: str, websocket: websoc
             context.close(reason="superseded")
             return initialize_virtual_kernel(session_id, kernel_id, websocket)
         logger.info("reusing virtual kernel: %s", kernel_id)
+        # A new kernel takes the event loop of the websocket that creates it. In threaded mode each
+        # websocket runs its own loop, which closes with that websocket, so move the kernel to the
+        # loop of this connection, the same way. Otherwise anything scheduled onto the kernel after
+        # a reconnect (task results, call_soon_threadsafe from other threads) lands on a closed loop.
+        context.event_loop = _get_or_create_event_loop()
         worker = context.state_flush_worker
         if worker is not None:
             # a genuine client reconnect starts a new connection epoch: reset the one-re-takeover
