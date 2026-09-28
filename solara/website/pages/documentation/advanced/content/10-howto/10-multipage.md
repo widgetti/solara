@@ -161,8 +161,7 @@ tabular.py, we see the `Page` component takes an additional arguments.
 
 ```python
 @solara.component
-def Page(name: str):
-    ...
+def Page(name: str): ...
 ```
 
 

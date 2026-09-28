@@ -83,6 +83,7 @@ This strategy was validated with two components: one clean, one intentionally le
 ```python
 _leaked_references: list = []
 
+
 @solara.component
 def LeakyComponent():
     text, set_text = solara.use_state("hello")
@@ -135,7 +136,7 @@ obj = rc_ref()
 chain = objgraph.find_backref_chain(obj, objgraph.is_proper_module, max_depth=20)
 for i, item in enumerate(chain):
     type_name = type(item).__name__
-    if hasattr(item, '__name__'):
+    if hasattr(item, "__name__"):
         type_name += f" ({item.__name__})"
     print(f"  [{i:2d}] {type_name}")
 ```
