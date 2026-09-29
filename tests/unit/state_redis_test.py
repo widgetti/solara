@@ -223,7 +223,7 @@ def test_e2e_double_reconnect_two_backends_one_server(monkeypatch):
     # in flight here would race B's takeover below and get fenced, flipping this into the
     # (designed, §5.5) reclaim-once fight instead of the zombie scenario this test pins.
     context_a = kc.initialize_virtual_kernel(session_id, kernel_id, Mock())
-    context_a.page_connect("pageA")
+    connection_a = context_a.page_connect("pageA")
     with context_a:
         r.value = "from-A"
     manager_a = context_a.state_persistence
@@ -237,7 +237,7 @@ def test_e2e_double_reconnect_two_backends_one_server(monkeypatch):
     # reclaim-once path — gen 3, defeating the zombie scenario this test pins. Disconnected,
     # a fenced A is an orphan: it concedes and closes as superseded — the same outcome the
     # reconnect's staleness check produces, whichever fires first.
-    context_a.page_disconnect("pageA")
+    context_a.page_disconnect("pageA", connection_a)
 
     # instance B (the second backend on the same server) takes over -> gen 2, then flushes "from-B"
     result_b = backend_b.takeover(kernel_id, shmac, SCHEMA_TAG)
