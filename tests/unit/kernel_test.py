@@ -370,3 +370,32 @@ def test_comm_info_request_filters_on_target_name():
     finally:
         kernel.comm_manager.comms.clear()  # type: ignore
         kernel.close()
+
+
+def test_reconnect_moves_the_kernel_to_the_event_loop_of_the_new_connection(no_kernel_context):
+    import asyncio
+
+    from solara.server import kernel_context
+
+    def connect_on_its_own_loop():
+        # threaded mode: each websocket connection runs on an event loop of its own
+        loop = asyncio.new_event_loop()
+
+        async def connect():
+            return kernel_context.initialize_virtual_kernel("session-loop", "kernel-loop", Mock())
+
+        return loop.run_until_complete(connect()), loop
+
+    context, first_loop = connect_on_its_own_loop()
+    second_loop = None
+    try:
+        assert context.event_loop is first_loop
+        first_loop.close()  # the websocket disconnected, and its loop with it
+        reconnected, second_loop = connect_on_its_own_loop()
+        assert reconnected is context
+        assert context.event_loop is second_loop
+    finally:
+        if second_loop is not None:
+            second_loop.close()
+        for live_context in list(kernel_context.contexts.values()):
+            live_context.close()

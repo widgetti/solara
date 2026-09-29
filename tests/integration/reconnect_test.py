@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 from typing import Optional
 
@@ -109,5 +110,39 @@ def test_reconnect_and_update(browser: playwright.sync_api.Browser, page_session
         # this will mutate when disconnected, testing the update functionality on reconnect
         page_session.locator("text=Disconnect and change").click()
         page_session.locator("text=Value 100").wait_for()
+        page_session.goto("about:blank")
+        assert context.closed_event.wait(10)
+
+
+def test_reconnect_moves_the_kernel_to_the_new_event_loop(
+    browser: playwright.sync_api.Browser, page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path
+):
+    # Each websocket runs on an event loop of its own, which closes with it. After a reconnect,
+    # work that another thread schedules onto the kernel's loop (such as a pub/sub listener that
+    # pushes an update into every open page) must still reach the page.
+    with extra_include_path(HERE), solara_app("reconnect_test:Page"):
+        page_session.goto(solara_server.base_url)
+        page_session.locator("text=Value 0").wait_for()
+        assert len(solara.server.kernel_context.contexts) == 1
+        context = list(solara.server.kernel_context.contexts.values())[0]
+        first_loop = context.event_loop
+        ws = list(context.kernel.session.websockets)[0]
+        page_session.locator("text=Disconnect").nth(0).click()
+        n = 0
+        while not (ws not in context.kernel.session.websockets and len(context.kernel.session.websockets) == 1):
+            page_session.wait_for_timeout(100)
+            n += 1
+            if n > 50:
+                raise RuntimeError("Timeout waiting for reconnected websocket")
+        assert context.event_loop is not first_loop
+        # the app runs as the module "reconnect_test", not as this test module
+        app_set_value = sys.modules["reconnect_test"].set_value
+
+        def set_value_in_kernel():
+            with context:
+                app_set_value(42)
+
+        context.event_loop.call_soon_threadsafe(set_value_in_kernel)
+        page_session.locator("text=Value 42").wait_for()
         page_session.goto("about:blank")
         assert context.closed_event.wait(10)
