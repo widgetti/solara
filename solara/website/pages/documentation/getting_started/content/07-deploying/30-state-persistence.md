@@ -61,6 +61,46 @@ license fork. Managed Redis or Redis Sentinel is sufficient; async-replication f
 the last few writes, which is acceptable for a recovery cache. For Redis Cluster, the per-kernel
 hash is a single key, so it lives in one slot.
 
+### Bringing your own Redis client
+
+To control the client yourself (a custom pool, TCP keepalive, TLS options, a Sentinel client, or a
+retry policy), point `SOLARA_STATE_REDIS_CLIENT_FACTORY` at a function that returns one:
+
+```python
+# myapp/state_redis.py
+import redis
+
+
+def make_client(settings):
+    # settings is solara.server.settings.state: url, connect_timeout, prefix, ...
+    return redis.Redis.from_url(
+        settings.url,
+        decode_responses=False,
+        socket_timeout=settings.connect_timeout,
+        socket_connect_timeout=settings.connect_timeout,
+        socket_keepalive=True,
+    )
+```
+
+```bash
+export SOLARA_STATE_REDIS_CLIENT_FACTORY=myapp.state_redis.make_client
+```
+
+The server imports the function at startup and refuses to start if it cannot. The client must be:
+
+- **synchronous and thread-safe**: Solara calls it from worker threads (a plain `redis.Redis` is).
+- **`decode_responses=False`**: stored values are signed bytes and must round-trip unchanged.
+- **bounded by the connect deadline**: keep socket timeouts at `connect_timeout`, and do not wait
+  on an exhausted pool (no long `BlockingConnectionPool` timeout, no backoff). When a restore
+  misses the deadline, Solara starts a fresh session, and when the late call finally completes it
+  deletes the stored state, so it cannot roll the user back later. If you add retries, retry only
+  transport errors that fail fast, at most once per operation. Never retry a timeout, or a server
+  reply: redis-py's `ConnectionError` also covers `AuthenticationError` and `BusyLoadingError`.
+  redis-py nests retry loops (a command, its reconnect, its health-check ping), so count the
+  retries per operation, not per loop.
+- **dedicated to Solara**: do not report its errors into your application's own Redis health.
+  Solara has its own circuit breaker, and its state shows on `/resourcez`.
+
 ## Secret keys and rotation
 
 `SOLARA_STATE_SECRET_KEYS` signs every stored value with HMAC-SHA-256, verified *before* anything

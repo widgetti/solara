@@ -21,6 +21,7 @@ import logging
 from typing import Any, Dict, List, Optional, Sequence, Union
 
 import solara.settings
+import solara.util
 
 from .backend import StateBackend, TakeoverResult
 
@@ -153,8 +154,15 @@ class RedisStateBackend(StateBackend):
 
     Constructed with no arguments by ``get_backend()``: it reads ``solara.settings.state.url``
     (the redis DSN) and ``prefix``, and builds a sync ``redis.Redis`` client whose socket
-    timeouts bound *every* operation (the connect deadline in commit 2 relies on this). The
-    ``client`` kwarg and the :meth:`_make_client` factory are the test-injection seam.
+    timeouts bound *every* operation (the connect deadline in commit 2 relies on this).
+
+    To bring your own client, set ``SOLARA_STATE_REDIS_CLIENT_FACTORY`` to the dotted path of a
+    callable that takes the state settings and returns a client, or pass ``client=`` directly
+    (e.g. from a subclass registered in ``state_backend_map``). Either way the client must be a
+    synchronous, thread-safe ``redis.Redis`` (or compatible) with ``decode_responses=False``, and
+    its timeouts and retries must stay within ``connect_timeout``: a takeover that completes after
+    the connect deadline is rolled back by deleting the stored state. The application owns that
+    client, including closing it.
     """
 
     # a genuinely shared, cross-process store: the server may shorten the orphan cull (§5.4).
@@ -197,6 +205,10 @@ class RedisStateBackend(StateBackend):
             logger.debug("could not read Redis maxmemory-policy: %s", exc)
 
     def _make_client(self) -> Any:
+        st = solara.settings.state
+        if st.redis_client_factory:
+            factory = solara.util.import_item(st.redis_client_factory)
+            return factory(st)
         # LAZY import: redis is an optional dependency, required only when this backend is selected.
         try:
             import redis
@@ -204,7 +216,6 @@ class RedisStateBackend(StateBackend):
             raise ImportError(
                 "the redis state backend requires the 'redis' package. Install it with `pip install solara[redis]` (or `pip install redis`)."
             ) from exc
-        st = solara.settings.state
         if not st.url:
             raise ValueError("SOLARA_STATE_URL must be set to a redis DSN (e.g. redis://localhost:6379/0) for the redis state backend")
         # socket_timeout bounds every op incl. peek_generation; socket_connect_timeout bounds connect.
