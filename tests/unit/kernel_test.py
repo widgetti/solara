@@ -2,6 +2,8 @@ import json
 from datetime import datetime
 from unittest.mock import Mock
 
+import pytest
+
 from solara.server.kernel import SessionWebsocket
 import numpy as np
 
@@ -119,3 +121,20 @@ def test_reconnect_moves_the_kernel_to_the_event_loop_of_the_new_connection(no_k
             second_loop.close()
         for live_context in list(kernel_context.contexts.values()):
             live_context.close()
+
+
+def test_restart_initialization_error_does_not_wedge_close(no_kernel_context):
+    from solara.server import kernel as kernel_mod
+    from solara.server.kernel_context import VirtualKernelContext
+
+    context = VirtualKernelContext(id="restart-init-error", kernel=kernel_mod.Kernel(), session_id="session")
+
+    def fail():
+        raise RuntimeError("restart initialization failed")
+
+    context.__post_init__ = fail  # type: ignore
+    with pytest.raises(RuntimeError, match="restart initialization failed"):
+        context.restart()
+
+    context.close()
+    assert context.closed_event.wait(timeout=5)
