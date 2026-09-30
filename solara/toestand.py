@@ -21,7 +21,6 @@ from typing import (
     ContextManager,
     Dict,
     Generic,
-    List,
     Optional,
     Set,
     Tuple,
@@ -77,40 +76,14 @@ def _managed_subscription():
 class _SubscriptionLeakCheck:
     site: str
     store_name: str
-    kernel_id: str
     resolved: bool = False
-
-
-class _ListenerEntry(Generic[T]):
-    __slots__ = ("listener", "context")
-
-    def __init__(self, listener: Callable, context: "Context"):
-        self.listener = listener
-        self.context = context
 
 
 # per kernel context id: subscriptions to check for leaks when it closes
 # (popped by the on_close report; VirtualKernelContext itself is unhashable)
 _pending_subscription_checks: Dict[str, list] = {}
-_pending_subscription_callbacks: Dict[str, Callable[[], None]] = {}
 _warned_sites: Set[str] = set()
 _internal_packages_paths = None
-
-
-def _resolve_subscription(check: _SubscriptionLeakCheck) -> None:
-    check.resolved = True
-    checks = _pending_subscription_checks.get(check.kernel_id)
-    if checks is None:
-        return
-    try:
-        checks.remove(check)
-    except ValueError:
-        return
-    if not checks:
-        _pending_subscription_checks.pop(check.kernel_id, None)
-        unregister = _pending_subscription_callbacks.pop(check.kernel_id, None)
-        if unregister is not None:
-            unregister()
 
 
 def _warn_once(site: str, message: str):
@@ -188,9 +161,8 @@ class ValueBase(Generic[T]):
     def __init__(self, merge: Callable = merge_state, equals=equals_extra):
         self.merge = merge
         self.equals = equals
-        self.listeners: Dict[str, Set[_ListenerEntry[T]]] = defaultdict(set)
-        self.listeners2: Dict[str, Set[_ListenerEntry[T]]] = defaultdict(set)
-        self._listeners_lock = threading.Lock()
+        self.listeners: Dict[str, Set[Tuple[Callable[[T], None], Optional[ContextManager]]]] = defaultdict(set)
+        self.listeners2: Dict[str, Set[Tuple[Callable[[T, T], None], Optional[ContextManager]]]] = defaultdict(set)
 
     # make sure all boolean operations give type errors
     if not solara.settings.main.allow_reactive_boolean:
@@ -269,20 +241,19 @@ class ValueBase(Generic[T]):
             kernel = nullcontext()
         context = Context(rc, kernel)
 
-        entry: _ListenerEntry[T] = _ListenerEntry(listener, context)
-        with self._listeners_lock:
-            self.listeners[scope_id].add(entry)
+        self.listeners[scope_id].add((listener, context))
         leak_check = self._track_subscription()
 
         def cleanup():
             if leak_check is not None:
-                _resolve_subscription(leak_check)
-            with self._listeners_lock:
-                entries = self.listeners.get(scope_id)
-                if entries is not None:
-                    entries.discard(entry)
-                    if not entries:
-                        self.listeners.pop(scope_id, None)
+                leak_check.resolved = True
+            entries = self.listeners.get(scope_id)
+            if entries is not None:
+                entries.discard((listener, context))
+                # prune the scope entry itself: unsubscribing must leave no residue,
+                # or every kernel that ever subscribed leaves an empty set behind
+                if not entries:
+                    del self.listeners[scope_id]
 
         return cleanup
 
@@ -299,20 +270,17 @@ class ValueBase(Generic[T]):
         else:
             kernel = nullcontext()
         context = Context(rc, kernel)
-        entry: _ListenerEntry[T] = _ListenerEntry(listener, context)
-        with self._listeners_lock:
-            self.listeners2[scope_id].add(entry)
+        self.listeners2[scope_id].add((listener, context))
         leak_check = self._track_subscription()
 
         def cleanup():
             if leak_check is not None:
-                _resolve_subscription(leak_check)
-            with self._listeners_lock:
-                entries = self.listeners2.get(scope_id)
-                if entries is not None:
-                    entries.discard(entry)
-                    if not entries:
-                        self.listeners2.pop(scope_id, None)
+                leak_check.resolved = True
+            entries = self.listeners2.get(scope_id)
+            if entries is not None:
+                entries.discard((listener, context))
+                if not entries:
+                    del self.listeners2[scope_id]
 
         return cleanup
 
@@ -346,14 +314,13 @@ class ValueBase(Generic[T]):
         site = _app_call_site()
         if site is None:
             return None
-        leak_check = _SubscriptionLeakCheck(site, repr(self), kernel_context.id)
+        leak_check = _SubscriptionLeakCheck(site, repr(self))
         checks = _pending_subscription_checks.setdefault(kernel_context.id, [])
         checks.append(leak_check)
         if len(checks) == 1:
             kernel_id = kernel_context.id
 
             def report():
-                _pending_subscription_callbacks.pop(kernel_id, None)
                 for check in _pending_subscription_checks.pop(kernel_id, []):
                     if not check.resolved:
                         _warn_once(
@@ -364,11 +331,7 @@ class ValueBase(Generic[T]):
                             "otherwise the listener and everything it captures leak for the lifetime of the process.",
                         )
 
-            unregister = kernel_context.on_close(report)
-            if kernel_id in _pending_subscription_checks:
-                _pending_subscription_callbacks[kernel_id] = unregister
-            else:
-                unregister()
+            kernel_context.on_close(report)
         return leak_check
 
     def fire(self, new: T, old: T):
@@ -377,20 +340,20 @@ class ValueBase(Generic[T]):
         # .get instead of indexing: these are defaultdicts, and indexing would
         # permanently materialize an empty set for every kernel that ever fires,
         # growing the dicts by one entry per kernel for the process lifetime
-        with self._listeners_lock:
-            listeners = tuple(self.listeners.get(scope_id, ()))
-            listeners2 = tuple(self.listeners2.get(scope_id, ()))
-        contexts = {entry.context for entry in listeners}
-        contexts.update(entry.context for entry in listeners2)
+        contexts = set()
+        for listener, context in tuple(self.listeners.get(scope_id, ())):
+            contexts.add(context)
+        for listener2, context in tuple(self.listeners2.get(scope_id, ())):
+            contexts.add(context)
         if contexts:
             for context in contexts:
                 with context or nullcontext():
-                    for entry in listeners:
-                        if context == entry.context:
-                            entry.listener(new)
-                    for entry in listeners2:
-                        if context == entry.context:
-                            entry.listener(new, old)
+                    for listener, context_listener in tuple(self.listeners.get(scope_id, ())):
+                        if context == context_listener:
+                            listener(new)
+                    for listener2, context_listener in tuple(self.listeners2.get(scope_id, ())):
+                        if context == context_listener:
+                            listener2(new, old)
 
     def update(self, _f=None, **kwargs):
         if _f is not None:
@@ -487,9 +450,6 @@ class KernelStore(ValueBase[S], ABC):
             else:
                 scope_dict = cast(Dict[str, S], context.user_dicts)
                 scope_id = context.id
-                # Persistent module stores can share an explicit key with a transient
-                # store; track them so the transient owner cannot clear their value.
-                context.track_generation_store(self, owned=False)
         return cast(Dict[str, S], scope_dict), scope_id, context
 
     def peek(self):
@@ -906,40 +866,38 @@ class Reactive(ValueBase[S]):
         return Computed(func, key=f.__qualname__)
 
 
-def _on_kernel_start_scoped_to_creator(
-    store: KernelStore,
-    f: Callable[[], Optional[Callable[[], None]]],
-    cleanup_value: Optional[Callable[[Any], None]] = None,
-) -> Callable[[], None]:
-    """Reset process-lifetime stores globally and kernel-created stores per generation.
+def _on_kernel_start_scoped_to_creator(f: Callable[[], Optional[Callable[[], None]]]) -> Callable[[], None]:
+    """on_kernel_start, but scoped to the creating kernel when there is one.
 
     Module-level Singleton/Computed instances register at import time (no kernel
     context) and live for the process — a process-global registration is right.
-    Stores created inside a real kernel are held weakly by that context and cleared
-    on every restart/close, so discarded instances are not pinned by a registry.
+    Instances created inside a kernel (a Computed in a component body, use_task's
+    Singleton) must not outlive it: unregister when that kernel closes. The
+    lifecycle cleanup is idempotent, so an earlier unmount cleanup (use_task) and
+    the kernel-close unregistration can both run.
 
     The app script itself runs inside the short-lived "dummy" kernel context
     (solara.server.app), so module-level instances of an app ARE created inside
     a kernel — scoping to the dummy context would unregister every module-level
-    reset the moment startup finishes (and break hot reload), so treat it as global.
+    reset the moment startup finishes (and break hot reload). Skip it.
     """
     import solara.lifecycle
 
+    cleanup = solara.lifecycle.on_kernel_start(f)
     if _using_solara_server():
         import solara.server.kernel_context
 
         if solara.server.kernel_context.has_current_context():
             context = solara.server.kernel_context.get_current_context()
             if context.id != "dummy":
-                context.track_generation_store(store, cleanup_value)
-                return store.clear
-    return solara.lifecycle.on_kernel_start(f)
+                context.on_close(cleanup)
+    return cleanup
 
 
 class Singleton(Reactive[S]):
     _storage: KernelStore[S]
 
-    def __init__(self, factory: Callable[[], S], key=None, _cleanup_value: Optional[Callable[[S], None]] = None):
+    def __init__(self, factory: Callable[[], S], key=None):
         super().__init__(KernelStoreFactory(factory, key=key))
 
         # reset on kernel restart (e.g. hot reload)
@@ -949,9 +907,13 @@ class Singleton(Reactive[S]):
 
             return cleanup
 
-        # Module-level instances use the process-global lifecycle registry. Kernel-created
-        # instances are tracked weakly by their context instead.
-        self._on_kernel_start_cleanup = _on_kernel_start_scoped_to_creator(self._storage, reset, _cleanup_value)
+        # the registration appends to a process-global list, pinning self (and, through the
+        # kernel store, the per-kernel values) forever. Fine for module-level singletons -
+        # the module pins them anyway - but per-component-instance singletons (use_task)
+        # must call this cleanup on unmount or every mount leaks until process exit.
+        # Instances created INSIDE a kernel additionally unregister at kernel close
+        # (unmount cleanups don't run when the whole kernel goes away).
+        self._on_kernel_start_cleanup = _on_kernel_start_scoped_to_creator(reset)
 
     def __set__(self, obj, value):
         raise AttributeError("Can't set a singleton")
@@ -972,20 +934,13 @@ class Computed(Reactive[S]):
                 )
         self.f = f
 
-        self_ref = weakref.ref(self)
-
         def on_change(*ignore):
-            computed = self_ref()
-            if computed is not None:
-                with computed._auto_subscriber.value:
-                    computed.set(f())
+            with self._auto_subscriber.value:
+                self.set(f())
 
         import functools
 
-        self._auto_subscriber = Singleton(
-            functools.wraps(AutoSubscribeContextManager)(lambda: AutoSubscribeContextManager(on_change)),
-            _cleanup_value=lambda manager: manager.unsubscribe_all(),
-        )
+        self._auto_subscriber = Singleton(functools.wraps(AutoSubscribeContextManager)(lambda: AutoSubscribeContextManager(on_change)))
 
         @functools.wraps(f)
         def factory():
@@ -1005,7 +960,7 @@ class Computed(Reactive[S]):
 
             return cleanup
 
-        self._on_kernel_start_cleanup = _on_kernel_start_scoped_to_creator(self._storage, reset)
+        self._on_kernel_start_cleanup = _on_kernel_start_scoped_to_creator(reset)
 
     def __repr__(self):
         value = super().__repr__()
@@ -1253,117 +1208,79 @@ class FieldItem(FieldBase):
                 self._parent.set(parent_value)
 
 
-@dataclasses.dataclass(eq=False)
-class _AutoSubscribeRun:
-    subscriptions: Dict[ValueBase, Callable]
-    reactive_used: Set[ValueBase]
-    reactive_used_before: Optional[Set[ValueBase]]
-    reactive_watch_before: Optional[Callable[[ValueBase], None]]
-
-
 class AutoSubscribeContextManagerBase:
+    # a render loop might trigger a new render loop of a differtent render context
+    # so we want to save, and restore the current reactive_used
+    reactive_used: Optional[Set[ValueBase]] = None
     subscribed: Dict[ValueBase, Callable]
-    reactive_used: Optional[Set[ValueBase]]
+    subscribed_previous_run: Dict[ValueBase, Callable]
     on_change: Callable[[], None]
+    previous_reactive_watch: Optional[Callable[["ValueBase"], None]] = None
 
     def __init__(self):
         self.subscribed = {}
-        self.reactive_used = None
+        self.subscribed_previous_run = {}
         self.on_change = lambda: None
-        self._subscription_lock = threading.Lock()
-        self._active_runs: List[_AutoSubscribeRun] = []
-        self._run_local = threading.local()
-        self._closed = False
 
-    @staticmethod
-    def _cleanup(unsubscribes):
-        fatal = None
-        for unsubscribe in unsubscribes:
-            try:
+    def unsubscribe_previous(self):
+        removed = set(self.subscribed_previous_run or set()) - set(self.subscribed)
+        if removed:
+            for reactive in removed:
+                unsubscribe = self.subscribed_previous_run[reactive]
                 unsubscribe()
-            except (KeyboardInterrupt, SystemExit) as error:
-                if fatal is None:
-                    fatal = error
-            except BaseException:
-                logger.exception("Reactive subscription cleanup failed")
-        if fatal is not None:
-            raise fatal
+                del self.subscribed_previous_run[reactive]
 
     def unsubscribe_all(self):
         """Unsubscribe everything: the owner's end-of-life cleanup (unmount or kernel close)."""
-        with self._subscription_lock:
-            self._closed = True
-            unsubscribes = list(self.subscribed.values())
-            self.subscribed = {}
-            self.reactive_used = None
-            for run in self._active_runs:
-                unsubscribes.extend(run.subscriptions.values())
-                run.subscriptions = {}
-            self._active_runs = []
-        self._cleanup(unsubscribes)
+        seen: Set[int] = set()
+        for subscriptions in (self.subscribed, self.subscribed_previous_run):
+            for unsubscribe in subscriptions.values():
+                # the same unsubscribe closure can sit in both dicts
+                if id(unsubscribe) not in seen:
+                    seen.add(id(unsubscribe))
+                    unsubscribe()
+            subscriptions.clear()
 
     def add(self, reactive: ValueBase):
-        stack = getattr(self._run_local, "stack", ())
-        if not stack:
-            return
-        run = stack[-1]
         relevant_reactive = reactive
         if isinstance(reactive, ValueSubField):
             root = reactive._root
-            if root in run.subscriptions:
+            if root in self.subscribed or root in self.subscribed_previous_run:
                 # we already subscribed to this reactive's root
                 return
+            else:
+                # we are subscribing to this reactive's root
+                pass
 
         # TODO: we could see if we are the root of any of the subscribed fields,
         # and remove that field.
-        if relevant_reactive in run.subscriptions:
-            return
-        with self._subscription_lock:
-            if self._closed or run not in self._active_runs:
-                return
-        with _managed_subscription():
-            unsubscribe = relevant_reactive.subscribe_change(lambda *args: self.on_change())
-        with self._subscription_lock:
-            if self._closed or run not in self._active_runs:
-                keep = False
+        if relevant_reactive not in self.subscribed:
+            if relevant_reactive not in self.subscribed_previous_run:
+                with _managed_subscription():
+                    unsubscribe = relevant_reactive.subscribe_change(lambda *args: self.on_change())
+                self.subscribed[relevant_reactive] = unsubscribe
             else:
-                run.subscriptions[relevant_reactive] = unsubscribe
-                keep = True
-        if not keep:
-            self._cleanup([unsubscribe])
+                self.subscribed[relevant_reactive] = self.subscribed_previous_run[relevant_reactive]
 
     def __enter__(self):
-        self._bind_to_current_kernel()
-        run = _AutoSubscribeRun({}, set(), thread_local.reactive_used, thread_local.reactive_watch)
-        with self._subscription_lock:
-            if not self._closed:
-                self._active_runs.append(run)
-        stack = getattr(self._run_local, "stack", None)
-        if stack is None:
-            stack = self._run_local.stack = []
-        stack.append(run)
+        self.subscribed = {}
+        self.reactive_used_before = thread_local.reactive_used
+        self.previous_reactive_watch = thread_local.reactive_watch
         thread_local.reactive_watch = self.add
-        thread_local.reactive_used = run.reactive_used
-        return self
+        self.reactive_used = thread_local.reactive_used = set()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        run = self._run_local.stack.pop()
-        thread_local.reactive_used = run.reactive_used_before
-        thread_local.reactive_watch = run.reactive_watch_before
-        with self._subscription_lock:
-            if run in self._active_runs:
-                self._active_runs.remove(run)
-            if self._closed or exc_type is not None:
-                unsubscribes = list(run.subscriptions.values())
-                run.subscriptions = {}
-            else:
-                unsubscribes = list(self.subscribed.values())
-                self.subscribed = run.subscriptions
-                self.reactive_used = run.reactive_used
-        self._cleanup(unsubscribes)
-
-    def _bind_to_current_kernel(self):
-        pass
+        thread_local.reactive_used = self.reactive_used_before
+        thread_local.reactive_watch = self.previous_reactive_watch
+        self.unsubscribe_previous()
+        self.subscribed_previous_run = self.subscribed.copy()
+        # Clear saved references to avoid preventing garbage collection.
+        # Without this, a Computed's AutoSubscribeContextManager retains
+        # previous_reactive_watch (a bound method from the component's
+        # AutoSubscribeContextManagerReacton), which transitively keeps
+        # the _RenderContext alive through closure cells.
+        self.previous_reactive_watch = None
+        self.reactive_used_before = None
 
 
 class Context:
@@ -1480,10 +1397,6 @@ class AutoSubscribeContextManager(AutoSubscribeContextManagerBase):
     def __init__(self, on_change: Callable[[], None]):
         super().__init__()
         self.on_change = on_change
-        self._context_ref: Optional[weakref.ReferenceType] = None
-        self._bind_to_current_kernel()
-
-    def _bind_to_current_kernel(self):
         # This instance owns its subscriptions, and (for Computed) is created once
         # per kernel: unsubscribe when that kernel closes, or every kernel leaves
         # its subscriptions — pinning the on_change closure and everything it
@@ -1493,20 +1406,7 @@ class AutoSubscribeContextManager(AutoSubscribeContextManagerBase):
             import solara.server.kernel_context
 
             if solara.server.kernel_context.has_current_context():
-                context = solara.server.kernel_context.get_current_context()
-                with self._subscription_lock:
-                    if self._closed or self._context_ref is not None:
-                        return
-                    self._context_ref = weakref.ref(context)
-                manager_ref = weakref.ref(self)
-
-                def close_manager():
-                    manager = manager_ref()
-                    if manager is not None:
-                        manager.unsubscribe_all()
-
-                unregister = context.on_close(close_manager)
-                weakref.finalize(self, unregister)
+                solara.server.kernel_context.get_current_context().on_close(self.unsubscribe_all)
 
 
 # alias for compatibility
