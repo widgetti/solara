@@ -1,4 +1,5 @@
 import dataclasses
+import gc
 import logging
 import threading
 import time
@@ -1872,3 +1873,74 @@ def test_init_lock_in_global_scope_uses_per_instance_lock(no_kernel_context):
     assert scope_id == "global"
     assert context is None  # no kernel context -> global scope, per-instance lock
     assert store.get() == "v"  # lazy init works through the global (per-instance) lock
+
+
+def _listener_count(value_base, scope_id: str) -> int:
+    count = 0
+    current = value_base
+    while isinstance(current, toestand.ValueBase):
+        count += len(current.listeners.get(scope_id, ()))
+        count += len(current.listeners2.get(scope_id, ()))
+        current = getattr(current, "_storage", None)
+    return count
+
+
+@pytest.mark.parametrize("read_before_close", [False, True])
+def test_auto_subscribe_close_cleans_active_run(no_kernel_context, monkeypatch, read_before_close):
+    monkeypatch.setattr(toestand, "_using_solara_server", lambda: True)
+    store = Reactive("value")
+    context = kernel_context.VirtualKernelContext(id=f"active-{read_before_close}", kernel=kernel.Kernel(), session_id="session")
+    with context:
+        manager = toestand.AutoSubscribeContextManager(lambda: None)
+
+    entered = threading.Event()
+    release = threading.Event()
+    errors = []
+
+    def run():
+        try:
+            with context, manager:
+                if read_before_close:
+                    assert store.value == "value"
+                entered.set()
+                assert release.wait(timeout=5)
+                if not read_before_close:
+                    assert store.value == "value"
+        except BaseException as error:
+            errors.append(error)
+
+    thread = threading.Thread(target=run)
+    thread.start()
+    assert entered.wait(timeout=5)
+    context.close()
+    assert _listener_count(store, context.id) == 0
+
+    release.set()
+    thread.join(timeout=5)
+    assert not thread.is_alive()
+    if errors:
+        raise errors[0]
+    assert _listener_count(store, context.id) == 0
+
+
+def test_discarded_singleton_preserves_shared_explicit_key(no_kernel_context, monkeypatch):
+    monkeypatch.setattr(toestand, "_using_solara_server", lambda: True)
+    calls = 0
+
+    def create():
+        nonlocal calls
+        calls += 1
+        return object()
+
+    permanent = toestand.Singleton(create, key="shared-explicit-key")
+    context = kernel_context.VirtualKernelContext(id="shared-key", kernel=kernel.Kernel(), session_id="session")
+    with context:
+        value = permanent.value
+        transient = toestand.Singleton(create, key="shared-explicit-key")
+        assert transient.value is value
+    del transient
+    gc.collect()
+    with context:
+        assert permanent.value is value
+    assert calls == 1
+    context.close()
