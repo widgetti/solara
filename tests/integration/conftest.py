@@ -86,8 +86,8 @@ def _write_to_stderr(text: str) -> None:
 
 
 def _dump_thread_stacks_on_timeout(outcome, item, when: str) -> None:
-    excinfo = outcome.excinfo
-    if excinfo is None or not isinstance(excinfo[1], playwright.sync_api.TimeoutError):
+    # the public Result.exception, read with getattr so it cannot raise
+    if not isinstance(getattr(outcome, "exception", None), playwright.sync_api.TimeoutError):
         return
     if item.nodeid in _tests_with_thread_stacks or len(_tests_with_thread_stacks) >= 3:
         return
