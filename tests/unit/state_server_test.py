@@ -126,14 +126,14 @@ def test_double_reconnect_supersedes_stale_context(backend):
     # instead of taking the connected-page reclaim-once path (§5.5) that would bump past B on
     # slow runners and fence B's flush.
     context_a = kc.initialize_virtual_kernel(session_id, kernel_id, Mock())
-    context_a.page_connect("pageA")
+    connection_a = context_a.page_connect("pageA")
     with context_a:
         r.value = "from-A"
     manager_a = context_a.state_persistence
     assert manager_a is not None
     assert manager_a.flush_now() == FlushOutcome.OK
     assert backend.peek_generation(kernel_id) == 1
-    context_a.page_disconnect("pageA")
+    context_a.page_disconnect("pageA", connection_a)
 
     # simulate instance B taking over on another instance: takeover bumps to 2, then flush "from-B"
     result_b = backend.takeover(kernel_id, shmac, SCHEMA_TAG)

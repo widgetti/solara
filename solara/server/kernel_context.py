@@ -10,6 +10,7 @@ import concurrent.futures
 import contextlib
 import dataclasses
 import enum
+import itertools
 from collections import defaultdict
 import logging
 import os
@@ -19,7 +20,7 @@ import threading
 import time
 import typing
 from pathlib import Path
-from typing import Any, Callable, DefaultDict, Dict, List, Optional, Tuple, Union, cast
+from typing import Any, Callable, DefaultDict, Dict, List, Optional, Set, Tuple, Union, cast
 
 import ipywidgets as widgets
 import reacton
@@ -110,6 +111,13 @@ class VirtualKernelContext:
     container: Optional[DOMWidget] = None
     # we track which pages are connected to implement kernel culling
     page_status: Dict[str, PageStatus] = dataclasses.field(default_factory=dict)
+    # the open connections of each page, by the number `page_connect` hands out; a page reconnects
+    # with the same page id, and the connect of its new websocket can be handled before the
+    # disconnect of its old one, so a page is only disconnected when its last connection is gone.
+    _page_connections: Dict[str, Set[int]] = dataclasses.field(default_factory=dict)
+    _connection_numbers: "itertools.count[int]" = dataclasses.field(
+        default_factory=lambda: itertools.count(1),
+    )
     # only used for testing
     _last_kernel_cull_task: "Optional[asyncio.Future[None]]" = None
     _last_kernel_cull_future: "Optional[concurrent.futures.Future[None]]" = None
@@ -308,7 +316,14 @@ class VirtualKernelContext:
                 logger.debug("State: %r", state)
                 pickle.dump(state, f)
 
-    def page_connect(self, page_id: str):
+    def page_connect(self, page_id: str) -> int:
+        """Signal that a page has connected, and cancel a scheduled kernel cull.
+
+        Returns a number for this connection.
+        Pass it to `page_disconnect`, so a page with several connections, as during a reconnect,
+        stays connected until the last one disconnects.
+        A counter keeps no reference to the transport, and two connects never get the same number.
+        """
         if self.closed_event.is_set():
             raise RuntimeError("Cannot connect a page to a closed kernel")
         logger.info("Connect page %s for kernel %s", page_id, self.id)
@@ -318,9 +333,12 @@ class VirtualKernelContext:
             if page_id in self.page_status and self.page_status.get(page_id) == PageStatus.CLOSED:
                 raise RuntimeError("Cannot connect a page that is already closed")
             self.page_status[page_id] = PageStatus.CONNECTED
+            connection = next(self._connection_numbers)
+            self._page_connections.setdefault(page_id, set()).add(connection)
             if self._last_kernel_cull_task:
                 logger.info("Cancelling previous kernel cull task for virtual kernel %s", self.id)
                 self._last_kernel_cull_task.cancel()
+            return connection
 
     def _cull_timeout_seconds(self) -> float:
         """The cull timeout for this kernel (design §5.4).
@@ -402,7 +420,7 @@ class VirtualKernelContext:
             self._last_kernel_cull_future = asyncio.run_coroutine_threadsafe(create_task(), keep_alive_event_loop)
             return future
 
-    def page_disconnect(self, page_id: str) -> "Optional[asyncio.Future[None]]":
+    def page_disconnect(self, page_id: str, connection: int) -> "Optional[asyncio.Future[None]]":
         """Signal that a page has disconnected, and schedule a kernel cull if needed.
 
         During the kernel reconnect window, we will keep the kernel alive, even if all pages have disconnected.
@@ -410,11 +428,26 @@ class VirtualKernelContext:
         Will return a future that is set when the kernel cull is done, when an event loop is available.
         The scheduled kernel cull can be cancelled when a new page connects, a new disconnect is scheduled,
         or a page if explicitly closed.
+
+        `connection` is the number that `page_connect` returned.
+        While the page has another connection, the page stays connected and no kernel cull is scheduled.
         """
 
         logger.info("Disconnect page %s for kernel %s", page_id, self.id)
         future: "asyncio.Future[None]" = asyncio.Future()
         with self.lock:
+            connections = self._page_connections.get(page_id)
+            if connections is None or connection not in connections:
+                # never connected, or already disconnected: nothing to undo
+                future.set_result(None)
+                return future
+            connections.discard(connection)
+            if connections:
+                # a reconnect: another connection of this page is still open
+                logger.info("Page %s still has %d connection(s) for kernel %s", page_id, len(connections), self.id)
+                future.set_result(None)
+                return future
+            del self._page_connections[page_id]
             if self.page_status[page_id] == PageStatus.CLOSED:
                 # this happens when the close beackon call happens before the websocket disconnect
                 logger.info("Page %s already closed for kernel %s", page_id, self.id)

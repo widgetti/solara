@@ -142,8 +142,8 @@ async def app_loop(
         run_context = solara.util.nullcontext()
 
     kernel = context.kernel
+    connection = context.page_connect(page_id)
     try:
-        context.page_connect(page_id)
         with run_context, context:
             if user:
                 from solara_enterprise.auth import user as solara_user
@@ -195,7 +195,7 @@ async def app_loop(
                         f" widget: created: {created_widgets_count} closed: {close_widgets_count}"
                     )
     finally:
-        context.page_disconnect(page_id)
+        context.page_disconnect(page_id, connection)
 
 
 def process_kernel_messages(kernel: Kernel, msg: Dict) -> bool:
