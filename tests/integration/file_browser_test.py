@@ -54,7 +54,9 @@ def test_file_browser_selection_events(solara_test, page_session: playwright.syn
     playwright.sync_api.expect(page_session.locator(".opened-path")).to_have_text("first.txt")
     playwright.sync_api.expect(selection).to_have_text("none")
     page_session.locator(".solara-file-list-dir").filter(has_text="subdir").dblclick()
-    playwright.sync_api.expect(page_session.locator(".solara-file-list-file")).to_have_text("nested.txt - 6 Bytes")
+    files = page_session.locator(".solara-file-list-file")
+    playwright.sync_api.expect(files).to_have_count(1)
+    playwright.sync_api.expect(files).to_have_text("nested.txt - 6 Bytes")
 
 
 def test_file_browser_open_events(solara_test, page_session: playwright.sync_api.Page, tmp_path: Path):

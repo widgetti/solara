@@ -1,0 +1,25 @@
+<template>
+  <div class="greeting">
+    <label>Your name <input data-solara-model="name"></label>
+    <p>Hello, <strong data-solara-text="name"></strong>!</p>
+    <button type="button" data-solara-event-click="reset">Reset</button>
+    <slot></slot>
+  </div>
+</template>
+
+<style>
+  :host { display: block; }
+  .greeting { padding: 1rem; border: 1px solid #aaa; border-radius: 0.5rem; }
+  .greeting button { margin-right: 0.5rem; }
+</style>
+
+<script type="module">
+  export function mount({root, set}) {
+    const input = root.querySelector("input");
+    const onKeydown = event => {
+      if (event.key === "Escape") set("name", "World");
+    };
+    input.addEventListener("keydown", onKeydown);
+    return () => input.removeEventListener("keydown", onKeydown);
+  }
+</script>
