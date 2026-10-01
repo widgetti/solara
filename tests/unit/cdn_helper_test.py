@@ -1,5 +1,6 @@
 import hashlib
 import os
+import threading
 from pathlib import Path
 
 from pytest import TempPathFactory
@@ -31,6 +32,52 @@ def test_cache(tmp_path_factory):
     assert (base_cache_dir / path2).is_file()
     data = get_from_cache(base_cache_dir, path2)
     assert data == b"test2"
+
+
+def test_put_in_cache_never_shows_a_partial_file(tmp_path: Path):
+    # The server sends the cached file as soon as it exists, while concurrent requests for
+    # an uncached file each fetch and write it: whenever the file exists, it must be complete.
+    path = norm("pkg@1.0.0/dist/big.js")
+    data = b"x" * (16 * 1024 * 1024)
+    cache_path = tmp_path / path
+    sizes = set()
+    done = threading.Event()
+
+    def watch():
+        while not done.is_set():
+            try:
+                sizes.add(os.stat(cache_path).st_size)
+            except FileNotFoundError:
+                pass
+
+    watcher = threading.Thread(target=watch)
+    watcher.start()
+    try:
+        for _ in range(20):
+            put_in_cache(tmp_path, path, data)
+    finally:
+        done.set()
+        watcher.join()
+    assert sizes <= {len(data)}
+
+
+def test_put_in_cache_while_the_file_is_open(tmp_path: Path):
+    # a request may be sending the file while another one writes it (on Windows an open
+    # file cannot be replaced)
+    path = norm("pkg@1.0.0/dist/small.js")
+    put_in_cache(tmp_path, path, b"content")
+    with open(tmp_path / path, "rb") as f:
+        put_in_cache(tmp_path, path, b"content")
+        assert f.read() == b"content"
+    assert (tmp_path / path).read_bytes() == b"content"
+    assert [p.name for p in (tmp_path / path).parent.iterdir()] == ["small.js"]
+
+
+def test_put_in_cache_permissions(tmp_path: Path):
+    # the same permissions as any file the server writes: other users may need to read it
+    put_in_cache(tmp_path, "new.js", b"content")
+    (tmp_path / "plain.js").write_bytes(b"content")
+    assert os.stat(tmp_path / "new.js").st_mode == os.stat(tmp_path / "plain.js").st_mode
 
 
 def test_cdn_url():

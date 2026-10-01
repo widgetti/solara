@@ -1,5 +1,7 @@
 import logging
+import os
 import pathlib
+import secrets
 import shutil
 import time
 
@@ -43,7 +45,28 @@ def put_in_cache(base_cache_dir: pathlib.Path, path, data: bytes):
     pathlib.Path(cache_path.parent).mkdir(parents=True, exist_ok=True)
     try:
         logger.info("Writing cache file: %s", cache_path)
-        cache_path.write_bytes(data)
+        # The server sends the cached file as soon as it exists, while concurrent requests
+        # for an uncached file each fetch and write it. Writing in place let a request send
+        # a half-written file, or one that another write truncated, which broke the page
+        # (e.g. "requirejs is not defined"). Write a temporary file and rename it, so the
+        # file is complete whenever it exists. The "x" mode creates the temporary file and
+        # fails if anything (e.g. a symlink) has its random name; unlike tempfile.mkstemp
+        # (mode 0600), it gives the file the usual permissions, which other users (a shared
+        # environment, a static build served by another user) need to read it.
+        tmp = cache_path.parent / f".{secrets.token_hex(8)}.tmp"
+        try:
+            with open(tmp, "xb") as f:
+                f.write(data)
+            try:
+                os.replace(tmp, cache_path)
+            except PermissionError:
+                # Windows cannot replace a file that is open, e.g. by a request sending it;
+                # that file was written the same way, so it is complete
+                if not cache_path.exists():
+                    raise
+        finally:
+            if os.path.exists(tmp):
+                os.unlink(tmp)
     except FileNotFoundError:
         logger.info("Failed writing cache file: %s", cache_path)
 
