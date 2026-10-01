@@ -273,6 +273,11 @@ def SyncWrapper():
 
 @contextlib.contextmanager
 def _solara_test(solara_server, solara_app, page_session: "playwright.sync_api.Page", require_vuetify_warmup: bool):
+    # Leave the previous test's page first. Once its kernel is closed (by the previous test's
+    # solara_app teardown, or by solara_app below), that page reloads itself in development
+    # mode about 3 seconds later, and when the page below takes longer to load (slow CI
+    # runners), that reload aborts it with net::ERR_ABORTED.
+    page_session.goto("about:blank")
     with solara_app("solara.test.pytest_plugin:SyncWrapper"):
         id = str(uuid.uuid4())
         run_events[id] = run_event = threading.Event()
