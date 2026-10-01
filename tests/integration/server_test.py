@@ -319,3 +319,15 @@ def test_static_secure(solara_server, solara_app, extra_include_path):
         url = static_url + "/foo/..%2f..%2f__init__.py"
         response = requests.get(url)
         assert response.status_code == 404
+
+
+def test_app_that_fails_to_load_does_not_break_the_next_test(solara_app, tmp_path: Path):
+    # the failed app must not leave the reloader attached, or every later test fails with
+    # "Previous reloader still had a on_change attached"
+    failing_app = tmp_path / "failing_app.py"
+    failing_app.write_text("raise ZeroDivisionError('this app fails to load')\n")
+    with pytest.raises(ZeroDivisionError):
+        with solara_app(str(failing_app)):
+            pass
+    with solara_app("tests.integration.testapp"):
+        pass
