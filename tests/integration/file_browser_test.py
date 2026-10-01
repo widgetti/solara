@@ -54,7 +54,9 @@ def test_file_browser_selection_events(solara_test, page_session: playwright.syn
     playwright.sync_api.expect(page_session.locator(".opened-path")).to_have_text("first.txt")
     playwright.sync_api.expect(selection).to_have_text("none")
     page_session.locator(".solara-file-list-dir").filter(has_text="subdir").dblclick()
-    playwright.sync_api.expect(page_session.locator(".solara-file-list-file")).to_have_text("nested.txt - 6 Bytes")
+    # a list, not a string: until the directory has changed, the locator still matches the 2
+    # old files, and with a string Playwright fails at once with a strict mode violation
+    playwright.sync_api.expect(page_session.locator(".solara-file-list-file")).to_have_text(["nested.txt - 6 Bytes"])
 
 
 def test_file_browser_open_events(solara_test, page_session: playwright.sync_api.Page, tmp_path: Path):
