@@ -176,7 +176,7 @@ pywin32-ctypes==0.2.3
 pywinpty==3.0.5
 PyYAML==6.0.3
 pyzmq==27.2.0
-reacton==1.10.3
+reacton==1.11.0
 redis==8.1.0
 referencing==0.37.0
 regex==2026.9.10
