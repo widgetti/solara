@@ -145,6 +145,9 @@ class State(BaseSettings):
     prefix: str = "solara:state:"  # key prefix / table name, backend-interpreted
     flush_debounce: str = "300ms"
     connect_timeout: float = 0.3  # hard cap on takeover/flush blocking
+    # dotted path to a callable(settings) -> redis.Redis, replacing the built-in client of the redis
+    # backend ("" -> built-in). Lets a deployment bring its own pool, keepalive and retry policy.
+    redis_client_factory: str = ""
     breaker_failures: int = 3  # circuit breaker: consecutive failures to open
     breaker_window: str = "30s"  # open duration before a half-open probe
     schema_tag: str = ""  # state-schema tag ("" -> derived); mismatch => clean state reset

@@ -503,6 +503,7 @@ file).
 | `SOLARA_STATE_PREFIX` | `solara:state:` | Backend key prefix / table name. |
 | `SOLARA_STATE_FLUSH_DEBOUNCE` | `300ms` | Coalescing window for write-behind flushes; also the at-most-once loss window. |
 | `SOLARA_STATE_CONNECT_TIMEOUT` | `0.3` | Hard cap (seconds) on any takeover/flush backend call. |
+| `SOLARA_STATE_REDIS_CLIENT_FACTORY` | *(empty)* | Dotted path to a `callable(settings) -> redis.Redis` that replaces the built-in Redis client. See [bringing your own client](/documentation/getting_started/deploying/state-persistence#bringing-your-own-redis-client). |
 | `SOLARA_STATE_BREAKER_FAILURES` | `3` | Consecutive backend failures before the circuit breaker opens. |
 | `SOLARA_STATE_BREAKER_WINDOW` | `30s` | How long the breaker stays open before a half-open probe. |
 | `SOLARA_STATE_SCHEMA_TAG` | `""` (derived from the Solara version) | Value-shape tag; a mismatch triggers a clean state reset + soft-remount. |

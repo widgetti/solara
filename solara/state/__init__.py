@@ -189,6 +189,17 @@ def validate_state_settings() -> None:
         raise ValueError("SOLARA_STATE_SECRET_KEYS must not contain the placeholder value 'change me'")
     if st.backend not in state_backend_map:
         raise ValueError(f"Unknown state backend {st.backend!r}; known: {sorted(state_backend_map)}")
+    from .redis import RedisStateBackend
+
+    backend_cls = solara.util.import_item(state_backend_map[st.backend])
+    if st.redis_client_factory and isinstance(backend_cls, type) and issubclass(backend_cls, RedisStateBackend):
+        # the client is built lazily on first connect; a typo should stop the server, not every restore
+        try:
+            factory = solara.util.import_item(st.redis_client_factory)
+        except (ImportError, AttributeError, ValueError) as exc:
+            raise ValueError(f"SOLARA_STATE_REDIS_CLIENT_FACTORY={st.redis_client_factory!r} cannot be imported: {exc}") from exc
+        if not callable(factory):
+            raise ValueError(f"SOLARA_STATE_REDIS_CLIENT_FACTORY={st.redis_client_factory!r} is not callable")
     # design §5.6: with persistence on, the session cookie is a durable cross-instance state-theft
     # credential, so any XSS that reads it now also steals persisted state. http_only makes it
     # unreadable to JS - free hardening. Warn (don't force) so existing deploys aren't broken.
