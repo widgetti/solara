@@ -73,6 +73,13 @@ def test_put_in_cache_while_the_file_is_open(tmp_path: Path):
     assert [p.name for p in (tmp_path / path).parent.iterdir()] == ["small.js"]
 
 
+def test_put_in_cache_permissions(tmp_path: Path):
+    # the same permissions as any file the server writes: other users may need to read it
+    put_in_cache(tmp_path, "new.js", b"content")
+    (tmp_path / "plain.js").write_bytes(b"content")
+    assert os.stat(tmp_path / "new.js").st_mode == os.stat(tmp_path / "plain.js").st_mode
+
+
 def test_cdn_url():
     assert get_cdn_url(path1) == f"https://cdn.jsdelivr.net/npm/{path1}".replace("\\", "/")
     assert get_cdn_url(path2) == f"https://cdn.jsdelivr.net/npm/{path2}".replace("\\", "/")

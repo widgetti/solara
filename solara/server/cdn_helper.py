@@ -1,8 +1,8 @@
 import logging
 import os
 import pathlib
+import secrets
 import shutil
-import tempfile
 import time
 
 import requests
@@ -49,10 +49,13 @@ def put_in_cache(base_cache_dir: pathlib.Path, path, data: bytes):
         # for an uncached file each fetch and write it. Writing in place let a request send
         # a half-written file, or one that another write truncated, which broke the page
         # (e.g. "requirejs is not defined"). Write a temporary file and rename it, so the
-        # file is complete whenever it exists.
-        fd, tmp = tempfile.mkstemp(dir=cache_path.parent, prefix=f".{cache_path.name}.", suffix=".tmp")
+        # file is complete whenever it exists. The "x" mode creates the temporary file and
+        # fails if anything (e.g. a symlink) has its random name; unlike tempfile.mkstemp
+        # (mode 0600), it gives the file the usual permissions, which other users (a shared
+        # environment, a static build served by another user) need to read it.
+        tmp = cache_path.parent / f".{secrets.token_hex(8)}.tmp"
         try:
-            with os.fdopen(fd, "wb") as f:
+            with open(tmp, "xb") as f:
                 f.write(data)
             try:
                 os.replace(tmp, cache_path)
