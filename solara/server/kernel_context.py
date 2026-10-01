@@ -335,9 +335,11 @@ class VirtualKernelContext:
             self.page_status[page_id] = PageStatus.CONNECTED
             connection = next(self._connection_numbers)
             self._page_connections.setdefault(page_id, set()).add(connection)
-            if self._last_kernel_cull_task:
+            if self._last_kernel_cull_future:
                 logger.info("Cancelling previous kernel cull task for virtual kernel %s", self.id)
-                self._last_kernel_cull_task.cancel()
+                # cancel the concurrent future, not the task: that is thread-safe, and it also
+                # cancels a cull that the keep-alive loop has not started yet
+                self._last_kernel_cull_future.cancel()
             return connection
 
     def _cull_timeout_seconds(self) -> float:
@@ -358,7 +360,11 @@ class VirtualKernelContext:
         return solara.util.parse_timedelta(solara.server.settings.kernel.cull_timeout)
 
     def _bump_kernel_cull(self):
+        started = False
+
         async def kernel_cull():
+            nonlocal started
+            started = True
             try:
                 cull_timeout_sleep_seconds = self._cull_timeout_seconds()
                 logger.info("Scheduling kernel cull, will wait for max %s before shutting down the virtual kernel %s", cull_timeout_sleep_seconds, self.id)
@@ -402,9 +408,9 @@ class VirtualKernelContext:
                 current_event_loop = asyncio.get_event_loop()
             except RuntimeError:
                 pass
-            if self._last_kernel_cull_task:
+            if self._last_kernel_cull_future:
                 logger.info("Cancelling previous kernel cull tas for virtual kernel %s", self.id)
-                self._last_kernel_cull_task.cancel()
+                self._last_kernel_cull_future.cancel()
 
             logger.info("Scheduling kernel cull for virtual kernel %s", self.id)
 
@@ -417,7 +423,17 @@ class VirtualKernelContext:
                 except RuntimeError:
                     pass  # event loop already closed, happens during testing
 
+            def cancel_if_never_started(cull_future: "concurrent.futures.Future[None]") -> None:
+                # kernel_cull settles the future, but a cull cancelled before the keep-alive loop
+                # started it never runs, so settle the future here
+                if cull_future.cancelled() and not started and current_event_loop is not None and future is not None:
+                    try:
+                        current_event_loop.call_soon_threadsafe(future.cancel)
+                    except RuntimeError:
+                        pass  # event loop already closed, happens during testing
+
             self._last_kernel_cull_future = asyncio.run_coroutine_threadsafe(create_task(), keep_alive_event_loop)
+            self._last_kernel_cull_future.add_done_callback(cancel_if_never_started)
             return future
 
     def page_disconnect(self, page_id: str, connection: int) -> "Optional[asyncio.Future[None]]":

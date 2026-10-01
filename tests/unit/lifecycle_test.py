@@ -1,5 +1,6 @@
 import asyncio
 import sys
+import threading
 import time
 from unittest.mock import Mock
 
@@ -63,6 +64,30 @@ async def test_kernel_lifecycle_reconnect_simple(short_cull_timeout):
         await cull_task1
     assert not context.closed_event.is_set()
     await context.page_disconnect("page-id-2", connection_2)
+    assert context.closed_event.is_set()
+
+
+async def test_kernel_lifecycle_reconnect_before_the_cull_task_runs(short_cull_timeout):
+    # page_disconnect schedules the cull on the keep-alive event loop. A reconnect can come
+    # before that loop has started the cull, and must still cancel it.
+    context = kernel_context.initialize_virtual_kernel("session-id-1", "kernel-id-1", Mock())
+    connection_1 = context.page_connect("page-id-1")
+    blocked = threading.Event()
+    release = threading.Event()
+
+    def block_the_keep_alive_loop():
+        blocked.set()
+        release.wait(5)
+
+    kernel_context.keep_alive_event_loop.call_soon_threadsafe(block_the_keep_alive_loop)
+    assert blocked.wait(5)
+    cull_task1 = context.page_disconnect("page-id-1", connection_1)
+    connection_2 = context.page_connect("page-id-1")
+    release.set()
+    with pytest.raises(asyncio.CancelledError):
+        await asyncio.wait_for(cull_task1, 5)
+    assert not context.closed_event.is_set()
+    await asyncio.wait_for(context.page_disconnect("page-id-1", connection_2), 5)
     assert context.closed_event.is_set()
 
 
