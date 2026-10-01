@@ -37,3 +37,34 @@ def test_button_icon_and_value_api():
             assert icon.left is True
     finally:
         rc.close()
+
+
+def test_icon_button_click_without_on_click():
+    widget, rc = solara.render_fixed(solara.IconButton(icon_name="mdi-thumb-up"), handle_error=False)
+    try:
+        widget.fire_event("click")
+    finally:
+        rc.close()
+
+
+def test_icon_button_click_with_on_click():
+    clicked = False
+
+    def on_click():
+        nonlocal clicked
+        clicked = True
+
+    widget, rc = solara.render_fixed(solara.IconButton(icon_name="mdi-thumb-up", on_click=on_click), handle_error=False)
+    try:
+        widget.fire_event("click")
+        assert clicked is True
+    finally:
+        rc.close()
+
+
+def test_button_click_without_on_click():
+    widget, rc = solara.render_fixed(solara.Button("Label"), handle_error=False)
+    try:
+        widget.fire_event("click")
+    finally:
+        rc.close()

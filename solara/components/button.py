@@ -10,7 +10,7 @@ from solara.util import IPYVUETIFY_V3
 @solara.component
 def Button(
     label: str = None,
-    on_click: Callable[[], None] = None,
+    on_click: Optional[Callable[[], None]] = None,
     icon_name: str = None,
     children: list = [],
     disabled=False,
@@ -85,5 +85,5 @@ def Button(
         btn = solara.v.Btn(children=children, **kwargs, disabled=disabled, class_=class_, style_=style_flat, color=color, variant=variant, value=value)
     else:
         btn = solara.v.Btn(children=children, **kwargs, disabled=disabled, text=text, class_=class_, style_=style_flat, outlined=outlined, color=color)
-    ipyvue.use_event(btn, click_event, lambda *_ignore: on_click and on_click())
+    ipyvue.use_event(btn, click_event, lambda *_ignore: callable(on_click) and on_click())
     return btn
