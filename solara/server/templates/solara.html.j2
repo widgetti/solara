@@ -274,8 +274,10 @@
         window.solara_cdn = solara.cdn;
         console.log("solara config", {rootPath: solara.rootPath, jupyterRootPath: solara.jupyterRootPath, cdn: solara.cdn});
 
+        // versioned with the content hash, so the server can mark them immutable
+        const themeCssUrls = {{ {"light": resources.versioned_asset_url("/static/assets/theme-light.css"), "dark": resources.versioned_asset_url("/static/assets/theme-dark.css")} | tojson | safe }};
         async function changeThemeCSS(theme) {
-            let css = await fetch(`${solara.rootPath}/static/assets/theme-${theme}.css`).then(r => r.text());
+            let css = await fetch(themeCssUrls[theme]).then(r => r.text());
             document.getElementById('jupyter-theme-css').innerHTML = css;
         }
         changeThemeCSS(inDarkMode() ? 'dark' : 'light');

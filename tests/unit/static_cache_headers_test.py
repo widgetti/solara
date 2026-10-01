@@ -1,5 +1,7 @@
 import hashlib
+import json
 import os
+import re
 from pathlib import Path
 from typing import List
 
@@ -8,10 +10,12 @@ from starlette.applications import Starlette
 from starlette.routing import Mount
 from starlette.testclient import TestClient
 
+import solara.server.app
 import solara.server.settings
 import solara.server.starlette
 from solara.server import server
-from solara.server.starlette import StaticFilesOptionalAuth, StaticNbFiles, StaticPublic, immutable_cache_control
+from solara.server.app import AppScript
+from solara.server.starlette import StaticAssets, StaticFilesOptionalAuth, StaticNbFiles, StaticPublic, immutable_cache_control
 
 CONTENT = b"console.log('hi')"
 DIGEST = hashlib.md5(CONTENT).hexdigest()
@@ -183,3 +187,24 @@ def test_development_follows_an_edit_in_a_symlinked_nbextension(tmp_path: Path, 
     assert after != before
     assert cache_control(client, f"/static/ext/nodeps.js?{before}") == "no-store"
     assert cache_control(client, f"/static/ext/nodeps.js?{after}") == IMMUTABLE
+
+
+def test_page_fetches_the_theme_css_from_immutable_urls(no_kernel_context, tmp_path: Path, monkeypatch):
+    app_file = tmp_path / "app.py"
+    app_file.write_text("import solara\n\n\n@solara.component\ndef Page():\n    solara.Text('hi')\n")
+    app_script = AppScript(str(app_file))
+    monkeypatch.setitem(solara.server.app.apps, "__default__", app_script)
+    try:
+        html = server.read_root("/")
+    finally:
+        app_script.close()
+    assert html is not None
+    match = re.search(r"const themeCssUrls = (\{.*?\});", html)
+    assert match is not None
+    urls = json.loads(match.group(1))
+    client = TestClient(Starlette(routes=[Mount("/static/assets", app=StaticAssets())]))
+
+    assert set(urls) == {"light", "dark"}
+    for url in urls.values():
+        assert "?v=" in url
+        assert cache_control(client, url) == IMMUTABLE

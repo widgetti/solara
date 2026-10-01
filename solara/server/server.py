@@ -348,6 +348,11 @@ def read_root(
             code = f'<link rel="stylesheet" type="text/css" href="{url}" class="solara-template-css">'
         return Markup(code)
 
+    def versioned_asset_url(path: str) -> str:
+        # for files the page fetches itself; the content hash lets the server mark them immutable
+        _, hash = solara.util.get_file_hash(resolve_static_path(path))
+        return f"{root_path}{path}?v={hash}"
+
     def include_js(path: str, module=False) -> Markup:
         filepath = resolve_static_path(path)
         content, hash = solara.util.get_file_hash(filepath)
@@ -394,6 +399,7 @@ def read_root(
         "nbextensions_hashes": nbextensions_hashes,
         "include_css": include_css,
         "include_js": include_js,
+        "versioned_asset_url": versioned_asset_url,
     }
     template: jinja2.Template = get_jinja_env(app_name="__default__").get_template(template_name)
     pre_rendered_html = ""
