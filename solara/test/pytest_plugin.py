@@ -227,7 +227,13 @@ def solara_app(solara_server):
         if isinstance(app, str):
             app = solara.server.app.AppScript(app)
             if init:
-                app.init()
+                try:
+                    app.init()
+                except BaseException:
+                    # detach the reloader, or every later test fails with "Previous reloader
+                    # still had a on_change attached" instead of only this one
+                    app.close()
+                    raise
         used_app = app
         solara.server.app.apps["__default__"] = app
         try:
