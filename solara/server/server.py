@@ -460,32 +460,39 @@ def public_directories() -> List[Path]:
     return [app.directory.parent / "public" for app in appmod.apps.values()]
 
 
-_public_hash_cache: Dict[str, Tuple[Tuple[float, int], str]] = {}
+_content_hash_cache: Dict[str, str] = {}
+
+
+def _md5() -> "hashlib._Hash":
+    if sys.version_info[:2] < (3, 9):
+        # usedforsecurity is only available in Python 3.9+
+        return hashlib.new("md5")
+    return hashlib.new("md5", usedforsecurity=False)  # type: ignore
+
+
+def file_content_hash(path: Path) -> str:
+    """md5 of a file's content, as used in ?v=<hash> urls.
+
+    In production files do not change on disk while the server runs, so each file is
+    hashed once. In development they do, so the current content is hashed on every call.
+    """
+    key = str(path)
+    if settings.main.mode == "production" and key in _content_hash_cache:
+        return _content_hash_cache[key]
+    h = _md5()
+    h.update(path.read_bytes())
+    digest = _content_hash_cache[key] = h.hexdigest()
+    return digest
 
 
 def public_url_content_hash(filename: str) -> Optional[str]:
-    """Content hash of a file served at /static/public/<filename>, or None.
-
-    Memoized on (mtime, size), so rebuilt bundles get a fresh hash.
-    """
+    """Short content hash of a file served at /static/public/<filename>, or None."""
     for directory in public_directories():
         path = (directory / filename).resolve()
         if not str(path).startswith(str(directory.resolve())):
             return None
         if path.exists():
-            stat = path.stat()
-            key = str(path)
-            cached = _public_hash_cache.get(key)
-            if cached and cached[0] == (stat.st_mtime, stat.st_size):
-                return cached[1]
-            if sys.version_info[:2] < (3, 9):
-                h = hashlib.new("md5")
-            else:
-                h = hashlib.new("md5", usedforsecurity=False)  # type: ignore
-            h.update(path.read_bytes())
-            digest = h.hexdigest()[:12]
-            _public_hash_cache[key] = ((stat.st_mtime, stat.st_size), digest)
-            return digest
+            return file_content_hash(path)[:12]
     return None
 
 
@@ -496,8 +503,8 @@ def versioned_url(url: str) -> str:
     """Append ?v=<content-hash> to urls solara serves itself.
 
     The same url is used for the modulepreload hint in the page and the
-    Module widget, so the preload always hits the cache; StaticPublic sends
-    long-lived cache headers when the hash matches (see starlette.py).
+    Module widget, so the preload always hits the cache; the static file
+    handlers send long-lived cache headers when the hash matches (see starlette.py).
     Urls with an existing query string and external urls pass through.
     """
     if not url.startswith(_PUBLIC_PREFIX) or "?" in url:
@@ -521,7 +528,8 @@ def get_nbextensions_directories() -> List[Path]:
 
 
 @solara.memoize(storage=cache_memory)
-def get_nbextensions() -> Tuple[List[str], Dict[str, Optional[str]]]:
+def get_nbextension_names() -> List[str]:
+    """The enabled nbextensions that are installed (read from the notebook config once)."""
     from jupyter_core.paths import jupyter_config_path
 
     paths = [Path(p) / "nbconfig" for p in jupyter_config_path()]
@@ -539,29 +547,52 @@ def get_nbextensions() -> Tuple[List[str], Dict[str, Optional[str]]]:
         logger.info(f"nbextension {name} not found")
         return False
 
-    def hash_extension(name):
-        if sys.version_info[:2] < (3, 9):
-            # usedforsecurity is only available in Python 3.9+
-            h = hashlib.new("md5")
-        else:
-            h = hashlib.new("md5", usedforsecurity=False)  # type: ignore
+    return [name for name, enabled in load_extensions.items() if enabled and (name not in nbextensions_ignorelist) and exists(name)]
 
-        for directory in nbextensions_directories:
-            try:
-                file_path = directory / (name + ".js")
-                if file_path.exists():
-                    for file in directory.glob("**/*.*"):
-                        if file.is_file():  # Otherwise directories with a dot in the name are included
-                            data = file.read_bytes()
-                            h.update(data)
-            except PermissionError:
-                logger.warning(f"Caught PermissionError while checking for existence of nbextension {name!r} at path: {file_path}. This path will be ignored.")
 
-        return h.hexdigest()
+def get_nbextensions() -> Tuple[List[str], Dict[str, Optional[str]]]:
+    nbextensions = get_nbextension_names()
+    return nbextensions, {name: nbextension_hash(name) for name in nbextensions}
 
-    nbextensions: List[str] = [name for name, enabled in load_extensions.items() if enabled and (name not in nbextensions_ignorelist) and exists(name)]
-    nbextensions_hashes = {name: hash_extension(name) for name in nbextensions}
-    return nbextensions, nbextensions_hashes
+
+def nbextension_root(name: str) -> Optional[Path]:
+    """The resolved folder an nbextension owns, or None when it is not installed.
+
+    jupyter-vue/ for jupyter-vue/extension, or the file itself for a top level extension,
+    from the first nbextensions directory that holds it: the order StaticNbFiles serves
+    from. Resolved, so a symlinked install (jupyter nbextension install --symlink,
+    common in development) points at the real files.
+    """
+    for directory in nbextensions_directories:
+        try:
+            if (directory / (name + ".js")).exists():
+                owned = directory / name.split("/")[0] if "/" in name else directory / (name + ".js")
+                return owned.resolve()
+        except PermissionError:
+            logger.warning(f"Caught PermissionError while checking for existence of nbextension {name!r} in {directory}. This path will be ignored.")
+    return None
+
+
+_nbextension_hash_cache: Dict[str, str] = {}
+
+
+def nbextension_hash(name: str) -> str:
+    """md5 over the names and content of the files in the folder an nbextension owns.
+
+    Like file_content_hash: computed once in production, from the current files on every
+    call in development.
+    """
+    if settings.main.mode == "production" and name in _nbextension_hash_cache:
+        return _nbextension_hash_cache[name]
+    h = _md5()
+    root = nbextension_root(name)
+    if root is not None:
+        files = [root] if root.is_file() else sorted(path for path in root.rglob("*") if path.is_file())
+        for file in files:
+            h.update(file.relative_to(root).as_posix().encode())
+            h.update(file.read_bytes())
+    digest = _nbextension_hash_cache[name] = h.hexdigest()
+    return digest
 
 
 nbextensions_directories = get_nbextensions_directories()
