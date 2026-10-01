@@ -67,28 +67,57 @@ async def test_kernel_lifecycle_reconnect_simple(short_cull_timeout):
     assert context.closed_event.is_set()
 
 
-async def test_kernel_lifecycle_reconnect_before_the_cull_task_runs(short_cull_timeout):
+@pytest.mark.parametrize("hops", [None, 0, 1], ids=["before-scheduled", "before-the-outer-task-step", "before-kernel_cull"])
+async def test_kernel_lifecycle_reconnect_before_the_cull_task_runs(short_cull_timeout, hops):
     # page_disconnect schedules the cull on the keep-alive event loop. A reconnect can come
-    # before that loop has started the cull, and must still cancel it.
+    # before that loop has started the cull, at any step on the way, and must still cancel it.
+    # "before-kernel_cull" is where the old code hung: the task existed, but had not started.
+    loop = kernel_context.keep_alive_event_loop
     context = kernel_context.initialize_virtual_kernel("session-id-1", "kernel-id-1", Mock())
-    connection_1 = context.page_connect("page-id-1")
-    blocked = threading.Event()
-    release = threading.Event()
+    blocked, release = threading.Event(), threading.Event()
+    held, let_go = threading.Event(), threading.Event()
 
-    def block_the_keep_alive_loop():
+    def block():
         blocked.set()
         release.wait(5)
 
-    kernel_context.keep_alive_event_loop.call_soon_threadsafe(block_the_keep_alive_loop)
-    assert blocked.wait(5)
-    cull_task1 = context.page_disconnect("page-id-1", connection_1)
-    connection_2 = context.page_connect("page-id-1")
-    release.set()
-    with pytest.raises(asyncio.CancelledError):
-        await asyncio.wait_for(cull_task1, 5)
-    assert not context.closed_event.is_set()
-    await asyncio.wait_for(context.page_disconnect("page-id-1", connection_2), 5)
-    assert context.closed_event.is_set()
+    def hold():
+        held.set()
+        let_go.wait(5)
+
+    def hop(n):
+        # each hop goes to the back of the loop's queue, so the steps queued before it run first
+        if n == 0:
+            block()
+        else:
+            loop.call_soon(hop, n - 1)
+
+    try:
+        connection_1 = context.page_connect("page-id-1")
+        if hops is None:
+            loop.call_soon_threadsafe(block)
+            assert blocked.wait(5)
+            cull_task1 = context.page_disconnect("page-id-1", connection_1)
+        else:
+            # hold the loop, so the scheduled cull and then the hops queue up behind it
+            loop.call_soon_threadsafe(hold)
+            assert held.wait(5)
+            cull_task1 = context.page_disconnect("page-id-1", connection_1)
+            loop.call_soon_threadsafe(hop, hops)
+            let_go.set()
+            assert blocked.wait(5)
+        connection_2 = context.page_connect("page-id-1")
+        release.set()
+        with pytest.raises(asyncio.CancelledError):
+            await asyncio.wait_for(cull_task1, 5)
+        assert not context.closed_event.is_set()
+        await asyncio.wait_for(context.page_disconnect("page-id-1", connection_2), 5)
+        assert context.closed_event.is_set()
+    finally:
+        let_go.set()
+        release.set()
+        if not context.closed_event.is_set():
+            context.close()
 
 
 @pytest.mark.skipif(on_windows, reason="This test is flaky on Windows")
