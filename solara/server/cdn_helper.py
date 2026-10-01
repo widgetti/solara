@@ -1,6 +1,8 @@
 import logging
+import os
 import pathlib
 import shutil
+import tempfile
 import time
 
 import requests
@@ -43,7 +45,25 @@ def put_in_cache(base_cache_dir: pathlib.Path, path, data: bytes):
     pathlib.Path(cache_path.parent).mkdir(parents=True, exist_ok=True)
     try:
         logger.info("Writing cache file: %s", cache_path)
-        cache_path.write_bytes(data)
+        # The server sends the cached file as soon as it exists, while concurrent requests
+        # for an uncached file each fetch and write it. Writing in place let a request send
+        # a half-written file, or one that another write truncated, which broke the page
+        # (e.g. "requirejs is not defined"). Write a temporary file and rename it, so the
+        # file is complete whenever it exists.
+        fd, tmp = tempfile.mkstemp(dir=cache_path.parent, prefix=f".{cache_path.name}.", suffix=".tmp")
+        try:
+            with os.fdopen(fd, "wb") as f:
+                f.write(data)
+            try:
+                os.replace(tmp, cache_path)
+            except PermissionError:
+                # Windows cannot replace a file that is open, e.g. by a request sending it;
+                # that file was written the same way, so it is complete
+                if not cache_path.exists():
+                    raise
+        finally:
+            if os.path.exists(tmp):
+                os.unlink(tmp)
     except FileNotFoundError:
         logger.info("Failed writing cache file: %s", cache_path)
 
