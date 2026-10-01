@@ -1,6 +1,9 @@
 import logging
 import os
-from typing import Dict, Set
+import sys
+import threading
+import traceback
+from typing import Dict, List, Set
 
 import playwright.sync_api
 import pytest
@@ -42,6 +45,32 @@ def _leave_the_previous_page(request):
             # the reload can still interrupt this goto in a window of milliseconds, and
             # pytest-retry does not retry a setup error; the reloaded page reloads no more
             page_session.goto("about:blank")
+
+
+# When a test times out waiting for a page, a server thread is often stuck (a hang or a
+# deadlock), but the test only sees the timeout. Both test servers run in this process, so
+# print the stack of every thread while they are still stuck. A few dumps per worker are
+# enough: the tests after a hang usually time out too.
+_thread_stack_dumps_left = 3
+
+
+def _thread_stacks() -> str:
+    names = {thread.ident: thread.name for thread in threading.enumerate()}
+    # threads with the same stack (e.g. idle worker threads) are listed once
+    threads_by_stack: Dict[str, List[str]] = {}
+    for ident, frame in sys._current_frames().items():
+        threads_by_stack.setdefault("".join(traceback.format_stack(frame)), []).append(f"{names.get(ident, '?')} ({ident})")
+    return "\n".join(f"--- {len(threads)} thread(s): {', '.join(threads)} ---\n{stack}" for stack, threads in threads_by_stack.items())
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    global _thread_stack_dumps_left
+    yield
+    if call.excinfo is not None and call.excinfo.errisinstance(playwright.sync_api.TimeoutError) and _thread_stack_dumps_left > 0:
+        _thread_stack_dumps_left -= 1
+        title = f" thread stacks after a timeout in {item.nodeid} ({call.when}) "
+        print(f"{title:=^100}\n{_thread_stacks()}\n{'':=^100}", file=sys.__stderr__, flush=True)
 
 
 worker = os.environ.get("PYTEST_XDIST_WORKER", "gw0")
