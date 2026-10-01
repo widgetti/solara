@@ -621,6 +621,16 @@ Also check out the following Solara documentation:
     return response
 
 
+MAX_VERSIONED_FILE_SIZE = 32 * 1024 * 1024
+
+
+def immutable_cache_control() -> str:
+    # With SOLARA_OAUTH_PRIVATE the static files require a login, which a shared cache
+    # (a CDN in front of the server) would skip: only let the browser keep them then.
+    visibility = "private" if settings.oauth.private else "public"
+    return f"{visibility}, max-age=31536000, immutable"
+
+
 class StaticFilesOptionalAuth(StaticFiles):
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         conn = HTTPConnection(scope)
@@ -629,6 +639,37 @@ class StaticFilesOptionalAuth(StaticFiles):
         if has_auth_support and settings.oauth.private and not conn.user.is_authenticated:
             raise HTTPException(status_code=401, detail="Unauthorized")
         await super().__call__(scope, receive, send)
+
+    def file_response(self, full_path, stat_result: os.stat_result, scope: Scope, status_code: int = 200) -> Response:
+        response = super().file_response(full_path, stat_result, scope, status_code)
+        # A url that carries the hash of the file's content (?v=..., see include_js,
+        # include_css and versioned_url in server.py) can never serve other content:
+        # a change to the file changes the url, so browsers and proxies may keep it
+        # forever. How the hash is checked depends on the mode (see file_content_hash):
+        # once per file in production, where files do not change on disk, and against
+        # the current file on every request in development, where they do.
+        version = self.url_version(scope)
+        if version:
+            if self.version_matches(version, Path(full_path), stat_result):
+                response.headers["Cache-Control"] = immutable_cache_control()
+            else:
+                # The file does not match the requested version: a page rendered before
+                # a deploy, or a server on the other version during a rolling deploy.
+                # No cache may keep this content under that url.
+                response.headers["Cache-Control"] = "no-store"
+        return response
+
+    def url_version(self, scope: Scope) -> Optional[str]:
+        return parse_qs(scope.get("query_string", b"").decode()).get("v", [None])[0]
+
+    def version_matches(self, version: str, full_path: Path, stat_result: os.stat_result) -> bool:
+        # Hashing reads the whole file into memory, and any request can add ?v= to
+        # any url (a video in the public directory, say): skip large files.
+        if stat_result.st_size > MAX_VERSIONED_FILE_SIZE:
+            return False
+        digest = server.file_content_hash(full_path)
+        # include_js/include_css use the full md5, versioned_url the first 12 characters
+        return version in (digest, digest[:12])
 
 
 class StaticNbFiles(StaticFilesOptionalAuth):
@@ -655,23 +696,26 @@ class StaticNbFiles(StaticFilesOptionalAuth):
                 continue
         return "", None
 
+    def url_version(self, scope: Scope) -> Optional[str]:
+        # requirejs' urlArgs appends the bare extension hash (?<hash>), see solara.html.j2
+        return scope.get("query_string", b"").decode() or None
+
+    def version_matches(self, version: str, full_path: Path, stat_result: os.stat_result) -> bool:
+        # An extension's hash covers the folder it owns (see nbextension_hash). Compare
+        # with the hash of the extension that owns the served file; a file outside every
+        # hashed folder (another nbextensions directory, a symlink pointing elsewhere)
+        # is not covered by any hash. full_path is already resolved (see lookup_path).
+        for name in server.get_nbextension_names():
+            root = server.nbextension_root(name)
+            if root is not None and (full_path == root or root in full_path.parents):
+                return server.nbextension_hash(name) == version
+        return False
+
 
 class StaticPublic(StaticFilesOptionalAuth):
     def lookup_path(self, *args, **kwargs):
         self.all_directories = self.get_directories(None, None)
         return super().lookup_path(*args, **kwargs)
-
-    async def get_response(self, path: str, scope):
-        response = await super().get_response(path, scope)
-        # requests versioned with the current content hash (?v=..., see
-        # solara.server.esm_vue.versioned_url) can be cached forever: any
-        # change to the file changes the url
-        query = parse_qs(scope.get("query_string", b"").decode())
-        version = query.get("v", [None])[0]
-        if version is not None and response.status_code in (200, 304):
-            if version == server.public_url_content_hash(path):
-                response.headers["Cache-Control"] = "max-age=31536000, immutable"
-        return response
 
     def get_directories(
         self,
@@ -723,7 +767,7 @@ class StaticCdn(StaticFilesOptionalAuth):
         # the cdn at fetch time and can change content under the same url, so
         # they are deliberately not marked immutable.
         if response.status_code in (200, 304) and self._exact_version.search(path):
-            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+            response.headers["Cache-Control"] = immutable_cache_control()
         return response
 
 

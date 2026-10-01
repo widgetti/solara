@@ -501,10 +501,17 @@
                 },
                 // Add cache busting to the urlArgs to ensure latest versions of nbextensions are loaded
                 urlArgs: function (id, url) {
-                    // the nodeps bundles ship in the extension's directory, which is
-                    // what gets hashed, so version them with the extension's hash
-                    const extensionName = id.replace(/^\/?(static\/)?nbextensions\//, "").replace(".js", "").replace(/\/nodeps$/, "/extension");
-                    if (nbextensionHashes[extensionName] !== undefined) {
+                    // An extension's hash covers the folder it owns (see nbextension_hash), so every
+                    // file in that folder (extension.js, nodeps.js, index.js, ...) is versioned by it,
+                    // and the server can mark these urls immutable. Match on the resolved url: ids
+                    // may carry a root path prefix (/jupyter/nbextensions/...).
+                    if (url.indexOf("nbextensions/") === -1) {
+                        return '';
+                    }
+                    const path = url.split("?")[0].replace(/^.*?nbextensions\//, "").replace(/\.js$/, "");
+                    const folder = path.split("/")[0];
+                    const extensionName = Object.prototype.hasOwnProperty.call(nbextensionHashes, path) ? path : Object.keys(nbextensionHashes).find((name) => name.split("/")[0] === folder);
+                    if (extensionName !== undefined) {
                         // Check if the url already has a query string, if so, append the hash as an additional parameter
                         return (url.indexOf('?') === -1 ? '?' : '&') + nbextensionHashes[extensionName];
                     } else {

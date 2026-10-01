@@ -7,6 +7,7 @@ ipyvue = pytest.importorskip("ipyvue")
 if not hasattr(ipyvue, "define_module"):
     pytest.skip("requires ipyvue with ES module support (>=3.0.0a9)", allow_module_level=True)
 
+import solara.server.settings  # noqa: E402
 from solara.server import esm_vue, kernel_context  # noqa: E402
 from solara.server.kernel import Kernel  # noqa: E402
 
@@ -127,7 +128,9 @@ def test_versioned_url(clean_esm_state, tmp_path: Path, monkeypatch):
     bundle = public / "bundle.mjs"
     bundle.write_text("export default 1")
     monkeypatch.setattr(server, "public_directories", lambda: [public])
-    server._public_hash_cache.clear()
+    monkeypatch.setattr(server, "_content_hash_cache", {})
+    # a rebuilt bundle changes the url in development; production hashes each file once
+    monkeypatch.setattr(solara.server.settings.main, "mode", "development")
 
     url = server.versioned_url("/static/public/bundle.mjs")
     assert url.startswith("/static/public/bundle.mjs?v=")
@@ -150,7 +153,7 @@ def test_module_widget_and_page_share_versioned_url(virtual_context, tmp_path: P
     public.mkdir()
     (public / "bundle.mjs").write_text("export default 1")
     monkeypatch.setattr(server, "public_directories", lambda: [public])
-    server._public_hash_cache.clear()
+    monkeypatch.setattr(server, "_content_hash_cache", {})
 
     esm_vue.define_module("esm-vue-versioned", url="/static/public/bundle.mjs")
     widget = esm_vue.create_modules()["esm-vue-versioned"]
