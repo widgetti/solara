@@ -121,7 +121,7 @@ def Preformatted(text, **kwargs):
 
 
 @solara.component
-def IconButton(icon_name: str = None, on_click=Callable[[], None], children: list = [], click_event="click", **kwargs):
+def IconButton(icon_name: str = None, on_click: Callable[[], None] = None, children: list = [], click_event="click", **kwargs):
     return solara.Button(icon_name=icon_name, on_click=on_click, children=children, icon=True, click_event=click_event, **kwargs)
 
 
