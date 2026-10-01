@@ -1,5 +1,17 @@
 # Solara Changelog
 
+## Version 1.63.0
+
+- Feature: Allow injecting the Redis client used for state persistence. [#1209](https://github.com/widgetti/solara/pull/1209)
+- Bug Fix: Keep a page connected while any of its websockets is open. When the new websocket of a reconnecting page connected before the old one disconnected, the page was marked as disconnected, its kernel could be culled under the open page, and the next disconnect raised "cannot disconnect a page that is in state: DISCONNECTED". [#1210](https://github.com/widgetti/solara/pull/1210)
+- Bug Fix: Move a reused kernel to the event loop of its new connection. [#1208](https://github.com/widgetti/solara/pull/1208)
+- Bug Fix: The assets proxy never serves a half-written cdn cache file. On a fresh server, several first visitors at once could get a truncated `require.js`, and the page hung on "Loading resources". [#1214](https://github.com/widgetti/solara/pull/1214)
+- Performance: Content-hashed static files, including the theme css, are cached forever (immutable). [#1212](https://github.com/widgetti/solara/pull/1212)
+- Revert: The reactive subscription lifecycle change from 1.60.3 (#1192) is reverted. [#1211](https://github.com/widgetti/solara/pull/1211)
+- Compatibility: CI tests with reacton 1.11.0, in which a state change from another thread never waits for the render lock. Solara still works with reacton 1.9 and later. [#1213](https://github.com/widgetti/solara/pull/1213)
+- Packaging: `solara-assets` 1.63.0 is unavailable on PyPI because the project has reached its storage limit.
+  The latest available asset package is 1.58.2.
+
 ## Version 1.62.1
 
 - Bug Fix: Restore file selection, opening, and directory navigation in file browsers with Vuetify 3. [#1203](https://github.com/widgetti/solara/pull/1203)
