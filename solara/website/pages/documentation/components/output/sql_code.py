@@ -22,10 +22,22 @@ if vaex is not None:
     df_titanic = vaex.datasets.titanic().to_pandas_df()
 
     def create_db():
-        conn = sqlite3.connect(filename)
+        # Several processes can import this at the same time (e.g. the pytest-xdist
+        # workers). Build the database in a file of our own and rename it, so the others
+        # never see a missing or empty table.
+        tmp = f"{filename}.{os.getpid()}.tmp"
+        conn = sqlite3.connect(tmp)
         df_iris.to_sql("iris", conn, if_exists="replace", index=False)
         df_titanic.to_sql("titanic", conn, if_exists="replace", index=False)
         conn.close()
+        try:
+            os.replace(tmp, filename)
+        except PermissionError:
+            # Windows cannot replace a file another process has open; that file was made
+            # the same way, so it is complete
+            os.remove(tmp)
+            if not os.path.exists(filename):
+                raise
 
     filename = "solara-sql.db"
     if not os.path.exists(filename):
