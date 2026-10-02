@@ -187,8 +187,9 @@ def test_hook_download(tmpdir, local_server_url):
 
     label, rc = render_fixed(DownloadFile())
     expected = "1.0 ResultState.FINISHED None"
-    # the local server is fast enough that the download thread may already be done here
-    assert label.value in ("0 ResultState.RUNNING None", expected)
+    # the download thread can be anywhere here: running with no bytes yet, with all bytes in
+    # but not yet marked finished (1.0 RUNNING), or done
+    assert label.value == expected or label.value.endswith(" ResultState.RUNNING None"), label.value
     busy_wait_compare(lambda: label.value, expected)
     assert label.value == expected
 
