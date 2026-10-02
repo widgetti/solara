@@ -107,7 +107,7 @@ else:
 # the handshake, and that code has its own copy of the limit.
 try:
     import websockets.http11
-except ImportError:  # websockets < 10 has no sans-I/O implementation
+except ImportError:  # very old websockets has no websockets.http11
     pass
 else:
     if ws_major_version >= 13:
