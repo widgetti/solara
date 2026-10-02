@@ -1,0 +1,4964 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Jupyter Dashboard 1</title>
+    <meta charset="utf-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+    <link rel="icon" type="image/png" sizes="any" href="/static/assets/favicon.png">
+    <link rel="icon" type="image/svg+xml" href="/static/assets/favicon.svg">
+
+    
+    
+    <link rel="canonical" href="https://solara.dev/apps/jupyter-dashboard-1">
+    
+    
+
+    <link rel="stylesheet" href="/_solara/cdn/@docsearch/css@3/dist/style.css" />
+    <script src="/_solara/cdn/@docsearch/js@3"></script>
+
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-KC98NKNL');</script>
+    <!-- End Google Tag Manager -->
+
+    
+
+    <style type="text/css">#mc_embed_signup input.mce_inline_error { border-color:#6B0505; } #mc_embed_signup div.mce_inline_error { margin: 0 0 1em 0; padding: 5px 10px; background-color:#6B0505; font-weight: bold; z-index: 1; color:#fff; }</style>
+<style id="vuetify-theme-stylesheet" type="text/css">.v-application a { color: #ff991f; }
+.v-application .primary {
+  background-color: #ff991f !important;
+  border-color: #ff991f !important;
+}
+.v-application .primary--text {
+  color: #ff991f !important;
+  caret-color: #ff991f !important;
+}
+.v-application .primary.lighten-5 {
+  background-color: #ffffae !important;
+  border-color: #ffffae !important;
+}
+.v-application .primary--text.text--lighten-5 {
+  color: #ffffae !important;
+  caret-color: #ffffae !important;
+}
+.v-application .primary.lighten-4 {
+  background-color: #ffff92 !important;
+  border-color: #ffff92 !important;
+}
+.v-application .primary--text.text--lighten-4 {
+  color: #ffff92 !important;
+  caret-color: #ffff92 !important;
+}
+.v-application .primary.lighten-3 {
+  background-color: #ffec76 !important;
+  border-color: #ffec76 !important;
+}
+.v-application .primary--text.text--lighten-3 {
+  color: #ffec76 !important;
+  caret-color: #ffec76 !important;
+}
+.v-application .primary.lighten-2 {
+  background-color: #ffd05a !important;
+  border-color: #ffd05a !important;
+}
+.v-application .primary--text.text--lighten-2 {
+  color: #ffd05a !important;
+  caret-color: #ffd05a !important;
+}
+.v-application .primary.lighten-1 {
+  background-color: #ffb43e !important;
+  border-color: #ffb43e !important;
+}
+.v-application .primary--text.text--lighten-1 {
+  color: #ffb43e !important;
+  caret-color: #ffb43e !important;
+}
+.v-application .primary.darken-1 {
+  background-color: #df7f00 !important;
+  border-color: #df7f00 !important;
+}
+.v-application .primary--text.text--darken-1 {
+  color: #df7f00 !important;
+  caret-color: #df7f00 !important;
+}
+.v-application .primary.darken-2 {
+  background-color: #c06500 !important;
+  border-color: #c06500 !important;
+}
+.v-application .primary--text.text--darken-2 {
+  color: #c06500 !important;
+  caret-color: #c06500 !important;
+}
+.v-application .primary.darken-3 {
+  background-color: #a14d00 !important;
+  border-color: #a14d00 !important;
+}
+.v-application .primary--text.text--darken-3 {
+  color: #a14d00 !important;
+  caret-color: #a14d00 !important;
+}
+.v-application .primary.darken-4 {
+  background-color: #843400 !important;
+  border-color: #843400 !important;
+}
+.v-application .primary--text.text--darken-4 {
+  color: #843400 !important;
+  caret-color: #843400 !important;
+}
+.v-application .secondary {
+  background-color: #424242 !important;
+  border-color: #424242 !important;
+}
+.v-application .secondary--text {
+  color: #424242 !important;
+  caret-color: #424242 !important;
+}
+.v-application .secondary.lighten-5 {
+  background-color: #c1c1c1 !important;
+  border-color: #c1c1c1 !important;
+}
+.v-application .secondary--text.text--lighten-5 {
+  color: #c1c1c1 !important;
+  caret-color: #c1c1c1 !important;
+}
+.v-application .secondary.lighten-4 {
+  background-color: #a6a6a6 !important;
+  border-color: #a6a6a6 !important;
+}
+.v-application .secondary--text.text--lighten-4 {
+  color: #a6a6a6 !important;
+  caret-color: #a6a6a6 !important;
+}
+.v-application .secondary.lighten-3 {
+  background-color: #8b8b8b !important;
+  border-color: #8b8b8b !important;
+}
+.v-application .secondary--text.text--lighten-3 {
+  color: #8b8b8b !important;
+  caret-color: #8b8b8b !important;
+}
+.v-application .secondary.lighten-2 {
+  background-color: #727272 !important;
+  border-color: #727272 !important;
+}
+.v-application .secondary--text.text--lighten-2 {
+  color: #727272 !important;
+  caret-color: #727272 !important;
+}
+.v-application .secondary.lighten-1 {
+  background-color: #595959 !important;
+  border-color: #595959 !important;
+}
+.v-application .secondary--text.text--lighten-1 {
+  color: #595959 !important;
+  caret-color: #595959 !important;
+}
+.v-application .secondary.darken-1 {
+  background-color: #2c2c2c !important;
+  border-color: #2c2c2c !important;
+}
+.v-application .secondary--text.text--darken-1 {
+  color: #2c2c2c !important;
+  caret-color: #2c2c2c !important;
+}
+.v-application .secondary.darken-2 {
+  background-color: #171717 !important;
+  border-color: #171717 !important;
+}
+.v-application .secondary--text.text--darken-2 {
+  color: #171717 !important;
+  caret-color: #171717 !important;
+}
+.v-application .secondary.darken-3 {
+  background-color: #000000 !important;
+  border-color: #000000 !important;
+}
+.v-application .secondary--text.text--darken-3 {
+  color: #000000 !important;
+  caret-color: #000000 !important;
+}
+.v-application .secondary.darken-4 {
+  background-color: #000000 !important;
+  border-color: #000000 !important;
+}
+.v-application .secondary--text.text--darken-4 {
+  color: #000000 !important;
+  caret-color: #000000 !important;
+}
+.v-application .accent {
+  background-color: #82b1ff !important;
+  border-color: #82b1ff !important;
+}
+.v-application .accent--text {
+  color: #82b1ff !important;
+  caret-color: #82b1ff !important;
+}
+.v-application .accent.lighten-5 {
+  background-color: #ffffff !important;
+  border-color: #ffffff !important;
+}
+.v-application .accent--text.text--lighten-5 {
+  color: #ffffff !important;
+  caret-color: #ffffff !important;
+}
+.v-application .accent.lighten-4 {
+  background-color: #f8ffff !important;
+  border-color: #f8ffff !important;
+}
+.v-application .accent--text.text--lighten-4 {
+  color: #f8ffff !important;
+  caret-color: #f8ffff !important;
+}
+.v-application .accent.lighten-3 {
+  background-color: #daffff !important;
+  border-color: #daffff !important;
+}
+.v-application .accent--text.text--lighten-3 {
+  color: #daffff !important;
+  caret-color: #daffff !important;
+}
+.v-application .accent.lighten-2 {
+  background-color: #bce8ff !important;
+  border-color: #bce8ff !important;
+}
+.v-application .accent--text.text--lighten-2 {
+  color: #bce8ff !important;
+  caret-color: #bce8ff !important;
+}
+.v-application .accent.lighten-1 {
+  background-color: #9fccff !important;
+  border-color: #9fccff !important;
+}
+.v-application .accent--text.text--lighten-1 {
+  color: #9fccff !important;
+  caret-color: #9fccff !important;
+}
+.v-application .accent.darken-1 {
+  background-color: #6596e2 !important;
+  border-color: #6596e2 !important;
+}
+.v-application .accent--text.text--darken-1 {
+  color: #6596e2 !important;
+  caret-color: #6596e2 !important;
+}
+.v-application .accent.darken-2 {
+  background-color: #467dc6 !important;
+  border-color: #467dc6 !important;
+}
+.v-application .accent--text.text--darken-2 {
+  color: #467dc6 !important;
+  caret-color: #467dc6 !important;
+}
+.v-application .accent.darken-3 {
+  background-color: #2364aa !important;
+  border-color: #2364aa !important;
+}
+.v-application .accent--text.text--darken-3 {
+  color: #2364aa !important;
+  caret-color: #2364aa !important;
+}
+.v-application .accent.darken-4 {
+  background-color: #004c90 !important;
+  border-color: #004c90 !important;
+}
+.v-application .accent--text.text--darken-4 {
+  color: #004c90 !important;
+  caret-color: #004c90 !important;
+}
+.v-application .error {
+  background-color: #ff5252 !important;
+  border-color: #ff5252 !important;
+}
+.v-application .error--text {
+  color: #ff5252 !important;
+  caret-color: #ff5252 !important;
+}
+.v-application .error.lighten-5 {
+  background-color: #ffe4d5 !important;
+  border-color: #ffe4d5 !important;
+}
+.v-application .error--text.text--lighten-5 {
+  color: #ffe4d5 !important;
+  caret-color: #ffe4d5 !important;
+}
+.v-application .error.lighten-4 {
+  background-color: #ffc6b9 !important;
+  border-color: #ffc6b9 !important;
+}
+.v-application .error--text.text--lighten-4 {
+  color: #ffc6b9 !important;
+  caret-color: #ffc6b9 !important;
+}
+.v-application .error.lighten-3 {
+  background-color: #ffa99e !important;
+  border-color: #ffa99e !important;
+}
+.v-application .error--text.text--lighten-3 {
+  color: #ffa99e !important;
+  caret-color: #ffa99e !important;
+}
+.v-application .error.lighten-2 {
+  background-color: #ff8c84 !important;
+  border-color: #ff8c84 !important;
+}
+.v-application .error--text.text--lighten-2 {
+  color: #ff8c84 !important;
+  caret-color: #ff8c84 !important;
+}
+.v-application .error.lighten-1 {
+  background-color: #ff6f6a !important;
+  border-color: #ff6f6a !important;
+}
+.v-application .error--text.text--lighten-1 {
+  color: #ff6f6a !important;
+  caret-color: #ff6f6a !important;
+}
+.v-application .error.darken-1 {
+  background-color: #df323b !important;
+  border-color: #df323b !important;
+}
+.v-application .error--text.text--darken-1 {
+  color: #df323b !important;
+  caret-color: #df323b !important;
+}
+.v-application .error.darken-2 {
+  background-color: #bf0025 !important;
+  border-color: #bf0025 !important;
+}
+.v-application .error--text.text--darken-2 {
+  color: #bf0025 !important;
+  caret-color: #bf0025 !important;
+}
+.v-application .error.darken-3 {
+  background-color: #9f0010 !important;
+  border-color: #9f0010 !important;
+}
+.v-application .error--text.text--darken-3 {
+  color: #9f0010 !important;
+  caret-color: #9f0010 !important;
+}
+.v-application .error.darken-4 {
+  background-color: #800000 !important;
+  border-color: #800000 !important;
+}
+.v-application .error--text.text--darken-4 {
+  color: #800000 !important;
+  caret-color: #800000 !important;
+}
+.v-application .info {
+  background-color: #2196f3 !important;
+  border-color: #2196f3 !important;
+}
+.v-application .info--text {
+  color: #2196f3 !important;
+  caret-color: #2196f3 !important;
+}
+.v-application .info.lighten-5 {
+  background-color: #d4ffff !important;
+  border-color: #d4ffff !important;
+}
+.v-application .info--text.text--lighten-5 {
+  color: #d4ffff !important;
+  caret-color: #d4ffff !important;
+}
+.v-application .info.lighten-4 {
+  background-color: #b5ffff !important;
+  border-color: #b5ffff !important;
+}
+.v-application .info--text.text--lighten-4 {
+  color: #b5ffff !important;
+  caret-color: #b5ffff !important;
+}
+.v-application .info.lighten-3 {
+  background-color: #95e8ff !important;
+  border-color: #95e8ff !important;
+}
+.v-application .info--text.text--lighten-3 {
+  color: #95e8ff !important;
+  caret-color: #95e8ff !important;
+}
+.v-application .info.lighten-2 {
+  background-color: #75ccff !important;
+  border-color: #75ccff !important;
+}
+.v-application .info--text.text--lighten-2 {
+  color: #75ccff !important;
+  caret-color: #75ccff !important;
+}
+.v-application .info.lighten-1 {
+  background-color: #51b0ff !important;
+  border-color: #51b0ff !important;
+}
+.v-application .info--text.text--lighten-1 {
+  color: #51b0ff !important;
+  caret-color: #51b0ff !important;
+}
+.v-application .info.darken-1 {
+  background-color: #007cd6 !important;
+  border-color: #007cd6 !important;
+}
+.v-application .info--text.text--darken-1 {
+  color: #007cd6 !important;
+  caret-color: #007cd6 !important;
+}
+.v-application .info.darken-2 {
+  background-color: #0064ba !important;
+  border-color: #0064ba !important;
+}
+.v-application .info--text.text--darken-2 {
+  color: #0064ba !important;
+  caret-color: #0064ba !important;
+}
+.v-application .info.darken-3 {
+  background-color: #004d9f !important;
+  border-color: #004d9f !important;
+}
+.v-application .info--text.text--darken-3 {
+  color: #004d9f !important;
+  caret-color: #004d9f !important;
+}
+.v-application .info.darken-4 {
+  background-color: #003784 !important;
+  border-color: #003784 !important;
+}
+.v-application .info--text.text--darken-4 {
+  color: #003784 !important;
+  caret-color: #003784 !important;
+}
+.v-application .success {
+  background-color: #4caf50 !important;
+  border-color: #4caf50 !important;
+}
+.v-application .success--text {
+  color: #4caf50 !important;
+  caret-color: #4caf50 !important;
+}
+.v-application .success.lighten-5 {
+  background-color: #dcffd6 !important;
+  border-color: #dcffd6 !important;
+}
+.v-application .success--text.text--lighten-5 {
+  color: #dcffd6 !important;
+  caret-color: #dcffd6 !important;
+}
+.v-application .success.lighten-4 {
+  background-color: #beffba !important;
+  border-color: #beffba !important;
+}
+.v-application .success--text.text--lighten-4 {
+  color: #beffba !important;
+  caret-color: #beffba !important;
+}
+.v-application .success.lighten-3 {
+  background-color: #a2ff9e !important;
+  border-color: #a2ff9e !important;
+}
+.v-application .success--text.text--lighten-3 {
+  color: #a2ff9e !important;
+  caret-color: #a2ff9e !important;
+}
+.v-application .success.lighten-2 {
+  background-color: #85e783 !important;
+  border-color: #85e783 !important;
+}
+.v-application .success--text.text--lighten-2 {
+  color: #85e783 !important;
+  caret-color: #85e783 !important;
+}
+.v-application .success.lighten-1 {
+  background-color: #69cb69 !important;
+  border-color: #69cb69 !important;
+}
+.v-application .success--text.text--lighten-1 {
+  color: #69cb69 !important;
+  caret-color: #69cb69 !important;
+}
+.v-application .success.darken-1 {
+  background-color: #2d9437 !important;
+  border-color: #2d9437 !important;
+}
+.v-application .success--text.text--darken-1 {
+  color: #2d9437 !important;
+  caret-color: #2d9437 !important;
+}
+.v-application .success.darken-2 {
+  background-color: #00791e !important;
+  border-color: #00791e !important;
+}
+.v-application .success--text.text--darken-2 {
+  color: #00791e !important;
+  caret-color: #00791e !important;
+}
+.v-application .success.darken-3 {
+  background-color: #006000 !important;
+  border-color: #006000 !important;
+}
+.v-application .success--text.text--darken-3 {
+  color: #006000 !important;
+  caret-color: #006000 !important;
+}
+.v-application .success.darken-4 {
+  background-color: #004700 !important;
+  border-color: #004700 !important;
+}
+.v-application .success--text.text--darken-4 {
+  color: #004700 !important;
+  caret-color: #004700 !important;
+}
+.v-application .warning {
+  background-color: #fb8c00 !important;
+  border-color: #fb8c00 !important;
+}
+.v-application .warning--text {
+  color: #fb8c00 !important;
+  caret-color: #fb8c00 !important;
+}
+.v-application .warning.lighten-5 {
+  background-color: #ffff9e !important;
+  border-color: #ffff9e !important;
+}
+.v-application .warning--text.text--lighten-5 {
+  color: #ffff9e !important;
+  caret-color: #ffff9e !important;
+}
+.v-application .warning.lighten-4 {
+  background-color: #fffb82 !important;
+  border-color: #fffb82 !important;
+}
+.v-application .warning--text.text--lighten-4 {
+  color: #fffb82 !important;
+  caret-color: #fffb82 !important;
+}
+.v-application .warning.lighten-3 {
+  background-color: #ffdf67 !important;
+  border-color: #ffdf67 !important;
+}
+.v-application .warning--text.text--lighten-3 {
+  color: #ffdf67 !important;
+  caret-color: #ffdf67 !important;
+}
+.v-application .warning.lighten-2 {
+  background-color: #ffc24b !important;
+  border-color: #ffc24b !important;
+}
+.v-application .warning--text.text--lighten-2 {
+  color: #ffc24b !important;
+  caret-color: #ffc24b !important;
+}
+.v-application .warning.lighten-1 {
+  background-color: #ffa72d !important;
+  border-color: #ffa72d !important;
+}
+.v-application .warning--text.text--lighten-1 {
+  color: #ffa72d !important;
+  caret-color: #ffa72d !important;
+}
+.v-application .warning.darken-1 {
+  background-color: #db7200 !important;
+  border-color: #db7200 !important;
+}
+.v-application .warning--text.text--darken-1 {
+  color: #db7200 !important;
+  caret-color: #db7200 !important;
+}
+.v-application .warning.darken-2 {
+  background-color: #bb5900 !important;
+  border-color: #bb5900 !important;
+}
+.v-application .warning--text.text--darken-2 {
+  color: #bb5900 !important;
+  caret-color: #bb5900 !important;
+}
+.v-application .warning.darken-3 {
+  background-color: #9d4000 !important;
+  border-color: #9d4000 !important;
+}
+.v-application .warning--text.text--darken-3 {
+  color: #9d4000 !important;
+  caret-color: #9d4000 !important;
+}
+.v-application .warning.darken-4 {
+  background-color: #802700 !important;
+  border-color: #802700 !important;
+}
+.v-application .warning--text.text--darken-4 {
+  color: #802700 !important;
+  caret-color: #802700 !important;
+}</style>
+<style>html {
+  /* font sizes in vuetify are in rem units. To get the correct font size, the html tag has to have a font size of 
+     * 16px */
+  font-size: 16px;
+}
+
+:where(.vuetify-styles) div.v-application--wrap {
+  /* disable min-height: 100vh set by vuetify */
+  min-height: unset;
+}
+
+.vuetify-styles {
+  /* Rules set on the html element in the vuetify styles are no longer applied after prefixing all selectors, so copy
+     * them here. */
+  overflow-x: hidden;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+
+  /* From _reset.scss */
+  box-sizing: border-box;
+}
+
+/* fix for override from jp-ThemedContainer button */
+button.v-btn--rounded {
+  border-radius: 28px;
+}
+
+/*# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIndlYnBhY2s6Ly8uL2xpYi9zdHlsZXMuY3NzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQUFBO0VBQ0U7YUFDVztFQUNYLGVBQWU7QUFDakI7O0FBRUE7RUFDRSw2Q0FBNkM7RUFDN0MsaUJBQWlCO0FBQ25COztBQUVBO0VBQ0U7bUJBQ2lCO0VBQ2pCLGtCQUFrQjtFQUNsQixrQ0FBa0M7RUFDbEMsbUNBQW1DO0VBQ25DLGtDQUFrQztFQUNsQyw2Q0FBNkM7O0VBRTdDLHFCQUFxQjtFQUNyQixzQkFBc0I7QUFDeEI7O0FBRUEsb0RBQW9EO0FBQ3BEO0VBQ0UsbUJBQW1CO0FBQ3JCIiwic291cmNlc0NvbnRlbnQiOlsiaHRtbCB7XG4gIC8qIGZvbnQgc2l6ZXMgaW4gdnVldGlmeSBhcmUgaW4gcmVtIHVuaXRzLiBUbyBnZXQgdGhlIGNvcnJlY3QgZm9udCBzaXplLCB0aGUgaHRtbCB0YWcgaGFzIHRvIGhhdmUgYSBmb250IHNpemUgb2YgXG4gICAgICogMTZweCAqL1xuICBmb250LXNpemU6IDE2cHg7XG59XG5cbjp3aGVyZSgudnVldGlmeS1zdHlsZXMpIGRpdi52LWFwcGxpY2F0aW9uLS13cmFwIHtcbiAgLyogZGlzYWJsZSBtaW4taGVpZ2h0OiAxMDB2aCBzZXQgYnkgdnVldGlmeSAqL1xuICBtaW4taGVpZ2h0OiB1bnNldDtcbn1cblxuLnZ1ZXRpZnktc3R5bGVzIHtcbiAgLyogUnVsZXMgc2V0IG9uIHRoZSBodG1sIGVsZW1lbnQgaW4gdGhlIHZ1ZXRpZnkgc3R5bGVzIGFyZSBubyBsb25nZXIgYXBwbGllZCBhZnRlciBwcmVmaXhpbmcgYWxsIHNlbGVjdG9ycywgc28gY29weVxuICAgICAqIHRoZW0gaGVyZS4gKi9cbiAgb3ZlcmZsb3cteDogaGlkZGVuO1xuICB0ZXh0LXJlbmRlcmluZzogb3B0aW1pemVMZWdpYmlsaXR5O1xuICAtd2Via2l0LWZvbnQtc21vb3RoaW5nOiBhbnRpYWxpYXNlZDtcbiAgLW1vei1vc3gtZm9udC1zbW9vdGhpbmc6IGdyYXlzY2FsZTtcbiAgLXdlYmtpdC10YXAtaGlnaGxpZ2h0LWNvbG9yOiByZ2JhKDAsIDAsIDAsIDApO1xuXG4gIC8qIEZyb20gX3Jlc2V0LnNjc3MgKi9cbiAgYm94LXNpemluZzogYm9yZGVyLWJveDtcbn1cblxuLyogZml4IGZvciBvdmVycmlkZSBmcm9tIGpwLVRoZW1lZENvbnRhaW5lciBidXR0b24gKi9cbmJ1dHRvbi52LWJ0bi0tcm91bmRlZCB7XG4gIGJvcmRlci1yYWRpdXM6IDI4cHg7XG59XG4iXSwic291cmNlUm9vdCI6IiJ9 */</style>
+<style id="algolia">
+    .DocSearch-Button {
+        background-color: rgb(255, 238, 197);
+        color: #182026;
+    }
+
+    .theme--dark .DocSearch-Button {
+        background-color: #26273D;
+        color: hsla(0,0%,100%,.7);
+    }
+
+    .DocSearch-Button:hover {
+        background-color: rgba(150,150,200,0.15);
+    }
+
+    .theme--dark .DocSearch-Button:hover {
+        background-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .DocSearch-Button .DocSearch-Search-Icon {
+        color: #26273D;
+    }
+
+    .theme--dark .DocSearch-Button .DocSearch-Search-Icon {
+        color: #ff991f;
+    }
+    </style>
+    
+    <link href="/_solara/cdn/@widgetti/solara-vuetify-app@10.1.1/dist/main8.css" rel="stylesheet" class="solara-template-css"></link>
+    
+
+
+    
+    <link rel="stylesheet" href="/_solara/cdn/font-awesome@4.5.0/css/font-awesome.min.css" type="text/css">
+    
+    <style class="solara-template-css">/*
+path=/static/highlight.css
+*/
+pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.highlight .hll { background-color: #ffffcc }
+.highlight { background: rgb(249 249 249); }
+.highlight .c { color: #008000 } /* Comment */
+.highlight .err { border: 1px solid #FF0000 } /* Error */
+.highlight .k { color: #0000ff } /* Keyword */
+.highlight .ch { color: #008000 } /* Comment.Hashbang */
+.highlight .cm { color: #008000 } /* Comment.Multiline */
+.highlight .cp { color: #0000ff } /* Comment.Preproc */
+.highlight .cpf { color: #008000 } /* Comment.PreprocFile */
+.highlight .c1 { color: #008000 } /* Comment.Single */
+.highlight .cs { color: #008000 } /* Comment.Special */
+.highlight .ge { font-style: italic } /* Generic.Emph */
+.highlight .gh { font-weight: bold } /* Generic.Heading */
+.highlight .gp { font-weight: bold } /* Generic.Prompt */
+.highlight .gs { font-weight: bold } /* Generic.Strong */
+.highlight .gu { font-weight: bold } /* Generic.Subheading */
+.highlight .kc { color: #0000ff } /* Keyword.Constant */
+.highlight .kd { color: #0000ff } /* Keyword.Declaration */
+.highlight .kn { color: #0000ff } /* Keyword.Namespace */
+.highlight .kp { color: #0000ff } /* Keyword.Pseudo */
+.highlight .kr { color: #0000ff } /* Keyword.Reserved */
+.highlight .kt { color: #2b91af } /* Keyword.Type */
+.highlight .s { color: #a31515 } /* Literal.String */
+.highlight .nc { color: #2b91af } /* Name.Class */
+.highlight .ow { color: #0000ff } /* Operator.Word */
+.highlight .sa { color: #a31515 } /* Literal.String.Affix */
+.highlight .sb { color: #a31515 } /* Literal.String.Backtick */
+.highlight .sc { color: #a31515 } /* Literal.String.Char */
+.highlight .dl { color: #a31515 } /* Literal.String.Delimiter */
+.highlight .sd { color: #a31515 } /* Literal.String.Doc */
+.highlight .s2 { color: #a31515 } /* Literal.String.Double */
+.highlight .se { color: #a31515 } /* Literal.String.Escape */
+.highlight .sh { color: #a31515 } /* Literal.String.Heredoc */
+.highlight .si { color: #a31515 } /* Literal.String.Interpol */
+.highlight .sx { color: #a31515 } /* Literal.String.Other */
+.highlight .sr { color: #a31515 } /* Literal.String.Regex */
+.highlight .s1 { color: #a31515 } /* Literal.String.Single */
+.highlight .ss { color: #a31515 } /* Literal.String.Symbol */
+</style>
+    <style class="solara-template-css">/*
+path=/static/highlight-dark.css
+*/
+/* generated using: pygmentize -S vs -f html -S one-dark -a ".theme--dark.v-application .highlight" >! solara/server/static/highlight-dark.css
+   and then remove the overlapping first lines with highlight.css
+*/
+.theme--dark.v-application .highlight .hll { background-color: #ffffcc }
+.theme--dark.v-application .highlight { background: #1d1f22; color: #ABB2BF }
+.theme--dark.v-application .highlight .c { color: #7F848E } /* Comment */
+.theme--dark.v-application .highlight .err { color: #ABB2BF } /* Error */
+.theme--dark.v-application .highlight .esc { color: #ABB2BF } /* Escape */
+.theme--dark.v-application .highlight .g { color: #ABB2BF } /* Generic */
+.theme--dark.v-application .highlight .k { color: #C678DD } /* Keyword */
+.theme--dark.v-application .highlight .l { color: #ABB2BF } /* Literal */
+.theme--dark.v-application .highlight .n { color: #E06C75 } /* Name */
+.theme--dark.v-application .highlight .o { color: #56B6C2 } /* Operator */
+.theme--dark.v-application .highlight .x { color: #ABB2BF } /* Other */
+.theme--dark.v-application .highlight .p { color: #ABB2BF } /* Punctuation */
+.theme--dark.v-application .highlight .ch { color: #7F848E } /* Comment.Hashbang */
+.theme--dark.v-application .highlight .cm { color: #7F848E } /* Comment.Multiline */
+.theme--dark.v-application .highlight .cp { color: #7F848E } /* Comment.Preproc */
+.theme--dark.v-application .highlight .cpf { color: #7F848E } /* Comment.PreprocFile */
+.theme--dark.v-application .highlight .c1 { color: #7F848E } /* Comment.Single */
+.theme--dark.v-application .highlight .cs { color: #7F848E } /* Comment.Special */
+.theme--dark.v-application .highlight .gd { color: #ABB2BF } /* Generic.Deleted */
+.theme--dark.v-application .highlight .ge { color: #ABB2BF } /* Generic.Emph */
+.theme--dark.v-application .highlight .gr { color: #ABB2BF } /* Generic.Error */
+.theme--dark.v-application .highlight .gh { color: #ABB2BF } /* Generic.Heading */
+.theme--dark.v-application .highlight .gi { color: #ABB2BF } /* Generic.Inserted */
+.theme--dark.v-application .highlight .go { color: #ABB2BF } /* Generic.Output */
+.theme--dark.v-application .highlight .gp { color: #ABB2BF } /* Generic.Prompt */
+.theme--dark.v-application .highlight .gs { color: #ABB2BF } /* Generic.Strong */
+.theme--dark.v-application .highlight .gu { color: #ABB2BF } /* Generic.Subheading */
+.theme--dark.v-application .highlight .gt { color: #ABB2BF } /* Generic.Traceback */
+.theme--dark.v-application .highlight .kc { color: #E5C07B } /* Keyword.Constant */
+.theme--dark.v-application .highlight .kd { color: #C678DD } /* Keyword.Declaration */
+.theme--dark.v-application .highlight .kn { color: #C678DD } /* Keyword.Namespace */
+.theme--dark.v-application .highlight .kp { color: #C678DD } /* Keyword.Pseudo */
+.theme--dark.v-application .highlight .kr { color: #C678DD } /* Keyword.Reserved */
+.theme--dark.v-application .highlight .kt { color: #E5C07B } /* Keyword.Type */
+.theme--dark.v-application .highlight .ld { color: #ABB2BF } /* Literal.Date */
+.theme--dark.v-application .highlight .m { color: #D19A66 } /* Literal.Number */
+.theme--dark.v-application .highlight .s { color: #98C379 } /* Literal.String */
+.theme--dark.v-application .highlight .na { color: #E06C75 } /* Name.Attribute */
+.theme--dark.v-application .highlight .nb { color: #E5C07B } /* Name.Builtin */
+.theme--dark.v-application .highlight .nc { color: #E5C07B } /* Name.Class */
+.theme--dark.v-application .highlight .no { color: #E06C75 } /* Name.Constant */
+.theme--dark.v-application .highlight .nd { color: #61AFEF } /* Name.Decorator */
+.theme--dark.v-application .highlight .ni { color: #E06C75 } /* Name.Entity */
+.theme--dark.v-application .highlight .ne { color: #E06C75 } /* Name.Exception */
+.theme--dark.v-application .highlight .nf { color: #61AFEF; font-weight: bold } /* Name.Function */
+.theme--dark.v-application .highlight .nl { color: #E06C75 } /* Name.Label */
+.theme--dark.v-application .highlight .nn { color: #E06C75 } /* Name.Namespace */
+.theme--dark.v-application .highlight .nx { color: #E06C75 } /* Name.Other */
+.theme--dark.v-application .highlight .py { color: #E06C75 } /* Name.Property */
+.theme--dark.v-application .highlight .nt { color: #E06C75 } /* Name.Tag */
+.theme--dark.v-application .highlight .nv { color: #E06C75 } /* Name.Variable */
+.theme--dark.v-application .highlight .ow { color: #56B6C2 } /* Operator.Word */
+.theme--dark.v-application .highlight .p-Marker { color: #ABB2BF } /* Punctuation.Marker */
+.theme--dark.v-application .highlight .w { color: #ABB2BF } /* Text.Whitespace */
+.theme--dark.v-application .highlight .mb { color: #D19A66 } /* Literal.Number.Bin */
+.theme--dark.v-application .highlight .mf { color: #D19A66 } /* Literal.Number.Float */
+.theme--dark.v-application .highlight .mh { color: #D19A66 } /* Literal.Number.Hex */
+.theme--dark.v-application .highlight .mi { color: #D19A66 } /* Literal.Number.Integer */
+.theme--dark.v-application .highlight .mo { color: #D19A66 } /* Literal.Number.Oct */
+.theme--dark.v-application .highlight .sa { color: #98C379 } /* Literal.String.Affix */
+.theme--dark.v-application .highlight .sb { color: #98C379 } /* Literal.String.Backtick */
+.theme--dark.v-application .highlight .sc { color: #98C379 } /* Literal.String.Char */
+.theme--dark.v-application .highlight .dl { color: #98C379 } /* Literal.String.Delimiter */
+.theme--dark.v-application .highlight .sd { color: #98C379 } /* Literal.String.Doc */
+.theme--dark.v-application .highlight .s2 { color: #98C379 } /* Literal.String.Double */
+.theme--dark.v-application .highlight .se { color: #98C379 } /* Literal.String.Escape */
+.theme--dark.v-application .highlight .sh { color: #98C379 } /* Literal.String.Heredoc */
+.theme--dark.v-application .highlight .si { color: #98C379 } /* Literal.String.Interpol */
+.theme--dark.v-application .highlight .sx { color: #98C379 } /* Literal.String.Other */
+.theme--dark.v-application .highlight .sr { color: #98C379 } /* Literal.String.Regex */
+.theme--dark.v-application .highlight .s1 { color: #98C379 } /* Literal.String.Single */
+.theme--dark.v-application .highlight .ss { color: #98C379 } /* Literal.String.Symbol */
+.theme--dark.v-application .highlight .bp { color: #E5C07B } /* Name.Builtin.Pseudo */
+.theme--dark.v-application .highlight .fm { color: #56B6C2; font-weight: bold } /* Name.Function.Magic */
+.theme--dark.v-application .highlight .vc { color: #E06C75 } /* Name.Variable.Class */
+.theme--dark.v-application .highlight .vg { color: #E06C75 } /* Name.Variable.Global */
+.theme--dark.v-application .highlight .vi { color: #E06C75 } /* Name.Variable.Instance */
+.theme--dark.v-application .highlight .vm { color: #E06C75 } /* Name.Variable.Magic */
+.theme--dark.v-application .highlight .il { color: #D19A66 } /* Literal.Number.Integer.Long */
+</style>
+    <link rel="stylesheet" type="text/css" href="/static/assets/style.css?v=eb50ffa1d09f416e2f98dedc1b1296ae" class="solara-template-css">
+    <style id="jupyter-theme-css" class="solara-template-css">
+    </style>
+    <link rel="stylesheet" type="text/css" href="/static/assets/custom.css?v=14f00c0ac47f808c3ac3cbd655c9fab4" class="solara-template-css">
+
+    <script id="jupyter-config-data" type="application/json">
+    {
+        "baseUrl": "/jupyter/",
+        "kernelId": "1234"
+    }
+    </script>
+    <style class="solara-template-css">
+        html,
+body {
+    height: 100vh;
+}
+
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(359deg);
+    }
+}
+
+@keyframes oscillate {
+    0% {
+        transform: scale(0.8);
+    }
+
+    50% {
+        transform: scale(1.0);
+    }
+
+    100% {
+        transform: scale(0.8);
+    }
+}
+
+#sun-spinner1 {
+    animation: spin 6s linear infinite;
+    padding: 10px;
+}
+
+#sun-spinner2 {
+    animation: spin 2s cubic-bezier(.79, .14, .15, .86) infinite;
+    padding: 10px;
+}
+
+#sun-spinner-container {
+    animation: oscillate 2s linear infinite;
+}
+
+@keyframes bounce-in {
+    0% {
+        transform: scale(0);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes bounce-out {
+    0% {
+        transform: translateZ(0) scale(1);
+    }
+
+    100% {
+        transform: translateZ(0) scale(50);
+    }
+}
+
+.solara-transition-enter-active {
+    transition: opacity 0.5s ease;
+    /* animation: bounce-in 0.5s ease; */
+}
+
+.solara-transition-leave-active {
+    transition: opacity 0.5s ease;
+}
+
+.solara-transition-leave-active .solara-loader {
+    animation: bounce-out 0.5s ease;
+}
+
+.solara-transition-leave-active #sun-spinner-container {
+    animation: unset;
+}
+
+.solara-transition-leave-active h1 {
+    visibility: hidden;
+}
+
+.solara-transition-enter,
+.solara-transition-leave-to {
+    opacity: 0;
+}
+
+#sun-spinner-container {
+    overflow: hidden;
+}
+
+#loader-container {
+    width: 100vw;
+    height: 100vh;
+    position: absolute;
+    margin: 0;
+    padding: 0;
+    z-index: 998;
+    display: flex;
+    align-items: center;
+}
+
+#loader {
+    position: absolute;
+    text-align: center;
+    z-index: 1000;
+    overflow: hidden;
+}
+    </style>
+    <!-- Include Vuetify background colours so static html from SSG renders the right general colour theme
+        before first render. We remove these after Vue takes over rendering to avoid collisions -->
+    <style id="pre-render-theme">
+    .theme--light .v-sheet {
+        background-color: #fff;
+        border-color: #fff;
+        color: rgba(0,0,0,.87)
+    }
+
+    .theme--dark .v-sheet {
+        background-color: #1e1e1e;
+        border-color: #1e1e1e;
+        color: #fff
+    }
+</style>
+    
+
+</head>
+<script type="x-template" id="vue-app-template" style="display: none">
+    <v-app :key="forceUpdateTrigger" :class="loadingPage ? 'solara-page-loading' : ''">
+        <v-progress-linear :style="{visibility: (kernelBusyLong && isMounted) ? 'visible' : 'hidden'}"
+            :indeterminate="kernelBusyLong && isMounted"
+            absolute></v-progress-linear>
+        <v-alert v-if="needsRefresh || cancelAutoRefresh" type="warning" :border="vue3 ? 'start' : 'left'"
+            style="position: absolute; right: 0px; z-index: 100; left: 0px;">
+            <!-- vuetify 2 shows the same message in the refresh dialog below, so keep
+                 the generic text there to avoid saying it twice -->
+            <span v-if="vue3 && needsRefresh">Could not restore session. Please refresh the page.</span>
+            <span v-else>App is disconnected, and may not function properly. Please refresh the page.</span>
+        </v-alert>
+        
+        <transition name="solara-transition" :duration="{ enter: 500, leave: 500 }">
+    <div v-if="loading" id="loader-container">
+        <v-container id="loader" key="loader" class="solara-loader" fluid>
+            <v-row>
+                <v-col>
+                    <div id="sun-spinner-container">
+                        <!-- <img id="sun-spinner" height="100px" src="static/assets/favicon.svg" /> -->
+                        <svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink"
+                            xmlns:svgjs="http://svgjs.com/svgjs" width="65" height="65"><svg width="65" height="65"
+                                viewBox="0 0 65 65" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path id="sun-spinner1" style="transform-origin: center;"
+                                    d="M57.11 30.64L61.47 17.87L48.7 13.51L42.76 1.39999L30.65 7.34999L17.87 2.97999L13.51 15.75L1.40002 21.7L7.35002 33.81L2.99002 46.58L15.76 50.94L21.71 63.06L33.82 57.11L46.59 61.47L50.95 48.7L63.06 42.75L57.11 30.64ZM54.26 34.39L34.39 54.26C33.19 55.46 31.25 55.46 30.05 54.26L10.2 34.4C9.00002 33.2 9.00002 31.26 10.2 30.07L30.06 10.2C31.26 8.99999 33.2 8.99999 34.4 10.2L54.27 30.07C55.47 31.27 55.47 33.21 54.27 34.4L54.26 34.39Z"
+                                    fill="#FFCF64"></path>
+                                <path id="sun-spinner2" style="transform-origin: center;"
+                                    d="M53.62 19.42L51.65 6.07L38.3 8.04L27.46 0L19.42 10.84L6.07 12.82L8.04 26.17L0 37L10.84 45.04L12.81 58.39L26.16 56.42L37 64.46L45.04 53.62L58.39 51.64L56.42 38.29L64.46 27.45L53.62 19.4V19.42ZM52.8 24.06L44.24 50.82C43.72 52.43 42 53.32 40.39 52.81L13.63 44.25C12.02 43.74 11.13 42.01 11.64 40.4L20.21 13.64C20.72 12.03 22.45 11.14 24.06 11.65L50.82 20.21C52.43 20.72 53.32 22.45 52.81 24.06H52.8Z"
+                                    fill="#FF8C3E"></path>
+                            </svg>
+                        </svg>
+
+                    </div>
+                    <h1>{{ loading_text }}</h1>
+
+                </v-col>
+            </v-row>
+        </v-container>
+        <div style="right: 50px; bottom: 10px; position: absolute;">
+            <b>Made with <a href="https://solara.dev">Solara</a></b>
+        </div>
+    </div>
+    <div v-else>
+        <jupyter-widget-mount-point v-if="!remounting" :key="remountKey" mount-id="solara-main">
+            A widget with mount-id="solara-main" should go here
+        </jupyter-widget-mount-point>
+        <div v-if="showBanner" style="position: absolute; right: 0px; bottom: 0px; padding: 10px;">
+            <b>This website runs on <a href="https://solara.dev">Solara</a></b>
+        </div>
+    </div>
+</transition>
+
+        <v-overlay style="z-index: 100002;" v-bind="vue3 ? { modelValue: (connectionStatus != 'connected') && wasConnected } : { value: (connectionStatus != 'connected') && wasConnected }">
+            <v-progress-circular indeterminate size="128" style="text-align: center;">Server
+                disconnected.</v-progress-circular>
+        </v-overlay>
+
+        <!-- soft-remount indicator (§6.2/§6.3): while the app re-runs on the new instance the mount
+             point is withheld from the DOM (see the loader templates), so we show a spinner here
+             instead of letting the empty mount-point placeholder flash through. Not the full loader. -->
+        <v-overlay style="z-index: 100001;" v-bind="vue3 ? { modelValue: remounting } : { value: remounting }" opacity="0.9">
+            <div style="text-align: center;">
+                <v-progress-circular indeterminate size="64" width="4"></v-progress-circular>
+                <div style="margin-top: 16px;">Restoring session…</div>
+            </div>
+        </v-overlay>
+
+        <v-dialog v-if="!vue3" v-model="needsRefresh" width="500">
+            <v-card>
+                <v-card-title class="text-h5 grey lighten-2">Please refresh the page</v-card-title>
+
+                
+                <v-card-text>
+                    Could not restore session. Please refresh.
+                </v-card-text>
+                
+
+                <v-divider></v-divider>
+
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn color="secondary" text @click="reload()">
+                        Refresh now
+                    </v-btn>
+                    <v-btn color="primary" text @click="setCancelAutoRefresh()">
+                        Cancel
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+        <v-menu v-if="debug && solaraDebugMessages && solaraDebugMessages.length" offset-y top
+            :close-on-content-click="false">
+            <template v-slot:activator="{ on }">
+                <v-btn text v-on="on" style="position: fixed; bottom: 8px; right: 8px">
+                    <span style="color: red">{{ solaraDebugMessages.length }}</span>
+                    <v-icon right large color="red">mdi-bug-outline</v-icon>
+                </v-btn>
+            </template>
+            <v-sheet class="pa-2" style="overflow: auto; max-height: 80vh">
+                <div style="display: flex" v-for="message in solaraDebugMessages" :key="message.cell" class="pa-2">
+                    <div style="width: 50px">[{{ message.cell }}]</div>
+                    <div v-if="message.traceback" class="jp-RenderedText jp-OutputArea-output"
+                        data-mime-type="application/vnd.jupyter.stderr">
+                        <pre v-html="message.traceback" class="pa-2"></pre>
+                    </div>
+                    <pre v-else><span :style="message.name === 'stderr' ? 'background-color: var(--jp-rendermime-error-background)' : ''"
+                                class="pa-2"
+                            >{{ message.text }}</span>
+                    </pre>
+                </div>
+                <div class="d-flex justify-end">
+                    <v-tooltip top>
+                        <template v-slot:activator="{ on, attrs }">
+                            <v-btn icon v-bind="attrs" v-on="on" @click="solaraDebugMessages = []">
+                                <v-icon>mdi-trash-can-outline</v-icon>
+                            </v-btn>
+                        </template>
+                        <span>Clear messages</span>
+                    </v-tooltip>
+                </div>
+            </v-sheet>
+        </v-menu>
+
+        <!-- <v-menu v-if="debug && outputMessages && outputMessages.length" offset-y top
+            :close-on-content-click="false">
+            <template v-slot:activator="{ on }">
+                <v-btn text v-on="on" style="position: fixed; top: 8px; right: 8px">
+                    <span style="color: #333">{{ outputMessages.length }}</span>
+                    <v-icon right large color="#333">mdi-information-outline</v-icon>
+                </v-btn>
+            </template>
+            <v-sheet class="pa-2" style="overflow: auto; max-height: 80vh">
+                <div style="display: flex" v-for="message in outputMessages" :key="message.cell" class="pa-2">
+                    <div style="width: 50px">[{{ message.cell }}]</div>
+                    <div v-if="message.traceback" class="jp-RenderedText jp-OutputArea-output"
+                        data-mime-type="application/vnd.jupyter.stderr">
+                        <pre v-html="message.traceback" class="pa-2"></pre>
+                    </div>
+                    <pre v-else><span :style="message.name === 'stderr' ? 'background-color: var(--jp-rendermime-error-background)' : ''"
+                                class="pa-2"
+                            >{{ message.text }}</span>
+                    </pre>
+                </div>
+                <div class="d-flex justify-end">
+                    <v-tooltip top>
+                        <template v-slot:activator="{ on, attrs }">
+                            <v-btn icon v-bind="attrs" v-on="on" @click="outputMessages = []">
+                                <v-icon>mdi-trash-can-outline</v-icon>
+                            </v-btn>
+                        </template>
+                        <span>Clear messages</span>
+                    </v-tooltip>
+                </div>
+            </v-sheet>
+        </v-menu> -->
+    </v-app>
+</script>
+<body data-base-url="/jupyter/">
+    
+    
+    
+    <div id="app" class="v-application v-application--is-ltr theme--light" data-app="true">
+    
+        <div class="v-application--wrap"><div aria-valuemax="100" aria-valuemin="0" aria-valuenow="0" class="v-progress-linear v-progress-linear--absolute theme--light" role="progressbar" style="height: 4px; visibility: hidden;"><div class="v-progress-linear__background primary" style="opacity: 0.3; left: 0%; width: 100%;"></div><div class="v-progress-linear__buffer"></div><div class="v-progress-linear__determinate primary" style="width: 0%;"></div></div> <!-- --> <div><div tag="div"><div class="v-sheet theme--light elevation-0 d-flex" style="flex-direction: column; align-items: stretch; flex-grow: 1;"><span></span><div style="height: 100vh;" tag="div"><div class="v-sheet theme--light elevation-0 d-flex" style="flex-direction: row; align-items: stretch; flex-grow: 1;"><nav class="v-navigation-drawer v-navigation-drawer--clipped v-navigation-drawer--fixed v-navigation-drawer--open theme--light solara-content-main" data-booted="true" style="height: 100vh; top: 64px; max-height: calc(100% - 64px); transform: translateX(0%); width: min-content; min-width: 400px; max-width: 600px;"><div class="v-navigation-drawer__content"><div style="padding: 12px; height: 100%;" tag="div"><div class="v-sheet theme--light elevation-0 d-flex ma-0" style="flex-direction: column; align-items: stretch; row-gap: 12px;"><div class="v-input v-input--is-label-active v-input--is-dirty theme--light v-text-field v-text-field--is-booted v-select v-select--is-multi"><div class="v-input__control"><div aria-expanded="false" aria-haspopup="listbox" aria-owns="list-24" class="v-input__slot" role="button"><div class="v-select__slot"><label class="v-label v-label--active theme--light" for="input-24" style="left: 0px; right: auto; position: absolute;">District</label><div class="v-select__selections"><div class="v-select__selection v-select__selection--comma">Bayview, </div><div class="v-select__selection v-select__selection--comma">Northern</div><input aria-readonly="false" autocomplete="off" id="input-24" readonly="readonly" type="text"/></div><div class="v-input__append-inner"><div class="v-input__icon v-input__icon--append"><i aria-hidden="true" class="v-icon notranslate mdi mdi-menu-down theme--light"></i></div></div><input type="hidden" value="Bayview,Northern"/></div><div class="v-menu"><!-- --></div></div><div class="v-text-field__details"><div class="v-messages theme--light"><div class="v-messages__wrapper"></div></div></div></div></div><div class="v-input v-input--is-label-active v-input--is-dirty theme--light v-text-field v-text-field--is-booted v-select v-select--is-multi"><div class="v-input__control"><div aria-expanded="false" aria-haspopup="listbox" aria-owns="list-30" class="v-input__slot" role="button"><div class="v-select__slot"><label class="v-label v-label--active theme--light" for="input-30" style="left: 0px; right: auto; position: absolute;">Category</label><div class="v-select__selections"><div class="v-select__selection v-select__selection--comma">Vandalism, </div><div class="v-select__selection v-select__selection--comma">Assault, </div><div class="v-select__selection v-select__selection--comma">Robbery</div><input aria-readonly="false" autocomplete="off" id="input-30" readonly="readonly" type="text"/></div><div class="v-input__append-inner"><div class="v-input__icon v-input__icon--append"><i aria-hidden="true" class="v-icon notranslate mdi mdi-menu-down theme--light"></i></div></div><input type="hidden" value="Vandalism,Assault,Robbery"/></div><div class="v-menu"><!-- --></div></div><div class="v-text-field__details"><div class="v-messages theme--light"><div class="v-messages__wrapper"></div></div></div></div></div><span tag="span">Maximum number of rows to show on map</span><div class="v-input v-input--hide-details v-input--is-label-active v-input--is-dirty theme--light v-input__slider"><div class="v-input__control"><div class="v-input__slot"><div class="v-slider v-slider--horizontal theme--light"><input id="input-37" readonly="readonly" tabindex="-1" value="100"/><div class="v-slider__track-container"><div class="v-slider__track-background primary lighten-3" style="right: 0px; width: calc(90.0901%);"></div><div class="v-slider__track-fill primary" style="left: 0px; right: auto; width: 9.90991%;"></div></div><div aria-label="" aria-orientation="horizontal" aria-readonly="false" aria-valuemax="1000" aria-valuemin="1" aria-valuenow="100" class="v-slider__thumb-container v-slider__thumb-container--show-label primary--text" role="slider" style="left: 9.90991%;" tabindex="0"><div class="v-slider__thumb primary"></div><div class="v-slider__thumb-label-container" style="display: none;"><div class="v-slider__thumb-label primary" style="height: 32px; width: 32px; transform: translateY(-20%) translateY(-12px) translateX(-50%) rotate(45deg);"><div><span>100</span></div></div></div></div></div></div></div></div></div></div></div><div class="v-navigation-drawer__border"></div></nav></div><header class="v-sheet v-sheet--tile theme--dark v-toolbar v-app-bar v-app-bar--clipped v-app-bar--fixed primary" data-booted="true" style="height: 64px; margin-top: 0px; transform: translateY(0px); left: 0px; right: 0px;"><div class="v-toolbar__content" style="height: 64px;"><button class="v-app-bar__nav-icon v-btn v-btn--flat v-btn--icon v-btn--round theme--dark v-size--default" type="button"><span class="v-btn__content"><i aria-hidden="true" class="v-icon notranslate mdi mdi-menu theme--dark"></i></span></button><div class="v-toolbar__title">Jupyter Dashboard 1</div><div class="spacer"></div></div></header><main class="v-content solara-content-main" data-booted="true" style="padding: 64px 0px 0px 400px; height: 100%;"><div class="v-content__wrap"><div style="height: 100%; max-height: 100%; overflow: auto; padding: 12px;" tag="div"><div class="solara-autorouter-content" tag="div"><span style="display: none;">Jupyter Dashboard 1</span><div class="v-sheet theme--light elevation-0 d-flex ma-0" style="flex-direction: column; align-items: stretch; row-gap: 12px;"><div tag="div"></div><div class="v-sheet theme--light elevation-0 d-flex ma-0" style="flex-direction: column; align-items: stretch; row-gap: 12px;"><div class="v-alert v-sheet theme--light v-alert--outlined v-alert--text warning--text" role="alert"><div class="v-alert__wrapper"><i aria-hidden="true" class="v-icon notranslate v-alert__icon mdi mdi-exclamation theme--light warning--text"></i><div class="v-alert__content">Only showing the first 100 of 427 crimes on map</div></div></div><div class="v-sheet theme--light elevation-0 d-flex ma-0" style="flex-direction: column; align-items: stretch; row-gap: 12px; max-height: 400px;"><div style="height: 100%;"><div class="lm-Widget p-Widget lm-Panel p-Panel jupyter-widgets widget-output"><div class="lm-Widget p-Widget jp-OutputArea"><div class="lm-Widget p-Widget lm-Panel p-Panel jp-OutputArea-child"><div class="lm-Widget p-Widget jp-OutputPrompt jp-OutputArea-prompt"></div><div class="lm-Widget p-Widget jp-RenderedHTMLCommon jp-RenderedHTML jp-mod-trusted jp-OutputArea-output" data-mime-type="text/html"><div style="width:100%;"><div style="position:relative;width:100%;height:0;padding-bottom:60%;"><span style="color:#565656">Make this Notebook Trusted to load map: File -&gt; Trust Notebook</span><iframe allowfullscreen="" mozallowfullscreen="" srcdoc='&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    
+    &lt;meta http-equiv="content-type" content="text/html; charset=UTF-8" /&gt;
+    &lt;script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"&gt;&lt;/script&gt;
+    &lt;script src="https://code.jquery.com/jquery-3.7.1.min.js"&gt;&lt;/script&gt;
+    &lt;script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"&gt;&lt;/script&gt;
+    &lt;script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"&gt;&lt;/script&gt;
+    &lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/&gt;
+    &lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/&gt;
+    &lt;link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/&gt;
+    &lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/&gt;
+    &lt;link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/&gt;
+    &lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/&gt;
+    
+            &lt;meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" /&gt;
+            &lt;style&gt;
+                #map_dcf5d76cf2b6cf96dcbd5000e40341a7 {
+                    position: relative;
+                    width: 100.0%;
+                    height: 400.0px;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            &lt;/style&gt;
+
+            &lt;style&gt;html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            &lt;/style&gt;
+
+            &lt;style&gt;#map {
+                position:absolute;
+                top:0;
+                bottom:0;
+                right:0;
+                left:0;
+                }
+            &lt;/style&gt;
+
+            &lt;script&gt;
+                L_NO_TOUCH = false;
+                L_DISABLE_3D = false;
+            &lt;/script&gt;
+
+        
+    &lt;script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.1.0/leaflet.markercluster.js"&gt;&lt;/script&gt;
+    &lt;link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.1.0/MarkerCluster.css"/&gt;
+    &lt;link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.1.0/MarkerCluster.Default.css"/&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    
+    
+            &lt;div class="folium-map" id="map_dcf5d76cf2b6cf96dcbd5000e40341a7" &gt;&lt;/div&gt;
+        
+&lt;/body&gt;
+&lt;script&gt;
+    
+    
+            var map_dcf5d76cf2b6cf96dcbd5000e40341a7 = L.map(
+                "map_dcf5d76cf2b6cf96dcbd5000e40341a7",
+                {
+                    center: [37.77, -122.42],
+                    crs: L.CRS.EPSG3857,
+                    ...{
+  "zoom": 12,
+  "zoomControl": true,
+  "preferCanvas": false,
+}
+
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_9464c15504c808e6b8ffcfbef00f27ba = L.tileLayer(
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {
+  "minZoom": 0,
+  "maxZoom": 19,
+  "maxNativeZoom": 19,
+  "noWrap": false,
+  "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_9464c15504c808e6b8ffcfbef00f27ba.addTo(map_dcf5d76cf2b6cf96dcbd5000e40341a7);
+        
+    
+            var marker_cluster_eb46bea5926026dc6b9757a36937b89e = L.markerClusterGroup(
+                {
+}
+            );
+        
+    
+            var marker_9860d62d94a2484debe61019b92d1e5d = L.marker(
+                [37.8016108699901, -122.441398221863],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_73aa36db5aaf61f7556363c779a377fb = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_ee74599ed493d37b63d05a7c5fc007c8 = $(`&lt;div id="html_ee74599ed493d37b63d05a7c5fc007c8" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_73aa36db5aaf61f7556363c779a377fb.setContent(html_ee74599ed493d37b63d05a7c5fc007c8);
+            
+        
+
+        marker_9860d62d94a2484debe61019b92d1e5d.bindPopup(popup_73aa36db5aaf61f7556363c779a377fb)
+        ;
+
+        
+    
+    
+            var marker_015f497b656b8a6891720f7cfea3af69 = L.marker(
+                [37.773037747039, -122.430630284155],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_80743164bd5f23eb2266dc8e0fe83c76 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_f3a182034903b94fb3f9ac7bc802a6fb = $(`&lt;div id="html_f3a182034903b94fb3f9ac7bc802a6fb" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_80743164bd5f23eb2266dc8e0fe83c76.setContent(html_f3a182034903b94fb3f9ac7bc802a6fb);
+            
+        
+
+        marker_015f497b656b8a6891720f7cfea3af69.bindPopup(popup_80743164bd5f23eb2266dc8e0fe83c76)
+        ;
+
+        
+    
+    
+            var marker_2088e94cc8d64211f3ad6818abe55f81 = L.marker(
+                [37.789163624599794, -122.431378676586],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_6b1679d8cb3c36a84f518039d7e07ef6 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_003a7fa09981f19b927580159d0469a6 = $(`&lt;div id="html_003a7fa09981f19b927580159d0469a6" style="width: 100.0%; height: 100.0%;"&gt;Vandalism&lt;/div&gt;`)[0];
+                popup_6b1679d8cb3c36a84f518039d7e07ef6.setContent(html_003a7fa09981f19b927580159d0469a6);
+            
+        
+
+        marker_2088e94cc8d64211f3ad6818abe55f81.bindPopup(popup_6b1679d8cb3c36a84f518039d7e07ef6)
+        ;
+
+        
+    
+    
+            var marker_0e51112ecdce6a064383b8ac92c07a6d = L.marker(
+                [37.7661917267111, -122.400756349771],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_338b39a4c3cebb58513619e0960e4cec = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_df2b64fc4b2459797590ab6cb148a0d3 = $(`&lt;div id="html_df2b64fc4b2459797590ab6cb148a0d3" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_338b39a4c3cebb58513619e0960e4cec.setContent(html_df2b64fc4b2459797590ab6cb148a0d3);
+            
+        
+
+        marker_0e51112ecdce6a064383b8ac92c07a6d.bindPopup(popup_338b39a4c3cebb58513619e0960e4cec)
+        ;
+
+        
+    
+    
+            var marker_db4ceddf2f4fee8ab5c90b2ca59479c8 = L.marker(
+                [37.761981795416006, -122.395567457366],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_e6f9c094f5c9dbe96cba7969640e7b7e = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_c3274ab95f8c332468f723b83bab8c85 = $(`&lt;div id="html_c3274ab95f8c332468f723b83bab8c85" style="width: 100.0%; height: 100.0%;"&gt;Robbery&lt;/div&gt;`)[0];
+                popup_e6f9c094f5c9dbe96cba7969640e7b7e.setContent(html_c3274ab95f8c332468f723b83bab8c85);
+            
+        
+
+        marker_db4ceddf2f4fee8ab5c90b2ca59479c8.bindPopup(popup_e6f9c094f5c9dbe96cba7969640e7b7e)
+        ;
+
+        
+    
+    
+            var marker_1bc0a006ce615f84368233a84f9e62cc = L.marker(
+                [37.7955038710773, -122.421608893207],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_b3169607ada4d57bff3c5565ccc60d4b = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_bfbb51d91fa7f7c5b8ded76b5716a2e5 = $(`&lt;div id="html_bfbb51d91fa7f7c5b8ded76b5716a2e5" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_b3169607ada4d57bff3c5565ccc60d4b.setContent(html_bfbb51d91fa7f7c5b8ded76b5716a2e5);
+            
+        
+
+        marker_1bc0a006ce615f84368233a84f9e62cc.bindPopup(popup_b3169607ada4d57bff3c5565ccc60d4b)
+        ;
+
+        
+    
+    
+            var marker_0a38c60b3f9bfe7b011d6f400e8e529b = L.marker(
+                [37.7383338978754, -122.385135095076],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_c6bb4a6cb12f99a16292f74c06ce6153 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_d24afaacf88ff867e817474163b5ac80 = $(`&lt;div id="html_d24afaacf88ff867e817474163b5ac80" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_c6bb4a6cb12f99a16292f74c06ce6153.setContent(html_d24afaacf88ff867e817474163b5ac80);
+            
+        
+
+        marker_0a38c60b3f9bfe7b011d6f400e8e529b.bindPopup(popup_c6bb4a6cb12f99a16292f74c06ce6153)
+        ;
+
+        
+    
+    
+            var marker_a0b57c83ad7f40605e0402ef0baefa32 = L.marker(
+                [37.7840676683775, -122.420906968642],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_2a29ebe23d3609ec23b40dc8bf594dcb = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_8d8fb5e6c09ef437f9aa7b9d3ca1c993 = $(`&lt;div id="html_8d8fb5e6c09ef437f9aa7b9d3ca1c993" style="width: 100.0%; height: 100.0%;"&gt;Vandalism&lt;/div&gt;`)[0];
+                popup_2a29ebe23d3609ec23b40dc8bf594dcb.setContent(html_8d8fb5e6c09ef437f9aa7b9d3ca1c993);
+            
+        
+
+        marker_a0b57c83ad7f40605e0402ef0baefa32.bindPopup(popup_2a29ebe23d3609ec23b40dc8bf594dcb)
+        ;
+
+        
+    
+    
+            var marker_28db3ebea23c6b491b87ad6f9fa4faa6 = L.marker(
+                [37.798968887758, -122.420690670534],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_c4a60d3e2dd9b8ce3326f17f94df8f1d = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_5cc482481742ac346a6ccab67c7f8369 = $(`&lt;div id="html_5cc482481742ac346a6ccab67c7f8369" style="width: 100.0%; height: 100.0%;"&gt;Vandalism&lt;/div&gt;`)[0];
+                popup_c4a60d3e2dd9b8ce3326f17f94df8f1d.setContent(html_5cc482481742ac346a6ccab67c7f8369);
+            
+        
+
+        marker_28db3ebea23c6b491b87ad6f9fa4faa6.bindPopup(popup_c4a60d3e2dd9b8ce3326f17f94df8f1d)
+        ;
+
+        
+    
+    
+            var marker_5b3e6c2646323956542b1f57b9fe8fcb = L.marker(
+                [37.8021188073432, -122.429831277476],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_8897575eace1004b182150936a3496e1 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_bccf5a46f3bd86174eaf8da452134441 = $(`&lt;div id="html_bccf5a46f3bd86174eaf8da452134441" style="width: 100.0%; height: 100.0%;"&gt;Vandalism&lt;/div&gt;`)[0];
+                popup_8897575eace1004b182150936a3496e1.setContent(html_bccf5a46f3bd86174eaf8da452134441);
+            
+        
+
+        marker_5b3e6c2646323956542b1f57b9fe8fcb.bindPopup(popup_8897575eace1004b182150936a3496e1)
+        ;
+
+        
+    
+    
+            var marker_596ba6d273ae86c239faf173ff478457 = L.marker(
+                [37.758002166458894, -122.387316279433],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_f7fd3e1c74f2786ac8091f44e9734647 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_539b7c9e24e725b8d37ff4a041254b20 = $(`&lt;div id="html_539b7c9e24e725b8d37ff4a041254b20" style="width: 100.0%; height: 100.0%;"&gt;Vandalism&lt;/div&gt;`)[0];
+                popup_f7fd3e1c74f2786ac8091f44e9734647.setContent(html_539b7c9e24e725b8d37ff4a041254b20);
+            
+        
+
+        marker_596ba6d273ae86c239faf173ff478457.bindPopup(popup_f7fd3e1c74f2786ac8091f44e9734647)
+        ;
+
+        
+    
+    
+            var marker_d749fc2f9da1ba4926a614de390a1242 = L.marker(
+                [37.7843533426568, -122.432914603494],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_86bf5d57ed4db88c01b02a4910fc674f = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_8fba82fa8b40de733128430e60a4c16f = $(`&lt;div id="html_8fba82fa8b40de733128430e60a4c16f" style="width: 100.0%; height: 100.0%;"&gt;Robbery&lt;/div&gt;`)[0];
+                popup_86bf5d57ed4db88c01b02a4910fc674f.setContent(html_8fba82fa8b40de733128430e60a4c16f);
+            
+        
+
+        marker_d749fc2f9da1ba4926a614de390a1242.bindPopup(popup_86bf5d57ed4db88c01b02a4910fc674f)
+        ;
+
+        
+    
+    
+            var marker_3e1095bfa0ca89ea258fecd7eeb19b9d = L.marker(
+                [37.7395687066051, -122.387313799871],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_c5685e787210f2bdbba2938fa3a7f1aa = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_86764b6f4a97f7490c07240acbc16678 = $(`&lt;div id="html_86764b6f4a97f7490c07240acbc16678" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_c5685e787210f2bdbba2938fa3a7f1aa.setContent(html_86764b6f4a97f7490c07240acbc16678);
+            
+        
+
+        marker_3e1095bfa0ca89ea258fecd7eeb19b9d.bindPopup(popup_c5685e787210f2bdbba2938fa3a7f1aa)
+        ;
+
+        
+    
+    
+            var marker_bf6d2d7aa751af8ed2405c5af646cdb8 = L.marker(
+                [37.7815325510309, -122.42815115473],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_4adc64393e2a05e112602ba4bdec8ba0 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_0aa4a356bd8193971a1af705056806de = $(`&lt;div id="html_0aa4a356bd8193971a1af705056806de" style="width: 100.0%; height: 100.0%;"&gt;Vandalism&lt;/div&gt;`)[0];
+                popup_4adc64393e2a05e112602ba4bdec8ba0.setContent(html_0aa4a356bd8193971a1af705056806de);
+            
+        
+
+        marker_bf6d2d7aa751af8ed2405c5af646cdb8.bindPopup(popup_4adc64393e2a05e112602ba4bdec8ba0)
+        ;
+
+        
+    
+    
+            var marker_13bf9e4b211f456ee37198716cd92df4 = L.marker(
+                [37.7815338127818, -122.423918786916],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_03b0b5a5c6793c005819a00e2904b3d4 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_f6120329ae73f36205065841f09e90ee = $(`&lt;div id="html_f6120329ae73f36205065841f09e90ee" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_03b0b5a5c6793c005819a00e2904b3d4.setContent(html_f6120329ae73f36205065841f09e90ee);
+            
+        
+
+        marker_13bf9e4b211f456ee37198716cd92df4.bindPopup(popup_03b0b5a5c6793c005819a00e2904b3d4)
+        ;
+
+        
+    
+    
+            var marker_c7593b52036a325dca84c96033c6d90b = L.marker(
+                [37.78775706024111, -122.420120319204],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_fae1ed901385892925d77ee4e9739a84 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_7d6e4ba830a49a00e59b72a97012020e = $(`&lt;div id="html_7d6e4ba830a49a00e59b72a97012020e" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_fae1ed901385892925d77ee4e9739a84.setContent(html_7d6e4ba830a49a00e59b72a97012020e);
+            
+        
+
+        marker_c7593b52036a325dca84c96033c6d90b.bindPopup(popup_fae1ed901385892925d77ee4e9739a84)
+        ;
+
+        
+    
+    
+            var marker_9fcbd88e5e1d214a45e6204e513fdb2b = L.marker(
+                [37.7318198889718, -122.405412091734],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_816026eb0757ba58214386dabd2463bb = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_e9135d352b198550fdfbd524355c88cd = $(`&lt;div id="html_e9135d352b198550fdfbd524355c88cd" style="width: 100.0%; height: 100.0%;"&gt;Vandalism&lt;/div&gt;`)[0];
+                popup_816026eb0757ba58214386dabd2463bb.setContent(html_e9135d352b198550fdfbd524355c88cd);
+            
+        
+
+        marker_9fcbd88e5e1d214a45e6204e513fdb2b.bindPopup(popup_816026eb0757ba58214386dabd2463bb)
+        ;
+
+        
+    
+    
+            var marker_55a2400ac9fa518b811b424683dd2f19 = L.marker(
+                [37.788018555829, -122.426077177375],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_7026512583722be168290895a569b43d = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_0dd3c1147a3b97090d6e9b73d9914335 = $(`&lt;div id="html_0dd3c1147a3b97090d6e9b73d9914335" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_7026512583722be168290895a569b43d.setContent(html_0dd3c1147a3b97090d6e9b73d9914335);
+            
+        
+
+        marker_55a2400ac9fa518b811b424683dd2f19.bindPopup(popup_7026512583722be168290895a569b43d)
+        ;
+
+        
+    
+    
+            var marker_20df412adcb469231b2885f72d44a8b8 = L.marker(
+                [37.7803089893403, -122.417777932619],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_ef55fbdb9f81e23081deab8e8ae962e8 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_39c4e1094c20df73c4d7bfb0155c6f8f = $(`&lt;div id="html_39c4e1094c20df73c4d7bfb0155c6f8f" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_ef55fbdb9f81e23081deab8e8ae962e8.setContent(html_39c4e1094c20df73c4d7bfb0155c6f8f);
+            
+        
+
+        marker_20df412adcb469231b2885f72d44a8b8.bindPopup(popup_ef55fbdb9f81e23081deab8e8ae962e8)
+        ;
+
+        
+    
+    
+            var marker_1a2cf258652ff17c19c5cb0e4db964d3 = L.marker(
+                [37.7482203413295, -122.402767417355],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_12792b216cc1fa3d8ed3989bb2723936 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_043e3ff6649c32ea813222c9a6106a48 = $(`&lt;div id="html_043e3ff6649c32ea813222c9a6106a48" style="width: 100.0%; height: 100.0%;"&gt;Robbery&lt;/div&gt;`)[0];
+                popup_12792b216cc1fa3d8ed3989bb2723936.setContent(html_043e3ff6649c32ea813222c9a6106a48);
+            
+        
+
+        marker_1a2cf258652ff17c19c5cb0e4db964d3.bindPopup(popup_12792b216cc1fa3d8ed3989bb2723936)
+        ;
+
+        
+    
+    
+            var marker_3fd3d1dc6b0b99e49db4656d8a4b58b7 = L.marker(
+                [37.7304096808335, -122.378494173975],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_2ef7d829388bb9c0c261a565b05ae350 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_0e72d3dfcce078ea59a0f0315a15bbb9 = $(`&lt;div id="html_0e72d3dfcce078ea59a0f0315a15bbb9" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_2ef7d829388bb9c0c261a565b05ae350.setContent(html_0e72d3dfcce078ea59a0f0315a15bbb9);
+            
+        
+
+        marker_3fd3d1dc6b0b99e49db4656d8a4b58b7.bindPopup(popup_2ef7d829388bb9c0c261a565b05ae350)
+        ;
+
+        
+    
+    
+            var marker_79d52cc1f0cd93d62aef23cc3895c57e = L.marker(
+                [37.7356138034783, -122.401968361773],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_12ac0499c9f8efcd119f815db2f115fe = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_42369e7ed2ecc36acde53a5af6a50ead = $(`&lt;div id="html_42369e7ed2ecc36acde53a5af6a50ead" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_12ac0499c9f8efcd119f815db2f115fe.setContent(html_42369e7ed2ecc36acde53a5af6a50ead);
+            
+        
+
+        marker_79d52cc1f0cd93d62aef23cc3895c57e.bindPopup(popup_12ac0499c9f8efcd119f815db2f115fe)
+        ;
+
+        
+    
+    
+            var marker_b8918d939a33bde9d6e85e5db9ef1baf = L.marker(
+                [37.7854378471968, -122.417885441042],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_c37ef8a34cdd2b0aebdd63fec21c750d = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_a58a804d21fde0ed35088ae5adf8156d = $(`&lt;div id="html_a58a804d21fde0ed35088ae5adf8156d" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_c37ef8a34cdd2b0aebdd63fec21c750d.setContent(html_a58a804d21fde0ed35088ae5adf8156d);
+            
+        
+
+        marker_b8918d939a33bde9d6e85e5db9ef1baf.bindPopup(popup_c37ef8a34cdd2b0aebdd63fec21c750d)
+        ;
+
+        
+    
+    
+            var marker_6cd312ea807c8d9e44f612d527e84196 = L.marker(
+                [37.787075403993, -122.421663714433],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_b136623f25f258d3dc32beb970c7d0c7 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_945d1e690b4bd6a71ea146fa6694daf8 = $(`&lt;div id="html_945d1e690b4bd6a71ea146fa6694daf8" style="width: 100.0%; height: 100.0%;"&gt;Vandalism&lt;/div&gt;`)[0];
+                popup_b136623f25f258d3dc32beb970c7d0c7.setContent(html_945d1e690b4bd6a71ea146fa6694daf8);
+            
+        
+
+        marker_6cd312ea807c8d9e44f612d527e84196.bindPopup(popup_b136623f25f258d3dc32beb970c7d0c7)
+        ;
+
+        
+    
+    
+            var marker_9d1eeae590435437d3fc616584ece980 = L.marker(
+                [37.7752311468558, -122.420962747171],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_7b7f677fdf924ae7b6b6e48ce6bd2624 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_c983a6d40ad08b3d5d0999b6003e7b3c = $(`&lt;div id="html_c983a6d40ad08b3d5d0999b6003e7b3c" style="width: 100.0%; height: 100.0%;"&gt;Vandalism&lt;/div&gt;`)[0];
+                popup_7b7f677fdf924ae7b6b6e48ce6bd2624.setContent(html_c983a6d40ad08b3d5d0999b6003e7b3c);
+            
+        
+
+        marker_9d1eeae590435437d3fc616584ece980.bindPopup(popup_7b7f677fdf924ae7b6b6e48ce6bd2624)
+        ;
+
+        
+    
+    
+            var marker_4b33e6f50c573badd7e6fd587c21169d = L.marker(
+                [37.7898100005704, -122.433800051784],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_876e15c029f598d34f33cada0e7d0b41 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_290d709aef59dc0398f098d6762d7564 = $(`&lt;div id="html_290d709aef59dc0398f098d6762d7564" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_876e15c029f598d34f33cada0e7d0b41.setContent(html_290d709aef59dc0398f098d6762d7564);
+            
+        
+
+        marker_4b33e6f50c573badd7e6fd587c21169d.bindPopup(popup_876e15c029f598d34f33cada0e7d0b41)
+        ;
+
+        
+    
+    
+            var marker_1adb776083a1098dc474417f2a3104e5 = L.marker(
+                [37.7857823532025, -122.424706013093],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_cbbf5918e4f2f5aff3927c469fb115c8 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_660368a0857dd9195faf003c02ca2b78 = $(`&lt;div id="html_660368a0857dd9195faf003c02ca2b78" style="width: 100.0%; height: 100.0%;"&gt;Vandalism&lt;/div&gt;`)[0];
+                popup_cbbf5918e4f2f5aff3927c469fb115c8.setContent(html_660368a0857dd9195faf003c02ca2b78);
+            
+        
+
+        marker_1adb776083a1098dc474417f2a3104e5.bindPopup(popup_cbbf5918e4f2f5aff3927c469fb115c8)
+        ;
+
+        
+    
+    
+            var marker_7971ad64809b21c626194af09d8f9185 = L.marker(
+                [37.7111618712449, -122.386452097316],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_ce086f3dd2d716ac429ba111b7605db0 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_f5346a853304bf8a9900c8ae0817fcb1 = $(`&lt;div id="html_f5346a853304bf8a9900c8ae0817fcb1" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_ce086f3dd2d716ac429ba111b7605db0.setContent(html_f5346a853304bf8a9900c8ae0817fcb1);
+            
+        
+
+        marker_7971ad64809b21c626194af09d8f9185.bindPopup(popup_ce086f3dd2d716ac429ba111b7605db0)
+        ;
+
+        
+    
+    
+            var marker_aae2c2007117038f9e4206c68f5e6c9b = L.marker(
+                [37.7536178531447, -122.395513264888],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_4633d6f3a7fd992e879a928566d2135f = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_a51e8e17d614693309ff2cc5a3d6d186 = $(`&lt;div id="html_a51e8e17d614693309ff2cc5a3d6d186" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_4633d6f3a7fd992e879a928566d2135f.setContent(html_a51e8e17d614693309ff2cc5a3d6d186);
+            
+        
+
+        marker_aae2c2007117038f9e4206c68f5e6c9b.bindPopup(popup_4633d6f3a7fd992e879a928566d2135f)
+        ;
+
+        
+    
+    
+            var marker_2c3225b673d46aced6ff7f345abd0fa3 = L.marker(
+                [37.730658826685, -122.403402998592],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_3c51277c17a72f3af49d4982ff973c84 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_56a6e878fd992ce2ada82da90f719cfb = $(`&lt;div id="html_56a6e878fd992ce2ada82da90f719cfb" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_3c51277c17a72f3af49d4982ff973c84.setContent(html_56a6e878fd992ce2ada82da90f719cfb);
+            
+        
+
+        marker_2c3225b673d46aced6ff7f345abd0fa3.bindPopup(popup_3c51277c17a72f3af49d4982ff973c84)
+        ;
+
+        
+    
+    
+            var marker_c516aa51d96ddbc792f45d43f9a119fa = L.marker(
+                [37.803662940810106, -122.425186870939],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_7a3398d9912ab85809147441f15c979c = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_d99e76ec4adb8f04cee17bc29f030890 = $(`&lt;div id="html_d99e76ec4adb8f04cee17bc29f030890" style="width: 100.0%; height: 100.0%;"&gt;Vandalism&lt;/div&gt;`)[0];
+                popup_7a3398d9912ab85809147441f15c979c.setContent(html_d99e76ec4adb8f04cee17bc29f030890);
+            
+        
+
+        marker_c516aa51d96ddbc792f45d43f9a119fa.bindPopup(popup_7a3398d9912ab85809147441f15c979c)
+        ;
+
+        
+    
+    
+            var marker_1d6733174f12369a334a8a23b956e399 = L.marker(
+                [37.7281117689395, -122.372712355944],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_98fff3cf187c9c09136745e74d606d70 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_da951a0a0e4583594197b6148ac057ae = $(`&lt;div id="html_da951a0a0e4583594197b6148ac057ae" style="width: 100.0%; height: 100.0%;"&gt;Vandalism&lt;/div&gt;`)[0];
+                popup_98fff3cf187c9c09136745e74d606d70.setContent(html_da951a0a0e4583594197b6148ac057ae);
+            
+        
+
+        marker_1d6733174f12369a334a8a23b956e399.bindPopup(popup_98fff3cf187c9c09136745e74d606d70)
+        ;
+
+        
+    
+    
+            var marker_d7f92362b9fa1d43c118c94a040d9ce7 = L.marker(
+                [37.805052022888106, -122.432951589917],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_1cd6c45fc8315f8566fd29eba6e09d07 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_5863bab4086a02dee2a874dd22edd9c3 = $(`&lt;div id="html_5863bab4086a02dee2a874dd22edd9c3" style="width: 100.0%; height: 100.0%;"&gt;Vandalism&lt;/div&gt;`)[0];
+                popup_1cd6c45fc8315f8566fd29eba6e09d07.setContent(html_5863bab4086a02dee2a874dd22edd9c3);
+            
+        
+
+        marker_d7f92362b9fa1d43c118c94a040d9ce7.bindPopup(popup_1cd6c45fc8315f8566fd29eba6e09d07)
+        ;
+
+        
+    
+    
+            var marker_afb0e9b00bee65e2f971e900d3f56ff9 = L.marker(
+                [37.7172230540399, -122.391149944463],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_7191b08806ba1af6302b38e5d4f18b5e = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_5aa2652fc0220bdade5d38f6b61467ed = $(`&lt;div id="html_5aa2652fc0220bdade5d38f6b61467ed" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_7191b08806ba1af6302b38e5d4f18b5e.setContent(html_5aa2652fc0220bdade5d38f6b61467ed);
+            
+        
+
+        marker_afb0e9b00bee65e2f971e900d3f56ff9.bindPopup(popup_7191b08806ba1af6302b38e5d4f18b5e)
+        ;
+
+        
+    
+    
+            var marker_59fd483c3f89378e9cbb3cba316b9b55 = L.marker(
+                [37.72265851292121, -122.412469643631],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_3aeb00b6588539e0128f31ede51fbd09 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_f9369ecadf708a58a1b2baf260858fcc = $(`&lt;div id="html_f9369ecadf708a58a1b2baf260858fcc" style="width: 100.0%; height: 100.0%;"&gt;Robbery&lt;/div&gt;`)[0];
+                popup_3aeb00b6588539e0128f31ede51fbd09.setContent(html_f9369ecadf708a58a1b2baf260858fcc);
+            
+        
+
+        marker_59fd483c3f89378e9cbb3cba316b9b55.bindPopup(popup_3aeb00b6588539e0128f31ede51fbd09)
+        ;
+
+        
+    
+    
+            var marker_4918b8a30c37dd5905017136b565d124 = L.marker(
+                [37.728381194358704, -122.372202831457],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_5ecb58ed22a40ad960b0fa755805e1ec = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_9d142994094c43704a22400f453ffb32 = $(`&lt;div id="html_9d142994094c43704a22400f453ffb32" style="width: 100.0%; height: 100.0%;"&gt;Vandalism&lt;/div&gt;`)[0];
+                popup_5ecb58ed22a40ad960b0fa755805e1ec.setContent(html_9d142994094c43704a22400f453ffb32);
+            
+        
+
+        marker_4918b8a30c37dd5905017136b565d124.bindPopup(popup_5ecb58ed22a40ad960b0fa755805e1ec)
+        ;
+
+        
+    
+    
+            var marker_a1b178a8f1ee32be9d150f65547c1bd9 = L.marker(
+                [37.7212137432262, -122.395178860156],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_febd017ba73a44b37b576bbcb9df6907 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_a7a0e056494c52a4bb3c0e11844feadd = $(`&lt;div id="html_a7a0e056494c52a4bb3c0e11844feadd" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_febd017ba73a44b37b576bbcb9df6907.setContent(html_a7a0e056494c52a4bb3c0e11844feadd);
+            
+        
+
+        marker_a1b178a8f1ee32be9d150f65547c1bd9.bindPopup(popup_febd017ba73a44b37b576bbcb9df6907)
+        ;
+
+        
+    
+    
+            var marker_648476b95247b128f167db862a30ad5f = L.marker(
+                [37.781691873286, -122.423127788491],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_e8e5dfd60695a8abfd503fa414a0f3de = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_25b3970340bd2052713105f86b9da130 = $(`&lt;div id="html_25b3970340bd2052713105f86b9da130" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_e8e5dfd60695a8abfd503fa414a0f3de.setContent(html_25b3970340bd2052713105f86b9da130);
+            
+        
+
+        marker_648476b95247b128f167db862a30ad5f.bindPopup(popup_e8e5dfd60695a8abfd503fa414a0f3de)
+        ;
+
+        
+    
+    
+            var marker_3d050aa8998004146696a897c5a30f94 = L.marker(
+                [37.7867109731605, -122.428337917055],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_c9fffeb374443c9dcc07ca99fd9879ec = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_cedc16f4c2d67db745fcc588d23134e4 = $(`&lt;div id="html_cedc16f4c2d67db745fcc588d23134e4" style="width: 100.0%; height: 100.0%;"&gt;Robbery&lt;/div&gt;`)[0];
+                popup_c9fffeb374443c9dcc07ca99fd9879ec.setContent(html_cedc16f4c2d67db745fcc588d23134e4);
+            
+        
+
+        marker_3d050aa8998004146696a897c5a30f94.bindPopup(popup_c9fffeb374443c9dcc07ca99fd9879ec)
+        ;
+
+        
+    
+    
+            var marker_0e73a3cd956dad7b9573b23a816013e3 = L.marker(
+                [37.7845681170336, -122.431206932079],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_78ff36f1d0d168682d4e94e4a0fe513a = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_bfa83a2a0b42a32530722e50b72ff09a = $(`&lt;div id="html_bfa83a2a0b42a32530722e50b72ff09a" style="width: 100.0%; height: 100.0%;"&gt;Vandalism&lt;/div&gt;`)[0];
+                popup_78ff36f1d0d168682d4e94e4a0fe513a.setContent(html_bfa83a2a0b42a32530722e50b72ff09a);
+            
+        
+
+        marker_0e73a3cd956dad7b9573b23a816013e3.bindPopup(popup_78ff36f1d0d168682d4e94e4a0fe513a)
+        ;
+
+        
+    
+    
+            var marker_e00332e9dc5326209358d09356af0763 = L.marker(
+                [37.758002166458894, -122.387316279433],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_8ffb1a16d589a15889d2db996708241a = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_e7b58098eda029b3524e15e0fa92a3c2 = $(`&lt;div id="html_e7b58098eda029b3524e15e0fa92a3c2" style="width: 100.0%; height: 100.0%;"&gt;Vandalism&lt;/div&gt;`)[0];
+                popup_8ffb1a16d589a15889d2db996708241a.setContent(html_e7b58098eda029b3524e15e0fa92a3c2);
+            
+        
+
+        marker_e00332e9dc5326209358d09356af0763.bindPopup(popup_8ffb1a16d589a15889d2db996708241a)
+        ;
+
+        
+    
+    
+            var marker_3ea3d37311f986adb6df1c99974c431e = L.marker(
+                [37.77045542956721, -122.428836305503],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_a4d05aa49444407aa47618a7fecc0fbc = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_91e09f69d58800a437ce99dcaaffed19 = $(`&lt;div id="html_91e09f69d58800a437ce99dcaaffed19" style="width: 100.0%; height: 100.0%;"&gt;Vandalism&lt;/div&gt;`)[0];
+                popup_a4d05aa49444407aa47618a7fecc0fbc.setContent(html_91e09f69d58800a437ce99dcaaffed19);
+            
+        
+
+        marker_3ea3d37311f986adb6df1c99974c431e.bindPopup(popup_a4d05aa49444407aa47618a7fecc0fbc)
+        ;
+
+        
+    
+    
+            var marker_25129fb867a1c12c85436ea6515b7799 = L.marker(
+                [37.782569556333605, -122.430798473748],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_a967fd739446a6c3166c326586aee42e = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_dc83a36575ff4874dd81ec22f11890cf = $(`&lt;div id="html_dc83a36575ff4874dd81ec22f11890cf" style="width: 100.0%; height: 100.0%;"&gt;Vandalism&lt;/div&gt;`)[0];
+                popup_a967fd739446a6c3166c326586aee42e.setContent(html_dc83a36575ff4874dd81ec22f11890cf);
+            
+        
+
+        marker_25129fb867a1c12c85436ea6515b7799.bindPopup(popup_a967fd739446a6c3166c326586aee42e)
+        ;
+
+        
+    
+    
+            var marker_8c9130a61bf65ccfa6d3fe7f63e02f34 = L.marker(
+                [37.799049760721296, -122.423907410647],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_c958207c00fa2740cbcb25e5c31f1e01 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_5da2382edf6e0eba7df3829fd2f5701c = $(`&lt;div id="html_5da2382edf6e0eba7df3829fd2f5701c" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_c958207c00fa2740cbcb25e5c31f1e01.setContent(html_5da2382edf6e0eba7df3829fd2f5701c);
+            
+        
+
+        marker_8c9130a61bf65ccfa6d3fe7f63e02f34.bindPopup(popup_c958207c00fa2740cbcb25e5c31f1e01)
+        ;
+
+        
+    
+    
+            var marker_64b8e2491a3dab4668797c716eaf8887 = L.marker(
+                [37.753598788032704, -122.397089183868],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_ccf22dc4ff053fea6120faced6cd637d = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_87fc01de30ec9c6300247180ebebe589 = $(`&lt;div id="html_87fc01de30ec9c6300247180ebebe589" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_ccf22dc4ff053fea6120faced6cd637d.setContent(html_87fc01de30ec9c6300247180ebebe589);
+            
+        
+
+        marker_64b8e2491a3dab4668797c716eaf8887.bindPopup(popup_ccf22dc4ff053fea6120faced6cd637d)
+        ;
+
+        
+    
+    
+            var marker_75437f9e06aaf0ccfdad4769d27dafd1 = L.marker(
+                [37.73401521807229, -122.390971734551],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_c08d842298678185021be5d938508735 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_2356640e52cab08475280778facea99f = $(`&lt;div id="html_2356640e52cab08475280778facea99f" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_c08d842298678185021be5d938508735.setContent(html_2356640e52cab08475280778facea99f);
+            
+        
+
+        marker_75437f9e06aaf0ccfdad4769d27dafd1.bindPopup(popup_c08d842298678185021be5d938508735)
+        ;
+
+        
+    
+    
+            var marker_f0b25375ba6575035fe067438f1a1996 = L.marker(
+                [37.7798208705936, -122.43376037857],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_4dea583e9f45b4000b8b5c1ca743bb46 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_c3b0f55ac0a2a8828d03829bee3957b0 = $(`&lt;div id="html_c3b0f55ac0a2a8828d03829bee3957b0" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_4dea583e9f45b4000b8b5c1ca743bb46.setContent(html_c3b0f55ac0a2a8828d03829bee3957b0);
+            
+        
+
+        marker_f0b25375ba6575035fe067438f1a1996.bindPopup(popup_4dea583e9f45b4000b8b5c1ca743bb46)
+        ;
+
+        
+    
+    
+            var marker_5198d6f3a4cfd4f224df98d777d23561 = L.marker(
+                [37.7552453099076, -122.39565974671],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_a523185b285fdd91a636e490eff505e0 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_3ebb300158e03d5e875a078ad7d53be1 = $(`&lt;div id="html_3ebb300158e03d5e875a078ad7d53be1" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_a523185b285fdd91a636e490eff505e0.setContent(html_3ebb300158e03d5e875a078ad7d53be1);
+            
+        
+
+        marker_5198d6f3a4cfd4f224df98d777d23561.bindPopup(popup_a523185b285fdd91a636e490eff505e0)
+        ;
+
+        
+    
+    
+            var marker_1bd4ef6e4c9df660f356be5cd0a35672 = L.marker(
+                [37.7839672336818, -122.429149563529],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_b36df1b6ac9c550762813cb4caa67d94 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_ecb27dbbd001ace76c2460b0693babe0 = $(`&lt;div id="html_ecb27dbbd001ace76c2460b0693babe0" style="width: 100.0%; height: 100.0%;"&gt;Robbery&lt;/div&gt;`)[0];
+                popup_b36df1b6ac9c550762813cb4caa67d94.setContent(html_ecb27dbbd001ace76c2460b0693babe0);
+            
+        
+
+        marker_1bd4ef6e4c9df660f356be5cd0a35672.bindPopup(popup_b36df1b6ac9c550762813cb4caa67d94)
+        ;
+
+        
+    
+    
+            var marker_244882dc68ae27e642a720341d5a4f61 = L.marker(
+                [37.79149430519061, -122.420874632415],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_4470255a22df39fba6829347b4b01815 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_4ecd227de93d0d32a58f6559e980154e = $(`&lt;div id="html_4ecd227de93d0d32a58f6559e980154e" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_4470255a22df39fba6829347b4b01815.setContent(html_4ecd227de93d0d32a58f6559e980154e);
+            
+        
+
+        marker_244882dc68ae27e642a720341d5a4f61.bindPopup(popup_4470255a22df39fba6829347b4b01815)
+        ;
+
+        
+    
+    
+            var marker_3f4ebf58209c9a6980869ac6048f5663 = L.marker(
+                [37.7889430432056, -122.426267960819],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_181f9336229a6d03291755b34a89258c = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_88eaca0de01627bc6a049c5597b39538 = $(`&lt;div id="html_88eaca0de01627bc6a049c5597b39538" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_181f9336229a6d03291755b34a89258c.setContent(html_88eaca0de01627bc6a049c5597b39538);
+            
+        
+
+        marker_3f4ebf58209c9a6980869ac6048f5663.bindPopup(popup_181f9336229a6d03291755b34a89258c)
+        ;
+
+        
+    
+    
+            var marker_efcf4f15d6cfed110a9d4d8b2245017a = L.marker(
+                [37.77096490662571, -122.431905238119],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_51132960bc1328869f86e5d6b3e79863 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_ee50ca46b7305a0d9a505c2534975769 = $(`&lt;div id="html_ee50ca46b7305a0d9a505c2534975769" style="width: 100.0%; height: 100.0%;"&gt;Vandalism&lt;/div&gt;`)[0];
+                popup_51132960bc1328869f86e5d6b3e79863.setContent(html_ee50ca46b7305a0d9a505c2534975769);
+            
+        
+
+        marker_efcf4f15d6cfed110a9d4d8b2245017a.bindPopup(popup_51132960bc1328869f86e5d6b3e79863)
+        ;
+
+        
+    
+    
+            var marker_d2379165b3cb465f7f7c808754781e89 = L.marker(
+                [37.7843533426568, -122.432914603494],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_4c56efb81855f4142f19dfff91298029 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_ae6628f15f88092f7f75e524aa84cb3b = $(`&lt;div id="html_ae6628f15f88092f7f75e524aa84cb3b" style="width: 100.0%; height: 100.0%;"&gt;Robbery&lt;/div&gt;`)[0];
+                popup_4c56efb81855f4142f19dfff91298029.setContent(html_ae6628f15f88092f7f75e524aa84cb3b);
+            
+        
+
+        marker_d2379165b3cb465f7f7c808754781e89.bindPopup(popup_4c56efb81855f4142f19dfff91298029)
+        ;
+
+        
+    
+    
+            var marker_7272393d263700aab4f0c5e1c677156b = L.marker(
+                [37.783258377094896, -122.418382008607],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_06f2b165dc1712ea98ddd0b4696ba26e = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_15b5b1b316bf05a8771cdf65a8adb32e = $(`&lt;div id="html_15b5b1b316bf05a8771cdf65a8adb32e" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_06f2b165dc1712ea98ddd0b4696ba26e.setContent(html_15b5b1b316bf05a8771cdf65a8adb32e);
+            
+        
+
+        marker_7272393d263700aab4f0c5e1c677156b.bindPopup(popup_06f2b165dc1712ea98ddd0b4696ba26e)
+        ;
+
+        
+    
+    
+            var marker_578e9a204cf2a7fae96969ce100af0e0 = L.marker(
+                [37.7310998921861, -122.389286347131],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_39583e16285a891f4497da96bc4e60ff = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_78c4b55aee480694b956d8a9785b5ed5 = $(`&lt;div id="html_78c4b55aee480694b956d8a9785b5ed5" style="width: 100.0%; height: 100.0%;"&gt;Vandalism&lt;/div&gt;`)[0];
+                popup_39583e16285a891f4497da96bc4e60ff.setContent(html_78c4b55aee480694b956d8a9785b5ed5);
+            
+        
+
+        marker_578e9a204cf2a7fae96969ce100af0e0.bindPopup(popup_39583e16285a891f4497da96bc4e60ff)
+        ;
+
+        
+    
+    
+            var marker_9b3d75d5082bb7d4fa6f88044e6aa44e = L.marker(
+                [37.7195130001474, -122.38724435334],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_353ef110a8a018ef1d39de869c47e0f1 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_aa33e59ce1e135abbe6069e85eac9643 = $(`&lt;div id="html_aa33e59ce1e135abbe6069e85eac9643" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_353ef110a8a018ef1d39de869c47e0f1.setContent(html_aa33e59ce1e135abbe6069e85eac9643);
+            
+        
+
+        marker_9b3d75d5082bb7d4fa6f88044e6aa44e.bindPopup(popup_353ef110a8a018ef1d39de869c47e0f1)
+        ;
+
+        
+    
+    
+            var marker_5d4d0c045dc7eae54d7e0e6911381013 = L.marker(
+                [37.7868672753075, -122.423309337399],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_9ae6d0a339de106f5cfaf97034b9cd85 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_d7d1be50d3839eb0fc12d561f3235ce4 = $(`&lt;div id="html_d7d1be50d3839eb0fc12d561f3235ce4" style="width: 100.0%; height: 100.0%;"&gt;Vandalism&lt;/div&gt;`)[0];
+                popup_9ae6d0a339de106f5cfaf97034b9cd85.setContent(html_d7d1be50d3839eb0fc12d561f3235ce4);
+            
+        
+
+        marker_5d4d0c045dc7eae54d7e0e6911381013.bindPopup(popup_9ae6d0a339de106f5cfaf97034b9cd85)
+        ;
+
+        
+    
+    
+            var marker_6e981271fb902643fe03ea3938d03069 = L.marker(
+                [37.7884306841336, -122.418562843426],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_b50664b5c48b627784153e6212f742ab = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_b79e1facc25f87aed9023b376ad9bb91 = $(`&lt;div id="html_b79e1facc25f87aed9023b376ad9bb91" style="width: 100.0%; height: 100.0%;"&gt;Vandalism&lt;/div&gt;`)[0];
+                popup_b50664b5c48b627784153e6212f742ab.setContent(html_b79e1facc25f87aed9023b376ad9bb91);
+            
+        
+
+        marker_6e981271fb902643fe03ea3938d03069.bindPopup(popup_b50664b5c48b627784153e6212f742ab)
+        ;
+
+        
+    
+    
+            var marker_dc2afcc4a1d34ee949e7f8219cd4d271 = L.marker(
+                [37.7190331787318, -122.39800417734],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_0579911f1e1ab54ad137b025bc0d1716 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_3891ea6e35c9f054721d5c24dc6eb544 = $(`&lt;div id="html_3891ea6e35c9f054721d5c24dc6eb544" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_0579911f1e1ab54ad137b025bc0d1716.setContent(html_3891ea6e35c9f054721d5c24dc6eb544);
+            
+        
+
+        marker_dc2afcc4a1d34ee949e7f8219cd4d271.bindPopup(popup_0579911f1e1ab54ad137b025bc0d1716)
+        ;
+
+        
+    
+    
+            var marker_186a52cd940fb5a3f3bcf92dad6d0990 = L.marker(
+                [37.797555304959104, -122.435654173631],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_9cb3edc65aa07b592ee08681088a8450 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_4abdd8a8a52371e60b57f413f8b07057 = $(`&lt;div id="html_4abdd8a8a52371e60b57f413f8b07057" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_9cb3edc65aa07b592ee08681088a8450.setContent(html_4abdd8a8a52371e60b57f413f8b07057);
+            
+        
+
+        marker_186a52cd940fb5a3f3bcf92dad6d0990.bindPopup(popup_9cb3edc65aa07b592ee08681088a8450)
+        ;
+
+        
+    
+    
+            var marker_a362fad6dea56e30162e0ac0336e6fd0 = L.marker(
+                [37.777173764521606, -122.4263385052],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_0ef9839ec7de39f28460950941797e64 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_f98e0efc2de94a6b34ea9bc7c3b8f48f = $(`&lt;div id="html_f98e0efc2de94a6b34ea9bc7c3b8f48f" style="width: 100.0%; height: 100.0%;"&gt;Robbery&lt;/div&gt;`)[0];
+                popup_0ef9839ec7de39f28460950941797e64.setContent(html_f98e0efc2de94a6b34ea9bc7c3b8f48f);
+            
+        
+
+        marker_a362fad6dea56e30162e0ac0336e6fd0.bindPopup(popup_0ef9839ec7de39f28460950941797e64)
+        ;
+
+        
+    
+    
+            var marker_412dfa55c80619f9583f7f3f6ccc594e = L.marker(
+                [37.733618233775, -122.376974546817],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_e23d307b62469396550c390442ab8c9e = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_bd10044cb371148e8b7b246f04a08453 = $(`&lt;div id="html_bd10044cb371148e8b7b246f04a08453" style="width: 100.0%; height: 100.0%;"&gt;Robbery&lt;/div&gt;`)[0];
+                popup_e23d307b62469396550c390442ab8c9e.setContent(html_bd10044cb371148e8b7b246f04a08453);
+            
+        
+
+        marker_412dfa55c80619f9583f7f3f6ccc594e.bindPopup(popup_e23d307b62469396550c390442ab8c9e)
+        ;
+
+        
+    
+    
+            var marker_df1bf4ddfd0bf23f5081e132537fe95e = L.marker(
+                [37.7816903586506, -122.429828871559],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_084e263b317f5aae74364c735a336f1c = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_a4f59bc19f37d4f4f45a4450400a121d = $(`&lt;div id="html_a4f59bc19f37d4f4f45a4450400a121d" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_084e263b317f5aae74364c735a336f1c.setContent(html_a4f59bc19f37d4f4f45a4450400a121d);
+            
+        
+
+        marker_df1bf4ddfd0bf23f5081e132537fe95e.bindPopup(popup_084e263b317f5aae74364c735a336f1c)
+        ;
+
+        
+    
+    
+            var marker_d1045030478f8901353def482f46443a = L.marker(
+                [37.7835950574018, -122.430240212023],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_2128596d849480b1e6efc716e131e35a = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_1648eeb3286870aa310074bd5237b033 = $(`&lt;div id="html_1648eeb3286870aa310074bd5237b033" style="width: 100.0%; height: 100.0%;"&gt;Vandalism&lt;/div&gt;`)[0];
+                popup_2128596d849480b1e6efc716e131e35a.setContent(html_1648eeb3286870aa310074bd5237b033);
+            
+        
+
+        marker_d1045030478f8901353def482f46443a.bindPopup(popup_2128596d849480b1e6efc716e131e35a)
+        ;
+
+        
+    
+    
+            var marker_87750f398239160e73fad01a4c462d64 = L.marker(
+                [37.78309982445921, -122.419183096362],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_7b9242f3544ab7f25b7d37eef87fc6b7 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_42b9adf9f1258c685856ccc2a53cbade = $(`&lt;div id="html_42b9adf9f1258c685856ccc2a53cbade" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_7b9242f3544ab7f25b7d37eef87fc6b7.setContent(html_42b9adf9f1258c685856ccc2a53cbade);
+            
+        
+
+        marker_87750f398239160e73fad01a4c462d64.bindPopup(popup_7b9242f3544ab7f25b7d37eef87fc6b7)
+        ;
+
+        
+    
+    
+            var marker_fe3b509faed863bf4ad74bb7827db3e9 = L.marker(
+                [37.7820855001414, -122.429018666717],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_6921c5288ff8918ab8ba02e170117157 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_17196ab5f9bafe033295b872aa52c4c3 = $(`&lt;div id="html_17196ab5f9bafe033295b872aa52c4c3" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_6921c5288ff8918ab8ba02e170117157.setContent(html_17196ab5f9bafe033295b872aa52c4c3);
+            
+        
+
+        marker_fe3b509faed863bf4ad74bb7827db3e9.bindPopup(popup_6921c5288ff8918ab8ba02e170117157)
+        ;
+
+        
+    
+    
+            var marker_abd996d7c74c7cdfb089e4061577c9f9 = L.marker(
+                [37.73530492784071, -122.388358368929],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_c8d21c94370ea88d50dcda11cf099a16 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_cf038453565e5ff5df2c04c742de6a2c = $(`&lt;div id="html_cf038453565e5ff5df2c04c742de6a2c" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_c8d21c94370ea88d50dcda11cf099a16.setContent(html_cf038453565e5ff5df2c04c742de6a2c);
+            
+        
+
+        marker_abd996d7c74c7cdfb089e4061577c9f9.bindPopup(popup_c8d21c94370ea88d50dcda11cf099a16)
+        ;
+
+        
+    
+    
+            var marker_c093e6760586b747d7693222d0fa752c = L.marker(
+                [37.7857828233879, -122.428151140162],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_92aa962bbaf4c8cd0dbb46ffe932c883 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_8fa257a1cf3ab540fd1c0d6b2ae7d8ca = $(`&lt;div id="html_8fa257a1cf3ab540fd1c0d6b2ae7d8ca" style="width: 100.0%; height: 100.0%;"&gt;Vandalism&lt;/div&gt;`)[0];
+                popup_92aa962bbaf4c8cd0dbb46ffe932c883.setContent(html_8fa257a1cf3ab540fd1c0d6b2ae7d8ca);
+            
+        
+
+        marker_c093e6760586b747d7693222d0fa752c.bindPopup(popup_92aa962bbaf4c8cd0dbb46ffe932c883)
+        ;
+
+        
+    
+    
+            var marker_02ec4072faba5cd329c2b7a939786de1 = L.marker(
+                [37.7501180223264, -122.39043366511],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_a9ac992489a8fa45d89b0daa86bd0d47 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_03ce65139193e8f186dc77b642b02f0a = $(`&lt;div id="html_03ce65139193e8f186dc77b642b02f0a" style="width: 100.0%; height: 100.0%;"&gt;Vandalism&lt;/div&gt;`)[0];
+                popup_a9ac992489a8fa45d89b0daa86bd0d47.setContent(html_03ce65139193e8f186dc77b642b02f0a);
+            
+        
+
+        marker_02ec4072faba5cd329c2b7a939786de1.bindPopup(popup_a9ac992489a8fa45d89b0daa86bd0d47)
+        ;
+
+        
+    
+    
+            var marker_6447586e0ae078092ce8122090f9d06d = L.marker(
+                [37.7312941487525, -122.378226008527],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_6ef78f8626f05cd9c1ffe31607d85ece = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_15470ac5a80bedbd209ea2df72f73e66 = $(`&lt;div id="html_15470ac5a80bedbd209ea2df72f73e66" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_6ef78f8626f05cd9c1ffe31607d85ece.setContent(html_15470ac5a80bedbd209ea2df72f73e66);
+            
+        
+
+        marker_6447586e0ae078092ce8122090f9d06d.bindPopup(popup_6ef78f8626f05cd9c1ffe31607d85ece)
+        ;
+
+        
+    
+    
+            var marker_3600093455bd419ebdd740b03eaeab1c = L.marker(
+                [37.7332252032804, -122.391245623019],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_6b51fff275a4c1f9849df9a33061becc = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_22ebc11ab5e499cefc7ccd53e5fccd24 = $(`&lt;div id="html_22ebc11ab5e499cefc7ccd53e5fccd24" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_6b51fff275a4c1f9849df9a33061becc.setContent(html_22ebc11ab5e499cefc7ccd53e5fccd24);
+            
+        
+
+        marker_3600093455bd419ebdd740b03eaeab1c.bindPopup(popup_6b51fff275a4c1f9849df9a33061becc)
+        ;
+
+        
+    
+    
+            var marker_07ce4160e7a36342167d83bb5cdfc14b = L.marker(
+                [37.735217228007706, -122.390689582557],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_262fdd804043f8e6efe62b45fb9c43ca = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_db0e508b340c9c3b24fd30697a2b98ca = $(`&lt;div id="html_db0e508b340c9c3b24fd30697a2b98ca" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_262fdd804043f8e6efe62b45fb9c43ca.setContent(html_db0e508b340c9c3b24fd30697a2b98ca);
+            
+        
+
+        marker_07ce4160e7a36342167d83bb5cdfc14b.bindPopup(popup_262fdd804043f8e6efe62b45fb9c43ca)
+        ;
+
+        
+    
+    
+            var marker_110bf9364f48020839a55d56492fda79 = L.marker(
+                [37.7800304351156, -122.432116233695],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_7089c54756fc696f8324305466efe01a = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_5c0a7f2e4e704ebe1712c395e3f9f864 = $(`&lt;div id="html_5c0a7f2e4e704ebe1712c395e3f9f864" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_7089c54756fc696f8324305466efe01a.setContent(html_5c0a7f2e4e704ebe1712c395e3f9f864);
+            
+        
+
+        marker_110bf9364f48020839a55d56492fda79.bindPopup(popup_7089c54756fc696f8324305466efe01a)
+        ;
+
+        
+    
+    
+            var marker_f75905a635f9301c1d766829f3d29bbc = L.marker(
+                [37.773295406746, -122.428178458093],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_f97d8a28c99aaffa122bc1af45ef9d4b = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_0c7d71f2a8deb5cdbfaf31abf2d4c39f = $(`&lt;div id="html_0c7d71f2a8deb5cdbfaf31abf2d4c39f" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_f97d8a28c99aaffa122bc1af45ef9d4b.setContent(html_0c7d71f2a8deb5cdbfaf31abf2d4c39f);
+            
+        
+
+        marker_f75905a635f9301c1d766829f3d29bbc.bindPopup(popup_f97d8a28c99aaffa122bc1af45ef9d4b)
+        ;
+
+        
+    
+    
+            var marker_f0f1cd759e5a93ea8f619a56d25d7521 = L.marker(
+                [37.7811175256377, -122.427206305932],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_783dd07ef214dc6171213103c31c4e26 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_2238ce8d430ecabe819578f1e6b4ce5d = $(`&lt;div id="html_2238ce8d430ecabe819578f1e6b4ce5d" style="width: 100.0%; height: 100.0%;"&gt;Robbery&lt;/div&gt;`)[0];
+                popup_783dd07ef214dc6171213103c31c4e26.setContent(html_2238ce8d430ecabe819578f1e6b4ce5d);
+            
+        
+
+        marker_f0f1cd759e5a93ea8f619a56d25d7521.bindPopup(popup_783dd07ef214dc6171213103c31c4e26)
+        ;
+
+        
+    
+    
+            var marker_d7830cfeef7d9e18f126377be6e711a4 = L.marker(
+                [37.7318463920608, -122.396788763777],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_f73c2d076ace332862178baefefd4d7a = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_c343dde96ea559c365a9de4125ead131 = $(`&lt;div id="html_c343dde96ea559c365a9de4125ead131" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_f73c2d076ace332862178baefefd4d7a.setContent(html_c343dde96ea559c365a9de4125ead131);
+            
+        
+
+        marker_d7830cfeef7d9e18f126377be6e711a4.bindPopup(popup_f73c2d076ace332862178baefefd4d7a)
+        ;
+
+        
+    
+    
+            var marker_7bea4075d2362bd79808f32894b7b79b = L.marker(
+                [37.7283905623996, -122.381906795287],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_42664bcf5d12e538a72d4c4b0bd734c0 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_487e811396930518fe29621ef2d3e356 = $(`&lt;div id="html_487e811396930518fe29621ef2d3e356" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_42664bcf5d12e538a72d4c4b0bd734c0.setContent(html_487e811396930518fe29621ef2d3e356);
+            
+        
+
+        marker_7bea4075d2362bd79808f32894b7b79b.bindPopup(popup_42664bcf5d12e538a72d4c4b0bd734c0)
+        ;
+
+        
+    
+    
+            var marker_a36301b94c304676b8be50349adf71d0 = L.marker(
+                [37.7422600519555, -122.387939452192],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_75df8c38ad79d2ae088b1fa366469d3b = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_d2900e48a0f549fa12271a3f9084ef9a = $(`&lt;div id="html_d2900e48a0f549fa12271a3f9084ef9a" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_75df8c38ad79d2ae088b1fa366469d3b.setContent(html_d2900e48a0f549fa12271a3f9084ef9a);
+            
+        
+
+        marker_a36301b94c304676b8be50349adf71d0.bindPopup(popup_75df8c38ad79d2ae088b1fa366469d3b)
+        ;
+
+        
+    
+    
+            var marker_74cabd1cb7a754daf5df632849a2e6b1 = L.marker(
+                [37.797139554437706, -122.42387180052602],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_33174fa7bf61e06b4085a592255dee1e = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_0b551790d125d94eebd9db5d7b4d7831 = $(`&lt;div id="html_0b551790d125d94eebd9db5d7b4d7831" style="width: 100.0%; height: 100.0%;"&gt;Robbery&lt;/div&gt;`)[0];
+                popup_33174fa7bf61e06b4085a592255dee1e.setContent(html_0b551790d125d94eebd9db5d7b4d7831);
+            
+        
+
+        marker_74cabd1cb7a754daf5df632849a2e6b1.bindPopup(popup_33174fa7bf61e06b4085a592255dee1e)
+        ;
+
+        
+    
+    
+            var marker_42f0d8281d940269b48c9dbdf1e87e25 = L.marker(
+                [37.73716994462029, -122.389865610332],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_b1f60923e07358ab3b9aacd010ba1067 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_c2e3c044ead1b71cf95db6e180eacd48 = $(`&lt;div id="html_c2e3c044ead1b71cf95db6e180eacd48" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_b1f60923e07358ab3b9aacd010ba1067.setContent(html_c2e3c044ead1b71cf95db6e180eacd48);
+            
+        
+
+        marker_42f0d8281d940269b48c9dbdf1e87e25.bindPopup(popup_b1f60923e07358ab3b9aacd010ba1067)
+        ;
+
+        
+    
+    
+            var marker_0c5fcf639701eff403be59b98f805429 = L.marker(
+                [37.7819608221838, -122.420641893733],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_df1585751a5b85d1c59b22c86e4fd5f9 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_f4723a8b35929083ff42a7bdc9a09d6e = $(`&lt;div id="html_f4723a8b35929083ff42a7bdc9a09d6e" style="width: 100.0%; height: 100.0%;"&gt;Vandalism&lt;/div&gt;`)[0];
+                popup_df1585751a5b85d1c59b22c86e4fd5f9.setContent(html_f4723a8b35929083ff42a7bdc9a09d6e);
+            
+        
+
+        marker_0c5fcf639701eff403be59b98f805429.bindPopup(popup_df1585751a5b85d1c59b22c86e4fd5f9)
+        ;
+
+        
+    
+    
+            var marker_91d2e46d70b41456c0029abe236b715c = L.marker(
+                [37.78407618638379, -122.418540618555],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_86a1f31e8e97389faf70e8b0735e504d = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_df43a0bcc53531990955763fb2dc027e = $(`&lt;div id="html_df43a0bcc53531990955763fb2dc027e" style="width: 100.0%; height: 100.0%;"&gt;Vandalism&lt;/div&gt;`)[0];
+                popup_86a1f31e8e97389faf70e8b0735e504d.setContent(html_df43a0bcc53531990955763fb2dc027e);
+            
+        
+
+        marker_91d2e46d70b41456c0029abe236b715c.bindPopup(popup_86a1f31e8e97389faf70e8b0735e504d)
+        ;
+
+        
+    
+    
+            var marker_2cbf0ba67e607a061567d51c0b29098f = L.marker(
+                [37.7843065301694, -122.422860135926],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_f937d19f2a4d89ec8fdd9c41130fc898 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_283d929036a00680b5e7ce82ef70fe8e = $(`&lt;div id="html_283d929036a00680b5e7ce82ef70fe8e" style="width: 100.0%; height: 100.0%;"&gt;Vandalism&lt;/div&gt;`)[0];
+                popup_f937d19f2a4d89ec8fdd9c41130fc898.setContent(html_283d929036a00680b5e7ce82ef70fe8e);
+            
+        
+
+        marker_2cbf0ba67e607a061567d51c0b29098f.bindPopup(popup_f937d19f2a4d89ec8fdd9c41130fc898)
+        ;
+
+        
+    
+    
+            var marker_3806d0339836870d1fc2cafee5a49feb = L.marker(
+                [37.7344910991058, -122.39192940892],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_f29bea2ae51a4bb286174aad69244c19 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_863e001b742e732dcdf988d0253c10f4 = $(`&lt;div id="html_863e001b742e732dcdf988d0253c10f4" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_f29bea2ae51a4bb286174aad69244c19.setContent(html_863e001b742e732dcdf988d0253c10f4);
+            
+        
+
+        marker_3806d0339836870d1fc2cafee5a49feb.bindPopup(popup_f29bea2ae51a4bb286174aad69244c19)
+        ;
+
+        
+    
+    
+            var marker_85f93ca6e0cf4788a87d85b9c8a970ba = L.marker(
+                [37.78407618638379, -122.418540618555],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_2df754e24a4cd3fb26a26e1e2523cf56 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_c61d0590a2931541f91b100a24f83a87 = $(`&lt;div id="html_c61d0590a2931541f91b100a24f83a87" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_2df754e24a4cd3fb26a26e1e2523cf56.setContent(html_c61d0590a2931541f91b100a24f83a87);
+            
+        
+
+        marker_85f93ca6e0cf4788a87d85b9c8a970ba.bindPopup(popup_2df754e24a4cd3fb26a26e1e2523cf56)
+        ;
+
+        
+    
+    
+            var marker_040c13ab1970abaf0f6af756a61c0baf = L.marker(
+                [37.78309982445921, -122.419183096362],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_7d0c3c93902d78dcd754e0960995f58d = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_fe02bc4ead6470af309800bae0b493c8 = $(`&lt;div id="html_fe02bc4ead6470af309800bae0b493c8" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_7d0c3c93902d78dcd754e0960995f58d.setContent(html_fe02bc4ead6470af309800bae0b493c8);
+            
+        
+
+        marker_040c13ab1970abaf0f6af756a61c0baf.bindPopup(popup_7d0c3c93902d78dcd754e0960995f58d)
+        ;
+
+        
+    
+    
+            var marker_e7daf5704b241b799a24dead5fe7becc = L.marker(
+                [37.7239748241609, -122.3949284758],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_2a95a4db13981ac04e49a79873e91eec = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_aed603375fcaea26e0c8b46873b37513 = $(`&lt;div id="html_aed603375fcaea26e0c8b46873b37513" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_2a95a4db13981ac04e49a79873e91eec.setContent(html_aed603375fcaea26e0c8b46873b37513);
+            
+        
+
+        marker_e7daf5704b241b799a24dead5fe7becc.bindPopup(popup_2a95a4db13981ac04e49a79873e91eec)
+        ;
+
+        
+    
+    
+            var marker_05bb767ece3fabdaef9a6eff1a2a42c6 = L.marker(
+                [37.731077440872895, -122.379974182114],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_acb3e33d86b5df589c2b4544d6331c2b = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_2fa924bdb0580ab65f1b6197794e4e1e = $(`&lt;div id="html_2fa924bdb0580ab65f1b6197794e4e1e" style="width: 100.0%; height: 100.0%;"&gt;Vandalism&lt;/div&gt;`)[0];
+                popup_acb3e33d86b5df589c2b4544d6331c2b.setContent(html_2fa924bdb0580ab65f1b6197794e4e1e);
+            
+        
+
+        marker_05bb767ece3fabdaef9a6eff1a2a42c6.bindPopup(popup_acb3e33d86b5df589c2b4544d6331c2b)
+        ;
+
+        
+    
+    
+            var marker_24a029f462e8597f228dc1899e272b25 = L.marker(
+                [37.724729955923294, -122.38793080184],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_cdbbbbb009b048a1dc67df3d1c5d0490 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_32d09f9a53604eb94a9db3c40e15b024 = $(`&lt;div id="html_32d09f9a53604eb94a9db3c40e15b024" style="width: 100.0%; height: 100.0%;"&gt;Robbery&lt;/div&gt;`)[0];
+                popup_cdbbbbb009b048a1dc67df3d1c5d0490.setContent(html_32d09f9a53604eb94a9db3c40e15b024);
+            
+        
+
+        marker_24a029f462e8597f228dc1899e272b25.bindPopup(popup_cdbbbbb009b048a1dc67df3d1c5d0490)
+        ;
+
+        
+    
+    
+            var marker_4559a4d73f8b71822124952dd265d721 = L.marker(
+                [37.7830295716044, -122.431046366089],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_65ae8993e48280d0c6824eee2b999334 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_621f8d2b6b5a9780b1d4b24d208c2d52 = $(`&lt;div id="html_621f8d2b6b5a9780b1d4b24d208c2d52" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_65ae8993e48280d0c6824eee2b999334.setContent(html_621f8d2b6b5a9780b1d4b24d208c2d52);
+            
+        
+
+        marker_4559a4d73f8b71822124952dd265d721.bindPopup(popup_65ae8993e48280d0c6824eee2b999334)
+        ;
+
+        
+    
+    
+            var marker_3e750d8b9db7eadca648d402fa71ef61 = L.marker(
+                [37.765377517215, -122.386775025935],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_1ab836b5a67fa2fb08289487afad4e4f = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_e701bbd8cea7859b3dacc616acab4473 = $(`&lt;div id="html_e701bbd8cea7859b3dacc616acab4473" style="width: 100.0%; height: 100.0%;"&gt;Robbery&lt;/div&gt;`)[0];
+                popup_1ab836b5a67fa2fb08289487afad4e4f.setContent(html_e701bbd8cea7859b3dacc616acab4473);
+            
+        
+
+        marker_3e750d8b9db7eadca648d402fa71ef61.bindPopup(popup_1ab836b5a67fa2fb08289487afad4e4f)
+        ;
+
+        
+    
+    
+            var marker_09121d84cbbb54099adc1a862f58faeb = L.marker(
+                [37.7299756929957, -122.382110242687],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_a41d9d0077e02cbc17a59a2bda402e3b = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_4ab09e4c7b572f373d97ed4692e02b5c = $(`&lt;div id="html_4ab09e4c7b572f373d97ed4692e02b5c" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_a41d9d0077e02cbc17a59a2bda402e3b.setContent(html_4ab09e4c7b572f373d97ed4692e02b5c);
+            
+        
+
+        marker_09121d84cbbb54099adc1a862f58faeb.bindPopup(popup_a41d9d0077e02cbc17a59a2bda402e3b)
+        ;
+
+        
+    
+    
+            var marker_00095e388c834f4d49575f7765a70421 = L.marker(
+                [37.7902088255652, -122.423156806774],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_9e54eff0c91fa265a865650c854c9210 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_461f3d4e9bb6328fbe1792c762ac7bed = $(`&lt;div id="html_461f3d4e9bb6328fbe1792c762ac7bed" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_9e54eff0c91fa265a865650c854c9210.setContent(html_461f3d4e9bb6328fbe1792c762ac7bed);
+            
+        
+
+        marker_00095e388c834f4d49575f7765a70421.bindPopup(popup_9e54eff0c91fa265a865650c854c9210)
+        ;
+
+        
+    
+    
+            var marker_bf21c63c1733fbbe4220db69f1c29dec = L.marker(
+                [37.759617041647, -122.403051612836],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_0934841894d4da4e291825d2f7e789fa = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_2d04b34f2b044c771e749d64620dfc65 = $(`&lt;div id="html_2d04b34f2b044c771e749d64620dfc65" style="width: 100.0%; height: 100.0%;"&gt;Robbery&lt;/div&gt;`)[0];
+                popup_0934841894d4da4e291825d2f7e789fa.setContent(html_2d04b34f2b044c771e749d64620dfc65);
+            
+        
+
+        marker_bf21c63c1733fbbe4220db69f1c29dec.bindPopup(popup_0934841894d4da4e291825d2f7e789fa)
+        ;
+
+        
+    
+    
+            var marker_457bf1f2627ff49bb6c8882615a1cfd5 = L.marker(
+                [37.7535645746594, -122.395635436168],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_eb7a2bafb09712bd4563a0ee7aea2a41 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_a87fd92924493a79b2fc21b5f035aeb6 = $(`&lt;div id="html_a87fd92924493a79b2fc21b5f035aeb6" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_eb7a2bafb09712bd4563a0ee7aea2a41.setContent(html_a87fd92924493a79b2fc21b5f035aeb6);
+            
+        
+
+        marker_457bf1f2627ff49bb6c8882615a1cfd5.bindPopup(popup_eb7a2bafb09712bd4563a0ee7aea2a41)
+        ;
+
+        
+    
+    
+            var marker_60ff03b28bd1fb1766489f14f45281e0 = L.marker(
+                [37.72940755917529, -122.404407189561],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_81997700bf23561df71d967c90e446bd = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_1f677aedbbab4b0062d584a84347e20e = $(`&lt;div id="html_1f677aedbbab4b0062d584a84347e20e" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_81997700bf23561df71d967c90e446bd.setContent(html_1f677aedbbab4b0062d584a84347e20e);
+            
+        
+
+        marker_60ff03b28bd1fb1766489f14f45281e0.bindPopup(popup_81997700bf23561df71d967c90e446bd)
+        ;
+
+        
+    
+    
+            var marker_bc8d212983972141327176112f504c22 = L.marker(
+                [37.789401478987706, -122.42037900933902],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_84bf22adf659a334bd23e64bfaafe126 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_187c764b136c5f2d431a9a35ee0931fb = $(`&lt;div id="html_187c764b136c5f2d431a9a35ee0931fb" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_84bf22adf659a334bd23e64bfaafe126.setContent(html_187c764b136c5f2d431a9a35ee0931fb);
+            
+        
+
+        marker_bc8d212983972141327176112f504c22.bindPopup(popup_84bf22adf659a334bd23e64bfaafe126)
+        ;
+
+        
+    
+    
+            var marker_5afbe20a95d1c0f8110ca2f144509665 = L.marker(
+                [37.792264753771896, -122.428630560161],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_b6a8d6ca36f47a344fdfa77c651d6292 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_24088880adf39c845f6bb6ad17080a87 = $(`&lt;div id="html_24088880adf39c845f6bb6ad17080a87" style="width: 100.0%; height: 100.0%;"&gt;Vandalism&lt;/div&gt;`)[0];
+                popup_b6a8d6ca36f47a344fdfa77c651d6292.setContent(html_24088880adf39c845f6bb6ad17080a87);
+            
+        
+
+        marker_5afbe20a95d1c0f8110ca2f144509665.bindPopup(popup_b6a8d6ca36f47a344fdfa77c651d6292)
+        ;
+
+        
+    
+    
+            var marker_4484cf5248a4d69b36f1cc6e3f13dbb1 = L.marker(
+                [37.753535124276205, -122.397201937993],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_d42b27bfbc7db7a8e3487aec8a79b550 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_5800a84cb784880ec7a804a3e9e7f9e5 = $(`&lt;div id="html_5800a84cb784880ec7a804a3e9e7f9e5" style="width: 100.0%; height: 100.0%;"&gt;Vandalism&lt;/div&gt;`)[0];
+                popup_d42b27bfbc7db7a8e3487aec8a79b550.setContent(html_5800a84cb784880ec7a804a3e9e7f9e5);
+            
+        
+
+        marker_4484cf5248a4d69b36f1cc6e3f13dbb1.bindPopup(popup_d42b27bfbc7db7a8e3487aec8a79b550)
+        ;
+
+        
+    
+    
+            var marker_581f745f6ba024c56ef281d81e56e9eb = L.marker(
+                [37.7198785524783, -122.390922553406],
+                {
+}
+            ).addTo(marker_cluster_eb46bea5926026dc6b9757a36937b89e);
+        
+    
+        var popup_ee6d5613453557145e15a8e27e4dc596 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_2ead72ef80ecb41abecfdbf8c97b9339 = $(`&lt;div id="html_2ead72ef80ecb41abecfdbf8c97b9339" style="width: 100.0%; height: 100.0%;"&gt;Assault&lt;/div&gt;`)[0];
+                popup_ee6d5613453557145e15a8e27e4dc596.setContent(html_2ead72ef80ecb41abecfdbf8c97b9339);
+            
+        
+
+        marker_581f745f6ba024c56ef281d81e56e9eb.bindPopup(popup_ee6d5613453557145e15a8e27e4dc596)
+        ;
+
+        
+    
+    
+            marker_cluster_eb46bea5926026dc6b9757a36937b89e.addTo(map_dcf5d76cf2b6cf96dcbd5000e40341a7);
+        
+&lt;/script&gt;
+&lt;/html&gt;' style="position:absolute;width:100%;height:100%;left:0;top:0;border:none !important;" webkitallowfullscreen=""></iframe></div></div></div></div></div></div></div></div><div style="height: 100%;"><img class="lm-Widget p-Widget jupyter-widgets widget-image" src="blob:http://localhost:8765/ab41ac63-8d56-426f-8c8e-6f48f76c0912"/></div></div></div></div></div></div></main></div></div></div> <div style="right: 0px; bottom: 0px; position: absolute; padding: 10px;"><b>This website runs on <a href="https://solara.dev">Solara</a></b></div></div> <div class="v-overlay theme--dark" style="z-index: 100002;"><div class="v-overlay__scrim" style="opacity: 0; background-color: rgb(33, 33, 33); border-color: rgb(33, 33, 33);"></div></div> <div class="v-overlay theme--dark" style="z-index: 100001;"><div class="v-overlay__scrim" style="opacity: 0; background-color: rgb(33, 33, 33); border-color: rgb(33, 33, 33);"></div></div> <div class="v-dialog__container" role="dialog"><!-- --></div> <!-- --></div>
+        
+        <div id="pre-rendered-html-present" style="display: none"></div>
+    </div>
+    <script>
+        var theme = {"force_refresh": false, "loader": "solara", "show_banner": true, "title": "Solara \u2600\ufe0f", "variant": "light"}
+        function getThemeVariant() {
+            if (localStorage.getItem(':solara:theme.variant')) {
+                return JSON.parse(localStorage.getItem(':solara:theme.variant'))
+            }
+            return theme.variant;
+        }
+        if (localStorage.getItem(':solara:theme.variant')) {
+            theme.variant = JSON.parse(localStorage.getItem(':solara:theme.variant'))
+        }
+        function prefersDarkScheme() {
+            return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        }
+        function inDarkMode() {
+            if (getThemeVariant() == 'auto') {
+                return prefersDarkScheme();
+            }
+            else {
+                return getThemeVariant() == 'dark';
+            }
+        }
+        // Init theme
+        let appContainer = document.getElementById('app');
+        const searchParams = new URLSearchParams(window.location.search);
+        if(searchParams.has('modelid')) {
+            // indicates that we are not mounting the application, but a specific
+            // widget (for instance using ipypopout)
+            document.body.classList.add('jupyter-widgets-popout-container');
+        }
+        if (inDarkMode()) {
+            appContainer.classList.remove('theme--light');
+            appContainer.classList.add('theme--dark');
+        } else {
+            appContainer.classList.remove('theme--dark');
+            appContainer.classList.add('theme--light');
+        }
+    </script>
+    
+    
+
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KC98NKNL"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+
+    <style id="algolia">
+    .DocSearch-Button {
+        background-color: rgb(255, 238, 197);
+        color: #182026;
+    }
+
+    .theme--dark .DocSearch-Button {
+        background-color: #26273D;
+        color: hsla(0,0%,100%,.7);
+    }
+
+    .DocSearch-Button:hover {
+        background-color: rgba(150,150,200,0.15);
+    }
+
+    .theme--dark .DocSearch-Button:hover {
+        background-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .DocSearch-Button .DocSearch-Search-Icon {
+        color: #26273D;
+    }
+
+    .theme--dark .DocSearch-Button .DocSearch-Search-Icon {
+        color: #ff991f;
+    }
+    </style>
+
+    <script>
+        function solaraAlgoliaInit({appId, apiKey, indexName, debug}) {
+            const otherClick = (event) => event.button === 1 || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey
+            docsearch({
+                container: '#docsearch',
+                appId: "9KW9L7O5EQ",
+                apiKey: "ef7495102afff1e16d1b7cf6ec2ab2d0",
+                indexName: "solara",
+                debug: debug,
+                hitComponent: ({ hit, children }) => {
+                    // react without the React library
+                    return {
+                        type: 'a',
+                        constructor: undefined,
+                        __v: 1,
+                        props: {
+                            href: hit.url,
+                            children,
+                            onClick: (event) => {
+                                if (otherClick(event)) { return }
+                                event.preventDefault()
+                                let url = hit.url;
+                                if (url.startsWith('https://solara.dev')) {
+                                    url = url.substring(18);
+                                }
+                                solara.router.push(url)
+                            }
+                        }
+                    }
+                },
+
+                navigator: {
+                    navigate({ itemUrl }) {
+                        if (itemUrl.startsWith('https://solara.dev')) {
+                            itemUrl = itemUrl.substring(18);
+                        }
+                        solara.router.push(itemUrl);
+                    },
+                },
+            });
+        }
+        if(document.getElementById('docsearch')) {
+            solaraAlgoliaInit({
+                appId: "9KW9L7O5EQ",
+                apiKey: "ef7495102afff1e16d1b7cf6ec2ab2d0",
+                indexName: "solara",
+                debug: false,
+            });
+        }
+    </script>
+    <!-- MailChimp -->
+    <link href="//cdn-images.mailchimp.com/embedcode/classic-061523.css" rel="stylesheet" type="text/css">
+    <script type="text/javascript" src="//s3.amazonaws.com/downloads.mailchimp.com/js/mc-validate.js"></script>
+
+    <script>/*
+path=/static/assets/theme.js
+*/vuetifyThemes = {
+    light: {
+        dark: false,
+        primary: '#ff991f',
+        colors: {
+            primary: '#ff991f',
+        },
+    },
+    dark: {
+        dark: true,
+        primary: '#f77e14',
+        colors: {
+            primary: '#f77e14',
+        },
+    }
+}
+</script>
+    
+        <link href="/_solara/cdn/@widgetti/solara-vuetify-app@10.1.1/dist/fonts.css" rel="stylesheet" fetchpriority="low"></link>
+        
+        <script src="/_solara/cdn/@widgetti/solara-vuetify-app@10.1.1/dist/solara-vuetify-app8.min.js"></script>
+        
+    
+    <script>
+        solara.rootPath = "";
+        solara.jupyterRootPath = "/jupyter";
+        solara.cdn = "/_solara/cdn";
+        solara.forceRefresh = false;
+        // opaque asset hash; compared against the app-status reply on reconnect to decide
+        // soft-remount vs hard-refresh (design §6.1)
+        solara.clientVersion = "badeeae32517";
+        // the vue templates expect it to not have a trailing slash
+        solara.cdn = solara.cdn.replace(/\/$/, '');
+        // keep this for backwards compatibility
+        window.solara_cdn = solara.cdn;
+        console.log("solara config", {rootPath: solara.rootPath, jupyterRootPath: solara.jupyterRootPath, cdn: solara.cdn});
+
+        // versioned with the content hash, so the server can mark them immutable
+        const themeCssUrls = {"dark": "/static/assets/theme-dark.css?v=36d169cba407829ff05e8adab9408c50", "light": "/static/assets/theme-light.css?v=36a2d9074a93e07739dcbf63e006ebb7"};
+        async function changeThemeCSS(theme) {
+            let css = await fetch(themeCssUrls[theme]).then(r => r.text());
+            document.getElementById('jupyter-theme-css').innerHTML = css;
+        }
+        changeThemeCSS(inDarkMode() ? 'dark' : 'light');
+    </script>
+
+    <script>/*
+path=/static/assets/custom.js
+*//* not empty */
+</script>
+
+    <script src="/_solara/cdn/requirejs@2.3.6/require.js" crossorigin="anonymous">
+    </script>
+    <script>/*
+path=/static/main-vuetify.js
+*/
+var jupyterWidgetMountPoint = {
+    data() {
+        return {
+            renderFn: undefined,
+            elem: undefined,
+            component: undefined,
+        }
+    },
+    props: ['mount-id'],
+    created() {
+        requestWidget(this.mountId);
+    },
+    mounted() {
+        requestWidget(this.mountId)
+            .then(async widgetView => {
+                const model = widgetView.model;
+                if (['VuetifyView', 'VuetifyTemplateView'].includes(model.get('_view_name'))) {
+                    if (Vue.h && ['VueTemplateModel', 'VuetifyTemplateModel', 'HtmlModel'].includes(model.get('_model_name'))) {
+                        await registerVueComponents(this, widgetView);
+                    }
+                    if (Vue.h) {
+                        const component = widgetView.vueComponent();
+                        this.component = Vue.markRaw ? Vue.markRaw(component) : component;
+                    } else {
+                        this.renderFn = createElement => widgetView.vueRender(createElement);
+                    }
+                } else {
+                    while (this.$el.firstChild) {
+                        this.$el.removeChild(this.$el.firstChild);
+                    }
+
+                    requirejs(['@jupyter-widgets/base'], widgets =>
+                        widgets.JupyterPhosphorWidget.attach(widgetView.pWidget, this.$el)
+                    );
+                }
+            }
+            );
+    },
+    render(createElement) {
+        // in vue3 we have Vue.h, otherwise fall back to createElement (vue2)
+        let h = Vue.h || createElement;
+        if (this.component) {
+            return h(this.component);
+        }
+        if (this.renderFn) {
+            /* workaround for v-menu click */
+            if (!this.elem) {
+                this.elem = this.renderFn(createElement);
+            }
+            return this.elem;
+        }
+        return h('div', this.$slots.default ||
+            [h('v-chip', `[${this.mountId}]`)]);
+    }
+};
+
+function widgetThemes() {
+    return Object.fromEntries(
+        Object.entries(vuetifyThemes || {}).map(([name, theme]) => [name, theme.colors || theme])
+    );
+}
+
+async function registerVueComponents(vueComponent, widgetView) {
+    const app = vueComponent.$.appContext.app;
+    await loadWidgetModule('jupyter-vue', jupyterVue =>
+        jupyterVue.addApp(app, widgetView.model.widget_manager)
+    );
+    if (widgetView.model.get('_view_module') === 'jupyter-vuetify') {
+        await loadWidgetModule('jupyter-vuetify', jupyterVuetify =>
+            jupyterVuetify.addApp(app)
+        );
+    }
+}
+
+function loadWidgetModule(name, callback) {
+    return new Promise(resolve => {
+        if (!requirejs.defined(name) && !requirejs.specified(name)) {
+            resolve();
+            return;
+        }
+        requirejs([name], module => resolve(callback(module)), () => resolve());
+    });
+}
+
+const widgetResolveFns = {};
+const widgetPromises = {};
+
+function provideWidget(mountId, widgetView) {
+    if (widgetResolveFns[mountId]) {
+        widgetResolveFns[mountId](widgetView);
+    } else {
+        widgetPromises[mountId] = Promise.resolve(widgetView);
+    }
+}
+
+function requestWidget(mountId) {
+    if (!widgetPromises[mountId]) {
+        widgetPromises[mountId] = new Promise(resolve => widgetResolveFns[mountId] = resolve);
+    }
+    return widgetPromises[mountId];
+}
+
+function injectDebugMessageInterceptor(kernel) {
+    const _original_handle_message = kernel._handleMessage.bind(kernel)
+    kernel._handleMessage = ((msg) => {
+        if (msg.msg_type === 'error') {
+            app.$data.solaraDebugMessages.push({
+                cell: '_',
+                traceback: msg.content.traceback.map(line => ansiSpan(_.escape(line)))
+            });
+        } else if (msg.msg_type === 'stream' && (msg.content['name'] === 'stdout' || msg.content['name'] === 'stderr')) {
+            app.$data.solaraDebugMessages.push({
+                cell: '_',
+                name: msg.content.name,
+                text: msg.content.text
+            });
+        }
+        return _original_handle_message(msg);
+    })
+}
+
+
+function getCookiesMap(cookiesString) {
+    return cookiesString.split(";")
+        .map(function (cookieString) {
+            return cookieString.trim().split("=");
+        })
+        .reduce(function (acc, curr) {
+            acc[curr[0]] = curr[1];
+            return acc;
+        }, {});
+}
+const COOKIE_KEY_CONTEXT_ID = 'solara-session-id'
+
+
+// from https://gist.github.com/outbreak/316637cde245160c2579898b21837c1c
+function generateUuid() {
+    function getRandomSymbol(symbol) {
+        var array;
+
+        if (symbol === 'y') {
+            array = ['8', '9', 'a', 'b'];
+            return array[Math.floor(Math.random() * array.length)];
+        }
+
+        array = new Uint8Array(1);
+        window.crypto.getRandomValues(array);
+        return (array[0] % 16).toString(16);
+    }
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, getRandomSymbol);
+}
+
+async function solaraInit(mountId, appName) {
+    console.log('solara init', mountId, appName);
+    mountId = mountId || 'content';
+    define("vue", [], () => Vue);
+    define("vuetify", [], () => Vuetify);
+    if (typeof vuetifyPlugin !== "undefined") {
+        define("solara-vuetify-plugin", [], () => ({ vuetifyPlugin }));
+    }
+    cookies = getCookiesMap(document.cookie);
+    const searchParams = new URLSearchParams(window.location.search);
+    let kernelId = searchParams.get('kernelid') || generateUuid()
+    let unloading = false;
+    window.addEventListener('beforeunload', function (e) {
+        unloading = true;
+        kernel.dispose()
+        // allow to opt-out to make testing easier
+        if (!searchParams.has('solara-no-close-beacon')) {
+            window.navigator.sendBeacon(close_url);
+        }
+    });
+    let kernel = await solara.connectKernel(solara.jupyterRootPath, kernelId)
+    if (!kernel) {
+        return;
+    }
+    const close_url = `${solara.rootPath}/_solara/api/close/${kernelId}?session_id=${kernel.clientId}`;
+    let skipReconnectedCheck = true;
+    // reconnect state machine state (see the block comment above connectionStatusChanged):
+    // every 'connected' event starts a reconnect CYCLE owning this generation; a cycle that is
+    // no longer the latest (or whose socket dropped again) aborts silently. A monotonic counter
+    // cannot deadlock the way an in-flight boolean could (there is nothing to clear).
+    let reconnectGeneration = 0;
+    // true iff a root view was mounted and not torn down since. Every rebuild sets it false
+    // FIRST and true only after a completed mount, so an interrupted rebuild (socket drop
+    // mid-way) leaves viewMounted == false for the next cycle to detect and REPAIR.
+    let viewMounted = false;
+
+    // Purge orphaned comm registrations left on the kernel CONNECTION after a widget manager is
+    // torn down. jupyter-widgets' WidgetModel.close(true) (used by clearStateLocal for a silent
+    // local teardown) deletes the model's reference to its comm but does NOT unregister the
+    // CommHandler from the connection's private _comms map (close(true) skips comm.close()). Those
+    // orphans are inert on the same node, but on a reconnect that lands on a DIFFERENT node still
+    // serving one of those ids, the resync (_loadFromKernel -> createComm(id)) throws
+    // "Comm is already created" mid-map, leaving half the widget tree detached (inputs never sync
+    // to python again). Disposing the CommHandler runs its unregister callback WITHOUT sending a
+    // comm_close over the wire (matching clearStateLocal's silent intent). commIdsBefore is
+    // snapshotted before the new manager registers its fresh comms, so we never purge live ones.
+    function purgeStaleComms(commIdsBefore) {
+        const comms = kernel && kernel._comms;
+        if (!comms || typeof comms.get !== 'function') {
+            // bundle change (private field renamed): skip rather than throw - the collision is
+            // rare (needs a cross-node reconnect) and must not break the common reconnect path.
+            return;
+        }
+        for (const id of commIdsBefore) {
+            const comm = comms.get(id);
+            if (comm && typeof comm.dispose === 'function') {
+                try {
+                    comm.dispose();
+                } catch (e) {
+                    console.warn('solara remount: stale comm dispose failed', e);
+                }
+            }
+        }
+    }
+
+    // debug/test hooks on the solara JS global (§6.4): always-on, unstable-by-contract. Getters
+    // return the CURRENT closure values because the socket is replaced on every reconnect and the
+    // widget manager on every soft-remount, so captured references go stale by design.
+    solara.debug = {
+        kernel: () => kernel,
+        widgetManager: () => widgetManager,
+        ws: () => kernel && kernel._ws,
+        connectionStatus: kernel.connectionStatus,
+        reconnectCount: 0,
+        remountCount: 0,
+        viewMounted: () => viewMounted,
+        lastRestore: null,
+        dropConnection() {
+            // close the raw underlying socket WITHOUT kernel.dispose, so the jupyterlab-services
+            // reconnect machinery fires as on a network blip. kernel._ws is a private field of the
+            // vendored bundle - guard against a bundle change.
+            if (!kernel._ws) {
+                console.warn('solara.debug: kernel._ws not found (bundle change?)');
+                return false;
+            }
+            kernel._ws.close();
+            return true;
+        },
+        async simulateFailover() {
+            // evict the kernel context server-side (dev/test-gated), then drop the socket, so
+            // the reconnect behaves exactly like landing on a fresh instance - with only backend
+            // state surviving. With the memory backend this exercises the real restore path in a
+            // single dev process (§6.5).
+            // The evict goes over the kernel WEBSOCKET (solara.control comm), not HTTP: behind a
+            // round-robin load balancer an HTTP evict lands on an arbitrary instance and 404s on
+            // every non-owner, while the websocket by definition terminates on the instance that
+            // owns the kernel. A refused evict (gate off) still fails loud: dropping the socket
+            // anyway would reconnect to the SAME live context - a silent no-op that looks like a
+            // passing failover to a developer or CI.
+            let status;
+            try {
+                status = await new Promise((resolve, reject) => {
+                    const controlComm = kernel.createComm('solara.control', generateUuid());
+                    controlComm.open({}, {}, []);
+                    controlComm.onMsg = (msg) => {
+                        const data = msg['content']['data'];
+                        if (data.method === 'evict') {
+                            resolve(data.status);
+                        }
+                    };
+                    setTimeout(() => reject(new Error('evict reply timeout')), 2000);
+                    controlComm.send({ method: 'evict' });
+                });
+            } catch (e) {
+                console.warn('solara.debug.simulateFailover: evict over websocket failed', e);
+                return false;
+            }
+            if (status !== 'evicted') {
+                console.warn('solara.debug.simulateFailover: evict refused; kernel not evicted. ' +
+                    'Enable it with SOLARA_STATE_TEST_EVICTION=true (non-production only).');
+                return false;
+            }
+            // the server also closes the socket while tearing the kernel down; drop it here too
+            // so the reconnect machinery fires even if that races
+            this.dropConnection();
+            return true;
+        },
+    };
+
+    // build a fresh widget manager from the same construction args as the initial mount, so the
+    // initial path and the soft-remount path share one construction (§6.2)
+    function makeWidgetManager() {
+        return new solara.WidgetManager(context, rendermime, settings);
+    }
+
+    async function fallbackToDialog() {
+        // the GIVE-UP verdict (recovery disabled, bundle changed, bailout, popout, consistent
+        // probe failure, or a failed rebuild). shutdownKernel lives ONLY here, and this is only
+        // ever called by the latest live cycle (see the state machine comment).
+        app.$data.remounting = false;
+        app.$data.needsRefresh = true;
+        await solara.shutdownKernel(kernel);
+    }
+
+    async function solaraAppStatus(k, timeoutMs) {
+        // inline control-comm probe (mirrors solara-widget-manager appStatus) that returns the FULL
+        // reply object - the bundled widgetManager.appStatus() drops canRecover/clientVersion/lastRestore.
+        const controlComm = k.createComm('solara.control', generateUuid());
+        controlComm.open({}, {}, []);
+        return await new Promise((resolve, reject) => {
+            controlComm.onMsg = (msg) => {
+                const data = msg['content']['data'];
+                if (data.method === 'app-status') {
+                    resolve(data);
+                } else {
+                    reject(new Error('unexpected message on solara.control comm'));
+                }
+            };
+            controlComm.onClose = () => reject(new Error('solara.control comm closed'));
+            setTimeout(() => reject(new Error('app-status timeout')), timeoutMs);
+            controlComm.send({ method: 'app-status' });
+        });
+    }
+
+    async function probeAppStatus(superseded) {
+        // PROBE step of the reconnect cycle. Returns the reply object, a synthetic
+        // {started:false, canRecover:false} after CONSISTENT failure (that is a real verdict),
+        // or null when the cycle got superseded mid-probe (abort silently - a probe riding a
+        // dead transport, or raced by a newer cycle, proves nothing about the app's health).
+        // The give-up verdict tears a session down for good (dialog, and with forceRefresh a
+        // full page reload), so it must never follow a SINGLE late/lost reply: one blip (busy
+        // backend restoring another kernel, network jitter) would otherwise kill a perfectly
+        // recoverable session.
+        for (let attempt = 1; attempt <= 3; attempt++) {
+            try {
+                const reply = await solaraAppStatus(kernel, 2000);
+                return superseded() ? null : reply;
+            } catch (e) {
+                console.warn(`solara reconnect: app-status probe attempt ${attempt} failed`, e);
+                if (superseded()) {
+                    return null;
+                }
+                if (attempt < 3) {
+                    // brief backoff, then retry on a fresh comm
+                    await new Promise((resolve) => setTimeout(resolve, 250 * attempt));
+                    if (superseded()) {
+                        return null;
+                    }
+                }
+            }
+        }
+        return { started: false, canRecover: false };
+    }
+
+    async function teardownClientWidgets(superseded) {
+        // shared teardown for REMOUNT/REPAIR: silently dispose the widget-manager generation
+        // that is current ON ENTRY (a live one, or the remnants of an interrupted rebuild),
+        // purge its comm registrations, and install a fresh manager + mount point. Returns the
+        // fresh manager, or null when the cycle got superseded mid-teardown: the shared mount
+        // state then already belongs to the newer cycle's own rebuild and must not be touched
+        // (a stale teardown finishing late would otherwise dispose the fresh manager the newer
+        // cycle just installed).
+        const manager = widgetManager;
+        // Snapshot the comm ids registered on the connection BEFORE teardown, so we can purge the
+        // ones orphaned by the silent teardown below (see purgeStaleComms). Taken before the new
+        // manager runs, so it can only ever name comms from the generation we are tearing down.
+        const commIdsBefore = (kernel && kernel._comms && typeof kernel._comms.keys === 'function')
+            ? [...kernel._comms.keys()]
+            : [];
+        // tear down the dead widget manager (disposes models). On a fresh kernel the old comms
+        // are already gone server-side, so prefer the silent local teardown (bundle >= 0.5.0)
+        // which does NOT send a comm_close per widget over the reconnected socket. Fall back to
+        // clear_state() on older bundles (it sends comm_close - harmless, the server filters the
+        // resulting "No such comm" noise). Bundle and pip versions are decoupled in the wild, so
+        // the feature-detect is required.
+        if (typeof manager.clearStateLocal === 'function') {
+            try {
+                await manager.clearStateLocal();  // silent local teardown (bundle >= 0.5.0)
+            } catch (e) {
+                console.warn('solara remount: clearStateLocal failed', e);
+            }
+        } else {
+            try {
+                manager.clear_state();  // old bundles: sends comm_close (server filters the noise)
+            } catch (e) {
+                console.warn('solara remount: clear_state failed', e);
+            }
+        }
+        if (typeof manager.dispose === 'function') {
+            try {
+                manager.dispose();
+            } catch (e) {
+                console.warn('solara remount: dispose failed', e);
+            }
+        }
+        if (superseded()) {
+            return null;
+        }
+        // the silent teardown above (clearStateLocal / close(true)) leaves the disposed
+        // widgets' CommHandlers registered on the connection; purge them now, before the new
+        // manager registers its own, so a later cross-node reconnect resync cannot collide.
+        purgeStaleComms(commIdsBefore);
+        // settled promises would otherwise make the re-mount a no-op (§6.2)
+        delete widgetPromises[mountId];
+        delete widgetResolveFns[mountId];
+        // destroy + recreate the Vue mount-point (bound :key in the loader templates)
+        app.$data.remountKey += 1;
+        // fresh widget manager on the same reconnected kernel
+        widgetManager = makeWidgetManager();
+        return widgetManager;
+    }
+
+    async function rebuildView(superseded, containerId) {
+        // REMOUNT (containerId null): run() the app again - the server restores persisted state
+        // on its fresh kernel context (§6.2).
+        // REPAIR (containerId given): the app is already running server-side but OUR view is
+        // gone (a previous rebuild was interrupted mid-way): re-attach to the existing root
+        // container - fetchAll + mount, the same path a popout uses to attach - so no server
+        // state is lost.
+        if (searchParams.has('modelid')) {
+            // popouts attach to a specific model id that no longer exists on a fresh instance -
+            // there is nothing to rebuild, so fall back to the dialog (§6.2)
+            await fallbackToDialog();
+            return;
+        }
+        app.$data.remounting = true;
+        // the view is going away NOW: if this rebuild never completes (socket drop mid-way,
+        // lost run() reply), the next cycle sees viewMounted == false and REPAIRs (invariant 2)
+        viewMounted = false;
+        try {
+            // work with OUR generation's manager from here on (never re-read the shared
+            // binding after an await: a newer cycle's rebuild may have replaced it)
+            const manager = await teardownClientWidgets(superseded);
+            if (manager === null || superseded()) {
+                return;
+            }
+            let modelId;
+            if (containerId) {
+                await manager.fetchAll();
+                modelId = containerId;
+            } else {
+                // pushState routing makes the boot-time path stale - recompute from the live URL now
+                const path = window.location.pathname.slice(solara.rootPath.length) + window.location.search;
+                modelId = await manager.run(appName, { path, dark: inDarkMode(), themes: widgetThemes() });
+            }
+            if (superseded()) {
+                // the socket dropped again (or a newer cycle took over) during the rebuild -
+                // abort quietly; the next cycle detects viewMounted == false and repairs
+                return;
+            }
+            await solaraMount(manager, mountId, modelId);
+            viewMounted = true;
+            solara.debug.remountCount++;
+        } catch (e) {
+            if (superseded()) {
+                // a superseded rebuild's failure is not a verdict: its comms may simply have
+                // been torn down by the newer cycle's own rebuild
+                console.warn('solara rebuild aborted (superseded)', e);
+                return;
+            }
+            console.error('solara remount failed', e);
+            await fallbackToDialog();
+        } finally {
+            if (!superseded()) {
+                // the latest cycle owns the "Restoring session..." indicator; a superseded
+                // rebuild must not clear what the newer cycle just set
+                app.$data.remounting = false;
+            }
+        }
+    }
+
+    kernel.statusChanged.connect(() => {
+        app.$data.kernelBusy = kernel.status == 'busy';
+    });
+
+    window.addEventListener('solara.router', function (event) {
+        app.$data.urlHasChanged = true;
+        if(kernel.status == 'busy') {
+            app.$data.loadingPage = true;
+        }
+    });
+    kernel.statusChanged.connect(() => {
+        // When navigation is triggered from the front-end, kernel.status becoming busy and
+        // solara.router event happen in a different order than when navigating through Python, so
+        // if the URL has changed when the kernel becomes busy, we set loadingPage to true
+        if (kernel.status == 'busy' && app.$data.urlHasChanged) {
+            app.$data.loadingPage = true;
+        }
+        // the first idle after a loadingPage == true (a router event)
+        // will be used as indicator that the page is loaded
+        if (app.$data.loadingPage && kernel.status == 'idle') {
+            app.$data.loadingPage = false;
+            app.$data.urlHasChanged = false;
+            const event = new Event('solara.pageReady');
+            window.dispatchEvent(event);
+        }
+    });
+
+
+    // =====================================================================================
+    // Reconnect state machine (design §6.1/§6.2)
+    //
+    // State (all per page, in this closure):
+    //   reconnectGeneration   monotonic; every 'connected' event starts a new reconnect CYCLE
+    //                         that owns its generation. superseded() means "a newer cycle
+    //                         exists, or the socket dropped again"; a superseded cycle aborts
+    //                         SILENTLY at its next await boundary - its observations are stale
+    //                         and prove nothing about the app's health.
+    //   viewMounted           true iff a root view was mounted and not torn down since. Every
+    //                         rebuild flips it false first and true only after a completed
+    //                         mount, so an interrupted rebuild is visible to the next cycle.
+    //   app.$data.needsRefresh   terminal: the refresh dialog is up (or forceRefresh already
+    //                         reloaded the page); later cycles do nothing.
+    //
+    // One cycle = one PROBE, then exactly one verdict, taken only while still the latest live
+    // cycle:
+    //   PROBE     app-status on a fresh solara.control comm, up to 3 attempts of 2s with
+    //             backoff (probeAppStatus). Only CONSISTENT failure is a verdict; a single
+    //             late/lost reply is not.
+    //   RESUME    started && viewMounted -> fetchAll() (same-instance hot reconnect).
+    //   REPAIR    started && !viewMounted -> a previous rebuild tore the view down but never
+    //             completed (socket drop mid-rebuild): the app is running server-side, so
+    //             re-attach to its root container (rebuildView with reply.containerId).
+    //   REMOUNT   !started && canRecover && clientVersion matches -> rebuildView(run): the
+    //             server restores persisted state on its fresh kernel (§6.2).
+    //   GIVE UP   otherwise -> fallbackToDialog(): needsRefresh + shutdownKernel. The ONLY
+    //             place that shuts the kernel down or raises the dialog.
+    //
+    // Invariants:
+    //   1. at most one cycle - the latest - takes a verdict and touches the UI state
+    //      (remounting indicator, dialog); there is no in-flight boolean that can wedge -
+    //      ownership is the generation number, and superseded work simply returns.
+    //   2. a rebuild either completes to a mounted view (viewMounted = true) or leaves
+    //      viewMounted == false, which the NEXT cycle detects and repairs; a rebuild hung on a
+    //      lost reply can therefore never block recovery.
+    //   3. the server half (kernel_context.initialize_virtual_kernel) generation-checks a
+    //      reused context against the backend and supersedes it BEFORE wiring the websocket,
+    //      so the probe always observes the post-supersede context.
+    // =====================================================================================
+    kernel.connectionStatusChanged.connect((s) => {
+        if (unloading) {
+            // we don't want to show ui changes when hitting refresh
+            return;
+        }
+        app.$data.connectionStatus = s.connectionStatus;
+        solara.debug.connectionStatus = s.connectionStatus;
+        if (s.connectionStatus == 'connected') {
+            app.$data.wasConnected = true;
+        }
+        if (s.connectionStatus == 'connected' && !skipReconnectedCheck) {
+            solara.debug.reconnectCount++;
+            const generation = ++reconnectGeneration;
+            const superseded = () => generation !== reconnectGeneration || kernel.connectionStatus !== 'connected';
+            (async () => {
+                if (app.$data.needsRefresh) {
+                    // terminal: we already gave up
+                    return;
+                }
+                const reply = await probeAppStatus(superseded);
+                if (reply === null || superseded()) {
+                    return;
+                }
+                solara.debug.lastRestore = reply.lastRestore || null;
+                if (reply.started && viewMounted) {
+                    // RESUME. Settle the indicator first: a previous rebuild may have completed
+                    // its mount just as its socket dropped, leaving the overlay up.
+                    app.$data.remounting = false;
+                    await widgetManager.fetchAll();
+                } else if (reply.started) {
+                    // REPAIR (falls back to a plain REMOUNT when the server predates containerId)
+                    await rebuildView(superseded, reply.containerId || null);
+                } else if (reply.canRecover && reply.clientVersion === solara.clientVersion) {
+                    // REMOUNT
+                    await rebuildView(superseded, null);
+                } else {
+                    // GIVE UP
+                    await fallbackToDialog();
+                }
+            })();
+        }
+    })
+    const context = {
+        sessionContext: {
+            session: {
+                kernel,
+                kernelChanged: {
+                    connect: () => {
+                    }
+                },
+            },
+            statusChanged: {
+                connect: () => {
+                }
+            },
+            kernelChanged: {
+                connect: () => {
+                }
+            },
+            connectionStatusChanged: {
+                connect: (s) => {
+                }
+            },
+        },
+        saveState: {
+            connect: () => {
+            }
+        },
+    };
+
+    const settings = {
+        saveState: false
+    };
+
+    // override the latexTypesetter to use katex, in case there are any libraries that
+    // make use of that.
+    const rendermime = new solara.RenderMimeRegistry({
+        initialFactories: solara.extendedRendererFactories,
+        latexTypesetter: new solara.KatexTypesetter(),
+    });
+
+    let widgetManager = makeWidgetManager();
+    // it seems if we attach this to early, it will not be called
+    app.$data.loading_text = 'Loading app';
+    const path = window.location.pathname.slice(solara.rootPath.length) + window.location.search;
+    let widgetModelId = searchParams.get('modelid');
+    // if kernelid and modelid are given as query parameters, we will use them
+    // instead of running the current solara app. This allows usage such as
+    // ipypopout, which reconnects to an existing kernel and shows a particular
+    // widget.
+    if (kernelId && widgetModelId) {
+        await widgetManager.fetchAll();
+    } else {
+        widgetModelId = await widgetManager.run(appName, {path, dark: inDarkMode(), themes: widgetThemes()});
+    }
+    await solaraMount(widgetManager, mountId, widgetModelId);
+    viewMounted = true;
+    skipReconnectedCheck = false;
+    solara.renderKatex();
+}
+
+async function solaraMount(widgetManager, mountId, modelId) {
+    console.log(`will mount widget with id ${modelId} at mount id ${mountId}`)
+
+    async function init() {
+        await Promise.all(Object.values(widgetManager._models).map(async (modelPromise) => {
+            const model = await modelPromise;
+            if (model.model_id == modelId) {
+                const view = await widgetManager.create_view(model);
+                provideWidget(mountId, view);
+            }
+        }));
+        app.$data.loadingPercentage = 0;
+        app.$data.loading_text = 'Done';
+        app.$data.loading = false;
+    }
+    if (document.readyState === 'complete') {
+        init()
+    } else {
+        window.addEventListener('load', init);
+    }
+}
+</script>
+    <script>/*
+path=/static/ansi.js
+*//* Copied from: https://github.com/jupyterlab/jupyterlab/blob/9284892500c9338852532d79d6c5b467c61d797b/packages/rendermime/src/renderers.ts#L881 */
+const ANSI_COLORS = [
+    'ansi-black',
+    'ansi-red',
+    'ansi-green',
+    'ansi-yellow',
+    'ansi-blue',
+    'ansi-magenta',
+    'ansi-cyan',
+    'ansi-white',
+    'ansi-black-intense',
+    'ansi-red-intense',
+    'ansi-green-intense',
+    'ansi-yellow-intense',
+    'ansi-blue-intense',
+    'ansi-magenta-intense',
+    'ansi-cyan-intense',
+    'ansi-white-intense'
+];
+
+/**
+ * Create HTML tags for a string with given foreground, background etc. and
+ * add them to the `out` array.
+ */
+function pushColoredChunk(
+    chunk,
+    fg,
+    bg,
+    bold,
+    underline,
+    inverse,
+    out
+) {
+    if (chunk) {
+        const classes = [];
+        const styles = [];
+
+        if (bold && typeof fg === 'number' && 0 <= fg && fg < 8) {
+            fg += 8; // Bold text uses "intense" colors
+        }
+        if (inverse) {
+            [fg, bg] = [bg, fg];
+        }
+
+        if (typeof fg === 'number') {
+            classes.push(ANSI_COLORS[fg] + '-fg');
+        } else if (fg.length) {
+            styles.push(`color: rgb(${fg})`);
+        } else if (inverse) {
+            classes.push('ansi-default-inverse-fg');
+        }
+
+        if (typeof bg === 'number') {
+            classes.push(ANSI_COLORS[bg] + '-bg');
+        } else if (bg.length) {
+            styles.push(`background-color: rgb(${bg})`);
+        } else if (inverse) {
+            classes.push('ansi-default-inverse-bg');
+        }
+
+        if (bold) {
+            classes.push('ansi-bold');
+        }
+
+        if (underline) {
+            classes.push('ansi-underline');
+        }
+
+        if (classes.length || styles.length) {
+            out.push('<span');
+            if (classes.length) {
+                out.push(` class="${classes.join(' ')}"`);
+            }
+            if (styles.length) {
+                out.push(` style="${styles.join('; ')}"`);
+            }
+            out.push('>');
+            out.push(chunk);
+            out.push('</span>');
+        } else {
+            out.push(chunk);
+        }
+    }
+}
+
+/**
+ * Convert ANSI extended colors to R/G/B triple.
+ */
+function getExtendedColors(numbers) {
+    let r;
+    let g;
+    let b;
+    const n = numbers.shift();
+    if (n === 2 && numbers.length >= 3) {
+        // 24-bit RGB
+        r = numbers.shift();
+        g = numbers.shift();
+        b = numbers.shift();
+        if ([r, g, b].some(c => c < 0 || 255 < c)) {
+            throw new RangeError('Invalid range for RGB colors');
+        }
+    } else if (n === 5 && numbers.length >= 1) {
+        // 256 colors
+        const idx = numbers.shift();
+        if (idx < 0) {
+            throw new RangeError('Color index must be >= 0');
+        } else if (idx < 16) {
+            // 16 default terminal colors
+            return idx;
+        } else if (idx < 232) {
+            // 6x6x6 color cube, see https://stackoverflow.com/a/27165165/500098
+            r = Math.floor((idx - 16) / 36);
+            r = r > 0 ? 55 + r * 40 : 0;
+            g = Math.floor(((idx - 16) % 36) / 6);
+            g = g > 0 ? 55 + g * 40 : 0;
+            b = (idx - 16) % 6;
+            b = b > 0 ? 55 + b * 40 : 0;
+        } else if (idx < 256) {
+            // grayscale, see https://stackoverflow.com/a/27165165/500098
+            r = g = b = (idx - 232) * 10 + 8;
+        } else {
+            throw new RangeError('Color index must be < 256');
+        }
+    } else {
+        throw new RangeError('Invalid extended color specification');
+    }
+    return [r, g, b];
+}
+
+/**
+ * Transform ANSI color escape codes into HTML <span> tags with CSS
+ * classes such as "ansi-green-intense-fg".
+ * The actual colors used are set in the CSS file.
+ * This also removes non-color escape sequences.
+ * This is supposed to have the same behavior as nbconvert.filters.ansi2html()
+ */
+function ansiSpan(str) {
+    const ansiRe = /\x1b\[(.*?)([@-~])/g; // eslint-disable-line no-control-regex
+    let fg = [];
+    let bg = [];
+    let bold = false;
+    let underline = false;
+    let inverse = false;
+    let match;
+    const out = [];
+    const numbers = [];
+    let start = 0;
+
+    //str = _.escape(str);
+
+    str += '\x1b[m'; // Ensure markup for trailing text
+    // tslint:disable-next-line
+    while ((match = ansiRe.exec(str))) {
+        if (match[2] === 'm') {
+            const items = match[1].split(';');
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                if (item === '') {
+                    numbers.push(0);
+                } else if (item.search(/^\d+$/) !== -1) {
+                    numbers.push(parseInt(item, 10));
+                } else {
+                    // Ignored: Invalid color specification
+                    numbers.length = 0;
+                    break;
+                }
+            }
+        } else {
+            // Ignored: Not a color code
+        }
+        const chunk = str.substring(start, match.index);
+        pushColoredChunk(chunk, fg, bg, bold, underline, inverse, out);
+        start = ansiRe.lastIndex;
+
+        while (numbers.length) {
+            const n = numbers.shift();
+            switch (n) {
+                case 0:
+                    fg = bg = [];
+                    bold = false;
+                    underline = false;
+                    inverse = false;
+                    break;
+                case 1:
+                case 5:
+                    bold = true;
+                    break;
+                case 4:
+                    underline = true;
+                    break;
+                case 7:
+                    inverse = true;
+                    break;
+                case 21:
+                case 22:
+                    bold = false;
+                    break;
+                case 24:
+                    underline = false;
+                    break;
+                case 27:
+                    inverse = false;
+                    break;
+                case 30:
+                case 31:
+                case 32:
+                case 33:
+                case 34:
+                case 35:
+                case 36:
+                case 37:
+                    fg = n - 30;
+                    break;
+                case 38:
+                    try {
+                        fg = getExtendedColors(numbers);
+                    } catch (e) {
+                        numbers.length = 0;
+                    }
+                    break;
+                case 39:
+                    fg = [];
+                    break;
+                case 40:
+                case 41:
+                case 42:
+                case 43:
+                case 44:
+                case 45:
+                case 46:
+                case 47:
+                    bg = n - 40;
+                    break;
+                case 48:
+                    try {
+                        bg = getExtendedColors(numbers);
+                    } catch (e) {
+                        numbers.length = 0;
+                    }
+                    break;
+                case 49:
+                    bg = [];
+                    break;
+                case 90:
+                case 91:
+                case 92:
+                case 93:
+                case 94:
+                case 95:
+                case 96:
+                case 97:
+                    fg = n - 90 + 8;
+                    break;
+                case 100:
+                case 101:
+                case 102:
+                case 103:
+                case 104:
+                case 105:
+                case 106:
+                case 107:
+                    bg = n - 100 + 8;
+                    break;
+                default:
+                // Unknown codes are ignored
+            }
+        }
+    }
+    return out.join('');
+}
+</script>
+
+    <script>
+        solara.production = true;
+        const themeVariants = ['light', 'dark', 'auto']
+        solara.preRendered = 90426 > 0
+        if(solara.preRendered) {
+            document.body.classList.add('solara-ssg', 'solara-pre-rendered');
+        } else {
+            document.body.classList.add('solara-no-ssg');
+        }
+
+    </script>
+
+    <script>
+        window.solara.browser_platform = false;
+        
+        var debug = true;
+
+        var appComponent = {
+            // if we do prerendering, keep it unmounted, and mount
+            // when loading becomes false
+            el: solara.preRendered ? null : '#app' ,
+            template: '#vue-app-template',
+            created() {
+                const original_$forceUpdate = this.$forceUpdate.bind(this);
+                this.$forceUpdate = (() => {
+                    this.forceUpdateTrigger += 1;
+                    original_$forceUpdate();
+                });
+                // in case we are showing a popop (e.g. using ipypopout), hide the banner
+                if(searchParams.has('modelid')) {
+                    this.showBanner = false;
+                }
+            },
+            mounted() {
+                document.querySelector('#app').removeAttribute("style");
+                const setVuetifyTheme = (dark) => {
+                    if (Vue.version.startsWith('3')) {
+                        const name = this.$vuetify.theme.global.name;
+                        if (name && typeof name === 'object') {
+                            name.value = dark ? 'dark' : 'light';
+                        } else {
+                            this.$vuetify.theme.global.name = dark ? 'dark' : 'light';
+                        }
+                    } else {
+                        this.$vuetify.theme.dark = dark;
+                    }
+                };
+                setVuetifyTheme(inDarkMode());
+                // listen to change in preferred color scheme (e.g if choosing dark in OSX)
+                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+                    setVuetifyTheme(inDarkMode());
+                });
+                document.getElementById('pre-render-theme').remove();
+            },
+            methods: {
+                setCancelAutoRefresh() {
+                    this.needsRefresh = false;
+                    this.cancelAutoRefresh = true;
+                },
+                reload() {
+                    location.reload();
+                },
+            },
+            watch: {
+                kernelBusy: function (value) {
+                    if(this._lastBusyTimer) {
+                        clearTimeout(this._lastBusyTimer)
+                    }
+                    if(value) {
+                        this._lastBusyTimer = setTimeout(() => {
+                            this.kernelBusyLong = value;
+                        }, 300);
+                    } else {
+                        this.kernelBusyLong = value;
+                    }
+                },
+                loading: function (value) {
+                    // if preRendered, the app is not mounted yet
+                    // so we mount it when loading becomes false
+                    if (solara.preRendered && !this.mounted) {
+                        function waitForAnimation(element) {
+                            return new Promise((resolve) => {
+                                element.addEventListener('animationend', resolve, { once: true });
+                            });
+                        }
+
+                        function waitForAllAnimations(elements) {
+                            const animationPromises = Array.from(elements).map(element => waitForAnimation(element));
+                            return Promise.all(animationPromises);
+                        }
+
+                        (async () => {
+                            await waitForAllAnimations(document.querySelectorAll('.solara-ssg-wait-for-animation'));
+                            console.log("animation finished");
+                            document.body.classList.remove('solara-pre-rendered');
+                            document.body.classList.add('solara-pre-rendered-finished');
+                            this.isMounted = true;
+                            this.$mount("#app")
+                        })();
+                    } else {
+                        this.isMounted = true;
+                    }
+                },
+                needsRefresh: function (value) {
+                    if(solara.forceRefresh) {
+                        this.reload();
+                    } else if (this.needsRefresh && !this.cancelAutoRefresh && !solara.production) {
+                        console.log('value for needRefresh', value);
+                        setTimeout(() => {
+                            console.log('this.autoRefreshCount', this.autoRefreshCount)
+                            this.autoRefreshCount = this.autoRefreshCount - 1;
+                        }, 1000);
+                    }
+                },
+                autoRefreshCount: function (value) {
+                    console.log('value for autoRefreshCount', value);
+                    if (value == 0) {
+                        if (!this.cancelAutoRefresh)
+                            this.reload();
+                    } else if (value > 0) {
+                        setTimeout(() => {
+                            console.log('this.autoRefreshCount!', this.autoRefreshCount)
+                            this.autoRefreshCount = this.autoRefreshCount - 1;
+                        }, 1000);
+                    }
+                },
+                '$vuetify.theme.dark': function (value) {
+                    if ( value ) {
+                        changeThemeCSS('dark');
+                        appContainer.classList.remove('theme--light');
+                        appContainer.classList.add('theme--dark');
+                    } else {
+                        changeThemeCSS('light');
+                        appContainer.classList.remove('theme--dark');
+                        appContainer.classList.add('theme--light');
+                    }
+                }
+            },
+            data() {
+                return {
+                    forceUpdateTrigger: 0,
+                    loading_text: "Loading resources",
+                    loadingPercentage: -1,
+                    loading: true,
+                    title: "No title",
+                    solaraDebugMessages: [],
+                    outputMessages: [],
+                    theme: theme,
+                    vue3: Vue.version.startsWith('3'),
+                    debug: debug,
+                    connectionStatus: null,
+                    wasConnected: false,
+                    // soft-remount state (§6.2): remountKey is bound as :key on the mount point so
+                    // bumping it destroys/recreates it; remounting drives the "Restoring session…" indicator
+                    remountKey: 0,
+                    remounting: false,
+                    needsRefresh: false,
+                    cancelAutoRefresh: false,
+                    autoRefreshCount: 3,
+                    kernelBusy: false,
+                    isMounted: false,
+                    loadingPage: false,
+                    _lastBusyTimer: null,
+                    kernelBusyLong: false,
+                    showBanner: theme.show_banner,
+                    // outputMessages: [{ name: 'stderr', text: 'lala' }],
+                }
+            }
+        };
+        const vue3 = Vue.version.startsWith('3');
+        const vuetifyThemesV2 = Object.fromEntries(
+            Object.entries(vuetifyThemes || {}).map(([name, theme]) => [name, theme.colors || theme])
+        );
+        if(vue3) {
+            var app = Vue.createApp(appComponent).use(vuetifyPlugin)
+                .component("jupyter-widget-mount-point", jupyterWidgetMountPoint)
+                .mount('#app');
+
+        } else {
+            Vue.component('jupyter-widget-mount-point', jupyterWidgetMountPoint);
+            Vue.use(Vuetify);
+            var app = new Vue({
+                vuetify: new Vuetify({
+                    theme: {
+                        dark: inDarkMode(),
+                        themes: vuetifyThemesV2,
+                    },
+                }),
+                ...appComponent,
+            });
+        }
+        // Loading classic notebook extensions.
+        window.enable_nbextensions = true;
+        nbextensionHashes = {"anywidget/extension": "e9b5dbf071eac91be9939f2a97e7ea2f", "bqplot/extension": "6d2c9fac50d82b51ee6448e3498d0b3e", "ipycanvas/extension": "d4fbdf5b5e8e7711d8b374d3645c30bd", "jupyter-leaflet/extension": "d11754129ee46286a356acd6cf489bba", "jupyter-vue/extension": "4958e0918398daeb9936d1be0246f34e", "jupyter-vuetify/extension": "1d2192ef2b25a42093434cb66e69f312"};
+        requirejs.config({
+            baseUrl: '/jupyter',
+            waitSeconds: 3000,
+            map: {
+                '*': {
+                        'jupyter-vue': 'nbextensions/jupyter-vue/nodeps',
+            'jupyter-vuetify': 'nbextensions/jupyter-vuetify/nodeps',
+            },
+                },
+                // Add cache busting to the urlArgs to ensure latest versions of nbextensions are loaded
+                urlArgs: function (id, url) {
+                    // An extension's hash covers the folder it owns (see nbextension_hash), so every
+                    // file in that folder (extension.js, nodeps.js, index.js, ...) is versioned by it,
+                    // and the server can mark these urls immutable. Match on the resolved url: ids
+                    // may carry a root path prefix (/jupyter/nbextensions/...).
+                    if (url.indexOf("nbextensions/") === -1) {
+                        return '';
+                    }
+                    const path = url.split("?")[0].replace(/^.*?nbextensions\//, "").replace(/\.js$/, "");
+                    const folder = path.split("/")[0];
+                    const extensionName = Object.prototype.hasOwnProperty.call(nbextensionHashes, path) ? path : Object.keys(nbextensionHashes).find((name) => name.split("/")[0] === folder);
+                    if (extensionName !== undefined) {
+                        // Check if the url already has a query string, if so, append the hash as an additional parameter
+                        return (url.indexOf('?') === -1 ? '?' : '&') + nbextensionHashes[extensionName];
+                    } else {
+                        return '';
+                    }
+                },
+            });
+        requirejs([
+            "/jupyter/nbextensions/bqplot/extension.js",
+            "/jupyter/nbextensions/ipycanvas/extension.js",
+            "/jupyter/nbextensions/jupyter-leaflet/extension.js",
+            "/jupyter/nbextensions/anywidget/extension.js",
+            
+        ]);
+        (async function () {
+            await Promise.all([
+                solaraInit('solara-main')
+            ]);
+        })();
+
+    </script>
+
+</html>
