@@ -1,5 +1,6 @@
 import shutil
 from pathlib import Path
+from typing import List
 
 import pytest
 
@@ -54,3 +55,48 @@ def test_on_kernel_start_cleanup(kernel_context, no_kernel_context):
     assert test_callback_cleanup in [k.callback for k in solara.lifecycle._on_kernel_start_callbacks]
     cleanup()
     assert test_callback_cleanup not in [k.callback for k in solara.lifecycle._on_kernel_start_callbacks]
+
+
+@pytest.fixture
+def reloader_spy(tmpdir):
+    """A watched file, plus a list of what reached the app's on_change; restores the global reloader afterwards."""
+    reloader = reload.reloader
+    saved = reloader.file_handlers.copy(), reloader.on_change, reloader.requires_reload
+    app_changes: List[str] = []
+    reloader.on_change = app_changes.append
+    reloader.requires_reload = False
+    path = Path(tmpdir) / "data.txt"
+    path.write_text("1")
+    try:
+        yield path, app_changes
+    finally:
+        reloader.file_handlers, reloader.on_change, reloader.requires_reload = saved
+
+
+def test_watch_file_on_change(reloader_spy):
+    path, app_changes = reloader_spy
+    handled: List[Path] = []
+    reload.watch_file(path, on_change=handled.append)
+    reload.reloader._on_change(str(path))
+    assert handled == [path]
+    assert not reload.reloader.requires_reload
+    assert app_changes == []
+
+
+def test_watch_file_reload(reloader_spy):
+    path, app_changes = reloader_spy
+    reload.watch_file(path)
+    reload.reloader._on_change(str(path))
+    assert reload.reloader.requires_reload
+    assert app_changes == [str(path)]
+
+
+def test_watch_file_without_on_change_keeps_handler(reloader_spy):
+    path, app_changes = reloader_spy
+    handled: List[Path] = []
+    reload.watch_file(path, on_change=handled.append)
+    reload.watch_file(path)
+    reload.reloader._on_change(str(path))
+    assert handled == [path]
+    assert not reload.reloader.requires_reload
+    assert app_changes == []

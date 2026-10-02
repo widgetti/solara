@@ -289,18 +289,8 @@ class AppScript:
         return self._first_execute_app
 
     def on_file_change(self, name):
-        path = Path(name)
-        if path.suffix == ".vue":
-            logger.info("Vue file changed: %s", name)
-            template_content = path.read_text(encoding="utf-8")
-            for context in list(kernel_context.contexts.values()):
-                with context:
-                    for filepath, widget in context.templates.items():
-                        if filepath == str(path):
-                            widget.template = template_content
-        else:
-            logger.info("Reload requires due to change in module: %s", name)
-            self.reload()
+        logger.info("Reload requires due to change in module: %s", name)
+        self.reload()
 
     def reload(self):
         # if multiple files change in a short time, we want to do this

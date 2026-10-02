@@ -67,7 +67,7 @@ def define_module(name: str, module: Union[str, Path, None] = None, *, code: Opt
         # solara reload, which re-reads the file in create_modules
         from solara.server import reload
 
-        reload.reloader.watcher.add_file(str(module))
+        reload.watch_file(module)
     if kernel_context.has_current_context():
         create_modules()
     return None
