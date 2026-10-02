@@ -37,8 +37,9 @@ def initialize_kernel_storage():
     kernel_storage[solara.get_kernel_id()] = "This does not"
 
     def cleanup():
-        # when a kernel gets stopped, we remove the dict entry
-        del kernel_storage[solara.get_kernel_id()]
+        # when a kernel gets stopped, we remove the dict entry (pop instead of del: a restored
+        # kernel reuses its kernel id, so another kernel may have removed the entry already)
+        kernel_storage.pop(solara.get_kernel_id(), None)
 
     # cleaning up kernel storage, we prevent memory leaks
     return cleanup
@@ -57,7 +58,7 @@ def store_in_session_storage(value):
 def Page():
     solara.InputText(
         "Stored under the kernel id key",
-        value=kernel_storage[solara.get_kernel_id()],
+        value=kernel_storage.get(solara.get_kernel_id(), "This does not"),
         on_value=store_in_kernel_storage,
         continuous_update=True,
     )
