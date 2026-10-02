@@ -13,6 +13,7 @@ VirtualKernelContexts + MemoryStateBackend, as in state_persist_test.py / state_
 
 import asyncio
 import json
+import threading
 import time
 from typing import Callable
 from unittest.mock import Mock
@@ -440,6 +441,75 @@ def test_evict_route_gating(backend, monkeypatch):
     assert context.closed_event.is_set()
     assert context.close_reason == "evicted"
     assert kernel_id not in kc.contexts
+
+
+def test_evict_route_does_not_block_the_event_loop(backend, monkeypatch):
+    # A kernel thread can hold context.lock while its websocket send waits for the event loop.
+    # The route waits for context.lock in close(), so it must not wait on the event loop thread.
+    from starlette.applications import Starlette
+    from starlette.responses import PlainTextResponse
+    from starlette.routing import Route
+    from starlette.testclient import TestClient
+
+    from solara.server.starlette import evict
+
+    session_id, kernel_id = "sess-evict", "kern-evict"
+    context = kc.initialize_virtual_kernel(session_id, kernel_id, Mock())
+    monkeypatch.setattr(solara.server.settings.state, "test_eviction", True)
+    monkeypatch.setattr(solara.server.settings.main, "mode", "development")
+    monkeypatch.setattr(solara.server.settings.kernel, "threaded", True)
+    # close() runs the persistence teardown right before it waits for context.lock
+    closing = threading.Event()
+    teardown = context._teardown_persistence
+
+    def teardown_and_signal(reason):
+        closing.set()
+        teardown(reason)
+
+    monkeypatch.setattr(context, "_teardown_persistence", teardown_and_signal)
+
+    async def ping(request):
+        return PlainTextResponse("pong")
+
+    app = Starlette(routes=[Route("/evict/{kernel_id}", evict, methods=["POST"]), Route("/ping", ping)])
+    with TestClient(app) as client:
+        client.cookies.set("solara-session-id", session_id)
+        responses = []
+        evicting = threading.Thread(target=lambda: responses.append(client.post(f"/evict/{kernel_id}")), daemon=True)
+        pinging = threading.Thread(target=lambda: responses.append(client.get("/ping")), daemon=True)
+        with context.lock:
+            evicting.start()
+            assert closing.wait(5)
+            pinging.start()
+            pinging.join(5)
+            assert not pinging.is_alive(), "the event loop waited for context.lock"
+        evicting.join(5)
+        assert not evicting.is_alive()
+    assert sorted(response.status_code for response in responses) == [200, 200]
+    assert context.closed_event.is_set()
+
+
+def test_evict_route_closes_on_the_event_loop_without_kernel_threads(backend, monkeypatch):
+    # without kernel threads, closing the page's websocket needs the event loop
+    session_id, kernel_id = "sess-evict", "kern-evict"
+    context = kc.initialize_virtual_kernel(session_id, kernel_id, Mock())
+    monkeypatch.setattr(solara.server.settings.state, "test_eviction", True)
+    monkeypatch.setattr(solara.server.settings.main, "mode", "development")
+    monkeypatch.setattr(solara.server.settings.kernel, "threaded", False)
+    on_the_loop = []
+    teardown = context._teardown_persistence
+
+    def teardown_and_record(reason):
+        try:
+            asyncio.get_running_loop()
+            on_the_loop.append(True)
+        except RuntimeError:
+            on_the_loop.append(False)
+        teardown(reason)
+
+    monkeypatch.setattr(context, "_teardown_persistence", teardown_and_record)
+    assert _call_evict(kernel_id, session_id).status_code == 200
+    assert on_the_loop == [True]
 
 
 def test_evict_route_disabled_by_default(backend):

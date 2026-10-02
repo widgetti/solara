@@ -468,7 +468,13 @@ async def evict(request: Request):
     session_id = request.cookies.get(server.COOKIE_KEY_SESSION_ID)
     if not session_id or session_id != context.session_id:
         return Response(status_code=403)
-    context.close(reason="evicted")
+    if settings.kernel.threaded:
+        # close() waits for context.lock, and a kernel thread can hold that lock while its
+        # websocket send waits for this event loop, so close on a worker thread
+        await anyio.to_thread.run_sync(lambda: context.close(reason="evicted"))
+    else:
+        # without kernel threads no send waits for the loop, and closing a websocket needs it
+        context.close(reason="evicted")
     return Response(status_code=200)
 
 
