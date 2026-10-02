@@ -103,6 +103,17 @@ if ws_major_version >= 13:
     websockets.legacy.http.MAX_LINE_LENGTH = int(os.environ.get("WEBSOCKETS_MAX_LINE_LENGTH", str(1024 * 32)))  # type: ignore
 else:
     websockets.legacy.http.MAX_LINE = 1024 * 32  # type: ignore
+# Since uvicorn 0.54, its default websocket implementation lets the sans-I/O code of websockets parse
+# the handshake, and that code has its own copy of the limit.
+try:
+    import websockets.http11
+except ImportError:  # very old websockets has no websockets.http11
+    pass
+else:
+    if ws_major_version >= 13:
+        websockets.http11.MAX_LINE_LENGTH = websockets.legacy.http.MAX_LINE_LENGTH  # type: ignore
+    else:
+        websockets.http11.MAX_LINE = 1024 * 32  # type: ignore
 
 
 class WebsocketDebugInfo:
