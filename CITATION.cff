@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Breddels"
+  given-names: "Maarten"
+title: "Solara: A Pure Python, React-style Framework for Scaling Your Jupyter and Web Apps"
+abstract:  >-
+  While there are many Python web frameworks out there, most are designed for small data apps or use paradigms unproven for larger scale. Code organization, reusability, and state tend to suffer as apps grow in complexity, resulting in either spaghetti code or offloading to a React application.
+  Solara addresses this gap. Using a React-like API, we don't need to worry about scalability. React has already proven its ability to support the world's largest web apps.
+  Solara uses a pure Python implementation of React (Reacton), creating ipywidget-based applications. These apps work both inside the Jupyter Notebook and as standalone web apps with frameworks like FastAPI. This paradigm enables component-based code and incredibly simple state management.
+  By building on top of ipywidgets, we automatically leverage an existing ecosystem of widgets and run on many platforms, including JupyterLab, Jupyter Notebook, Voilà, Google Colab, DataBricks, JetBrains Datalore, and more.
+  We care about developer experience. Solara will give your hot code reloading and type hints for faster development.
+license: MIT
+license-url: "https://github.com/widgetti/solara/blob/master/LICENSE"
+repository-code: "https://github.com/widgetti/solara"
+date-released: 2022-04-02
+type: software
+url: "https://solara.dev/"
