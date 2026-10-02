@@ -1,5 +1,14 @@
 # Solara Changelog
 
+## Version 1.64.0
+
+- Feature: Packages outside Solara can hot reload the non-Python files they read, such as templates, with `solara.server.reload.watch_file(path, on_change=None)`. Without `on_change`, a change to the file reloads the app, which re-imports the app's own modules but not installed packages. With `on_change`, Solara calls `on_change(path)` and does not reload. It works only in development mode. See [Reloading](/documentation/advanced/reference/reloading). [#1232](https://github.com/widgetti/solara/pull/1232)
+- Bug Fix: A `.vue` file reached through a symlink now hot reloads too. A `.vue` change no longer makes the next page load reload all app modules. [#1232](https://github.com/widgetti/solara/pull/1232)
+- Bug Fix: Browsers with more than 8kb of cookies can connect again with uvicorn 0.54. Solara's 32kb websocket header limit now also applies to the handshake code that uvicorn 0.54 uses. [#1231](https://github.com/widgetti/solara/pull/1231)
+- Bug Fix(pytest-ipywidgets): A snapshot test that finds a difference shows a diff image again, and no longer crashes with pixelmatch 0.4. [#1230](https://github.com/widgetti/solara/pull/1230)
+- Packaging: `solara-assets` 1.64.0 is unavailable on PyPI because the project has reached its storage limit.
+  The latest available asset package is 1.58.2.
+
 ## Version 1.63.1
 
 - Bug Fix: With the starlette server, a page load could deadlock with another kernel's ES module setup. Every user then got no response until a restart. It could happen whenever ipyreact is installed. [#1227](https://github.com/widgetti/solara/pull/1227)
