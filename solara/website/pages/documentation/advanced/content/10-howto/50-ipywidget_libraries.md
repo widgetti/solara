@@ -87,6 +87,46 @@ def Page():
 
 ```
 
+## Example with anywidget
+
+[anywidget](https://anywidget.dev/) lets you write your own widget in plain JavaScript and CSS, inside a Python class.
+You do not need a build step, npm, or a separate package.
+Solara server supports anywidget widgets out of the box, and you use them like any other widget, with `.element(...)`.
+
+```solara
+import anywidget
+import traitlets
+import solara
+
+
+class CounterWidget(anywidget.AnyWidget):
+    _esm = """
+    function render({ model, el }) {
+      let button = document.createElement("button");
+      button.innerHTML = `count is ${model.get("value")}`;
+      button.addEventListener("click", () => {
+        model.set("value", model.get("value") + 1);
+        model.save_changes();
+      });
+      model.on("change:value", () => {
+        button.innerHTML = `count is ${model.get("value")}`;
+      });
+      el.appendChild(button);
+    }
+    export default { render };
+    """
+    value = traitlets.Int(0).tag(sync=True)
+
+
+count = solara.reactive(0)
+
+
+@solara.component
+def Page():
+    CounterWidget.element(value=count.value, on_value=count.set)
+    solara.Text(f"Python sees: {count.value}")
+```
+
 ## Wrapper libraries
 
 However, because we care about type safety, we generate wrapper components for some libraries. This enables type completion in VSCode, type checks with VSCode, and mypy.

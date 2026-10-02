@@ -23,3 +23,10 @@ def test_cross_filter():
     box, rc = solara.render(Test(), handle_error=False)
     assert set_filter is not None
     set_filter(df["sepal_length"] > 5)
+
+
+def test_histogram():
+    # our copy of px.histogram passes all its arguments to plotly, which should accept them (e.g. subtitle in plotly 6)
+    fig = solara.express.histogram(df, "species", title="title")
+    box, rc = solara.render(fig, handle_error=False)
+    rc.close()

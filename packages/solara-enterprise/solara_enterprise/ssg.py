@@ -33,6 +33,17 @@ pw = Playwright()
 _used: List[Tuple["playwright.sync_api.Browser", "playwright.sync_api._context_manager.PlaywrightContextManager"]] = []
 
 
+class SSGRenderError(Exception):
+    pass
+
+
+# Solara and reacton show a render error as an HTML widget with the traceback in a <pre>,
+# a live ```solara``` block in markdown shows it as an Error with the solara-markdown-error class
+_HAS_TRACEBACK_JS = """() => document.querySelector(".solara-markdown-error") !== null
+    || Array.from(document.querySelectorAll(".widget-html-content > pre"))
+        .some((el) => el.textContent.startsWith("Traceback (most recent call last):"))"""
+
+
 class SSGData(TypedDict):
     title: str
     html: str
@@ -109,8 +120,16 @@ def ssg_crawl(base_url: str):
     for route in routes:
         results.append(thread_pool.submit(ssg_crawl_route, f"{base_url}/", route, build_path, thread_pool))
 
+    # a broken page should not stop the build, but we report all of them at the end
+    errors: List[SSGRenderError] = []
+
     def wait(async_result):
-        results = async_result.result()
+        try:
+            results = async_result.result()
+        except SSGRenderError as e:
+            rprint(f"[red]{e}[/red]")
+            errors.append(e)
+            return
         for result in results:
             wait(result)
 
@@ -119,6 +138,8 @@ def ssg_crawl(base_url: str):
 
     thread_pool.shutdown()
 
+    if errors:
+        raise SSGRenderError(f"{len(errors)} page(s) rendered a traceback:\n" + "\n".join(str(e) for e in errors))
     rprint("Done building SSG")
 
 
@@ -157,9 +178,14 @@ def ssg_crawl_route(base_url: str, route: solara.Route, build_path: Path, thread
                 # page.wait_
                 time.sleep(0.5)
                 raw_html = page.content()
+                has_traceback = page.evaluate(_HAS_TRACEBACK_JS)
             except Exception:
                 logger.exception("Failure retrieving content for url: %s", url)
                 raise
+            if has_traceback:
+                page.goto("about:blank")
+                # do not write the page, so a next run will try again
+                raise SSGRenderError(f"{url} rendered a traceback (see the server log), not writing {path}")
             request_path = urllib.parse.urlparse(url).path
 
             import solara.server.server
