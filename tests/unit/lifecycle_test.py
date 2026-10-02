@@ -194,8 +194,9 @@ async def test_kernel_lifecycle_close_while_disconnected(close_first, short_cull
         cull_task_2 = context.page_close("page-id-2")
     assert cull_task_2 is not None
     assert not context.closed_event.is_set()
-    # past the first cull's window (1.0) and before the second cull (about 1.5)
-    await asyncio.sleep(0.75)
+    # past the first cull's window (1.0) and well before the second cull (about 1.5): sleeps
+    # never end early, so only a late check can fail, which leaves 350 ms or more for that
+    await asyncio.sleep(0.6)
     # but even though we closed, the first page is still in the disconnected state
     with pytest.raises(asyncio.CancelledError):
         await cull_task_1
