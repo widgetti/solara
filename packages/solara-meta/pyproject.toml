@@ -44,7 +44,9 @@ documentation = [
     "bqplot<0.13",  # reacton 1.10 references bqplot.marks.ScatterGL, which 0.13 moved to bqplot-gl
     "altair",
     "folium",
+    "ipyaggrid",
     "ipycanvas",
+    "ipydatagrid",
     "ipyleaflet",
     "matplotlib",
     "mkdocs-pycafe",
