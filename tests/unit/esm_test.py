@@ -121,16 +121,20 @@ def test_a_hot_reload_waits_for_a_thread_that_still_applies_older_modules(virtua
 
     monkeypatch.setattr(esm, "_read", slow_read)
     slow = threading.Thread(target=esm.create_modules, daemon=True)
-    slow.start()
-    assert reading.wait(5)
-    virtual_context.restart()
     reload = threading.Thread(target=lambda: esm.define_module("esm-test-module", code="export default 2"), daemon=True)
-    reload.start()
-    reload.join(0.5)
-    assert reload.is_alive(), "the reload did not wait for the slow thread"
-    resume.set()
-    slow.join(5)
-    reload.join(5)
+    slow.start()
+    try:
+        assert reading.wait(5)
+        virtual_context.restart()
+        reload.start()
+        reload.join(0.5)
+        assert reload.is_alive(), "the reload did not wait for the slow thread"
+    finally:
+        resume.set()
+        slow.join(5)
+        if reload.ident is not None:
+            reload.join(5)
+    assert not slow.is_alive() and not reload.is_alive()
     assert published == ["export default 1", "export default 2"]
 
 
