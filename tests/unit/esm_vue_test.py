@@ -54,7 +54,7 @@ def test_a_page_request_does_not_wait_for_module_creation(virtual_context, monke
     page_requests = []
 
     def read_while_a_page_loads(module):
-        page = threading.Thread(target=lambda: page_requests.append(esm_vue.get_module_urls()))
+        page = threading.Thread(target=lambda: page_requests.append(esm_vue.get_module_urls()), daemon=True)
         page.start()
         page.join(5)
         assert not page.is_alive(), "get_module_urls waited for module creation"
