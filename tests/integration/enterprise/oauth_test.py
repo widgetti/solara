@@ -12,6 +12,9 @@ from solara.server import settings  # noqa
 
 @pytest.mark.skipif(not bool(os.environ.get("AUTH0_PASSWORD")), reason="AUTH0_PASSWORD not set")
 def test_oauth_from_app_auth0(page_session: playwright.sync_api.Page, solara_server, solara_app):
+    # the browser context is session-scoped: if a previous attempt failed after the Auth0 login,
+    # Auth0 would skip the username form, and solara could still have us logged in
+    page_session.context.clear_cookies()
     with solara_app("solara.website.pages"):
         settings.main.base_url = ""
         settings.oauth.client_id = settings.AUTH0_TEST_CLIENT_ID
