@@ -4,6 +4,7 @@
 import logging
 import warnings
 import threading
+import weakref
 from collections import defaultdict
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
@@ -19,6 +20,19 @@ lock = threading.Lock()
 _modules: Dict[str, Tuple[Union[str, Path], List[str]]] = {}
 _modules_added_per_kernel: Dict[str, Dict[str, ipyreact.module.Module]] = defaultdict(dict)
 _import_map_per_kernel: Dict[str, ipyreact.importmap.ImportMap] = {}
+# serializes copy-and-apply per kernel: a thread must not publish an older copy of _modules
+# after another thread of the same kernel published a newer one. Weak values: a lock lives as
+# long as a thread uses it, so a hot reload (context.restart) cannot swap it under that thread,
+# and a closed kernel leaves nothing behind.
+_lock_per_kernel: "weakref.WeakValueDictionary[str, threading.RLock]" = weakref.WeakValueDictionary()
+
+
+def _kernel_lock(kernel_id: str) -> threading.RLock:
+    with lock:
+        kernel_lock = _lock_per_kernel.get(kernel_id)
+        if kernel_lock is None:
+            kernel_lock = _lock_per_kernel[kernel_id] = threading.RLock()
+        return kernel_lock
 
 
 # in solara server, we'll monkey patch ipyreact.module with this
@@ -76,8 +90,12 @@ def create_modules():
     _modules_added = _modules_added_per_kernel[kernel_id]
     logger.info("create modules %s", _modules)
     widgets = {}
-    with lock:
-        for name, (module, dependencies) in _modules.items():
+    with _kernel_lock(kernel_id):
+        # the global lock only guards _modules: creating a widget sends, and the event loop takes
+        # this lock for every page GET (get_module_urls)
+        with lock:
+            modules = list(_modules.items())
+        for name, (module, dependencies) in modules:
             widget = _modules_added.get(name)
             if widget is not None and widget.comm is None:
                 # closed by context.restart (hot reload) - a trait update
@@ -127,7 +145,8 @@ def create_module(name, module: Union[str, Path], dependencies: List[str]):
 
 def create_import_map():
     kernel_id = kernel_context.get_current_context().id
-    with lock:
+    # not the global lock: creating a widget sends, and the event loop takes the global lock
+    with _kernel_lock(kernel_id):
         widget = _import_map_per_kernel.get(kernel_id)
         if widget is not None and widget.comm is None:
             # closed by context.restart (hot reload), recreate instead

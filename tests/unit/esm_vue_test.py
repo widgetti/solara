@@ -1,3 +1,4 @@
+import threading
 from pathlib import Path
 
 import pytest
@@ -43,6 +44,25 @@ def test_create_modules_per_kernel_reuse(virtual_context):
     widget = widgets["esm-vue-test-module"]
     # a second call must reuse the same (live) widget for this kernel
     assert esm_vue.create_modules()["esm-vue-test-module"] is widget
+
+
+def test_a_page_request_does_not_wait_for_module_creation(virtual_context, monkeypatch):
+    # Creating a module widget sends a message. With starlette that send waits for the event
+    # loop, and the event loop calls get_module_urls for every page request. If module creation
+    # held the lock that get_module_urls takes, the two would wait for each other forever.
+    read = esm_vue._read
+    page_requests = []
+
+    def read_while_a_page_loads(module):
+        page = threading.Thread(target=lambda: page_requests.append(esm_vue.get_module_urls()), daemon=True)
+        page.start()
+        page.join(5)
+        assert not page.is_alive(), "get_module_urls waited for module creation"
+        return read(module)
+
+    monkeypatch.setattr(esm_vue, "_read", read_while_a_page_loads)
+    esm_vue.define_module("esm-vue-test-module", code="export default 1")
+    assert page_requests == [[]]
 
 
 def test_create_modules_recreates_closed_widget(virtual_context):

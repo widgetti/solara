@@ -6,6 +6,7 @@
 # reload), so in-place reloads actually reach the browser.
 import logging
 import threading
+import weakref
 from collections import defaultdict
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
@@ -19,6 +20,19 @@ lock = threading.Lock()
 
 _modules: Dict[str, Tuple[Union[str, Path], List[str]]] = {}
 _modules_added_per_kernel: Dict[str, Dict[str, ipyvue.esm.Module]] = defaultdict(dict)
+# serializes copy-and-apply per kernel: a thread must not publish an older copy of _modules
+# after another thread of the same kernel published a newer one. Weak values: a lock lives as
+# long as a thread uses it, so a hot reload (context.restart) cannot swap it under that thread,
+# and a closed kernel leaves nothing behind.
+_lock_per_kernel: "weakref.WeakValueDictionary[str, threading.RLock]" = weakref.WeakValueDictionary()
+
+
+def _kernel_lock(kernel_id: str) -> threading.RLock:
+    with lock:
+        kernel_lock = _lock_per_kernel.get(kernel_id)
+        if kernel_lock is None:
+            kernel_lock = _lock_per_kernel[kernel_id] = threading.RLock()
+        return kernel_lock
 
 
 def define_module(name: str, module: Optional[Path] = None, *, code: Optional[str] = None, url: Optional[str] = None):
@@ -95,8 +109,12 @@ def create_modules():
         context.on_close(cleanup)
     _modules_added = _modules_added_per_kernel[kernel_id]
     widgets = {}
-    with lock:
-        for name, (module, dependencies) in _modules.items():
+    with _kernel_lock(kernel_id):
+        # the global lock only guards _modules: creating a widget sends, and the event loop takes
+        # this lock for every page GET (get_module_urls)
+        with lock:
+            modules = list(_modules.items())
+        for name, (module, dependencies) in modules:
             widget = _modules_added.get(name)
             if widget is not None and widget.comm is None:
                 # closed by context.restart (hot reload) - a trait update
