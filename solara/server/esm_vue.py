@@ -19,6 +19,14 @@ lock = threading.Lock()
 
 _modules: Dict[str, Tuple[Union[str, Path], List[str]]] = {}
 _modules_added_per_kernel: Dict[str, Dict[str, ipyvue.esm.Module]] = defaultdict(dict)
+# serializes copy-and-apply per kernel: a thread must not publish an older copy of _modules
+# after another thread of the same kernel published a newer one
+_lock_per_kernel: Dict[str, threading.RLock] = {}
+
+
+def _kernel_lock(kernel_id: str) -> threading.RLock:
+    # setdefault is atomic; a defaultdict could hand two threads different locks
+    return _lock_per_kernel.setdefault(kernel_id, threading.RLock())
 
 
 def define_module(name: str, module: Optional[Path] = None, *, code: Optional[str] = None, url: Optional[str] = None):
@@ -91,12 +99,17 @@ def create_modules():
         # widgets close with the kernel; drop our per-kernel bookkeeping too
         def cleanup(kernel_id=kernel_id) -> None:
             _modules_added_per_kernel.pop(kernel_id, None)
+            _lock_per_kernel.pop(kernel_id, None)
 
         context.on_close(cleanup)
     _modules_added = _modules_added_per_kernel[kernel_id]
     widgets = {}
-    with lock:
-        for name, (module, dependencies) in _modules.items():
+    with _kernel_lock(kernel_id):
+        # the global lock only guards _modules: creating a widget sends, and the event loop takes
+        # this lock for every page GET (get_module_urls)
+        with lock:
+            modules = list(_modules.items())
+        for name, (module, dependencies) in modules:
             widget = _modules_added.get(name)
             if widget is not None and widget.comm is None:
                 # closed by context.restart (hot reload) - a trait update

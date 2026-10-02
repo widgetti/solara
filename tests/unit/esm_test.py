@@ -1,3 +1,4 @@
+import threading
 from pathlib import Path
 
 import pytest
@@ -64,6 +65,25 @@ def test_redefine_module_updates_live_widget(virtual_context):
     esm.define_module("esm-test-module", code="export default 2")
     assert esm.create_modules()["esm-test-module"] is widget
     assert widget.code == "export default 2"
+
+
+def test_a_page_request_does_not_wait_for_module_creation(virtual_context, monkeypatch):
+    # Creating a module widget sends a message. With starlette that send waits for the event
+    # loop, and the event loop calls get_module_urls for every page request. If module creation
+    # held the lock that get_module_urls takes, the two would wait for each other forever.
+    read = esm._read
+    page_requests = []
+
+    def read_while_a_page_loads(module):
+        page = threading.Thread(target=lambda: page_requests.append(esm.get_module_urls()))
+        page.start()
+        page.join(5)
+        assert not page.is_alive(), "get_module_urls waited for module creation"
+        return read(module)
+
+    monkeypatch.setattr(esm, "_read", read_while_a_page_loads)
+    esm.define_module("esm-test-module", code="export default 1")
+    assert page_requests == [[]]
 
 
 def test_define_module_path_is_watched(clean_esm_state, tmp_path: Path, monkeypatch):
