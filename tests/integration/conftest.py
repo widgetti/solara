@@ -35,7 +35,13 @@ def _leave_the_previous_page(request):
     # that reload interrupts the next test's page_session.goto. Leave the page first; this
     # also runs again before each pytest-retry attempt.
     if "page_session" in request.fixturenames:
-        request.getfixturevalue("page_session").goto("about:blank")
+        page_session = request.getfixturevalue("page_session")
+        try:
+            page_session.goto("about:blank")
+        except playwright.sync_api.Error:
+            # the reload can still interrupt this goto in a window of milliseconds, and
+            # pytest-retry does not retry a setup error; the reloaded page reloads no more
+            page_session.goto("about:blank")
 
 
 worker = os.environ.get("PYTEST_XDIST_WORKER", "gw0")
