@@ -1,14 +1,15 @@
 <template>
   <v-sheet class="solara-file-list" ref="scrollpane"
-      @click="clicked = null"
+      @click="clearSelection"
   >
     <v-list
-      @click="clicked = null"
+      @click="clearSelection"
     >
       <v-list-item
           v-for="{name, is_file, size} in files"
           :key="name + '|' + is_file"
-          @click.stop="emitClick(name, is_file)"
+          @click.stop="emitClick(name, is_file, $event)"
+          @mousedown.shift.prevent
           @dblclick="emitDoubleClick(name, is_file)"
           :ripple="!use_selected_names || !isSelected(name)"
           :class="['solara-file-list-item', isSelected(name) ? 'solara-file-list-selected': '']"
@@ -30,26 +31,50 @@
 module.exports = {
   data() {
     return {
-      click_id: 0,
+      click_id: this.selection_state ? this.selection_state.click_id : 0,
+      selection_anchor: null,
+      range_base: null,
       // Match the Vue 2 template: update highlighting before the Python round trip.
       optimistic_selected_names: this.selected_names || [],
     }
   },
   methods: {
-    emitClick(name, is_file) {
+    resetSelectionGesture() {
+      this.selection_anchor = null
+      this.range_base = null
+    },
+    clearSelection() {
+      this.resetSelectionGesture()
+      if (this.use_selected_names) this.optimistic_selected_names = []
+      this.clicked = null
+    },
+    emitClick(name, is_file, event) {
       this.click_id += 1
+      let range_selection = null
       if (this.use_selected_names && name !== '..') {
         const selected = this.optimistic_selected_names || []
-        if (selected.indexOf(name) === -1) {
-          this.optimistic_selected_names = selected.concat([name])
+        const names = this.files.map(file => file.name).filter(name => name !== '..')
+        const anchor = names.indexOf(this.selection_anchor)
+        if (event.shiftKey && anchor !== -1) {
+          if (this.range_base === null) this.range_base = selected.slice()
+          const end = names.indexOf(name)
+          const range = names.slice(Math.min(anchor, end), Math.max(anchor, end) + 1)
+          range_selection = Array.from(new Set(this.range_base.concat(range)))
+          this.optimistic_selected_names = range_selection
         } else {
-          this.optimistic_selected_names = selected.filter(item => item !== name)
+          this.selection_anchor = name
+          this.range_base = null
+          this.optimistic_selected_names = event.shiftKey || !selected.includes(name)
+            ? Array.from(new Set(selected.concat([name])))
+            : selected.filter(item => item !== name)
+          if (event.shiftKey) range_selection = this.optimistic_selected_names
         }
       }
       this.clicked = { name, is_file }
-      this.click_event = { name, is_file, click_id: this.click_id }
+      this.click_event = { name, is_file, click_id: this.click_id, location: this.location, selected_names: range_selection }
     },
     emitDoubleClick(name, is_file) {
+      this.resetSelectionGesture()
       this.click_id += 1
       this.double_clicked = { name, is_file }
       this.double_click_event = { name, is_file, click_id: this.click_id }
@@ -72,7 +97,19 @@ module.exports = {
   },
   watch: {
     selected_names(v) {
-      this.optimistic_selected_names = v || []
+      if (!this.selection_state) this.optimistic_selected_names = v || []
+    },
+    selection_state(v) {
+      // Match the reply to its click, even when consecutive ranges select the same names.
+      if (!v || v.click_id < this.click_id) return
+      if (!_.isEqual(v.names, this.optimistic_selected_names)) this.resetSelectionGesture()
+      this.optimistic_selected_names = v.names
+    },
+    files() {
+      this.resetSelectionGesture()
+    },
+    location() {
+      this.resetSelectionGesture()
     },
     scroll_pos(v) {
       this.$nextTick(() => this.$refs.scrollpane.$el.scrollTop = v);

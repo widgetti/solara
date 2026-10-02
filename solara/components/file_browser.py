@@ -73,11 +73,13 @@ class FileListWidget(vy.VuetifyTemplate):
     template_file = (__file__, "file_list_widget_v3.vue" if IPYVUETIFY_V3 else "file_list_widget.vue")
 
     files = traitlets.List(cast(List[Dict], [])).tag(sync=True)
+    location = traitlets.Unicode().tag(sync=True)
     clicked = traitlets.Dict(allow_none=True, default_value=None).tag(sync=True)
     double_clicked = traitlets.Dict(allow_none=True, default_value=None).tag(sync=True)
     click_event = traitlets.Dict(allow_none=True, default_value=None).tag(sync=True)
     double_click_event = traitlets.Dict(allow_none=True, default_value=None).tag(sync=True)
     selected_names = traitlets.List(cast(List[str], [])).tag(sync=True)
+    selection_state = traitlets.Dict(allow_none=True, default_value=None).tag(sync=True)
     use_selected_names = traitlets.Bool(False).tag(sync=True)
     scroll_pos = traitlets.Int(allow_none=True).tag(sync=True)
 
@@ -146,6 +148,7 @@ def _FileBrowserBase(
         raise ValueError("selection_mode must be 'open', 'single', or 'multiple'")
 
     current_location = solara.use_reactive(location)
+    selection_event_id, set_selection_event_id = solara.use_state(0)
     double_clicked, set_double_clicked = solara.use_state(cast(Optional[Dict[str, Any]], None))
     warning, set_warning = solara.use_state(cast(Optional[str], None))
     scroll_pos_stack, set_scroll_pos_stack = solara.use_state(cast(List[int], []))
@@ -241,6 +244,8 @@ def _FileBrowserBase(
             if selection_mode == "single" and on_select:
                 on_select(None)
             return
+        if item.get("location", source.location_name(current_location.value)) != source.location_name(current_location.value):
+            return
         if item["name"] == "..":
             if parent is None:
                 return
@@ -268,7 +273,9 @@ def _FileBrowserBase(
                     on_select(parent)
             return
 
-        entry = entry_by_name[item["name"]]
+        entry = entry_by_name.get(item["name"])
+        if entry is None:
+            return
         if selection_mode == "multiple":
             if double_click:
                 if entry.is_file:
@@ -281,7 +288,18 @@ def _FileBrowserBase(
                 clear_multiple_selection()
                 set_double_clicked(None)
             else:
-                toggle_value(entry.value)
+                names = item.get("selected_names")
+                if names is not None:
+                    if not isinstance(names, list) or any(not isinstance(name, str) for name in names):
+                        return
+                    visible_values = [entry.value for entry in entries]
+                    values = [value for value in selected_multiple_private if value not in visible_values]
+                    for name in names:
+                        if name in entry_by_name and entry_by_name[name].value not in values:
+                            values.append(entry_by_name[name].value)
+                    set_selected_multiple_private(values)
+                else:
+                    toggle_value(entry.value)
             return
         if (selection_mode == "single" and double_click) or (selection_mode == "open" and not double_click):
             if entry.is_file:
@@ -302,6 +320,8 @@ def _FileBrowserBase(
             raise RuntimeError("Combination should not happen")  # pragma: no cover
 
     def on_click(item):
+        if selection_mode == "multiple" and item is not None:
+            set_selection_event_id(item.get("click_id", 0))
         if selection_mode == "single":
             set_selected_private(item["name"] if item else None)
         elif selection_mode == "open":
@@ -313,6 +333,8 @@ def _FileBrowserBase(
             on_click(None)
 
     def on_double_click(item):
+        if selection_mode == "multiple" and item is not None:
+            set_selection_event_id(item.get("click_id", 0))
         if item is not None:
             set_double_clicked({"name": item["name"], "is_file": item["is_file"]})
         if selection_mode in {"single", "multiple"}:
@@ -333,6 +355,7 @@ def _FileBrowserBase(
         Div(children=[source.location_name(current_location.value)])
         file_list_kwargs: Dict[str, Any] = dict(
             files=files,
+            location=source.location_name(current_location.value),
             clicked=None if selection_mode == "multiple" else clicked,
             on_clicked=on_clicked_change,
             on_click_event=on_click,
@@ -342,7 +365,11 @@ def _FileBrowserBase(
             on_scroll_pos=set_scroll_pos,
         )
         if selection_mode == "multiple":
-            file_list_kwargs.update(selected_names=selected_names, use_selected_names=True)
+            file_list_kwargs.update(
+                selected_names=selected_names,
+                selection_state={"names": selected_names, "click_id": selection_event_id},
+                use_selected_names=True,
+            )
         FileListWidget.element(**file_list_kwargs).key("FileList")
         if warning:
             Div(style_="font-weight: bold; color: red", children=[warning])
@@ -565,7 +592,10 @@ def FileBrowserMultiple(
     Selection values are always `pathlib.Path` instances. Unlike `FileBrowser`,
     this component does not accept string directories.
 
-    Single-clicking a file or directory toggles it in the selected path list.
+    Single-clicking a file or directory toggles it in the selected path list, including Cmd-click (macOS) or Ctrl-click (Windows/Linux).
+    Shift-click adds the visible range from the last non-Shift click to the clicked item, preserving existing selections.
+    Consecutive Shift-clicks resize that range while preserving selections made before the range gesture.
+    Without an anchor in the current listing, Shift-click selects the clicked item and establishes an anchor.
     Double-clicking a file opens it, and double-clicking a directory navigates
     into it. Opening or navigating clears the current selection.
 
