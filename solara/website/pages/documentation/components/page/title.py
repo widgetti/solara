@@ -12,12 +12,12 @@ def Page():
 
     solara.ToggleButtonsSingle(value=title, values=[None, "Custom title!", "Different custom title"])
 
-    if title is not None:
+    if title.value is not None:
         # if the title is not set in a child component, the parent's title will be used
         with solara.Head():
             # title should always occur inside a Head component
-            solara.Title(title)
-        solara.Info(f"Your browser tab title should say {title}", classes=["mt-4"])
+            solara.Title(title.value)
+        solara.Info(f"Your browser tab title should say {title.value}", classes=["mt-4"])
     else:
         solara.Warning("If no title is set, the parent title is used.", classes=["mt-4"])
 

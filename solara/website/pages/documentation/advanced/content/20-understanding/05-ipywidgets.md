@@ -33,3 +33,10 @@ many more.
 All these libraries should work with [Solara server](./solara-server), but we have not tested all of them. If you use a regular ipywidget based app, you should not run into issues. If you do, consider [opening a GitHub issue](https://github.com/widgetti/solara/issues/new)
 
 If you write a Reacton-based Solara application, check out [the reacton page](./reacton).
+
+## Writing your own widget with anywidget
+
+[anywidget](https://anywidget.dev/) lets you write a custom ipywidget with plain JavaScript and CSS inside a Python class, without a build step or a separate package.
+Solara server supports anywidget out of the box.
+Use your widget like any other ipywidget, with `.element(...)` in a component.
+See [how to use ipywidget libraries](/documentation/advanced/howto/ipywidget-libraries#example-with-anywidget) for a live example.

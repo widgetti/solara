@@ -71,3 +71,45 @@ def test_ssg(page_session: playwright.sync_api.Page, solara_server, solara_app, 
             set_value(text_live)
         page_session.locator("text=Live render").wait_for()
         context = None
+
+
+@solara.component
+def SSGBroken():
+    raise ValueError("this page is broken")
+
+
+@solara.component
+def SSGBrokenMarkdown():
+    solara.Markdown(
+        """
+```solara
+import solara
+
+@solara.component
+def Page():
+    raise ValueError("this example is broken")
+```
+""",
+        unsafe_solara_execute=True,
+    )
+
+
+@pytest.mark.parametrize("app", ["SSGBroken", "SSGBrokenMarkdown"])
+@pytest.mark.skipif(sys.platform == "win32", reason="Skip on Windows, fails with playwright saying navigation was interrupted")
+def test_ssg_fails_on_traceback(solara_server, solara_app, tmpdir, app):
+    settings.ssg.build_path = Path(tmpdir) / "build"
+    errors = []
+
+    def run():
+        try:
+            ssg.ssg_crawl(solara_server.base_url)
+        except ssg.SSGRenderError as e:
+            errors.append(e)
+
+    with solara_app(f"tests.integration.ssg_test:{app}"):
+        t = threading.Thread(target=run)
+        t.start()
+        t.join()
+        assert len(errors) == 1
+        assert "1 page(s) rendered a traceback" in str(errors[0])
+        assert not (settings.ssg.build_path / "index.html").exists()

@@ -58,6 +58,7 @@ def histogram(
     nbins=None,
     text_auto=False,
     title=None,
+    subtitle=None,
     template=None,
     width=None,
     height=None,

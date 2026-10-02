@@ -51,6 +51,7 @@ documentation = [
     "vega_datasets",
     "openai",
     "plotly",
+    "anywidget",  # plotly>=6 builds FigureWidget (used by FigurePlotly) on anywidget, but does not require it
     "vaex-core ; python_version < '3.11'",
     "vaex-hdf5 ; python_version < '3.11'",
     "tiktoken; python_version >= '3.9'",
