@@ -415,7 +415,7 @@ def _call_evict(kernel_id, cookie_session_id):
     request = Mock()
     request.path_params = {"kernel_id": kernel_id}
     request.cookies = {"solara-session-id": cookie_session_id} if cookie_session_id is not None else {}
-    return evict(request)
+    return asyncio.run(evict(request))
 
 
 def test_evict_route_gating(backend, monkeypatch):
@@ -486,6 +486,29 @@ def test_evict_route_does_not_block_the_event_loop(backend, monkeypatch):
         assert not evicting.is_alive()
     assert sorted(response.status_code for response in responses) == [200, 200]
     assert context.closed_event.is_set()
+
+
+def test_evict_route_closes_on_the_event_loop_without_kernel_threads(backend, monkeypatch):
+    # without kernel threads, closing the page's websocket needs the event loop
+    session_id, kernel_id = "sess-evict", "kern-evict"
+    context = kc.initialize_virtual_kernel(session_id, kernel_id, Mock())
+    monkeypatch.setattr(solara.server.settings.state, "test_eviction", True)
+    monkeypatch.setattr(solara.server.settings.main, "mode", "development")
+    monkeypatch.setattr(solara.server.settings.kernel, "threaded", False)
+    on_the_loop = []
+    teardown = context._teardown_persistence
+
+    def teardown_and_record(reason):
+        try:
+            asyncio.get_running_loop()
+            on_the_loop.append(True)
+        except RuntimeError:
+            on_the_loop.append(False)
+        teardown(reason)
+
+    monkeypatch.setattr(context, "_teardown_persistence", teardown_and_record)
+    assert _call_evict(kernel_id, session_id).status_code == 200
+    assert on_the_loop == [True]
 
 
 def test_evict_route_disabled_by_default(backend):
