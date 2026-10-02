@@ -1,0 +1,104 @@
+<template>
+  <article class="card">
+    <label class="field">
+      <span>Name</span>
+      <input data-solara-model="name" placeholder="Your name" />
+    </label>
+    <h2 data-solara-attr-title="name">Hello, <span data-solara-text="name"></span></h2>
+    <p class="count"></p>
+    <button type="button" data-solara-event-click="reset">Reset</button>
+    <div class="slot">
+      <slot></slot>
+    </div>
+  </article>
+</template>
+
+<style>
+  :host {
+    display: block;
+    max-width: 28rem;
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  }
+
+  .card {
+    margin: 0.5rem 1.5rem 1.5rem 0.5rem;
+    display: grid;
+    gap: 0.85rem;
+    padding: 1rem;
+    border: 1px solid #d7dee8;
+    border-radius: 8px;
+    background: #f8fbff;
+    color: #16202a;
+    box-shadow: 0 4px 14px rgba(44, 70, 95, 0.12);
+  }
+
+  .field {
+    display: grid;
+    gap: 0.35rem;
+    font-size: 0.9rem;
+    font-weight: 650;
+  }
+
+  input {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #9fb0c4;
+    border-radius: 6px;
+    padding: 0.55rem 0.65rem;
+    font: inherit;
+    background: white;
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 1.35rem;
+    line-height: 1.25;
+  }
+
+  .count {
+    margin: 0;
+    color: #526173;
+    font-size: 0.9rem;
+  }
+
+  button {
+    justify-self: start;
+    border: 0;
+    border-radius: 6px;
+    padding: 0.5rem 0.8rem;
+    background: #235a97;
+    color: white;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .slot {
+    padding-top: 0.4rem;
+    border-top: 1px solid #d7dee8;
+  }
+</style>
+
+<script type="module">
+  import { characters } from "./format.js";
+
+  export function mount({root, get, set, subscribe}) {
+    const input = root.querySelector("input");
+    const count = root.querySelector(".count");
+    const updateCount = value => {
+      count.textContent = characters((value || "").length);
+    };
+    const onKeydown = event => {
+      if (event.key === "Escape") {
+        set("name", "World");
+      }
+    };
+    input.addEventListener("keydown", onKeydown);
+    const unsubscribe = subscribe("name", updateCount);
+    updateCount(get("name"));
+    return () => {
+      input.removeEventListener("keydown", onKeydown);
+      unsubscribe();
+    };
+  }
+</script>

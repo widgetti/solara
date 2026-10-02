@@ -1,0 +1,27 @@
+[build-system]
+requires = ["hatchling==1.26.3"]
+build-backend = "hatchling.build"
+
+[project]
+name = "solara-html"
+version = "0.1.0"
+description = "Single-file HTML components for Solara through ipyreact ES modules."
+readme = "README.md"
+authors = [{name = "Maarten A. Breddels", email = "maartenbreddels@gmail.com"}]
+license = {file = "LICENSE"}
+requires-python = ">=3.8"
+classifiers = ["License :: OSI Approved :: MIT License"]
+dependencies = [
+    "solara-ui>=1.64.0",
+    "solara-server>=1.64.0",
+    "ipyreact>=0.6.1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "playwright", "typer"]
+
+[project.urls]
+Home = "https://www.github.com/widgetti/solara"
+
+[tool.hatch.build.targets.wheel]
+packages = ["solara_html"]
