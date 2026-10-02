@@ -13,3 +13,4 @@ def test_compare_default_reports_the_difference():
     diff, difference = compare_default(reference, result)
     assert diff == 64
     assert difference.size == reference.size
+    assert difference.mode == "RGB"
