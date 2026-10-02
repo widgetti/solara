@@ -58,7 +58,7 @@ def store_in_session_storage(value):
 def Page():
     solara.InputText(
         "Stored under the kernel id key",
-        value=kernel_storage[solara.get_kernel_id()],
+        value=kernel_storage.get(solara.get_kernel_id(), "This does not"),
         on_value=store_in_kernel_storage,
         continuous_update=True,
     )
