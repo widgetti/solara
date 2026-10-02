@@ -27,7 +27,7 @@ import solara.server.server
 import solara.server.settings
 from solara.server import reload
 from solara.server.starlette import ServerStarlette
-from solara.server.threaded import ServerBase
+from solara.server.threaded import SERVER_START_TIMEOUT, ServerBase
 
 if typing.TYPE_CHECKING:
     import playwright.sync_api
@@ -336,6 +336,12 @@ def solara_test(solara_server, solara_app, page_session: "playwright.sync_api.Pa
         yield
 
 
+# Jupyter Lab and Voila start as subprocesses that load many extensions, which took more
+# than the default 30 seconds on a busy Windows CI runner (the server was up 1.7 s too late).
+# A larger SOLARA_TEST_SERVER_START_TIMEOUT still wins.
+SUBPROCESS_SERVER_START_TIMEOUT = max(SERVER_START_TIMEOUT, 120.0)
+
+
 class ServerVoila(ServerBase):
     popen = None
 
@@ -422,7 +428,7 @@ def voila_server(pytestconfig: Any, notebook_path):
     server = ServerVoila(notebook_path, port, host)
     try:
         server.serve_threaded()
-        server.wait_until_serving()
+        server.wait_until_serving(SUBPROCESS_SERVER_START_TIMEOUT)
         yield server
     finally:
         server.stop_serving()
@@ -439,7 +445,7 @@ def jupyter_server(pytestconfig: Any, notebook_path):
     server = ServerJupyter(notebook_path, port, host)
     try:
         server.serve_threaded()
-        server.wait_until_serving()
+        server.wait_until_serving(SUBPROCESS_SERVER_START_TIMEOUT)
         yield server
     finally:
         server.stop_serving()
