@@ -685,7 +685,8 @@ def compare_default(reference, result, threshold=0.1):
     from PIL import Image
     from pixelmatch.contrib.PIL import pixelmatch
 
-    difference = Image.new("RGB", reference.size)
+    # pixelmatch 0.4 writes RGBA data into the diff image, older versions accept RGBA too
+    difference = Image.new("RGBA", reference.size)
     diff = pixelmatch(reference, result, difference, threshold=threshold)
     return diff, difference
 
