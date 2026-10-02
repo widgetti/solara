@@ -446,7 +446,7 @@ def _eviction_enabled() -> bool:
     return appmod.eviction_enabled()
 
 
-async def evict(request: Request):
+def evict(request: Request):
     """Dev/test-only kernel eviction over HTTP (§6.4).
 
     ``solara.debug.simulateFailover()`` sends evict over the kernel websocket instead (the
@@ -468,6 +468,8 @@ async def evict(request: Request):
     session_id = request.cookies.get(server.COOKIE_KEY_SESSION_ID)
     if not session_id or session_id != context.session_id:
         return Response(status_code=403)
+    # a plain def, so starlette runs it on a worker thread: close() waits for context.lock, and a
+    # kernel thread can hold that lock while its websocket send waits for the event loop
     context.close(reason="evicted")
     return Response(status_code=200)
 
