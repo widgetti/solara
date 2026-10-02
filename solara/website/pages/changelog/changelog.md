@@ -1,5 +1,22 @@
 # Solara Changelog
 
+## Version 1.63.1
+
+- Bug Fix: With the starlette server, a page load could deadlock with another kernel's ES module setup. Every user then got no response until a restart. It could happen whenever ipyreact is installed. [#1227](https://github.com/widgetti/solara/pull/1227)
+- Bug Fix: With threaded kernels (the default), the test-only kernel eviction route can no longer hang the starlette server. The route is enabled only when `settings.state.test_eviction` is on and the server runs outside production mode. [#1228](https://github.com/widgetti/solara/pull/1228)
+- Bug Fix: A reconnect now stops a pending kernel cull at once, also when the cull has not started yet. [#1220](https://github.com/widgetti/solara/pull/1220)
+- Bug Fix: Clicking an `IconButton` without `on_click` no longer raises `TypeError`. [#1215](https://github.com/widgetti/solara/pull/1215)
+- Bug Fix: `solara.express.histogram` no longer raises `KeyError: 'subtitle'` with newer plotly versions. [#1229](https://github.com/widgetti/solara/pull/1229)
+- Bug Fix(pytest-ipywidgets): The `solara_test` fixture leaves the previous test's page first. On a slow machine, that page could reload and abort the next test's page load with `net::ERR_ABORTED`. [#1219](https://github.com/widgetti/solara/pull/1219)
+- Bug Fix(pytest-ipywidgets): The `jupyter_server` and `voila_server` fixtures now allow 120 seconds for startup by default, previously 30. A larger `SOLARA_TEST_SERVER_START_TIMEOUT` still wins. Each startup probe now times out after 5 seconds. [#1224](https://github.com/widgetti/solara/pull/1224)
+- Behavior: `solara ssg` detects a Python traceback or a live markdown error on the pages it generates. It does not write those pages, reports their URLs, and exits with an error. [#1229](https://github.com/widgetti/solara/pull/1229)
+- Packaging: `solara[documentation]` now installs `anywidget`. Plotly 6 and later need it for `FigureWidget`, which `FigurePlotly` uses. [#1229](https://github.com/widgetti/solara/pull/1229)
+- Docs: Eight pre-rendered solara.dev pages no longer show a Python traceback, among them the `Title` documentation page. [#1229](https://github.com/widgetti/solara/pull/1229)
+- Docs: The ipywidget libraries how-to has an example with anywidget. [#1229](https://github.com/widgetti/solara/pull/1229)
+- Docs: The custom storage example no longer raises `KeyError` when a kernel id is reused. [#1223](https://github.com/widgetti/solara/pull/1223)
+- Packaging: `solara-assets` 1.63.1 is unavailable on PyPI because the project has reached its storage limit.
+  The latest available asset package is 1.58.2.
+
 ## Version 1.63.0
 
 - Feature: Allow injecting the Redis client used for state persistence. [#1209](https://github.com/widgetti/solara/pull/1209)
