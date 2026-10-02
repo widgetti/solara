@@ -174,24 +174,28 @@ async def test_kernel_lifecycle_close_single(close_first, short_cull_timeout):
 @pytest.mark.parametrize("close_first", [True, False])
 async def test_kernel_lifecycle_close_while_disconnected(close_first, short_cull_timeout):
     # a reconnect should be possible within the reconnect window
+    # A longer cull timeout than the other tests: the check after the first cull's window has to
+    # come before the second cull fires, with room for a slow runner (it was 40 ms with 0.2s).
+    solara.server.settings.kernel.cull_timeout = "1s"
     websocket = Mock()
     context = kernel_context.initialize_virtual_kernel(f"session-id-1-{close_first}", f"kernel-id-1-{close_first}", websocket)
     connection_1 = context.page_connect("page-id-1")
     cull_task_1 = context.page_disconnect("page-id-1", connection_1)
-    await asyncio.sleep(0.1)
-    # after 0.1 we connect again, but close it directly
+    await asyncio.sleep(0.5)
+    # after 0.5 we connect again, but close it directly
     connection_2 = context.page_connect("page-id-2")
     if close_first:
         cull_task_2 = context.page_close("page-id-2")
-        await asyncio.sleep(0.01)
+        await asyncio.sleep(0.05)
         context.page_disconnect("page-id-2", connection_2)
     else:
         context.page_disconnect("page-id-2", connection_2)
-        await asyncio.sleep(0.01)
+        await asyncio.sleep(0.05)
         cull_task_2 = context.page_close("page-id-2")
     assert cull_task_2 is not None
     assert not context.closed_event.is_set()
-    await asyncio.sleep(0.15)
+    # past the first cull's window (1.0) and before the second cull (about 1.5)
+    await asyncio.sleep(0.75)
     # but even though we closed, the first page is still in the disconnected state
     with pytest.raises(asyncio.CancelledError):
         await cull_task_1
