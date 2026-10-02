@@ -1,6 +1,9 @@
 import logging
 import os
-from typing import Dict, Set
+import sys
+import threading
+import traceback
+from typing import Dict, List, Set
 
 import playwright.sync_api
 import pytest
@@ -24,7 +27,8 @@ def pytest_runtest_teardown(item, nextitem):
     # errors at teardown with KeyError on this stash key, turning a successfully retried flaky
     # test into a hard failure. Seed the entry so the tmp_path finalizer always finds it.
     item.stash.setdefault(tmppath_result_key, {})
-    yield
+    outcome = yield
+    _dump_thread_stacks_on_timeout(outcome, item, "teardown")
 
 
 @pytest.fixture(autouse=True)
@@ -42,6 +46,69 @@ def _leave_the_previous_page(request):
             # the reload can still interrupt this goto in a window of milliseconds, and
             # pytest-retry does not retry a setup error; the reloaded page reloads no more
             page_session.goto("about:blank")
+
+
+# When a test times out waiting for a page, a server thread is often stuck (a hang or a
+# deadlock), but the test only sees the timeout. Both test servers run in this process, so
+# print the stack of every thread while they are still stuck. The checks wrap setup, call and
+# teardown, because pytest-retry runs its retries through those hooks but not through
+# pytest_runtest_makereport. One dump per test, for at most 3 tests per worker, is enough:
+# the retries of a test, and the tests after a hang, usually time out too.
+_tests_with_thread_stacks: Set[str] = set()
+
+
+def _thread_stacks() -> str:
+    names = {thread.ident: thread.name for thread in threading.enumerate()}
+    # threads with the same stack (e.g. idle worker threads) are listed once
+    threads_by_stack: Dict[str, List[str]] = {}
+    for ident, frame in sys._current_frames().items():
+        threads_by_stack.setdefault("".join(traceback.format_stack(frame)), []).append(f"{names.get(ident, '?')} ({ident})")
+    return "\n".join(f"--- {len(threads)} thread(s): {', '.join(threads)} ---\n{stack}" for stack, threads in threads_by_stack.items())
+
+
+def _write_to_stderr(text: str) -> None:
+    # sys.stderr, not sys.__stderr__: xdist workers on Windows point fd 2 at devnull. The
+    # Playwright driver can leave the stream non-blocking, and a non-blocking write drops what
+    # does not fit in the pipe, so make it blocking for this write.
+    fd, was_blocking = None, True
+    try:
+        fd = sys.stderr.fileno()
+        was_blocking = os.get_blocking(fd)
+        os.set_blocking(fd, True)
+    except Exception:
+        pass  # no file descriptor (the output is captured), or not supported (Windows)
+    try:
+        sys.stderr.write(text)
+        sys.stderr.flush()
+    finally:
+        if fd is not None and not was_blocking:
+            os.set_blocking(fd, False)
+
+
+def _dump_thread_stacks_on_timeout(outcome, item, when: str) -> None:
+    # the public Result.exception, read with getattr so it cannot raise
+    if not isinstance(getattr(outcome, "exception", None), playwright.sync_api.TimeoutError):
+        return
+    if item.nodeid in _tests_with_thread_stacks or len(_tests_with_thread_stacks) >= 3:
+        return
+    _tests_with_thread_stacks.add(item.nodeid)
+    title = f" thread stacks after a timeout in {item.nodeid} ({when}) "
+    try:
+        _write_to_stderr(f"{title:=^100}\n{_thread_stacks()}\n{'':=^100}\n")
+    except Exception:
+        pass  # a diagnostic must never change the result of a test
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_setup(item):
+    outcome = yield
+    _dump_thread_stacks_on_timeout(outcome, item, "setup")
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_call(item):
+    outcome = yield
+    _dump_thread_stacks_on_timeout(outcome, item, "call")
 
 
 worker = os.environ.get("PYTEST_XDIST_WORKER", "gw0")
