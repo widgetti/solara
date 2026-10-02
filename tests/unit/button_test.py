@@ -37,3 +37,16 @@ def test_button_icon_and_value_api():
             assert icon.left is True
     finally:
         rc.close()
+
+
+def test_icon_button_click_without_on_click():
+    @solara.component
+    def Page():
+        return solara.IconButton(icon_name="mdi-delete")
+
+    box, rc = solara.render(Page(), handle_error=False)
+    try:
+        btn = rc.find(v.Btn).widget
+        btn.fire_event("click", None)
+    finally:
+        rc.close()
