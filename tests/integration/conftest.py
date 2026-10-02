@@ -27,6 +27,23 @@ def pytest_runtest_teardown(item, nextitem):
     yield
 
 
+@pytest.fixture(autouse=True)
+def _leave_the_previous_page(request):
+    # A test leaves the shared page_session on its app, and that app's kernel is then closed
+    # (by the solara_app fixture, or by the next solara_app(...) switch). In development mode
+    # the page reloads itself about 3 seconds after it loses its kernel, and on a slow runner
+    # that reload interrupts the next test's page_session.goto. Leave the page first; this
+    # also runs again before each pytest-retry attempt.
+    if "page_session" in request.fixturenames:
+        page_session = request.getfixturevalue("page_session")
+        try:
+            page_session.goto("about:blank")
+        except playwright.sync_api.Error:
+            # the reload can still interrupt this goto in a window of milliseconds, and
+            # pytest-retry does not retry a setup error; the reloaded page reloads no more
+            page_session.goto("about:blank")
+
+
 worker = os.environ.get("PYTEST_XDIST_WORKER", "gw0")
 # each xdist worker runs its own flask and starlette server (see solara_server below), so workers
 # need to be at least 2 ports apart. Ports up to 18770 are a valid callback for auth0, which keeps
