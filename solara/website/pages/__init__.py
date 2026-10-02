@@ -12,7 +12,6 @@ title = "Home"
 
 route_order = ["/", "showcase", "documentation", "apps", "contact", "changelog", "roadmap", "pricing", "our_team", "careers", "about", "scale_ipywidgets"]
 
-
 _redirects = {
     "/docs": "/documentation/getting_started/introduction",
     "/docs/installing": "/documentation/getting_started/installing",
@@ -119,6 +118,8 @@ _redirects = {
     "/documentation/examples/fullscreen/multipage": "/apps/multipage",
     "/examples/fullscreen/scatter": "apps/scatter",
     "/documentation/examples/fullscreen/scatter": "/apps/scatter",
+    "/examples/fullscreen/scatter-bokeh": "/apps/scatter-bokeh",
+    "/documentation/examples/fullscreen/scatter_bokeh": "/apps/scatter-bokeh",
     "/examples/fullscreen/scrolling": "/apps/scrolling",
     "/documentation/examples/fullscreen/scrolling": "/apps/scrolling",
     "/examples/fullscreen/tutorial-streamlit": "/apps/tutorial-streamlit",
@@ -211,7 +212,6 @@ _redirects = {
     "/api/default_layout": "/documentation/components/layout",
     "/api/title": "/documentation/components/page/title",
 }
-
 
 server._redirects = _redirects
 autorouting._redirects = _redirects
