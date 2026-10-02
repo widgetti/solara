@@ -37,8 +37,9 @@ def initialize_kernel_storage():
     kernel_storage[solara.get_kernel_id()] = "This does not"
 
     def cleanup():
-        # when a kernel gets stopped, we remove the dict entry
-        del kernel_storage[solara.get_kernel_id()]
+        # when a kernel gets stopped, we remove the dict entry (pop instead of del: a restored
+        # kernel reuses its kernel id, so another kernel may have removed the entry already)
+        kernel_storage.pop(solara.get_kernel_id(), None)
 
     # cleaning up kernel storage, we prevent memory leaks
     return cleanup
