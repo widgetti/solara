@@ -355,8 +355,9 @@ class ServerVoila(ServerBase):
         if self.popen is not None and self.popen.poll() is not None:
             raise RuntimeError(f"voila server process exited with return code {self.popen.returncode}")
         try:
-            return requests.get(self.base_url).status_code // 100 in [2, 3]
-        except requests.exceptions.ConnectionError:
+            # a timeout per probe, so one hanging probe cannot outlast wait_until_serving's budget
+            return requests.get(self.base_url, timeout=5).status_code // 100 in [2, 3]
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
             return False
 
     def signal_stop(self):
@@ -394,8 +395,9 @@ class ServerJupyter(ServerBase):
         if self.popen is not None and self.popen.poll() is not None:
             raise RuntimeError(f"jupyter server process exited with return code {self.popen.returncode}")
         try:
-            return requests.get(self.base_url).status_code // 100 in [2, 3]
-        except requests.exceptions.ConnectionError:
+            # a timeout per probe, so one hanging probe cannot outlast wait_until_serving's budget
+            return requests.get(self.base_url, timeout=5).status_code // 100 in [2, 3]
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
             return False
 
     def signal_stop(self):

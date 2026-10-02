@@ -7,7 +7,8 @@ import socket
 
 logger = logging.getLogger("solara.server.threaded")
 
-# a cold jupyter lab on a slow windows CI runner can take ~18s to start serving
+# for the in-process test servers; the jupyter and voila subprocesses wait longer (see
+# SUBPROCESS_SERVER_START_TIMEOUT in solara/test/pytest_plugin.py)
 SERVER_START_TIMEOUT = float(os.environ.get("SOLARA_TEST_SERVER_START_TIMEOUT", "30"))
 
 
