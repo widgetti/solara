@@ -7,7 +7,7 @@ import os
 import sys
 import threading
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Set, Type
+from typing import Any, Callable, Dict, List, Optional, Set, Type, Union
 
 import solara.server.settings as settings
 
@@ -152,6 +152,8 @@ class Reloader:
         self.requires_reload = False
         self.ignore_modules: Set[str] = set()
         self.reload_event_next = threading.Event()
+        # files registered with watch_file that handle their own changes, instead of a reload
+        self.file_handlers: Dict[str, Callable[[Path], None]] = {}
         # should be set at app.directory
         self.root_path: Optional[Path] = None
         # maybe we want this mode enabled in the future via configuration
@@ -171,11 +173,15 @@ class Reloader:
             self._first = False
 
     def _on_change(self, name):
-        # flag that we need to reload all modules next time
-        self.requires_reload = True
-        # and forward callback
-        if self.on_change:
-            self.on_change(name)
+        handler = self.file_handlers.get(_normalize(name))
+        if handler is not None:
+            handler(Path(name))
+        else:
+            # flag that we need to reload all modules next time
+            self.requires_reload = True
+            # and forward callback
+            if self.on_change:
+                self.on_change(name)
         # used for testing
         self.reload_event_next.set()
 
@@ -259,3 +265,28 @@ class Reloader:
 # there is only a reloader, and there should be only 1 app
 # that connect to the on_change
 reloader = Reloader()
+
+
+def _normalize(path) -> str:
+    return os.path.abspath(os.path.realpath(path))
+
+
+def watch_file(path: Union[str, Path], on_change: Optional[Callable[[Path], None]] = None) -> None:
+    """Watch a file that is not a Python module, for hot reload.
+
+    Use this for files your code reads at import time or render time, such as templates.
+    Without `on_change`, a change to the file reloads the app, like a change to a Python module.
+    With `on_change`, a change calls `on_change(path)` instead, and the app is not reloaded,
+    so the callback can update what is live (e.g. widgets that use the file).
+
+    The file must exist. A file has at most one `on_change`: a later call with `on_change`
+    replaces it, a call without `on_change` keeps it. It stays registered until the server stops.
+    `on_change` gets the resolved path, and runs on the file watcher thread without a kernel
+    context, so enter each context in `solara.server.kernel_context.contexts` to update widgets.
+    An exception raised by `on_change` is logged.
+    This only has effect when the Solara server runs in development mode.
+    """
+    key = _normalize(path)
+    reloader.watcher.add_file(key)
+    if on_change is not None:
+        reloader.file_handlers[key] = on_change

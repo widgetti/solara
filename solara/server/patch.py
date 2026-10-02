@@ -5,6 +5,7 @@ import sys
 import threading
 import traceback
 import warnings
+from pathlib import Path
 from typing import Any, Dict, MutableMapping
 from unittest import mock
 
@@ -252,13 +253,23 @@ class context_dict_user(context_dict):
             return self.default_dict
 
 
+def _update_templates(path: Path):
+    logger.info("Vue file changed: %s", path)
+    template_content = path.read_text(encoding="utf-8")
+    for context in list(kernel_context.contexts.values()):
+        with context:
+            for filepath, widget in context.templates.items():
+                if reload._normalize(filepath) == reload._normalize(path):
+                    widget.template = template_content
+
+
 def auto_watch_get_template(get_template):
     """Wraps get_template and adds a file listener for automatic .vue file reloading"""
 
     def wrapper(abs_path):
         template = get_template(abs_path)
         with kernel_context.without_context():
-            reload.reloader.watcher.add_file(abs_path)
+            reload.watch_file(abs_path, on_change=_update_templates)
         return template
 
     return wrapper
