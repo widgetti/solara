@@ -457,6 +457,7 @@ def test_evict_route_does_not_block_the_event_loop(backend, monkeypatch):
     context = kc.initialize_virtual_kernel(session_id, kernel_id, Mock())
     monkeypatch.setattr(solara.server.settings.state, "test_eviction", True)
     monkeypatch.setattr(solara.server.settings.main, "mode", "development")
+    monkeypatch.setattr(solara.server.settings.kernel, "threaded", True)
     # close() runs the persistence teardown right before it waits for context.lock
     closing = threading.Event()
     teardown = context._teardown_persistence
