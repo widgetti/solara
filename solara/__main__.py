@@ -18,6 +18,7 @@ from uvicorn.main import LEVEL_CHOICES
 import solara
 from solara.server import settings
 import solara.server.threaded
+import solara.server.frontend
 
 from .server import telemetry
 
@@ -64,6 +65,8 @@ LOGGING_CONFIG: dict = {
     },
     "loggers": {
         "solara": {"handlers": ["default"], "level": "ERROR"},
+        # tells which --frontend flag to add when the browser lazy loads a feature
+        "solara.server.frontend": {"level": "WARNING"},
         "reacton": {"handlers": ["default"], "level": "ERROR"},
         # "react": {"handlers": ["rich"], "level": "DEBUG"},
         "uvicorn": {"handlers": ["default"], "level": "ERROR"},
@@ -71,6 +74,15 @@ LOGGING_CONFIG: dict = {
         "uvicorn.access": {"handlers": ["access"], "level": "ERROR", "propagate": False},
     },
 }
+
+
+def _check_frontend(ctx, param, value: str) -> str:
+    # check during argument parsing, so a typo fails before anything else runs
+    try:
+        solara.server.frontend.parse(value)
+    except ValueError as e:
+        raise click.BadParameter(str(e))
+    return value
 
 
 def _check_version():
@@ -221,6 +233,15 @@ if "SOLARA_MODE" in os.environ:
     help=f"Loader to use when the app is not yet shown to the user. [default: {settings.theme.loader!r}]",
 )
 @click.option(
+    "--frontend",
+    type=str,
+    default=settings.main.frontend,
+    callback=_check_frontend,
+    help="Which frontend features the page preloads: a preset (full, minimal) followed by +feature or -feature,"
+    " for example 'minimal,+katex' or 'full,-mermaid'. A feature that is not preloaded loads on first use, with a warning."
+    f" Features: {', '.join(solara.server.frontend.FEATURES)}. [default: {settings.main.frontend!r}]",
+)
+@click.option(
     "--theme-variant",
     type=settings.ThemeVariant,
     default=settings.theme.variant.name,
@@ -294,6 +315,7 @@ def run(
     access_log: bool,
     use_pdb: bool,
     theme_loader: str,
+    frontend: str,
     theme_variant: settings.ThemeVariant,
     dark: bool,
     theme_variant_user_selectable: bool,
@@ -399,6 +421,8 @@ def run(
 
     if log_level is not None:
         LOGGING_CONFIG["loggers"]["solara"]["level"] = log_level.upper()
+        if log_level.upper() in ("DEBUG", "TRACE", "INFO"):
+            LOGGING_CONFIG["loggers"]["solara.server.frontend"]["level"] = log_level.upper()
         # LOGGING_CONFIG["loggers"]["reacton"]["level"] = log_level.upper()
 
     log_level = log_level_uvicorn
@@ -415,13 +439,16 @@ def run(
     kwargs["loop"] = loop
     settings.main.use_pdb = use_pdb
     settings.theme.loader = theme_loader
+    settings.main.frontend = frontend
+    # solara ssg and child processes read it from the environment
+    os.environ["SOLARA_FRONTEND"] = frontend
     if dark:
         theme_variant = settings.ThemeVariant.dark
     settings.theme.variant = theme_variant
     settings.main.tracer = tracer
     settings.main.timing = timing
     items = (
-        "theme_variant_user_selectable dark theme_variant theme_loader use_pdb server open_browser open url failed dev tracer"
+        "theme_variant_user_selectable dark theme_variant theme_loader frontend use_pdb server open_browser open url failed dev tracer"
         " timing ssg search check_version production qt".split()
     )
     for item in items:
@@ -648,7 +675,7 @@ def staticbuild():
     for path in list(voila.glob("*.js")) + list(voila.glob("*.woff")):
         shutil.copy(path, target_dir_static_dist)
 
-    index_html = solara.server.server.read_root("", render_kwargs={"for_pyodide": True}, use_nbextensions=True)
+    index_html = solara.server.server.read_root("", render_kwargs={"for_pyodide": True}, use_nbextensions=True, legacy=True)
     assert index_html is not None
     (target_dir / "index.html").write_text(index_html)
 

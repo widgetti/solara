@@ -18,7 +18,7 @@ from IPython.core.interactiveshell import InteractiveShell
 import solara
 import solara.util
 
-from . import app, kernel_context, reload, settings
+from . import app, frontend, kernel_context, reload, settings
 from .utils import pdb_guard
 
 logger = logging.getLogger("solara.server.patch")
@@ -227,6 +227,13 @@ class context_dict_widgets(context_dict):
             return context.widgets
         else:
             return global_widgets_dict
+
+    def __setitem__(self, key, value):
+        # every widget registers itself here when its comm opens: warn when the page
+        # did not preload the frontend feature it needs (Jupyter loads everything)
+        if kernel_context.has_current_context():
+            frontend.check_widget(value)
+        super().__setitem__(key, value)
 
 
 class context_dict_templates(context_dict):

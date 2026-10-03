@@ -7,6 +7,7 @@ import warnings
 from typing import Any, Callable, Dict, List, Optional, Union, cast
 import typing
 
+import ipyvue
 import ipyvuetify as v
 
 try:
@@ -21,6 +22,7 @@ import reacton.core
 
 import solara
 import solara.components.applayout
+from solara.server import frontend
 
 try:
     import pygments
@@ -68,7 +70,7 @@ def _run_solara(code, cleanups):
         app = solara.components.applayout._AppLayoutEmbed(children=[ExceptionGuard(children=[Page()])])
     else:
         raise NameError("No Page or app defined")
-    box = v.Html(tag="div")
+    box = v.Html(tag="div") if frontend.vuetify_enabled() else ipyvue.Html(tag="div")
 
     rc: reacton.core.RenderContext
 
@@ -85,6 +87,14 @@ def _run_solara(code, cleanups):
     )
 
 
+def _has_math(html: str) -> bool:
+    return "$" in html or "\\(" in html or "\\[" in html
+
+
+def _has_mermaid(html: str) -> bool:
+    return 'class="mermaid"' in html
+
+
 def _markdown_template(
     html,
     style="",
@@ -94,6 +104,13 @@ def _markdown_template(
 
     if not solara.settings.assets.proxy:
         cdn = solara.settings.assets.cdn
+    has_math = _has_math(html)
+    has_mermaid = _has_mermaid(html)
+    # on a Solara server, without the feature, the browser loads it on first use: log which flag to add
+    if has_math:
+        frontend.warn_missing("katex", "solara.Markdown with math")
+    if has_mermaid:
+        frontend.warn_missing("mermaid", "solara.Markdown with a mermaid diagram")
 
     template = (
         """
@@ -111,9 +128,21 @@ module.exports = {
         this.cdn = """
         + (rf"'{cdn}'" if cdn is not None else r"null")
         + r""";
+        const hasMath = """
+        + ("true" if has_math else "false")
+        + r""";
+        const hasMermaid = """
+        + ("true" if has_mermaid else "false")
+        + r""";
+        // a Solara server page has KaTeX in its bundle, and loads mermaid as a frontend feature
+        const solaraFeatures = window.solara && typeof window.solara.loadKatex === 'function' ? window.solara : null;
         await this.loadRequire();
-        this.mermaid = await this.loadMermaid();
-        this.mermaid.init();
+        // with the mermaid feature on (or outside a Solara server page) mermaid loads on the first mount,
+        // otherwise only when there is a diagram
+        if (!solaraFeatures || hasMermaid || !solaraFeatures.isEnabled || solaraFeatures.isEnabled('mermaid')) {
+            this.mermaid = solaraFeatures && solaraFeatures.loadMermaid ? await solaraFeatures.loadMermaid() : await this.loadMermaid();
+            this.mermaid.init();
+        }
         this.latexSettings = {
                 delimiters: [
                     {left: "$$", right: "$$", display: true},
@@ -123,7 +152,23 @@ module.exports = {
                 ],
                 ignoredClasses: ["solara-markdown-output", "jupyter-widgets"]
             };
-        if (window.renderMathInElement) {
+        if (solaraFeatures) {
+            // the KaTeX of the bundle: preloaded with the katex feature, otherwise a lazy load only for text with math
+            if (hasMath || !solaraFeatures.isEnabled || solaraFeatures.isEnabled('katex')) {
+                const katexChunk = await solaraFeatures.loadKatex();
+                this.renderMathInElement = katexChunk.renderMathInElement;
+                // as before, the first Markdown makes KaTeX available to user code
+                if (!window.renderMathInElement) {
+                    window.renderMathInElement = katexChunk.renderMathInElement;
+                }
+                if (window.requirejs && !requirejs.defined('katex') && !requirejs.specified('katex')) {
+                    define('katex', [], () => katexChunk.katex);
+                }
+                if (hasMath) {
+                    this.renderMathInElement(this.$el, this.latexSettings);
+                }
+            }
+        } else if (window.renderMathInElement) {
             window.renderMathInElement(this.$el, this.latexSettings);
         } else if (window.MathJax && MathJax.Hub) {
             MathJax.Hub.Queue(['Typeset', MathJax.Hub, this.$el]);
@@ -230,11 +275,15 @@ module.exports = {
     },
     updated() {
         // if the html gets update, re-run mermaid
-        this.mermaid.init();
+        if (this.mermaid) {
+            this.mermaid.init();
+        }
 
-        if(window.MathJax && MathJax.Hub) {
+        if (this.renderMathInElement) {
+            this.renderMathInElement(this.$el, this.latexSettings);
+        } else if(window.MathJax && MathJax.Hub) {
             MathJax.Hub.Queue(['Typeset', MathJax.Hub, this.$el]);
-        } else {
+        } else if (window.renderMathInElement) {
             window.renderMathInElement(this.$el, this.latexSettings);
         }
     }
@@ -243,6 +292,11 @@ module.exports = {
     """
     )
     return template
+
+
+def _template_widget():
+    # the template has no Vuetify tags, so without the vuetify feature it does not need Vuetify
+    return frontend.template_class(v.VuetifyTemplate, ipyvue.VueTemplate)
 
 
 def _highlight(src, language, class_name=None, options=None, md=None, unsafe_solara_execute=False, cleanups=None, **kwargs):
@@ -318,7 +372,7 @@ def MarkdownIt(md_text: str, highlight: List[int] = [], unsafe_solara_execute: b
         return cleanup
 
     solara.use_effect(cleanup_wrapper)
-    return v.VuetifyTemplate.element(template=_markdown_template(html)).key(hash)
+    return _template_widget().element(template=_markdown_template(html)).key(hash)
 
 
 if has_pymdownx:
@@ -442,4 +496,4 @@ def Markdown(md_text: str, unsafe_solara_execute=False, style: Union[str, Dict, 
     # if we update the template value, the whole vue tree will rerender (ipvue/ipyvuetify issue)
     # however, using the hash we simply generate a new widget each time
     hash = hashlib.sha256((html + str(unsafe_solara_execute)).encode("utf-8")).hexdigest()
-    return v.VuetifyTemplate.element(template=_markdown_template(html, style)).key(hash)
+    return _template_widget().element(template=_markdown_template(html, style)).key(hash)

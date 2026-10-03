@@ -615,6 +615,70 @@ jobs:
           path: ./**/${{ env.LOCK_FILE_LOCATION }}
           include-hidden-files: true
 
+  # Page load benchmark: prints the numbers in the job summary and uploads the JSON.
+  # Timings never fail this job (no thresholds yet), keep it out of the required checks,
+  # and out of update-ci-package-locks/release: it only reads the integration test locks.
+  benchmark:
+    needs: [build]
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        vue: ["2", "3"]
+        include:
+          - vue: "2"
+            lock: .ci-package-locks/integration/osubuntu-python3.10-ipywidgets8.txt
+          - vue: "3"
+            lock: .ci-package-locks/integration-vue3/osubuntu-ipywidgets8.txt
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+
+      - uses: actions/download-artifact@v6
+        with:
+          name: solara-builds
+
+      - name: Link solara app packages
+        run: |
+          (cd packages/solara-vuetify-app; npm run devlink)
+          (cd packages/solara-vuetify3-app; npm run devlink)
+
+      - name: Install
+        run: |
+          command -v uv >/dev/null || pip install uv
+          uv pip install --system -r ${{ matrix.lock }} \
+            `echo dist/*.whl`[all] \
+            `echo packages/solara-server/dist/*.whl`[all] \
+            `echo packages/pytest-ipywidgets/dist/*.whl`[all,ipywidgets8]
+
+      - name: Install and verify ipyvuetify 3
+        if: matrix.vue == '3'
+        run: |
+          pip install --pre "ipyvue>=3.0.0a1" "ipyvuetify>=3.0.0a1"
+          python -c "import ipyvuetify, solara.util; print('ipyvuetify', ipyvuetify.__version__); assert solara.util.IPYVUETIFY_V3"
+
+      - name: Install playwright
+        run: playwright install chromium
+
+      - name: Test the benchmark script
+        run: pytest tests/benchmark -v --timeout=120
+
+      - name: Benchmark
+        run: python -m tests.benchmark.bench --configs all --out bench-results/vue${{ matrix.vue }}.json
+
+      - name: Upload benchmark results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-vue${{ matrix.vue }}
+          path: bench-results
+
   unit-test:
     needs: [build]
     runs-on: ${{ matrix.os }}-latest

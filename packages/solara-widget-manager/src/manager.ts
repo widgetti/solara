@@ -16,29 +16,21 @@ import {
 } from '@jupyter-widgets/jupyterlab-manager/lib/renderer';
 
 
-import * as output from '@jupyter-widgets/jupyterlab-manager/lib/output';
-
 import * as base from '@jupyter-widgets/base';
-import * as controls from '@jupyter-widgets/controls';
-// there two imports came 'for free' with webpack 4, from the jupyter-lab-manager plugin
-// it seems webpack 5 is better at tree-shaking, so we didn't need to import them explicitly before
+// only the version constants: the controls and output code are in the feature chunks
+import { JUPYTER_CONTROLS_VERSION } from '@jupyter-widgets/controls/lib/version';
+import { OUTPUT_WIDGET_VERSION } from '@jupyter-widgets/output/lib/output';
+// this import came 'for free' with webpack 4, from the jupyter-lab-manager plugin
+// it seems webpack 5 is better at tree-shaking, so we didn't need to import it explicitly before
+// (the controls CSS, widgets-base.css, is the jupyter-css feature)
 import '@jupyter-widgets/base/css/index.css';
-import '@jupyter-widgets/controls/css/widgets-base.css';
 // Voila imports the following css file, not sure why
 // import '@jupyter-widgets/controls/css/widgets.built.css';
-
-import * as CoreUtils from '@jupyterlab/coreutils';
-import * as OutputArea from '@jupyterlab/outputarea';
 
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 import { INotebookModel } from '@jupyterlab/notebook';
 import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
 
-import * as LuminoAlgorithm from '@lumino/algorithm';
-import * as LuminoCommands from '@lumino/commands';
-import * as LuminoDomutils from '@lumino/domutils';
-import * as LuminoSignaling from '@lumino/signaling';
-import * as LuminoVirtualdom from '@lumino/virtualdom';
 import * as LuminoWidget from '@lumino/widgets';
 
 import { MessageLoop } from '@lumino/messaging';
@@ -46,7 +38,26 @@ import { MessageLoop } from '@lumino/messaging';
 import { Widget } from '@lumino/widgets';
 
 import { IComm } from '@jupyterlab/services/lib/kernel/kernel';
+import { defineAmdModules } from './amd';
+import { hasFeature, loadFeature } from './features';
 import { requireLoader } from './loader';
+
+// widget modules whose code needs a feature: load the feature first, so the
+// lazy load warning names the flag, and its CSS arrives with it
+const MODULE_FEATURE: { [moduleName: string]: string } = {
+  'jupyter-vuetify': 'vuetify',
+};
+
+// The page maps these modules to their nbextension itself (requirejs.config in solara.html.j2).
+// Other nbextensions configure requirejs in their extension.js, so wait for those (the page sets
+// solara.nbextensionsLoaded) before asking requirejs for such a module. Without the wait, a fast
+// kernel asks before the map exists, which gives a 404 and a fallback to the CDN.
+const PAGE_MAPPED_MODULES = ['jupyter-vue', 'jupyter-vuetify'];
+
+function nbextensionsLoaded(): Promise<void> | undefined {
+  const solara = (window as any).solara;
+  return solara && solara.nbextensionsLoaded;
+}
 
 
 const WIDGET_MIMETYPE = 'application/vnd.jupyter.widget-view+json';
@@ -232,6 +243,13 @@ export class WidgetManager extends JupyterLabManager {
     ) {
       return super.loadClass(className, moduleName, moduleVersion);
     } else {
+      const feature = MODULE_FEATURE[moduleName];
+      if (feature && hasFeature(feature)) {
+        await loadFeature(feature);
+      }
+      if (PAGE_MAPPED_MODULES.indexOf(moduleName) === -1) {
+        await nbextensionsLoaded();
+      }
       // TODO: code duplicate from HTMLWidgetManager, consider a refactor
       return this._loader(moduleName, moduleVersion).then(module => {
         if (module[className]) {
@@ -260,39 +278,20 @@ export class WidgetManager extends JupyterLabManager {
       version: base.JUPYTER_WIDGETS_VERSION,
       exports: base as any
     });
+    // lazy exports: jupyterlab-manager's loadClass awaits a function
     this.register({
       name: '@jupyter-widgets/controls',
-      version: controls.JUPYTER_CONTROLS_VERSION,
-      exports: controls as any
+      version: JUPYTER_CONTROLS_VERSION,
+      exports: () => loadFeature('jupyter-controls').then(chunk => chunk.controls)
     });
     this.register({
       name: '@jupyter-widgets/output',
-      version: output.OUTPUT_WIDGET_VERSION,
-      exports: output as any
+      version: OUTPUT_WIDGET_VERSION,
+      exports: () => loadFeature('output-widget').then(chunk => chunk.output)
     });
-    // do this not top level, since requirejs might be loaded after this module is loaded
-    if (typeof window !== 'undefined' && typeof window.define !== 'undefined') {
-      window.define('@jupyter-widgets/base', base);
-      window.define('@jupyter-widgets/controls', controls);
-      window.define('@jupyter-widgets/output', output);
-
-      window.define('@jupyterlab/coreutils', CoreUtils);
-      window.define('@jupyterlab/outputarea', OutputArea);
-
-      window.define('@phosphor/widgets', LuminoWidget);
-      window.define('@phosphor/signaling', LuminoSignaling);
-      window.define('@phosphor/virtualdom', LuminoVirtualdom);
-      window.define('@phosphor/algorithm', LuminoAlgorithm);
-      window.define('@phosphor/commands', LuminoCommands);
-      window.define('@phosphor/domutils', LuminoDomutils);
-
-      window.define('@lumino/widgets', LuminoWidget);
-      window.define('@lumino/signaling', LuminoSignaling);
-      window.define('@lumino/virtualdom', LuminoVirtualdom);
-      window.define('@lumino/algorithm', LuminoAlgorithm);
-      window.define('@lumino/commands', LuminoCommands);
-      window.define('@lumino/domutils', LuminoDomutils);
-    }
+    // the page calls solara.defineAmdModules() right after loading require.js;
+    // this call (a no-op then) keeps pages that do not do that working
+    defineAmdModules();
   }
 
   private _loader: (name: any, version: any) => Promise<any>;

@@ -8,7 +8,8 @@
  ****************************************************************************/
 
 import { PageConfig } from '@jupyterlab/coreutils';
-import { Kernel, ServerConnection } from '@jupyterlab/services';
+import * as Kernel from '@jupyterlab/services/lib/kernel/kernel';
+import { ServerConnection } from '@jupyterlab/services/lib/serverconnection';
 import { KernelConnection } from '@jupyterlab/services/lib/kernel/default';
 import * as KernelMessage from '@jupyterlab/services/lib/kernel/messages';
 

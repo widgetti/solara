@@ -101,6 +101,53 @@ By default, solara runs in development mode. This means, it will:
 
 To disabled all of these option, pass the `--production` flag, or set the environment variable `SOLARA_MODE=production`.
 
+## Frontend features
+
+The page that the Solara server sends to the browser loads the frontend code in parts, called features.
+By default, the page preloads all features (the `full` preset), so every widget renders at once.
+If your app does not use some features, you can leave them out, and the page loads faster.
+
+Use the `--frontend` option, the `SOLARA_FRONTEND` environment variable, or `solara.server.settings.main.frontend`.
+The value is a preset, `full` or `minimal`, followed by `+feature` or `-feature`:
+
+```bash
+# everything, except the mermaid diagrams
+$ solara run sol.py --frontend=full,-mermaid
+# only Vue and the widget core, plus math rendering
+$ SOLARA_FRONTEND=minimal,+katex solara run sol.py
+```
+
+The features are:
+
+| Feature | What it gives |
+|---|---|
+| `vuetify` | Vuetify and the Vuetify page shell. Needs `mdi`. |
+| `mdi` | The Material Design Icons font (`mdi-*` icons). |
+| `material-icons` | The Material Icons font. |
+| `roboto` | The Roboto font. |
+| `font-awesome` | The Font Awesome icons (replaces `SOLARA_ASSETS_FONTAWESOME_ENABLED`, which still works). |
+| `jupyter-controls` | The ipywidgets controls (`IntSlider`, `Button`, ...). Needs `jupyter-css`. |
+| `output-widget` | The ipywidgets `Output` widget. Needs `jupyter-css`. |
+| `jupyter-css` | The CSS of the ipywidgets controls. |
+| `katex` | Math rendering (KaTeX), for example in `solara.Markdown`. |
+| `mermaid` | Mermaid diagrams in `solara.Markdown`. |
+| `vue-sfc` | The full Vue single-file-component compiler of ipyvue, for templates with `<script setup>`, `<style scoped>` or `lang="ts"`. Vue 3 only. |
+
+The `minimal` preset has none of these features. Vue, the widget core and the notebook extensions are always on.
+
+A feature that the page does not preload still works: the browser loads it the first time a widget needs it.
+That first render is slower, so the server logs a warning (once per feature) that names the flag to add, for example `--frontend=minimal,+jupyter-controls`.
+The browser console shows the same warning.
+The fonts and icon sets are an exception: the browser never loads `material-icons`, `roboto` or `font-awesome` on demand, and nothing warns.
+Without them, text uses a fallback font and those icons do not show, so add them when your app uses them.
+`mdi` loads on demand together with `vuetify`.
+
+Without `vuetify`, the page uses a shell without Vuetify, and the layout components (such as `solara.Column` and `solara.Row`) render without Vuetify.
+This shell has no dark mode.
+Solara then uses no default layout (`AppLayout`), so `solara.Sidebar`, `solara.AppBar` and `solara.AppBarTitle` show nothing, unless you use `solara.AppLayout` or a layout of your own; the server logs a warning when that happens.
+On Vue 2 (ipyvue < 3), Vuetify is always on.
+This setting only applies to the Solara server; Jupyter (notebook, lab, Voila) always loads everything.
+
 ## Telemetry
 
 Solara uses Mixpanel to collect usage of the solara server. We track when a server is started, stopped and a daily report of the number of unique users and connections made. To opt out of mixpanel telemetry, either:

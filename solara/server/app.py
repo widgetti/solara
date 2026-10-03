@@ -14,6 +14,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional, cast
 
+import ipyvue
+import ipyvuetify
 import ipywidgets as widgets
 import reacton
 from reacton.core import Element, render
@@ -23,7 +25,7 @@ import solara
 import solara.lifecycle
 from solara.util import nested_get
 
-from . import kernel_context, patch, reload, settings
+from . import frontend, kernel_context, patch, reload, settings
 from .kernel import Kernel
 from .utils import pdb_guard
 
@@ -76,6 +78,30 @@ class AppType(str, Enum):
 
 def display(*args, **kwargs):
     print("display not implemented", args, kwargs)  # noqa
+
+
+def _root_container() -> widgets.DOMWidget:
+    """The widget that holds the app: ipyvuetify.Html, or ipyvue.Html when the vuetify frontend feature is off."""
+    if frontend.vuetify_enabled():
+        return ipyvuetify.Html(tag="div")
+    return ipyvue.Html(tag="div")
+
+
+def _error_widget(text: str) -> widgets.Widget:
+    """A widget that shows an error, such as a traceback.
+
+    ipywidgets.HTML needs the jupyter-controls frontend feature, so without it we use ipyvue.Html.
+    """
+    if "jupyter-controls" in frontend.current():
+        return widgets.HTML(f"<pre>{html.escape(text)}</pre>", layout=widgets.Layout(overflow="auto"))
+    return ipyvue.Html(tag="pre", children=[text], style_="overflow: auto")
+
+
+def _error_element(text: str) -> Element:
+    """Like _error_widget, but an element, so each virtual kernel creates its own widget."""
+    if "jupyter-controls" in frontend.current():
+        return ipywidgets.HTML(value=f"<pre>{html.escape(text)}</pre>", layout=ipywidgets.Layout(overflow="auto"))
+    return ipyvue.Html.element(tag="pre", children=[text], style_="overflow: auto")
 
 
 class AppScript:
@@ -278,8 +304,7 @@ class AppScript:
                         error = "".join(traceback.format_exception(None, e, e.__traceback__))
                         print(error, file=sys.stdout, flush=True)  # noqa
 
-                        error = html.escape(error)
-                        self._first_execute_app = ipywidgets.HTML(value=f"<pre>{error}</pre>", layout=ipywidgets.Layout(overflow="auto"))
+                        self._first_execute_app = _error_element(error)
                         # We now ran the app again, might contain new imports
 
                         print("Failed to execute app, fix the error and save the file to reload")  # noqa
@@ -463,11 +488,8 @@ def load_app_widget(app_state, app_script: AppScript, pathname: str):
         error = "".join(traceback.format_exception(None, e, e.__traceback__))
         print(error, file=sys.stdout, flush=True)  # noqa
         # widget = widgets.Label(value="Error, see server logs")
-        import html
-
-        error = html.escape(error)
         with context:
-            widget = widgets.HTML(f"<pre>{error}</pre>", layout=widgets.Layout(overflow="auto"))
+            widget = _error_widget(error)
             container.children = [widget]
 
 
@@ -552,13 +574,10 @@ def solara_comm_target(comm, msg_first):
             app_name = args.get("appName") or "__default__"
             app = apps[app_name]
             context = kernel_context.get_current_context()
-            import ipyvuetify
-
-            container = ipyvuetify.Html(tag="div")
-            context.container = container
-            themes = args.get("themes")
-            dark = args.get("dark")
-            load_themes(themes, dark)
+            context.container = _root_container()
+            if frontend.vuetify_enabled():
+                # the theme widgets are Vuetify widgets, and the page without Vuetify sends no themes
+                load_themes(args.get("themes"), args.get("dark"))
             try:
                 load_app_widget(None, app, path)
             except Exception as e:
@@ -595,12 +614,15 @@ def solara_comm_target(comm, msg_first):
             assert app is not None
             context = kernel_context.get_current_context()
             path = data.get("path", "")
-            current_theme = theme._instance.value
-            theme_dict = _get_theme(current_theme)
+            vuetify = frontend.vuetify_enabled()
+            if vuetify:
+                current_theme = theme._instance.value
+                theme_dict = _get_theme(current_theme)
 
             with context:
                 context.restart()
-                load_themes(theme_dict, current_theme.dark_effective)
+                if vuetify:
+                    load_themes(theme_dict, current_theme.dark_effective)
                 load_app_widget(context.state, app, path)
                 comm.send({"method": "finished"})
         elif method == "evict":
@@ -621,6 +643,9 @@ def solara_comm_target(comm, msg_first):
                 # machinery, which must not happen re-entrantly from the kernel's own message
                 # thread that is executing this handler
                 threading.Thread(target=lambda: context.close(reason="evicted"), name=f"evict-{context.id}", daemon=True).start()
+        elif method == "frontend-lazy-load":
+            # the browser loaded a frontend feature that the page did not preload
+            frontend.log_lazy_load(data.get("feature"))
         else:
             logger.error("Unknown comm method called on solara.control comm: %s", method)
 

@@ -1,125 +1,100 @@
-var path = require('path');
+const path = require('path');
+const webpack = require('webpack');
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
+const TerserPlugin = require("terser-webpack-plugin");
+const { slotInsert, DropCssPlugin, ChunkGuardPlugin, DedupePackagesPlugin } = require("../solara-widget-manager/webpack-plugins");
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
-const analyzerPlugins = process.env.ANALYZE === "true" ? [
-    new BundleAnalyzerPlugin({analyzerPort: 9999})] : [];
+const analyze = process.env.ANALYZE === "true";
 
-var rules = [
+// Each frontend feature (katex, jupyter-controls, ...) is a named async chunk:
+// solara-vuetify-app{M}.{feature}{.min}.js and main{M}.{feature}.css.
+// The server preloads the chunks of the enabled features, see solara/server/frontend_assets.py.
+// On Vue 2, Vuetify stays in the core bundle (jupyter-vuetify's nodeps.js reads the app's vuetify).
+
+const rules = [
     { test: /\.css$/, use: [MiniCssExtractPlugin.loader, 'css-loader'] },
-    // required to load font-awesome
+    // fonts are files, not data URIs: the browser fetches only the fonts a page uses
+    // (KaTeX's CSS was 77 KB gzip with its fonts inlined, 4 KB without)
     {
-        test: /\.woff2(\?v=\d+\.\d+\.\d+)?$/,
-        type: 'asset',
+        test: /\.(woff2?|ttf|eot|svg)(\?v=\d+\.\d+\.\d+)?$/,
+        type: 'asset/resource',
     },
-    {
-        test: /\.woff(\?v=\d+\.\d+\.\d+)?$/,
-        type: 'asset',
-    },
-    {
-        test: /\.ttf(\?v=\d+\.\d+\.\d+)?$/,
-        type: 'asset',
-    },
-    {
-        test: /\.eot(\?v=\d+\.\d+\.\d+)?$/,
-        type: 'asset',
-    },
-    {
-        test: /\.svg(\?v=\d+\.\d+\.\d+)?$/,
-        type: 'asset',
-    }
 ];
 
-module.exports = [
-    {
-        plugins: [new MiniCssExtractPlugin({filename: 'fonts.css'})],
-        entry: './src/fonts.js',
-        output: {
-            filename: 'fonts.js',
-            path: path.resolve(__dirname, 'dist'),
-            libraryTarget: 'umd',
-            publicPath: 'auto',
-        },
-        module: {
-            rules: rules
-        },
-        mode: 'production',
-    },
-    {
-        plugins: [new MiniCssExtractPlugin({filename: 'main7.css'})],
+const empty = path.resolve(__dirname, "src", "empty.js");
+
+// one config per (ipywidgets major version, production|development)
+function config(major, production) {
+    const min = production ? '.min' : '';
+    const widgetManager = major === 8 ? '@widgetti/solara-widget-manager8' : '@widgetti/solara-widget-manager';
+    return {
+        name: `solara-vuetify-app${major}${min}`,
         entry: './src/solara-vuetify-app.js',
+        mode: production ? 'production' : 'development',
+        // as before: no source map for prod 7, eval for dev 7
+        devtool: major === 8 ? 'source-map' : (production ? false : 'eval'),
         output: {
-            filename: 'solara-vuetify-app7.min.js',
+            filename: `solara-vuetify-app${major}${min}.js`,
+            chunkFilename: `solara-vuetify-app${major}.[name]${min}.js`,
             path: path.resolve(__dirname, 'dist'),
             libraryTarget: 'umd',
+            // chunks load from where the core script came from (CDN, /_solara/cdn, solara-assets)
             publicPath: 'auto',
+            // own JSONP global per build, so two builds can never share chunks
+            uniqueName: `solara_vuetify_app${major}${production ? '' : '_dev'}`,
+            ...(production ? {} : { devtoolModuleFilenameTemplate: `webpack://@widgetti/solara-vuetify-app` }),
         },
-        module: {
-            rules: rules
-        },
-        mode: 'production',
-    },
-    {
-        plugins: [new MiniCssExtractPlugin({filename: 'main7.css'})],
-        entry: './src/solara-vuetify-app.js',
-        output: {
-            filename: 'solara-vuetify-app7.js',
-            path: path.resolve(__dirname, 'dist'),
-            libraryTarget: 'umd',
-            publicPath: 'auto',
-            devtoolModuleFilenameTemplate: `webpack://@widgetti/solara-vuetify-app`
-        },
-        module: {
-            rules: rules
-        },
-        mode: 'development',
-    },
-    {
-        plugins: [new MiniCssExtractPlugin({filename: 'main8.css'}), ...analyzerPlugins],
-        entry: './src/solara-vuetify-app.js',
-        output: {
-            filename: 'solara-vuetify-app8.min.js',
-            path: path.resolve(__dirname, 'dist'),
-            libraryTarget: 'umd',
-            publicPath: 'auto',
-        },
-        devtool: 'source-map',
+        plugins: [
+            new MiniCssExtractPlugin({
+                filename: `main${major}.css`,
+                chunkFilename: `main${major}.[name].css`,
+                insert: slotInsert,
+            }),
+            new ChunkGuardPlugin(),
+            new DedupePackagesPlugin(),
+            // only the parts of the @jupyterlab/services index that we use (see solara-widget-manager/src/services.ts)
+            new webpack.NormalModuleReplacementPlugin(
+                /@jupyterlab[\\/]services[\\/]lib[\\/]index\.js$/,
+                path.resolve(__dirname, 'node_modules', widgetManager, 'lib', 'services.js'),
+            ),
+            ...(production ? [] : [new DropCssPlugin()]),
+            ...(analyze && major === 8 && production ? [new BundleAnalyzerPlugin({ analyzerPort: 9999 })] : []),
+        ],
         module: {
             rules: rules
         },
         optimization: {
-            concatenateModules: false,
+            // no shared chunks with generated names: every async chunk is one feature
+            splitChunks: false,
+            // the bundle analyzer shows more detail without module concatenation
+            concatenateModules: analyze ? false : undefined,
+            minimizer: [
+                // without ascii_only, the chunks need <meta charset="utf-8"> on the page
+                new TerserPlugin({ terserOptions: { format: { ascii_only: true } } }),
+                // also removes the duplicate Vuetify rules (dist + lib CSS), keeping the last copy.
+                // mergeLonghand off: merging var() longhands into a shorthand changes the cascade, e.g.
+                // Vuetify's .v-main padding-top/left longhands became one padding shorthand, and one invalid
+                // var (--v-layout-left: NaN with a width="min-content" drawer) then voided padding-top as well
+                new CssMinimizerPlugin({ minimizerOptions: { preset: ['default', { mergeLonghand: false }] } }),
+            ],
         },
         resolve: {
             alias: {
-                "@widgetti/solara-widget-manager": "@widgetti/solara-widget-manager8",
-                // why would we need codemirror?
-                '@jupyterlab/codemirror': path.resolve(__dirname, "src", "empty.js"),
-                // do not think we use these
-                'postcss': path.resolve(__dirname, "src", "empty.js"),
-                'moment': path.resolve(__dirname, "src", "empty.js"),
+                ...(major === 8 ? { "@widgetti/solara-widget-manager": widgetManager } : {}),
+                // CodeMirror (markdown code highlighting) is a lazy chunk (see solara-widget-manager/src/codemirror.ts)
+                '@jupyterlab/codemirror$': path.resolve(__dirname, 'node_modules', widgetManager, 'lib', 'codemirror.js'),
+                // do not think we use this
+                'moment': empty,
+                // as before: the ipywidgets 8 production build has no postcss, so sanitize-html drops the
+                // style attributes of HTML descriptions (the development build keeps them)
+                ...(major === 8 && production ? { 'postcss': empty } : {}),
+                // one sanitize-html copy, in the "sanitizer" chunk (see solara-widget-manager/src/sanitize.ts)
+                'sanitize-html$': path.resolve(__dirname, 'node_modules', widgetManager, 'lib', 'sanitize.js'),
             }
         },
-        mode: 'production',
-    }, {
-        plugins: [new MiniCssExtractPlugin({filename: 'main8.css'})],
-        entry: './src/solara-vuetify-app.js',
-        output: {
-            filename: 'solara-vuetify-app8.js',
-            path: path.resolve(__dirname, 'dist'),
-            libraryTarget: 'umd',
-            publicPath: 'auto',
-            devtoolModuleFilenameTemplate: `webpack://@widgetti/solara-vuetify-app`
-        },
-        devtool: 'source-map',
-        module: {
-            rules: rules
-        },
-        resolve: {
-            alias: {
-                "@widgetti/solara-widget-manager": "@widgetti/solara-widget-manager8",
-            }
-        },
-        mode: 'development',
-    },
-];
+    };
+}
+
+module.exports = [config(7, true), config(7, false), config(8, true), config(8, false)];

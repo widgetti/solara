@@ -20,7 +20,7 @@ import solara.server.settings
 from solara.lab import cookies as solara_cookies
 from solara.lab import headers as solara_headers
 
-from . import app, jupytertools, patch, settings, websocket
+from . import app, frontend as frontend_mod, frontend_assets, jupytertools, patch, settings, websocket
 from .kernel import Kernel, deserialize_binary_message
 from .kernel_context import initialize_virtual_kernel
 
@@ -288,7 +288,15 @@ def read_root(
     render_kwargs={},
     use_nbextensions=True,
     ssg_data=None,
+    frontend: Union[str, frontend_mod.Frontend, None] = None,
+    legacy: bool = False,
 ) -> Optional[str]:
+    """Render the page.
+
+    frontend: the features the page preloads (a --frontend value, or a Frontend), default: the server setting.
+    legacy: the page as before --frontend existed (all features, require.js from the CDN, no preloads),
+        for pages that are not served by a Solara server (the Jupyter popout page and the pyodide build).
+    """
     if settings.ssg.enabled and ssg_data is None:
         # simply return the pre-rendered html
         from solara_enterprise import ssg
@@ -421,6 +429,37 @@ def read_root(
     if jupyter_root_path is None:
         jupyter_root_path = f"{root_path}/jupyter"
 
+    if legacy:
+        enabled = frontend_mod.legacy(vue3=vue3)
+    elif frontend is None:
+        enabled = frontend_mod.current(vue3=vue3)
+    elif isinstance(frontend, str):
+        enabled = frontend_mod.effective(frontend_mod.parse(frontend), vue3, settings.assets.fontawesome_enabled)
+    else:
+        enabled = frontend
+    production = settings.main.mode == "production"
+    page_assets = frontend_assets.page_assets(vue3, ipywidgets_major, production, cdn, enabled)
+    vuetify = "vuetify" in enabled
+
+    # start fetching the widget code while the kernel starts; requirejs loads the same urls later
+    # (it adds the hash of the folder an nbextension owns, see urlArgs in solara.html.j2)
+    nbextension_preloads = []
+    vue_sfc_preload = None
+    if not legacy:
+        preload_names = ["jupyter-vue/extension"] + (["jupyter-vuetify/extension"] if vuetify else [])
+        for name in preload_names:
+            if name in nbextensions:
+                folder = name.split("/")[0]
+                nbextension_preloads.append(f"{jupyter_root_path}/nbextensions/{folder}/nodeps.js?{nbextensions_hashes[name]}")
+        if "vue-sfc" in enabled and "jupyter-vue/extension" in nbextensions:
+            # ipyvue >= 3.1 has the SFC compiler in its own chunk
+            jupyter_vue_root = nbextension_root("jupyter-vue/extension")
+            if jupyter_vue_root is not None and (jupyter_vue_root / "nodeps-vue-sfc.js").exists():
+                vue_sfc_preload = f"{jupyter_root_path}/nbextensions/jupyter-vue/nodeps-vue-sfc.js?{nbextensions_hashes['jupyter-vue/extension']}"
+
+    assets = settings.assets.dict()
+    assets["fontawesome_enabled"] = "font-awesome" in enabled
+
     render_settings = {
         "title": title,
         "path": path,
@@ -432,17 +471,28 @@ def read_root(
         "client_version": app.client_version(),
         "resources": resources,
         "theme": settings.theme.dict(),
-        "production": settings.main.mode == "production",
+        "production": production,
         "pre_rendered_html": pre_rendered_html,
         "pre_rendered_css": pre_rendered_css,
         "pre_rendered_metas": pre_rendered_metas,
-        "assets": settings.assets.dict(),
+        "assets": assets,
         "cdn": cdn,
         "ipywidget_major_version": ipywidgets_major,
         "solara_version": solara.__version__,
         "platform": settings.main.platform,
         "vue3": vue3,
         "perform_check": settings.main.mode != "production" and solara.checks.should_perform_solara_check(),
+        "legacy": legacy,
+        "features": enabled.features,
+        "vuetify": vuetify,
+        "frontend_assets": page_assets,
+        "frontend_js": {**enabled.to_js(), "chunks": page_assets.chunk_names},
+        "nbextension_preloads": nbextension_preloads,
+        "vue_sfc_preload": vue_sfc_preload,
+        "mermaid_url": f"{cdn}{frontend_assets.MERMAID_PATH}",
+        "requirejs_url": f"{cdn}{frontend_assets.REQUIREJS_PATH}",
+        # the quick wins ship a minified require.js; the CDN copy is the fallback
+        "requirejs_local": (solara_static / "require.min.js").exists(),
         **render_kwargs,
     }
     response = template.render(**render_settings)

@@ -13,13 +13,28 @@
     {# start fetching ES modules (ipyvue.define_module) while the kernel starts #}
     <link rel="modulepreload" href="{{ url }}" />
     {% endfor -%}
+    {% for url in nbextension_preloads -%}
+    {# start fetching the widget code while the kernel starts (no crossorigin: requirejs loads it without) #}
+    <link rel="preload" as="script" href="{{ url }}">
+    {% endfor -%}
+    {% if vue_sfc_preload -%}
+    {# the SFC compiler chunk of jupyter-vue (ipyvue >= 3.1): it registers itself, and runs when jupyter-vue needs it.
+       A failed tag must go, or webpack reuses it later (found by data-webpack) and waits for an event that never comes. #}
+    <script defer src="{{ vue_sfc_preload }}" data-webpack="jupyter-vue-nodeps:chunk-vue-sfc" onerror="event.target.remove()"></script>
+    {% endif -%}
     {% block header %}
 
     {{ pre_rendered_css | safe }}
-    {% if vue3 == True %}
-    <link href="{{cdn}}/@widgetti/solara-vuetify3-app@5.2.0/dist/main{{ipywidget_major_version}}.css" rel="stylesheet" class="solara-template-css"></link>
-    {% else %}
-    <link href="{{cdn}}/@widgetti/solara-vuetify-app@10.1.1/dist/main{{ipywidget_major_version}}.css" rel="stylesheet" class="solara-template-css"></link>
+    <link href="{{frontend_assets.core_css}}" rel="stylesheet" class="solara-template-css"></link>
+    {% for css in frontend_assets.head_css %}
+    {% if css.url %}
+    <link href="{{css.url}}" rel="stylesheet" class="solara-template-css" data-href="{{css.data_href}}"></link>
+    {% endif %}
+    {# a lazy loaded feature puts its CSS here, so the order is the same as when it is preloaded #}
+    <template data-solara-css-slot="{{css.feature}}"></template>
+    {% endfor %}
+    {% if not vuetify %}
+    {{ resources.include_css("/static/solara-vue.css") }}
     {% endif %}
 
 
@@ -42,6 +57,7 @@
     <style class="solara-template-css">
         {% include "loader-"~theme.loader~".css" %}
     </style>
+    {% if vuetify %}
     <!-- Include Vuetify background colours so static html from SSG renders the right general colour theme
         before first render. We remove these after Vue takes over rendering to avoid collisions -->
     <style id="pre-render-theme">
@@ -57,8 +73,10 @@
         color: #fff
     }
 </style>
+    {% endif %}
     {% endblock header %}
 </head>
+{% if vuetify %}
 {% raw -%}
 <script type="x-template" id="vue-app-template" style="display: none">
     <v-app :key="forceUpdateTrigger" :class="loadingPage ? 'solara-page-loading' : ''">
@@ -189,6 +207,9 @@
     </v-app>
 </script>
 {% endraw -%}
+{% else %}
+{% include "shell-vue.html" %}
+{% endif %}
 
 <body data-base-url="{{root_path}}/jupyter/">
     {% if perform_check %}
@@ -196,7 +217,9 @@
     {% endif %}
     {% if theme.variant == "auto" %}
     {% endif %}
-    {% if theme.variant == "light" %}
+    {% if not vuetify %}
+    <div id="app" class="solara-app">
+    {% elif theme.variant == "light" %}
     <div id="app" class="v-application v-application--is-ltr theme--light" data-app="true">
     {% elif theme.variant == "dark" %}
     <div id="app" class="v-application v-application--is-ltr theme--dark" data-app="true">
@@ -220,6 +243,10 @@
             return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
         }
         function inDarkMode() {
+            {% if not vuetify %}
+            // the shell without Vuetify has no dark mode: a dark Jupyter theme would put white text on its white page
+            return false;
+            {% endif %}
             if (getThemeVariant() == 'auto') {
                 return prefersDarkScheme();
             }
@@ -245,21 +272,35 @@
     </script>
     {% block after_pre_rendered_html %}{% endblock %}
     {{ resources.include_js("/static/assets/theme.js") }}
-    {% if vue3 == True %}
-        <link href="{{cdn}}/@widgetti/solara-vuetify3-app@5.2.0/dist/fonts.css" rel="stylesheet"></link>
-        {% if production %}
-        <script src="{{cdn}}/@widgetti/solara-vuetify3-app@5.2.0/dist/solara-vuetify-app{{ipywidget_major_version}}.min.js"></script>
-        {% else %}
-        <script src="{{cdn}}/@widgetti/solara-vuetify3-app@5.2.0/dist/solara-vuetify-app{{ipywidget_major_version}}.js"></script>
-        {% endif %}
-    {% else %}
-        <link href="{{cdn}}/@widgetti/solara-vuetify-app@10.1.1/dist/fonts.css" rel="stylesheet" fetchpriority="low"></link>
-        {% if production %}
-        <script src="{{cdn}}/@widgetti/solara-vuetify-app@10.1.1/dist/solara-vuetify-app{{ipywidget_major_version}}.min.js"></script>
-        {% else %}
-        <script src="{{cdn}}/@widgetti/solara-vuetify-app@10.1.1/dist/solara-vuetify-app{{ipywidget_major_version}}.js"></script>
-        {% endif %}
+    {% for css in frontend_assets.body_css %}
+    {% if css.url %}
+        <link href="{{css.url}}" rel="stylesheet" data-href="{{css.data_href}}"{% if not vue3 %} fetchpriority="low"{% endif %}></link>
     {% endif %}
+        <template data-solara-css-slot="{{css.feature}}"></template>
+    {% endfor %}
+    <script>
+        window.solaraFrontend = {{ frontend_js | tojson | safe }};
+    </script>
+        <script src="{{frontend_assets.core_js}}"></script>
+    {# a failed chunk script must go: webpack reuses a script tag with the same src for a lazy load, and would wait for it #}
+    {% for url in frontend_assets.chunk_js %}
+        <script src="{{url}}" onerror="event.target.remove()"></script>
+    {% endfor %}
+    <script>
+        // run the chunks of the preloaded features now, so their globals (like vuetifyPlugin) exist below
+        if (typeof solara.setEnabledFeatures === "function") {
+            solara.setEnabledFeatures(solaraFrontend.features);
+            const missing = solara.loadPreloadedFeaturesSync().filter(name => solaraFrontend.chunks.includes(name));
+            if (missing.length) {
+                console.error("solara: the chunks of these preloaded frontend features did not run:", missing);
+            }
+        }
+        // mermaid is not in the bundle, it loads from its own package
+        if (typeof solara.registerFeature === "function") {
+            solara.registerFeature("mermaid", () => new Promise((resolve, reject) => requirejs([{{ mermaid_url | tojson | safe }}], resolve, reject)));
+            solara.loadMermaid = () => solara.loadFeature("mermaid");
+        }
+    </script>
     <script>
         solara.rootPath = {{ root_path | tojson | safe}};
         solara.jupyterRootPath = {{ jupyter_root_path | tojson | safe}};
@@ -285,8 +326,12 @@
 
     {{ resources.include_js("/static/assets/custom.js") }}
 
-    <script src="{{cdn}}/requirejs@2.3.6/require.js" crossorigin="anonymous">
+    {% if legacy or not requirejs_local %}
+    <script src="{{requirejs_url}}" crossorigin="anonymous">
     </script>
+    {% else %}
+    {{ resources.include_js("/static/require.min.js") }}
+    {% endif %}
     {{ resources.include_js("/static/main-vuetify.js") }}
     {{ resources.include_js("/static/ansi.js") }}
 
@@ -327,6 +372,7 @@
             },
             mounted() {
                 document.querySelector('#app').removeAttribute("style");
+                {% if vuetify %}
                 const setVuetifyTheme = (dark) => {
                     if (Vue.version.startsWith('3')) {
                         const name = this.$vuetify.theme.global.name;
@@ -345,6 +391,7 @@
                     setVuetifyTheme(inDarkMode());
                 });
                 document.getElementById('pre-render-theme').remove();
+                {% endif %}
             },
             methods: {
                 setCancelAutoRefresh() {
@@ -418,6 +465,7 @@
                         }, 1000);
                     }
                 },
+                {% if vuetify %}
                 '$vuetify.theme.dark': function (value) {
                     if ( value ) {
                         changeThemeCSS('dark');
@@ -429,6 +477,7 @@
                         appContainer.classList.add('theme--light');
                     }
                 }
+                {% endif %}
             },
             data() {
                 return {
@@ -465,6 +514,7 @@
         const vuetifyThemesV2 = Object.fromEntries(
             Object.entries(vuetifyThemes || {}).map(([name, theme]) => [name, theme.colors || theme])
         );
+        {% if vuetify %}
         if(vue3) {
             var app = Vue.createApp(appComponent).use(vuetifyPlugin)
                 .component("jupyter-widget-mount-point", jupyterWidgetMountPoint)
@@ -483,6 +533,12 @@
                 ...appComponent,
             });
         }
+        {% else %}
+        // the shell without Vuetify (shell-vue.html); a Vuetify widget loads Vuetify on first use
+        var app = Vue.createApp(appComponent)
+            .component("jupyter-widget-mount-point", jupyterWidgetMountPoint)
+            .mount('#app');
+        {% endif %}
         // Loading classic notebook extensions.
         {% if 'jupyter-vuetify/extension' in resources.nbextensions -%}
         window.enable_nbextensions = true;
@@ -521,11 +577,22 @@
                     }
                 },
             });
-        requirejs([
+        // the AMD modules of the bundle (@jupyter-widgets/base, ...) and the app (vue, vuetify),
+        // before any nbextension can ask for them
+        if (typeof solara.defineAmdModules === "function") {
+            solara.defineAmdModules();
+        }
+        defineAppAmdModules();
+        // an nbextension configures requirejs in its extension.js (for instance a map to its own files), so
+        // the widget manager waits for this before it asks requirejs for the module of such a widget
+        solara.nbextensionsLoaded = new Promise((resolve) => requirejs([
             {% for ext in resources.nbextensions if ext != 'jupyter-vuetify/extension' and ext != 'jupyter-vue/extension' -%}
         "{{jupyter_root_path}}/nbextensions/{{ ext }}.js",
             {% endfor %}
-        ]);
+        ], () => resolve(), (error) => {
+            console.error(error);
+            resolve();
+        }));
         (async function () {
             await Promise.all([
                 solaraInit('solara-main')
