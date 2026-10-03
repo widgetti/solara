@@ -15,7 +15,8 @@ from solara.util import IPYVUETIFY_V3
 def MarkdownWithMetadata(content: str, unsafe_solara_execute=True):
     cleanups = solara.use_ref(cast(List[Callable[[], None]], []))
     if "---" in content:
-        pre_content, raw_metadata, post_content = content.split("---")
+        # only the first two "---" delimit the metadata, the body may have more (a table or a horizontal rule)
+        pre_content, raw_metadata, post_content = content.split("---", 2)
         metadata: Dict[str, Union[str, List[str]]] = yaml.safe_load(raw_metadata)
 
         if len(pre_content) == 0:

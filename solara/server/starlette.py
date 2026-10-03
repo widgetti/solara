@@ -1,5 +1,6 @@
 import asyncio
 import concurrent.futures
+import copy
 from contextlib import asynccontextmanager
 import hashlib
 import re
@@ -49,6 +50,7 @@ else:
     has_auth_support = False
 
 from starlette.applications import Starlette
+from starlette.datastructures import Headers
 from starlette.exceptions import HTTPException
 from starlette.middleware import Middleware
 from starlette.middleware.authentication import AuthenticationMiddleware
@@ -59,17 +61,19 @@ from starlette.routing import Mount, Route, WebSocketRoute
 from urllib.parse import parse_qs
 
 from starlette.staticfiles import StaticFiles
-from starlette.types import Receive, Scope, Send
+from starlette.types import Message, Receive, Scope, Send
 
 import solara
 import solara.settings
 from solara.server.threaded import ServerBase
 
 from . import app as appmod
-from . import kernel_context, server, settings, telemetry, websocket
+from . import compress, kernel_context, server, settings, telemetry, websocket
 from .cdn_helper import cdn_url_path, get_path
 
 os.environ["SERVER_SOFTWARE"] = "solara/" + str(solara.__version__)
+# fail early on a bad SOLARA_FRONTEND (only the server uses it, so not at `import solara`)
+solara.server.frontend.parse(settings.main.frontend)
 limiter: Optional[anyio.CapacityLimiter] = None
 lock = threading.Lock()
 
@@ -657,6 +661,12 @@ class StaticFilesOptionalAuth(StaticFiles):
             raise HTTPException(status_code=401, detail="Unauthorized")
         await super().__call__(scope, receive, send)
 
+    async def get_response(self, path: str, scope: Scope) -> Response:
+        response = await super().get_response(path, scope)
+        # compressed once per file, instead of on every request by the GZip middleware
+        # (which sends the compressed response as it is, see SolaraGZipMiddleware)
+        return await compress.compress_file_response(response, scope)
+
     def file_response(self, full_path, stat_result: os.stat_result, scope: Scope, status_code: int = 200) -> Response:
         response = super().file_response(full_path, stat_result, scope, status_code)
         # A url that carries the hash of the file's content (?v=..., see include_js,
@@ -772,6 +782,11 @@ class StaticCdn(StaticFilesOptionalAuth):
     # republishing a version, so the content behind such a url can never change
     _exact_version = re.compile(r"@\d+\.\d+\.\d+(?:[-+][\w.]+)?/")
 
+    @classmethod
+    def _pins_exact_version(cls, path: str, sep: str = os.sep) -> bool:
+        # path is an OS path (StaticFiles.get_path), with backslashes on Windows
+        return cls._exact_version.search(path.replace(sep, "/")) is not None
+
     async def get_response(self, path: str, scope):
         response = await super().get_response(path, scope)
         # All urls solara itself puts through this proxy pin an exact version
@@ -783,7 +798,7 @@ class StaticCdn(StaticFilesOptionalAuth):
         # Semver-RANGE urls (user-constructed, e.g. pkg@^1/...) are resolved by
         # the cdn at fetch time and can change content under the same url, so
         # they are deliberately not marked immutable.
-        if response.status_code in (200, 304) and self._exact_version.search(path):
+        if response.status_code in (200, 304) and self._pins_exact_version(path):
             response.headers["Cache-Control"] = immutable_cache_control()
         return response
 
@@ -1022,10 +1037,41 @@ async def resourcez(request: Request):
     return Response(content=json_string, media_type="application/json")
 
 
+class SolaraGZipMiddleware(GZipMiddleware):
+    """GZipMiddleware that sends a response that already has a Content-Encoding as it is.
+
+    The static mounts compress each file once (see StaticFilesOptionalAuth.get_response), and older
+    starlette versions would gzip such a response again. Other responses, also static files that
+    compress.py leaves alone (an unlisted suffix, a large file), get gzip as before.
+    """
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        app = self.app
+
+        async def app_skipping_encoded(scope: Scope, receive: Receive, gzip_send: Send) -> None:
+            target = gzip_send
+
+            async def app_send(message: Message) -> None:
+                nonlocal target
+                if message["type"] == "http.response.start" and "content-encoding" in Headers(raw=message["headers"]):
+                    target = send
+                await target(message)
+
+            await app(scope, receive, app_send)
+
+        # a copy per request, so the gzip responder of this request wraps our app
+        middleware = copy.copy(self)
+        middleware.app = app_skipping_encoded
+        await GZipMiddleware.__call__(middleware, scope, receive, send)
+
+
 middleware = [
     # SOLARA_SERVER_HTTP_GZIP=false to disable, e.g. when a fronting proxy
     # (nginx/caddy) does the compressing
-    *([Middleware(GZipMiddleware, minimum_size=1000)] if settings.server.http_gzip else []),
+    *([Middleware(SolaraGZipMiddleware, minimum_size=1000)] if settings.server.http_gzip else []),
 ]
 
 if has_auth_support:

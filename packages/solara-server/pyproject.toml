@@ -41,6 +41,8 @@ starlette = [
     "uvicorn",
     "websockets",
     "starlette",
+    # static files are sent brotli compressed when installed (else gzip), see solara/server/compress.py
+    "brotli",
 ]
 flask = [
     "flask",

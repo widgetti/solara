@@ -1,11 +1,17 @@
+import ipyvue
 import ipyvuetify as vy
 import solara
+from solara.server import frontend
 
 
-class CodeHighlightCssWidget(vy.VuetifyTemplate):
+class CodeHighlightCssWidgetVue(ipyvue.VueTemplate):
     template_file = (__file__, "code_highlight_css.vue")
+
+
+class CodeHighlightCssWidget(CodeHighlightCssWidgetVue, vy.VuetifyTemplate):
+    pass
 
 
 @solara.component
 def CodeHighlightCss():
-    return CodeHighlightCssWidget.element()
+    return frontend.template_class(CodeHighlightCssWidget, CodeHighlightCssWidgetVue).element()

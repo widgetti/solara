@@ -257,6 +257,9 @@ class MainSettings(BaseSettings):
     # `Authorization: Bearer <token>` unlocks the un-redacted per-key/per-kernel tables; when
     # empty, production serves aggregates + hashed key labels only. Never gates /readyz.
     resourcez_token: str = ""
+    # which frontend features the page preloads, e.g. "full" (default), "minimal,+katex" or "full,-mermaid"
+    # (SOLARA_FRONTEND or solara run --frontend, see solara/server/frontend.py)
+    frontend: str = "full"
 
     class Config:
         env_prefix = "solara_"

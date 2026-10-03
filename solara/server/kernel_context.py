@@ -109,6 +109,9 @@ class VirtualKernelContext:
     # "evicted" | "unknown". Drives the reason-gated fenced delete (§5.4) and is logged/asserted.
     close_reason: str = "unknown"
     container: Optional[DOMWidget] = None
+    # the frontend features of the page (a solara.server.frontend.Frontend), set by its run message;
+    # None: the server setting (see solara.server.frontend.active)
+    frontend: Optional[Any] = None
     # we track which pages are connected to implement kernel culling
     page_status: Dict[str, PageStatus] = dataclasses.field(default_factory=dict)
     # the open connections of each page, by the number `page_connect` hands out; a page reconnects

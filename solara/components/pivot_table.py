@@ -3,6 +3,7 @@ import os
 from functools import reduce
 from typing import Any, Callable, Dict, List, NoReturn
 
+import ipyvue
 import ipyvuetify as v
 
 try:
@@ -12,6 +13,7 @@ except ModuleNotFoundError:
 import traitlets
 
 import solara
+from solara.server import frontend
 from solara.util import IPYVUETIFY_V3
 from solara.alias import rv
 from solara.lab.hooks.dataframe import use_df_column_names
@@ -19,11 +21,15 @@ from solara.lab.hooks.dataframe import use_df_column_names
 cardheight = "100%"
 
 
-class PivotTableWidget(v.VuetifyTemplate):
+class PivotTableWidgetVue(ipyvue.VueTemplate):
     template_file = os.path.realpath(os.path.join(os.path.dirname(__file__), "pivot_table.vue"))
     d = traitlets.Dict(default_value={"no": "data"}).tag(sync=True)
     selected = traitlets.Dict(default_value={}).tag(sync=True)
     style_ = traitlets.Unicode("").tag(sync=True)
+
+
+class PivotTableWidget(PivotTableWidgetVue, v.VuetifyTemplate):
+    pass
 
 
 def assert_never(value) -> NoReturn:
@@ -136,7 +142,7 @@ def use_df_pivot_data(df, x: List[str], y: List[str], aggregation: solara.Aggreg
 
 @solara.component
 def PivotTableView(data: solara.PivotTableData, selected: Dict[str, Any] = {}, on_selected: Callable[[Dict[str, Any]], None] = None, style=""):
-    return PivotTableWidget.element(d=data, selected=selected, on_selected=on_selected, style_=style)
+    return frontend.template_class(PivotTableWidget, PivotTableWidgetVue).element(d=data, selected=selected, on_selected=on_selected, style_=style)
 
 
 @solara.component

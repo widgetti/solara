@@ -1,8 +1,10 @@
 import os
 from typing import Dict, List, cast
 
+import ipyvue
 import ipyvuetify as v
 import ipywidgets
+import reacton.core
 import traitlets
 
 from solara.util import IPYVUETIFY_V3
@@ -16,7 +18,12 @@ __all__ = [
 ]
 
 
-class VegaLite(v.VuetifyTemplate):
+# Each template below has no Vuetify tags. The public class is a VuetifyTemplate, as before, and is used in
+# Jupyter and in full mode. Its ...Vue base class has the same traits and template on ipyvue.VueTemplate, and is
+# used on a Solara server without the vuetify frontend feature (see solara.server.frontend.template_class).
+
+
+class VegaLiteVue(ipyvue.VueTemplate):
     template_file = os.path.realpath(os.path.join(os.path.dirname(__file__), "vue/vegalite.vue"))
     spec = traitlets.Dict().tag(sync=True)
     listen_to_click = traitlets.Bool(False).tag(sync=True)
@@ -41,12 +48,20 @@ class VegaLite(v.VuetifyTemplate):
             return solara.settings.assets.cdn
 
 
-class Navigator(v.VuetifyTemplate):
+class VegaLite(VegaLiteVue, v.VuetifyTemplate):
+    pass
+
+
+class NavigatorVue(ipyvue.VueTemplate):
     template_file = os.path.realpath(os.path.join(os.path.dirname(__file__), "vue/navigator.vue"))
     location = traitlets.Unicode(None, allow_none=True).tag(sync=True)
 
 
-class GridLayout(v.VuetifyTemplate):
+class Navigator(NavigatorVue, v.VuetifyTemplate):
+    pass
+
+
+class GridLayoutVue(ipyvue.VueTemplate):
     template_file = os.path.join(os.path.dirname(__file__), "vue/gridlayout_v3.vue" if IPYVUETIFY_V3 else "vue/gridlayout.vue")
     gridlayout_loaded = traitlets.Bool(False).tag(sync=True)
     items = traitlets.Union([traitlets.List(), traitlets.Dict()], default_value=[]).tag(sync=True, **ipywidgets.widget_serialization)
@@ -70,14 +85,42 @@ class GridLayout(v.VuetifyTemplate):
             return solara.settings.assets.cdn
 
 
-class HTML(v.VuetifyTemplate):
+class GridLayout(GridLayoutVue, v.VuetifyTemplate):
+    pass
+
+
+class HTMLVue(ipyvue.VueTemplate):
     template_file = os.path.realpath(os.path.join(os.path.dirname(__file__), "vue/html.vue"))
     tag = traitlets.Unicode("div").tag(sync=True)
     attributes = traitlets.Dict().tag(sync=True)
     unsafe_innerHTML = traitlets.Unicode(None, allow_none=True).tag(sync=True)
 
 
-def watch():
-    import ipyvue
+class HTML(HTMLVue, v.VuetifyTemplate):
+    pass
 
+
+_html_traits = ipyvue.Html.class_traits()
+
+
+class FragmentVue(reacton.core.FragmentWidget):
+    """reacton's FragmentWidget with the model and view of an ipyvue.Html div, instead of those of a VBox.
+
+    Reacton puts the children of a FragmentWidget in its parent, so a page rarely shows one, but the browser
+    still creates its model. The model of a VBox needs @jupyter-widgets/controls (the jupyter-controls frontend
+    feature), this one only needs jupyter-vue, which every page has. If the page shows it after all (a
+    fragment as the only child of a slot), it is a div that stacks its children, as a VBox does.
+    """
+
+    _model_name = traitlets.Unicode("HtmlModel").tag(sync=True)
+    _model_module = traitlets.Unicode(_html_traits["_model_module"].default_value).tag(sync=True)
+    _model_module_version = traitlets.Unicode(_html_traits["_model_module_version"].default_value).tag(sync=True)
+    _view_name = traitlets.Unicode(_html_traits["_view_name"].default_value).tag(sync=True)
+    _view_module = traitlets.Unicode(_html_traits["_view_module"].default_value).tag(sync=True)
+    _view_module_version = traitlets.Unicode(_html_traits["_view_module_version"].default_value).tag(sync=True)
+    tag = traitlets.Unicode("div").tag(sync=True)
+    style_ = traitlets.Unicode("display: flex; flex-direction: column;").tag(sync=True)
+
+
+def watch():
     ipyvue.watch(os.path.realpath(os.path.dirname(__file__) + "/vue"))
