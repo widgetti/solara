@@ -91,6 +91,77 @@ def test_minimal_hello_has_no_vuetify_models(minimal, kernel_context, no_kernel_
     assert frontend_warnings(caplog) == []
 
 
+def _jupyter_vuetify_widgets(context) -> List[ipywidgets.Widget]:
+    return [widget for widget in context.widgets.values() if widget._model_module == "jupyter-vuetify"]
+
+
+def test_theme_when_vuetify_loads_on_first_use(minimal, kernel_context, no_kernel_context, tmp_path: Path, monkeypatch):
+    from solara.lab.components.theming import theme
+
+    app_file = tmp_path / "hello.py"
+    app_file.write_text("import solara\n\n\n@solara.component\ndef Page():\n    solara.Text('hello')\n")
+    app = AppScript(str(app_file))
+    monkeypatch.setitem(solara.server.app.apps, "__default__", app)
+    try:
+        app.init()
+        with kernel_context:
+            comm = FakeComm()
+            solara.server.app.solara_comm_target(comm, None)
+            themes = {"light": {"primary": "#123456"}, "dark": {}}
+            comm.receive({"method": "run", "args": {"path": "/", "appName": None, "themes": themes, "dark": False}})
+            # the theme widgets are Vuetify widgets: the page does not need them before it loads Vuetify
+            assert _jupyter_vuetify_widgets(kernel_context) == []
+            comm.receive({"method": "frontend-lazy-load", "feature": "vuetify"})
+            # the theme of the page, as in full, so Vuetify widgets get the same colors
+            assert {type(widget).__name__ for widget in _jupyter_vuetify_widgets(kernel_context)} == {"Theme", "ThemeColors"}
+            assert theme.themes.light.primary == "#123456"
+            assert theme.dark_effective is False
+            count = len(kernel_context.widgets)
+            comm.receive({"method": "frontend-lazy-load", "feature": "vuetify"})
+            assert len(kernel_context.widgets) == count
+            # a hot reload keeps the theme, as in full
+            theme.themes.light.secondary = "#654321"
+            comm.receive({"method": "reload", "path": "/"})
+            assert comm.sent[-1]["method"] == "finished"
+            assert theme.themes.light.primary == "#123456"
+            assert theme.themes.light.secondary == "#654321"
+    finally:
+        app.close()
+
+
+def test_page_keeps_its_frontend(warned, kernel_context, no_kernel_context, tmp_path: Path, monkeypatch):
+    # e.g. solara.server.settings.main.frontend in the app code, which a hot reload changes
+    monkeypatch.setattr(frontend, "vue3", True)
+    monkeypatch.setattr(solara.server.settings.main, "frontend", "full")
+    app_file = tmp_path / "hello.py"
+    app_file.write_text("import solara\n\n\n@solara.component\ndef Page():\n    solara.Text('hello')\n")
+    app = AppScript(str(app_file))
+    monkeypatch.setitem(solara.server.app.apps, "__default__", app)
+    try:
+        app.init()
+        with kernel_context:
+            comm = FakeComm()
+            solara.server.app.solara_comm_target(comm, None)
+            # the page preloaded nothing (it was rendered when the setting was minimal)
+            page_frontend = {"spec": "minimal", "features": [], "chunks": []}
+            comm.receive({"method": "run", "args": {"path": "/", "appName": None, "frontend": page_frontend}})
+            assert type(kernel_context.container) is ipyvue.Html
+            assert not frontend.vuetify_enabled()
+            assert frontend.active().spec == "minimal"
+            before = set(kernel_context.widgets)
+            comm.receive({"method": "reload", "path": "/"})
+            new_widgets = [widget for key, widget in kernel_context.widgets.items() if key not in before]
+            assert new_widgets
+            # still widgets for the page without Vuetify, not the AppLayout of full
+            assert [widget for widget in new_widgets if widget._model_module == "jupyter-vuetify"] == []
+        # without the frontend of the page (an older page), the server setting applies
+        kernel_context.frontend = None
+        with kernel_context:
+            assert frontend.vuetify_enabled()
+    finally:
+        app.close()
+
+
 def test_warning_once_per_feature(minimal, caplog):
     v.Btn(children=["one"])
     v.Btn(children=["two"])

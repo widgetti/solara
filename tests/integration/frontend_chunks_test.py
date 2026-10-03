@@ -110,6 +110,26 @@ def LateDatePickerApp():
         rv.DatePicker(v_model="2024-01-02")
 
 
+@solara.component
+def DefaultButton():
+    solara.Button("default button", color="primary", classes=["default-button"])
+
+
+@solara.component
+def ThemedButton():
+    import solara.lab
+
+    solara.lab.theme.themes.light.primary = "#ff0000"
+    solara.Button("themed button", color="primary", classes=["themed-button"])
+
+
+@solara.component
+def SingleDollars():
+    # a shell prompt in a code block, and prices: no math, so no KaTeX
+    solara.Markdown("```bash\n$ pip install solara\n```\n\nPrice ($), single dollar")
+    ipywidgets.FloatSlider.element(description="Price ($)")
+
+
 class Recorder:
     """Collects the requests and console messages of page_session."""
 
@@ -455,4 +475,38 @@ def test_minimal_fragment_container(
     chunks = recorder.chunk_requests()
     assert "jupyter-controls" not in chunks
     assert "jupyter-controls" not in recorder.lazy_warnings()
+    assert recorder.errors() == []
+
+
+@pytest.mark.skipif(not vue3, reason="the Vue 2 build has Vuetify in its core bundle")
+@pytest.mark.parametrize("preset", ["full", "minimal"])
+def test_vuetify_theme_colors(page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, recorder, frontend_setting, preset):
+    # Vuetify that loads on first use (minimal) gets the theme of solara.lab.theme, as in full
+    frontend_setting(preset)
+    with extra_include_path(HERE):
+        with solara_app("frontend_chunks_test:DefaultButton"):
+            page_session.goto(solara_server.base_url)
+            # the default primary color of solara.lab.theme (ipyvuetify's #6200EE), not Vuetify's own default
+            playwright.sync_api.expect(page_session.locator(".default-button")).to_have_css("background-color", "rgb(98, 0, 238)")
+        with solara_app("frontend_chunks_test:ThemedButton"):
+            page_session.goto(solara_server.base_url)
+            playwright.sync_api.expect(page_session.locator(".themed-button")).to_have_css("background-color", "rgb(255, 0, 0)")
+    # two pages: each loads Vuetify on first use
+    assert recorder.lazy_warnings() == ([] if preset == "full" else ["vuetify", "vuetify"])
+    assert recorder.errors() == []
+
+
+def test_minimal_single_dollar_no_katex(
+    page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, recorder, frontend_setting, caplog
+):
+    frontend_setting("minimal,+jupyter-controls")
+    with caplog.at_level(logging.WARNING, logger="solara.server.frontend"), extra_include_path(HERE), solara_app("frontend_chunks_test:SingleDollars"):
+        page_session.goto(solara_server.base_url)
+        page_session.locator("text=single dollar").wait_for()
+        page_session.locator(".widget-slider >> text=Price ($)").wait_for()
+        # give a (wrong) katex load the time to start
+        page_session.wait_for_timeout(500)
+    assert "katex" not in recorder.chunk_requests()
+    assert "katex" not in recorder.lazy_warnings()
+    assert not [message for message in _server_warnings(caplog) if "katex" in message]
     assert recorder.errors() == []

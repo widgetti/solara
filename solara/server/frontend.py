@@ -26,8 +26,10 @@ from solara.server import settings
 
 logger = logging.getLogger("solara.server.frontend")
 # The solara logger is at ERROR level under `solara run`, but these warnings tell the user
-# which flag to add, so they must show up.
-logger.setLevel(logging.WARNING)
+# which flag to add, so they must show up. A level that is already set (solara run --log-level
+# configures logging before the server imports this module) stays.
+if logger.level == logging.NOTSET:
+    logger.setLevel(logging.WARNING)
 
 vue3 = ipyvue.__version__.startswith("3")
 
@@ -136,13 +138,16 @@ def parse(value: str) -> Frontend:
             features.discard(name)
             removed.add(name)
         normalized.append(sign + name)
-    for feature in sorted(features):
-        conflict = REQUIRES.get(feature, frozenset()) & removed
-        if conflict:
-            needed = sorted(conflict)[0]
+    for needed in sorted(removed):
+        # every feature that is on and needs it, so that the suggested value works
+        users = sorted(feature for feature in features if needed in REQUIRES.get(feature, frozenset()))
+        if users:
+            names = " and ".join(repr(user) for user in users)
+            off = ",".join(f"-{name}" for name in [*users, needed])
             raise ValueError(
-                f"Invalid frontend setting {value!r}: {feature!r} needs {needed!r}, so '-{needed}' cannot be used while {feature!r} is on. "
-                f"Also turn off {feature!r} ('-{feature},-{needed}'), or keep {needed!r}."
+                f"Invalid frontend setting {value!r}: {names} {'needs' if len(users) == 1 else 'need'} {needed!r}, "
+                f"so '-{needed}' cannot be used while {'it is' if len(users) == 1 else 'they are'} on. "
+                f"Also turn off {names} ('{off}'), or keep {needed!r}."
             )
     return Frontend(spec=",".join(normalized), features=_closure(features))
 
@@ -186,15 +191,45 @@ def _vue3() -> bool:
     return vue3
 
 
+def from_page(value) -> Optional[Frontend]:
+    """The frontend a page preloaded (its window.solaraFrontend, which the page sends with run), or None."""
+    if not isinstance(value, dict):
+        return None
+    spec, features = value.get("spec"), value.get("features")
+    if not isinstance(spec, str) or not isinstance(features, list):
+        return None
+    try:
+        # the browser sends it: keep only known names, the spec shows up in the warnings
+        spec = parse(spec).spec
+    except ValueError:
+        return None
+    return Frontend(spec=spec, features=frozenset(feature for feature in features if feature in FEATURES))
+
+
+def _context_frontend() -> Optional[Frontend]:
+    """In a virtual kernel context: the frontend of its page (see active), otherwise None."""
+    kernel_context = sys.modules.get("solara.server.kernel_context")
+    if kernel_context is None or not kernel_context.has_current_context():
+        return None
+    return kernel_context.get_current_context().frontend or current()
+
+
+def active() -> Frontend:
+    """The features of the page of the current virtual kernel context, otherwise the server setting.
+
+    The run message pins the page's features on the kernel context, so the server keeps building
+    widgets for the page it has, also when a hot reload changes solara.server.settings.main.frontend.
+    """
+    return _context_frontend() or current()
+
+
 def preloaded(feature: str) -> bool:
     """False only on a Solara server that does not preload feature.
 
     Outside a virtual kernel context (Jupyter, or import time) this is always True, so Jupyter never changes.
     """
-    kernel_context = sys.modules.get("solara.server.kernel_context")
-    if kernel_context is None or not kernel_context.has_current_context():
-        return True
-    return feature in current()
+    frontend = _context_frontend()
+    return frontend is None or feature in frontend
 
 
 def vuetify_enabled() -> bool:
@@ -246,11 +281,8 @@ def warn_missing(feature: str, what: str) -> None:
     """
     if feature not in FEATURES:
         raise ValueError(f"Unknown frontend feature {feature!r}")
-    kernel_context = sys.modules.get("solara.server.kernel_context")
-    if kernel_context is None or not kernel_context.has_current_context():
-        return
-    frontend = current()
-    if feature in frontend:
+    frontend = _context_frontend()
+    if frontend is None or feature in frontend:
         return
     _warn_once(feature, what, frontend)
 
@@ -279,7 +311,7 @@ def log_lazy_load(feature: str) -> None:
     if feature not in FEATURES:
         logger.debug("unknown frontend feature lazy loaded: %r", feature)
         return
-    frontend = current()
+    frontend = active()
     if feature in frontend:
         return
     _warn_once(feature, "The page", frontend)
@@ -322,8 +354,8 @@ def missing_feature(widget, frontend: Frontend) -> Optional[str]:
 
 
 @lru_cache(maxsize=None)
-def _nothing_to_check(frontend: Frontend) -> bool:
-    return all(feature in frontend for feature in MODULE_FEATURE.values()) and (not vue3 or "vue-sfc" in frontend or not _vue_sfc_chunk_exists())
+def _nothing_to_check(features: FrozenSet[str]) -> bool:
+    return all(feature in features for feature in MODULE_FEATURE.values()) and (not vue3 or "vue-sfc" in features or not _vue_sfc_chunk_exists())
 
 
 def check_widget(widget) -> None:
@@ -331,8 +363,8 @@ def check_widget(widget) -> None:
 
     Called for each widget that is created in a virtual kernel context (see solara.server.patch).
     """
-    frontend = current()
-    if _nothing_to_check(frontend):
+    frontend = active()
+    if _nothing_to_check(frontend.features):
         return
     feature = missing_feature(widget, frontend)
     if feature is None:

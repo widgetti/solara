@@ -143,10 +143,11 @@ Without them, text uses a fallback font and those icons do not show, so add them
 `mdi` loads on demand together with `vuetify`.
 
 Without `vuetify`, the page uses a shell without Vuetify, and the layout components (such as `solara.Column` and `solara.Row`) render without Vuetify.
-This shell has no dark mode.
+This shell has no dark mode: Vuetify widgets that load on demand use the light colors of `solara.lab.theme`.
 Solara then uses no default layout (`AppLayout`), so `solara.Sidebar`, `solara.AppBar` and `solara.AppBarTitle` show nothing, unless you use `solara.AppLayout` or a layout of your own; the server logs a warning when that happens.
 On Vue 2 (ipyvue < 3), Vuetify is always on.
 This setting only applies to the Solara server; Jupyter (notebook, lab, Voila) always loads everything.
+A page that is open keeps the features it loaded with, also after a hot reload that changes the setting; refresh the page to use the new setting.
 
 ## Telemetry
 

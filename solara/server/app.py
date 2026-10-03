@@ -92,14 +92,14 @@ def _error_widget(text: str) -> widgets.Widget:
 
     ipywidgets.HTML needs the jupyter-controls frontend feature, so without it we use ipyvue.Html.
     """
-    if "jupyter-controls" in frontend.current():
+    if "jupyter-controls" in frontend.active():
         return widgets.HTML(f"<pre>{html.escape(text)}</pre>", layout=widgets.Layout(overflow="auto"))
     return ipyvue.Html(tag="pre", children=[text], style_="overflow: auto")
 
 
 def _error_element(text: str) -> Element:
     """Like _error_widget, but an element, so each virtual kernel creates its own widget."""
-    if "jupyter-controls" in frontend.current():
+    if "jupyter-controls" in frontend.active():
         return ipywidgets.HTML(value=f"<pre>{html.escape(text)}</pre>", layout=ipywidgets.Layout(overflow="auto"))
     return ipyvue.Html.element(tag="pre", children=[text], style_="overflow: auto")
 
@@ -503,6 +503,33 @@ def load_themes(themes: Dict[str, Dict[str, Any]], dark: bool):
     theme.dark_effective = dark
 
 
+# The themes and dark mode that a page without the vuetify feature sent with run. The theme widgets
+# are Vuetify widgets, so the server creates them only when the page loads Vuetify on first use.
+_PAGE_THEMES = "solara.server.app:page-themes"
+
+
+def _defer_themes(context: "kernel_context.VirtualKernelContext", themes, dark) -> None:
+    page_themes = context.user_dicts.setdefault(_PAGE_THEMES, {})
+    page_themes.update(themes=themes, dark=dark)
+    if page_themes.get("vuetify_loaded"):
+        # the page has Vuetify already (a run after a reconnect)
+        load_themes(themes, dark)
+
+
+def _load_deferred_themes(context: "kernel_context.VirtualKernelContext") -> None:
+    """The page loaded Vuetify on first use: create the theme widgets, so Vuetify widgets get the theme as in full."""
+    page_themes = context.user_dicts.setdefault(_PAGE_THEMES, {})
+    if page_themes.get("vuetify_loaded"):
+        return
+    page_themes["vuetify_loaded"] = True
+    if "themes" in page_themes:
+        load_themes(page_themes["themes"], page_themes["dark"])
+
+
+def _page_loaded_vuetify(context: "kernel_context.VirtualKernelContext") -> bool:
+    return bool(context.user_dicts.get(_PAGE_THEMES, {}).get("vuetify_loaded"))
+
+
 def client_version() -> str:
     """Opaque short hash identifying the served client assets (design §6.1).
 
@@ -574,10 +601,14 @@ def solara_comm_target(comm, msg_first):
             app_name = args.get("appName") or "__default__"
             app = apps[app_name]
             context = kernel_context.get_current_context()
+            # the features the page preloaded: the server keeps building widgets for this page,
+            # also when a hot reload changes solara.server.settings.main.frontend
+            context.frontend = frontend.from_page(args.get("frontend"))
             context.container = _root_container()
             if frontend.vuetify_enabled():
-                # the theme widgets are Vuetify widgets, and the page without Vuetify sends no themes
                 load_themes(args.get("themes"), args.get("dark"))
+            else:
+                _defer_themes(context, args.get("themes"), args.get("dark"))
             try:
                 load_app_widget(None, app, path)
             except Exception as e:
@@ -614,7 +645,8 @@ def solara_comm_target(comm, msg_first):
             assert app is not None
             context = kernel_context.get_current_context()
             path = data.get("path", "")
-            vuetify = frontend.vuetify_enabled()
+            # the theme widgets exist only when the page has Vuetify (preloaded, or loaded on first use)
+            vuetify = frontend.vuetify_enabled() or _page_loaded_vuetify(context)
             if vuetify:
                 current_theme = theme._instance.value
                 theme_dict = _get_theme(current_theme)
@@ -645,7 +677,10 @@ def solara_comm_target(comm, msg_first):
                 threading.Thread(target=lambda: context.close(reason="evicted"), name=f"evict-{context.id}", daemon=True).start()
         elif method == "frontend-lazy-load":
             # the browser loaded a frontend feature that the page did not preload
-            frontend.log_lazy_load(data.get("feature"))
+            feature = data.get("feature")
+            frontend.log_lazy_load(feature)
+            if feature == "vuetify":
+                _load_deferred_themes(kernel_context.get_current_context())
         else:
             logger.error("Unknown comm method called on solara.control comm: %s", method)
 

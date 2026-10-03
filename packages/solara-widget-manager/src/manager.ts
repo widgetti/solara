@@ -39,7 +39,7 @@ import { Widget } from '@lumino/widgets';
 
 import { IComm } from '@jupyterlab/services/lib/kernel/kernel';
 import { defineAmdModules } from './amd';
-import { hasFeature, loadFeature } from './features';
+import { getLoadedFeature, hasFeature, loadFeature, wasLazyLoaded } from './features';
 import { requireLoader } from './loader';
 
 // widget modules whose code needs a feature: load the feature first, so the
@@ -53,6 +53,32 @@ const MODULE_FEATURE: { [moduleName: string]: string } = {
 // solara.nbextensionsLoaded) before asking requirejs for such a module. Without the wait, a fast
 // kernel asks before the map exists, which gives a 404 and a fallback to the CDN.
 const PAGE_MAPPED_MODULES = ['jupyter-vue', 'jupyter-vuetify'];
+
+// A page without the vuetify feature has an ipyvue.Html as its root, so no VuetifyView of
+// ipyvuetify sets up the theme (solara.lab.theme) when Vuetify loads on first use. Then the
+// vuetify chunk follows the colors of each ThemeColorsModel, so Vuetify widgets look as in full.
+const themeFollowingClasses = new WeakMap<any, any>();
+
+function followThemeOnLazyVuetify(cls: any, className: string, moduleName: string): any {
+  if (moduleName !== 'jupyter-vuetify' || className !== 'ThemeColorsModel' || !wasLazyLoaded('vuetify')) {
+    return cls;
+  }
+  const vuetifyChunk = getLoadedFeature('vuetify');
+  if (!vuetifyChunk || typeof vuetifyChunk.followThemeColors !== 'function') {
+    return cls;
+  }
+  let followingClass = themeFollowingClasses.get(cls);
+  if (!followingClass) {
+    followingClass = class extends cls {
+      initialize(attributes: any, options: any) {
+        super.initialize(attributes, options);
+        vuetifyChunk.followThemeColors(this);
+      }
+    };
+    themeFollowingClasses.set(cls, followingClass);
+  }
+  return followingClass;
+}
 
 function nbextensionsLoaded(): Promise<void> | undefined {
   const solara = (window as any).solara;
@@ -253,7 +279,7 @@ export class WidgetManager extends JupyterLabManager {
       // TODO: code duplicate from HTMLWidgetManager, consider a refactor
       return this._loader(moduleName, moduleVersion).then(module => {
         if (module[className]) {
-          return module[className];
+          return followThemeOnLazyVuetify(module[className], className, moduleName);
         } else {
           return Promise.reject(
             'Class ' +

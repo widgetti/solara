@@ -1,6 +1,8 @@
 import importlib
 import logging
 import re
+import subprocess
+import sys
 from pathlib import Path
 from typing import List
 
@@ -93,6 +95,38 @@ def test_parse_closure():
     assert "mdi" not in frontend.parse("full,-vuetify,-mdi")
 
 
+def test_parse_suggests_a_value_that_works():
+    # both jupyter-controls and output-widget need jupyter-css: the suggestion turns off both
+    with pytest.raises(ValueError) as error:
+        frontend.parse("full,-jupyter-css")
+    message = str(error.value)
+    assert "'jupyter-controls' and 'output-widget' need 'jupyter-css'" in message
+    suggestion = re.search(r"\('(-[^']*)'\)", message)
+    assert suggestion is not None and suggestion.group(1) == "-jupyter-controls,-output-widget,-jupyter-css"
+    assert "jupyter-css" not in frontend.parse("full," + suggestion.group(1))
+
+
+def test_from_page():
+    # what the page sends with run (window.solaraFrontend)
+    page = frontend.from_page({"spec": "minimal,+katex", "features": ["katex", "no-such-feature"], "chunks": ["katex"]})
+    assert page == frontend.Frontend(spec="minimal,+katex", features=frozenset({"katex"}))
+    # an older page, or a value that is not a page's: the server setting applies
+    assert frontend.from_page(None) is None
+    assert frontend.from_page({"spec": "minimal", "features": "katex"}) is None
+    # the spec shows up in the server log, so it must be a valid setting
+    assert frontend.from_page({"spec": "minimal\nERROR: fake log line", "features": []}) is None
+
+
+def test_logger_level_from_logging_config_stays():
+    # solara run --log-level configures logging before the server process imports solara.server.frontend
+    code = (
+        "import logging; logging.getLogger('solara.server.frontend').setLevel(logging.ERROR); "
+        "import solara.server.frontend; print(logging.getLogger('solara.server.frontend').level)"
+    )
+    output = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True, timeout=60).stdout
+    assert output.strip().splitlines()[-1] == str(logging.ERROR)
+
+
 @pytest.mark.parametrize(
     "value, message",
     [
@@ -176,8 +210,15 @@ def test_markdown_warns_for_math(monkeypatch, caplog):
     with caplog.at_level(logging.WARNING, logger="solara.server.frontend"):
         template = _markdown_template("<p>no math</p>")
         assert "const hasMath = false" in template
+        # a single $, or $ in code, is no math: KaTeX's auto-render skips code, and needs a closing delimiter
+        template = _markdown_template('<div class="highlight"><pre><span></span><code>$ pip install solara\n</code></pre></div>')
+        assert "const hasMath = false" in template
+        template = _markdown_template("<p>Price ($)</p><p>Total: $1,234</p><p><code>$x$</code></p>")
+        assert "const hasMath = false" in template
         template = _markdown_template("<p>$x^2$</p>")
         assert "const hasMath = true" in template
+        for html in ["<p>$$\nx\n$$</p>", "<p>\\(x\\)</p>", "<p>\\[x\\]</p>", "<p>from $5 to $10</p>"]:
+            assert "const hasMath = true" in _markdown_template(html), html
     messages = [record.getMessage() for record in caplog.records if record.name == "solara.server.frontend"]
     assert len(messages) == 1 and "'katex'" in messages[0]
 

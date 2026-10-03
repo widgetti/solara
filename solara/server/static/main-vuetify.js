@@ -78,6 +78,15 @@ function widgetThemes() {
     );
 }
 
+// The features this page preloaded, sent with run: the server keeps building widgets for this page,
+// also when a hot reload changes the frontend setting. null: the server uses its setting.
+function pageFrontend() {
+    if (!window.solaraFrontend) {
+        return null;
+    }
+    return { spec: solaraFrontend.spec, features: solaraFrontend.features };
+}
+
 // the apps (vuetify off) that wait for jupyter-vuetify, see registerVueComponents
 const appsWaitingForVuetify = new WeakSet();
 
@@ -542,7 +551,7 @@ async function solaraInit(mountId, appName) {
             } else {
                 // pushState routing makes the boot-time path stale - recompute from the live URL now
                 const path = window.location.pathname.slice(solara.rootPath.length) + window.location.search;
-                modelId = await manager.run(appName, { path, dark: inDarkMode(), themes: widgetThemes() });
+                modelId = await manager.run(appName, { path, dark: inDarkMode(), themes: widgetThemes(), frontend: pageFrontend() });
             }
             if (superseded()) {
                 // the socket dropped again (or a newer cycle took over) during the rebuild -
@@ -744,7 +753,7 @@ async function solaraInit(mountId, appName) {
     if (kernelId && widgetModelId) {
         await widgetManager.fetchAll();
     } else {
-        widgetModelId = await widgetManager.run(appName, {path, dark: inDarkMode(), themes: widgetThemes()});
+        widgetModelId = await widgetManager.run(appName, {path, dark: inDarkMode(), themes: widgetThemes(), frontend: pageFrontend()});
     }
     await solaraMount(widgetManager, mountId, widgetModelId);
     viewMounted = true;

@@ -74,6 +74,11 @@ export function onLazyLoad(callback: (name: string) => void): void {
   lazyLoaded.forEach(name => callback(name));
 }
 
+/** True when the feature was not preloaded, and loaded on first use on this page. */
+export function wasLazyLoaded(name: string): boolean {
+  return lazyLoaded.indexOf(name) !== -1;
+}
+
 function warnLazyLoad(name: string): void {
   if (lazyLoaded.indexOf(name) !== -1) {
     return;

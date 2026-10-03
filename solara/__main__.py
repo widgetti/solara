@@ -421,8 +421,8 @@ def run(
 
     if log_level is not None:
         LOGGING_CONFIG["loggers"]["solara"]["level"] = log_level.upper()
-        if log_level.upper() in ("DEBUG", "TRACE", "INFO"):
-            LOGGING_CONFIG["loggers"]["solara.server.frontend"]["level"] = log_level.upper()
+        # an explicit level also applies to the frontend warnings (WARNING without --log-level)
+        LOGGING_CONFIG["loggers"]["solara.server.frontend"]["level"] = log_level.upper()
         # LOGGING_CONFIG["loggers"]["reacton"]["level"] = log_level.upper()
 
     log_level = log_level_uvicorn

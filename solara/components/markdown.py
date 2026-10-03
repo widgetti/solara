@@ -1,6 +1,7 @@
 import hashlib
 import html
 import logging
+import re
 import textwrap
 import traceback
 import warnings
@@ -87,8 +88,19 @@ def _run_solara(code, cleanups):
     )
 
 
+# KaTeX's auto-render skips <pre> and <code>, and typesets only between a left and a right
+# delimiter in the same text. These checks find a superset of that, so a single "$" (for
+# example a shell prompt in a code block, or a price) does not load KaTeX.
+_CODE_ELEMENT = re.compile(r"<(pre|code)\b[^>]*>.*?</\1\s*>", re.S | re.I)
+_TAG = re.compile(r"<[^>]*>")
+_MATH = re.compile(r"\$[^$]*\$|\\\(.*?\\\)|\\\[.*?\\\]", re.S)
+
+
 def _has_math(html: str) -> bool:
-    return "$" in html or "\\(" in html or "\\[" in html
+    if "$" not in html and "\\(" not in html and "\\[" not in html:
+        return False
+    text = _CODE_ELEMENT.sub("", html)
+    return any(_MATH.search(part) for part in _TAG.split(text))
 
 
 def _has_mermaid(html: str) -> bool:
