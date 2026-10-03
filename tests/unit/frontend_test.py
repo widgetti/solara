@@ -37,6 +37,8 @@ def page(no_kernel_context, tmp_path: Path, monkeypatch):
     app_script = AppScript(str(app_file))
     monkeypatch.setitem(solara.server.app.apps, "__default__", app_script)
     monkeypatch.setattr(solara.server.settings.main, "mode", "production")
+    # production would gc.freeze() the whole test process on the first app run
+    monkeypatch.setattr(solara.server.settings.main, "gc_freeze", False)
     monkeypatch.setattr(solara.server.settings.assets, "fontawesome_enabled", True)
     monkeypatch.setattr(solara.settings.assets, "proxy", True)
     monkeypatch.setattr(server, "vue3", True)
@@ -223,7 +225,7 @@ def _lines(html: str, remove: List[str]) -> List[str]:
 
 
 def test_full_page_unchanged(page):
-    golden = GOLDEN_FULL.read_text()
+    golden = GOLDEN_FULL.read_text(encoding="utf-8")
     html = page()
     assert len(re.findall(r'<link rel="preload" as="script"', html)) == 2
     assert re.search(LOCAL_REQUIREJS, html)
@@ -250,7 +252,7 @@ def test_legacy_page(page, monkeypatch, vue3):
     assert "solara.loadPreloadedFeaturesSync()" in html
     if vue3:
         # apart from the feature parts, the page is the one of Solara 1.63.1
-        golden = GOLDEN_FULL.read_text()
+        golden = GOLDEN_FULL.read_text(encoding="utf-8")
         assert _lines(html, FEATURE_PARTS + NBEXTENSIONS_LOADED) == _lines(golden, [FONTS_CSS])
 
 

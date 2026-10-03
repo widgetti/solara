@@ -113,10 +113,13 @@ function whenModuleDefined(name, callback) {
         if (previous) {
             previous.apply(this, arguments);
         }
-        if (!done && map.id === name && context.defined && Object.prototype.hasOwnProperty.call(context.defined, name)) {
+        // requirejs.defined applies the map config: the page maps 'jupyter-vuetify' to
+        // 'nbextensions/jupyter-vuetify/nodeps', so map.id is never the name itself.
+        // requirejs sets the module as defined before it calls onResourceLoad.
+        if (!done && requirejs.defined(name)) {
             done = true;
             try {
-                callback(context.defined[name]);
+                callback(requirejs(name));
             } catch (e) {
                 console.error(e);
             }

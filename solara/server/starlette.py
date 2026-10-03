@@ -782,6 +782,11 @@ class StaticCdn(StaticFilesOptionalAuth):
     # republishing a version, so the content behind such a url can never change
     _exact_version = re.compile(r"@\d+\.\d+\.\d+(?:[-+][\w.]+)?/")
 
+    @classmethod
+    def _pins_exact_version(cls, path: str, sep: str = os.sep) -> bool:
+        # path is an OS path (StaticFiles.get_path), with backslashes on Windows
+        return cls._exact_version.search(path.replace(sep, "/")) is not None
+
     async def get_response(self, path: str, scope):
         response = await super().get_response(path, scope)
         # All urls solara itself puts through this proxy pin an exact version
@@ -793,7 +798,7 @@ class StaticCdn(StaticFilesOptionalAuth):
         # Semver-RANGE urls (user-constructed, e.g. pkg@^1/...) are resolved by
         # the cdn at fetch time and can change content under the same url, so
         # they are deliberately not marked immutable.
-        if response.status_code in (200, 304) and self._exact_version.search(path):
+        if response.status_code in (200, 304) and self._pins_exact_version(path):
             response.headers["Cache-Control"] = immutable_cache_control()
         return response
 

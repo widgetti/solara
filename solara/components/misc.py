@@ -40,6 +40,18 @@ def _flex_box(classes: List[str], style: str, children):
     return ipyvue.Html.element(tag="div", class_=_combine_classes(classes), style_="display: flex; " + style, children=children)
 
 
+@reacton.component
+def _DefaultFragment(children: List[reacton.core.Element] = []):
+    """reacton's Fragment, as the default container (SOLARA_DEFAULT_CONTAINER=Fragment).
+
+    The page creates the model of each fragment widget. On a Solara server without the jupyter-controls frontend
+    feature, the fragment widget has an ipyvue model (FragmentVue), so the page does not load jupyter-controls for it.
+    """
+    if solara.server.frontend.preloaded("jupyter-controls"):
+        return reacton.core.FragmentWidget.element(children=children)
+    return solara.widgets.widgets.FragmentVue.element(children=children)
+
+
 @solara.component
 def ListItem(title, icon_name: str = None, children=[], value=None):
     if value is None:

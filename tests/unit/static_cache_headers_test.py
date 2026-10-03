@@ -356,6 +356,21 @@ def test_cdn_proxy_compressed_and_immutable(tmp_path: Path, monkeypatch):
     assert response.content == BIG
 
 
+@pytest.mark.parametrize(
+    "path, sep, expected",
+    [
+        ("@widgetti/solara-vuetify3-app@5.2.0/dist/main8.css", "/", True),
+        # Windows: StaticFiles.get_path returns an OS path
+        ("@widgetti\\solara-vuetify3-app@5.2.0\\dist\\main8.css", "\\", True),
+        ("requirejs@2.3.6\\require.js", "\\", True),
+        ("pkg@^1\\index.js", "\\", False),
+        ("pkg@1.2\\index.js", "\\", False),
+    ],
+)
+def test_cdn_proxy_exact_version_os_paths(path: str, sep: str, expected: bool):
+    assert StaticCdn._pins_exact_version(path, sep) is expected
+
+
 def test_gzip_middleware_sends_encoded_responses_as_they_are():
     # the static mounts compress (once) themselves; the middleware compresses the rest
     def text(request):

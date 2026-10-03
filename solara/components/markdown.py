@@ -156,6 +156,7 @@ module.exports = {
             // the KaTeX of the bundle: preloaded with the katex feature, otherwise a lazy load only for text with math
             if (hasMath || !solaraFeatures.isEnabled || solaraFeatures.isEnabled('katex')) {
                 const katexChunk = await solaraFeatures.loadKatex();
+                this.katexCssLast();
                 this.renderMathInElement = katexChunk.renderMathInElement;
                 // as before, the first Markdown makes KaTeX available to user code
                 if (!window.renderMathInElement) {
@@ -204,6 +205,23 @@ module.exports = {
             } else {
                 console.log("href", href, "is not a local link")
             }
+        },
+        katexCssLast() {
+            // Append KaTeX's CSS to the end of <head> once, as the first Markdown did before the frontend features.
+            // KaTeX's rules must win over the rules of style.css with the same specificity, such as
+            // `.jp-RenderedHTMLCommon svg {height: auto}`, or the svg parts of math (like the radical of \sqrt) collapse.
+            if (document.head.querySelector('link[data-solara-katex-css-last]')) {
+                return;
+            }
+            const chunkLink = [...document.querySelectorAll('link[rel=stylesheet]')].find(link => /main\d\.katex\.css$/.test(link.href));
+            if (!chunkLink) {
+                return;
+            }
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = chunkLink.href;
+            link.setAttribute('data-solara-katex-css-last', '');
+            document.head.appendChild(link);
         },
         async loadKatex() {
             require.config({

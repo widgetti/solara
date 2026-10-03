@@ -186,15 +186,23 @@ def _vue3() -> bool:
     return vue3
 
 
-def vuetify_enabled() -> bool:
-    """False only on a Solara server that runs without the vuetify feature.
+def preloaded(feature: str) -> bool:
+    """False only on a Solara server that does not preload feature.
 
     Outside a virtual kernel context (Jupyter, or import time) this is always True, so Jupyter never changes.
     """
     kernel_context = sys.modules.get("solara.server.kernel_context")
     if kernel_context is None or not kernel_context.has_current_context():
         return True
-    return "vuetify" in current()
+    return feature in current()
+
+
+def vuetify_enabled() -> bool:
+    """False only on a Solara server that runs without the vuetify feature.
+
+    Outside a virtual kernel context (Jupyter, or import time) this is always True, so Jupyter never changes.
+    """
+    return preloaded("vuetify")
 
 
 T = TypeVar("T")

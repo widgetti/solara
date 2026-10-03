@@ -9,8 +9,10 @@ from typing import Dict, List
 import ipywidgets
 import playwright.sync_api
 import pytest
+import reacton.core
 
 import solara
+import solara.components.misc
 import solara.server.settings
 from solara.server import frontend, frontend_assets
 
@@ -47,6 +49,17 @@ def MarkdownMath():
 
 
 @solara.component
+def TwoTexts():
+    solara.Text("first fragment text")
+    solara.Text("second fragment text")
+
+
+@solara.component
+def MarkdownSqrt():
+    solara.Markdown(r"root markdown: $\sqrt{x}$")
+
+
+@solara.component
 def DisplayOutputs():
     import IPython.display
 
@@ -80,6 +93,20 @@ def DatePickerApp():
     import reacton.ipyvuetify as rv
 
     rv.DatePicker(v_model="2024-01-02")
+
+
+@solara.component
+def LateDatePickerApp():
+    # the first render has no Vuetify widget: jupyter-vuetify loads after the root view mounted
+    import ipyvue
+    import reacton.ipyvue
+    import reacton.ipyvuetify as rv
+
+    show, set_show = solara.use_state(False)
+    button = ipyvue.Html.element(tag="button", children=["show date picker"])
+    reacton.ipyvue.use_event(button, "click", lambda *_ignore: set_show(True))
+    if show:
+        rv.DatePicker(v_model="2024-01-02")
 
 
 class Recorder:
@@ -343,3 +370,45 @@ def test_minimal_date_picker(page_session: playwright.sync_api.Page, solara_serv
         page_session.locator(".v-date-picker").wait_for()
     assert not [msg.text for msg in recorder.console if "Failed to resolve component" in msg.text]
     assert recorder.lazy_warnings() == ["vuetify"]
+
+
+@pytest.mark.skipif(not vue3, reason="the Vue 2 build has Vuetify in its core bundle")
+def test_minimal_date_picker_after_mount(page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, recorder, frontend_setting):
+    # jupyter-vuetify loads after the root view mounted: its components are still registered on the shell app
+    frontend_setting("minimal")
+    with extra_include_path(HERE), solara_app("frontend_chunks_test:LateDatePickerApp"):
+        page_session.goto(solara_server.base_url)
+        page_session.locator("button >> text=show date picker").click()
+        page_session.locator(".v-date-picker").wait_for(timeout=10000)
+        assert page_session.locator("ipyvuetifydatepicker").count() == 0
+    assert not [msg.text for msg in recorder.console if "Failed to resolve component" in msg.text]
+    assert recorder.lazy_warnings() == ["vuetify"]
+
+
+@pytest.mark.parametrize("preset", ["full", "minimal"])
+def test_markdown_katex_svg_height(page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, recorder, frontend_setting, preset):
+    # KaTeX's `.katex svg {height: inherit}` must win over style.css's `.jp-RenderedHTMLCommon svg {height: auto}`,
+    # as before the frontend features, or the radical of \sqrt collapses to a line
+    frontend_setting(preset)
+    with extra_include_path(HERE), solara_app("frontend_chunks_test:MarkdownSqrt"):
+        page_session.goto(solara_server.base_url)
+        svg = page_session.locator(".solara-markdown .katex .hide-tail svg").first
+        svg.wait_for()
+        page_session.wait_for_function("document.querySelector('.solara-markdown .katex .hide-tail svg').getBoundingClientRect().height > 5", timeout=5000)
+    assert recorder.errors() == []
+
+
+def test_minimal_fragment_container(
+    page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, recorder, frontend_setting, monkeypatch
+):
+    # SOLARA_DEFAULT_CONTAINER=Fragment: the fragment widgets (VBoxes) do not make the page load jupyter-controls
+    monkeypatch.setattr(reacton.core, "_default_container", solara.components.misc._DefaultFragment)
+    frontend_setting("minimal")
+    with extra_include_path(HERE), solara_app("frontend_chunks_test:TwoTexts"):
+        page_session.goto(solara_server.base_url)
+        page_session.locator("text=first fragment text").wait_for()
+        page_session.locator("text=second fragment text").wait_for()
+    chunks = recorder.chunk_requests()
+    assert "jupyter-controls" not in chunks
+    assert "jupyter-controls" not in recorder.lazy_warnings()
+    assert recorder.errors() == []
