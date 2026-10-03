@@ -435,6 +435,39 @@ def test_markdown_katex_svg_height(page_session: playwright.sync_api.Page, solar
     assert recorder.errors() == []
 
 
+def test_full_markdown_katex_css_without_chunk_link(
+    page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, recorder, frontend_setting
+):
+    # A custom template can replace the header block without super(), with a copy of an older header. That page has
+    # no KaTeX chunk link, and the older all-in-one bundle CSS has KaTeX's rules before style.css. Markdown must
+    # still put KaTeX's CSS last, as before the frontend features, or the radical of \sqrt collapses.
+    frontend_setting("full")
+    katex_css = frontend_assets.css_file("katex", ipywidgets_major)
+
+    def katex_css_before_style_css(route: playwright.sync_api.Route):
+        response = route.fetch()
+        html = response.text()
+        link = re.search(r'<link href="([^"]*/' + re.escape(katex_css) + r')"[^>]*></link>', html)
+        assert link is not None
+        # an @import in a <style> keeps the rules at this place in the cascade, without a <link>
+        route.fulfill(response=response, body=html.replace(link.group(0), f'<style>@import url("{link.group(1)}");</style>', 1))
+
+    def is_page(url: str) -> bool:
+        return url.rstrip("/") == solara_server.base_url.rstrip("/")
+
+    page_session.route(is_page, katex_css_before_style_css)
+    try:
+        with extra_include_path(HERE), solara_app("frontend_chunks_test:MarkdownSqrt"):
+            page_session.goto(solara_server.base_url)
+            page_session.locator(".solara-markdown .katex .hide-tail svg").first.wait_for()
+            page_session.wait_for_function("document.querySelector('.solara-markdown .katex .hide-tail svg').getBoundingClientRect().height > 5", timeout=5000)
+            href = page_session.evaluate("document.querySelector('link[data-solara-katex-css-last]').href")
+            assert href.endswith("/" + katex_css)
+    finally:
+        page_session.unroute(is_page, katex_css_before_style_css)
+    assert recorder.errors() == []
+
+
 # a stand-in for MathJax 2 (that a page can load, e.g. from assets/custom.js): it records what it typesets
 FAKE_MATHJAX = """<script>
 window.solaraTestMathJaxTypeset = [];

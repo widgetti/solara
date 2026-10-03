@@ -281,12 +281,19 @@ module.exports = {
                 return;
             }
             const chunkLink = [...document.querySelectorAll('link[rel=stylesheet]')].find(link => /main\d\.katex\.css$/.test(link.href));
-            if (!chunkLink) {
-                return;
+            let href = chunkLink && chunkLink.href;
+            if (!href) {
+                // A custom template can replace the header block without super(), and with it the chunk's CSS link.
+                // The chunk CSS sits next to the app bundle, whose <script> is outside that block.
+                const core = [...document.querySelectorAll('script[src]')]
+                    .map(script => /^(.*\/)solara-vuetify-app(\d)(?:\.min)?\.js(?:[?#].*)?$/.exec(script.src))
+                    .find(match => match);
+                // as before the frontend features: the bundle has the same KaTeX version
+                href = core ? `${core[1]}main${core[2]}.katex.css` : `${this.getCdn()}/katex@0.16.9/dist/katex.min.css`;
             }
             const link = document.createElement('link');
             link.rel = 'stylesheet';
-            link.href = chunkLink.href;
+            link.href = href;
             link.setAttribute('data-solara-katex-css-last', '');
             document.head.appendChild(link);
         },
