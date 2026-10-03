@@ -88,13 +88,27 @@ def test_parse_presets():
 
 
 def test_parse_closure():
-    assert frontend.parse("minimal,+vuetify").features == {"vuetify", "mdi"}
+    # Vuetify's icons use mdi, and its typography (e.g. caption font-weight-light) uses Roboto
+    assert frontend.parse("minimal,+vuetify").features == {"vuetify", "mdi", "roboto"}
     assert frontend.parse("minimal,+jupyter-controls").features == {"jupyter-controls", "jupyter-css"}
     assert frontend.parse("minimal,+output-widget").features == {"output-widget", "jupyter-css"}
     # turning off what something else needs is an error, unless that is off too
     with pytest.raises(ValueError, match="'vuetify' needs 'mdi'"):
         frontend.parse("full,-mdi")
     assert "mdi" not in frontend.parse("full,-vuetify,-mdi")
+
+
+@pytest.mark.parametrize("spec", ["full,-roboto", "minimal,+vuetify,-roboto", "minimal,-roboto,+vuetify", "full,+roboto,-roboto"])
+def test_parse_roboto_opt_out(spec):
+    # Roboto comes with vuetify, but an app with its own font leaves it out: the last +roboto or -roboto wins
+    parsed = frontend.parse(spec)
+    assert "vuetify" in parsed and "mdi" in parsed
+    assert "roboto" not in parsed
+    assert parsed.off == {"roboto"}
+    # the suggested value keeps the opt-out
+    assert "roboto" not in frontend.parse(parsed.suggest("katex"))
+    # +roboto after -roboto turns it on again
+    assert "roboto" in frontend.parse(spec + ",+roboto")
 
 
 def test_parse_suggests_a_value_that_works():
@@ -148,12 +162,19 @@ def test_parse_errors(value, message):
         frontend.parse(value)
 
 
-def test_effective_vue2_forces_vuetify():
+def test_effective_vue2_forces_vuetify(caplog):
     minimal = frontend.parse("minimal")
     assert frontend.effective(minimal, vue3=True).features == frozenset()
-    vue2 = frontend.effective(minimal, vue3=False)
-    # the Vue 2 build has Vuetify (and mdi) in its core bundle
-    assert vue2.features == {"vuetify", "mdi"}
+    with caplog.at_level(logging.WARNING, logger="solara.server.frontend"):
+        vue2 = frontend.effective(minimal, vue3=False)
+    # the Vue 2 build has Vuetify in its core bundle, so it keeps what Vuetify needs (mdi), and Roboto comes with it
+    assert vue2.features == {"vuetify", "mdi", "roboto"}
+    assert "The Vue 2 build cannot leave out mdi, vuetify, so they stay on." in caplog.text
+    # an app with its own font leaves Roboto out, also when the Vue 2 build forces Vuetify on
+    for spec in ["minimal,-roboto", "full,-roboto", "minimal,+vuetify,-roboto"]:
+        vue2 = frontend.effective(frontend.parse(spec), vue3=False)
+        assert "vuetify" in vue2 and "mdi" in vue2
+        assert "roboto" not in vue2
     # vue-sfc does not exist on Vue 2
     assert "vue-sfc" not in frontend.effective(frontend.parse("full"), vue3=False)
 
@@ -353,6 +374,27 @@ def test_minimal_page(page):
     assert not re.search(r"solara-vuetify-app8\.[a-z-]+\.min\.js", html)
     for feature in ["vuetify", "katex", "jupyter-css", "mdi", "material-icons", "roboto"]:
         assert f'<template data-solara-css-slot="{feature}"></template>' in html
+
+
+@pytest.mark.parametrize("vue3", [True, False])
+def test_vuetify_page_has_roboto(page, monkeypatch, vue3):
+    # Vuetify's typography (e.g. "caption font-weight-light") uses Roboto: a page with Vuetify preloads the Roboto CSS
+    monkeypatch.setattr(server, "vue3", vue3)
+    roboto = r'<link href="[^"]*/main8\.roboto\.css" rel="stylesheet" data-href="main8\.roboto\.css"'
+    # full, as before
+    assert len(re.findall(roboto, page())) == 1
+    # Vue 2 always has Vuetify (also in minimal), Vue 3 with +vuetify
+    for spec in ["minimal,+vuetify"] + ([] if vue3 else ["minimal"]):
+        html = page(frontend=spec)
+        assert len(re.findall(roboto, html)) == 1
+        assert re.search(r'window\.solaraFrontend = \{[^\n]*"features": \[[^\]]*"roboto"', html)
+    # without Vuetify (Vue 3 minimal) or with -roboto (an app with its own font), the page has no Roboto link: only
+    # the slot, where Vuetify that loads on first use puts it, unless the spec says -roboto
+    for spec in (["minimal"] if vue3 else []) + ["full,-roboto", "minimal,-roboto", "minimal,+vuetify,-roboto"]:
+        html = page(frontend=spec)
+        assert not re.search(roboto, html)
+        assert '<template data-solara-css-slot="roboto"></template>' in html
+        assert re.search(r'window\.solaraFrontend = \{[^\n]*"spec": "' + re.escape(spec) + '"', html)
 
 
 def test_chunk_scripts_removed_on_error(page):

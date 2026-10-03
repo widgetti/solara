@@ -4,7 +4,9 @@ Set with ``solara run --frontend``, ``SOLARA_FRONTEND`` or ``solara.server.setti
 The value is a preset (``full`` or ``minimal``) followed by ``+feature`` or ``-feature``, for example
 ``minimal,+katex`` or ``full,-mermaid``. A feature that is not preloaded still works: the browser loads
 it on first use, and the server logs one warning per feature that names the flag to add. The fonts and
-icon sets (material-icons, roboto, font-awesome) are the exception: they never load on demand.
+icon sets are the exception: material-icons and font-awesome never load on demand, and mdi and roboto
+only load on demand together with vuetify (Vuetify's icons and typography use them). Roboto comes with
+vuetify, but an app with its own font can leave it out with ``-roboto``.
 
 This module does not parse the setting at import time: Jupyter ignores the setting, and a bad value
 must not break ``import solara`` there. The CLI and solara.server.starlette check it early instead.
@@ -47,9 +49,16 @@ FEATURES: Tuple[str, ...] = (
     "vue-sfc",
 )
 REQUIRES: Dict[str, FrozenSet[str]] = {
+    # Vuetify's icons use mdi
     "vuetify": frozenset({"mdi"}),
     "jupyter-controls": frozenset({"jupyter-css"}),
     "output-widget": frozenset({"jupyter-css"}),
+}
+# Features that come with a feature, unless the setting turns them off by name. Unlike REQUIRES, the feature
+# works without them: Vuetify's typography (e.g. the caption and font-weight-light classes) assumes the Roboto
+# font, but an app with its own font can leave Roboto out, for example with 'minimal,+vuetify,-roboto'.
+COMES_WITH: Dict[str, FrozenSet[str]] = {
+    "vuetify": frozenset({"roboto"}),
 }
 PRESETS: Dict[str, FrozenSet[str]] = {
     "full": frozenset(FEATURES),
@@ -62,11 +71,11 @@ MODULE_FEATURE: Dict[str, str] = {
     "@jupyter-widgets/controls": "jupyter-controls",
     "@jupyter-widgets/output": "output-widget",
 }
-# Features each build can leave out (key: Vue 3). The Vue 2 build keeps Vuetify (and mdi, which
-# Vuetify needs) in its core bundle, and has no vue-sfc chunk. Other features are forced on.
+# Features each build can leave out (key: Vue 3). The Vue 2 build keeps Vuetify in its core bundle, so it
+# also keeps what Vuetify needs (mdi), and has no vue-sfc chunk. Other features are forced on.
 CAN_DISABLE: Dict[bool, FrozenSet[str]] = {
     True: frozenset(FEATURES),
-    False: frozenset(FEATURES) - {"vuetify", "mdi", "vue-sfc"},
+    False: frozenset(FEATURES) - {"vuetify", *REQUIRES["vuetify"], "vue-sfc"},
 }
 HELP = "Use a preset (full, minimal) followed by +feature or -feature, for example 'minimal,+katex' or 'full,-mermaid'."
 
@@ -75,6 +84,8 @@ HELP = "Use a preset (full, minimal) followed by +feature or -feature, for examp
 class Frontend:
     spec: str  # normalized, e.g. "minimal,+katex"
     features: FrozenSet[str]
+    # the features the spec turns off by name (e.g. "-roboto"): they do not come with another feature (COMES_WITH)
+    off: FrozenSet[str] = frozenset()
 
     def __contains__(self, feature: str) -> bool:
         return feature in self.features
@@ -96,6 +107,14 @@ def _closure(features: Iterable[str]) -> FrozenSet[str]:
             if needed not in result:
                 result.add(needed)
                 todo.append(needed)
+    return frozenset(result)
+
+
+def _with_companions(features: Iterable[str], off: FrozenSet[str]) -> FrozenSet[str]:
+    """features, what they need, and what comes with them (COMES_WITH) unless it is in off."""
+    result = set(_closure(features))
+    for feature in list(result):
+        result |= COMES_WITH.get(feature, frozenset()) - off
     return frozenset(result)
 
 
@@ -149,7 +168,7 @@ def parse(value: str) -> Frontend:
                 f"so '-{needed}' cannot be used while {'it is' if len(users) == 1 else 'they are'} on. "
                 f"Also turn off {names} ('{off}'), or keep {needed!r}."
             )
-    return Frontend(spec=",".join(normalized), features=_closure(features))
+    return Frontend(spec=",".join(normalized), features=_with_companions(features, frozenset(removed)), off=frozenset(removed))
 
 
 def effective(frontend: Frontend, vue3: bool, fontawesome_enabled: bool = True) -> Frontend:
@@ -164,11 +183,17 @@ def effective(frontend: Frontend, vue3: bool, fontawesome_enabled: bool = True) 
         all_features.discard("vue-sfc")
     forced = all_features - features - CAN_DISABLE[vue3]
     if forced:
-        logger.warning("The %s build cannot leave out %s, so they stay on.", "Vue 3" if vue3 else "Vue 2", ", ".join(sorted(forced)))
+        logger.warning(
+            "The %s build cannot leave out %s, so they stay on.%s",
+            "Vue 3" if vue3 else "Vue 2",
+            ", ".join(sorted(forced)),
+            "" if vue3 else " Vuetify is in its core bundle, and Vuetify needs the mdi icons.",
+        )
         features |= forced
     if not fontawesome_enabled:
         features.discard("font-awesome")
-    return Frontend(spec=frontend.spec, features=_closure(features))
+    # a forced Vuetify (Vue 2) brings Roboto, unless the spec says '-roboto'
+    return Frontend(spec=frontend.spec, features=_with_companions(features, frontend.off), off=frontend.off)
 
 
 @lru_cache(maxsize=None)

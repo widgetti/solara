@@ -111,6 +111,14 @@ def LateDatePickerApp():
 
 
 @solara.component
+def VuetifyCaption():
+    import reacton.ipyvuetify as rv
+
+    # Vuetify's typography classes (Vue 2: caption, Vue 3: text-caption) use the Roboto font
+    rv.Html(tag="span", class_="caption text-caption font-weight-light", children=["vuetify caption text"])
+
+
+@solara.component
 def DefaultButton():
     solara.Button("default button", color="primary", classes=["default-button"])
 
@@ -562,4 +570,32 @@ def test_markdown_entity_math(page_session: playwright.sync_api.Page, solara_ser
         page_session.locator("text=entity dollars").wait_for()
         # the first Markdown of the page renders math, as before the frontend features
         page_session.locator(".katex").first.wait_for()
+    assert recorder.errors() == []
+
+
+@pytest.mark.parametrize("preset", ["full", "minimal", "full,-roboto", "minimal,-roboto"])
+def test_vuetify_has_roboto(page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, recorder, frontend_setting, preset):
+    # Vuetify's typography uses Roboto, so a page with Vuetify has the Roboto CSS: preloaded (full, and minimal on
+    # Vue 2, where Vuetify is always on), or together with Vuetify that loads on first use (minimal on Vue 3).
+    # An app with its own font leaves it out with -roboto, also when Vuetify loads on first use.
+    frontend_setting(preset)
+    lazy = vue3 and preset.startswith("minimal")
+    own_font = preset.endswith("-roboto")
+    with extra_include_path(HERE), solara_app("frontend_chunks_test:VuetifyCaption"):
+        page_session.goto(solara_server.base_url)
+        page_session.locator(".font-weight-light >> text=vuetify caption text").wait_for()
+        roboto = page_session.evaluate(
+            """async () => {
+                const slot = document.querySelector('template[data-solara-css-slot="roboto"]');
+                const links = [...document.querySelectorAll('link[rel=stylesheet]')].filter(l => /main\\d\\.roboto\\.css/.test(l.href));
+                // the faces of the light caption text: none without the Roboto CSS
+                const faces = await document.fonts.load('300 12px Roboto');
+                return {count: links.length, atSlot: links.length == 1 && slot.previousElementSibling === links[0], faces: faces.length > 0};
+            }"""
+        )
+    assert roboto == ({"count": 0, "atSlot": False, "faces": False} if own_font else {"count": 1, "atSlot": True, "faces": True})
+    # a css-only feature that is preloaded needs no JS; a lazy load fetches its (tiny) chunk
+    assert recorder.chunk_requests().get("roboto") == (1 if lazy and not own_font else None)
+    # Roboto loads silently with Vuetify: the warning names the feature to add, which brings Roboto along
+    assert recorder.lazy_warnings() == (["vuetify"] if lazy else [])
     assert recorder.errors() == []

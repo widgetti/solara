@@ -121,10 +121,10 @@ The features are:
 
 | Feature | What it gives |
 | - | - |
-| `vuetify` | Vuetify and the Vuetify page shell. Needs `mdi`. |
+| `vuetify` | Vuetify and the Vuetify page shell. Needs `mdi`. Roboto comes with `vuetify`; add `-roboto` to use your own font. |
 | `mdi` | The Material Design Icons font (`mdi-*` icons). |
 | `material-icons` | The Material Icons font. |
-| `roboto` | The Roboto font. |
+| `roboto` | The Roboto font. Comes with `vuetify`; add `-roboto` to use your own font. |
 | `font-awesome` | The Font Awesome icons (replaces `SOLARA_ASSETS_FONTAWESOME_ENABLED`, which still works). |
 | `jupyter-controls` | The ipywidgets controls (`IntSlider`, `Button`, ...). Needs `jupyter-css`. |
 | `output-widget` | The ipywidgets `Output` widget. Needs `jupyter-css`. |
@@ -138,14 +138,16 @@ The `minimal` preset has none of these features. Vue, the widget core and the no
 A feature that the page does not preload still works: the browser loads it the first time a widget needs it.
 That first render is slower, so the server logs a warning (once per feature) that names the flag to add, for example `--frontend=minimal,+jupyter-controls`.
 The browser console shows the same warning.
-The fonts and icon sets are an exception: the browser never loads `material-icons`, `roboto` or `font-awesome` on demand, and nothing warns.
+The fonts and icon sets are an exception: the browser never loads `material-icons`, `roboto` or `font-awesome` on demand by themselves, and nothing warns.
 Without them, text uses a fallback font and those icons do not show, so add them when your app uses them.
-`mdi` loads on demand together with `vuetify`.
+Vuetify's icons use `mdi`, so `mdi` always loads together with `vuetify`, also on demand.
+Vuetify's text styles use the Roboto font, so Roboto comes with `vuetify`, also on demand.
+Add `-roboto` to use your own font, for example `--frontend=minimal,+vuetify,-roboto`.
 
 Without `vuetify`, the page uses a shell without Vuetify, and the layout components (such as `solara.Column` and `solara.Row`) render without Vuetify.
 This shell has no dark mode: Vuetify widgets that load on demand use the light colors of `solara.lab.theme`.
 Solara then uses no default layout (`AppLayout`), so `solara.Sidebar`, `solara.AppBar` and `solara.AppBarTitle` show nothing, unless you use `solara.AppLayout` or a layout of your own; the server logs a warning when that happens.
-On Vue 2 (ipyvue < 3), Vuetify is always on.
+On Vue 2 (ipyvue < 3), Vuetify is always on, and so is `mdi`; `roboto` comes with it, unless you add `-roboto`.
 This setting only applies to the Solara server; Jupyter (notebook, lab, Voila) always loads everything.
 A page that is open keeps the features it loaded with, also after a hot reload that changes the setting; refresh the page to use the new setting.
 

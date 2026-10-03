@@ -36,13 +36,24 @@ def test_asset_urls(vue3, ipywidgets_major, production):
     assets = frontend_assets.page_assets(vue3, ipywidgets_major, production, CDN, minimal)
     # on Vue 2 vuetify is in the core bundle
     assert assets.chunk_js == []
-    # not preloaded: only the slot, so a lazy load puts the CSS in the same place (Vue 2 always has mdi)
-    assert [css.feature for css in assets.head_css + assets.body_css if css.url] == ([] if vue3 else ["mdi"])
+    # not preloaded: only the slot, so a lazy load puts the CSS in the same place (Vue 2 always has Vuetify, so mdi, and roboto
+    # comes with it)
+    assert [css.feature for css in assets.head_css + assets.body_css if css.url] == ([] if vue3 else ["mdi", "roboto"])
 
     controls = frontend.effective(frontend.parse("minimal,+jupyter-controls"), vue3=vue3)
     assets = frontend_assets.page_assets(vue3, ipywidgets_major, production, CDN, controls)
     assert assets.chunk_names == ["sanitizer", "jupyter-controls"]
     assert [css.feature for css in assets.head_css if css.url] == ["jupyter-css"]
+
+    # Vuetify's icons need the mdi font, and the Roboto font comes with it
+    vuetify = frontend.effective(frontend.parse("minimal,+vuetify"), vue3=vue3)
+    assets = frontend_assets.page_assets(vue3, ipywidgets_major, production, CDN, vuetify)
+    assert [css.feature for css in assets.body_css if css.url] == ["mdi", "roboto"]
+    # unless the app uses its own font
+    for spec in ["minimal,+vuetify,-roboto", "full,-roboto"]:
+        own_font = frontend.effective(frontend.parse(spec), vue3=vue3)
+        assets = frontend_assets.page_assets(vue3, ipywidgets_major, production, CDN, own_font)
+        assert [css.feature for css in assets.body_css if css.url] == ["mdi"] + (["material-icons"] if spec == "full,-roboto" else [])
 
 
 def _dist(vue3: bool):
