@@ -10,7 +10,23 @@ const latexDelimiters = [
 ];
 // KaTeX's auto-render typesets only between a left and a right delimiter, in one run of sibling
 // text nodes. This finds a superset of that, so a single '$' (e.g. a label 'Price ($)') does not load KaTeX.
-const mathPair = /\$[^$]*\$|\\\([\s\S]*?\\\)|\\\[[\s\S]*?\\\]/;
+// It takes linear time: a regex such as /\\\([\s\S]*?\\\)/ scans to the end for each unclosed delimiter.
+function hasDelimiterPair(text: string): boolean {
+  const dollar = text.indexOf('$');
+  if (dollar !== -1 && text.indexOf('$', dollar + 1) !== -1) {
+    return true;
+  }
+  for (const [left, right] of [
+    ['\\(', '\\)'],
+    ['\\[', '\\]']
+  ]) {
+    const start = text.indexOf(left);
+    if (start !== -1 && text.indexOf(right, start + left.length) !== -1) {
+      return true;
+    }
+  }
+  return false;
+}
 // the tags KaTeX's auto-render skips
 const ignoredTags = new Set(['SCRIPT', 'NOSCRIPT', 'STYLE', 'TEXTAREA', 'PRE', 'CODE', 'OPTION', 'TEMPLATE']);
 
@@ -29,7 +45,7 @@ function hasMath(node: Node): boolean {
     return false;
   }
   if (root.nodeType === Node.TEXT_NODE) {
-    return mathPair.test(root.textContent || '');
+    return hasDelimiterPair(root.textContent || '');
   }
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   while (walker.nextNode()) {
@@ -39,7 +55,7 @@ function hasMath(node: Node): boolean {
       // part of the run of the text node before it
       continue;
     }
-    if (mathPair.test(textRun(text))) {
+    if (hasDelimiterPair(textRun(text))) {
       let parent = text.parentElement;
       while (parent && parent !== root && !ignoredTags.has(parent.tagName)) {
         parent = parent.parentElement;

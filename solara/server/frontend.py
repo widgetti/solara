@@ -191,12 +191,19 @@ def _vue3() -> bool:
     return vue3
 
 
+# A page sends the spec of the server (normalized), which is far shorter. The spec and the features come from
+# the browser and show up in the process-wide warnings, so a longer value is not a page's.
+_MAX_PAGE_SPEC = 256
+
+
 def from_page(value) -> Optional[Frontend]:
     """The frontend a page preloaded (its window.solaraFrontend, which the page sends with run), or None."""
     if not isinstance(value, dict):
         return None
     spec, features = value.get("spec"), value.get("features")
     if not isinstance(spec, str) or not isinstance(features, list):
+        return None
+    if len(spec) > _MAX_PAGE_SPEC or len(features) > len(FEATURES):
         return None
     try:
         # the browser sends it: keep only known names, the spec shows up in the warnings

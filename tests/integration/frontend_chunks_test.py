@@ -26,7 +26,7 @@ ipywidgets_major = int(ipywidgets.__version__.split(".")[0])
 CHUNK_RE = re.compile(r"/@widgetti/solara-vuetify3?-app@[^/]+/dist/solara-vuetify-app\d\.([a-z-]+)(?:\.min)?\.js")
 # the console warning of a lazy load (solara-widget-manager features.ts)
 LAZY_RE = re.compile(r'Add "\+([a-z-]+)" to --frontend')
-WEBSOCKET_CLOSED_RE = re.compile(r"WebSocket connection to .* failed: Invalid frame header")
+WEBSOCKET_CLOSED_RE = re.compile(r"WebSocket connection to .* failed: (Invalid frame header|Data frame received after close)")
 
 
 @solara.component
@@ -130,6 +130,12 @@ def SingleDollars():
     ipywidgets.FloatSlider.element(description="Price ($)")
 
 
+@solara.component
+def EntityMath():
+    # the template compiler of Vue decodes character references, so KaTeX sees "$x+3$"
+    solara.Markdown("&#36;x+3&#36; entity dollars")
+
+
 class Recorder:
     """Collects the requests and console messages of page_session."""
 
@@ -164,7 +170,8 @@ class Recorder:
         return [m.group(1) for m in (LAZY_RE.search(msg.text) for msg in self.console if msg.type == "warning") if m]
 
     def errors(self) -> List[str]:
-        # a page that is left closes its kernel websocket, which flask reports as a broken frame
+        # a page that is left closes its kernel websocket, which flask reports as a broken frame (and the
+        # page can see the closed websocket of flask before that)
         return [msg.text for msg in self.console if msg.type == "error" and not WEBSOCKET_CLOSED_RE.match(msg.text)] + self.failed
 
 
@@ -509,4 +516,17 @@ def test_minimal_single_dollar_no_katex(
     assert "katex" not in recorder.chunk_requests()
     assert "katex" not in recorder.lazy_warnings()
     assert not [message for message in _server_warnings(caplog) if "katex" in message]
+    assert recorder.errors() == []
+
+
+@pytest.mark.parametrize("preset", ["full", "minimal"])
+def test_markdown_entity_math(page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, recorder, frontend_setting, preset):
+    if not vue3 and preset == "minimal":
+        pytest.skip("Vue 2 cannot leave out Vuetify, so minimal is not minimal there")
+    frontend_setting(preset)
+    with extra_include_path(HERE), solara_app("frontend_chunks_test:EntityMath"):
+        page_session.goto(solara_server.base_url)
+        page_session.locator("text=entity dollars").wait_for()
+        # the first Markdown of the page renders math, as before the frontend features
+        page_session.locator(".katex").first.wait_for()
     assert recorder.errors() == []

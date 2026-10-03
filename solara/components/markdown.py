@@ -1,3 +1,4 @@
+import bisect
 import hashlib
 import html
 import logging
@@ -5,7 +6,7 @@ import re
 import textwrap
 import traceback
 import warnings
-from typing import Any, Callable, Dict, List, Optional, Union, cast
+from typing import Any, Callable, Dict, Iterator, List, Optional, Union, cast
 import typing
 
 import ipyvue
@@ -91,16 +92,69 @@ def _run_solara(code, cleanups):
 # KaTeX's auto-render skips <pre> and <code>, and typesets only between a left and a right
 # delimiter in the same text. These checks find a superset of that, so a single "$" (for
 # example a shell prompt in a code block, or a price) does not load KaTeX.
-_CODE_ELEMENT = re.compile(r"<(pre|code)\b[^>]*>.*?</\1\s*>", re.S | re.I)
-_TAG = re.compile(r"<[^>]*>")
-_MATH = re.compile(r"\$[^$]*\$|\\\(.*?\\\)|\\\[.*?\\\]", re.S)
+# Markdown can come from users (e.g. a chat app), so no step may take quadratic time: a regex such as
+# <(pre|code)>.*?</\1> or \\(.*?\\) scans to the end for each unclosed tag or delimiter.
+_CODE_OPEN = re.compile(r"<(pre|code)\b", re.I)
+_CODE_CLOSE = re.compile(r"</(pre|code)\s*>", re.I)
 
 
-def _has_math(html: str) -> bool:
-    if "$" not in html and "\\(" not in html and "\\[" not in html:
+def _without_code(text: str) -> str:
+    """text without its <pre> and <code> elements: each opening tag up to the first closing tag with its name."""
+    closes: Dict[str, List[int]] = {"pre": [], "code": []}
+    close_ends: Dict[str, List[int]] = {"pre": [], "code": []}
+    for match in _CODE_CLOSE.finditer(text):
+        closes[match.group(1).lower()].append(match.start())
+        close_ends[match.group(1).lower()].append(match.end())
+    if not closes["pre"] and not closes["code"]:
+        return text
+    parts = []
+    position = 0
+    for match in _CODE_OPEN.finditer(text):
+        if match.start() < position:
+            continue
+        end = text.find(">", match.end())
+        if end == -1:
+            # no more tags at all
+            break
+        name = match.group(1).lower()
+        index = bisect.bisect_left(closes[name], end + 1)
+        if index == len(closes[name]):
+            # not closed: the text stays
+            continue
+        parts.append(text[position : match.start()])
+        position = close_ends[name][index]
+    parts.append(text[position:])
+    return "".join(parts)
+
+
+def _text_parts(text: str) -> Iterator[str]:
+    """The text between the tags."""
+    position = 0
+    while True:
+        start = text.find("<", position)
+        end = text.find(">", start + 1) if start != -1 else -1
+        if end == -1:
+            yield text[position:]
+            return
+        yield text[position:start]
+        position = end + 1
+
+
+def _has_delimiter_pair(text: str) -> bool:
+    if text.count("$") >= 2:
+        return True
+    for left, right in (("\\(", "\\)"), ("\\[", "\\]")):
+        start = text.find(left)
+        if start != -1 and text.find(right, start + len(left)) != -1:
+            return True
+    return False
+
+
+def _has_math(html_text: str) -> bool:
+    # the template compiler of Vue decodes character references, so &#36; is a "$" for KaTeX
+    if "$" not in html_text and "\\(" not in html_text and "\\[" not in html_text and "&" not in html_text:
         return False
-    text = _CODE_ELEMENT.sub("", html)
-    return any(_MATH.search(part) for part in _TAG.split(text))
+    return any(_has_delimiter_pair(html.unescape(part)) for part in _text_parts(_without_code(html_text)))
 
 
 def _has_mermaid(html: str) -> bool:
@@ -183,9 +237,8 @@ module.exports = {
                 if (window.requirejs && !requirejs.defined('katex') && !requirejs.specified('katex')) {
                     define('katex', [], () => katexChunk.katex);
                 }
-                if (hasMath) {
-                    this.renderMathInElement(this.$el, this.latexSettings);
-                }
+                // always, as before the frontend features: hasMath can miss math that only the browser sees
+                this.renderMathInElement(this.$el, this.latexSettings);
             }
         } else {
             window.renderMathInElement = await this.loadKatexExt();

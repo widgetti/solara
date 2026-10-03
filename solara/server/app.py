@@ -503,31 +503,27 @@ def load_themes(themes: Dict[str, Dict[str, Any]], dark: bool):
     theme.dark_effective = dark
 
 
-# The themes and dark mode that a page without the vuetify feature sent with run. The theme widgets
-# are Vuetify widgets, so the server creates them only when the page loads Vuetify on first use.
-_PAGE_THEMES = "solara.server.app:page-themes"
-
-
 def _defer_themes(context: "kernel_context.VirtualKernelContext", themes, dark) -> None:
-    page_themes = context.user_dicts.setdefault(_PAGE_THEMES, {})
-    page_themes.update(themes=themes, dark=dark)
-    if page_themes.get("vuetify_loaded"):
-        # the page has Vuetify already (a run after a reconnect)
+    """A page without the vuetify feature sent its theme with run.
+
+    The theme widgets are Vuetify widgets, so the server creates them only when the app uses solara.lab.theme,
+    or when the page loads Vuetify on first use. They then start from the theme of the page, so that changes
+    of the app win, as in full.
+    """
+    from solara.lab.components.theming import _PAGE_THEME, _theme_created
+
+    context.user_dicts[_PAGE_THEME] = {"themes": themes, "dark": dark}
+    if _theme_created():
+        # as in full: the theme of the page, before the app code runs
         load_themes(themes, dark)
 
 
-def _load_deferred_themes(context: "kernel_context.VirtualKernelContext") -> None:
+def _load_deferred_themes() -> None:
     """The page loaded Vuetify on first use: create the theme widgets, so Vuetify widgets get the theme as in full."""
-    page_themes = context.user_dicts.setdefault(_PAGE_THEMES, {})
-    if page_themes.get("vuetify_loaded"):
-        return
-    page_themes["vuetify_loaded"] = True
-    if "themes" in page_themes:
-        load_themes(page_themes["themes"], page_themes["dark"])
+    from solara.lab.components.theming import theme
 
-
-def _page_loaded_vuetify(context: "kernel_context.VirtualKernelContext") -> bool:
-    return bool(context.user_dicts.get(_PAGE_THEMES, {}).get("vuetify_loaded"))
+    # creates them once, from the theme of the page (see _defer_themes); existing ones keep the changes of the app
+    theme._instance.value
 
 
 def client_version() -> str:
@@ -640,13 +636,13 @@ def solara_comm_target(comm, msg_first):
             comm.send(reply)
 
         elif method == "reload":
-            from solara.lab.components.theming import _get_theme, theme
+            from solara.lab.components.theming import _get_theme, _theme_created, theme
 
             assert app is not None
             context = kernel_context.get_current_context()
             path = data.get("path", "")
-            # the theme widgets exist only when the page has Vuetify (preloaded, or loaded on first use)
-            vuetify = frontend.vuetify_enabled() or _page_loaded_vuetify(context)
+            # without the vuetify feature, the theme widgets exist only when the app or the page needed them
+            vuetify = frontend.vuetify_enabled() or _theme_created()
             if vuetify:
                 current_theme = theme._instance.value
                 theme_dict = _get_theme(current_theme)
@@ -680,7 +676,7 @@ def solara_comm_target(comm, msg_first):
             feature = data.get("feature")
             frontend.log_lazy_load(feature)
             if feature == "vuetify":
-                _load_deferred_themes(kernel_context.get_current_context())
+                _load_deferred_themes()
         else:
             logger.error("Unknown comm method called on solara.control comm: %s", method)
 

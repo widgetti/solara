@@ -129,6 +129,44 @@ def test_theme_when_vuetify_loads_on_first_use(minimal, kernel_context, no_kerne
         app.close()
 
 
+@pytest.mark.parametrize("preset", ["full", "minimal"])
+def test_theme_changes_of_the_app_win(preset, warned, kernel_context, no_kernel_context, tmp_path: Path, monkeypatch):
+    # the theming docs: Page sets a color, and the page sends the colors of its theme.js with run
+    from solara.lab.components.theming import theme
+
+    monkeypatch.setattr(solara.server.settings.main, "frontend", preset)
+    monkeypatch.setattr(frontend, "vue3", True)
+    app_file = tmp_path / "themed.py"
+    app_file.write_text(
+        "import solara\nimport solara.lab\n\n\n@solara.component\ndef Page():\n"
+        "    solara.lab.theme.themes.light.primary = '#3f51b5'\n    solara.Text('hello')\n"
+    )
+    app = AppScript(str(app_file))
+    monkeypatch.setitem(solara.server.app.apps, "__default__", app)
+    try:
+        app.init()
+        with kernel_context:
+            comm = FakeComm()
+            solara.server.app.solara_comm_target(comm, None)
+            themes = {"light": {"colors": {"primary": "#ff991f", "secondary": "#123456"}}, "dark": {}}
+            comm.receive({"method": "run", "args": {"path": "/", "appName": None, "themes": themes, "dark": True}})
+            assert comm.sent[-1]["method"] == "finished"
+            assert theme.themes.light.primary == "#3f51b5"
+            assert theme.themes.light.secondary == "#123456"
+            assert theme.dark_effective is True
+            # the page loads Vuetify on first use (minimal): the theme keeps the change of the app
+            comm.receive({"method": "frontend-lazy-load", "feature": "vuetify"})
+            assert theme.themes.light.primary == "#3f51b5"
+            assert theme.themes.light.secondary == "#123456"
+            assert theme.dark_effective is True
+            comm.receive({"method": "reload", "path": "/"})
+            assert comm.sent[-1]["method"] == "finished"
+            assert theme.themes.light.primary == "#3f51b5"
+            assert theme.themes.light.secondary == "#123456"
+    finally:
+        app.close()
+
+
 def test_page_keeps_its_frontend(warned, kernel_context, no_kernel_context, tmp_path: Path, monkeypatch):
     # e.g. solara.server.settings.main.frontend in the app code, which a hot reload changes
     monkeypatch.setattr(frontend, "vue3", True)

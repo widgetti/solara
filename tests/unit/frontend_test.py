@@ -3,6 +3,7 @@ import logging
 import re
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import List
 
@@ -15,6 +16,7 @@ import solara.__main__
 import solara.server.app
 import solara.server.settings
 import solara.settings
+from solara.components.markdown import _has_math
 from solara.server import frontend, server
 from solara.server.app import AppScript
 
@@ -115,6 +117,9 @@ def test_from_page():
     assert frontend.from_page({"spec": "minimal", "features": "katex"}) is None
     # the spec shows up in the server log, so it must be a valid setting
     assert frontend.from_page({"spec": "minimal\nERROR: fake log line", "features": []}) is None
+    # a valid setting that is longer than any page sends, or more features than exist
+    assert frontend.from_page({"spec": "full" + ",+katex" * 1000, "features": []}) is None
+    assert frontend.from_page({"spec": "full", "features": ["katex"] * 100}) is None
 
 
 def test_logger_level_from_logging_config_stays():
@@ -219,8 +224,31 @@ def test_markdown_warns_for_math(monkeypatch, caplog):
         assert "const hasMath = true" in template
         for html in ["<p>$$\nx\n$$</p>", "<p>\\(x\\)</p>", "<p>\\[x\\]</p>", "<p>from $5 to $10</p>"]:
             assert "const hasMath = true" in _markdown_template(html), html
+        # the template compiler of Vue decodes character references before KaTeX sees the text
+        for html in ["<p>&#36;x+3&#36;</p>", "<p>&dollar;x&dollar;</p>", "<p>&#92;(x&#92;)</p>"]:
+            assert "const hasMath = true" in _markdown_template(html), html
+        for html in ["<p>&amp;#36;x&amp;#36;</p>", "<p>a &amp; b</p>", "<p><code>&#36;x&#36;</code></p>"]:
+            assert "const hasMath = false" in _markdown_template(html), html
     messages = [record.getMessage() for record in caplog.records if record.name == "solara.server.frontend"]
     assert len(messages) == 1 and "'katex'" in messages[0]
+
+
+@pytest.mark.parametrize(
+    "unit",
+    [
+        "x \\( ",  # an unclosed \( in each part
+        "<code> ",  # an unclosed <code> in each part
+        "&#92;( ",
+        "< ",
+    ],
+)
+def test_has_math_takes_linear_time(unit):
+    # Markdown can come from users (e.g. a chat app): the check must not stall the server
+    text = "$ " + unit * 20_000
+    start = time.perf_counter()
+    assert not _has_math(text)
+    # a quadratic check takes 5 seconds or more here, a linear one a few milliseconds
+    assert time.perf_counter() - start < 1
 
 
 def test_cli_rejects_bad_frontend(monkeypatch):
