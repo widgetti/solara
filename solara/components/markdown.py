@@ -152,7 +152,13 @@ module.exports = {
                 ],
                 ignoredClasses: ["solara-markdown-output", "jupyter-widgets"]
             };
-        if (solaraFeatures) {
+        // the same order as before the frontend features: a renderMathInElement that is already there (from an
+        // earlier Markdown or from user code), then MathJax 2 when the page loaded it, and only then KaTeX
+        if (window.renderMathInElement) {
+            window.renderMathInElement(this.$el, this.latexSettings);
+        } else if (window.MathJax && MathJax.Hub) {
+            MathJax.Hub.Queue(['Typeset', MathJax.Hub, this.$el]);
+        } else if (solaraFeatures) {
             // the KaTeX of the bundle: preloaded with the katex feature, otherwise a lazy load only for text with math
             if (hasMath || !solaraFeatures.isEnabled || solaraFeatures.isEnabled('katex')) {
                 const katexChunk = await solaraFeatures.loadKatex();
@@ -169,10 +175,6 @@ module.exports = {
                     this.renderMathInElement(this.$el, this.latexSettings);
                 }
             }
-        } else if (window.renderMathInElement) {
-            window.renderMathInElement(this.$el, this.latexSettings);
-        } else if (window.MathJax && MathJax.Hub) {
-            MathJax.Hub.Queue(['Typeset', MathJax.Hub, this.$el]);
         } else {
             window.renderMathInElement = await this.loadKatexExt();
             window.renderMathInElement(this.$el, this.latexSettings);
@@ -297,10 +299,11 @@ module.exports = {
             this.mermaid.init();
         }
 
-        if (this.renderMathInElement) {
-            this.renderMathInElement(this.$el, this.latexSettings);
-        } else if(window.MathJax && MathJax.Hub) {
+        // MathJax first, as before the frontend features
+        if(window.MathJax && MathJax.Hub) {
             MathJax.Hub.Queue(['Typeset', MathJax.Hub, this.$el]);
+        } else if (this.renderMathInElement) {
+            this.renderMathInElement(this.$el, this.latexSettings);
         } else if (window.renderMathInElement) {
             window.renderMathInElement(this.$el, this.latexSettings);
         }

@@ -120,7 +120,7 @@ $ SOLARA_FRONTEND=minimal,+katex solara run sol.py
 The features are:
 
 | Feature | What it gives |
-|---|---|
+| - | - |
 | `vuetify` | Vuetify and the Vuetify page shell. Needs `mdi`. |
 | `mdi` | The Material Design Icons font (`mdi-*` icons). |
 | `material-icons` | The Material Icons font. |

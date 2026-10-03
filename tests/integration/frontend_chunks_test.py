@@ -13,6 +13,7 @@ import reacton.core
 
 import solara
 import solara.components.misc
+import solara.server.server
 import solara.server.settings
 from solara.server import frontend, frontend_assets
 
@@ -154,6 +155,15 @@ def recorder(page_session: playwright.sync_api.Page):
         yield rec
     finally:
         rec.close()
+
+
+@pytest.fixture(autouse=True)
+def default_page_template():
+    # server.get_jinja_env is cached per process, with the template directory of the app that was served first.
+    # After a test that served the solara website (e.g. api_test), every page would use the website's template,
+    # with its third-party scripts that throw on our pages. These tests check the default template.
+    solara.server.server.cache_memory.clear()
+    yield
 
 
 @pytest.fixture
@@ -395,6 +405,40 @@ def test_markdown_katex_svg_height(page_session: playwright.sync_api.Page, solar
         svg = page_session.locator(".solara-markdown .katex .hide-tail svg").first
         svg.wait_for()
         page_session.wait_for_function("document.querySelector('.solara-markdown .katex .hide-tail svg').getBoundingClientRect().height > 5", timeout=5000)
+    assert recorder.errors() == []
+
+
+# a stand-in for MathJax 2 (that a page can load, e.g. from assets/custom.js): it records what it typesets
+FAKE_MATHJAX = """<script>
+window.solaraTestMathJaxTypeset = [];
+window.MathJax = {Hub: {Queue: (job) => window.solaraTestMathJaxTypeset.push(job[0])}};
+</script>"""
+
+
+def test_full_markdown_mathjax_first(page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, recorder, frontend_setting):
+    # as before the frontend features: with MathJax 2 on the page, Markdown typesets with MathJax, not with KaTeX
+    frontend_setting("full")
+
+    def add_fake_mathjax(route: playwright.sync_api.Route):
+        response = route.fetch()
+        html = response.text()
+        assert "<head>" in html
+        route.fulfill(response=response, body=html.replace("<head>", "<head>" + FAKE_MATHJAX, 1))
+
+    def is_page(url: str) -> bool:
+        return url.rstrip("/") == solara_server.base_url.rstrip("/")
+
+    page_session.route(is_page, add_fake_mathjax)
+    try:
+        with extra_include_path(HERE), solara_app("frontend_chunks_test:MarkdownMath"):
+            page_session.goto(solara_server.base_url)
+            page_session.locator("text=math markdown").wait_for()
+            page_session.wait_for_function("window.solaraTestMathJaxTypeset.length > 0")
+            assert page_session.evaluate("window.solaraTestMathJaxTypeset[0]") == "Typeset"
+            assert page_session.locator(".solara-markdown .katex").count() == 0
+            assert page_session.locator("link[data-solara-katex-css-last]").count() == 0
+    finally:
+        page_session.unroute(is_page, add_fake_mathjax)
     assert recorder.errors() == []
 
 
