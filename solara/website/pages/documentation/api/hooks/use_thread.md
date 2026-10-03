@@ -10,8 +10,7 @@ def use_thread(
     ],
     intrusive_cancel=True,
     dependencies=[],
-) -> Result[T]:
-    ...
+) -> Result[T]: ...
 ```
 
 `use_thread` can be used to run medium or long running jobs in a separate thread to avoid blocking the render loop.

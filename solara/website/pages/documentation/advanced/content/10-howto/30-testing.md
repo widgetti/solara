@@ -176,6 +176,7 @@ import ipywidgets as widgets
 import playwright.sync_api
 from IPython.display import display
 
+
 def test_widget_button_solara(solara_test, page_session: playwright.sync_api.Page):
     # The test code runs in the same process as solara-server (which runs in a separate thread)
     # Note: this test uses ipywidgets directly, not solara components.

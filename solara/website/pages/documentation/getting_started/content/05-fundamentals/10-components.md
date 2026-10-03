@@ -48,6 +48,7 @@ Here's an example of a simple Solara component that displays a button:
 ```python
 import solara
 
+
 @solara.component
 def MyButton():
     solara.Button("Click me!")
@@ -62,6 +63,7 @@ Here's an example of using the `MyButton` component we defined earlier:
 
 ```python
 import solara
+
 
 @solara.component
 def MyApp():
@@ -79,8 +81,10 @@ Here's an example of a Solara component that displays a button and responds to c
 ```python
 import solara
 
+
 def on_button_click(event):
     print("Button clicked!")
+
 
 @solara.component
 def MyInteractiveButton():
@@ -102,6 +106,7 @@ Here's an example of a Solara component that accepts an argument:
 
 ```python
 import solara
+
 
 @solara.component
 def MyButton(text):
