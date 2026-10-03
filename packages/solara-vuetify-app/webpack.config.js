@@ -3,7 +3,7 @@ const webpack = require('webpack');
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 const TerserPlugin = require("terser-webpack-plugin");
-const { slotInsert, DropCssPlugin, ChunkGuardPlugin, DedupePackagesPlugin } = require("../solara-widget-manager/webpack-plugins");
+const { slotInsert, DropCssPlugin, WrapUmdFactoryPlugin, ChunkGuardPlugin, DedupePackagesPlugin } = require("../solara-widget-manager/webpack-plugins");
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
 const analyze = process.env.ANALYZE === "true";
@@ -59,7 +59,7 @@ function config(major, production) {
                 /@jupyterlab[\\/]services[\\/]lib[\\/]index\.js$/,
                 path.resolve(__dirname, 'node_modules', widgetManager, 'lib', 'services.js'),
             ),
-            ...(production ? [] : [new DropCssPlugin()]),
+            ...(production ? [] : [new DropCssPlugin(), new WrapUmdFactoryPlugin()]),
             ...(analyze && major === 8 && production ? [new BundleAnalyzerPlugin({ analyzerPort: 9999 })] : []),
         ],
         module: {
@@ -71,8 +71,11 @@ function config(major, production) {
             // the bundle analyzer shows more detail without module concatenation
             concatenateModules: analyze ? false : undefined,
             minimizer: [
-                // without ascii_only, the chunks need <meta charset="utf-8"> on the page
-                new TerserPlugin({ terserOptions: { format: { ascii_only: true } } }),
+                // without ascii_only, the chunks need <meta charset="utf-8"> on the page.
+                // wrap_func_args (the default before terser 5.43) keeps a function passed as an argument in
+                // parentheses, as in the published bundles: V8 then compiles the UMD factory, "(self,(()=>...))",
+                // eagerly and off the main thread, instead of lazily on the main thread (see WrapUmdFactoryPlugin)
+                new TerserPlugin({ terserOptions: { format: { ascii_only: true, wrap_func_args: true } } }),
                 // also removes the duplicate Vuetify rules (dist + lib CSS), keeping the last copy.
                 // mergeLonghand off: merging var() longhands into a shorthand changes the cascade, e.g.
                 // Vuetify's .v-main padding-top/left longhands became one padding shorthand, and one invalid

@@ -33,6 +33,48 @@ class DropCssPlugin {
     }
 }
 
+// V8 compiles a function in parentheses eagerly, as part of the script compile, which Chrome streams
+// off the main thread. A function without them compiles lazily on the main thread when it is called.
+// The UMD wrapper calls its factory at once, so the factory needs the parentheses:
+// "})(self, (() => {...}));". The production builds get them from terser (format.wrap_func_args);
+// the development builds are not minified, so this plugin adds them. It fails the build when the
+// wrapper does not look as expected, so the parentheses cannot get lost without notice.
+// webpack's development UMD output, for comparison: "})(self, () => {...});" (also in the published bundles).
+const UMD_FACTORY_START = /^\}\)\([A-Za-z_$][\w$]*, \(\) => \{$/m;
+
+class WrapUmdFactoryPlugin {
+    apply(compiler) {
+        const { Compilation, sources } = compiler.webpack;
+        compiler.hooks.thisCompilation.tap(PLUGIN, compilation => {
+            // before the source map (dev tooling stage) is made, so the map accounts for the two characters
+            compilation.hooks.processAssets.tap({ name: PLUGIN, stage: Compilation.PROCESS_ASSETS_STAGE_OPTIMIZE }, () => {
+                for (const chunk of compilation.chunks) {
+                    if (!chunk.canBeInitial()) {
+                        continue; // async chunks have no UMD wrapper
+                    }
+                    for (const file of chunk.files) {
+                        if (!file.endsWith('.js')) {
+                            continue;
+                        }
+                        const asset = compilation.getAsset(file);
+                        const text = asset.source.source().toString();
+                        const start = UMD_FACTORY_START.exec(text);
+                        const end = text.lastIndexOf('\n});');
+                        if (!start || start.index > 2000 || end === -1 || text.slice(end + 4).trim() !== '') {
+                            throw new Error(`${PLUGIN}: ${file} does not have the expected UMD wrapper, cannot wrap its factory`);
+                        }
+                        const source = new sources.ReplaceSource(asset.source);
+                        // "})(self, () => {" -> "})(self, (() => {" and the final "});" -> "}));"
+                        source.insert(start.index + start[0].indexOf('() =>'), '(');
+                        source.insert(end + 2, ')');
+                        compilation.updateAsset(file, source);
+                    }
+                }
+            });
+        });
+    }
+}
+
 // Fails the build on a chunk without a name (the server computes the file names), and on
 // a module over 2 KB that is in more than one chunk (it would be downloaded twice; give
 // it its own named chunk instead, as for the sanitizer).
@@ -208,4 +250,4 @@ class DedupePackagesPlugin {
     }
 }
 
-module.exports = { slotInsert, DropCssPlugin, ChunkGuardPlugin, DedupePackagesPlugin };
+module.exports = { slotInsert, DropCssPlugin, WrapUmdFactoryPlugin, ChunkGuardPlugin, DedupePackagesPlugin };

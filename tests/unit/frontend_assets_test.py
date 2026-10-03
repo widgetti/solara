@@ -110,3 +110,22 @@ def test_sanitizer_postcss_as_before(vue3):
             chunk = dist / f"solara-vuetify-app{ipywidgets_major}.sanitizer{'.min' if production else ''}.js"
             has_postcss = "CssSyntaxError" in chunk.read_text(encoding="utf8")
             assert has_postcss == (vue3 or ipywidgets_major == 7 or not production), chunk.name
+
+
+@pytest.mark.parametrize("vue3", [True, False])
+@pytest.mark.parametrize("ipywidgets_major", [7, 8])
+@pytest.mark.parametrize("production", [True, False])
+def test_core_umd_factory_in_parentheses(vue3, ipywidgets_major, production):
+    # V8 compiles a function in parentheses eagerly, with the script (off the main thread in Chrome), and any other
+    # function lazily on the main thread when it is called. The UMD wrapper calls its factory at once, so the factory
+    # must be in parentheses, as in the published bundles: "}(self,(()=>" (production), "})(self, (() => {" (development).
+    # terser >= 5.43 drops them unless format.wrap_func_args is on (webpack.config.js); WrapUmdFactoryPlugin adds them
+    # to the development builds. Without them, the factory compile took 65-80 ms of main thread at 4x CPU.
+    dist = _dist(vue3)
+    head = (dist / frontend_assets.js_file("core", ipywidgets_major, production)).read_text(encoding="utf8")[:5000]
+    if production:
+        assert "}(self,(()=>(()=>{" in head
+        assert "}(self,()=>" not in head
+    else:
+        assert re.search(r"^\}\)\(self, \(\(\) => \{$", head, re.M)
+        assert not re.search(r"^\}\)\(self, \(\) => \{$", head, re.M)
