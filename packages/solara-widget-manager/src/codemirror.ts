@@ -13,6 +13,8 @@ function loadMode(): Promise<ModeNamespace> {
       realMode = module.Mode;
       return realMode;
     });
+    // a failed load (e.g. network) may be retried by the next code block
+    loading.catch(() => (loading = undefined));
   }
   return loading;
 }
