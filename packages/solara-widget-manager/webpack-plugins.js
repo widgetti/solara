@@ -185,7 +185,6 @@ class DedupePackagesPlugin {
         this.packages = new Map(); // node_modules root -> Map(name@version -> [package dirs])
         this.versions = new Map(); // package dir -> version
         this.same = new Map(); // "file|file" -> bool
-        this.count = 0;
     }
 
     version(dir) {
@@ -295,7 +294,6 @@ class DedupePackagesPlugin {
                     r.descriptionFilePath = replace(r.descriptionFilePath);
                     r.descriptionFileRoot = r.descriptionFileRoot === dir ? canonical : replace(r.descriptionFileRoot);
                 }
-                this.count += 1;
             });
         });
     }
