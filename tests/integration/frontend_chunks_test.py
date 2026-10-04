@@ -132,6 +132,16 @@ def ThemedButton():
 
 
 @solara.component
+def ThemeOnClick():
+    import solara.lab
+
+    def make_red():
+        solara.lab.theme.themes.light.primary = "#ff0000"
+
+    solara.Button("theme button", color="primary", classes=["theme-button"], on_click=make_red)
+
+
+@solara.component
 def SingleDollars():
     # a shell prompt in a code block, and prices: no math, so no KaTeX
     solara.Markdown("```bash\n$ pip install solara\n```\n\nPrice ($), single dollar")
@@ -636,3 +646,26 @@ def test_vuetify_css(page_session: playwright.sync_api.Page, solara_server, sola
     # Vuetify's CSS loads silently with Vuetify: the warning names the feature to add, which brings the CSS along
     assert recorder.lazy_warnings() == (["vuetify"] if lazy else [])
     assert recorder.errors() == []
+
+
+@pytest.mark.skipif(not vue3, reason="the Vue 2 build has Vuetify in its core bundle")
+@pytest.mark.parametrize("preset", ["full", "minimal"])
+def test_vuetify_theme_after_soft_remount(
+    page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, frontend_setting, monkeypatch, preset
+):
+    # the fresh kernel of a soft-remount starts from the theme of the page, also when Vuetify loaded on first use
+    frontend_setting(preset)
+    monkeypatch.setattr(solara.server.settings.state, "auto_remount", True)
+    monkeypatch.setattr(solara.server.settings.state, "test_eviction", True)
+    button = page_session.locator(".theme-button")
+    try:
+        with extra_include_path(HERE), solara_app("frontend_chunks_test:ThemeOnClick"):
+            page_session.goto(solara_server.base_url)
+            playwright.sync_api.expect(button).to_have_css("background-color", "rgb(98, 0, 238)")
+            button.click()
+            playwright.sync_api.expect(button).to_have_css("background-color", "rgb(255, 0, 0)")
+            assert page_session.evaluate("solara.debug.simulateFailover()") is not False
+            page_session.wait_for_function("() => solara.debug.remountCount === 1", timeout=30000)
+            playwright.sync_api.expect(button).to_have_css("background-color", "rgb(98, 0, 238)")
+    finally:
+        page_session.goto("about:blank")

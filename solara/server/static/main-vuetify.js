@@ -162,15 +162,15 @@ function defineAppAmdModules() {
 }
 
 // A feature that was not preloaded loaded on first use: tell the server (on the solara.control
-// comm), so it logs which flag to add. Queued until the widget manager (and its comm) exists.
-const lazyLoadQueue = [];
+// comm), so it logs which flag to add. Sent once the widget manager (and its comm) exists, and
+// again to the fresh kernel of a soft-remount (which creates the theme widgets when Vuetify loaded).
+const lazyLoadedFeatures = [];
 let sendLazyLoad = null;
 
 function reportLazyLoad(feature) {
+    lazyLoadedFeatures.push(feature);
     if (sendLazyLoad) {
         sendLazyLoad(feature);
-    } else {
-        lazyLoadQueue.push(feature);
     }
 }
 
@@ -552,6 +552,7 @@ async function solaraInit(mountId, appName) {
                 // pushState routing makes the boot-time path stale - recompute from the live URL now
                 const path = window.location.pathname.slice(solara.rootPath.length) + window.location.search;
                 modelId = await manager.run(appName, { path, dark: inDarkMode(), themes: widgetThemes(), frontend: pageFrontend() });
+                lazyLoadedFeatures.forEach(sendLazyLoad);
             }
             if (superseded()) {
                 // the socket dropped again (or a newer cycle took over) during the rebuild -
@@ -741,7 +742,7 @@ async function solaraInit(mountId, appName) {
             console.warn('solara: could not report the lazy load of', feature, e);
         }
     };
-    lazyLoadQueue.splice(0).forEach(sendLazyLoad);
+    lazyLoadedFeatures.forEach(sendLazyLoad);
     // it seems if we attach this to early, it will not be called
     app.$data.loading_text = 'Loading app';
     const path = window.location.pathname.slice(solara.rootPath.length) + window.location.search;
