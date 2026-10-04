@@ -32,7 +32,7 @@ class CodeEditorWidget(ipyvue.VueTemplate):
 @solara.component
 def CodeEditor(
     value: str = "",
-    on_value: Optional[Callable[[str], None]] = None,
+    on_value: Callable[[str], None] | None = None,
     language: str = "python",
     theme: str = "default",
     height: str = "240px",
