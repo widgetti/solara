@@ -3,7 +3,7 @@ annotated-types==0.8.0
 anyio==4.15.1
 anywidget==0.11.0
 argcomplete==3.7.2
-ast_serialize==0.12.0
+ast_serialize==0.12.1
 asttokens==3.0.2
 attrs==26.1.0
 Authlib==1.8.0
@@ -158,14 +158,14 @@ typing_extensions==4.16.0
 tzdata==2026.5
 urllib3==2.8.0
 userpath==1.9.2
-uv==0.12.22
+uv==0.12.23
 uvicorn==0.54.0
 vega-datasets==0.9.0
 virtualenv==21.14.5
 watchdog==6.0.0
 watchfiles==1.3.0
 wcwidth==0.9.1
-websockets==17.1
+websockets==17.2
 Werkzeug==3.1.9
 widgetsnbextension==4.0.16
 wsproto==1.3.2
