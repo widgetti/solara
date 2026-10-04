@@ -287,6 +287,19 @@ def test_static_prefers_brotli_when_accepted(static_dir: Path):
     assert client.get("/static/big.js", headers={"accept-encoding": "gzip, br;q=0"}).headers["content-encoding"] == "gzip"
 
 
+def test_static_gzip_without_brotli(static_dir: Path, compress_calls: List[str], monkeypatch):
+    # brotli is opt-in (the solara-server[brotli] extra): without it, a client that accepts br gets gzip
+    monkeypatch.setattr(compress, "brotli", None)
+    (static_dir / "big.js").write_bytes(BIG)
+    client = gzip_client(StaticFilesOptionalAuth(directory=static_dir))
+
+    response = client.get("/static/big.js", headers={"accept-encoding": "gzip, deflate, br"})
+
+    assert response.headers["content-encoding"] == "gzip"
+    assert response.content == BIG
+    assert compress_calls == ["gzip"]
+
+
 def test_static_range_request_gets_identity(static_dir: Path, compress_calls: List[str]):
     (static_dir / "big.js").write_bytes(BIG)
     client = gzip_client(StaticFilesOptionalAuth(directory=static_dir))

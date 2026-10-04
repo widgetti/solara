@@ -36,6 +36,11 @@ redis = [
     "solara-ui[redis]"
 ]
 
+# opt-in brotli compression of static files (gzip otherwise)
+brotli = [
+    "solara-server[brotli]"
+]
+
 assets = [
     "solara-assets==1.64.0"
 ]

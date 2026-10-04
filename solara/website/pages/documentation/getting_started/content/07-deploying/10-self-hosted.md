@@ -312,8 +312,9 @@ bytes than needed.
 
 The server compresses each static file (the JavaScript and CSS bundles, also through
 the CDN proxy) only once per process, and keeps the result in a 64MB memory cache.
-It uses brotli when the browser accepts it and the `brotli` package is installed
-(the `solara-server[starlette]` extra installs it), and gzip otherwise.
+It uses gzip by default. It uses brotli, which gives smaller files, when the browser
+accepts it and the `brotli` package is installed. Brotli is opt-in: install it with
+`pip install "solara[brotli]"` (or `pip install "solara-server[brotli]"`).
 These responses have `Vary: Accept-Encoding` and a weak `ETag` (`W/"..."`),
 because the compressed bytes differ from the file. Static files over 8MB, files
 with a suffix that `solara/server/compress.py` does not list (such as images), and

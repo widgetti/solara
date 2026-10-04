@@ -21,7 +21,7 @@ from . import settings
 
 try:
     import brotli
-except ImportError:  # optional, in the solara-server[starlette] extra
+except ImportError:  # optional, opt-in with the solara[brotli] or solara-server[brotli] extra
     brotli = None  # type: ignore
 
 COMPRESSIBLE_SUFFIXES = {
