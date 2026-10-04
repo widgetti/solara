@@ -61,12 +61,10 @@ SETTLE_CAP = 3.0  # wait at most this long for the requests started before the f
 IDLE_QUIET = 1.0
 IDLE_CAP = 8.0
 
-# from the verified measure.py prototype, keep in sync to compare numbers
 INIT_JS = r"""
 (() => {
   const TEXT = %s;
   window.__fv = undefined;
-  window.__loaf = [];
   let scheduled = false;
   function check() {
     scheduled = false;
@@ -82,14 +80,6 @@ INIT_JS = r"""
   }
   const obs = new MutationObserver(() => { if (!scheduled) { scheduled = true; requestAnimationFrame(check); } });
   obs.observe(document, {subtree: true, childList: true, characterData: true, attributes: true});
-  try {
-    new PerformanceObserver((list) => {
-      for (const e of list.getEntries()) {
-        window.__loaf.push({start: e.startTime, dur: e.duration, blocking: e.blockingDuration,
-          scripts: (e.scripts || []).map(s => ({src: s.sourceURL, fn: s.sourceFunctionName, inv: s.invoker, invType: s.invokerType, start: s.startTime, exec: s.executionStart, dur: s.duration, fsl: s.forcedStyleAndLayoutDuration}))});
-      }
-    }).observe({type: 'long-animation-frame', buffered: true});
-  } catch (e) {}
 })();
 """
 
