@@ -467,6 +467,10 @@ async def measure_config(pw: Playwright, server: Server, runs: int, throttled_ru
         all_runs[profile] = {"cold": cold, "warm": warm}
     result["runs"] = all_runs
     result["median"] = {profile: {"cold": aggregate(r["cold"]), "warm": aggregate(r["warm"])} for profile, r in all_runs.items() if r["cold"]}
+    # a profile without one good cold visit has no numbers: the config failed (the summary and the exit code say so)
+    empty = [profile for profile, median in result["median"].items() if not median["cold"]["n"]]
+    if empty:
+        result["failed"] = f"every {' and '.join(empty)} cold visit failed"
     messages = [server.log_text()] + warm_visit.get("warnings", [])
     for profile_runs in all_runs.values():
         for visit in profile_runs["cold"] + profile_runs["warm"]:

@@ -98,6 +98,17 @@ def test_markdown_table_skips_empty_profile():
     assert "#### Throttled" not in md
 
 
+def test_markdown_table_lists_failed_configs_of_a_profile_that_ran():
+    # bench.py marks a config failed when every cold visit of a profile failed: its row must not disappear
+    failed: ConfigResult = {"name": "hello@full", "app": "hello", "preset": "full", "failed": "every fast cold visit failed"}
+    result = make_result([failed])
+    result["meta"]["runs"] = {"fast": {"cold": 3, "warm": 3}, "throttled": {"cold": 0, "warm": 0}}
+    md = markdown_table(result)
+    assert "#### Unthrottled (3 cold, 3 warm visits)" in md
+    assert "| hello@full | failed: every fast cold visit failed |" in md
+    assert "#### Throttled" not in md
+
+
 def test_compare_adds_delta_and_na_for_unmatched():
     base = make_result([make_config("hello@full", [200.0])])
     now = make_result([make_config("hello@full", [220.0]), make_config("dashboard@full", [500.0])])

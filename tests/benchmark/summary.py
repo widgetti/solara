@@ -185,6 +185,10 @@ def _row(config: ConfigResult, profile: str, delta: Optional[Dict[str, Optional[
 
 
 def _has_profile(result: BenchResult, profile: str) -> bool:
+    # a profile that bench.py ran gets a table, also when every visit failed: its rows say why
+    counts = result["meta"].get("runs", {}).get(profile)
+    if counts is not None:
+        return counts["cold"] > 0
     return any(config.get("median", {}).get(profile, {}).get("cold", {}).get("n") for config in result["configs"])
 
 
