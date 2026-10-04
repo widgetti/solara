@@ -59,6 +59,7 @@ PROFILES = ["fast", "throttled"]
 # server log, says 'Add "+katex" to --frontend (SOLARA_FRONTEND) to preload it.'
 FEATURES = [
     "vuetify",
+    "vuetify-css",
     "mdi",
     "material-icons",
     "roboto",

@@ -3,7 +3,7 @@ const webpack = require('webpack');
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 const TerserPlugin = require("terser-webpack-plugin");
-const { slotInsert, DropCssPlugin, WrapUmdFactoryPlugin, ChunkGuardPlugin, DedupePackagesPlugin } = require("../solara-widget-manager/webpack-plugins");
+const { slotInsert, cssChunkFilename, MoveCssPlugin, DropCssPlugin, WrapUmdFactoryPlugin, ChunkGuardPlugin, DedupePackagesPlugin } = require("../solara-widget-manager/webpack-plugins");
 
 // Each frontend feature (vuetify, katex, jupyter-controls, ...) is a named async chunk:
 // solara-vuetify-app{M}.{feature}{.min}.js and main{M}.{feature}.css.
@@ -45,9 +45,12 @@ function config(major, production) {
         plugins: [
             new MiniCssExtractPlugin({
                 filename: `main${major}.css`,
-                chunkFilename: `main${major}.[name].css`,
+                // main{M}.{chunk name}.css, but Vuetify's CSS (chunk vuetify-css) is main{M}.vuetify.css
+                chunkFilename: cssChunkFilename(major),
                 insert: slotInsert,
             }),
+            // Vuetify's CSS (also the CSS its components import) loads with the vuetify-css feature, not with Vuetify
+            new MoveCssPlugin('vuetify', 'vuetify-css'),
             new ChunkGuardPlugin(),
             new DedupePackagesPlugin(),
             // only the parts of the @jupyterlab/services index that we use (see solara-widget-manager/src/services.ts)

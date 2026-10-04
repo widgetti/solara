@@ -121,7 +121,8 @@ The features are:
 
 | Feature | What it gives |
 | - | - |
-| `vuetify` | Vuetify and the Vuetify page shell. Needs `mdi`. Roboto comes with `vuetify`; add `-roboto` to use your own font. |
+| `vuetify` | Vuetify and the Vuetify page shell. Needs `mdi`. Roboto and Vuetify's CSS come with `vuetify`; add `-roboto` to use your own font, and `-vuetify-css` to use your own Vuetify CSS. |
+| `vuetify-css` | Vuetify's stylesheet. Comes with `vuetify`; add `-vuetify-css` to use your own Vuetify CSS. |
 | `mdi` | The Material Design Icons font (`mdi-*` icons). |
 | `material-icons` | The Material Icons font. |
 | `roboto` | The Roboto font. Comes with `vuetify`; add `-roboto` to use your own font. |
@@ -143,11 +144,15 @@ Without them, text uses a fallback font and those icons do not show, so add them
 Vuetify's icons use `mdi`, so `mdi` always loads together with `vuetify`, also on demand.
 Vuetify's text styles use the Roboto font, so Roboto comes with `vuetify`, also on demand.
 Add `-roboto` to use your own font, for example `--frontend=minimal,+vuetify,-roboto`.
+Vuetify's stylesheet (`vuetify-css`) also comes with `vuetify`, also on demand.
+Use `-vuetify-css` when you ship your own Vuetify CSS (for example built from Vuetify's SASS) in `assets/`, for example `--frontend=full,-vuetify-css`.
+Vuetify still adds the stylesheet of its theme colors from JavaScript; `-vuetify-css` does not remove that one.
+On Vue 3, ipyvuetify 3.0.0 adds its own copy of Vuetify's CSS to the page, which `-vuetify-css` does not remove either.
 
 Without `vuetify`, the page uses a shell without Vuetify, and the layout components (such as `solara.Column` and `solara.Row`) render without Vuetify.
 This shell has no dark mode: Vuetify widgets that load on demand use the light colors of `solara.lab.theme`.
 Solara then uses no default layout (`AppLayout`), so `solara.Sidebar`, `solara.AppBar` and `solara.AppBarTitle` show nothing, unless you use `solara.AppLayout` or a layout of your own; the server logs a warning when that happens.
-On Vue 2 (ipyvue < 3), Vuetify is always on, and so is `mdi`; `roboto` comes with it, unless you add `-roboto`.
+On Vue 2 (ipyvue < 3), Vuetify is always on, and so is `mdi`; `roboto` and `vuetify-css` come with it, unless you add `-roboto` or `-vuetify-css`.
 This setting only applies to the Solara server; Jupyter (notebook, lab, Voila) always loads everything.
 A page that is open keeps the features it loaded with, also after a hot reload that changes the setting; refresh the page to use the new setting.
 

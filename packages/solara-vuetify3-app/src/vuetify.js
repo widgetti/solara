@@ -1,4 +1,5 @@
-// feature "vuetify": the Vuetify JS and CSS
+// feature "vuetify": the Vuetify JS. Its CSS (this CSS import, and the CSS that Vuetify's components
+// import) is the feature "vuetify-css": MoveCssPlugin (webpack.config.js) moves it to that chunk.
 import * as Vue from 'vue';
 import * as Vuetify from 'vuetify';
 import 'vuetify/dist/vuetify.min.css';

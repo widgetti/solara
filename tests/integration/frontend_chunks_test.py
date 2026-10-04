@@ -599,3 +599,40 @@ def test_vuetify_has_roboto(page_session: playwright.sync_api.Page, solara_serve
     # Roboto loads silently with Vuetify: the warning names the feature to add, which brings Roboto along
     assert recorder.lazy_warnings() == (["vuetify"] if lazy else [])
     assert recorder.errors() == []
+
+
+@pytest.mark.parametrize("preset", ["full", "minimal", "full,-vuetify-css", "minimal,-vuetify-css"])
+def test_vuetify_css(page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, recorder, frontend_setting, preset):
+    # Vuetify's CSS comes with Vuetify: preloaded (full, and minimal on Vue 2, where Vuetify is always on), or together with
+    # Vuetify that loads on first use (minimal on Vue 3). An app that ships its own Vuetify CSS leaves it out with
+    # -vuetify-css, also when Vuetify loads on first use, and the page still renders without errors.
+    frontend_setting(preset)
+    lazy = vue3 and preset.startswith("minimal")
+    own_css = preset.endswith("-vuetify-css")
+    with extra_include_path(HERE), solara_app("frontend_chunks_test:DefaultButton"):
+        page_session.goto(solara_server.base_url)
+        page_session.locator(".default-button >> text=default button").wait_for()
+        vuetify_css = page_session.evaluate(
+            """() => {
+                const slot = document.querySelector('template[data-solara-css-slot="vuetify"]');
+                const links = [...document.querySelectorAll('link[rel=stylesheet]')].filter(l => /main\\d\\.vuetify\\.css/.test(l.href));
+                // a rule of Vuetify's stylesheet in a stylesheet of the page (not in the theme stylesheet that Vuetify makes in
+                // JavaScript, nor in the <style> copy of Vuetify's CSS that the nodeps.js of ipyvuetify 3.0.0 adds on Vue 3)
+                const rules = [...document.styleSheets].filter(sheet => sheet.href).flatMap(sheet => {
+                    try {
+                        return [...sheet.cssRules];
+                    } catch (e) {
+                        return [];
+                    }
+                });
+                const ripple = rules.some(rule => rule.selectorText && rule.selectorText.includes('.v-ripple__container'));
+                return {count: links.length, atSlot: links.length == 1 && slot.previousElementSibling === links[0], rules: ripple};
+            }"""
+        )
+    assert vuetify_css == ({"count": 0, "atSlot": False, "rules": False} if own_css else {"count": 1, "atSlot": True, "rules": True})
+    assert len([url for url in recorder.urls if re.search(r"/main\d\.vuetify\.css", url)]) == (0 if own_css else 1)
+    # a css-only feature that is preloaded needs no JS; a lazy load fetches its (tiny) chunk
+    assert recorder.chunk_requests().get("vuetify-css") == (1 if lazy and not own_css else None)
+    # Vuetify's CSS loads silently with Vuetify: the warning names the feature to add, which brings the CSS along
+    assert recorder.lazy_warnings() == (["vuetify"] if lazy else [])
+    assert recorder.errors() == []

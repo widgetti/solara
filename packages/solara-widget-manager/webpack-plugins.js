@@ -5,8 +5,8 @@ const path = require('path');
 
 const PLUGIN = 'SolaraFeatureChunks';
 
-// Lazy loaded chunk CSS goes to the <template data-solara-css-slot="feature"> the server
-// put where a preloaded link of that feature would be, so the CSS order is the same.
+// Lazy loaded chunk CSS main{M}.{name}.css goes to the <template data-solara-css-slot="name"> the
+// server put where a preloaded link of that feature would be, so the CSS order is the same.
 // This function runs in the browser: mini-css-extract-plugin inlines its source.
 function slotInsert(linkTag) {
     var match = /main\d\.([a-z-]+)\.css/.exec(linkTag.href);
@@ -15,6 +15,57 @@ function slotInsert(linkTag) {
         slot.parentNode.insertBefore(linkTag, slot);
     } else {
         document.head.appendChild(linkTag);
+    }
+}
+
+// The CSS file of an async chunk is main{M}.{chunk name}.css, except for the chunks in CSS_NAMES. The chunk of
+// the vuetify-css feature (Vuetify's CSS) writes main{M}.vuetify.css, the name of Vuetify's CSS before it was a
+// feature of its own, so a page with Vuetify's CSS stays the same. slotInsert takes the slot name from the file
+// name ("vuetify"), and so does the server (css_name in solara/server/frontend_assets.py).
+const CSS_NAMES = { 'vuetify-css': 'vuetify' };
+
+function cssChunkFilename(major) {
+    return pathData => `main${major}.${CSS_NAMES[pathData.chunk.name] || '[name]'}.css`;
+}
+
+// Moves the CSS of the chunk named `from` into the chunk named `to`, so the CSS loads with `to`, not with `from`.
+// On Vue 3, Vuetify's components import their own CSS, so Vuetify's CSS would load with the vuetify JS chunk; it
+// goes to the vuetify-css chunk instead (a CSS-only feature), and "-vuetify-css" leaves it out, also when Vuetify
+// loads on first use. The CSS file stays the same: mini-css-extract-plugin orders the CSS of a chunk by each
+// module's post-order index in the chunk group, and the modules keep the index they had in the group of `from`.
+class MoveCssPlugin {
+    constructor(from, to) {
+        this.from = from;
+        this.to = to;
+    }
+
+    apply(compiler) {
+        const { WebpackError } = compiler.webpack;
+        compiler.hooks.thisCompilation.tap(PLUGIN, compilation => {
+            compilation.hooks.afterOptimizeChunks.tap(PLUGIN, () => {
+                const error = message => compilation.errors.push(new WebpackError(`MoveCssPlugin: ${message}`));
+                const chunkGraph = compilation.chunkGraph;
+                const from = compilation.namedChunks.get(this.from);
+                const to = compilation.namedChunks.get(this.to);
+                if (!from || !to) {
+                    return error(`no chunk named ${from ? this.to : this.from}`);
+                }
+                const fromGroups = [...from.groupsIterable];
+                const toGroups = [...to.groupsIterable];
+                if (fromGroups.length !== 1 || toGroups.length !== 1) {
+                    return error(`chunks ${this.from} and ${this.to} must each be in one chunk group, so the CSS order is known`);
+                }
+                const css = chunkGraph.getChunkModules(from).filter(module => module.type === 'css/mini-extract');
+                if (!css.length) {
+                    return error(`chunk ${this.from} has no CSS`);
+                }
+                for (const module of css) {
+                    toGroups[0].setModulePostOrderIndex(module, fromGroups[0].getModulePostOrderIndex(module));
+                    chunkGraph.disconnectChunkAndModule(from, module);
+                    chunkGraph.connectChunkAndModule(to, module);
+                }
+            });
+        });
     }
 }
 
@@ -250,4 +301,4 @@ class DedupePackagesPlugin {
     }
 }
 
-module.exports = { slotInsert, DropCssPlugin, WrapUmdFactoryPlugin, ChunkGuardPlugin, DedupePackagesPlugin };
+module.exports = { slotInsert, cssChunkFilename, MoveCssPlugin, DropCssPlugin, WrapUmdFactoryPlugin, ChunkGuardPlugin, DedupePackagesPlugin };

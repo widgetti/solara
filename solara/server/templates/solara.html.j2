@@ -25,13 +25,20 @@
     {% block header %}
 
     {{ pre_rendered_css | safe }}
+    {#- the CSS before the core CSS (Vuetify's CSS on Vue 2); the whitespace control keeps the page as before without it #}
+    {%- for css in frontend_assets.head_first_css %}
+    {% if css.url %}
+    <link href="{{css.url}}" rel="stylesheet" class="solara-template-css" data-href="{{css.data_href}}"></link>
+    {% endif %}
+    <template data-solara-css-slot="{{css.slot}}"></template>
+    {%- endfor %}
     <link href="{{frontend_assets.core_css}}" rel="stylesheet" class="solara-template-css"></link>
     {% for css in frontend_assets.head_css %}
     {% if css.url %}
     <link href="{{css.url}}" rel="stylesheet" class="solara-template-css" data-href="{{css.data_href}}"></link>
     {% endif %}
     {# a lazy loaded feature puts its CSS here, so the order is the same as when it is preloaded #}
-    <template data-solara-css-slot="{{css.feature}}"></template>
+    <template data-solara-css-slot="{{css.slot}}"></template>
     {% endfor %}
     {% if not vuetify %}
     {{ resources.include_css("/static/solara-vue.css") }}
@@ -276,7 +283,7 @@
     {% if css.url %}
         <link href="{{css.url}}" rel="stylesheet" data-href="{{css.data_href}}"{% if not vue3 %} fetchpriority="low"{% endif %}></link>
     {% endif %}
-        <template data-solara-css-slot="{{css.feature}}"></template>
+        <template data-solara-css-slot="{{css.slot}}"></template>
     {% endfor %}
     <script>
         window.solaraFrontend = {{ frontend_js | tojson | safe }};

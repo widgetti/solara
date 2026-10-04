@@ -88,14 +88,36 @@ def test_parse_presets():
 
 
 def test_parse_closure():
-    # Vuetify's icons use mdi, and its typography (e.g. caption font-weight-light) uses Roboto
-    assert frontend.parse("minimal,+vuetify").features == {"vuetify", "mdi", "roboto"}
+    # Vuetify's icons use mdi, its typography (e.g. caption font-weight-light) uses Roboto, and it needs its CSS
+    assert frontend.parse("minimal,+vuetify").features == {"vuetify", "mdi", "roboto", "vuetify-css"}
     assert frontend.parse("minimal,+jupyter-controls").features == {"jupyter-controls", "jupyter-css"}
     assert frontend.parse("minimal,+output-widget").features == {"output-widget", "jupyter-css"}
     # turning off what something else needs is an error, unless that is off too
     with pytest.raises(ValueError, match="'vuetify' needs 'mdi'"):
         frontend.parse("full,-mdi")
     assert "mdi" not in frontend.parse("full,-vuetify,-mdi")
+
+
+@pytest.mark.parametrize("spec", ["full,-vuetify-css", "minimal,+vuetify,-vuetify-css", "minimal,-vuetify-css,+vuetify", "full,+vuetify-css,-vuetify-css"])
+def test_parse_vuetify_css_opt_out(spec):
+    # Vuetify's CSS comes with vuetify, but an app that ships its own Vuetify CSS leaves it out: the last + or - wins
+    parsed = frontend.parse(spec)
+    assert "vuetify" in parsed and "mdi" in parsed and "roboto" in parsed
+    assert "vuetify-css" not in parsed
+    assert parsed.off == {"vuetify-css"}
+    # the suggested value keeps the opt-out
+    assert "vuetify-css" not in frontend.parse(parsed.suggest("katex"))
+    # +vuetify-css after -vuetify-css turns it on again
+    assert "vuetify-css" in frontend.parse(spec + ",+vuetify-css")
+
+
+def test_parse_vuetify_css_follows_vuetify():
+    # the full preset has Vuetify's CSS because it has Vuetify: a page without Vuetify gets no Vuetify CSS, as before
+    assert "vuetify-css" in frontend.parse("full")
+    assert "vuetify-css" not in frontend.parse("full,-vuetify")
+    assert "vuetify-css" not in frontend.parse("minimal")
+    # an app can still ask for it, e.g. for Vuetify that loads on first use
+    assert frontend.parse("minimal,+vuetify-css").features == {"vuetify-css"}
 
 
 @pytest.mark.parametrize("spec", ["full,-roboto", "minimal,+vuetify,-roboto", "minimal,-roboto,+vuetify", "full,+roboto,-roboto"])
@@ -167,9 +189,21 @@ def test_effective_vue2_forces_vuetify(caplog):
     assert frontend.effective(minimal, vue3=True).features == frozenset()
     with caplog.at_level(logging.WARNING, logger="solara.server.frontend"):
         vue2 = frontend.effective(minimal, vue3=False)
-    # the Vue 2 build has Vuetify in its core bundle, so it keeps what Vuetify needs (mdi), and Roboto comes with it
-    assert vue2.features == {"vuetify", "mdi", "roboto"}
+    # the Vue 2 build has Vuetify in its core bundle, so it keeps what Vuetify needs (mdi), and Roboto and Vuetify's CSS
+    # come with it
+    assert vue2.features == {"vuetify", "mdi", "roboto", "vuetify-css"}
     assert "The Vue 2 build cannot leave out mdi, vuetify, so they stay on." in caplog.text
+    # Vuetify's CSS is a file of its own on Vue 2 too: an app with its own Vuetify CSS leaves it out, without a warning
+    caplog.clear()
+    for spec in ["full,-vuetify-css", "minimal,+vuetify,-vuetify-css"]:
+        with caplog.at_level(logging.WARNING, logger="solara.server.frontend"):
+            vue2 = frontend.effective(frontend.parse(spec), vue3=False)
+        assert "vuetify" in vue2 and "mdi" in vue2 and "roboto" in vue2
+        assert "vuetify-css" not in vue2
+    assert "cannot leave out" not in caplog.text
+    assert "vuetify-css" not in frontend.effective(frontend.parse("minimal,-vuetify-css"), vue3=False)
+    # a Vue 2 page without +vuetify still has Vuetify, so its CSS too
+    assert "vuetify-css" in frontend.effective(frontend.parse("full,-vuetify"), vue3=False)
     # an app with its own font leaves Roboto out, also when the Vue 2 build forces Vuetify on
     for spec in ["minimal,-roboto", "full,-roboto", "minimal,+vuetify,-roboto"]:
         vue2 = frontend.effective(frontend.parse(spec), vue3=False)
@@ -335,7 +369,8 @@ def test_legacy_page(page, monkeypatch, vue3):
     chunks = ["vuetify", "katex", "sanitizer", "jupyter-controls", "output-widget"] if vue3 else ["katex", "sanitizer", "jupyter-controls", "output-widget"]
     scripts = re.findall(r'<script src="[^"]*/solara-vuetify-app8(\.[a-z-]+)?\.min\.js"(?: onerror="event\.target\.remove\(\)")?></script>', html)
     assert scripts == ["", *(f".{chunk}" for chunk in chunks)]
-    css = ["vuetify", "katex", "jupyter-css", "mdi", "material-icons", "roboto"] if vue3 else ["katex", "jupyter-css", "mdi", "material-icons", "roboto"]
+    # Vuetify's CSS (main8.vuetify.css) is the first chunk CSS: on Vue 2 before the core CSS, on Vue 3 after it
+    css = ["vuetify", "katex", "jupyter-css", "mdi", "material-icons", "roboto"]
     assert re.findall(r'<link href="[^"]*/main8\.([a-z-]+)\.css"[^>]*data-href="main8\.\1\.css"', html) == css
     assert '"spec": "full"' in html
     assert "solara.setEnabledFeatures(solaraFrontend.features);" in html
@@ -395,6 +430,33 @@ def test_vuetify_page_has_roboto(page, monkeypatch, vue3):
         assert not re.search(roboto, html)
         assert '<template data-solara-css-slot="roboto"></template>' in html
         assert re.search(r'window\.solaraFrontend = \{[^\n]*"spec": "' + re.escape(spec) + '"', html)
+
+
+VUETIFY_CSS = r'<link href="[^"]*/main8\.vuetify\.css" rel="stylesheet" class="solara-template-css" data-href="main8\.vuetify\.css"></link>'
+CORE_CSS = r'<link href="[^"]*/main8\.css" rel="stylesheet" class="solara-template-css"></link>'
+
+
+@pytest.mark.parametrize("vue3", [True, False])
+def test_vuetify_css(page, monkeypatch, vue3):
+    # Vuetify's CSS comes with Vuetify, at the place it had before it was a feature of its own: on Vue 3 the CSS of the
+    # vuetify chunk, right after the core CSS; on Vue 2 the start of the core CSS (main8.css), so right before it
+    monkeypatch.setattr(server, "vue3", vue3)
+    for spec in ["full", "minimal,+vuetify"] + ([] if vue3 else ["minimal"]):
+        html = page(frontend=spec)
+        assert len(re.findall(VUETIFY_CSS, html)) == 1
+        # the slot (for a lazy load) is right after the link
+        vuetify_css = VUETIFY_CSS + r'\s*<template data-solara-css-slot="vuetify"></template>'
+        assert re.search(CORE_CSS + r"\s*" + vuetify_css if vue3 else vuetify_css + r"\s*" + CORE_CSS, html), spec
+        assert re.search(r'window\.solaraFrontend = \{[^\n]*"features": \[[^\]]*"vuetify-css"', html)
+    # an app with its own Vuetify CSS (-vuetify-css), or a page without Vuetify (Vue 3): no link, only the slot (on Vue 3
+    # Vuetify that loads on first use puts its CSS there, unless the spec says -vuetify-css)
+    for spec in ["full,-vuetify-css", "minimal,-vuetify-css", "minimal,+vuetify,-vuetify-css"] + (["minimal", "full,-vuetify"] if vue3 else []):
+        html = page(frontend=spec)
+        assert "main8.vuetify.css" not in html, spec
+        assert html.count('<template data-solara-css-slot="vuetify"></template>') == 1
+        assert not re.search(r'window\.solaraFrontend = \{[^\n]*"vuetify-css"', html)
+        # the rest of the page keeps Vuetify, if it has it (always on Vue 2)
+        assert ("<v-app" in html) == ("vuetify" in frontend.effective(frontend.parse(spec), vue3=vue3)), spec
 
 
 def test_chunk_scripts_removed_on_error(page):

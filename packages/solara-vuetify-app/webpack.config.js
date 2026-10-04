@@ -3,7 +3,7 @@ const webpack = require('webpack');
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 const TerserPlugin = require("terser-webpack-plugin");
-const { slotInsert, DropCssPlugin, WrapUmdFactoryPlugin, ChunkGuardPlugin, DedupePackagesPlugin } = require("../solara-widget-manager/webpack-plugins");
+const { slotInsert, cssChunkFilename, DropCssPlugin, WrapUmdFactoryPlugin, ChunkGuardPlugin, DedupePackagesPlugin } = require("../solara-widget-manager/webpack-plugins");
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
 const analyze = process.env.ANALYZE === "true";
@@ -49,7 +49,8 @@ function config(major, production) {
         plugins: [
             new MiniCssExtractPlugin({
                 filename: `main${major}.css`,
-                chunkFilename: `main${major}.[name].css`,
+                // main{M}.{chunk name}.css, but Vuetify's CSS (chunk vuetify-css) is main{M}.vuetify.css
+                chunkFilename: cssChunkFilename(major),
                 insert: slotInsert,
             }),
             new ChunkGuardPlugin(),

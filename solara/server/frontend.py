@@ -6,7 +6,8 @@ The value is a preset (``full`` or ``minimal``) followed by ``+feature`` or ``-f
 it on first use, and the server logs one warning per feature that names the flag to add. The fonts and
 icon sets are the exception: material-icons and font-awesome never load on demand, and mdi and roboto
 only load on demand together with vuetify (Vuetify's icons and typography use them). Roboto comes with
-vuetify, but an app with its own font can leave it out with ``-roboto``.
+vuetify, but an app with its own font can leave it out with ``-roboto``. Vuetify's stylesheet (vuetify-css)
+also comes with vuetify, and an app that brings its own Vuetify CSS leaves it out with ``-vuetify-css``.
 
 This module does not parse the setting at import time: Jupyter ignores the setting, and a bad value
 must not break ``import solara`` there. The CLI and solara.server.starlette check it early instead.
@@ -37,6 +38,7 @@ vue3 = ipyvue.__version__.startswith("3")
 
 FEATURES: Tuple[str, ...] = (
     "vuetify",
+    "vuetify-css",
     "mdi",
     "material-icons",
     "roboto",
@@ -56,12 +58,16 @@ REQUIRES: Dict[str, FrozenSet[str]] = {
 }
 # Features that come with a feature, unless the setting turns them off by name. Unlike REQUIRES, the feature
 # works without them: Vuetify's typography (e.g. the caption and font-weight-light classes) assumes the Roboto
-# font, but an app with its own font can leave Roboto out, for example with 'minimal,+vuetify,-roboto'.
+# font, but an app with its own font can leave Roboto out, for example with 'minimal,+vuetify,-roboto'. In the
+# same way, an app that ships its own Vuetify CSS (e.g. built from Vuetify's SASS) leaves out Vuetify's
+# stylesheet with '-vuetify-css'.
 COMES_WITH: Dict[str, FrozenSet[str]] = {
-    "vuetify": frozenset({"roboto"}),
+    "vuetify": frozenset({"roboto", "vuetify-css"}),
 }
 PRESETS: Dict[str, FrozenSet[str]] = {
-    "full": frozenset(FEATURES),
+    # vuetify-css is not in full by itself, it comes with vuetify: a page without Vuetify ('full,-vuetify') gets no
+    # Vuetify CSS
+    "full": frozenset(FEATURES) - {"vuetify-css"},
     "minimal": frozenset(),
 }
 DEFAULT = "full"
@@ -72,7 +78,8 @@ MODULE_FEATURE: Dict[str, str] = {
     "@jupyter-widgets/output": "output-widget",
 }
 # Features each build can leave out (key: Vue 3). The Vue 2 build keeps Vuetify in its core bundle, so it
-# also keeps what Vuetify needs (mdi), and has no vue-sfc chunk. Other features are forced on.
+# also keeps what Vuetify needs (mdi), and has no vue-sfc chunk. Other features are forced on. Vuetify's CSS
+# (vuetify-css) is a file of its own on Vue 2 too, so it can be left out there.
 CAN_DISABLE: Dict[bool, FrozenSet[str]] = {
     True: frozenset(FEATURES),
     False: frozenset(FEATURES) - {"vuetify", *REQUIRES["vuetify"], "vue-sfc"},
@@ -192,7 +199,7 @@ def effective(frontend: Frontend, vue3: bool, fontawesome_enabled: bool = True) 
         features |= forced
     if not fontawesome_enabled:
         features.discard("font-awesome")
-    # a forced Vuetify (Vue 2) brings Roboto, unless the spec says '-roboto'
+    # a forced Vuetify (Vue 2) brings Roboto and Vuetify's CSS, unless the spec says '-roboto' or '-vuetify-css'
     return Frontend(spec=frontend.spec, features=_with_companions(features, frontend.off), off=frontend.off)
 
 
