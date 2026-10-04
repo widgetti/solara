@@ -29,7 +29,8 @@ all = [
     "solara[assets]",
     "solara[documentation]",
     "solara[pytest]",
-    "solara[dev]"
+    "solara[dev]",
+    "solara[brotli]"
 ]
 
 redis = [
