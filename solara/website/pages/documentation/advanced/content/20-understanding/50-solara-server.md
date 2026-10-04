@@ -131,7 +131,7 @@ The features are:
 | `output-widget` | The ipywidgets `Output` widget. Needs `jupyter-css`. |
 | `jupyter-css` | The CSS of the ipywidgets controls. |
 | `katex` | Math rendering (KaTeX), for example in `solara.Markdown`. |
-| `mermaid` | Mermaid diagrams in `solara.Markdown`. |
+| `mermaid` | Mermaid diagrams in `solara.Markdown`. The page never preloads it: when it is on, it loads when the first `solara.Markdown` mounts. |
 | `vue-sfc` | The full Vue single-file-component compiler of ipyvue, for templates with `<script setup>`, `<style scoped>` or `lang="ts"`. Vue 3 only. |
 
 The `minimal` preset has none of these features. Vue, the widget core and the notebook extensions are always on.
