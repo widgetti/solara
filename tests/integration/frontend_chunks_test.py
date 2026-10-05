@@ -9,6 +9,7 @@ from typing import Dict, List
 import ipywidgets
 import playwright.sync_api
 import pytest
+import reacton.core
 
 import solara
 import solara.server.server
@@ -429,7 +430,12 @@ def test_minimal_date_picker_after_mount(page_session: playwright.sync_api.Page,
         page_session.locator(".v-date-picker").wait_for(timeout=10000)
         assert page_session.locator("ipyvuetifydatepicker").count() == 0
     assert not [msg.text for msg in recorder.console if "Failed to resolve component" in msg.text]
-    assert recorder.lazy_warnings() == ["vuetify"]
+    expected = ["vuetify"]
+    if reacton.core._default_container is reacton.core.Fragment:
+        # SOLARA_DEFAULT_CONTAINER=Fragment: reacton wraps the button and the date picker in its FragmentWidget,
+        # an ipywidgets VBox, so jupyter-controls loads too
+        expected.append("jupyter-controls")
+    assert sorted(recorder.lazy_warnings()) == sorted(expected)
 
 
 @pytest.mark.parametrize("preset", ["full", "minimal"])

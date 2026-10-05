@@ -139,7 +139,7 @@ The `minimal` preset has none of these features. Vue, the widget core and the no
 A feature that the page does not preload still works: the browser loads it the first time a widget needs it.
 That first render is slower, so the server logs a warning (once per feature) that names the flag to add, for example `--frontend=minimal,+jupyter-controls`.
 The browser console shows the same warning.
-With `SOLARA_DEFAULT_CONTAINER=Fragment`, `minimal` loads `jupyter-controls` on the first page, because reacton's `Fragment` is an ipywidgets `VBox`.
+With `SOLARA_DEFAULT_CONTAINER=Fragment`, `minimal` loads `jupyter-controls` the first time a component renders more than one element without a container, because reacton then wraps those elements in its `Fragment`, an ipywidgets `VBox`.
 The fonts and icon sets are an exception: the browser never loads `material-icons`, `roboto` or `font-awesome` on demand by themselves, and nothing warns.
 Without them, text uses a fallback font and those icons do not show, so add them when your app uses them.
 Vuetify's icons use `mdi`, so `mdi` always loads together with `vuetify`, also on demand.
