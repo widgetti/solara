@@ -344,7 +344,10 @@ def AppLayout(
                 if use_drawer:
                     if IPYVUETIFY_V3:
                         drawer = v.NavigationDrawer(
-                            width="min-content",
+                            # Vuetify 3 reserves Number(width) px for the drawer, so the app bar and
+                            # the main content start right of it. "min-content" gives NaN, and then
+                            # the drawer covers them. Vue 2 measures the drawer instead.
+                            width=400,
                             v_model=sidebar_open,
                             on_v_model=set_sidebar_open,
                             style_="min-width: 400px; max-width: 600px",
