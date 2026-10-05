@@ -8,6 +8,7 @@ from typing import List, Optional
 
 import pytest
 import starlette.middleware.gzip
+import starlette.staticfiles
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.responses import PlainTextResponse, Response
@@ -295,11 +296,25 @@ def test_static_prefers_brotli_when_accepted(static_dir: Path):
     assert client.get("/static/big.js", headers={"accept-encoding": "gzip, br;q=0"}).headers["content-encoding"] == "gzip"
 
 
+def test_static_weak_etag_revalidates_on_old_starlette(static_dir: Path, monkeypatch):
+    # Starlette before 0.35 compares If-None-Match exactly: the weak ETag must still give a 304
+    def exact(self, response_headers, request_headers):
+        return request_headers.get("if-none-match") == response_headers.get("etag")
+
+    monkeypatch.setattr(starlette.staticfiles.StaticFiles, "is_not_modified", exact)
+    (static_dir / "big.js").write_bytes(BIG)
+    client = gzip_client(StaticFilesOptionalAuth(directory=static_dir))
+    etag = client.get("/static/big.js", headers={"accept-encoding": "gzip"}).headers["etag"]
+    assert etag.startswith('W/"')
+    assert client.get("/static/big.js", headers={"accept-encoding": "gzip", "if-none-match": etag}).status_code == 304
+    assert client.get("/static/big.js", headers={"accept-encoding": "gzip", "if-none-match": '"other"'}).status_code == 200
+
+
 def test_choose_encoding_agrees_with_the_gzip_middleware(monkeypatch):
     # The GZip middleware gzips a response when "gzip" is in the raw header. On every header of a
     # small grammar, the choice must agree with it: compressed exactly when the middleware would
     # compress, and brotli only when a "br" part of the header has a q above 0.
-    accept = ["", ";q=0", ";q=0.5", ";q=1", ";q=NaN", ";q=2"]
+    accept = ["", ";q=0", ";q=0.5", ";q=1", ";q=NaN", ";q=2", ";q=1e0", ";q=0_1"]
     parts = [name + q for name in ["gzip", "GZIP", "br", "BR", "identity", "*", "deflate"] for q in accept]
     for with_brotli in [False, True]:
         if with_brotli:
@@ -336,6 +351,9 @@ def test_choose_encoding_agrees_with_the_gzip_middleware(monkeypatch):
         pytest.param("br", False, None, id="br-only"),
         pytest.param("GZIP;q=0, identity;q=1", False, None, id="uppercase-gzip-refused"),
         pytest.param("GZIP;q=1, br;q=0.5, identity;q=0", True, "br", id="uppercase-gzip-br"),
+        pytest.param("br;q=1e0", True, None, id="br-q-exponent"),
+        pytest.param("br;q=0_1", True, None, id="br-q-underscore"),
+        pytest.param("br;q=1.0000000000000001", True, None, id="br-q-too-many-digits"),
     ],
 )
 def test_static_encoding_follows_accept_encoding(

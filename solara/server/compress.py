@@ -8,6 +8,7 @@ client accepts it and the brotli package is installed, else with gzip.
 
 import gzip
 import os
+import re
 import threading
 from collections import OrderedDict
 from pathlib import Path
@@ -79,12 +80,9 @@ def _q_value(params: str) -> float:
     for param in params.split(";"):
         key, _, value = param.partition("=")
         if key.strip() == "q":
-            try:
-                q = float(value)
-            except ValueError:
-                return 0.0
-            # float() also accepts "nan" and "inf"
-            return q if 0 <= q <= 1 else 0.0
+            value = value.strip()
+            # the qvalue grammar of RFC 9110, section 12.4.2 (float() also takes "nan", "1e0", "0_1")
+            return float(value) if re.fullmatch(r"0(\.[0-9]{0,3})?|1(\.0{0,3})?", value) else 0.0
     return 1.0
 
 

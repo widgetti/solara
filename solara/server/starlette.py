@@ -665,6 +665,15 @@ class StaticFilesOptionalAuth(StaticFiles):
         # (which sends the compressed response as it is, see SolaraGZipMiddleware)
         return await compress.compress_file_response(response, scope)
 
+    def is_not_modified(self, response_headers: Headers, request_headers: Headers) -> bool:
+        # A compressed response has a weak ETag (see compress.py). Starlette before 0.35 compares
+        # If-None-Match exactly, so we also compare the tags without their W/ prefix.
+        etag = response_headers.get("etag")
+        tags = [tag.strip() for tag in request_headers.get("if-none-match", "").split(",")]
+        if etag and etag in [tag[2:] if tag.startswith("W/") else tag for tag in tags]:
+            return True
+        return super().is_not_modified(response_headers, request_headers)
+
     def file_response(self, full_path, stat_result: os.stat_result, scope: Scope, status_code: int = 200) -> Response:
         response = super().file_response(full_path, stat_result, scope, status_code)
         # a 304 carries the ETag and Vary of the 200, which get_response may compress
