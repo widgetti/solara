@@ -32,7 +32,6 @@ all = [
     "solara-server[dev]",
     "solara-server[starlette]",
     "solara-server[flask]",
-    "solara-server[brotli]",
 ]
 dev = [
     "watchfiles",
@@ -42,12 +41,6 @@ starlette = [
     "uvicorn",
     "websockets",
     "starlette",
-]
-# opt-in: static files are sent brotli compressed when installed (else gzip), see solara/server/compress.py.
-# Not in starlette (which `pip install solara` pulls): brotli does not have wheels for all platforms
-# (such as Windows ARM64, PyPy, free-threaded CPython), and needs a C compiler there.
-brotli = [
-    "brotli",
 ]
 flask = [
     "flask",
