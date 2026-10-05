@@ -640,7 +640,7 @@ def solara_comm_target(comm, msg_first):
                 threading.Thread(target=lambda: context.close(reason="evicted"), name=f"evict-{context.id}", daemon=True).start()
         elif method == "frontend-lazy-load":
             # the browser loaded a frontend feature that the page did not preload
-            frontend.log_lazy_load(data.get("feature"))
+            frontend.log_lazy_load(data.get("feature"), data.get("module"))
         else:
             logger.error("Unknown comm method called on solara.control comm: %s", method)
 

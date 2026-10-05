@@ -37,14 +37,17 @@
     "typescript": "~5.3.3"
   },
   "scripts": {
+    "prebuild": "npm run split-lumino",
     "build": "npm run build:lib",
     "build:lib": "tsc",
     "build:prod": "npm run build:lib",
     "clean": "jlpm run clean:lib",
     "clean:lib": "rimraf lib tsconfig.tsbuildinfo",
-    "prepare": "npm run build:lib ",
+    "prepare": "npm run split-lumino && npm run build:lib",
     "test": "echo \"Error: no test specified\" && exit 1",
+    "prewatch": "npm run split-lumino",
     "watch": "npm-run-all -p watch:*",
-    "watch:lib": "tsc -w"
+    "watch:lib": "tsc -w",
+    "split-lumino": "node tools/split-lumino.js ."
   }
 }

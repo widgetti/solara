@@ -1,0 +1,8 @@
+{
+  "name": "solara-widget-manager-tools",
+  "private": true,
+  "description": "The TypeScript version that split-lumino.js needs: the one these Lumino versions were built with",
+  "devDependencies": {
+    "typescript": "~3.6.0"
+  }
+}
