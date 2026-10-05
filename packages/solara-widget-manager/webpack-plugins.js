@@ -300,3 +300,70 @@ class DedupePackagesPlugin {
 }
 
 module.exports = { slotInsert, cssChunkFilename, MoveCssPlugin, DropCssPlugin, WrapUmdFactoryPlugin, ChunkGuardPlugin, DedupePackagesPlugin };
+
+// Swaps the canonical copy of a package (its resolved entry file) for a generated copy: one ES module
+// per source file with "sideEffects": false (see tools/split-lumino.js), so webpack keeps only the files
+// a chunk uses. Other copies (other versions, nested) stay as they are. Runs after DedupePackagesPlugin.
+class SplitPackagesPlugin {
+    constructor(map) {
+        this.map = map; // resolved entry file -> generated index.js
+    }
+
+    apply(compiler) {
+        compiler.hooks.normalModuleFactory.tap(PLUGIN, nmf => {
+            nmf.hooks.afterResolve.tap(PLUGIN, resolveData => {
+                const data = resolveData.createData;
+                const target = data.resource && this.map[data.resource];
+                if (!target) {
+                    return;
+                }
+                const dir = path.dirname(target);
+                data.resource = target;
+                data.request = target;
+                data.userRequest = target;
+                data.context = dir;
+                if (data.resourceResolveData) {
+                    Object.assign(data.resourceResolveData, {
+                        path: target,
+                        relativePath: './' + path.basename(target),
+                        descriptionFilePath: path.join(dir, 'package.json'),
+                        descriptionFileRoot: dir,
+                        descriptionFileData: JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8')),
+                    });
+                }
+            });
+        });
+    }
+}
+
+// The Lumino packages that tools/split-lumino.js splits per file (it pins their versions).
+const SPLIT_LUMINO_PACKAGES = ['widgets', 'algorithm', 'collections'];
+
+function readVersion(dir) {
+    try {
+        return JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8')).version;
+    } catch (e) {
+        return null;
+    }
+}
+
+// The plugin that bundles the split Lumino packages of a widget manager package dir (real path), so the
+// core keeps only the Lumino files it uses (Widget, Panel, ...) and the lumino chunk gets the rest.
+// Throws when the split is missing, or was made for another version than the installed package.
+function splitLuminoPlugin(widgetManagerDir) {
+    const split = {};
+    for (const name of SPLIT_LUMINO_PACKAGES) {
+        const packageDir = path.join(widgetManagerDir, 'node_modules', '@lumino', name);
+        const splitVersion = readVersion(path.join(packageDir, 'split'));
+        if (splitVersion !== readVersion(packageDir)) {
+            throw new Error(
+                `splitLuminoPlugin: ${packageDir}/split is ${splitVersion ? `for ${splitVersion}` : 'missing'}: ` +
+                `run "npm run split-lumino" (or "npm run build") in ${widgetManagerDir}`
+            );
+        }
+        split[path.join(packageDir, 'dist', 'index.es6.js')] = path.join(packageDir, 'split', 'index.js');
+    }
+    return new SplitPackagesPlugin(split);
+}
+
+module.exports.splitLuminoPlugin = splitLuminoPlugin;

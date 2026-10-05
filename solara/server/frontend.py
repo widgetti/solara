@@ -43,6 +43,7 @@ FEATURES: Tuple[str, ...] = (
     "material-icons",
     "roboto",
     "font-awesome",
+    "lumino",
     "jupyter-controls",
     "jupyter-css",
     "output-widget",
@@ -53,8 +54,9 @@ FEATURES: Tuple[str, ...] = (
 REQUIRES: Dict[str, FrozenSet[str]] = {
     # Vuetify's icons use mdi
     "vuetify": frozenset({"mdi"}),
-    "jupyter-controls": frozenset({"jupyter-css"}),
-    "output-widget": frozenset({"jupyter-css"}),
+    # the controls (e.g. Tab uses Lumino's TabBar) and the Output widget use Lumino beyond what the core has
+    "jupyter-controls": frozenset({"jupyter-css", "lumino"}),
+    "output-widget": frozenset({"jupyter-css", "lumino"}),
 }
 # Features that come with a feature, unless the setting turns them off by name. Unlike REQUIRES, the feature
 # works without them: Vuetify's typography (e.g. the caption and font-weight-light classes) assumes the Roboto
@@ -75,6 +77,9 @@ MODULE_FEATURE: Dict[str, str] = {
     "@jupyter-widgets/controls": "jupyter-controls",
     "@jupyter-widgets/output": "output-widget",
 }
+# lumino has no check at widget creation: only a requirejs request for a module of the lumino chunk (for
+# example @phosphor/widgets, by a widget of an nbextension) loads it, which the server cannot know.
+# The browser reports that load (log_lazy_load).
 # Features each build can leave out (key: Vue 3). Both builds keep Vuetify and what it needs (mdi): the page
 # shell and the default layout are made of Vuetify. The Vue 2 build has no vue-sfc chunk. Other features are
 # forced on. Vuetify's CSS (vuetify-css) is a file of its own, so it can be left out.
@@ -295,15 +300,23 @@ def warn_missing(feature: str, what: str) -> None:
     _warn_once(feature, what, frontend)
 
 
-def log_lazy_load(feature: str) -> None:
-    """The browser lazy loaded a feature (the frontend-lazy-load message on the control comm)."""
+# a requirejs module name, as the browser reports it (it shows up in the warning)
+_MODULE_RE = re.compile(r"[@\w./-]{1,100}", re.ASCII)
+
+
+def log_lazy_load(feature: str, module: Optional[str] = None) -> None:
+    """The browser lazy loaded a feature (the frontend-lazy-load message on the control comm).
+
+    module is the requirejs module that asked for it, if any (for example '@phosphor/widgets' for lumino).
+    """
     if feature not in FEATURES:
         logger.debug("unknown frontend feature lazy loaded: %r", feature)
         return
     frontend = active()
     if feature in frontend:
         return
-    _warn_once(feature, "The page", frontend)
+    what = f"The requirejs module {module!r} of the page" if isinstance(module, str) and _MODULE_RE.fullmatch(module) else "The page"
+    _warn_once(feature, what, frontend)
 
 
 @lru_cache(maxsize=None)
