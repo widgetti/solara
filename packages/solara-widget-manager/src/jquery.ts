@@ -33,6 +33,8 @@ function missing(what: string): Error {
 // __esModule, Vue's __v_skip, React's $$typeof, an index past the end, and the then and toJSON of Promise and JSON.
 // They give what a plain object gives (undefined), as do the names that a plain object (or a function) has.
 const PROBE = /^([_$0-9]|then$|toJSON$)/;
+// the functions of $ that start with _ (jQuery 3.7): a use of jQuery, not a probe
+const JQUERY_UNDERSCORE = ['_data', '_removeData', '_queueHooks', '_evalUrl'];
 
 function isProbe(target: object, name: string | symbol): boolean {
   return typeof name === 'symbol' || name in target || PROBE.test(name);
@@ -82,7 +84,7 @@ const $: any = new Proxy(call, {
     if (real) {
       return real[name];
     }
-    if (isProbe(target, name)) {
+    if (isProbe(target, name) && JQUERY_UNDERSCORE.indexOf(name as string) === -1) {
       return Reflect.get(target, name);
     }
     throw missing(`$.${String(name)}`);
