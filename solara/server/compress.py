@@ -74,30 +74,39 @@ def clear():
         _cache_bytes = 0
 
 
-def choose_encoding(accept_encoding: str) -> Optional[str]:
-    """Return "br", "gzip" or None for an Accept-Encoding request header.
+def _q_value(params: str) -> float:
+    """Return the q value of the parameters of one Accept-Encoding entry: 1 when missing, 0 when invalid."""
+    for param in params.split(";"):
+        key, _, value = param.partition("=")
+        if key.strip() == "q":
+            try:
+                q = float(value)
+            except ValueError:
+                return 0.0
+            # float() also accepts "nan" and "inf"
+            return q if 0 <= q <= 1 else 0.0
+    return 1.0
 
-    The highest q value wins, and brotli wins a tie with gzip.
+
+def choose_encoding(accept_encoding: str) -> Optional[str]:
+    """Return "br", "gzip" or None (identity) for an Accept-Encoding request header.
+
+    SolaraGZipMiddleware (Starlette's GZipMiddleware) gzips every response when "gzip" is in the
+    header, whatever its q value. We compress whenever it would, so we never send an identity
+    response that it then gzips on every request. Brotli wins when the client gives it a q value
+    above 0 and at least the q value of gzip. We ignore "*".
     """
+    accept_encoding = accept_encoding.lower()
     weights: Dict[str, float] = {}
     for part in accept_encoding.split(","):
         name, _, params = part.partition(";")
-        name = name.strip().lower()
-        q = 1.0
-        for param in params.split(";"):
-            key, _, value = param.partition("=")
-            if key.strip().lower() == "q":
-                try:
-                    q = float(value)
-                except ValueError:
-                    q = 0.0
-        if name:
-            weights[name] = q
-    # max keeps the first of equal weights
-    best = max(["br", "gzip"] if brotli is not None else ["gzip"], key=lambda name: weights.get(name, 0.0))
-    if weights.get(best, 0.0) <= 0 or weights.get("identity", 0.0) > weights[best]:
-        return None
-    return best
+        weights[name.strip()] = _q_value(params)
+    br = weights.get("br", 0.0)
+    if brotli is not None and br > 0 and br >= weights.get("gzip", 0.0):
+        return "br"
+    if "gzip" in accept_encoding:
+        return "gzip"
+    return None
 
 
 def _compress(data: bytes, encoding: str) -> bytes:

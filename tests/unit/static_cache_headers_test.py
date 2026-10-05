@@ -4,7 +4,7 @@ import json
 import os
 import re
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 import pytest
 import starlette.middleware.gzip
@@ -293,10 +293,41 @@ def test_static_prefers_brotli_when_accepted(static_dir: Path):
 
     assert client.get("/static/big.js", headers={"accept-encoding": "gzip, deflate, br"}).headers["content-encoding"] == "br"
     assert client.get("/static/big.js", headers={"accept-encoding": "gzip, br;q=0"}).headers["content-encoding"] == "gzip"
-    # the client's weights win over our preference for brotli
-    assert compress.choose_encoding("gzip;q=1, br;q=0.1") == "gzip"
-    assert compress.choose_encoding("identity;q=1, br;q=0.1") is None
-    assert compress.choose_encoding("br;q=0.5, gzip;q=0.5") == "br"
+
+
+@pytest.mark.parametrize(
+    "accept_encoding, with_brotli, expected",
+    [
+        # the GZip middleware gzips whenever "gzip" is in the header, whatever the q values
+        pytest.param("gzip;q=0.1, identity;q=1", True, "gzip", id="gzip-low-q-identity-brotli"),
+        pytest.param("gzip;q=0.1, identity;q=1", False, "gzip", id="gzip-low-q-identity"),
+        pytest.param("br;q=NaN, gzip;q=1", True, "gzip", id="br-nan-q"),
+        pytest.param("br;q=2, gzip;q=0.5", True, "gzip", id="br-q-above-1"),
+        pytest.param("gzip;q=1, br;q=0.1", True, "gzip", id="gzip-higher-q"),
+        pytest.param("br;q=0.5, gzip;q=0.5", True, "br", id="br-wins-a-tie"),
+        pytest.param("br, gzip", True, "br", id="br-gzip-brotli"),
+        pytest.param("br, gzip", False, "gzip", id="br-gzip"),
+        pytest.param("identity", True, None, id="identity"),
+        pytest.param("br", False, None, id="br-only"),
+    ],
+)
+def test_static_encoding_follows_accept_encoding(
+    static_dir: Path, compress_calls: List[str], monkeypatch, accept_encoding: str, with_brotli: bool, expected: Optional[str]
+):
+    if with_brotli:
+        pytest.importorskip("brotli")
+    else:
+        monkeypatch.setattr(compress, "brotli", None)
+    (static_dir / "big.js").write_bytes(BIG)
+    client = gzip_client(StaticFilesOptionalAuth(directory=static_dir))
+
+    for _ in range(2):
+        response = client.get("/static/big.js", headers={"accept-encoding": accept_encoding})
+        assert response.status_code == 200
+        assert response.headers.get("content-encoding") == expected
+        assert response.content == BIG
+    # compressed by us, once: the middleware did not compress on its own, and the second request used the cache
+    assert compress_calls == ([expected] if expected else [])
 
 
 def test_static_gzip_without_brotli(static_dir: Path, compress_calls: List[str], monkeypatch):
