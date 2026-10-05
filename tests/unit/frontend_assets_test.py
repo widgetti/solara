@@ -151,3 +151,20 @@ def test_core_umd_factory_in_parentheses(vue3, ipywidgets_major, production):
     else:
         assert re.search(r"^\}\)\(self, \(\(\) => \{$", head, re.M)
         assert not re.search(r"^\}\)\(self, \(\) => \{$", head, re.M)
+
+
+# a CSS class that only the markdown renderer of @jupyterlab/rendermime adds
+RENDERMIME_MARKER = "jp-RenderedMarkdown"
+
+
+@pytest.mark.parametrize("vue3", [True, False])
+@pytest.mark.parametrize("ipywidgets_major", [7, 8])
+@pytest.mark.parametrize("production", [True, False])
+def test_output_renderers_out_of_core(vue3, ipywidgets_major, production):
+    # only the Output widget renders outputs: the renderers are in the output-widget chunk, and the core has a
+    # RenderMimeRegistry stand-in (solara-widget-manager/src/rendermime.ts)
+    dist = _dist(vue3)
+    core = (dist / frontend_assets.js_file("core", ipywidgets_major, production)).read_text(encoding="utf8")
+    output = (dist / frontend_assets.js_file("output-widget", ipywidgets_major, production)).read_text(encoding="utf8")
+    assert RENDERMIME_MARKER not in core
+    assert RENDERMIME_MARKER in output

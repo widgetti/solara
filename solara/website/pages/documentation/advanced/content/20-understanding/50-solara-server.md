@@ -128,7 +128,7 @@ The features are:
 | `roboto` | The Roboto font. Comes with `vuetify`; add `-roboto` to use your own font. |
 | `font-awesome` | The Font Awesome icons (replaces `SOLARA_ASSETS_FONTAWESOME_ENABLED`, which still works). |
 | `jupyter-controls` | The ipywidgets controls (`IntSlider`, `Button`, ...). Needs `jupyter-css`. |
-| `output-widget` | The ipywidgets `Output` widget. Needs `jupyter-css`. |
+| `output-widget` | The ipywidgets `Output` widget, and the renderers of its outputs (HTML, Markdown, LaTeX, images, JavaScript). Needs `jupyter-css`. |
 | `jupyter-css` | The CSS of the ipywidgets controls. |
 | `katex` | Math rendering (KaTeX), for example in `solara.Markdown`. |
 | `mermaid` | Mermaid diagrams in `solara.Markdown`. The page never preloads it: when it is on, it loads when the first `solara.Markdown` mounts. |
@@ -140,6 +140,8 @@ A feature that the page does not preload still works: the browser loads it the f
 That first render is slower, so the server logs a warning (once per feature) that names the flag to add, for example `--frontend=minimal,+jupyter-controls`.
 The browser console shows the same warning.
 With `SOLARA_DEFAULT_CONTAINER=Fragment`, `minimal` loads `jupyter-controls` the first time a component renders more than one element without a container, because reacton then wraps those elements in its `Fragment`, an ipywidgets `VBox`.
+The renderers of the `Output` widget load with `output-widget`.
+Before that, a call to a method of the page's `RenderMimeRegistry` that renders (for example `createRenderer`) throws an error and starts the load.
 The fonts and icon sets are an exception: the browser never loads `material-icons` or `font-awesome` on demand, and nothing warns.
 Without them, those icons do not show, so add them when your app uses them.
 Vuetify's text styles use the Roboto font, so Roboto comes with `vuetify`.
