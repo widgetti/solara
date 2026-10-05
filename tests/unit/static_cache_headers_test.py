@@ -309,6 +309,7 @@ def test_static_prefers_brotli_when_accepted(static_dir: Path):
         pytest.param("br, gzip", False, "gzip", id="br-gzip"),
         pytest.param("identity", True, None, id="identity"),
         pytest.param("br", False, None, id="br-only"),
+        pytest.param("GZIP;q=0, identity;q=1", False, None, id="uppercase-gzip-refused"),
     ],
 )
 def test_static_encoding_follows_accept_encoding(

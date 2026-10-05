@@ -96,14 +96,14 @@ def choose_encoding(accept_encoding: str) -> Optional[str]:
     response that it then gzips on every request. Brotli wins when the client gives it a q value
     above 0 and at least the q value of gzip. We ignore "*".
     """
-    accept_encoding = accept_encoding.lower()
     weights: Dict[str, float] = {}
-    for part in accept_encoding.split(","):
+    for part in accept_encoding.lower().split(","):
         name, _, params = part.partition(";")
         weights[name.strip()] = _q_value(params)
     br = weights.get("br", 0.0)
     if brotli is not None and br > 0 and br >= weights.get("gzip", 0.0):
         return "br"
+    # the same case-sensitive check as the middleware, so "GZIP;q=0" stays identity for both
     if "gzip" in accept_encoding:
         return "gzip"
     return None
