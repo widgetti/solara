@@ -306,9 +306,19 @@ For a complete example, you can take a look at:
 
 ## HTTP compression and caching
 
-The Solara server compresses HTTP responses larger than 1KB with gzip. This matters
-in production: the main JavaScript bundle is ~2MB, and without compression every
-cold page load downloads all of it (~4x more than needed).
+The Solara server compresses HTTP responses larger than 1KB. This matters
+in production: without compression, every cold page load downloads about 4x more
+bytes than needed.
+
+The server compresses each static file (the JavaScript and CSS bundles, also through
+the CDN proxy) only once per process, and keeps the result in a 64MB memory cache.
+It uses gzip by default. It uses brotli, which gives smaller files, when the browser
+accepts it and the `brotli` package is installed. Brotli is opt-in: install it with
+`pip install "solara[brotli]"` (or `pip install "solara-server[brotli]"`).
+These responses have `Vary: Accept-Encoding` and a weak `ETag` (`W/"..."`),
+because the compressed bytes differ from the file. Static files over 8MB, files
+with a suffix that `solara/server/compress.py` does not list (such as images), and
+all other responses get gzip on each request.
 
 Both entrypoints (`solara.server.starlette.app` and `solara.server.fastapi.app`)
 apply the same middleware stack, so this also holds when you embed Solara in your
