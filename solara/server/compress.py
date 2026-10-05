@@ -100,13 +100,12 @@ def choose_encoding(accept_encoding: str) -> Optional[str]:
     for part in accept_encoding.lower().split(","):
         name, _, params = part.partition(";")
         weights[name.strip()] = _q_value(params)
+    # the same case-sensitive check as the middleware, so both agree on every header
+    gzip_ok = "gzip" in accept_encoding
     br = weights.get("br", 0.0)
-    if brotli is not None and br > 0 and br >= weights.get("gzip", 0.0):
+    if brotli is not None and br > 0 and br >= (weights.get("gzip", 0.0) if gzip_ok else 0.0):
         return "br"
-    # the same case-sensitive check as the middleware, so "GZIP;q=0" stays identity for both
-    if "gzip" in accept_encoding:
-        return "gzip"
-    return None
+    return "gzip" if gzip_ok else None
 
 
 def _compress(data: bytes, encoding: str) -> bytes:

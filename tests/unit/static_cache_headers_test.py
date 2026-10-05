@@ -295,6 +295,31 @@ def test_static_prefers_brotli_when_accepted(static_dir: Path):
     assert client.get("/static/big.js", headers={"accept-encoding": "gzip, br;q=0"}).headers["content-encoding"] == "gzip"
 
 
+def test_choose_encoding_agrees_with_the_gzip_middleware(monkeypatch):
+    # The GZip middleware gzips a response when "gzip" is in the raw header. On every header of a
+    # small grammar, the choice must agree with it: compressed exactly when the middleware would
+    # compress, and brotli only when a "br" part of the header has a q above 0.
+    accept = ["", ";q=0", ";q=0.5", ";q=1", ";q=NaN", ";q=2"]
+    parts = [name + q for name in ["gzip", "GZIP", "br", "BR", "identity", "*", "deflate"] for q in accept]
+    for with_brotli in [False, True]:
+        if with_brotli:
+            monkeypatch.undo()
+            pytest.importorskip("brotli")
+        else:
+            monkeypatch.setattr(compress, "brotli", None)
+        for a in parts:
+            for b in parts:
+                header = f"{a}, {b}"
+                choice = compress.choose_encoding(header)
+                if "gzip" in header:
+                    assert choice in ("gzip", "br"), header
+                else:
+                    assert choice in (None, "br"), header
+                if choice == "br":
+                    assert with_brotli, header
+                    assert any(p.lower().startswith("br") and p.lower().endswith(("br", "q=0.5", "q=1")) for p in (a, b)), header
+
+
 @pytest.mark.parametrize(
     "accept_encoding, with_brotli, expected",
     [
@@ -310,6 +335,7 @@ def test_static_prefers_brotli_when_accepted(static_dir: Path):
         pytest.param("identity", True, None, id="identity"),
         pytest.param("br", False, None, id="br-only"),
         pytest.param("GZIP;q=0, identity;q=1", False, None, id="uppercase-gzip-refused"),
+        pytest.param("GZIP;q=1, br;q=0.5, identity;q=0", True, "br", id="uppercase-gzip-br"),
     ],
 )
 def test_static_encoding_follows_accept_encoding(
