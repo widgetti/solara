@@ -1,23 +1,17 @@
 from typing import Callable, Dict, Optional, Tuple, cast
 
-import ipyvue
 import ipyvuetify as vy
 import reacton.core
 import traitlets
 
 import solara
 import solara.lab
-from solara.server import frontend
 
 
-class TitleWidgetVue(ipyvue.VueTemplate):
+class TitleWidget(vy.VuetifyTemplate):
     template_file = (__file__, "title.vue")
     title = traitlets.Unicode().tag(sync=True)
     level = traitlets.Int().tag(sync=True)
-
-
-class TitleWidget(TitleWidgetVue, vy.VuetifyTemplate):
-    pass
 
 
 Titles = Dict[str, Tuple[int, str]]
@@ -93,4 +87,4 @@ def Title(title: str):
     offset = 2**level
     use_title_set(title, offset)
 
-    return frontend.template_class(TitleWidget, TitleWidgetVue).element(title=title, level=level)
+    return TitleWidget.element(title=title, level=level)

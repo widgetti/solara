@@ -30,9 +30,9 @@ function cssChunkFilename(major) {
 
 // Moves the CSS of the chunk named `from` into the chunk named `to`, so the CSS loads with `to`, not with `from`.
 // On Vue 3, Vuetify's components import their own CSS, so Vuetify's CSS would load with the vuetify JS chunk; it
-// goes to the vuetify-css chunk instead (a CSS-only feature), and "-vuetify-css" leaves it out, also when Vuetify
-// loads on first use. The CSS file stays the same: mini-css-extract-plugin orders the CSS of a chunk by each
-// module's post-order index in the chunk group, and the modules keep the index they had in the group of `from`.
+// goes to the vuetify-css chunk instead (a CSS-only feature), and "-vuetify-css" leaves it out. The CSS file stays
+// the same: mini-css-extract-plugin orders the CSS of a chunk by each module's post-order index in the chunk group,
+// and the modules keep the index they had in the group of `from`.
 class MoveCssPlugin {
     constructor(from, to) {
         this.from = from;

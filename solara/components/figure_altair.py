@@ -1,9 +1,7 @@
 from typing import Any, Callable
 
 import solara
-import solara.server.frontend
 import solara.widgets
-import solara.widgets.widgets
 
 
 @solara.component
@@ -36,8 +34,9 @@ def FigureAltair(
                 break
         if spec is None:
             raise KeyError(f"No Vega-Lite MIME type found in mimebundle: {list(bundle.keys())}")
-        widget = solara.server.frontend.template_class(solara.widgets.VegaLite, solara.widgets.widgets.VegaLiteVue)
-        return widget.element(spec=spec, on_click=on_click, listen_to_click=on_click is not None, on_hover=on_hover, listen_to_hover=on_hover is not None)
+        return solara.widgets.VegaLite.element(
+            spec=spec, on_click=on_click, listen_to_click=on_click is not None, on_hover=on_hover, listen_to_hover=on_hover is not None
+        )
 
 
 # alias for backward compatibility

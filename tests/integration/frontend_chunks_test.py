@@ -9,7 +9,6 @@ from typing import Dict, List
 import ipywidgets
 import playwright.sync_api
 import pytest
-import reacton.core
 
 import solara
 import solara.server.server
@@ -75,35 +74,6 @@ def SidebarApp():
 
 
 @solara.component
-def ExplicitAppLayout():
-    with solara.AppLayout(title="layout title"):
-        with solara.Sidebar():
-            solara.Text("sidebar text")
-        solara.Text("main content text")
-
-
-@solara.component
-def DatePickerApp():
-    import reacton.ipyvuetify as rv
-
-    rv.DatePicker(v_model="2024-01-02")
-
-
-@solara.component
-def LateDatePickerApp():
-    # the first render has no Vuetify widget: jupyter-vuetify loads after the root view mounted
-    import ipyvue
-    import reacton.ipyvue
-    import reacton.ipyvuetify as rv
-
-    show, set_show = solara.use_state(False)
-    button = ipyvue.Html.element(tag="button", children=["show date picker"])
-    reacton.ipyvue.use_event(button, "click", lambda *_ignore: set_show(True))
-    if show:
-        rv.DatePicker(v_model="2024-01-02")
-
-
-@solara.component
 def VuetifyCaption():
     import reacton.ipyvuetify as rv
 
@@ -114,24 +84,6 @@ def VuetifyCaption():
 @solara.component
 def DefaultButton():
     solara.Button("default button", color="primary", classes=["default-button"])
-
-
-@solara.component
-def ThemedButton():
-    import solara.lab
-
-    solara.lab.theme.themes.light.primary = "#ff0000"
-    solara.Button("themed button", color="primary", classes=["themed-button"])
-
-
-@solara.component
-def ThemeOnClick():
-    import solara.lab
-
-    def make_red():
-        solara.lab.theme.themes.light.primary = "#ff0000"
-
-    solara.Button("theme button", color="primary", classes=["theme-button"], on_click=make_red)
 
 
 @solara.component
@@ -215,9 +167,7 @@ def frontend_setting(monkeypatch):
 
 
 def _server_warnings(caplog) -> List[str]:
-    messages = [record.getMessage() for record in caplog.records if record.name == "solara.server.frontend" and record.levelno >= logging.WARNING]
-    # Vue 2 logs once that minimal keeps vuetify and mdi; that is not a lazy load
-    return [message for message in messages if "build cannot leave out" not in message]
+    return [record.getMessage() for record in caplog.records if record.name == "solara.server.frontend" and record.levelno >= logging.WARNING]
 
 
 def _expected_chunks() -> List[str]:
@@ -302,8 +252,6 @@ def test_minimal_lazy_controls(page_session: playwright.sync_api.Page, solara_se
     assert chunks.get("jupyter-controls") == 1
     assert "katex" not in chunks
     assert "output-widget" not in chunks
-    if vue3:
-        assert "vuetify" not in chunks
     assert recorder.lazy_warnings() == ["jupyter-controls"]
     assert recorder.errors() == []
     server_warnings = _server_warnings(caplog)
@@ -338,22 +286,6 @@ def test_markdown_katex_bundled(page_session: playwright.sync_api.Page, solara_s
     assert recorder.errors() == []
 
 
-@pytest.mark.skipif(not vue3, reason="the Vue 2 build has Vuetify in its core bundle")
-def test_minimal_hello(page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, recorder, frontend_setting, caplog):
-    frontend_setting("minimal")
-    with caplog.at_level(logging.WARNING, logger="solara.server.frontend"), extra_include_path(HERE), solara_app("frontend_chunks_test:Hello"):
-        page_session.goto(solara_server.base_url)
-        page_session.locator("text=hello frontend").wait_for()
-        # the pure Vue shell, without Vuetify
-        assert page_session.locator(".v-application").count() == 0
-        assert page_session.evaluate("typeof window.vuetifyPlugin") == "undefined"
-    assert not [url for url in recorder.urls if "jupyter-vuetify" in url]
-    assert recorder.chunk_requests() == {}
-    assert recorder.lazy_warnings() == []
-    assert recorder.errors() == []
-    assert _server_warnings(caplog) == []
-
-
 def test_full_applayout_content_below_app_bar(
     page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, recorder, frontend_setting
 ):
@@ -385,57 +317,6 @@ def test_full_markdown_katex_globals(page_session: playwright.sync_api.Page, sol
     assert not [url for url in recorder.urls if "katex@" in url]
     assert recorder.lazy_warnings() == []
     assert recorder.errors() == []
-
-
-@pytest.mark.skipif(not vue3, reason="the Vue 2 build has Vuetify in its core bundle")
-def test_minimal_explicit_applayout(page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, recorder, frontend_setting):
-    # the page without Vuetify has no <v-app>: AppLayout provides the layout its drawer, app bar and main need
-    frontend_setting("minimal")
-    page_errors: List[str] = []
-
-    def on_page_error(error):
-        page_errors.append(str(error))
-
-    page_session.on("pageerror", on_page_error)
-    try:
-        with extra_include_path(HERE), solara_app("frontend_chunks_test:ExplicitAppLayout"):
-            page_session.goto(solara_server.base_url)
-            page_session.locator("text=main content text").wait_for()
-            page_session.locator("text=sidebar text").wait_for()
-            page_session.locator("text=layout title").wait_for()
-    finally:
-        page_session.remove_listener("pageerror", on_page_error)
-    assert page_errors == []
-    assert recorder.lazy_warnings() == ["vuetify"]
-
-
-@pytest.mark.skipif(not vue3, reason="the Vue 2 build has Vuetify in its core bundle")
-def test_minimal_date_picker(page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, recorder, frontend_setting):
-    # jupyter-vuetify loads after the shell app exists: its components (IpyvuetifyDatePicker) are registered on it too
-    frontend_setting("minimal")
-    with extra_include_path(HERE), solara_app("frontend_chunks_test:DatePickerApp"):
-        page_session.goto(solara_server.base_url)
-        page_session.locator(".v-date-picker").wait_for()
-    assert not [msg.text for msg in recorder.console if "Failed to resolve component" in msg.text]
-    assert recorder.lazy_warnings() == ["vuetify"]
-
-
-@pytest.mark.skipif(not vue3, reason="the Vue 2 build has Vuetify in its core bundle")
-def test_minimal_date_picker_after_mount(page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, recorder, frontend_setting):
-    # jupyter-vuetify loads after the root view mounted: its components are still registered on the shell app
-    frontend_setting("minimal")
-    with extra_include_path(HERE), solara_app("frontend_chunks_test:LateDatePickerApp"):
-        page_session.goto(solara_server.base_url)
-        page_session.locator("button >> text=show date picker").click()
-        page_session.locator(".v-date-picker").wait_for(timeout=10000)
-        assert page_session.locator("ipyvuetifydatepicker").count() == 0
-    assert not [msg.text for msg in recorder.console if "Failed to resolve component" in msg.text]
-    expected = ["vuetify"]
-    if reacton.core._default_container is reacton.core.Fragment:
-        # SOLARA_DEFAULT_CONTAINER=Fragment: reacton wraps the button and the date picker in its FragmentWidget,
-        # an ipywidgets VBox, so jupyter-controls loads too
-        expected.append("jupyter-controls")
-    assert sorted(recorder.lazy_warnings()) == sorted(expected)
 
 
 @pytest.mark.parametrize("preset", ["full", "minimal"])
@@ -518,24 +399,6 @@ def test_full_markdown_mathjax_first(page_session: playwright.sync_api.Page, sol
     assert recorder.errors() == []
 
 
-@pytest.mark.skipif(not vue3, reason="the Vue 2 build has Vuetify in its core bundle")
-@pytest.mark.parametrize("preset", ["full", "minimal"])
-def test_vuetify_theme_colors(page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, recorder, frontend_setting, preset):
-    # Vuetify that loads on first use (minimal) gets the theme of solara.lab.theme, as in full
-    frontend_setting(preset)
-    with extra_include_path(HERE):
-        with solara_app("frontend_chunks_test:DefaultButton"):
-            page_session.goto(solara_server.base_url)
-            # the default primary color of solara.lab.theme (ipyvuetify's #6200EE), not Vuetify's own default
-            playwright.sync_api.expect(page_session.locator(".default-button")).to_have_css("background-color", "rgb(98, 0, 238)")
-        with solara_app("frontend_chunks_test:ThemedButton"):
-            page_session.goto(solara_server.base_url)
-            playwright.sync_api.expect(page_session.locator(".themed-button")).to_have_css("background-color", "rgb(255, 0, 0)")
-    # two pages: each loads Vuetify on first use
-    assert recorder.lazy_warnings() == ([] if preset == "full" else ["vuetify", "vuetify"])
-    assert recorder.errors() == []
-
-
 def test_minimal_single_dollar_no_katex(
     page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, recorder, frontend_setting, caplog
 ):
@@ -567,11 +430,9 @@ def test_markdown_entity_math(page_session: playwright.sync_api.Page, solara_ser
 
 @pytest.mark.parametrize("preset", ["full", "minimal", "full,-roboto", "minimal,-roboto"])
 def test_vuetify_has_roboto(page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, recorder, frontend_setting, preset):
-    # Vuetify's typography uses Roboto, so a page with Vuetify has the Roboto CSS: preloaded (full, and minimal on
-    # Vue 2, where Vuetify is always on), or together with Vuetify that loads on first use (minimal on Vue 3).
-    # An app with its own font leaves it out with -roboto, also when Vuetify loads on first use.
+    # Vuetify's typography uses Roboto, so the page (Vuetify is always on) preloads the Roboto CSS.
+    # An app with its own font leaves it out with -roboto.
     frontend_setting(preset)
-    lazy = vue3 and preset.startswith("minimal")
     own_font = preset.endswith("-roboto")
     with extra_include_path(HERE), solara_app("frontend_chunks_test:VuetifyCaption"):
         page_session.goto(solara_server.base_url)
@@ -586,20 +447,17 @@ def test_vuetify_has_roboto(page_session: playwright.sync_api.Page, solara_serve
             }"""
         )
     assert roboto == ({"count": 0, "atSlot": False, "faces": False} if own_font else {"count": 1, "atSlot": True, "faces": True})
-    # a css-only feature that is preloaded needs no JS; a lazy load fetches its (tiny) chunk
-    assert recorder.chunk_requests().get("roboto") == (1 if lazy and not own_font else None)
-    # Roboto loads silently with Vuetify: the warning names the feature to add, which brings Roboto along
-    assert recorder.lazy_warnings() == (["vuetify"] if lazy else [])
+    # a css-only feature that is preloaded needs no JS
+    assert recorder.chunk_requests().get("roboto") is None
+    assert recorder.lazy_warnings() == []
     assert recorder.errors() == []
 
 
 @pytest.mark.parametrize("preset", ["full", "minimal", "full,-vuetify-css", "minimal,-vuetify-css"])
 def test_vuetify_css(page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, recorder, frontend_setting, preset):
-    # Vuetify's CSS comes with Vuetify: preloaded (full, and minimal on Vue 2, where Vuetify is always on), or together with
-    # Vuetify that loads on first use (minimal on Vue 3). An app that ships its own Vuetify CSS leaves it out with
-    # -vuetify-css, also when Vuetify loads on first use, and the page still renders without errors.
+    # Vuetify's CSS comes with Vuetify (always on), preloaded. An app that ships its own Vuetify CSS leaves it out with
+    # -vuetify-css, and the page still renders without errors.
     frontend_setting(preset)
-    lazy = vue3 and preset.startswith("minimal")
     own_css = preset.endswith("-vuetify-css")
     with extra_include_path(HERE), solara_app("frontend_chunks_test:DefaultButton"):
         page_session.goto(solara_server.base_url)
@@ -623,31 +481,7 @@ def test_vuetify_css(page_session: playwright.sync_api.Page, solara_server, sola
         )
     assert vuetify_css == ({"count": 0, "atSlot": False, "rules": False} if own_css else {"count": 1, "atSlot": True, "rules": True})
     assert len([url for url in recorder.urls if re.search(r"/main\d\.vuetify\.css", url)]) == (0 if own_css else 1)
-    # a css-only feature that is preloaded needs no JS; a lazy load fetches its (tiny) chunk
-    assert recorder.chunk_requests().get("vuetify-css") == (1 if lazy and not own_css else None)
-    # Vuetify's CSS loads silently with Vuetify: the warning names the feature to add, which brings the CSS along
-    assert recorder.lazy_warnings() == (["vuetify"] if lazy else [])
+    # a css-only feature that is preloaded needs no JS
+    assert recorder.chunk_requests().get("vuetify-css") is None
+    assert recorder.lazy_warnings() == []
     assert recorder.errors() == []
-
-
-@pytest.mark.skipif(not vue3, reason="the Vue 2 build has Vuetify in its core bundle")
-@pytest.mark.parametrize("preset", ["full", "minimal"])
-def test_vuetify_theme_after_soft_remount(
-    page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, frontend_setting, monkeypatch, preset
-):
-    # the fresh kernel of a soft-remount starts from the theme of the page, also when Vuetify loaded on first use
-    frontend_setting(preset)
-    monkeypatch.setattr(solara.server.settings.state, "auto_remount", True)
-    monkeypatch.setattr(solara.server.settings.state, "test_eviction", True)
-    button = page_session.locator(".theme-button")
-    try:
-        with extra_include_path(HERE), solara_app("frontend_chunks_test:ThemeOnClick"):
-            page_session.goto(solara_server.base_url)
-            playwright.sync_api.expect(button).to_have_css("background-color", "rgb(98, 0, 238)")
-            button.click()
-            playwright.sync_api.expect(button).to_have_css("background-color", "rgb(255, 0, 0)")
-            assert page_session.evaluate("solara.debug.simulateFailover()") is not False
-            page_session.wait_for_function("() => solara.debug.remountCount === 1", timeout=30000)
-            playwright.sync_api.expect(button).to_have_css("background-color", "rgb(98, 0, 238)")
-    finally:
-        page_session.goto("about:blank")

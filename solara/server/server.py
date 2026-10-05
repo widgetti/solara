@@ -439,15 +439,13 @@ def read_root(
         enabled = frontend
     production = settings.main.mode == "production"
     page_assets = frontend_assets.page_assets(vue3, ipywidgets_major, production, cdn, enabled)
-    vuetify = "vuetify" in enabled
 
     # start fetching the widget code while the kernel starts; requirejs loads the same urls later
     # (it adds the hash of the folder an nbextension owns, see urlArgs in solara.html.j2)
     nbextension_preloads = []
     vue_sfc_preload = None
     if not legacy:
-        preload_names = ["jupyter-vue/extension"] + (["jupyter-vuetify/extension"] if vuetify else [])
-        for name in preload_names:
+        for name in ["jupyter-vue/extension", "jupyter-vuetify/extension"]:
             if name in nbextensions:
                 folder = name.split("/")[0]
                 nbextension_preloads.append(f"{jupyter_root_path}/nbextensions/{folder}/nodeps.js?{nbextensions_hashes[name]}")
@@ -484,7 +482,6 @@ def read_root(
         "perform_check": settings.main.mode != "production" and solara.checks.should_perform_solara_check(),
         "legacy": legacy,
         "features": enabled.features,
-        "vuetify": vuetify,
         "frontend_assets": page_assets,
         "frontend_js": {**enabled.to_js(), "chunks": page_assets.chunk_names},
         "nbextension_preloads": nbextension_preloads,

@@ -4,7 +4,6 @@ import logging
 from pathlib import Path
 from typing import Optional, Union, cast
 
-import ipyvue
 import ipyvuetify as v
 
 try:
@@ -13,7 +12,6 @@ except ModuleNotFoundError:
     watchfiles = None  # type: ignore
 
 import solara
-import solara.server.frontend
 import solara.server.settings
 
 logger = logging.getLogger("solara.Style")
@@ -118,5 +116,4 @@ module.exports = {
 </style>
     """
     # using .key avoids reusing the template, which causes a flicker (due to ipyvue)
-    widget = solara.server.frontend.template_class(v.VuetifyTemplate, ipyvue.VueTemplate)
-    return widget.element(template=template).key(key)
+    return v.VuetifyTemplate.element(template=template).key(key)

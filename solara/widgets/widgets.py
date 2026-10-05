@@ -1,7 +1,6 @@
 import os
 from typing import Dict, List, cast
 
-import ipyvue
 import ipyvuetify as v
 import ipywidgets
 import traitlets
@@ -17,12 +16,7 @@ __all__ = [
 ]
 
 
-# Each template below has no Vuetify tags. The public class is a VuetifyTemplate, as before, and is used in
-# Jupyter and in full mode. Its ...Vue base class has the same traits and template on ipyvue.VueTemplate, and is
-# used on a Solara server without the vuetify frontend feature (see solara.server.frontend.template_class).
-
-
-class VegaLiteVue(ipyvue.VueTemplate):
+class VegaLite(v.VuetifyTemplate):
     template_file = os.path.realpath(os.path.join(os.path.dirname(__file__), "vue/vegalite.vue"))
     spec = traitlets.Dict().tag(sync=True)
     listen_to_click = traitlets.Bool(False).tag(sync=True)
@@ -47,20 +41,12 @@ class VegaLiteVue(ipyvue.VueTemplate):
             return solara.settings.assets.cdn
 
 
-class VegaLite(VegaLiteVue, v.VuetifyTemplate):
-    pass
-
-
-class NavigatorVue(ipyvue.VueTemplate):
+class Navigator(v.VuetifyTemplate):
     template_file = os.path.realpath(os.path.join(os.path.dirname(__file__), "vue/navigator.vue"))
     location = traitlets.Unicode(None, allow_none=True).tag(sync=True)
 
 
-class Navigator(NavigatorVue, v.VuetifyTemplate):
-    pass
-
-
-class GridLayoutVue(ipyvue.VueTemplate):
+class GridLayout(v.VuetifyTemplate):
     template_file = os.path.join(os.path.dirname(__file__), "vue/gridlayout_v3.vue" if IPYVUETIFY_V3 else "vue/gridlayout.vue")
     gridlayout_loaded = traitlets.Bool(False).tag(sync=True)
     items = traitlets.Union([traitlets.List(), traitlets.Dict()], default_value=[]).tag(sync=True, **ipywidgets.widget_serialization)
@@ -84,20 +70,14 @@ class GridLayoutVue(ipyvue.VueTemplate):
             return solara.settings.assets.cdn
 
 
-class GridLayout(GridLayoutVue, v.VuetifyTemplate):
-    pass
-
-
-class HTMLVue(ipyvue.VueTemplate):
+class HTML(v.VuetifyTemplate):
     template_file = os.path.realpath(os.path.join(os.path.dirname(__file__), "vue/html.vue"))
     tag = traitlets.Unicode("div").tag(sync=True)
     attributes = traitlets.Dict().tag(sync=True)
     unsafe_innerHTML = traitlets.Unicode(None, allow_none=True).tag(sync=True)
 
 
-class HTML(HTMLVue, v.VuetifyTemplate):
-    pass
-
-
 def watch():
+    import ipyvue
+
     ipyvue.watch(os.path.realpath(os.path.dirname(__file__) + "/vue"))

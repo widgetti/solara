@@ -1,23 +1,17 @@
 from typing import Optional
 
-import ipyvue
 import ipyvuetify as vy
 import reacton.core
 import solara
 import traitlets
-from solara.server import frontend
 
 
-class HeadTagWidgetVue(ipyvue.VueTemplate):
+class HeadTagWidget(vy.VuetifyTemplate):
     template_file = (__file__, "head_tag.vue")
     tagname = traitlets.Unicode().tag(sync=True)
     key = traitlets.Unicode(None, allow_none=True).tag(sync=True)
     attributes = traitlets.Dict().tag(sync=True)
     level = traitlets.Int().tag(sync=True)
-
-
-class HeadTagWidget(HeadTagWidgetVue, vy.VuetifyTemplate):
-    pass
 
 
 @solara.component
@@ -52,4 +46,4 @@ def HeadTag(tagname: str, key=None, attributes: Optional[dict] = None):
         level += 1
         context = context.parent
     attributes = attributes or {}
-    return frontend.template_class(HeadTagWidget, HeadTagWidgetVue).element(tagname=tagname, key=key, attributes=attributes, level=level)
+    return HeadTagWidget.element(tagname=tagname, key=key, attributes=attributes, level=level)

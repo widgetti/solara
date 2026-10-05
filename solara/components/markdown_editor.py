@@ -1,14 +1,12 @@
 from typing import Callable
 
-import ipyvue
 import ipyvuetify
 import traitlets
 
 import solara
-from solara.server import frontend
 
 
-class MarkdownEditorWidgetVue(ipyvue.VueTemplate):
+class MarkdownEditorWidget(ipyvuetify.VuetifyTemplate):
     template_file = (__file__, "markdown_editor.vue")
 
     value = traitlets.Unicode("").tag(sync=True)
@@ -23,10 +21,6 @@ class MarkdownEditorWidgetVue(ipyvue.VueTemplate):
             return solara.settings.assets.cdn
 
 
-class MarkdownEditorWidget(MarkdownEditorWidgetVue, ipyvuetify.VuetifyTemplate):
-    pass
-
-
 @solara.component
 def MarkdownEditor(value: str = "", on_value: Callable[[str], None] = None):
     """WYSIWYG (visual) Markdown editor.
@@ -36,4 +30,4 @@ def MarkdownEditor(value: str = "", on_value: Callable[[str], None] = None):
     * value: Markdown text
     * on_value: Callback function that is called when the text is changed
     """
-    return frontend.template_class(MarkdownEditorWidget, MarkdownEditorWidgetVue).element(value=value, on_value=on_value)
+    return MarkdownEditorWidget.element(value=value, on_value=on_value)

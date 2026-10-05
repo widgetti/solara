@@ -1,43 +1,16 @@
 import warnings
 from typing import Any, Callable, Dict, List, Union
 
-import ipyvue
 import reacton
 import reacton.ipyvuetify as v
 import solara
-import solara.server.frontend
 import solara.widgets
-import solara.widgets.widgets
 from solara.util import IPYVUETIFY_V3, _combine_classes
 
-
-class _TemplateComponentWidget(reacton.core.ComponentWidget):
-    """A ComponentWidget for a solara template without Vuetify tags: see solara.server.frontend.template_class."""
-
-    def __init__(self, widget, vue_widget):
-        super().__init__(widget)
-        self.vue_component = reacton.core.ComponentWidget(vue_widget)
-
-    def __call__(self, *args, **kwargs):
-        if solara.server.frontend.vuetify_enabled():
-            return super().__call__(*args, **kwargs)
-        return self.vue_component(*args, **kwargs)
-
-
-Navigator = _TemplateComponentWidget(solara.widgets.Navigator, solara.widgets.widgets.NavigatorVue)
-GridDraggable = _TemplateComponentWidget(solara.widgets.GridLayout, solara.widgets.widgets.GridLayoutVue)
+Navigator = reacton.core.ComponentWidget(solara.widgets.Navigator)
+GridDraggable = reacton.core.ComponentWidget(solara.widgets.GridLayout)
 # keep the old name for a while
 GridLayout = GridDraggable
-
-
-def _Html():
-    """The Html element factory: ipyvuetify's (as before), or ipyvue's when the vuetify frontend feature is off."""
-    return v.Html if solara.server.frontend.vuetify_enabled() else ipyvue.Html.element
-
-
-def _flex_box(classes: List[str], style: str, children):
-    """A flex box without Vuetify, for VBox, HBox, Row and Column when the vuetify frontend feature is off."""
-    return ipyvue.Html.element(tag="div", class_=_combine_classes(classes), style_="display: flex; " + style, children=children)
 
 
 @solara.component
@@ -125,7 +98,7 @@ def ui_slider(value=1, label="", min=0, max=100, key=None, tick_labels=None, thu
 @solara.component
 def Text(text, style: Union[str, Dict[str, str], None] = None, classes: List[str] = []):
     style_flat = solara.util._flatten_style(style)
-    return _Html()(tag="span", class_=_combine_classes(classes), style_=style_flat, children=[text])
+    return v.Html(tag="span", class_=_combine_classes(classes), style_=style_flat, children=[text])
 
 
 @solara.component
@@ -139,12 +112,12 @@ def Div(children=[], classes: List[str] = [], style: Union[str, Dict[str, str], 
         style_flat += kwargs.pop("style_")
     class_ = _combine_classes(classes)
 
-    return _Html()(tag="div", children=children, class_=class_, style_=style_flat, **kwargs)
+    return v.Html(tag="div", children=children, class_=class_, style_=style_flat, **kwargs)
 
 
 @solara.component
 def Preformatted(text, **kwargs):
-    return _Html()(tag="pre", children=[text], **kwargs)
+    return v.Html(tag="pre", children=[text], **kwargs)
 
 
 @solara.component
@@ -176,8 +149,7 @@ def HTML(tag="div", unsafe_innerHTML=None, style: str = None, classes: List[str]
     if class_ or classes:
         class_ = _combine_classes([*classes, *([] if class_ is None else [class_])])
         attributes["class"] = class_
-    widget = solara.server.frontend.template_class(solara.widgets.HTML, solara.widgets.widgets.HTMLVue)
-    return widget.element(tag=tag, unsafe_innerHTML=unsafe_innerHTML, attributes=attributes)
+    return solara.widgets.HTML.element(tag=tag, unsafe_innerHTML=unsafe_innerHTML, attributes=attributes)
 
 
 @solara.component
@@ -186,8 +158,6 @@ def VBox(children=[], grow=True, align_items="stretch", classes: List[str] = [])
     style = f"flex-direction: column; align-items: {align_items};"
     if grow:
         style += "flex-grow: 1;"
-    if not solara.server.frontend.vuetify_enabled():
-        return _flex_box(["solara-vbox", *classes], style, children)
     class_ = _combine_classes(["d-flex", *classes])
     return v.Sheet(class_=class_, style_=style, elevation=0, children=children)
 
@@ -198,8 +168,6 @@ def HBox(children=[], grow=True, align_items="stretch", classes: List[str] = [])
     style = f"flex-direction: row; align-items: {align_items}; "
     if grow:
         style += "flex-grow: 1;"
-    if not solara.server.frontend.vuetify_enabled():
-        return _flex_box(["solara-hbox", *classes], style, children)
     class_ = _combine_classes(["d-flex", *classes])
     return v.Sheet(class_=class_, style_=style, elevation=0, children=children)
 
@@ -236,15 +204,11 @@ def Row(children=[], gap="12px", justify="start", margin: int = 0, classes: List
     """
     align_items = "stretch"
     style_flat = solara.util._flatten_style(style)
-    style_base = f"flex-direction: row; align-items: {align_items}; justify-content: {justify}; column-gap: {gap};"
+    style_flat = f"flex-direction: row; align-items: {align_items}; justify-content: {justify}; column-gap: {gap};" + style_flat + ";"
     # valid css values, but we don't list them as options to avoid confusion
     extra_justify_options = ["left", "right", "flex-start", "flex-end"]
     if justify not in (["start", "center", "end", "space-around", "space-between", "space-evenly"] + extra_justify_options):
         warnings.warn(f"Invalid value for justify: {justify}, possible values are: start, center, end, space-around, space-between, space-evenly")
-    if not solara.server.frontend.vuetify_enabled():
-        # an inline margin replaces Vuetify's ma-{margin} class (4px per step), the user style stays last
-        return _flex_box(["solara-row", *classes], f"{style_base} margin: {4 * margin}px;" + style_flat + ";", children)
-    style_flat = style_base + style_flat + ";"
     class_ = _combine_classes(["d-flex", f"ma-{margin}", *classes])
     return v.Sheet(class_=class_, style_=style_flat, elevation=0, children=children)
 
@@ -290,11 +254,7 @@ def Column(children=[], gap="12px", align="stretch", margin: int = 0, classes: L
     if align not in (["start", "center", "end", "stretch"] + extra_align_options):
         warnings.warn(f"Invalid value for align: {align}, possible values are 'start', 'center', 'end' or 'stretch'")
     style_flat = solara.util._flatten_style(style)
-    style_base = f"flex-direction: column; align-items: {align}; row-gap: {gap};"
-    if not solara.server.frontend.vuetify_enabled():
-        # an inline margin replaces Vuetify's ma-{margin} class (4px per step), the user style stays last
-        return _flex_box(["solara-column", *classes], f"{style_base} margin: {4 * margin}px;" + style_flat + ";", children)
-    style_flat = style_base + style_flat + ";"
+    style_flat = f"flex-direction: column; align-items: {align}; row-gap: {gap};" + style_flat + ";"
     class_ = _combine_classes(["d-flex", f"ma-{margin}", *classes])
     return v.Sheet(class_=class_, style_=style_flat, elevation=0, children=children)
 
