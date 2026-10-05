@@ -74,8 +74,11 @@ def clear():
 
 
 def choose_encoding(accept_encoding: str) -> Optional[str]:
-    """Return "br", "gzip" or None for an Accept-Encoding request header."""
-    accepted = set()
+    """Return "br", "gzip" or None for an Accept-Encoding request header.
+
+    The highest q value wins, and brotli wins a tie with gzip.
+    """
+    weights: Dict[str, float] = {}
     for part in accept_encoding.split(","):
         name, _, params = part.partition(";")
         name = name.strip().lower()
@@ -87,13 +90,13 @@ def choose_encoding(accept_encoding: str) -> Optional[str]:
                     q = float(value)
                 except ValueError:
                     q = 0.0
-        if name and q > 0:
-            accepted.add(name)
-    if brotli is not None and "br" in accepted:
-        return "br"
-    if "gzip" in accepted:
-        return "gzip"
-    return None
+        if name:
+            weights[name] = q
+    # max keeps the first of equal weights
+    best = max(["br", "gzip"] if brotli is not None else ["gzip"], key=lambda name: weights.get(name, 0.0))
+    if weights.get(best, 0.0) <= 0 or weights.get("identity", 0.0) > weights[best]:
+        return None
+    return best
 
 
 def _compress(data: bytes, encoding: str) -> bytes:

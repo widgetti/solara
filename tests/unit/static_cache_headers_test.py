@@ -285,6 +285,10 @@ def test_static_prefers_brotli_when_accepted(static_dir: Path):
 
     assert client.get("/static/big.js", headers={"accept-encoding": "gzip, deflate, br"}).headers["content-encoding"] == "br"
     assert client.get("/static/big.js", headers={"accept-encoding": "gzip, br;q=0"}).headers["content-encoding"] == "gzip"
+    # the client's weights win over our preference for brotli
+    assert compress.choose_encoding("gzip;q=1, br;q=0.1") == "gzip"
+    assert compress.choose_encoding("identity;q=1, br;q=0.1") is None
+    assert compress.choose_encoding("br;q=0.5, gzip;q=0.5") == "br"
 
 
 def test_static_gzip_without_brotli(static_dir: Path, compress_calls: List[str], monkeypatch):
