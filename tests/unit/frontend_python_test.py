@@ -140,6 +140,29 @@ def test_lazy_load_message_ignores_a_strange_module(minimal, kernel_context, cap
     assert messages[0].startswith("The page needs the frontend feature 'lumino'")
 
 
+def test_missing_message_logs_once(minimal, kernel_context, caplog):
+    # jQuery never loads on first use: a widget that uses it fails, and the browser reports that, once per page
+    comm = FakeComm()
+    solara.server.app.solara_comm_target(comm, None)
+    comm.receive({"method": "frontend-missing", "feature": "jquery"})
+    comm.receive({"method": "frontend-missing", "feature": "jquery"})
+    # only for a feature that never loads on first use
+    comm.receive({"method": "frontend-missing", "feature": "katex"})
+    comm.receive({"method": "frontend-missing", "feature": "no-such-feature"})
+    messages = frontend_warnings(caplog)
+    assert len(messages) == 1
+    assert messages[0].startswith("A widget of the page uses the frontend feature 'jquery', which this server does not load, so the widget fails.")
+    assert "--frontend=minimal,+jquery" in messages[0]
+
+
+def test_missing_message_not_in_full(warned, kernel_context, caplog, monkeypatch):
+    monkeypatch.setattr(solara.server.settings.main, "frontend", "full")
+    comm = FakeComm()
+    solara.server.app.solara_comm_target(comm, None)
+    comm.receive({"method": "frontend-missing", "feature": "jquery"})
+    assert frontend_warnings(caplog) == []
+
+
 def test_errors_without_controls(minimal, kernel_context, no_kernel_context):
     with kernel_context:
         widget = solara.server.app._error_widget("<b>Traceback</b>")

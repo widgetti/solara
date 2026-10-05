@@ -134,10 +134,13 @@ def test_lazy_regex_lists_distinct_features():
         # a requirejs request names the module that asked
         'solara: frontend feature "lumino" was not preloaded, it loads now for the requirejs module "@phosphor/widgets". '
         'Add "+lumino" to --frontend (SOLARA_FRONTEND) to preload it.',
+        # a widget used jQuery, which never loads on first use: the server log names the flag too
+        "WARNING solara.server.frontend: A widget of the page uses the frontend feature 'jquery', which this server does not load, "
+        'so the widget fails. Add "+jquery" to --frontend (SOLARA_FRONTEND) to load it, for example --frontend=minimal,+jquery.',
         'Add "+unknown" to --frontend, Add "+vuetify-extra" to --frontend, x+mdi +mermaid',
         "no features here",
     ]
-    assert lazy_features(texts) == ["jupyter-controls", "lumino", "vue-sfc", "vuetify"]
+    assert lazy_features(texts) == ["jquery", "jupyter-controls", "lumino", "vue-sfc", "vuetify"]
     assert lazy_features([]) == []
 
 
