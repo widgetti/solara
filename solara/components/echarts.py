@@ -1,12 +1,14 @@
 from typing import Any, Callable
 
+import ipyvue
 import ipyvuetify
 import traitlets
 
 import solara
+from solara.server import frontend
 
 
-class EchartsWidget(ipyvuetify.VuetifyTemplate):
+class EchartsWidgetVue(ipyvue.VueTemplate):
     template_file = (__file__, "echarts.vue")
 
     attributes = traitlets.Dict(default_value=None, allow_none=True).tag(sync=True)
@@ -42,6 +44,10 @@ class EchartsWidget(ipyvuetify.VuetifyTemplate):
             self.on_mouseout(data)
 
 
+class EchartsWidget(EchartsWidgetVue, ipyvuetify.VuetifyTemplate):
+    pass
+
+
 @solara.component
 def FigureEcharts(
     option: dict = {},
@@ -73,7 +79,7 @@ def FigureEcharts(
 
 
     """
-    return EchartsWidget.element(
+    return frontend.template_class(EchartsWidget, EchartsWidgetVue).element(
         option=option,
         on_click=on_click,
         on_mouseover=on_mouseover,

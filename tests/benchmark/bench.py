@@ -44,10 +44,12 @@ REPO_ROOT = HERE.parent.parent
 APPS: Dict[str, Tuple[str, str]] = {
     "hello": ("hello.py", "Hello benchmark"),
     "dashboard": ("dashboard.py", "row-0"),
+    "dashboard_lite": ("dashboard_lite.py", "row-0"),
 }
 PRESETS = ["full", "minimal"]
-DEFAULT_CONFIGS = ["hello@full", "hello@minimal", "dashboard@full", "dashboard@minimal"]
-ALL_CONFIGS = DEFAULT_CONFIGS
+DEFAULT_CONFIGS = ["hello@full", "hello@minimal", "dashboard@full", "dashboard_lite@minimal"]
+# dashboard@minimal: the lazy load path; dashboard_lite@full: separates the app effect from the preset effect
+ALL_CONFIGS = DEFAULT_CONFIGS + ["dashboard@minimal", "dashboard_lite@full"]
 
 THROTTLE = {"latency_ms": 150, "down_mbit": 9, "up_mbit": 1.5, "cpu": 4}
 VIEWPORT: ViewportSize = {"width": 1280, "height": 800}
