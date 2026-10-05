@@ -12,6 +12,8 @@ HERE = Path(__file__).parent
 def Page():
     with solara.Sidebar():
         solara.Text("sidebar text")
+        # wider than the 400 px drawer on Vue 3
+        solara.Div(style={"width": "500px", "height": "20px"}, classes=["wide-sidebar-element"])
     with solara.AppBarTitle():
         solara.Text("app bar title")
     solara.Text("main content")
@@ -60,6 +62,24 @@ def test_applayout_sidebar_next_to_content(page_session: playwright.sync_api.Pag
             layout = _wait_for_layout(page_session, open_ok)
             assert layout["drawer_right"] > 0
             assert open_ok(layout), layout
+
+            # sidebar content wider than the drawer must stay reachable: Vue 2 grows the drawer, Vue 3 scrolls it
+            wide = page_session.locator(".wide-sidebar-element")
+
+            def wide_right():
+                box = wide.bounding_box()
+                assert box is not None
+                return box["x"] + box["width"]
+
+            if wide_right() > layout["drawer_right"]:
+                box = wide.bounding_box()
+                assert box is not None
+                page_session.mouse.move(box["x"] + 100, box["y"] + box["height"] / 2)
+                page_session.mouse.wheel(300, 0)
+                start = time.time()
+                while wide_right() > layout["drawer_right"] and time.time() - start < 5:
+                    page_session.wait_for_timeout(100)
+            assert wide_right() <= layout["drawer_right"], (wide_right(), layout)
 
             # the menu icon must not be under the drawer, and closing the sidebar gives the content the full width
             page_session.locator(".v-app-bar-nav-icon, .v-app-bar__nav-icon").click()

@@ -366,10 +366,15 @@ def AppLayout(
                             mobile_break_point="960",
                             class_="solara-content-main",
                         )
+                    sidebar_style = "padding: 12px; height: 100%"
+                    if IPYVUETIFY_V3:
+                        # The Vue 3 drawer does not grow with its content, and the drawer cuts off
+                        # what does not fit. A scrollbar keeps wide sidebar content reachable.
+                        sidebar_style += "; overflow-x: auto"
                     with drawer:
                         if not show_app_bar:
                             AppIcon(sidebar_open, on_click=lambda: set_sidebar_open(not sidebar_open))
-                        v.Html(tag="div", children=children_sidebar, style_="padding: 12px; height: 100%").meta(ref="sidebar-content")
+                        v.Html(tag="div", children=children_sidebar, style_=sidebar_style).meta(ref="sidebar-content")
             if show_app_bar:
                 # if hide_on_scroll is True, and we have a little bit of scrolling, vuetify seems to act strangely
                 # when scrolling (on @mariobuikhuizen/vuetify v2.2.26-rc.0
