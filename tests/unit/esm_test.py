@@ -68,6 +68,24 @@ def test_redefine_module_updates_live_widget(virtual_context):
     assert widget.code == "export default 2"
 
 
+def test_define_module_dependencies(virtual_context):
+    esm.define_module("esm-test-dep-a", code="export default 1")
+    esm.define_module("esm-test-dep-b", code="export default 2")
+    esm.define_module("esm-test-dep-c", code="export default 3", dependencies=[])
+    widgets = esm.create_modules()
+    # by default a module depends on every earlier module
+    assert widgets["esm-test-dep-b"].dependencies == ["esm-test-dep-a"]
+    # an explicit list is used as given
+    assert widgets["esm-test-dep-c"].dependencies == []
+    # a redefinition without dependencies keeps the first list
+    esm.define_module("esm-test-dep-c", code="export default 4")
+    assert esm.create_modules()["esm-test-dep-c"] is widgets["esm-test-dep-c"]
+    assert widgets["esm-test-dep-c"].dependencies == []
+    # a redefinition with dependencies overrides it
+    esm.define_module("esm-test-dep-c", code="export default 5", dependencies=["esm-test-dep-a"])
+    assert widgets["esm-test-dep-c"].dependencies == ["esm-test-dep-a"]
+
+
 def _load_a_page():
     # Creating a module or import map widget sends a message. With starlette that send waits for
     # the event loop, and the event loop calls get_module_urls for every page request. If widget
