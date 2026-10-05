@@ -7,14 +7,11 @@
  * The full license is in the file LICENSE, distributed with this software. *
  ****************************************************************************/
 
-export {
-  RenderMimeRegistry,
-  standardRendererFactories
-} from '@jupyterlab/rendermime';
+// stand-ins until the output-widget chunk runs, then the real ones (live bindings)
+export { RenderMimeRegistry, standardRendererFactories, extendedRendererFactories } from './rendermime';
 export { connectKernel, shutdownKernel } from './kernel';
 export { WidgetManager } from './manager';
 export { KatexTypesetter, renderKatex, loadKatex } from './katex';
-export { extendedRendererFactories } from './rendermime';
 export {
   registerFeature,
   provideFeature,

@@ -277,6 +277,87 @@ def test_minimal_lazy_controls(page_session: playwright.sync_api.Page, solara_se
     assert 'Add "+jupyter-controls" to --frontend' in server_warnings[0]
 
 
+def test_minimal_lazy_output(page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, recorder, frontend_setting, caplog):
+    # minimal: the page makes its RenderMimeRegistry with the stand-in of the core, and does not load the output renderers;
+    # the first Output widget loads output-widget, which turns the stand-in into the real registry, so the outputs render
+    frontend_setting("minimal")
+    with caplog.at_level(logging.WARNING, logger="solara.server.frontend"), extra_include_path(HERE):
+        with solara_app("frontend_chunks_test:Hello"):
+            page_session.goto(solara_server.base_url)
+            page_session.locator("text=hello frontend").wait_for()
+            page_session.wait_for_timeout(300)
+        assert "output-widget" not in recorder.chunk_requests()
+        with solara_app("frontend_chunks_test:DisplayOutputs"):
+            page_session.goto(solara_server.base_url)
+            page_session.locator("strong >> text=md-bold-one").wait_for()
+            page_session.locator("strong >> text=md-bold-two").wait_for()
+            page_session.locator("code.cm-s-jupyter >> span.cm-variable >> text=x").wait_for()
+    assert recorder.chunk_requests().get("output-widget") == 1
+    # ipywidgets 8 also shows a Checkbox (jupyter-controls)
+    lazy = {"output-widget"} | ({"jupyter-controls"} if ipywidgets_major >= 8 else set())
+    assert set(recorder.lazy_warnings()) == lazy
+    assert len(_server_warnings(caplog)) == len(lazy)
+    assert recorder.errors() == []
+
+
+def test_minimal_soft_remount_keeps_one_widget_renderer(
+    page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, recorder, frontend_setting, monkeypatch
+):
+    # each soft remount makes a new widget manager, which adds a widget renderer factory (that holds the manager) to the
+    # one RenderMimeRegistry of the page. Without an Output widget, that registry stays the stand-in: it must drop the
+    # factory of the old manager, as the real registry does, or each remount keeps the old manager in memory.
+    frontend_setting("minimal")
+    monkeypatch.setattr(solara.server.settings.state, "auto_remount", True)
+    monkeypatch.setattr(solara.server.settings.state, "test_eviction", True)
+    added = "() => { const r = solara.debug.widgetManager()._rendermime; return {real: !!r._real, added: r._added.length}; }"
+    try:
+        with extra_include_path(HERE), solara_app("frontend_chunks_test:Hello"):
+            page_session.goto(solara_server.base_url)
+            page_session.locator("text=hello frontend").wait_for()
+            assert page_session.evaluate(added) == {"real": False, "added": 1}
+            assert page_session.evaluate("solara.debug.simulateFailover()") is not False
+            page_session.wait_for_function("() => solara.debug.remountCount === 1", timeout=30000)
+            page_session.locator("text=hello frontend").wait_for()
+            assert page_session.evaluate(added) == {"real": False, "added": 1}
+    finally:
+        page_session.goto("about:blank")
+    assert "output-widget" not in recorder.chunk_requests()
+
+
+def test_full_output_widget_request_fails(page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, recorder, frontend_setting):
+    # the preloaded output-widget chunk fails once (404): the page still starts with the RenderMimeRegistry stand-in,
+    # and the Output widget loads the chunk on first use, which turns the stand-in into the real registry
+    frontend_setting("full")
+    failed: List[str] = []
+
+    def fail_once(route: playwright.sync_api.Route):
+        if failed:
+            route.continue_()
+        else:
+            failed.append(route.request.url)
+            route.fulfill(status=404, body="not found")
+
+    output_url = re.compile(r".*/solara-vuetify-app\d\.output-widget(\.min)?\.js$")
+    page_session.route(output_url, fail_once)
+    try:
+        with extra_include_path(HERE), solara_app("frontend_chunks_test:DisplayOutputs"):
+            page_session.goto(solara_server.base_url)
+            page_session.locator("strong >> text=md-bold-one").wait_for()
+            page_session.locator("strong >> text=md-bold-two").wait_for()
+            missing = page_session.evaluate("window.solara.loadPreloadedFeaturesSync()")
+    finally:
+        page_session.unroute(output_url, fail_once)
+    assert len(failed) == 1
+    # nothing was left half loaded
+    assert missing == []
+    assert recorder.chunk_requests().get("output-widget") == 2
+    assert recorder.lazy_warnings() == []
+    errors = recorder.errors()
+    assert [error for error in errors if "did not run" in error], errors
+    expected = ("did not run", "404", "Failed to load resource")
+    assert [error for error in errors if not any(text in error for text in expected)] == []
+
+
 @pytest.mark.parametrize("preset", ["full", "minimal"])
 def test_markdown_katex_bundled(page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, recorder, frontend_setting, preset):
     if not vue3 and preset == "minimal":
