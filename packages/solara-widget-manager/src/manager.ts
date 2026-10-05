@@ -40,6 +40,7 @@ import { Widget } from '@lumino/widgets';
 import { IComm } from '@jupyterlab/services/lib/kernel/kernel';
 import { defineAmdModules } from './amd';
 import { loadFeature } from './features';
+import { enabledJQueryLoaded } from './jquery';
 import { requireLoader } from './loader';
 
 // The page maps these modules to their nbextension itself (requirejs.config in solara.html.j2).
@@ -230,6 +231,11 @@ export class WidgetManager extends JupyterLabManager {
     moduleName: string,
     moduleVersion: string
   ): Promise<any> {
+    // every model and view class loads here first: a failed jquery chunk loads again before any view exists
+    const jqueryLoaded = enabledJQueryLoaded();
+    if (jqueryLoaded) {
+      await jqueryLoaded;
+    }
     if (
       moduleName === '@jupyter-widgets/base' ||
       moduleName === '@jupyter-widgets/controls' ||

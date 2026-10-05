@@ -10,7 +10,7 @@
 // - The jquery chunk calls setJQuery. From then on, $ forwards to the real jQuery: $(...), $.ajax, and also the
 //   $.fn.slider = ... and $.cleanData = ... of plugins such as jQuery UI. `full` and +jquery run that chunk before
 //   the first view, so every view.$el is a real jQuery object, as before. A wrapper made before then stays a wrapper.
-import { reportMissingFeature } from './features';
+import { isEnabled, loadFeature, reportMissingFeature } from './features';
 
 let real: any = null;
 let logged = false;
@@ -104,6 +104,26 @@ const $: any = new Proxy(call, {
 /** Called by the jquery chunk: from now on, $ is the real jQuery. */
 export function setJQuery(jQuery: any): void {
   real = jQuery;
+}
+
+let retry: Promise<void> | undefined;
+
+/**
+ * full and +jquery: the jquery chunk runs before the first view. When its <script> failed (e.g. network), this loads
+ * it again, once, and the widget manager waits for it before it makes a widget, so no view gets the stand-in.
+ * Returns undefined when there is nothing to wait for.
+ */
+export function enabledJQueryLoaded(): Promise<void> | undefined {
+  if (real || !isEnabled('jquery')) {
+    return undefined;
+  }
+  if (!retry) {
+    retry = loadFeature('jquery').then(
+      () => undefined,
+      error => console.error('solara: the jquery chunk did not load, so widgets that use jQuery fail', error)
+    );
+  }
+  return retry;
 }
 
 export default $;

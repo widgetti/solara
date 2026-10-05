@@ -961,3 +961,41 @@ def test_jquery(page_session: playwright.sync_api.Page, solara_server, solara_ap
     assert len(server_warnings) == 1
     assert server_warnings[0].startswith("A widget of the page uses the frontend feature 'jquery'")
     assert 'Add "+jquery" to --frontend (SOLARA_FRONTEND) to load it, for example --frontend=minimal,+jquery.' in server_warnings[0]
+
+
+def test_full_jquery_request_fails(page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, recorder, frontend_setting, caplog):
+    # the preloaded jquery chunk fails once (404): jQuery never loads on first use, so the widget manager loads it again
+    # before it makes the first widget, and every view.$el is still a real jQuery object
+    frontend_setting("full")
+    failed: List[str] = []
+
+    def fail_once(route: playwright.sync_api.Route):
+        if failed:
+            route.continue_()
+        else:
+            failed.append(route.request.url)
+            route.fulfill(status=404, body="not found")
+
+    jquery_url = re.compile(r".*/solara-vuetify-app\d\.jquery(\.min)?\.js$")
+    page_session.route(jquery_url, fail_once)
+    unroute = _route_page(page_session, solara_server, _add_modules(JQUERY_AMD_MODULES))
+    try:
+        with caplog.at_level(logging.WARNING, logger="solara.server.frontend"), extra_include_path(HERE), solara_app("frontend_chunks_test:JQueryApp"):
+            page_session.goto(solara_server.base_url)
+            page_session.locator("text=vue view text").wait_for()
+            page_session.locator(".jquery-text >> text=jquery widget").wait_for(timeout=10000)
+            views = page_session.evaluate(JQUERY_VIEWS)
+    finally:
+        unroute()
+        page_session.unroute(jquery_url, fail_once)
+    assert len(failed) == 1
+    assert recorder.chunk_requests().get("jquery") == 2
+    assert views["backbone"] is True
+    assert views["vue"] and all(views["vue"]), views
+    assert views["other"] == [True], views
+    assert recorder.lazy_warnings() == []
+    assert _server_warnings(caplog) == []
+    errors = recorder.errors()
+    assert [error for error in errors if "did not run" in error], errors
+    expected = ("did not run", "404", "Failed to load resource")
+    assert [error for error in errors if not any(text in error for text in expected)] == []
