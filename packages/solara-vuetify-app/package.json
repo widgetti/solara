@@ -29,9 +29,11 @@
   },
   "devDependencies": {
     "css-loader": "^6.9.1",
+    "css-minimizer-webpack-plugin": "^7.0.4",
     "file-loader": "^6.2.0",
     "mini-css-extract-plugin": "^2.7.7",
     "style-loader": "^3.3.4",
+    "terser-webpack-plugin": "^5.6.1",
     "webpack": "^5.90.0",
     "webpack-bundle-analyzer": "^4.10.1",
     "webpack-cli": "^5.1.4"

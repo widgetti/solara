@@ -1,43 +1,98 @@
-import renderMathInElement from 'katex/dist/contrib/auto-render';
-
 import { IRenderMime } from '@jupyterlab/rendermime-interfaces';
 
-import { DescriptionView } from '@jupyter-widgets/controls';
+import { getLoadedFeature, loadFeature } from './features';
 
-let latexDelimiters = [
-    { left: '$$', right: '$$', display: true },
-    { left: '$', right: '$', display: false },
-    { left: '\\(', right: '\\)', display: false },
-    { left: '\\[', right: '\\]', display: true }
+const latexDelimiters = [
+  { left: '$$', right: '$$', display: true },
+  { left: '$', right: '$', display: false },
+  { left: '\\(', right: '\\)', display: false },
+  { left: '\\[', right: '\\]', display: true }
 ];
+// KaTeX's auto-render typesets only between a left and a right delimiter, in one run of sibling
+// text nodes. This finds a superset of that, so a single '$' (e.g. a label 'Price ($)') does not load KaTeX.
+// It takes linear time: a regex such as /\\\([\s\S]*?\\\)/ scans to the end for each unclosed delimiter.
+function hasDelimiterPair(text: string): boolean {
+  const dollar = text.indexOf('$');
+  if (dollar !== -1 && text.indexOf('$', dollar + 1) !== -1) {
+    return true;
+  }
+  for (const [left, right] of [
+    ['\\(', '\\)'],
+    ['\\[', '\\]']
+  ]) {
+    const start = text.indexOf(left);
+    if (start !== -1 && text.indexOf(right, start + left.length) !== -1) {
+      return true;
+    }
+  }
+  return false;
+}
+// the tags KaTeX's auto-render skips
+const ignoredTags = new Set(['SCRIPT', 'NOSCRIPT', 'STYLE', 'TEXTAREA', 'PRE', 'CODE', 'OPTION', 'TEMPLATE']);
 
-// Override DescriptionView with one that doesn't use MathJax, and instead just uses KatexTypesetter
-DescriptionView.prototype.typeset = function(element: HTMLElement, text?: string): void {
-    this.displayed.then(() => {
-        const widget_manager: any = this.model.widget_manager;
-        const latexTypesetter = widget_manager._rendermime?.latexTypesetter;
-        if (latexTypesetter) {
-          if (text !== void 0) {
-            element.textContent = text;
-          }
-          latexTypesetter.typeset(element);
-        }
-    });
+// the text of node and of the text nodes right after it (auto-render joins those)
+function textRun(node: Node): string {
+  let text = node.textContent || '';
+  for (let sibling = node.nextSibling; sibling && sibling.nodeType === Node.TEXT_NODE; sibling = sibling.nextSibling) {
+    text += sibling.textContent || '';
+  }
+  return text;
+}
+
+function hasMath(node: Node): boolean {
+  const root = node.nodeType === Node.DOCUMENT_NODE ? (node as Document).body : node;
+  if (!root) {
+    return false;
+  }
+  if (root.nodeType === Node.TEXT_NODE) {
+    return hasDelimiterPair(root.textContent || '');
+  }
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  while (walker.nextNode()) {
+    const text = walker.currentNode;
+    const previous = text.previousSibling;
+    if (previous && previous.nodeType === Node.TEXT_NODE) {
+      // part of the run of the text node before it
+      continue;
+    }
+    if (hasDelimiterPair(textRun(text))) {
+      let parent = text.parentElement;
+      while (parent && parent !== root && !ignoredTags.has(parent.tagName)) {
+        parent = parent.parentElement;
+      }
+      if (!parent || parent === root) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/** The KaTeX chunk: {katex, renderMathInElement}. */
+export function loadKatex(): Promise<any> {
+  return loadFeature('katex');
+}
+
+function typeset(node: HTMLElement | Document): void {
+  const chunk = getLoadedFeature('katex');
+  if (chunk) {
+    chunk.renderMathInElement(node, { delimiters: latexDelimiters });
+  } else if (hasMath(node)) {
+    // load KaTeX only for text with a math delimiter: DescriptionView typesets
+    // every description (e.g. every slider label)
+    loadKatex().then(chunk => chunk.renderMathInElement(node, { delimiters: latexDelimiters }));
+  }
 }
 
 export class KatexTypesetter implements IRenderMime.ILatexTypesetter {
-    /**
-     * Typeset the math in a node.
-     */
-    typeset(node: HTMLElement): void {
-        renderMathInElement(node, {
-            delimiters: latexDelimiters
-        });
-    }
+  /**
+   * Typeset the math in a node.
+   */
+  typeset(node: HTMLElement): void {
+    typeset(node);
   }
+}
 
 export function renderKatex(): void {
-    renderMathInElement(document, {
-        delimiters: latexDelimiters,
-    });
+  typeset(document);
 }

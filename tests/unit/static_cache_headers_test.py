@@ -15,7 +15,7 @@ import solara.server.settings
 import solara.server.starlette
 from solara.server import server
 from solara.server.app import AppScript
-from solara.server.starlette import StaticAssets, StaticFilesOptionalAuth, StaticNbFiles, StaticPublic, immutable_cache_control
+from solara.server.starlette import StaticAssets, StaticCdn, StaticFilesOptionalAuth, StaticNbFiles, StaticPublic, immutable_cache_control
 
 CONTENT = b"console.log('hi')"
 DIGEST = hashlib.md5(CONTENT).hexdigest()
@@ -208,3 +208,18 @@ def test_page_fetches_the_theme_css_from_immutable_urls(no_kernel_context, tmp_p
     for url in urls.values():
         assert "?v=" in url
         assert cache_control(client, url) == IMMUTABLE
+
+
+@pytest.mark.parametrize(
+    "path, sep, expected",
+    [
+        ("@widgetti/solara-vuetify3-app@5.2.0/dist/main8.css", "/", True),
+        # Windows: StaticFiles.get_path returns an OS path
+        ("@widgetti\\solara-vuetify3-app@5.2.0\\dist\\main8.css", "\\", True),
+        ("requirejs@2.3.6\\require.js", "\\", True),
+        ("pkg@^1\\index.js", "\\", False),
+        ("pkg@1.2\\index.js", "\\", False),
+    ],
+)
+def test_cdn_proxy_exact_version_os_paths(path: str, sep: str, expected: bool):
+    assert StaticCdn._pins_exact_version(path, sep) is expected

@@ -101,6 +101,57 @@ By default, solara runs in development mode. This means, it will:
 
 To disabled all of these option, pass the `--production` flag, or set the environment variable `SOLARA_MODE=production`.
 
+## Frontend features
+
+The page that the Solara server sends to the browser loads the frontend code in parts, called features.
+By default, the page preloads all features (the `full` preset), so every widget renders at once.
+If your app does not use some features, you can leave them out, and the page loads faster.
+
+Use the `--frontend` option, the `SOLARA_FRONTEND` environment variable, or `solara.server.settings.main.frontend`.
+The value is a preset, `full` or `minimal`, followed by `+feature` or `-feature`:
+
+```bash
+# everything, except the mermaid diagrams
+$ solara run sol.py --frontend=full,-mermaid
+# only Vue, Vuetify and the widget core, plus math rendering
+$ SOLARA_FRONTEND=minimal,+katex solara run sol.py
+```
+
+The features are:
+
+| Feature | What it gives |
+| - | - |
+| `vuetify` | Vuetify. Always on, and so is `mdi`, which it needs. Roboto and Vuetify's CSS come with `vuetify`; add `-roboto` to use your own font, and `-vuetify-css` to use your own Vuetify CSS. |
+| `vuetify-css` | Vuetify's stylesheet. Comes with `vuetify`; add `-vuetify-css` to use your own Vuetify CSS. |
+| `mdi` | The Material Design Icons font (`mdi-*` icons). |
+| `material-icons` | The Material Icons font. |
+| `roboto` | The Roboto font. Comes with `vuetify`; add `-roboto` to use your own font. |
+| `font-awesome` | The Font Awesome icons (replaces `SOLARA_ASSETS_FONTAWESOME_ENABLED`, which still works). |
+| `jupyter-controls` | The ipywidgets controls (`IntSlider`, `Button`, ...). Needs `jupyter-css`. |
+| `output-widget` | The ipywidgets `Output` widget. Needs `jupyter-css`. |
+| `jupyter-css` | The CSS of the ipywidgets controls. |
+| `katex` | Math rendering (KaTeX), for example in `solara.Markdown`. |
+| `mermaid` | Mermaid diagrams in `solara.Markdown`. The page never preloads it: when it is on, it loads when the first `solara.Markdown` mounts. |
+| `vue-sfc` | The full Vue single-file-component compiler of ipyvue, for templates with `<script setup>`, `<style scoped>` or `lang="ts"`. Vue 3 only. |
+
+The `minimal` preset has none of these features, except `vuetify`, `mdi`, and the `roboto` and `vuetify-css` that come with `vuetify` (unless you add `-roboto` or `-vuetify-css`). Vue, Vuetify, the widget core and the notebook extensions are always on.
+
+A feature that the page does not preload still works: the browser loads it the first time a widget needs it.
+That first render is slower, so the server logs a warning (once per feature) that names the flag to add, for example `--frontend=minimal,+jupyter-controls`.
+The browser console shows the same warning.
+With `SOLARA_DEFAULT_CONTAINER=Fragment`, `minimal` loads `jupyter-controls` the first time a component renders more than one element without a container, because reacton then wraps those elements in its `Fragment`, an ipywidgets `VBox`.
+The fonts and icon sets are an exception: the browser never loads `material-icons` or `font-awesome` on demand, and nothing warns.
+Without them, those icons do not show, so add them when your app uses them.
+Vuetify's text styles use the Roboto font, so Roboto comes with `vuetify`.
+Add `-roboto` to use your own font, for example `--frontend=minimal,-roboto`.
+Vuetify's stylesheet (`vuetify-css`) also comes with `vuetify`.
+Use `-vuetify-css` when you ship your own Vuetify CSS (for example built from Vuetify's SASS) in `assets/`, for example `--frontend=full,-vuetify-css`.
+Vuetify still adds the stylesheet of its theme colors from JavaScript; `-vuetify-css` does not remove that one.
+On Vue 3, ipyvuetify 3.0.0 adds its own copy of Vuetify's CSS to the page, which `-vuetify-css` does not remove either.
+
+This setting only applies to the Solara server; Jupyter (notebook, lab, Voila) always loads everything.
+A page that is open keeps the features it loaded with, also after a hot reload that changes the setting; refresh the page to use the new setting.
+
 ## Telemetry
 
 Solara uses Mixpanel to collect usage of the solara server. We track when a server is started, stopped and a daily report of the number of unique users and connections made. To opt out of mixpanel telemetry, either:

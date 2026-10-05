@@ -1,10 +1,12 @@
+import bisect
 import hashlib
 import html
 import logging
+import re
 import textwrap
 import traceback
 import warnings
-from typing import Any, Callable, Dict, List, Optional, Union, cast
+from typing import Any, Callable, Dict, Iterator, List, Optional, Union, cast
 import typing
 
 import ipyvuetify as v
@@ -21,6 +23,7 @@ import reacton.core
 
 import solara
 import solara.components.applayout
+from solara.server import frontend
 
 try:
     import pygments
@@ -85,6 +88,78 @@ def _run_solara(code, cleanups):
     )
 
 
+# KaTeX's auto-render skips <pre> and <code>, and typesets only between a left and a right
+# delimiter in the same text. These checks find a superset of that, so a single "$" (for
+# example a shell prompt in a code block, or a price) does not load KaTeX.
+# Markdown can come from users (e.g. a chat app), so no step may take quadratic time: a regex such as
+# <(pre|code)>.*?</\1> or \\(.*?\\) scans to the end for each unclosed tag or delimiter.
+_CODE_OPEN = re.compile(r"<(pre|code)\b", re.I)
+_CODE_CLOSE = re.compile(r"</(pre|code)\s*>", re.I)
+
+
+def _without_code(text: str) -> str:
+    """text without its <pre> and <code> elements: each opening tag up to the first closing tag with its name."""
+    closes: Dict[str, List[int]] = {"pre": [], "code": []}
+    close_ends: Dict[str, List[int]] = {"pre": [], "code": []}
+    for match in _CODE_CLOSE.finditer(text):
+        closes[match.group(1).lower()].append(match.start())
+        close_ends[match.group(1).lower()].append(match.end())
+    if not closes["pre"] and not closes["code"]:
+        return text
+    parts = []
+    position = 0
+    for match in _CODE_OPEN.finditer(text):
+        if match.start() < position:
+            continue
+        end = text.find(">", match.end())
+        if end == -1:
+            # no more tags at all
+            break
+        name = match.group(1).lower()
+        index = bisect.bisect_left(closes[name], end + 1)
+        if index == len(closes[name]):
+            # not closed: the text stays
+            continue
+        parts.append(text[position : match.start()])
+        position = close_ends[name][index]
+    parts.append(text[position:])
+    return "".join(parts)
+
+
+def _text_parts(text: str) -> Iterator[str]:
+    """The text between the tags."""
+    position = 0
+    while True:
+        start = text.find("<", position)
+        end = text.find(">", start + 1) if start != -1 else -1
+        if end == -1:
+            yield text[position:]
+            return
+        yield text[position:start]
+        position = end + 1
+
+
+def _has_delimiter_pair(text: str) -> bool:
+    if text.count("$") >= 2:
+        return True
+    for left, right in (("\\(", "\\)"), ("\\[", "\\]")):
+        start = text.find(left)
+        if start != -1 and text.find(right, start + len(left)) != -1:
+            return True
+    return False
+
+
+def _has_math(html_text: str) -> bool:
+    # the template compiler of Vue decodes character references, so &#36; is a "$" for KaTeX
+    if "$" not in html_text and "\\(" not in html_text and "\\[" not in html_text and "&" not in html_text:
+        return False
+    return any(_has_delimiter_pair(html.unescape(part)) for part in _text_parts(_without_code(html_text)))
+
+
+def _has_mermaid(html: str) -> bool:
+    return 'class="mermaid"' in html
+
+
 def _markdown_template(
     html,
     style="",
@@ -94,6 +169,13 @@ def _markdown_template(
 
     if not solara.settings.assets.proxy:
         cdn = solara.settings.assets.cdn
+    has_math = _has_math(html)
+    has_mermaid = _has_mermaid(html)
+    # on a Solara server, without the feature, the browser loads it on first use: log which flag to add
+    if has_math:
+        frontend.warn_missing("katex", "solara.Markdown with math")
+    if has_mermaid:
+        frontend.warn_missing("mermaid", "solara.Markdown with a mermaid diagram")
 
     template = (
         """
@@ -111,9 +193,21 @@ module.exports = {
         this.cdn = """
         + (rf"'{cdn}'" if cdn is not None else r"null")
         + r""";
+        const hasMath = """
+        + ("true" if has_math else "false")
+        + r""";
+        const hasMermaid = """
+        + ("true" if has_mermaid else "false")
+        + r""";
+        // a Solara server page has KaTeX in its bundle, and loads mermaid as a frontend feature
+        const solaraFeatures = window.solara && typeof window.solara.loadKatex === 'function' ? window.solara : null;
         await this.loadRequire();
-        this.mermaid = await this.loadMermaid();
-        this.mermaid.init();
+        // with the mermaid feature on (or outside a Solara server page) mermaid loads on the first mount,
+        // otherwise only when there is a diagram
+        if (!solaraFeatures || hasMermaid || !solaraFeatures.isEnabled || solaraFeatures.isEnabled('mermaid')) {
+            this.mermaid = solaraFeatures && solaraFeatures.loadMermaid ? await solaraFeatures.loadMermaid() : await this.loadMermaid();
+            this.mermaid.init();
+        }
         this.latexSettings = {
                 delimiters: [
                     {left: "$$", right: "$$", display: true},
@@ -123,10 +217,28 @@ module.exports = {
                 ],
                 ignoredClasses: ["solara-markdown-output", "jupyter-widgets"]
             };
+        // the same order as before the frontend features: a renderMathInElement that is already there (from an
+        // earlier Markdown or from user code), then MathJax 2 when the page loaded it, and only then KaTeX
         if (window.renderMathInElement) {
             window.renderMathInElement(this.$el, this.latexSettings);
         } else if (window.MathJax && MathJax.Hub) {
             MathJax.Hub.Queue(['Typeset', MathJax.Hub, this.$el]);
+        } else if (solaraFeatures) {
+            // the KaTeX of the bundle: preloaded with the katex feature, otherwise a lazy load only for text with math
+            if (hasMath || !solaraFeatures.isEnabled || solaraFeatures.isEnabled('katex')) {
+                const katexChunk = await solaraFeatures.loadKatex();
+                this.katexCssLast();
+                this.renderMathInElement = katexChunk.renderMathInElement;
+                // as before, the first Markdown makes KaTeX available to user code
+                if (!window.renderMathInElement) {
+                    window.renderMathInElement = katexChunk.renderMathInElement;
+                }
+                if (window.requirejs && !requirejs.defined('katex') && !requirejs.specified('katex')) {
+                    define('katex', [], () => katexChunk.katex);
+                }
+                // always, as before the frontend features: hasMath can miss math that only the browser sees
+                this.renderMathInElement(this.$el, this.latexSettings);
+            }
         } else {
             window.renderMathInElement = await this.loadKatexExt();
             window.renderMathInElement(this.$el, this.latexSettings);
@@ -159,6 +271,30 @@ module.exports = {
             } else {
                 console.log("href", href, "is not a local link")
             }
+        },
+        katexCssLast() {
+            // Append KaTeX's CSS to the end of <head> once, as the first Markdown did before the frontend features.
+            // KaTeX's rules must win over the rules of style.css with the same specificity, such as
+            // `.jp-RenderedHTMLCommon svg {height: auto}`, or the svg parts of math (like the radical of \sqrt) collapse.
+            if (document.head.querySelector('link[data-solara-katex-css-last]')) {
+                return;
+            }
+            const chunkLink = [...document.querySelectorAll('link[rel=stylesheet]')].find(link => /main\d\.katex\.css$/.test(link.href));
+            let href = chunkLink && chunkLink.href;
+            if (!href) {
+                // A custom template can replace the header block without super(), and with it the chunk's CSS link.
+                // The chunk CSS sits next to the app bundle, whose <script> is outside that block.
+                const core = [...document.querySelectorAll('script[src]')]
+                    .map(script => /^(.*\/)solara-vuetify-app(\d)(?:\.min)?\.js(?:[?#].*)?$/.exec(script.src))
+                    .find(match => match);
+                // as before the frontend features: the bundle has the same KaTeX version
+                href = core ? `${core[1]}main${core[2]}.katex.css` : `${this.getCdn()}/katex@0.16.9/dist/katex.min.css`;
+            }
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = href;
+            link.setAttribute('data-solara-katex-css-last', '');
+            document.head.appendChild(link);
         },
         async loadKatex() {
             require.config({
@@ -230,11 +366,16 @@ module.exports = {
     },
     updated() {
         // if the html gets update, re-run mermaid
-        this.mermaid.init();
+        if (this.mermaid) {
+            this.mermaid.init();
+        }
 
+        // MathJax first, as before the frontend features
         if(window.MathJax && MathJax.Hub) {
             MathJax.Hub.Queue(['Typeset', MathJax.Hub, this.$el]);
-        } else {
+        } else if (this.renderMathInElement) {
+            this.renderMathInElement(this.$el, this.latexSettings);
+        } else if (window.renderMathInElement) {
             window.renderMathInElement(this.$el, this.latexSettings);
         }
     }

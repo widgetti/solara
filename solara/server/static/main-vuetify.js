@@ -1,4 +1,16 @@
 
+// Frontend features (solara run --frontend): which parts of the bundle the page preloaded.
+// Without the feature API (an older bundle or template) every feature counts as enabled.
+function solaraFeatureEnabled(name) {
+    if (window.solara && typeof solara.isEnabled === 'function') {
+        return solara.isEnabled(name);
+    }
+    if (window.solaraFrontend) {
+        return solaraFrontend.features.includes(name);
+    }
+    return true;
+}
+
 var jupyterWidgetMountPoint = {
     data() {
         return {
@@ -61,6 +73,15 @@ function widgetThemes() {
     );
 }
 
+// The features this page preloaded, sent with run: the server keeps building widgets for this page,
+// also when a hot reload changes the frontend setting. null: the server uses its setting.
+function pageFrontend() {
+    if (!window.solaraFrontend) {
+        return null;
+    }
+    return { spec: solaraFrontend.spec, features: solaraFrontend.features };
+}
+
 async function registerVueComponents(vueComponent, widgetView) {
     const app = vueComponent.$.appContext.app;
     await loadWidgetModule('jupyter-vue', jupyterVue =>
@@ -72,6 +93,55 @@ async function registerVueComponents(vueComponent, widgetView) {
         );
     }
 }
+
+let appAmdModulesDefined = false;
+
+// AMD modules for the widget libraries (jupyter-vue, jupyter-vuetify nodeps.js). Called by the
+// template right after requirejs.config, and again by solaraInit for templates that do not.
+function defineAppAmdModules() {
+    if (appAmdModulesDefined) {
+        return;
+    }
+    appAmdModulesDefined = true;
+    define("vue", [], () => Vue);
+    define("vuetify", [], () => Vuetify);
+    if (typeof vuetifyPlugin !== "undefined") {
+        define("solara-vuetify-plugin", [], () => ({ vuetifyPlugin }));
+    }
+}
+
+// A feature that was not preloaded loaded on first use: tell the server (on the solara.control
+// comm), so it logs which flag to add. Queued until the widget manager (and its comm) exists.
+const lazyLoadQueue = [];
+let sendLazyLoad = null;
+
+function reportLazyLoad(feature) {
+    if (sendLazyLoad) {
+        sendLazyLoad(feature);
+    } else {
+        lazyLoadQueue.push(feature);
+    }
+}
+
+if (window.solara && typeof solara.onLazyLoad === 'function') {
+    solara.onLazyLoad(reportLazyLoad);
+}
+
+// jupyter-vue (ipyvue >= 3.1) has its SFC compiler in a chunk, and tells when it needs it
+let vueSfcWarned = false;
+window.addEventListener('jupyter-vue:load-chunk', (event) => {
+    const chunk = event.detail && event.detail.chunk;
+    if (chunk !== 'vue-sfc' || solaraFeatureEnabled('vue-sfc') || vueSfcWarned) {
+        return;
+    }
+    vueSfcWarned = true;
+    console.warn(
+        'solara: frontend feature "vue-sfc" was not preloaded, it loads now' +
+        (event.detail.reason ? ` (${event.detail.reason})` : '') +
+        '. Add "+vue-sfc" to --frontend (SOLARA_FRONTEND) to preload it.'
+    );
+    reportLazyLoad('vue-sfc');
+});
 
 function loadWidgetModule(name, callback) {
     return new Promise(resolve => {
@@ -154,11 +224,7 @@ function generateUuid() {
 async function solaraInit(mountId, appName) {
     console.log('solara init', mountId, appName);
     mountId = mountId || 'content';
-    define("vue", [], () => Vue);
-    define("vuetify", [], () => Vuetify);
-    if (typeof vuetifyPlugin !== "undefined") {
-        define("solara-vuetify-plugin", [], () => ({ vuetifyPlugin }));
-    }
+    defineAppAmdModules();
     cookies = getCookiesMap(document.cookie);
     const searchParams = new URLSearchParams(window.location.search);
     let kernelId = searchParams.get('kernelid') || generateUuid()
@@ -434,7 +500,7 @@ async function solaraInit(mountId, appName) {
             } else {
                 // pushState routing makes the boot-time path stale - recompute from the live URL now
                 const path = window.location.pathname.slice(solara.rootPath.length) + window.location.search;
-                modelId = await manager.run(appName, { path, dark: inDarkMode(), themes: widgetThemes() });
+                modelId = await manager.run(appName, { path, dark: inDarkMode(), themes: widgetThemes(), frontend: pageFrontend() });
             }
             if (superseded()) {
                 // the socket dropped again (or a newer cycle took over) during the rebuild -
@@ -612,6 +678,19 @@ async function solaraInit(mountId, appName) {
     });
 
     let widgetManager = makeWidgetManager();
+    sendLazyLoad = (feature) => {
+        // the control comm of the current widget manager (it changes on a soft-remount)
+        const comm = widgetManager && widgetManager.controlComm;
+        if (!comm) {
+            return;
+        }
+        try {
+            comm.send({ method: 'frontend-lazy-load', feature });
+        } catch (e) {
+            console.warn('solara: could not report the lazy load of', feature, e);
+        }
+    };
+    lazyLoadQueue.splice(0).forEach(sendLazyLoad);
     // it seems if we attach this to early, it will not be called
     app.$data.loading_text = 'Loading app';
     const path = window.location.pathname.slice(solara.rootPath.length) + window.location.search;
@@ -623,11 +702,13 @@ async function solaraInit(mountId, appName) {
     if (kernelId && widgetModelId) {
         await widgetManager.fetchAll();
     } else {
-        widgetModelId = await widgetManager.run(appName, {path, dark: inDarkMode(), themes: widgetThemes()});
+        widgetModelId = await widgetManager.run(appName, {path, dark: inDarkMode(), themes: widgetThemes(), frontend: pageFrontend()});
     }
     await solaraMount(widgetManager, mountId, widgetModelId);
     viewMounted = true;
     skipReconnectedCheck = false;
+    // renders math in the whole page; without the katex feature it loads KaTeX only when the
+    // page has a math delimiter
     solara.renderKatex();
 }
 
