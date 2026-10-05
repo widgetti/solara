@@ -46,7 +46,7 @@ execnet==2.1.2
 executing==2.2.1
 fakeredis==2.39.0
 fastjsonschema==2.22.2
-filelock==4.0.10
+filelock==4.0.11
 Flask==3.1.3
 flask-sock==0.7.0
 folium==0.20.0
@@ -119,7 +119,7 @@ mistune==3.3.4
 mkdocs-pycafe==0.3.0
 mypy==2.4.0
 mypy_extensions==1.1.0
-narwhals==2.26.0
+narwhals==2.27.0
 nbclassic==1.3.3
 nbclient==0.11.0
 nbconvert==7.17.1
@@ -231,7 +231,7 @@ virtualenv==21.14.5
 voila==0.5.13
 watchdog==6.0.0
 watchfiles==1.3.0
-wcwidth==0.9.1
+wcwidth==0.9.2
 webcolors==25.10.0
 webencodings==0.6.1
 websocket-client==1.9.2
