@@ -127,9 +127,10 @@ The features are:
 | `material-icons` | The Material Icons font. |
 | `roboto` | The Roboto font. Comes with `vuetify`; add `-roboto` to use your own font. |
 | `font-awesome` | The Font Awesome icons (replaces `SOLARA_ASSETS_FONTAWESOME_ENABLED`, which still works). |
+| `jquery` | jQuery, for widgets that use it: the ipywidgets controls, the `Output` widget, and widgets that use `view.$el`, such as anywidget widgets (also `solara.FigurePlotly` with plotly 6 or later) and pythreejs. It never loads on first use (see below). |
 | `lumino` | The Lumino widgets beyond `Widget` and `Panel` (for example `DockPanel` and `TabBar`), and the requirejs modules `@lumino/widgets`, `@lumino/algorithm`, `@lumino/commands` and `@lumino/virtualdom` (also as `@phosphor/*`) for widgets of notebook extensions. |
-| `jupyter-controls` | The ipywidgets controls (`IntSlider`, `Button`, ...). Needs `jupyter-css` and `lumino`. |
-| `output-widget` | The ipywidgets `Output` widget, and the renderers of its outputs (HTML, Markdown, LaTeX, images, JavaScript). Needs `jupyter-css` and `lumino`. |
+| `jupyter-controls` | The ipywidgets controls (`IntSlider`, `Button`, ...). Needs `jupyter-css`, `lumino` and `jquery`. |
+| `output-widget` | The ipywidgets `Output` widget, and the renderers of its outputs (HTML, Markdown, LaTeX, images, JavaScript). Needs `jupyter-css`, `lumino` and `jquery`. |
 | `jupyter-css` | The CSS of the ipywidgets controls. |
 | `katex` | Math rendering (KaTeX), for example in `solara.Markdown`. |
 | `mermaid` | Mermaid diagrams in `solara.Markdown`. The page never preloads it: when it is on, it loads when the first `solara.Markdown` mounts. |
@@ -145,6 +146,10 @@ A widget that asks requirejs for a module of `lumino` (for example `@phosphor/wi
 The requirejs modules `@lumino/signaling`, `@lumino/domutils` (also as `@phosphor/*`) and `@jupyterlab/coreutils` are always there.
 The renderers of the `Output` widget load with `output-widget`.
 Before that, a call to a method of the page's `RenderMimeRegistry` that renders (for example `createRenderer`) throws an error and starts the load.
+`jquery` is an exception: the browser never loads it on first use, because a widget uses jQuery without asking for it first.
+In `minimal`, a widget that uses jQuery fails: the browser console shows an error that names `+jquery` (with ipywidgets 8, the widget shows it too), and the server logs a warning.
+Widgets of anywidget (also `solara.FigurePlotly` with plotly 6 or later), pythreejs and other widgets that use `view.$el` need `+jquery`, for example `--frontend=minimal,+jquery`.
+The ipywidgets controls and the `Output` widget bring `jquery` along, so they work without `+jquery`.
 The fonts and icon sets are an exception: the browser never loads `material-icons` or `font-awesome` on demand, and nothing warns.
 Without them, those icons do not show, so add them when your app uses them.
 Vuetify's text styles use the Roboto font, so Roboto comes with `vuetify`.

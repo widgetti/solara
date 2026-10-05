@@ -126,7 +126,7 @@ define("solara-test-signaling", ["@jupyter-widgets/base", "@phosphor/signaling",
     class SignalingView extends base.DOMWidgetView {
         render() {
             const signal = new signaling.Signal({});
-            signal.connect((sender, value) => this.$el.empty().append('<span class="signaling-text">signal ' + value + "</span>"));
+            signal.connect((sender, value) => (this.el.innerHTML = '<span class="signaling-text">signal ' + value + "</span>"));
             signal.emit(this.model.get("value"));
             this.el.dataset.domutils = typeof domutils.ElementExt.hitTest;
             this.el.dataset.coreutils = typeof coreutils.URLExt.join;
@@ -169,6 +169,35 @@ class LuminoWidget(ipywidgets.DOMWidget):
     _view_name = traitlets.Unicode("LuminoView").tag(sync=True)
     _view_module = traitlets.Unicode("solara-test-lumino").tag(sync=True)
     _view_module_version = traitlets.Unicode("1.0.0").tag(sync=True)
+
+
+# a widget whose view is not Vue based and uses jQuery on view.$el, as anywidget and pythreejs do
+JQUERY_AMD_MODULES = """
+<script>
+define("solara-test-jquery", ["@jupyter-widgets/base"], function (base) {
+    class JQueryView extends base.DOMWidgetView {
+        render() {
+            this.$el.empty().append('<span class="jquery-text">jquery ' + this.model.get("value") + "</span>");
+            this.$el.find(".jquery-text").css("font-weight", "bold");
+        }
+    }
+    return { JQueryView: JQueryView };
+});
+</script>
+"""
+
+
+class JQueryWidget(ipywidgets.DOMWidget):
+    _view_name = traitlets.Unicode("JQueryView").tag(sync=True)
+    _view_module = traitlets.Unicode("solara-test-jquery").tag(sync=True)
+    _view_module_version = traitlets.Unicode("1.0.0").tag(sync=True)
+    value = traitlets.Unicode("widget").tag(sync=True)
+
+
+@solara.component
+def JQueryApp():
+    solara.Text("vue view text")
+    JQueryWidget.element(value="widget")
 
 
 @solara.component
@@ -300,7 +329,7 @@ def test_full_preloads_sync(page_session: playwright.sync_api.Page, solara_serve
     finally:
         page_session.unroute(is_page, add_init_probe)
     expected = _expected_chunks()
-    assert set(expected) >= {"katex", "jupyter-controls", "output-widget", "sanitizer"}
+    assert set(expected) >= {"katex", "jquery", "lumino", "jupyter-controls", "output-widget", "sanitizer"}
     if vue3:
         assert "vuetify" in expected
     # every preloaded chunk is requested once, and nothing loads lazily (no css-only stubs)
@@ -346,9 +375,15 @@ def test_minimal_lazy_controls(page_session: playwright.sync_api.Page, solara_se
                 };
             }"""
         )
+        # the slider works: ipywidgets 7 uses jQuery UI's slider (it needs jQuery when its module runs), 8 uses noUiSlider
+        page_session.locator(".ui-slider-handle" if ipywidgets_major == 7 else ".noUi-handle").focus()
+        page_session.keyboard.press("ArrowRight")
+        page_session.locator(".widget-readout >> text=4").wait_for()
     assert css_position == {"count": 1, "atSlot": True, "beforeStyle": True}
     chunks = recorder.chunk_requests()
     assert chunks.get("jupyter-controls") == 1
+    # the controls use jQuery: it loads with them, without a warning of its own
+    assert chunks.get("jquery") == 1
     assert "katex" not in chunks
     assert "output-widget" not in chunks
     assert recorder.lazy_warnings() == ["jupyter-controls"]
@@ -722,10 +757,16 @@ def _route_page(page_session: playwright.sync_api.Page, solara_server, change):
     return lambda: page_session.unroute(is_page, handle)
 
 
-def _add_lumino_modules(html: str) -> str:
-    # at the end of the page: after require.js, before the kernel (which connects asynchronously) asks for them
-    assert html.rstrip().endswith("</html>")
-    return html.rstrip()[: -len("</html>")] + LUMINO_AMD_MODULES + "</html>"
+def _add_modules(scripts: str):
+    def add(html: str) -> str:
+        # at the end of the page: after require.js, before the kernel (which connects asynchronously) asks for them
+        assert html.rstrip().endswith("</html>")
+        return html.rstrip()[: -len("</html>")] + scripts + "</html>"
+
+    return add
+
+
+_add_lumino_modules = _add_modules(LUMINO_AMD_MODULES)
 
 
 def _check_lumino_widget(page: playwright.sync_api.Page):
@@ -789,13 +830,14 @@ def test_tab(page_session: playwright.sync_api.Page, solara_server, solara_app, 
         _check_tab(page_session)
     chunks = recorder.chunk_requests()
     assert chunks.get("lumino") == 1
+    assert chunks.get("jquery") == 1
     assert chunks.get("jupyter-controls") == 1
     server_warnings = _server_warnings(caplog)
     if preset == "full":
         assert recorder.lazy_warnings() == []
         assert server_warnings == []
     else:
-        # the controls bring lumino along: the warning names jupyter-controls, not lumino
+        # the controls bring lumino and jquery along: the warning names jupyter-controls, not lumino or jquery
         assert recorder.lazy_warnings() == ["jupyter-controls"]
         assert len(server_warnings) == 1
         assert 'Add "+jupyter-controls" to --frontend' in server_warnings[0]
@@ -837,3 +879,81 @@ def test_full_lumino_request_fails(page_session: playwright.sync_api.Page, solar
     assert [error for error in errors if "did not run" in error], errors
     expected = ("did not run", "404", "Failed to load resource")
     assert [error for error in errors if not any(text in error for text in expected)] == []
+
+
+# for each view of the page: whether its $el is a real jQuery object, split into the views of Vue widgets and the others
+JQUERY_VIEWS = """async () => {
+    const jQuery = solara.getLoadedFeature("jquery").jQuery;
+    const result = { backbone: window.Backbone.$ === jQuery, vue: [], other: [] };
+    for (const modelPromise of Object.values(solara.debug.widgetManager()._models)) {
+        const model = await modelPromise;
+        for (const viewPromise of Object.values(model.views || {})) {
+            const view = await viewPromise;
+            const module = model.get("_view_module");
+            if (!view.$el) {
+                continue; // not a DOM view (the LayoutView of the widget)
+            }
+            const real = typeof view.$el.jquery === "string" && view.$el instanceof jQuery;
+            (module === "jupyter-vue" || module === "jupyter-vuetify" ? result.vue : result.other).push(real);
+        }
+    }
+    return result;
+}"""
+
+
+def _wait_for(page: playwright.sync_api.Page, condition, what: str, timeout_ms: int = 10000):
+    for _ in range(timeout_ms // 100):
+        if condition():
+            return
+        page.wait_for_timeout(100)
+    raise AssertionError(f"timeout waiting for {what}")
+
+
+@pytest.mark.parametrize("preset", ["full", "minimal,+jquery", "minimal"])
+def test_jquery(page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, recorder, frontend_setting, caplog, preset):
+    # jQuery never loads on first use. With it (full, +jquery), the jquery chunk runs before the first view, so every
+    # view.$el is a real jQuery object, as before. Without it, a widget that uses jQuery shows an error that names +jquery.
+    frontend_setting(preset)
+    unroute = _route_page(page_session, solara_server, _add_modules(JQUERY_AMD_MODULES))
+    error_view_text = None
+    try:
+        with caplog.at_level(logging.WARNING, logger="solara.server.frontend"), extra_include_path(HERE), solara_app("frontend_chunks_test:JQueryApp"):
+            page_session.goto(solara_server.base_url)
+            page_session.locator("text=vue view text").wait_for()
+            if preset != "minimal":
+                page_session.locator(".jquery-text >> text=jquery widget").wait_for()
+                assert page_session.locator(".jquery-text").evaluate("el => getComputedStyle(el).fontWeight") == "700"
+                views = page_session.evaluate(JQUERY_VIEWS)
+            else:
+                _wait_for(page_session, lambda: _server_warnings(caplog), "the server warning")
+                if ipywidgets_major >= 8:
+                    # the error view of ipywidgets 8 shows the error after a click
+                    page_session.locator(".jupyter-widgets-error-widget").click()
+                    error_view_text = page_session.locator(".jupyter-widgets-error-widget pre").inner_text()
+    finally:
+        unroute()
+    server_warnings = _server_warnings(caplog)
+    assert recorder.lazy_warnings() == []
+    if preset != "minimal":
+        assert views["backbone"] is True
+        assert views["vue"] and all(views["vue"]), views
+        assert views["other"] == [True], views
+        assert recorder.chunk_requests().get("jquery") == 1
+        assert recorder.errors() == []
+        assert server_warnings == []
+        return
+    message = (
+        "solara: this widget uses jQuery (.empty()), which this page does not load. "
+        "Add +jquery to --frontend (SOLARA_FRONTEND), for example --frontend=minimal,+jquery."
+    )
+    assert "jquery" not in recorder.chunk_requests()
+    errors = recorder.errors()
+    # the console shows the error once, next to the errors of ipywidgets ("Could not create a view for model id ...", and
+    # on ipywidgets 7 also "Could not create child view")
+    assert errors.count(message) == 1, errors
+    assert [error for error in errors if error != message and "Could not create" not in error] == []
+    if ipywidgets_major >= 8:
+        assert error_view_text is not None and message in error_view_text
+    assert len(server_warnings) == 1
+    assert server_warnings[0].startswith("A widget of the page uses the frontend feature 'jquery'")
+    assert 'Add "+jquery" to --frontend (SOLARA_FRONTEND) to load it, for example --frontend=minimal,+jquery.' in server_warnings[0]

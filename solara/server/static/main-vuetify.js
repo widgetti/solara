@@ -110,22 +110,34 @@ function defineAppAmdModules() {
     }
 }
 
-// A feature that was not preloaded loaded on first use: tell the server (on the solara.control
-// comm), so it logs which flag to add. module is the requirejs module that asked for it, if any
-// (e.g. '@phosphor/widgets' for lumino). Queued until the widget manager (and its comm) exists.
-const lazyLoadQueue = [];
-let sendLazyLoad = null;
+// A feature that was not preloaded loaded on first use, or a widget used a feature that the page
+// does not load (jquery): tell the server (on the solara.control comm), so it logs which flag to add.
+// Queued until the widget manager (and its comm) exists.
+const controlQueue = [];
+let sendControl = null;
 
-function reportLazyLoad(feature, module) {
-    if (sendLazyLoad) {
-        sendLazyLoad(feature, module);
+function sendToServer(message) {
+    if (sendControl) {
+        sendControl(message);
     } else {
-        lazyLoadQueue.push([feature, module]);
+        controlQueue.push(message);
     }
+}
+
+// module is the requirejs module that asked for the feature, if any (e.g. '@phosphor/widgets' for lumino)
+function reportLazyLoad(feature, module) {
+    const message = { method: 'frontend-lazy-load', feature };
+    if (module) {
+        message.module = module;
+    }
+    sendToServer(message);
 }
 
 if (window.solara && typeof solara.onLazyLoad === 'function') {
     solara.onLazyLoad(reportLazyLoad);
+}
+if (window.solara && typeof solara.onMissingFeature === 'function') {
+    solara.onMissingFeature(feature => sendToServer({ method: 'frontend-missing', feature }));
 }
 
 // jupyter-vue (ipyvue >= 3.1) has its SFC compiler in a chunk, and tells when it needs it
@@ -679,23 +691,19 @@ async function solaraInit(mountId, appName) {
     });
 
     let widgetManager = makeWidgetManager();
-    sendLazyLoad = (feature, module) => {
+    sendControl = (message) => {
         // the control comm of the current widget manager (it changes on a soft-remount)
         const comm = widgetManager && widgetManager.controlComm;
         if (!comm) {
             return;
         }
         try {
-            const message = { method: 'frontend-lazy-load', feature };
-            if (module) {
-                message.module = module;
-            }
             comm.send(message);
         } catch (e) {
-            console.warn('solara: could not report the lazy load of', feature, e);
+            console.warn('solara: could not report', message, e);
         }
     };
-    lazyLoadQueue.splice(0).forEach(([feature, module]) => sendLazyLoad(feature, module));
+    controlQueue.splice(0).forEach(sendControl);
     // it seems if we attach this to early, it will not be called
     app.$data.loading_text = 'Loading app';
     const path = window.location.pathname.slice(solara.rootPath.length) + window.location.search;

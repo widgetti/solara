@@ -33,7 +33,7 @@ def test_asset_urls(vue3, ipywidgets_major, production):
     assert [css.feature for css in assets.head_first_css] == ([] if vue3 else ["vuetify-css"])
     assert [css.feature for css in assets.head_css] == (["vuetify-css"] if vue3 else []) + ["katex", "jupyter-css"]
     assert [css.feature for css in assets.body_css] == ["mdi", "material-icons", "roboto"]
-    expected_chunks = (["vuetify"] if vue3 else []) + ["katex", "lumino", "sanitizer", "jupyter-controls", "output-widget"]
+    expected_chunks = (["vuetify"] if vue3 else []) + ["katex", "jquery", "lumino", "sanitizer", "jupyter-controls", "output-widget"]
     assert assets.chunk_names == expected_chunks
     assert assets.chunk_js == [f"{base}solara-vuetify-app{ipywidgets_major}.{name}{suffix}" for name in expected_chunks]
 
@@ -48,8 +48,8 @@ def test_asset_urls(vue3, ipywidgets_major, production):
 
     controls = frontend.effective(frontend.parse("minimal,+jupyter-controls"), vue3=vue3)
     assets = frontend_assets.page_assets(vue3, ipywidgets_major, production, CDN, controls)
-    # the controls use Lumino of the lumino chunk, which runs before them
-    assert assets.chunk_names == (["vuetify"] if vue3 else []) + ["lumino", "sanitizer", "jupyter-controls"]
+    # the controls use jQuery and Lumino of the jquery and lumino chunks, which run before them
+    assert assets.chunk_names == (["vuetify"] if vue3 else []) + ["jquery", "lumino", "sanitizer", "jupyter-controls"]
     assert [css.feature for css in assets.head_css if css.url] == (["vuetify-css"] if vue3 else []) + ["jupyter-css"]
 
     # Vuetify's icons need the mdi font, and the Roboto font and Vuetify's CSS come with it
@@ -180,14 +180,31 @@ LUMINO_DOCK_MARKER = "lm-DockPanel"
 @pytest.mark.parametrize("ipywidgets_major", [7, 8])
 @pytest.mark.parametrize("production", [True, False])
 def test_lumino_out_of_core(vue3, ipywidgets_major, production):
-    # the Lumino widgets beyond Widget and Panel are in the lumino chunk, not in the core; jQuery stays in the core
+    # the Lumino widgets beyond Widget and Panel are in the lumino chunk, not in the core
     dist = _dist(vue3)
     core = (dist / frontend_assets.js_file("core", ipywidgets_major, production)).read_text(encoding="utf8")
     lumino = (dist / frontend_assets.js_file("lumino", ipywidgets_major, production)).read_text(encoding="utf8")
-    assert JQUERY_MARKER in core
     assert LUMINO_DOCK_MARKER not in core
-    assert JQUERY_MARKER not in lumino
     assert LUMINO_DOCK_MARKER in lumino
+
+
+@pytest.mark.parametrize("vue3", [True, False])
+@pytest.mark.parametrize("ipywidgets_major", [7, 8])
+@pytest.mark.parametrize("production", [True, False])
+def test_jquery_out_of_core(vue3, ipywidgets_major, production):
+    # jQuery is only in the jquery chunk; the core has the stand-in that every 'jquery' import gets
+    # (solara-widget-manager/src/jquery.ts), also the imports of the controls and the Output widget
+    dist = _dist(vue3)
+
+    def read(feature: str) -> str:
+        return (dist / frontend_assets.js_file(feature, ipywidgets_major, production)).read_text(encoding="utf8")
+
+    core = read("core")
+    assert JQUERY_MARKER not in core
+    assert "this widget uses jQuery" in core
+    assert JQUERY_MARKER in read("jquery")
+    for feature in ["lumino", "jupyter-controls", "output-widget"]:
+        assert JQUERY_MARKER not in read(feature), feature
 
 
 @pytest.mark.parametrize("ipywidgets_major", [7, 8])

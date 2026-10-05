@@ -97,6 +97,31 @@ function warnLazyLoad(name: string, module?: string): void {
   });
 }
 
+// the features that a widget used, but that the page does not load and that never load on first use (jquery, see ./jquery)
+const missingReported: string[] = [];
+const missingCallbacks: ((name: string) => void)[] = [];
+
+/** Called once per feature that a widget used but the page does not load; also for the ones reported before. */
+export function onMissingFeature(callback: (name: string) => void): void {
+  missingCallbacks.push(callback);
+  missingReported.forEach(name => callback(name));
+}
+
+/** A widget used a feature that the page does not load (the caller shows the error). Reports each feature once. */
+export function reportMissingFeature(name: string): void {
+  if (missingReported.indexOf(name) !== -1) {
+    return;
+  }
+  missingReported.push(name);
+  missingCallbacks.forEach(callback => {
+    try {
+      callback(name);
+    } catch (e) {
+      console.error(e);
+    }
+  });
+}
+
 function load(name: string, warn: boolean, module?: string): Promise<any> {
   let promise = loading.get(name);
   if (promise) {
@@ -190,6 +215,14 @@ registerFeature(
   false,
   require.resolveWeak('./chunks/sanitizer'),
 );
+// jQuery: never loads on first use (see ./jquery), only when the page preloads it or as a requirement of a feature
+registerFeature(
+  'jquery',
+  () => import(/* webpackChunkName: "jquery" */ './chunks/jquery'),
+  [],
+  false,
+  require.resolveWeak('./chunks/jquery'),
+);
 registerFeature(
   'lumino',
   () => import(/* webpackChunkName: "lumino" */ './chunks/lumino'),
@@ -197,18 +230,22 @@ registerFeature(
   false,
   require.resolveWeak('./chunks/lumino'),
 );
-// these chunks load from the lumino chunk (and run after it), so they share its modules
+// These chunks load from the lumino chunk (and run after it), so they share its modules. They also use jQuery
+// (for example jQuery UI's slider in the ipywidgets 7 controls, which needs it when its module runs), so they load
+// only after the jquery chunk ran.
+const afterLuminoAndJQuery = (): Promise<any> =>
+  Promise.all([load('lumino', false), load('jquery', false)]).then(([lumino]) => lumino);
 registerFeature(
   'jupyter-controls',
-  () => load('lumino', false).then(lumino => lumino.loadControls()),
-  ['jupyter-css', 'sanitizer', 'lumino'],
+  () => afterLuminoAndJQuery().then(lumino => lumino.loadControls()),
+  ['jupyter-css', 'sanitizer', 'lumino', 'jquery'],
   false,
   require.resolveWeak('./chunks/controls'),
 );
 registerFeature(
   'output-widget',
-  () => load('lumino', false).then(lumino => lumino.loadOutput()),
-  ['jupyter-css', 'sanitizer', 'lumino'],
+  () => afterLuminoAndJQuery().then(lumino => lumino.loadOutput()),
+  ['jupyter-css', 'sanitizer', 'lumino', 'jquery'],
   false,
   require.resolveWeak('./chunks/output'),
 );

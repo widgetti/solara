@@ -90,8 +90,8 @@ def test_parse_presets():
 def test_parse_closure():
     # Vuetify's icons use mdi, its typography (e.g. caption font-weight-light) uses Roboto, and it needs its CSS
     assert frontend.parse("minimal,+vuetify").features == {"vuetify", "mdi", "roboto", "vuetify-css"}
-    assert frontend.parse("minimal,+jupyter-controls").features == {"jupyter-controls", "jupyter-css", "lumino"}
-    assert frontend.parse("minimal,+output-widget").features == {"output-widget", "jupyter-css", "lumino"}
+    assert frontend.parse("minimal,+jupyter-controls").features == {"jupyter-controls", "jupyter-css", "lumino", "jquery"}
+    assert frontend.parse("minimal,+output-widget").features == {"output-widget", "jupyter-css", "lumino", "jquery"}
     # turning off what something else needs is an error, unless that is off too
     with pytest.raises(ValueError, match="'vuetify' needs 'mdi'"):
         frontend.parse("full,-mdi")
@@ -106,6 +106,16 @@ def test_parse_closure():
     }
     assert "lumino" not in frontend.parse("minimal")
     assert frontend.parse("minimal,+lumino").features == {"lumino"}
+    # and they use jQuery (for example Box, and jQuery UI's slider in ipywidgets 7)
+    with pytest.raises(ValueError, match="'jupyter-controls' and 'output-widget' need 'jquery'"):
+        frontend.parse("full,-jquery")
+    assert frontend.parse("full,-jupyter-controls,-output-widget,-jquery").features == set(frontend.FEATURES) - {
+        "jupyter-controls",
+        "output-widget",
+        "jquery",
+    }
+    assert "jquery" not in frontend.parse("minimal")
+    assert frontend.parse("minimal,+jquery").features == {"jquery"}
 
 
 @pytest.mark.parametrize("spec", ["full,-vuetify-css", "minimal,+vuetify,-vuetify-css", "minimal,-vuetify-css,+vuetify", "full,+vuetify-css,-vuetify-css"])
@@ -365,9 +375,9 @@ def test_legacy_page(page, monkeypatch, vue3):
     assert re.search(CDN_REQUIREJS, html)
     assert not re.search(LOCAL_REQUIREJS, html)
     chunks = (
-        ["vuetify", "katex", "lumino", "sanitizer", "jupyter-controls", "output-widget"]
+        ["vuetify", "katex", "jquery", "lumino", "sanitizer", "jupyter-controls", "output-widget"]
         if vue3
-        else ["katex", "lumino", "sanitizer", "jupyter-controls", "output-widget"]
+        else ["katex", "jquery", "lumino", "sanitizer", "jupyter-controls", "output-widget"]
     )
     scripts = re.findall(r'<script src="[^"]*/solara-vuetify-app8(\.[a-z-]+)?\.min\.js"(?: onerror="event\.target\.remove\(\)")?></script>', html)
     assert scripts == ["", *(f".{chunk}" for chunk in chunks)]
@@ -460,7 +470,7 @@ def test_vuetify_css(page, monkeypatch, vue3):
 def test_chunk_scripts_removed_on_error(page):
     # with the CDN proxy off the src is absolute, and webpack would wait for a failed tag with the same src
     tags = re.findall(r'<script src="[^"]*/solara-vuetify-app8\.[a-z-]+\.min\.js"[^>]*>', page())
-    assert len(tags) == 6
+    assert len(tags) == 7
     assert all('onerror="event.target.remove()"' in tag for tag in tags)
 
 
