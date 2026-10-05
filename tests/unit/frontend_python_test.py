@@ -11,7 +11,6 @@ import pytest
 import reacton.core
 
 import solara
-import solara.components.misc
 import solara.server.app
 import solara.server.settings
 import solara.widgets
@@ -26,6 +25,7 @@ from solara.server import frontend
 from solara.server.app import AppScript
 
 FRONTEND_LOGGER = "solara.server.frontend"
+FRAGMENT_NEEDS_CONTROLS = "The widget reacton.core.FragmentWidget needs the frontend feature 'jupyter-controls'"
 
 
 @pytest.fixture
@@ -403,6 +403,12 @@ def test_portal_without_layout_warns(minimal, kernel_context, caplog):
     rc.render(PortalsWithoutLayout())
     rc.close()
     messages = frontend_warnings(caplog)
+    if reacton.core._default_container is reacton.core.Fragment:
+        # SOLARA_DEFAULT_CONTAINER=Fragment (the 'solara 2.0' CI run): reacton's FragmentWidget is an ipywidgets VBox,
+        # so minimal loads jupyter-controls for the default container, and warns once
+        controls = [message for message in messages if message.startswith(FRAGMENT_NEEDS_CONTROLS)]
+        assert len(controls) == 1
+        messages = [message for message in messages if message not in controls]
     assert len(messages) == 2
     assert messages[0].startswith("solara.Sidebar: ")
     assert messages[1].startswith("solara.AppBarTitle: ")
@@ -412,46 +418,6 @@ def test_portal_without_layout_warns(minimal, kernel_context, caplog):
 def test_portal_without_layout_full_no_warning(warned, kernel_context, caplog):
     _box, rc = render(PortalsWithoutLayout())
     rc.close()
-    assert frontend_warnings(caplog) == []
-
-
-@solara.component
-def TwoTexts():
-    solara.Text("first text")
-    solara.Text("second text")
-
-
-@pytest.fixture
-def fragment_container(monkeypatch):
-    # SOLARA_DEFAULT_CONTAINER=Fragment, as in the 'solara 2.0' CI run
-    monkeypatch.setattr(reacton.core, "_default_container", solara.components.misc._DefaultFragment)
-
-
-def fragment_widgets(kernel_context) -> List[ipywidgets.Widget]:
-    return [widget for widget in kernel_context.widgets.values() if isinstance(widget, reacton.core.FragmentWidget)]
-
-
-def test_fragment_container_without_controls(minimal, fragment_container, kernel_context, caplog):
-    # the fragment widget (a VBox) needs no jupyter-controls in the browser
-    _box, rc = render(TwoTexts())
-    try:
-        fragments = fragment_widgets(kernel_context)
-        assert fragments
-        assert all(type(widget) is solara.widgets.widgets.FragmentVue for widget in fragments)
-        assert fragments[0].get_state()["_model_module"] == "jupyter-vue"
-    finally:
-        rc.close()
-    assert frontend_warnings(caplog) == []
-
-
-def test_fragment_container_full_is_unchanged(warned, fragment_container, kernel_context, caplog):
-    _box, rc = render(TwoTexts())
-    try:
-        fragments = fragment_widgets(kernel_context)
-        assert fragments
-        assert all(type(widget) is reacton.core.FragmentWidget for widget in fragments)
-    finally:
-        rc.close()
     assert frontend_warnings(caplog) == []
 
 

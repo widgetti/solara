@@ -9,10 +9,8 @@ from typing import Dict, List
 import ipywidgets
 import playwright.sync_api
 import pytest
-import reacton.core
 
 import solara
-import solara.components.misc
 import solara.server.server
 import solara.server.settings
 from solara.server import frontend, frontend_assets
@@ -47,12 +45,6 @@ def MarkdownPlain():
 @solara.component
 def MarkdownMath():
     solara.Markdown("math markdown: $E = mc^2$")
-
-
-@solara.component
-def TwoTexts():
-    solara.Text("first fragment text")
-    solara.Text("second fragment text")
 
 
 @solara.component
@@ -517,22 +509,6 @@ def test_full_markdown_mathjax_first(page_session: playwright.sync_api.Page, sol
             assert page_session.locator("link[data-solara-katex-css-last]").count() == 0
     finally:
         page_session.unroute(is_page, add_fake_mathjax)
-    assert recorder.errors() == []
-
-
-def test_minimal_fragment_container(
-    page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, recorder, frontend_setting, monkeypatch
-):
-    # SOLARA_DEFAULT_CONTAINER=Fragment: the fragment widgets (VBoxes) do not make the page load jupyter-controls
-    monkeypatch.setattr(reacton.core, "_default_container", solara.components.misc._DefaultFragment)
-    frontend_setting("minimal")
-    with extra_include_path(HERE), solara_app("frontend_chunks_test:TwoTexts"):
-        page_session.goto(solara_server.base_url)
-        page_session.locator("text=first fragment text").wait_for()
-        page_session.locator("text=second fragment text").wait_for()
-    chunks = recorder.chunk_requests()
-    assert "jupyter-controls" not in chunks
-    assert "jupyter-controls" not in recorder.lazy_warnings()
     assert recorder.errors() == []
 
 

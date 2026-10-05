@@ -262,21 +262,13 @@ def active() -> Frontend:
     return _context_frontend() or current()
 
 
-def preloaded(feature: str) -> bool:
-    """False only on a Solara server that does not preload feature.
-
-    Outside a virtual kernel context (Jupyter, or import time) this is always True, so Jupyter never changes.
-    """
-    frontend = _context_frontend()
-    return frontend is None or feature in frontend
-
-
 def vuetify_enabled() -> bool:
     """False only on a Solara server that runs without the vuetify feature.
 
     Outside a virtual kernel context (Jupyter, or import time) this is always True, so Jupyter never changes.
     """
-    return preloaded("vuetify")
+    frontend = _context_frontend()
+    return frontend is None or "vuetify" in frontend
 
 
 T = TypeVar("T")

@@ -4,7 +4,6 @@ from typing import Dict, List, cast
 import ipyvue
 import ipyvuetify as v
 import ipywidgets
-import reacton.core
 import traitlets
 
 from solara.util import IPYVUETIFY_V3
@@ -98,28 +97,6 @@ class HTMLVue(ipyvue.VueTemplate):
 
 class HTML(HTMLVue, v.VuetifyTemplate):
     pass
-
-
-_html_traits = ipyvue.Html.class_traits()
-
-
-class FragmentVue(reacton.core.FragmentWidget):
-    """reacton's FragmentWidget with the model and view of an ipyvue.Html div, instead of those of a VBox.
-
-    Reacton puts the children of a FragmentWidget in its parent, so a page rarely shows one, but the browser
-    still creates its model. The model of a VBox needs @jupyter-widgets/controls (the jupyter-controls frontend
-    feature), this one only needs jupyter-vue, which every page has. If the page shows it after all (a
-    fragment as the only child of a slot), it is a div that stacks its children, as a VBox does.
-    """
-
-    _model_name = traitlets.Unicode("HtmlModel").tag(sync=True)
-    _model_module = traitlets.Unicode(_html_traits["_model_module"].default_value).tag(sync=True)
-    _model_module_version = traitlets.Unicode(_html_traits["_model_module_version"].default_value).tag(sync=True)
-    _view_name = traitlets.Unicode(_html_traits["_view_name"].default_value).tag(sync=True)
-    _view_module = traitlets.Unicode(_html_traits["_view_module"].default_value).tag(sync=True)
-    _view_module_version = traitlets.Unicode(_html_traits["_view_module_version"].default_value).tag(sync=True)
-    tag = traitlets.Unicode("div").tag(sync=True)
-    style_ = traitlets.Unicode("display: flex; flex-direction: column;").tag(sync=True)
 
 
 def watch():
