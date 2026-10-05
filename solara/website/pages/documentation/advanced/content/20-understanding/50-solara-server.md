@@ -134,7 +134,7 @@ The features are:
 | `mermaid` | Mermaid diagrams in `solara.Markdown`. The page never preloads it: when it is on, it loads when the first `solara.Markdown` mounts. |
 | `vue-sfc` | The full Vue single-file-component compiler of ipyvue, for templates with `<script setup>`, `<style scoped>` or `lang="ts"`. Vue 3 only. |
 
-The `minimal` preset has none of these features, except `vuetify` and `mdi`. Vue, Vuetify, the widget core and the notebook extensions are always on.
+The `minimal` preset has none of these features, except `vuetify`, `mdi`, and the `roboto` and `vuetify-css` that come with `vuetify` (unless you add `-roboto` or `-vuetify-css`). Vue, Vuetify, the widget core and the notebook extensions are always on.
 
 A feature that the page does not preload still works: the browser loads it the first time a widget needs it.
 That first render is slower, so the server logs a warning (once per feature) that names the flag to add, for example `--frontend=minimal,+jupyter-controls`.

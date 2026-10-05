@@ -87,6 +87,24 @@ def DefaultButton():
 
 
 @solara.component
+def ThemedButton():
+    import solara.lab
+
+    solara.lab.theme.themes.light.primary = "#ff0000"
+    solara.Button("themed button", color="primary", classes=["themed-button"])
+
+
+@solara.component
+def ThemeOnClick():
+    import solara.lab
+
+    def make_red():
+        solara.lab.theme.themes.light.primary = "#ff0000"
+
+    solara.Button("theme button", color="primary", classes=["theme-button"], on_click=make_red)
+
+
+@solara.component
 def SingleDollars():
     # a shell prompt in a code block, and prices: no math, so no KaTeX
     solara.Markdown("```bash\n$ pip install solara\n```\n\nPrice ($), single dollar")
@@ -397,6 +415,47 @@ def test_full_markdown_mathjax_first(page_session: playwright.sync_api.Page, sol
     finally:
         page_session.unroute(is_page, add_fake_mathjax)
     assert recorder.errors() == []
+
+
+# the default primary color of solara.lab.theme: ipyvuetify's light primary (3.x: #6200EE, 1.x: #1976D2)
+DEFAULT_PRIMARY = "rgb(98, 0, 238)" if vue3 else "rgb(25, 118, 210)"
+
+
+@pytest.mark.parametrize("preset", ["full", "minimal"])
+def test_vuetify_theme_colors(page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, recorder, frontend_setting, preset):
+    # Vuetify gets the theme of solara.lab.theme, and follows a change the app makes to it
+    frontend_setting(preset)
+    with extra_include_path(HERE):
+        with solara_app("frontend_chunks_test:DefaultButton"):
+            page_session.goto(solara_server.base_url)
+            playwright.sync_api.expect(page_session.locator(".default-button")).to_have_css("background-color", DEFAULT_PRIMARY)
+        with solara_app("frontend_chunks_test:ThemedButton"):
+            page_session.goto(solara_server.base_url)
+            playwright.sync_api.expect(page_session.locator(".themed-button")).to_have_css("background-color", "rgb(255, 0, 0)")
+    assert recorder.lazy_warnings() == []
+    assert recorder.errors() == []
+
+
+@pytest.mark.parametrize("preset", ["full", "minimal"])
+def test_vuetify_theme_after_soft_remount(
+    page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, frontend_setting, monkeypatch, preset
+):
+    # the fresh kernel of a soft-remount starts from the theme of the page, not from the color the old kernel set
+    frontend_setting(preset)
+    monkeypatch.setattr(solara.server.settings.state, "auto_remount", True)
+    monkeypatch.setattr(solara.server.settings.state, "test_eviction", True)
+    button = page_session.locator(".theme-button")
+    try:
+        with extra_include_path(HERE), solara_app("frontend_chunks_test:ThemeOnClick"):
+            page_session.goto(solara_server.base_url)
+            playwright.sync_api.expect(button).to_have_css("background-color", DEFAULT_PRIMARY)
+            button.click()
+            playwright.sync_api.expect(button).to_have_css("background-color", "rgb(255, 0, 0)")
+            assert page_session.evaluate("solara.debug.simulateFailover()") is not False
+            page_session.wait_for_function("() => solara.debug.remountCount === 1", timeout=30000)
+            playwright.sync_api.expect(button).to_have_css("background-color", DEFAULT_PRIMARY)
+    finally:
+        page_session.goto("about:blank")
 
 
 def test_minimal_single_dollar_no_katex(
