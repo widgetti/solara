@@ -332,7 +332,7 @@ jobs:
       - name: Run solara server (pyinstaller)
         # serve the app bundle that this run built and linked (or copied) above, not the published one
         # from the CDN, which lacks the chunk files of a new frontend until its npm release
-        run: SOLARA_ASSETS_PROXY_CACHE_DIR="$(python -c 'import sys; print(sys.prefix)')/share/solara/cdn" pyinstaller/minimal/dist/solara/solara --port 18765 &
+        run: SOLARA_ASSETS_PROXY_CACHE_DIR="$(python -c 'import sys; sys.stdout.write(sys.prefix)')/share/solara/cdn" pyinstaller/minimal/dist/solara/solara --port 18765 &
 
       - name: Wait for Solara server to get online
         run: |
