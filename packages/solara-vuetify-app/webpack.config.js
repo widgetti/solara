@@ -99,6 +99,9 @@ function config(major, production) {
                 ...(major === 8 && production ? { 'postcss': empty } : {}),
                 // one sanitize-html copy, in the "sanitizer" chunk (see solara-widget-manager/src/sanitize.ts)
                 'sanitize-html$': path.resolve(__dirname, 'node_modules', widgetManager, 'lib', 'sanitize.js'),
+                // every 'jquery' import gets the stand-in of the core; the real jQuery is in the "jquery" chunk
+                // (see solara-widget-manager/src/jquery.ts)
+                'jquery$': path.resolve(__dirname, 'node_modules', widgetManager, 'lib', 'jquery-cjs.js'),
             }
         },
     };

@@ -43,6 +43,7 @@ FEATURES: Tuple[str, ...] = (
     "material-icons",
     "roboto",
     "font-awesome",
+    "jquery",
     "lumino",
     "jupyter-controls",
     "jupyter-css",
@@ -54,9 +55,10 @@ FEATURES: Tuple[str, ...] = (
 REQUIRES: Dict[str, FrozenSet[str]] = {
     # Vuetify's icons use mdi
     "vuetify": frozenset({"mdi"}),
-    # the controls (e.g. Tab uses Lumino's TabBar) and the Output widget use Lumino beyond what the core has
-    "jupyter-controls": frozenset({"jupyter-css", "lumino"}),
-    "output-widget": frozenset({"jupyter-css", "lumino"}),
+    # the controls (e.g. Tab uses Lumino's TabBar) and the Output widget use Lumino beyond what the core has, and
+    # jQuery (e.g. Box, SelectionContainer, and jQuery UI's slider in ipywidgets 7)
+    "jupyter-controls": frozenset({"jupyter-css", "lumino", "jquery"}),
+    "output-widget": frozenset({"jupyter-css", "lumino", "jquery"}),
 }
 # Features that come with a feature, unless the setting turns them off by name. Unlike REQUIRES, the feature
 # works without them: Vuetify's typography (e.g. the caption and font-weight-light classes) assumes the Roboto
@@ -80,6 +82,9 @@ MODULE_FEATURE: Dict[str, str] = {
 # lumino has no check at widget creation: only a requirejs request for a module of the lumino chunk (for
 # example @phosphor/widgets, by a widget of an nbextension) loads it, which the server cannot know.
 # The browser reports that load (log_lazy_load).
+# jquery has no check either: any widget view may use jQuery (view.$el), and nothing tells which one does.
+# It never loads on first use: the browser shows an error, and reports it (log_missing).
+NEVER_LAZY: FrozenSet[str] = frozenset({"jquery"})
 # Features each build can leave out (key: Vue 3). Both builds keep Vuetify and what it needs (mdi): the page
 # shell and the default layout are made of Vuetify. The Vue 2 build has no vue-sfc chunk. Other features are
 # forced on. Vuetify's CSS (vuetify-css) is a file of its own, so it can be left out.
@@ -269,11 +274,22 @@ _warned: Set[str] = set()
 _warned_lock = threading.Lock()
 
 
-def _warn_once(feature: str, what: str, frontend: Frontend) -> None:
+def _warn_once(feature: str, what: str, frontend: Frontend, loads: bool = True) -> None:
+    """loads=False: the browser does not load the feature on first use (NEVER_LAZY), the widget fails."""
     with _warned_lock:
         if feature in _warned:
             return
         _warned.add(feature)
+    if not loads:
+        logger.warning(
+            "%s uses the frontend feature %r, which this server does not load, so the widget fails. "
+            'Add "+%s" to --frontend (SOLARA_FRONTEND) to load it, for example --frontend=%s.',
+            what,
+            feature,
+            feature,
+            frontend.suggest(feature),
+        )
+        return
     # 'Add "+feature" to --frontend (SOLARA_FRONTEND) to preload it.' is also the wording of the browser
     # console warning (solara-widget-manager features.ts), and tests/benchmark/summary.py searches for it
     logger.warning(
@@ -317,6 +333,20 @@ def log_lazy_load(feature: str, module: Optional[str] = None) -> None:
         return
     what = f"The requirejs module {module!r} of the page" if isinstance(module, str) and _MODULE_RE.fullmatch(module) else "The page"
     _warn_once(feature, what, frontend)
+
+
+def log_missing(feature: str) -> None:
+    """A widget in the browser used a feature that the page does not load (the frontend-missing message).
+
+    Only for the features that never load on first use (NEVER_LAZY): the browser shows an error instead.
+    """
+    if feature not in NEVER_LAZY:
+        logger.debug("unexpected missing frontend feature: %r", feature)
+        return
+    frontend = active()
+    if feature in frontend:
+        return
+    _warn_once(feature, "A widget of the page", frontend, loads=False)
 
 
 @lru_cache(maxsize=None)

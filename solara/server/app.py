@@ -641,6 +641,9 @@ def solara_comm_target(comm, msg_first):
         elif method == "frontend-lazy-load":
             # the browser loaded a frontend feature that the page did not preload
             frontend.log_lazy_load(data.get("feature"), data.get("module"))
+        elif method == "frontend-missing":
+            # a widget used a frontend feature that the page does not load, and that never loads on first use (jquery)
+            frontend.log_missing(data.get("feature"))
         else:
             logger.error("Unknown comm method called on solara.control comm: %s", method)
 
