@@ -276,6 +276,14 @@ def test_static_compressed_once(static_dir: Path, encoding: str, compress_calls:
     response = client.get(url, headers={"accept-encoding": encoding, "if-none-match": etag})
     assert response.status_code == 304
     assert response.headers["cache-control"] == IMMUTABLE
+    # a 304 has the validators of the 200 it stands for
+    assert response.headers["etag"] == etag
+    assert response.headers["vary"] == "Accept-Encoding"
+    identity_etag = client.get(url, headers={"accept-encoding": "identity"}).headers["etag"]
+    assert identity_etag == etag[2:]
+    response = client.get(url, headers={"accept-encoding": "identity", "if-none-match": identity_etag})
+    assert response.status_code == 304
+    assert response.headers["etag"] == identity_etag
 
 
 def test_static_prefers_brotli_when_accepted(static_dir: Path):

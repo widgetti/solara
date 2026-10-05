@@ -11,10 +11,10 @@ import os
 import threading
 from collections import OrderedDict
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, Union
 
 import anyio.to_thread
-from starlette.datastructures import Headers
+from starlette.datastructures import Headers, MutableHeaders
 from starlette.responses import FileResponse, Response
 from starlette.types import Scope
 
@@ -161,15 +161,13 @@ def compressed(path: str, stat_result: os.stat_result, encoding: str) -> bytes:
     return data
 
 
-def _should_compress(response: Response, scope: Scope) -> Optional[str]:
+def encoding_for(path: str, stat_result: Optional[os.stat_result], scope: Scope) -> Optional[str]:
+    """Return the encoding of the 200 response to this request for the file, or None."""
     if not settings.server.http_gzip:  # e.g. a fronting proxy does the compressing
         return None
-    if not isinstance(response, FileResponse) or response.status_code != 200 or scope["method"] != "GET":
+    if scope["method"] != "GET" or stat_result is None or not (MIN_SIZE <= stat_result.st_size <= MAX_SIZE):
         return None
-    stat_result = response.stat_result
-    if stat_result is None or not (MIN_SIZE <= stat_result.st_size <= MAX_SIZE):
-        return None
-    if os.path.splitext(str(response.path))[1].lower() not in COMPRESSIBLE_SUFFIXES:
+    if os.path.splitext(path)[1].lower() not in COMPRESSIBLE_SUFFIXES:
         return None
     request_headers = Headers(scope=scope)
     if "range" in request_headers:  # FileResponse serves the byte range of the identity body
@@ -177,18 +175,7 @@ def _should_compress(response: Response, scope: Scope) -> Optional[str]:
     return choose_encoding(request_headers.get("accept-encoding", ""))
 
 
-async def compress_file_response(response: Response, scope: Scope) -> Response:
-    """Replace a 200 FileResponse for a GET by a compressed Response when the client accepts it.
-
-    Other responses (304, Range requests, small or binary files) pass through.
-    """
-    encoding = _should_compress(response, scope)
-    if encoding is None:
-        return response
-    assert isinstance(response, FileResponse) and response.stat_result is not None
-    data = await anyio.to_thread.run_sync(compressed, str(response.path), response.stat_result, encoding)
-    headers = {k: v for k, v in response.headers.items() if k not in ("content-length", "accept-ranges")}
-    headers["content-encoding"] = encoding
+def _set_compressed_validators(headers: Union[Dict[str, str], MutableHeaders]) -> None:
     vary = headers.get("vary")
     headers["vary"] = f"{vary}, Accept-Encoding" if vary else "Accept-Encoding"
     etag = headers.get("etag")
@@ -196,4 +183,28 @@ async def compress_file_response(response: Response, scope: Scope) -> Response:
     # StaticFiles.is_not_modified ignores the W/ prefix, so revalidation still gives a 304.
     if etag and not etag.startswith("W/"):
         headers["etag"] = "W/" + etag
+
+
+def update_not_modified(response: Response, path: str, stat_result: os.stat_result, scope: Scope) -> None:
+    """Give a 304 the ETag and Vary of the compressed 200 it stands for (RFC 9110, section 15.4.5)."""
+    if response.status_code == 304 and encoding_for(path, stat_result, scope) is not None:
+        _set_compressed_validators(response.headers)
+
+
+async def compress_file_response(response: Response, scope: Scope) -> Response:
+    """Replace a 200 FileResponse for a GET by a compressed Response when the client accepts it.
+
+    Other responses (Range requests, small or binary files) pass through. A 304 gets its
+    headers from update_not_modified.
+    """
+    if not isinstance(response, FileResponse) or response.status_code != 200:
+        return response
+    encoding = encoding_for(str(response.path), response.stat_result, scope)
+    if encoding is None:
+        return response
+    assert response.stat_result is not None
+    data = await anyio.to_thread.run_sync(compressed, str(response.path), response.stat_result, encoding)
+    headers = {k: v for k, v in response.headers.items() if k not in ("content-length", "accept-ranges")}
+    headers["content-encoding"] = encoding
+    _set_compressed_validators(headers)
     return Response(content=data, status_code=response.status_code, headers=headers, background=response.background)

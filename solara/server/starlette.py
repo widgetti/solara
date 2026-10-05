@@ -667,6 +667,8 @@ class StaticFilesOptionalAuth(StaticFiles):
 
     def file_response(self, full_path, stat_result: os.stat_result, scope: Scope, status_code: int = 200) -> Response:
         response = super().file_response(full_path, stat_result, scope, status_code)
+        # a 304 carries the ETag and Vary of the 200, which get_response may compress
+        compress.update_not_modified(response, str(full_path), stat_result, scope)
         # A url that carries the hash of the file's content (?v=..., see include_js,
         # include_css and versioned_url in server.py) can never serve other content:
         # a change to the file changes the url, so browsers and proxies may keep it
