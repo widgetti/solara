@@ -666,11 +666,12 @@ class StaticFilesOptionalAuth(StaticFiles):
         return await compress.compress_file_response(response, scope)
 
     def is_not_modified(self, response_headers: Headers, request_headers: Headers) -> bool:
-        # A compressed response has a weak ETag (see compress.py). Starlette before 0.35 compares
-        # If-None-Match exactly, so we also compare the tags without their W/ prefix.
+        # A compressed response has a weak ETag (see compress.py), and a browser sends it back as it
+        # got it. Starlette before 0.35 compares If-None-Match exactly, so we match that one weak
+        # tag here, without parsing a list; everything else is up to Starlette.
         etag = response_headers.get("etag")
-        tags = [tag.strip() for tag in request_headers.get("if-none-match", "").split(",")]
-        if etag and etag in [tag[2:] if tag.startswith("W/") else tag for tag in tags]:
+        if_none_match = request_headers.get("if-none-match", "").strip()
+        if etag and if_none_match.startswith("W/") and if_none_match[2:] == etag:
             return True
         return super().is_not_modified(response_headers, request_headers)
 

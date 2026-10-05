@@ -308,6 +308,9 @@ def test_static_weak_etag_revalidates_on_old_starlette(static_dir: Path, monkeyp
     assert etag.startswith('W/"')
     assert client.get("/static/big.js", headers={"accept-encoding": "gzip", "if-none-match": etag}).status_code == 304
     assert client.get("/static/big.js", headers={"accept-encoding": "gzip", "if-none-match": '"other"'}).status_code == 200
+    # one tag that contains the hash between commas is another tag
+    inner = etag[3:-1]
+    assert client.get("/static/big.js", headers={"accept-encoding": "gzip", "if-none-match": f'W/"a,{inner},b"'}).status_code == 200
 
 
 def test_choose_encoding_agrees_with_the_gzip_middleware(monkeypatch):
