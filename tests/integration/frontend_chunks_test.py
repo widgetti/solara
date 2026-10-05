@@ -916,6 +916,7 @@ def test_jquery(page_session: playwright.sync_api.Page, solara_server, solara_ap
     frontend_setting(preset)
     unroute = _route_page(page_session, solara_server, _add_modules(JQUERY_AMD_MODULES))
     error_view_text = None
+    data_error = ""
     try:
         with caplog.at_level(logging.WARNING, logger="solara.server.frontend"), extra_include_path(HERE), solara_app("frontend_chunks_test:JQueryApp"):
             page_session.goto(solara_server.base_url)
@@ -930,6 +931,8 @@ def test_jquery(page_session: playwright.sync_api.Page, solara_server, solara_ap
                     # the error view of ipywidgets 8 shows the error after a click
                     page_session.locator(".jupyter-widgets-error-widget").click()
                     error_view_text = page_session.locator(".jupyter-widgets-error-widget pre").inner_text()
+                # jQuery's own functions whose names start with _ are a use of jQuery too
+                data_error = page_session.evaluate("() => { try { Backbone.$._data(document.body, 'events'); } catch (e) { return e.message; } }")
     finally:
         unroute()
     server_warnings = _server_warnings(caplog)
@@ -954,6 +957,7 @@ def test_jquery(page_session: playwright.sync_api.Page, solara_server, solara_ap
     assert [error for error in errors if error != message and "Could not create" not in error] == []
     if ipywidgets_major >= 8:
         assert error_view_text is not None and message in error_view_text
+    assert data_error.startswith("solara: this widget uses jQuery ($._data), which this page does not load. Add +jquery"), data_error
     assert len(server_warnings) == 1
     assert server_warnings[0].startswith("A widget of the page uses the frontend feature 'jquery'")
     assert 'Add "+jquery" to --frontend (SOLARA_FRONTEND) to load it, for example --frontend=minimal,+jquery.' in server_warnings[0]
