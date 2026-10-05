@@ -111,15 +111,16 @@ function defineAppAmdModules() {
 }
 
 // A feature that was not preloaded loaded on first use: tell the server (on the solara.control
-// comm), so it logs which flag to add. Queued until the widget manager (and its comm) exists.
+// comm), so it logs which flag to add. module is the requirejs module that asked for it, if any
+// (e.g. '@phosphor/widgets' for lumino). Queued until the widget manager (and its comm) exists.
 const lazyLoadQueue = [];
 let sendLazyLoad = null;
 
-function reportLazyLoad(feature) {
+function reportLazyLoad(feature, module) {
     if (sendLazyLoad) {
-        sendLazyLoad(feature);
+        sendLazyLoad(feature, module);
     } else {
-        lazyLoadQueue.push(feature);
+        lazyLoadQueue.push([feature, module]);
     }
 }
 
@@ -678,19 +679,23 @@ async function solaraInit(mountId, appName) {
     });
 
     let widgetManager = makeWidgetManager();
-    sendLazyLoad = (feature) => {
+    sendLazyLoad = (feature, module) => {
         // the control comm of the current widget manager (it changes on a soft-remount)
         const comm = widgetManager && widgetManager.controlComm;
         if (!comm) {
             return;
         }
         try {
-            comm.send({ method: 'frontend-lazy-load', feature });
+            const message = { method: 'frontend-lazy-load', feature };
+            if (module) {
+                message.module = module;
+            }
+            comm.send(message);
         } catch (e) {
             console.warn('solara: could not report the lazy load of', feature, e);
         }
     };
-    lazyLoadQueue.splice(0).forEach(sendLazyLoad);
+    lazyLoadQueue.splice(0).forEach(([feature, module]) => sendLazyLoad(feature, module));
     // it seems if we attach this to early, it will not be called
     app.$data.loading_text = 'Loading app';
     const path = window.location.pathname.slice(solara.rootPath.length) + window.location.search;

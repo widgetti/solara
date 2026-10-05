@@ -4,11 +4,12 @@ import logging
 import re
 from collections import Counter
 from pathlib import Path
-from typing import Dict, List
+from typing import Any, Dict, List
 
 import ipywidgets
 import playwright.sync_api
 import pytest
+import traitlets
 
 import solara
 import solara.server.server
@@ -115,6 +116,86 @@ def SingleDollars():
 def EntityMath():
     # the template compiler of Vue decodes character references, so KaTeX sees "$x+3$"
     solara.Markdown("&#36;x+3&#36; entity dollars")
+
+
+# widgets whose views are not Vue based, defined by the page (as an nbextension would). The first asks requirejs only
+# for modules that the core defines (no lumino chunk), the second for @lumino/widgets, which is in the lumino chunk.
+LUMINO_AMD_MODULES = """
+<script>
+define("solara-test-signaling", ["@jupyter-widgets/base", "@phosphor/signaling", "@lumino/domutils", "@jupyterlab/coreutils"], function (base, signaling, domutils, coreutils) {
+    class SignalingView extends base.DOMWidgetView {
+        render() {
+            const signal = new signaling.Signal({});
+            signal.connect((sender, value) => this.$el.empty().append('<span class="signaling-text">signal ' + value + "</span>"));
+            signal.emit(this.model.get("value"));
+            this.el.dataset.domutils = typeof domutils.ElementExt.hitTest;
+            this.el.dataset.coreutils = typeof coreutils.URLExt.join;
+        }
+    }
+    return { SignalingView: SignalingView };
+});
+define("solara-test-lumino", ["@jupyter-widgets/base", "@lumino/widgets"], function (base, lumino) {
+    // an ES5 subclass of a Lumino widget, as older nbextensions write them
+    function Es5Widget(options) {
+        lumino.Widget.call(this, options);
+        this.node.textContent = "es5 lumino widget";
+    }
+    Es5Widget.prototype = Object.create(lumino.Widget.prototype);
+    Es5Widget.prototype.constructor = Es5Widget;
+    // a class: the views of @jupyter-widgets/base 6 (ipywidgets 8) are classes, so .extend() does not work there
+    class LuminoView extends base.DOMWidgetView {
+        render() {
+            const dock = new lumino.DockPanel();
+            dock.addWidget(new Es5Widget());
+            this.el.appendChild(dock.node);
+            // the Widget class of the lumino chunk is the one of the core (that base uses)
+            this.el.dataset.sameWidget = String((this.luminoWidget || this.pWidget) instanceof lumino.Widget);
+        }
+    }
+    return { LuminoView: LuminoView };
+});
+</script>
+"""
+
+
+class SignalingWidget(ipywidgets.DOMWidget):
+    _view_name = traitlets.Unicode("SignalingView").tag(sync=True)
+    _view_module = traitlets.Unicode("solara-test-signaling").tag(sync=True)
+    _view_module_version = traitlets.Unicode("1.0.0").tag(sync=True)
+    value = traitlets.Unicode("widget").tag(sync=True)
+
+
+class LuminoWidget(ipywidgets.DOMWidget):
+    _view_name = traitlets.Unicode("LuminoView").tag(sync=True)
+    _view_module = traitlets.Unicode("solara-test-lumino").tag(sync=True)
+    _view_module_version = traitlets.Unicode("1.0.0").tag(sync=True)
+
+
+@solara.component
+def SignalingApp():
+    solara.Text("vue view text")
+    SignalingWidget.element(value="widget")
+
+
+@solara.component
+def LuminoApp():
+    solara.Text("vue view text")
+    LuminoWidget.element()
+
+
+@solara.component
+def TabApp():
+    titles: Dict[str, Any] = {"titles": ["tab one", "tab two"]} if ipywidgets_major >= 8 else {"_titles": {"0": "tab one", "1": "tab two"}}
+    ipywidgets.Tab.element(children=[ipywidgets.HTML.element(value="first tab body"), ipywidgets.HTML.element(value="second tab body")], **titles)
+
+
+@solara.component
+def LuminoAllApp():
+    import IPython.display
+
+    TabApp()
+    solara.display(IPython.display.Markdown("output **md-bold-lumino**"))
+    LuminoWidget.element()
 
 
 class Recorder:
@@ -625,3 +706,134 @@ def test_vuetify_css(page_session: playwright.sync_api.Page, solara_server, sola
     assert recorder.chunk_requests().get("vuetify-css") is None
     assert recorder.lazy_warnings() == []
     assert recorder.errors() == []
+
+
+def _route_page(page_session: playwright.sync_api.Page, solara_server, change):
+    """Changes the HTML of the app page (not of other requests)."""
+
+    def handle(route: playwright.sync_api.Route):
+        response = route.fetch()
+        route.fulfill(response=response, body=change(response.text()))
+
+    def is_page(url: str) -> bool:
+        return url.rstrip("/") == solara_server.base_url.rstrip("/")
+
+    page_session.route(is_page, handle)
+    return lambda: page_session.unroute(is_page, handle)
+
+
+def _add_lumino_modules(html: str) -> str:
+    # at the end of the page: after require.js, before the kernel (which connects asynchronously) asks for them
+    assert html.rstrip().endswith("</html>")
+    return html.rstrip()[: -len("</html>")] + LUMINO_AMD_MODULES + "</html>"
+
+
+def _check_lumino_widget(page: playwright.sync_api.Page):
+    page.locator(".lm-DockPanel >> text=es5 lumino widget").wait_for()
+    assert page.locator("[data-same-widget]").get_attribute("data-same-widget") == "true"
+
+
+def _check_tab(page: playwright.sync_api.Page):
+    # the Tab widget uses the Lumino TabBar of the lumino chunk
+    page.locator("text=first tab body").wait_for()
+    page.locator("text=tab two").click()
+    page.locator("text=second tab body").wait_for()
+    assert page.locator("text=first tab body").is_hidden()
+
+
+@pytest.mark.parametrize("preset", ["full", "minimal"])
+def test_lumino_requirejs(page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, recorder, frontend_setting, caplog, preset):
+    frontend_setting(preset)
+    unroute = _route_page(page_session, solara_server, _add_lumino_modules)
+    try:
+        with caplog.at_level(logging.WARNING, logger="solara.server.frontend"), extra_include_path(HERE):
+            # a widget that asks requirejs only for modules that the core defines (signaling, domutils, coreutils)
+            with solara_app("frontend_chunks_test:SignalingApp"):
+                page_session.goto(solara_server.base_url)
+                page_session.locator(".signaling-text >> text=signal widget").wait_for()
+                widget = page_session.locator("[data-domutils]")
+                assert widget.get_attribute("data-domutils") == "function"
+                assert widget.get_attribute("data-coreutils") == "function"
+                page_session.wait_for_timeout(300)
+            if preset == "minimal":
+                assert "lumino" not in recorder.chunk_requests()
+                assert recorder.lazy_warnings() == []
+            # a widget that asks requirejs for @lumino/widgets
+            with solara_app("frontend_chunks_test:LuminoApp"):
+                page_session.goto(solara_server.base_url)
+                _check_lumino_widget(page_session)
+    finally:
+        unroute()
+    server_warnings = _server_warnings(caplog)
+    if preset == "full":
+        assert recorder.chunk_requests().get("lumino") == 2
+        assert recorder.lazy_warnings() == []
+        assert server_warnings == []
+    else:
+        # loads once, with one warning in the browser and one in the server log, which name the module that asked
+        assert recorder.chunk_requests().get("lumino") == 1
+        assert recorder.lazy_warnings() == ["lumino"]
+        warnings = [msg.text for msg in recorder.console if msg.type == "warning" and 'Add "+lumino"' in msg.text]
+        assert 'for the requirejs module "@lumino/widgets"' in warnings[0]
+        assert len(server_warnings) == 1
+        assert "The requirejs module '@lumino/widgets' of the page needs the frontend feature 'lumino'" in server_warnings[0]
+        assert 'Add "+lumino" to --frontend' in server_warnings[0]
+    assert recorder.errors() == []
+
+
+@pytest.mark.parametrize("preset", ["full", "minimal"])
+def test_tab(page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, recorder, frontend_setting, caplog, preset):
+    frontend_setting(preset)
+    with caplog.at_level(logging.WARNING, logger="solara.server.frontend"), extra_include_path(HERE), solara_app("frontend_chunks_test:TabApp"):
+        page_session.goto(solara_server.base_url)
+        _check_tab(page_session)
+    chunks = recorder.chunk_requests()
+    assert chunks.get("lumino") == 1
+    assert chunks.get("jupyter-controls") == 1
+    server_warnings = _server_warnings(caplog)
+    if preset == "full":
+        assert recorder.lazy_warnings() == []
+        assert server_warnings == []
+    else:
+        # the controls bring lumino along: the warning names jupyter-controls, not lumino
+        assert recorder.lazy_warnings() == ["jupyter-controls"]
+        assert len(server_warnings) == 1
+        assert 'Add "+jupyter-controls" to --frontend' in server_warnings[0]
+    assert recorder.errors() == []
+
+
+def test_full_lumino_request_fails(page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, recorder, frontend_setting):
+    # the preloaded lumino chunk fails once (404): the page still starts, the chunks that need it (jupyter-controls,
+    # output-widget) do not run, and all of them load on first use instead
+    frontend_setting("full")
+    failed: List[str] = []
+
+    def fail_once(route: playwright.sync_api.Route):
+        if failed:
+            route.continue_()
+        else:
+            failed.append(route.request.url)
+            route.fulfill(status=404, body="not found")
+
+    lumino_url = re.compile(r".*/solara-vuetify-app\d\.lumino(\.min)?\.js$")
+    page_session.route(lumino_url, fail_once)
+    unroute = _route_page(page_session, solara_server, _add_lumino_modules)
+    try:
+        with extra_include_path(HERE), solara_app("frontend_chunks_test:LuminoAllApp"):
+            page_session.goto(solara_server.base_url)
+            _check_tab(page_session)
+            page_session.locator("strong >> text=md-bold-lumino").wait_for()
+            _check_lumino_widget(page_session)
+            missing = page_session.evaluate("window.solara.loadPreloadedFeaturesSync()")
+    finally:
+        unroute()
+        page_session.unroute(lumino_url, fail_once)
+    assert len(failed) == 1
+    # nothing was left half loaded
+    assert missing == []
+    assert recorder.chunk_requests().get("lumino") == 2
+    assert recorder.lazy_warnings() == []
+    errors = recorder.errors()
+    assert [error for error in errors if "did not run" in error], errors
+    expected = ("did not run", "404", "Failed to load resource")
+    assert [error for error in errors if not any(text in error for text in expected)] == []

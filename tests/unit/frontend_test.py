@@ -90,12 +90,22 @@ def test_parse_presets():
 def test_parse_closure():
     # Vuetify's icons use mdi, its typography (e.g. caption font-weight-light) uses Roboto, and it needs its CSS
     assert frontend.parse("minimal,+vuetify").features == {"vuetify", "mdi", "roboto", "vuetify-css"}
-    assert frontend.parse("minimal,+jupyter-controls").features == {"jupyter-controls", "jupyter-css"}
-    assert frontend.parse("minimal,+output-widget").features == {"output-widget", "jupyter-css"}
+    assert frontend.parse("minimal,+jupyter-controls").features == {"jupyter-controls", "jupyter-css", "lumino"}
+    assert frontend.parse("minimal,+output-widget").features == {"output-widget", "jupyter-css", "lumino"}
     # turning off what something else needs is an error, unless that is off too
     with pytest.raises(ValueError, match="'vuetify' needs 'mdi'"):
         frontend.parse("full,-mdi")
     assert "mdi" not in frontend.parse("full,-vuetify,-mdi")
+    # the controls and the Output widget use Lumino of the lumino chunk
+    with pytest.raises(ValueError, match="'jupyter-controls' and 'output-widget' need 'lumino'"):
+        frontend.parse("full,-lumino")
+    assert frontend.parse("full,-jupyter-controls,-output-widget,-lumino").features == set(frontend.FEATURES) - {
+        "jupyter-controls",
+        "output-widget",
+        "lumino",
+    }
+    assert "lumino" not in frontend.parse("minimal")
+    assert frontend.parse("minimal,+lumino").features == {"lumino"}
 
 
 @pytest.mark.parametrize("spec", ["full,-vuetify-css", "minimal,+vuetify,-vuetify-css", "minimal,-vuetify-css,+vuetify", "full,+vuetify-css,-vuetify-css"])
@@ -354,7 +364,11 @@ def test_legacy_page(page, monkeypatch, vue3):
     assert 'rel="preload"' not in html
     assert re.search(CDN_REQUIREJS, html)
     assert not re.search(LOCAL_REQUIREJS, html)
-    chunks = ["vuetify", "katex", "sanitizer", "jupyter-controls", "output-widget"] if vue3 else ["katex", "sanitizer", "jupyter-controls", "output-widget"]
+    chunks = (
+        ["vuetify", "katex", "lumino", "sanitizer", "jupyter-controls", "output-widget"]
+        if vue3
+        else ["katex", "lumino", "sanitizer", "jupyter-controls", "output-widget"]
+    )
     scripts = re.findall(r'<script src="[^"]*/solara-vuetify-app8(\.[a-z-]+)?\.min\.js"(?: onerror="event\.target\.remove\(\)")?></script>', html)
     assert scripts == ["", *(f".{chunk}" for chunk in chunks)]
     # Vuetify's CSS (main8.vuetify.css) is the first chunk CSS: on Vue 2 before the core CSS, on Vue 3 after it
@@ -446,7 +460,7 @@ def test_vuetify_css(page, monkeypatch, vue3):
 def test_chunk_scripts_removed_on_error(page):
     # with the CDN proxy off the src is absolute, and webpack would wait for a failed tag with the same src
     tags = re.findall(r'<script src="[^"]*/solara-vuetify-app8\.[a-z-]+\.min\.js"[^>]*>', page())
-    assert len(tags) == 5
+    assert len(tags) == 6
     assert all('onerror="event.target.remove()"' in tag for tag in tags)
 
 
