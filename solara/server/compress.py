@@ -10,6 +10,7 @@ import gzip
 import os
 import threading
 from collections import OrderedDict
+from pathlib import Path
 from typing import Dict, Optional, Tuple
 
 import anyio.to_thread
@@ -17,7 +18,7 @@ from starlette.datastructures import Headers
 from starlette.responses import FileResponse, Response
 from starlette.types import Scope
 
-from . import settings
+from . import server, settings
 
 try:
     import brotli
@@ -58,7 +59,7 @@ CACHE_SIZE = 64 * 1024 * 1024
 GZIP_LEVEL = 9
 BROTLI_QUALITY = 5
 
-Key = Tuple[str, int, int, str]
+Key = Tuple[str, int, int, str, str]
 
 _lock = threading.Lock()
 _cache: "OrderedDict[Key, bytes]" = OrderedDict()
@@ -126,8 +127,11 @@ def compressed(path: str, stat_result: os.stat_result, encoding: str) -> bytes:
     """Return the compressed content of the file, from the cache when possible.
 
     A lock per key makes concurrent requests for the same file compress it once.
+    In development a file can change without a new size or mtime, so the key also
+    holds the hash of the current content there (as server.file_content_hash does).
     """
-    key: Key = (path, stat_result.st_mtime_ns, stat_result.st_size, encoding)
+    digest = "" if settings.main.mode == "production" else server.file_content_hash(Path(path))
+    key: Key = (path, stat_result.st_mtime_ns, stat_result.st_size, encoding, digest)
     with _lock:
         data = _cache.get(key)
         if data is not None:

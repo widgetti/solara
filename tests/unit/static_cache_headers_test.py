@@ -357,6 +357,24 @@ def test_static_compression_follows_a_changed_file(static_dir: Path, compress_ca
     assert compress_calls == ["gzip", "gzip"]
 
 
+@pytest.mark.usefixtures("development")
+def test_development_compression_follows_an_edit_with_the_same_size_and_mtime(static_dir: Path, compress_calls: List[str]):
+    path = static_dir / "big.js"
+    path.write_bytes(BIG)
+    client = client_for(StaticFilesOptionalAuth(directory=static_dir))
+    assert client.get(f"/static/big.js?v={BIG_DIGEST}", headers={"accept-encoding": "gzip"}).content == BIG
+    stat = path.stat()
+
+    changed = BIG.replace(b"hello", b"howdy")
+    path.write_bytes(changed)
+    os.utime(path, ns=(stat.st_atime_ns, stat.st_mtime_ns))
+
+    response = client.get(f"/static/big.js?v={hashlib.md5(changed).hexdigest()}", headers={"accept-encoding": "gzip"})
+    assert response.headers["cache-control"] == IMMUTABLE
+    assert response.content == changed
+    assert compress_calls == ["gzip", "gzip"]
+
+
 def test_cdn_proxy_compressed_and_immutable(tmp_path: Path, monkeypatch):
     cache_dir = tmp_path / "cdn"
     path = cache_dir / "pkg@1.2.3" / "dist" / "big.js"
@@ -427,12 +445,12 @@ def test_static_identity_response_varies_as_before(static_dir: Path):
 def test_compress_cache_counts_a_key_stored_twice_once(monkeypatch):
     # after an eviction, two requests for the same file can both compress it and store it
     monkeypatch.setattr(compress, "CACHE_SIZE", 100)
-    key = ("/a.js", 1, 2, "gzip")
+    key = ("/a.js", 1, 2, "gzip", "")
     compress._store(key, b"x" * 40)
     compress._store(key, b"y" * 40)
     assert compress._cache_bytes == sum(len(data) for data in compress._cache.values()) == 40
     # a drift in the count would evict entries that fit
-    compress._store(("/b.js", 1, 2, "gzip"), b"z" * 40)
+    compress._store(("/b.js", 1, 2, "gzip", ""), b"z" * 40)
     assert len(compress._cache) == 2
 
 
@@ -441,7 +459,7 @@ def test_compress_keeps_the_key_lock_of_another_request(static_dir: Path, monkey
     (static_dir / "big.js").write_bytes(BIG)
     path = str(static_dir / "big.js")
     stat_result = os.stat(path)
-    key = (path, stat_result.st_mtime_ns, stat_result.st_size, "gzip")
+    key = (path, stat_result.st_mtime_ns, stat_result.st_size, "gzip", "")
     other_lock = compress.threading.Lock()
     original = compress._compress
 
