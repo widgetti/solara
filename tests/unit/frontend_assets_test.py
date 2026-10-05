@@ -168,3 +168,15 @@ def test_output_renderers_out_of_core(vue3, ipywidgets_major, production):
     output = (dist / frontend_assets.js_file("output-widget", ipywidgets_major, production)).read_text(encoding="utf8")
     assert RENDERMIME_MARKER not in core
     assert RENDERMIME_MARKER in output
+
+
+@pytest.mark.parametrize("ipywidgets_major", [7, 8])
+@pytest.mark.parametrize("production", [True, False])
+def test_vue3_feature_flags_defined(ipywidgets_major, production):
+    # webpack defines two of Vue's esm-bundler feature flags (solara-vuetify3-app/webpack.config.js), so the core has
+    # no runtime checks for them, and terser drops the code they turn off; __VUE_PROD_DEVTOOLS__ stays a runtime global
+    dist = _dist(True)
+    core = (dist / frontend_assets.js_file("core", ipywidgets_major, production)).read_text(encoding="utf8")
+    assert "__VUE_OPTIONS_API__" not in core
+    assert "__VUE_PROD_HYDRATION_MISMATCH_DETAILS__" not in core
+    assert "__VUE_PROD_DEVTOOLS__" in core

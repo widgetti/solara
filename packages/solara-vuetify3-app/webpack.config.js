@@ -51,6 +51,13 @@ function config(major, production) {
             }),
             // Vuetify's CSS (also the CSS its components import) loads with the vuetify-css feature, not with Vuetify
             new MoveCssPlugin('vuetify', 'vuetify-css'),
+            // Vue's esm-bundler feature flags, as they are by default at runtime (options API on, hydration
+            // mismatch details off); defined, terser drops the code behind them. __VUE_PROD_DEVTOOLS__ stays
+            // a runtime global, so a page can still turn on the devtools in production, as before.
+            new webpack.DefinePlugin({
+                __VUE_OPTIONS_API__: 'true',
+                __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: 'false',
+            }),
             new ChunkGuardPlugin(),
             new DedupePackagesPlugin(),
             // only the parts of the @jupyterlab/services index that we use (see solara-widget-manager/src/services.ts)
