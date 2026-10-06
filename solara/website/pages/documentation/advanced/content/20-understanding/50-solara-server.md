@@ -147,7 +147,7 @@ Add `-roboto` to use your own font, for example `--frontend=minimal,-roboto`.
 Vuetify's stylesheet (`vuetify-css`) also comes with `vuetify`.
 Use `-vuetify-css` when you ship your own Vuetify CSS (for example built from Vuetify's SASS) in `assets/`, for example `--frontend=full,-vuetify-css`.
 Vuetify still adds the stylesheet of its theme colors from JavaScript; `-vuetify-css` does not remove that one.
-On Vue 3, ipyvuetify 3.0.0 adds its own copy of Vuetify's CSS to the page, which `-vuetify-css` does not remove either.
+On Vue 3, ipyvuetify 3.0.0 also adds its own copy of Vuetify's CSS to the page, which `-vuetify-css` does not remove; ipyvuetify 3.1.0 and newer do not add it.
 
 This setting only applies to the Solara server; Jupyter (notebook, lab, Voila) always loads everything.
 A page that is open keeps the features it loaded with, also after a hot reload that changes the setting; refresh the page to use the new setting.
