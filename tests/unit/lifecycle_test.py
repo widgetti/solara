@@ -268,15 +268,19 @@ async def test_kernel_lifecycle_close_beacon_for_unknown_page(short_cull_timeout
     websocket = Mock()
     context = kernel_context.initialize_virtual_kernel("session-id-1", "kernel-id-1", websocket)
     connection = context.page_connect("page-id-1")
+    cull_task = context.page_disconnect("page-id-1", connection)
+    cull_future = context._last_kernel_cull_future
+    assert cull_future is not None
 
     context.page_close("page-id-unknown")
     assert "page-id-unknown" not in context.page_status
-    assert context.page_status["page-id-1"] == kernel_context.PageStatus.CONNECTED
+    assert context.page_status["page-id-1"] == kernel_context.PageStatus.DISCONNECTED
+    # the cull of the disconnected page is not bumped
+    assert context._last_kernel_cull_future is cull_future
     assert not context.closed_event.is_set()
 
-    context.page_close("page-id-1")
+    await cull_task
     assert context.closed_event.is_set()
-    context.page_disconnect("page-id-1", connection)
 
 
 class WebsocketOpenUntilDropped(solara.server.websocket.WebsocketWrapper):
