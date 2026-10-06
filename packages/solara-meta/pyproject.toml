@@ -29,11 +29,17 @@ all = [
     "solara[assets]",
     "solara[documentation]",
     "solara[pytest]",
-    "solara[dev]"
+    "solara[dev]",
+    "solara[brotli]"
 ]
 
 redis = [
     "solara-ui[redis]"
+]
+
+# opt-in brotli compression of static files (gzip otherwise)
+brotli = [
+    "solara-server[brotli]"
 ]
 
 assets = [
