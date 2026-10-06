@@ -12,8 +12,9 @@ blinker==1.9.0
 bqplot==0.12.47
 bqplot-image-gl==1.10.2
 branca==0.8.2
+brotli==1.2.0
 bump2version==1.0.1
-cachetools==7.2.0
+cachetools==7.2.1
 certifi==2026.7.22
 cffi==2.1.1
 cfgv==3.5.0
@@ -51,11 +52,11 @@ ipyaggrid==0.5.4
 ipycanvas==0.14.3
 ipykernel==7.4.0
 ipyleaflet==0.20.0
-ipyreact==0.6.1
+ipyreact==0.7.0
 ipython==9.17.1
 ipython_pygments_lexers==1.1.1
-ipyvue==3.0.0
-ipyvuetify==3.0.0
+ipyvue==3.1.1
+ipyvuetify==3.1.0
 ipywidgets==8.1.9
 itsdangerous==2.2.0
 jedi==0.20.0
@@ -81,7 +82,7 @@ mdurl==0.1.2
 mkdocs-pycafe==0.3.0
 mypy==2.4.0
 mypy_extensions==1.1.0
-narwhals==2.27.0
+narwhals==2.26.0
 nbformat==5.11.1
 nest-asyncio2==1.7.3
 nodeenv==1.11.0
@@ -99,8 +100,8 @@ platformdirs==4.11.14
 playwright==1.63.0
 plotly==7.1.0
 pluggy==1.6.0
-polars==1.44.2
-polars-runtime-32==1.44.2
+polars==2.0.0
+polars-runtime-32==2.0.0
 pre_commit==4.6.2
 prompt_toolkit==3.0.53
 psutil==7.2.2
@@ -152,7 +153,7 @@ traittypes==0.2.3
 truststore==0.10.4
 types-Markdown==3.10.2.20260712
 types-PyYAML==6.0.12.20260906
-types-requests==2.33.0.20260906
+types-requests==2.33.0.20261006
 typing-inspection==0.4.4
 typing_extensions==4.16.0
 tzdata==2026.5

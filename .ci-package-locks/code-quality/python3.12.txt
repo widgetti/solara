@@ -1,6 +1,6 @@
 cfgv==3.5.0
 distlib==0.4.3
-filelock==4.0.11
+filelock==4.0.12
 identify==2.6.20
 nodeenv==1.11.0
 packaging==26.3
