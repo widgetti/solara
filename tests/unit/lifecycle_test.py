@@ -261,14 +261,15 @@ async def test_kernel_lifecycle_close_beacon_with_two_open_websockets(short_cull
 
 
 @pytest.mark.skipif(on_windows, reason="This test is flaky on Windows")
-async def test_kernel_lifecycle_close_beacon_for_unknown_page(short_cull_timeout):
+async def test_kernel_lifecycle_close_beacon_for_unknown_page():
     # A close beacon can name a page this kernel never saw, for instance when the beacon reaches
     # another server process that holds a stale copy of the kernel, or when the tab closes before
     # its websocket connects. That beacon should do nothing, and not raise a KeyError.
     websocket = Mock()
     context = kernel_context.initialize_virtual_kernel("session-id-1", "kernel-id-1", websocket)
     connection = context.page_connect("page-id-1")
-    cull_task = context.page_disconnect("page-id-1", connection)
+    # the default cull timeout is long, so the cull cannot fire during this test
+    context.page_disconnect("page-id-1", connection)
     cull_future = context._last_kernel_cull_future
     assert cull_future is not None
 
@@ -279,7 +280,7 @@ async def test_kernel_lifecycle_close_beacon_for_unknown_page(short_cull_timeout
     assert context._last_kernel_cull_future is cull_future
     assert not context.closed_event.is_set()
 
-    await cull_task
+    context.page_close("page-id-1")
     assert context.closed_event.is_set()
 
 
