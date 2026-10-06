@@ -260,6 +260,25 @@ async def test_kernel_lifecycle_close_beacon_with_two_open_websockets(short_cull
     context.page_disconnect("page-id-1", connection_2)
 
 
+@pytest.mark.skipif(on_windows, reason="This test is flaky on Windows")
+async def test_kernel_lifecycle_close_beacon_for_unknown_page(short_cull_timeout):
+    # A close beacon can name a page this kernel never saw, for instance when the beacon reaches
+    # another server process that holds a stale copy of the kernel, or when the tab closes before
+    # its websocket connects. That beacon should do nothing, and not raise a KeyError.
+    websocket = Mock()
+    context = kernel_context.initialize_virtual_kernel("session-id-1", "kernel-id-1", websocket)
+    connection = context.page_connect("page-id-1")
+
+    context.page_close("page-id-unknown")
+    assert "page-id-unknown" not in context.page_status
+    assert context.page_status["page-id-1"] == kernel_context.PageStatus.CONNECTED
+    assert not context.closed_event.is_set()
+
+    context.page_close("page-id-1")
+    assert context.closed_event.is_set()
+    context.page_disconnect("page-id-1", connection)
+
+
 class WebsocketOpenUntilDropped(solara.server.websocket.WebsocketWrapper):
     def __init__(self):
         self.receiving = asyncio.Event()

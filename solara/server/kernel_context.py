@@ -514,6 +514,11 @@ class VirtualKernelContext:
             if self.closed_event.is_set():
                 logger.info("Kernel %s was already closed when page %s attempted to close", self.id, page_id)
                 return future
+            if page_id not in self.page_status:
+                # e.g. the beacon reached a server process with a stale copy of this kernel, or the
+                # tab closed before its websocket connected
+                logger.info("Page %s is unknown to kernel %s, ignoring close", page_id, self.id)
+                return future
             if self.page_status[page_id] == PageStatus.CLOSED:
                 logger.info("Page %s already closed for kernel %s", page_id, self.id)
                 return future
