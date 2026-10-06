@@ -91,9 +91,12 @@ module.exports = {
   font-weight: bold;
 }
 
-.solara-file-list-selected {
+.solara-file-list .solara-file-list-selected {
   background-color: #3333;
+}
 
+.solara-file-list.v-theme--dark .solara-file-list-selected {
+  background-color: #fff3;
 }
 
 .solara-file-list .solara-file-list-row {
