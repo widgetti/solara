@@ -9,6 +9,7 @@ import warnings
 from typing import Any, Callable, Dict, Iterator, List, Optional, Union, cast
 import typing
 
+import ipyvue
 import ipyvuetify as v
 
 try:
@@ -71,7 +72,7 @@ def _run_solara(code, cleanups):
         app = solara.components.applayout._AppLayoutEmbed(children=[ExceptionGuard(children=[Page()])])
     else:
         raise NameError("No Page or app defined")
-    box = v.Html(tag="div")
+    box = v.Html(tag="div") if frontend.vuetify_enabled() else ipyvue.Html(tag="div")
 
     rc: reacton.core.RenderContext
 
@@ -386,6 +387,11 @@ module.exports = {
     return template
 
 
+def _template_widget():
+    # the template has no Vuetify tags, so without the vuetify feature it does not need Vuetify
+    return frontend.template_class(v.VuetifyTemplate, ipyvue.VueTemplate)
+
+
 def _highlight(src, language, class_name=None, options=None, md=None, unsafe_solara_execute=False, cleanups=None, **kwargs):
     """Highlight a block of code"""
     if not has_pygments:
@@ -459,7 +465,7 @@ def MarkdownIt(md_text: str, highlight: List[int] = [], unsafe_solara_execute: b
         return cleanup
 
     solara.use_effect(cleanup_wrapper)
-    return v.VuetifyTemplate.element(template=_markdown_template(html)).key(hash)
+    return _template_widget().element(template=_markdown_template(html)).key(hash)
 
 
 if has_pymdownx:
@@ -583,4 +589,4 @@ def Markdown(md_text: str, unsafe_solara_execute=False, style: Union[str, Dict, 
     # if we update the template value, the whole vue tree will rerender (ipvue/ipyvuetify issue)
     # however, using the hash we simply generate a new widget each time
     hash = hashlib.sha256((html + str(unsafe_solara_execute)).encode("utf-8")).hexdigest()
-    return v.VuetifyTemplate.element(template=_markdown_template(html, style)).key(hash)
+    return _template_widget().element(template=_markdown_template(html, style)).key(hash)

@@ -27,7 +27,12 @@ var jupyterWidgetMountPoint = {
         requestWidget(this.mountId)
             .then(async widgetView => {
                 const model = widgetView.model;
-                if (['VuetifyView', 'VuetifyTemplateView'].includes(model.get('_view_name'))) {
+                const vueViews = ['VuetifyView', 'VuetifyTemplateView'];
+                if (Vue.h && !solaraFeatureEnabled('vuetify')) {
+                    // the root container is an ipyvue.Html when vuetify is off (only on Vue 3)
+                    vueViews.push('VueView');
+                }
+                if (vueViews.includes(model.get('_view_name'))) {
                     if (Vue.h && ['VueTemplateModel', 'VuetifyTemplateModel', 'HtmlModel'].includes(model.get('_model_name'))) {
                         await registerVueComponents(this, widgetView);
                     }
@@ -63,7 +68,7 @@ var jupyterWidgetMountPoint = {
             return this.elem;
         }
         return h('div', this.$slots.default ||
-            [h('v-chip', `[${this.mountId}]`)]);
+            [h(solaraFeatureEnabled('vuetify') ? 'v-chip' : 'span', `[${this.mountId}]`)]);
     }
 };
 
@@ -82,6 +87,9 @@ function pageFrontend() {
     return { spec: solaraFrontend.spec, features: solaraFrontend.features };
 }
 
+// the apps (vuetify off) that wait for jupyter-vuetify, see registerVueComponents
+const appsWaitingForVuetify = new WeakSet();
+
 async function registerVueComponents(vueComponent, widgetView) {
     const app = vueComponent.$.appContext.app;
     await loadWidgetModule('jupyter-vue', jupyterVue =>
@@ -91,7 +99,41 @@ async function registerVueComponents(vueComponent, widgetView) {
         await loadWidgetModule('jupyter-vuetify', jupyterVuetify =>
             jupyterVuetify.addApp(app)
         );
+    } else if (!solaraFeatureEnabled('vuetify') && !appsWaitingForVuetify.has(app)) {
+        // vuetify off: the root is an ipyvue.Html, and jupyter-vuetify loads on the first Vuetify
+        // widget (if ever). Its addApp registers components on the app (e.g. the date picker).
+        appsWaitingForVuetify.add(app);
+        whenModuleDefined('jupyter-vuetify', jupyterVuetify =>
+            jupyterVuetify.addApp && jupyterVuetify.addApp(app)
+        );
     }
+}
+
+// Calls callback(module) once the AMD module is defined, without loading it. It runs before the
+// require callbacks of the module (e.g. the widget manager's), so before its widgets render.
+function whenModuleDefined(name, callback) {
+    if (requirejs.defined(name)) {
+        callback(requirejs(name));
+        return;
+    }
+    const previous = requirejs.onResourceLoad;
+    let done = false;
+    requirejs.onResourceLoad = function (context, map, depMaps) {
+        if (previous) {
+            previous.apply(this, arguments);
+        }
+        // requirejs.defined applies the map config: the page maps 'jupyter-vuetify' to
+        // 'nbextensions/jupyter-vuetify/nodeps', so map.id is never the name itself.
+        // requirejs sets the module as defined before it calls onResourceLoad.
+        if (!done && requirejs.defined(name)) {
+            done = true;
+            try {
+                callback(requirejs(name));
+            } catch (e) {
+                console.error(e);
+            }
+        }
+    };
 }
 
 let appAmdModulesDefined = false;
@@ -104,22 +146,31 @@ function defineAppAmdModules() {
     }
     appAmdModulesDefined = true;
     define("vue", [], () => Vue);
-    define("vuetify", [], () => Vuetify);
-    if (typeof vuetifyPlugin !== "undefined") {
-        define("solara-vuetify-plugin", [], () => ({ vuetifyPlugin }));
+    if (typeof Vuetify !== "undefined") {
+        // preloaded (or Vue 2, where Vuetify is part of the core bundle)
+        define("vuetify", [], () => Vuetify);
+        if (typeof vuetifyPlugin !== "undefined") {
+            define("solara-vuetify-plugin", [], () => ({ vuetifyPlugin }));
+        }
+    } else {
+        // not preloaded: the first module that needs vuetify loads the chunk (with a warning
+        // that names the flag). The chunk sets window.Vuetify and window.vuetifyPlugin, and
+        // installs the plugin on the app of the page (the shell without Vuetify).
+        define("vuetify", ["solara-feature!vuetify"], () => window.Vuetify);
+        define("solara-vuetify-plugin", ["solara-feature!vuetify"], () => ({ vuetifyPlugin: window.vuetifyPlugin }));
     }
 }
 
 // A feature that was not preloaded loaded on first use: tell the server (on the solara.control
-// comm), so it logs which flag to add. Queued until the widget manager (and its comm) exists.
-const lazyLoadQueue = [];
+// comm), so it logs which flag to add. Sent once the widget manager (and its comm) exists, and
+// again to the fresh kernel of a soft-remount (which creates the theme widgets when Vuetify loaded).
+const lazyLoadedFeatures = [];
 let sendLazyLoad = null;
 
 function reportLazyLoad(feature) {
+    lazyLoadedFeatures.push(feature);
     if (sendLazyLoad) {
         sendLazyLoad(feature);
-    } else {
-        lazyLoadQueue.push(feature);
     }
 }
 
@@ -501,6 +552,7 @@ async function solaraInit(mountId, appName) {
                 // pushState routing makes the boot-time path stale - recompute from the live URL now
                 const path = window.location.pathname.slice(solara.rootPath.length) + window.location.search;
                 modelId = await manager.run(appName, { path, dark: inDarkMode(), themes: widgetThemes(), frontend: pageFrontend() });
+                lazyLoadedFeatures.forEach(sendLazyLoad);
             }
             if (superseded()) {
                 // the socket dropped again (or a newer cycle took over) during the rebuild -
@@ -690,7 +742,7 @@ async function solaraInit(mountId, appName) {
             console.warn('solara: could not report the lazy load of', feature, e);
         }
     };
-    lazyLoadQueue.splice(0).forEach(sendLazyLoad);
+    lazyLoadedFeatures.forEach(sendLazyLoad);
     // it seems if we attach this to early, it will not be called
     app.$data.loading_text = 'Loading app';
     const path = window.location.pathname.slice(solara.rootPath.length) + window.location.search;

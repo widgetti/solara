@@ -17,6 +17,7 @@ import reacton.core
 import solara
 import solara.checks
 from solara.alias import rv
+from solara.server import frontend
 from solara.util import cwd, nested_get
 
 autoroute_level_context = solara.create_context(0)
@@ -26,6 +27,17 @@ solara_root = Path(solara.__file__).parent
 
 DefaultLayout: Any = solara.AppLayout  # type: ignore[has-type]
 _redirects: Dict[str, str] = {}
+
+
+def _default_layout() -> Optional[Any]:
+    """The layout to use when an app defines none.
+
+    AppLayout is made of Vuetify widgets, so without the vuetify frontend feature we use no layout,
+    unless the user replaced DefaultLayout.
+    """
+    if DefaultLayout is solara.AppLayout and not frontend.vuetify_enabled():
+        return None
+    return DefaultLayout
 
 
 def source_to_module(path: Path, initial_namespace={}) -> ModuleType:
@@ -194,7 +206,9 @@ def RenderPage(main_name: str = "Page"):
 
     # if no layouts are found, we use the default layout
     if layouts == []:
-        layouts = [DefaultLayout]
+        default_layout = _default_layout()
+        if default_layout is not None:
+            layouts = [default_layout]
 
     if route_current.component is None and route_current.module is None and (route_current.file is None or route_current.file.suffix != ".md"):
         return solara.Error(f"Page not found: {router.path}, route does not link to a (markdown) path or module or component")
@@ -329,7 +343,7 @@ def RenderPage(main_name: str = "Page"):
             else:
                 msg = f"{module} does not have a Page component or an app element"
 
-            with DefaultLayout() as main:
+            with (_default_layout() or solara.Column)() as main:
                 solara.Error(msg)
     return main
 

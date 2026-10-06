@@ -40,6 +40,9 @@
     {# a lazy loaded feature puts its CSS here, so the order is the same as when it is preloaded #}
     <template data-solara-css-slot="{{css.slot}}"></template>
     {% endfor %}
+    {% if not vuetify %}
+    {{ resources.include_css("/static/solara-vue.css") }}
+    {% endif %}
 
 
     {% if assets.fontawesome_enabled == True %}
@@ -61,6 +64,7 @@
     <style class="solara-template-css">
         {% include "loader-"~theme.loader~".css" %}
     </style>
+    {% if vuetify %}
     <!-- Include Vuetify background colours so static html from SSG renders the right general colour theme
         before first render. We remove these after Vue takes over rendering to avoid collisions -->
     <style id="pre-render-theme">
@@ -76,8 +80,10 @@
         color: #fff
     }
 </style>
+    {% endif %}
     {% endblock header %}
 </head>
+{% if vuetify %}
 {% raw -%}
 <script type="x-template" id="vue-app-template" style="display: none">
     <v-app :key="forceUpdateTrigger" :class="loadingPage ? 'solara-page-loading' : ''">
@@ -208,6 +214,9 @@
     </v-app>
 </script>
 {% endraw -%}
+{% else %}
+{% include "shell-vue.html" %}
+{% endif %}
 
 <body data-base-url="{{root_path}}/jupyter/">
     {% if perform_check %}
@@ -215,7 +224,9 @@
     {% endif %}
     {% if theme.variant == "auto" %}
     {% endif %}
-    {% if theme.variant == "light" %}
+    {% if not vuetify %}
+    <div id="app" class="solara-app">
+    {% elif theme.variant == "light" %}
     <div id="app" class="v-application v-application--is-ltr theme--light" data-app="true">
     {% elif theme.variant == "dark" %}
     <div id="app" class="v-application v-application--is-ltr theme--dark" data-app="true">
@@ -239,6 +250,10 @@
             return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
         }
         function inDarkMode() {
+            {% if not vuetify %}
+            // the shell without Vuetify has no dark mode: a dark Jupyter theme would put white text on its white page
+            return false;
+            {% endif %}
             if (getThemeVariant() == 'auto') {
                 return prefersDarkScheme();
             }
@@ -364,6 +379,7 @@
             },
             mounted() {
                 document.querySelector('#app').removeAttribute("style");
+                {% if vuetify %}
                 const setVuetifyTheme = (dark) => {
                     if (Vue.version.startsWith('3')) {
                         const name = this.$vuetify.theme.global.name;
@@ -382,6 +398,7 @@
                     setVuetifyTheme(inDarkMode());
                 });
                 document.getElementById('pre-render-theme').remove();
+                {% endif %}
             },
             methods: {
                 setCancelAutoRefresh() {
@@ -455,6 +472,7 @@
                         }, 1000);
                     }
                 },
+                {% if vuetify %}
                 '$vuetify.theme.dark': function (value) {
                     if ( value ) {
                         changeThemeCSS('dark');
@@ -466,6 +484,7 @@
                         appContainer.classList.add('theme--light');
                     }
                 }
+                {% endif %}
             },
             data() {
                 return {
@@ -502,6 +521,7 @@
         const vuetifyThemesV2 = Object.fromEntries(
             Object.entries(vuetifyThemes || {}).map(([name, theme]) => [name, theme.colors || theme])
         );
+        {% if vuetify %}
         if(vue3) {
             var app = Vue.createApp(appComponent).use(vuetifyPlugin)
                 .component("jupyter-widget-mount-point", jupyterWidgetMountPoint)
@@ -520,6 +540,12 @@
                 ...appComponent,
             });
         }
+        {% else %}
+        // the shell without Vuetify (shell-vue.html); a Vuetify widget loads Vuetify on first use
+        var app = Vue.createApp(appComponent)
+            .component("jupyter-widget-mount-point", jupyterWidgetMountPoint)
+            .mount('#app');
+        {% endif %}
         // Loading classic notebook extensions.
         {% if 'jupyter-vuetify/extension' in resources.nbextensions -%}
         window.enable_nbextensions = true;
