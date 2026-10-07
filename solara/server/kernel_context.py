@@ -56,6 +56,10 @@ class PageStatus(enum.Enum):
     CLOSED = "closed"
 
 
+class PageClosedError(RuntimeError):
+    """A page tried to connect after its close beacon arrived."""
+
+
 def _get_or_create_event_loop() -> asyncio.AbstractEventLoop:
     # On Python 3.12+, asyncio.get_event_loop() raises RuntimeError when called
     # from the main thread after asyncio.run() has cleaned up the loop.
@@ -331,7 +335,7 @@ class VirtualKernelContext:
             if self.closed_event.is_set():
                 raise RuntimeError("Cannot connect a page to a closed kernel")
             if page_id in self.page_status and self.page_status.get(page_id) == PageStatus.CLOSED:
-                raise RuntimeError("Cannot connect a page that is already closed")
+                raise PageClosedError("Cannot connect a page that is already closed")
             self.page_status[page_id] = PageStatus.CONNECTED
             connection = next(self._connection_numbers)
             self._page_connections.setdefault(page_id, set()).add(connection)
@@ -514,15 +518,18 @@ class VirtualKernelContext:
             if self.closed_event.is_set():
                 logger.info("Kernel %s was already closed when page %s attempted to close", self.id, page_id)
                 return future
-            known_page = page_id in self.page_status
-            if known_page and self.page_status[page_id] == PageStatus.CLOSED:
+            if page_id not in self.page_status:
+                # The tab closed before its websocket connected, or the beacon reached a server
+                # process with a stale copy of this kernel. Mark the page closed, so page_connect
+                # refuses a websocket that connects late, but leave the kernel and its cull alone:
+                # the kernel may still be initializing, and the server closes it after the refused
+                # connect (see close_if_no_live_pages).
+                logger.info("Close page %s for kernel %s before it connected", redact_id(page_id), redact_id(self.id))
+                self.page_status[page_id] = PageStatus.CLOSED
+                return future
+            if self.page_status[page_id] == PageStatus.CLOSED:
                 logger.info("Page %s already closed for kernel %s", page_id, self.id)
                 return future
-            if not known_page:
-                # The tab closed before its websocket connected, or the beacon reached a server
-                # process with a stale copy of this kernel. Marking the page closed makes
-                # page_connect refuse a websocket that connects late.
-                logger.info("Close page %s for kernel %s before it connected", redact_id(page_id), redact_id(self.id))
             self.page_status[page_id] = PageStatus.CLOSED
             logger.info("Close page %s for kernel %s", page_id, self.id)
             has_connected_pages = PageStatus.CONNECTED in self.page_status.values()
@@ -530,8 +537,7 @@ class VirtualKernelContext:
             # if we have disconnected pages, we may have cancelled the kernel cull task
             # if we still have connected pages, it will go to a disconnected state again
             # which will also trigger a new kernel cull
-            # A page that never connected never cancelled the cull, so it does not bump it.
-            if has_disconnected_pages and known_page:
+            if has_disconnected_pages:
                 future = self._bump_kernel_cull()
             if not (has_connected_pages or has_disconnected_pages):
                 should_close = True
@@ -543,6 +549,23 @@ class VirtualKernelContext:
             logger.info("No connected or disconnected pages, shutting down virtual kernel %s", self.id)
             self.close(reason="page-close")
         return future
+
+    def close_if_no_live_pages(self, reason: str):
+        """Close the kernel when no page is connected or disconnected.
+
+        The server calls this after page_connect refused a page whose close beacon came first, once
+        the kernel finished initializing. No page ever used the kernel then, so the persisted state
+        is not deleted: only reason="page-close" does that.
+        """
+        with self.lock:
+            if self.closed_event.is_set():
+                return
+            statuses = self.page_status.values()
+            if PageStatus.CONNECTED in statuses or PageStatus.DISCONNECTED in statuses:
+                return
+        # close() OUTSIDE self.lock: persistence teardown does backend I/O (§5.3)
+        logger.info("No connected or disconnected pages, shutting down virtual kernel %s", self.id)
+        self.close(reason=reason)
 
 
 try:

@@ -261,43 +261,33 @@ async def test_kernel_lifecycle_close_beacon_with_two_open_websockets(short_cull
 
 
 @pytest.mark.skipif(on_windows, reason="This test is flaky on Windows")
-async def test_kernel_lifecycle_close_beacon_for_unknown_page():
-    # A close beacon can name a page this kernel never saw, for instance when the beacon reaches
-    # another server process that holds a stale copy of the kernel. The page is marked closed, so
-    # a late websocket for it cannot connect, but the other pages and their cull stay as they are.
+@pytest.mark.parametrize("other_page_connected", [True, False])
+async def test_kernel_lifecycle_close_beacon_for_unknown_page(other_page_connected):
+    # A close beacon can name a page this kernel never saw: the tab closed before its websocket
+    # connected, or the beacon reached a server process with a stale copy of the kernel. The page
+    # is marked closed, so a late websocket for it cannot connect, but the kernel, its other pages,
+    # and their cull stay as they are.
     websocket = Mock()
-    context = kernel_context.initialize_virtual_kernel("session-id-1", "kernel-id-1", websocket)
-    connection = context.page_connect("page-id-1")
-    # the default cull timeout is long, so the cull cannot fire during this test
-    context.page_disconnect("page-id-1", connection)
-    cull_future = context._last_kernel_cull_future
-    assert cull_future is not None
+    context = kernel_context.initialize_virtual_kernel("session-id-1", f"kernel-id-unknown-{other_page_connected}", websocket)
+    try:
+        connection = context.page_connect("page-id-1")
+        if not other_page_connected:
+            # the default cull timeout is long, so the cull cannot fire during this test
+            context.page_disconnect("page-id-1", connection)
+        cull_future = context._last_kernel_cull_future
 
-    context.page_close("page-id-unknown")
-    assert context.page_status["page-id-unknown"] == kernel_context.PageStatus.CLOSED
-    assert context.page_status["page-id-1"] == kernel_context.PageStatus.DISCONNECTED
-    # the cull of the disconnected page is not bumped
-    assert context._last_kernel_cull_future is cull_future
-    assert not context.closed_event.is_set()
-    with pytest.raises(RuntimeError, match="already closed"):
-        context.page_connect("page-id-unknown")
-
-    context.page_close("page-id-1")
-    assert context.closed_event.is_set()
-
-
-@pytest.mark.skipif(on_windows, reason="This test is flaky on Windows")
-async def test_kernel_lifecycle_close_beacon_before_connect():
-    # The server creates the kernel, and only then connects the page. When the tab closes in
-    # between, the close beacon comes first. The kernel has no live page, so it closes, and the
-    # late connect fails instead of keeping a closed tab's kernel alive until the cull.
-    websocket = Mock()
-    context = kernel_context.initialize_virtual_kernel("session-id-1", "kernel-id-early-close", websocket)
-
-    context.page_close("page-id-1")
-    assert context.closed_event.is_set()
-    with pytest.raises(RuntimeError, match="closed kernel"):
-        context.page_connect("page-id-1")
+        context.page_close("page-id-unknown")
+        assert context.page_status["page-id-unknown"] == kernel_context.PageStatus.CLOSED
+        status = kernel_context.PageStatus.CONNECTED if other_page_connected else kernel_context.PageStatus.DISCONNECTED
+        assert context.page_status["page-id-1"] == status
+        # the cull is not bumped
+        assert context._last_kernel_cull_future is cull_future
+        assert not context.closed_event.is_set()
+        with pytest.raises(kernel_context.PageClosedError):
+            context.page_connect("page-id-unknown")
+        assert not context.closed_event.is_set()
+    finally:
+        context.close()
 
 
 class WebsocketOpenUntilDropped(solara.server.websocket.WebsocketWrapper):
@@ -318,6 +308,26 @@ class WebsocketOpenUntilDropped(solara.server.websocket.WebsocketWrapper):
         self.receiving.set()
         await self.dropped.wait()
         raise solara.server.websocket.WebSocketDisconnect()
+
+
+@pytest.mark.skipif(on_windows, reason="This test is flaky on Windows")
+async def test_app_loop_close_beacon_before_connect():
+    # The server creates the kernel, and only then connects the page. When the tab closes in
+    # between, the close beacon comes first. The websocket handler then refuses the late connect
+    # without an error, and closes the kernel, which has no live page, instead of keeping it until
+    # the cull.
+    websocket = WebsocketOpenUntilDropped()
+    context = kernel_context.initialize_virtual_kernel("session-id-1", "kernel-id-early-close", websocket)
+    try:
+        context.page_close("page-id-1")
+        assert not context.closed_event.is_set()
+        await solara.server.server.app_loop(websocket, {}, {}, "session-id-1", "kernel-id-early-close", "page-id-1")
+        assert context.closed_event.is_set()
+        assert context.close_reason == "closed-before-connect"
+        assert not websocket.receiving.is_set()
+    finally:
+        if not context.closed_event.is_set():
+            context.close()
 
 
 @pytest.mark.skipif(on_windows, reason="This test is flaky on Windows")

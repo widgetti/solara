@@ -22,7 +22,8 @@ from solara.lab import headers as solara_headers
 
 from . import app, jupytertools, patch, settings, websocket
 from .kernel import Kernel, deserialize_binary_message
-from .kernel_context import initialize_virtual_kernel
+from .kernel_context import PageClosedError, initialize_virtual_kernel
+from .utils import redact_id
 
 COOKIE_KEY_SESSION_ID = "solara-session-id"
 
@@ -142,7 +143,13 @@ async def app_loop(
         run_context = solara.util.nullcontext()
 
     kernel = context.kernel
-    connection = context.page_connect(page_id)
+    try:
+        connection = context.page_connect(page_id)
+    except PageClosedError:
+        # the tab closed before its websocket connected: the close beacon came first
+        logger.info("page %s closed before it connected to kernel %s", redact_id(page_id), redact_id(kernel_id))
+        context.close_if_no_live_pages(reason="closed-before-connect")
+        return
     try:
         with run_context, context:
             if user:
