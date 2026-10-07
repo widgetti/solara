@@ -35,6 +35,7 @@ def _FileDrop(
     on_file: Optional[Callable[[Union[FileInfo, List[FileInfo]]], None]] = None,
     lazy: bool = True,
     multiple: bool = False,
+    accept: Optional[str] = None,
 ):
     """Generic implementation used by FileDrop and FileDropMultiple.
 
@@ -44,7 +45,7 @@ def _FileDrop(
     file_info, set_file_info = solara.use_state(None)
     wired_files, set_wired_files = solara.use_state(cast(Optional[typing.List[FileInfo]], None))
 
-    file_drop = FileDropZone.element(label=label, on_total_progress=on_total_progress, on_file_info=set_file_info, multiple=multiple)  # type: ignore
+    file_drop = FileDropZone.element(label=label, on_total_progress=on_total_progress, on_file_info=set_file_info, multiple=multiple, accept=accept or "")  # type: ignore
 
     def wire_files():
         if not file_info:
@@ -87,6 +88,7 @@ def FileDrop(
     on_total_progress: Optional[Callable[[float], None]] = None,
     on_file: Optional[Callable[[FileInfo], None]] = None,
     lazy: bool = True,
+    accept: Optional[str] = None,
 ):
     """Region a user can drop a file into for file uploading.
 
@@ -110,6 +112,7 @@ def FileDrop(
      * `on_file`: Will be called with a `FileInfo` object, which contains the file `.name`, `.length` and a `.file_obj` object.
      * `lazy`: Whether to load the file contents into memory or not. If `False`,
         the file contents will be loaded into memory via the `.data` attribute of file object(s).
+     * `accept`: Comma-separated file extensions or MIME types to accept, for example `.csv,image/*`.
 
     ## Load into Pandas
     To load the data into a Pandas DF, set `lazy=False` and use `file['file_obj']` (be careful of memory)<br>
@@ -133,7 +136,7 @@ def FileDrop(
 
     """
 
-    return _FileDrop(label=label, on_total_progress=on_total_progress, on_file=on_file, lazy=lazy, multiple=False)
+    return _FileDrop(label=label, on_total_progress=on_total_progress, on_file=on_file, lazy=lazy, multiple=False, accept=accept)
 
 
 @solara.component
@@ -142,6 +145,7 @@ def FileDropMultiple(
     on_total_progress: Optional[Callable[[float], None]] = None,
     on_file: Optional[Callable[[List[FileInfo]], None]] = None,
     lazy: bool = True,
+    accept: Optional[str] = None,
 ):
     """Region a user can drop multiple files into for file uploading.
 
@@ -153,7 +157,8 @@ def FileDropMultiple(
      * `on_file`: Will be called with a `List[FileInfo]`.
         Each `FileInfo` contains the file `.name`, `.length`, `.file_obj` object, and `.data` attributes.
      * `lazy`: Whether to load the file contents into memory or not.
+     * `accept`: Comma-separated file extensions or MIME types to accept, for example `.csv,image/*`.
 
     """
 
-    return _FileDrop(label=label, on_total_progress=on_total_progress, on_file=on_file, lazy=lazy, multiple=True)
+    return _FileDrop(label=label, on_total_progress=on_total_progress, on_file=on_file, lazy=lazy, multiple=True, accept=accept)
