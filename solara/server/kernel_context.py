@@ -518,7 +518,8 @@ class VirtualKernelContext:
             if self.closed_event.is_set():
                 logger.info("Kernel %s was already closed when page %s attempted to close", self.id, page_id)
                 return future
-            if page_id not in self.page_status:
+            status = self.page_status.get(page_id)
+            if status is None:
                 # The tab closed before its websocket connected, or the beacon reached a server
                 # process with a stale copy of this kernel. Mark the page closed, so page_connect
                 # refuses a websocket that connects late, but leave the kernel and its cull alone:
@@ -527,7 +528,7 @@ class VirtualKernelContext:
                 logger.info("Close page %s for kernel %s before it connected", redact_id(page_id), redact_id(self.id))
                 self.page_status[page_id] = PageStatus.CLOSED
                 return future
-            if self.page_status[page_id] == PageStatus.CLOSED:
+            if status == PageStatus.CLOSED:
                 logger.info("Page %s already closed for kernel %s", page_id, self.id)
                 return future
             self.page_status[page_id] = PageStatus.CLOSED
