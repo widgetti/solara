@@ -514,14 +514,15 @@ class VirtualKernelContext:
             if self.closed_event.is_set():
                 logger.info("Kernel %s was already closed when page %s attempted to close", self.id, page_id)
                 return future
-            if page_id not in self.page_status:
-                # e.g. the beacon reached a server process with a stale copy of this kernel, or the
-                # tab closed before its websocket connected
-                logger.info("Page %s is unknown to kernel %s, ignoring close", redact_id(page_id), redact_id(self.id))
-                return future
-            if self.page_status[page_id] == PageStatus.CLOSED:
+            known_page = page_id in self.page_status
+            if known_page and self.page_status[page_id] == PageStatus.CLOSED:
                 logger.info("Page %s already closed for kernel %s", page_id, self.id)
                 return future
+            if not known_page:
+                # The tab closed before its websocket connected, or the beacon reached a server
+                # process with a stale copy of this kernel. Marking the page closed makes
+                # page_connect refuse a websocket that connects late.
+                logger.info("Close page %s for kernel %s before it connected", redact_id(page_id), redact_id(self.id))
             self.page_status[page_id] = PageStatus.CLOSED
             logger.info("Close page %s for kernel %s", page_id, self.id)
             has_connected_pages = PageStatus.CONNECTED in self.page_status.values()
@@ -529,7 +530,8 @@ class VirtualKernelContext:
             # if we have disconnected pages, we may have cancelled the kernel cull task
             # if we still have connected pages, it will go to a disconnected state again
             # which will also trigger a new kernel cull
-            if has_disconnected_pages:
+            # A page that never connected never cancelled the cull, so it does not bump it.
+            if has_disconnected_pages and known_page:
                 future = self._bump_kernel_cull()
             if not (has_connected_pages or has_disconnected_pages):
                 should_close = True
