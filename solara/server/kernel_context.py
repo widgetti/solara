@@ -833,34 +833,42 @@ def _restore_on_connect(context: VirtualKernelContext, backend, session_id: str)
         logger.warning("state takeover identity mismatch for kernel %s (session hijack?); serving unpersisted", kernel_id)
         return
 
-    try:
-        manager = solara_state.attach(
-            context,
-            backend,
-            session_hmac=shmac,
-            schema_tag=schema_tag,
-            generation=result.generation,
-            envelopes=result.fields,
-            restore_reason=result.reason,
+    # The context is already in `contexts`, so it can close while the takeover waits, for instance
+    # when a reconnect of the same tab reused it and was refused after the tab's close beacon.
+    # close() sets _teardown_done under _teardown_lock before its teardown reads the manager and
+    # the worker, so attach under that lock: either the teardown stops them, or they never start.
+    with context._teardown_lock:
+        if context._teardown_done:
+            logger.info("virtual kernel %s closed during the state takeover; serving unpersisted", redact_id(kernel_id))
+            return
+        try:
+            manager = solara_state.attach(
+                context,
+                backend,
+                session_hmac=shmac,
+                schema_tag=schema_tag,
+                generation=result.generation,
+                envelopes=result.fields,
+                restore_reason=result.reason,
+            )
+        except Exception:  # noqa - e.g. PersistKeyError from an unresolved class-body persist=True
+            logger.exception("state attach failed for kernel %s; serving unpersisted", kernel_id)
+            return
+
+        if manager.recovery_failed:
+            # all-or-nothing bail-out happened inside attach (§4.3): keep the manager (it exposes the
+            # recovery-failed state for a future canRecover:false) but do NOT start a worker - the
+            # kernel runs fresh.
+            return
+
+        worker = solara_state.KernelFlushWorker(
+            manager,
+            breaker=breaker,
+            has_connected_page=lambda: _has_connected_page(context),
+            on_superseded=lambda: context.close(reason="superseded"),
         )
-    except Exception:  # noqa - e.g. PersistKeyError from an unresolved class-body persist=True
-        logger.exception("state attach failed for kernel %s; serving unpersisted", kernel_id)
-        return
-
-    if manager.recovery_failed:
-        # all-or-nothing bail-out happened inside attach (§4.3): keep the manager (it exposes the
-        # recovery-failed state for a future canRecover:false) but do NOT start a worker - the
-        # kernel runs fresh.
-        return
-
-    worker = solara_state.KernelFlushWorker(
-        manager,
-        breaker=breaker,
-        has_connected_page=lambda: _has_connected_page(context),
-        on_superseded=lambda: context.close(reason="superseded"),
-    )
-    context.state_flush_worker = worker
-    worker.start()
+        context.state_flush_worker = worker
+        worker.start()
 
 
 def _reuse_context_is_stale(context: VirtualKernelContext, backend) -> bool:
@@ -997,5 +1005,9 @@ def initialize_virtual_kernel(session_id: str, kernel_id: str, websocket: websoc
             # budget of the rejection protocol (§5.5)
             worker.new_epoch()
 
+    if context._teardown_done:
+        # closed during the state takeover: its kernel is gone, so there is nothing to wire, and
+        # page_connect refuses the closed kernel
+        return context
     _wire_kernel_streams(context, websocket)
     return context
