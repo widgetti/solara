@@ -554,8 +554,8 @@ class VirtualKernelContext:
         """Close the kernel when no page is connected or disconnected.
 
         The server calls this after page_connect refused a page whose close beacon came first, once
-        the kernel finished initializing. No page ever used the kernel then, so the persisted state
-        is not deleted: only reason="page-close" does that.
+        the kernel finished initializing. Use a reason other than "page-close", so the persisted
+        state is kept until its TTL: the tab never connected, so it never confirmed that state.
         """
         with self.lock:
             if self.closed_event.is_set():

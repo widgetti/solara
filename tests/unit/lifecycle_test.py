@@ -331,6 +331,25 @@ async def test_app_loop_close_beacon_before_connect():
 
 
 @pytest.mark.skipif(on_windows, reason="This test is flaky on Windows")
+async def test_app_loop_close_beacon_before_connect_with_live_page():
+    # Two pages share a kernel (for instance with ?kernelid=). When one of them closes before it
+    # connects, its websocket is refused, but the kernel stays alive for the other page, and the
+    # refused websocket is not left on the kernel.
+    websocket_live = Mock()
+    websocket_closed = WebsocketOpenUntilDropped()
+    context = kernel_context.initialize_virtual_kernel("session-id-1", "kernel-id-shared", websocket_live)
+    try:
+        context.page_connect("page-id-live")
+        context.page_close("page-id-closed")
+        await solara.server.server.app_loop(websocket_closed, {}, {}, "session-id-1", "kernel-id-shared", "page-id-closed")
+        assert not context.closed_event.is_set()
+        assert context.page_status["page-id-live"] == kernel_context.PageStatus.CONNECTED
+        assert websocket_closed not in context.kernel.session.websockets
+    finally:
+        context.close()
+
+
+@pytest.mark.skipif(on_windows, reason="This test is flaky on Windows")
 async def test_app_loop_reconnect_before_disconnect(short_cull_timeout):
     # same as test_kernel_lifecycle_reconnect_before_disconnect, using the websocket handler
     websocket_old = WebsocketOpenUntilDropped()

@@ -148,6 +148,9 @@ async def app_loop(
     except PageClosedError:
         # the tab closed before its websocket connected: the close beacon came first
         logger.info("page %s closed before it connected to kernel %s", redact_id(page_id), redact_id(kernel_id))
+        # another page may keep the kernel alive, so do not leave this dead websocket on it
+        if context.kernel is not None and context.kernel.session is not None:
+            context.kernel.session.websockets.discard(ws)
         context.close_if_no_live_pages(reason="closed-before-connect")
         return
     try:
