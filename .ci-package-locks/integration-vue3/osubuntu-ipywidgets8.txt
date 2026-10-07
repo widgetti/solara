@@ -67,7 +67,7 @@ humanize==4.16.0
 identify==2.6.20
 idna==3.20
 importlib_metadata==9.0.1
-iniconfig==2.3.0
+iniconfig==2.3.1
 ipyaggrid==0.5.4
 ipycanvas==0.14.3
 ipydatawidgets==4.3.5
@@ -132,7 +132,7 @@ notebook==6.5.4
 notebook_shim==0.2.4
 numpy==1.26.4
 objgraph==3.6.2
-openai==3.24.0
+openai==3.26.0
 overrides==7.7.0
 packaging==26.3
 pandas==2.3.3
@@ -209,12 +209,12 @@ tiktoken==0.14.0
 tinycss2==1.5.1
 tomli==2.4.1
 tomlkit==0.15.1
-toolz==1.1.0
+toolz==1.2.0
 tornado==6.5.10
 traitlets==5.16.1
 traittypes==0.2.3
 truststore==0.10.4
-types-Markdown==3.10.2.20260712
+types-Markdown==3.10.2.20261007
 types-PyYAML==6.0.12.20260906
 types-requests==2.33.0.20261006
 typing_extensions==4.16.0
