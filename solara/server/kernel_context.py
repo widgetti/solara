@@ -37,6 +37,10 @@ from .utils import redact_id
 WebSocket = Any
 logger = logging.getLogger("solara.server.app")
 
+# session id prefix the servers use when the browser did not send the session cookie (cookies blocked,
+# or a Secure cookie the browser refuses on plain http, as Safari does on http://localhost)
+SESSION_ID_COOKIE_UNAVAILABLE_PREFIX = "session-id-cookie-unavailable:"
+
 
 class Local(threading.local):
     kernel_context_stack: Optional[List[Optional["VirtualKernelContext"]]] = None
@@ -931,11 +935,22 @@ def initialize_virtual_kernel(session_id: str, kernel_id: str, websocket: websoc
         assert context is not None
         # redact both session ids: they are bearer credentials for takeover once persistence is on.
         # The client message must NOT echo them back either (it reaches an attacker's browser).
-        logger.critical(
-            "Session id mismatch when reusing kernel (hack attempt?): %s != %s",
-            redact_id(context.session_id),
-            redact_id(session_id),
-        )
+        if context.session_id.startswith(SESSION_ID_COOKIE_UNAVAILABLE_PREFIX) or session_id.startswith(SESSION_ID_COOKIE_UNAVAILABLE_PREFIX):
+            # not a hack attempt: without the cookie a reconnect or popout cannot prove it owns the kernel
+            logger.warning(
+                "Session id mismatch when reusing kernel %s: the browser did not send the session cookie "
+                "(cookies blocked, or the browser refused the cookie), so a reconnect or popout cannot be matched to the session that "
+                "created the kernel: %s != %s",
+                redact_id(kernel_id),
+                redact_id(context.session_id),
+                redact_id(session_id),
+            )
+        else:
+            logger.critical(
+                "Session id mismatch when reusing kernel (hack attempt?): %s != %s",
+                redact_id(context.session_id),
+                redact_id(session_id),
+            )
         websocket.send_text("Session id mismatch when reusing kernel (hack attempt?)")
         # to avoid very fast reconnects (we are in a thread anyway)
         time.sleep(0.5)
