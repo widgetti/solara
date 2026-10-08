@@ -83,11 +83,11 @@ mypy==2.4.0
 mypy_extensions==1.1.0
 narwhals==2.26.0
 nbformat==5.11.1
-nest-asyncio2==1.7.3
+nest-asyncio2==1.7.4
 nodeenv==1.11.0
 numpy==1.26.4
 objgraph==3.6.2
-openai==3.26.0
+openai==3.26.1
 packaging==26.3
 pandas==3.0.6
 parso==0.8.7
@@ -95,7 +95,7 @@ pathspec==1.1.1
 pexpect==4.9.0
 pillow==12.3.0
 pixelmatch==0.4.0
-platformdirs==4.12.3
+platformdirs==4.12.4
 playwright==1.63.0
 plotly==7.1.0
 pluggy==1.6.0
