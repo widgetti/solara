@@ -50,6 +50,29 @@ def test_kernel_max_per_session(monkeypatch):
             ctx.close()
 
 
+def test_session_mismatch_without_cookie_is_not_logged_as_hack_attempt(caplog, monkeypatch):
+    # a browser that does not send the session cookie gets a fresh session id per websocket, so a
+    # reconnect or popout cannot match the kernel's session: refuse, but explain instead of crying wolf
+    monkeypatch.setattr(kernel_context.time, "sleep", lambda s: None)
+    prefix = kernel_context.SESSION_ID_COOKIE_UNAVAILABLE_PREFIX
+    kernel_context.initialize_virtual_kernel(prefix + "a", "kern-no-cookie", Mock())
+    kernel_context.initialize_virtual_kernel("real-session", "kern-with-cookie", Mock())
+    try:
+        with caplog.at_level("WARNING", logger="solara.server.app"):
+            with pytest.raises(ValueError, match="Session id mismatch"):
+                kernel_context.initialize_virtual_kernel(prefix + "b", "kern-no-cookie", Mock())
+            assert [r.levelname for r in caplog.records if "mismatch" in r.getMessage()] == ["WARNING"]
+            assert "did not send the session cookie" in caplog.text
+            caplog.clear()
+            # two different real cookies for the same kernel is still a potential hack attempt
+            with pytest.raises(ValueError, match="Session id mismatch"):
+                kernel_context.initialize_virtual_kernel("other-session", "kern-with-cookie", Mock())
+            assert [r.levelname for r in caplog.records if "mismatch" in r.getMessage()] == ["CRITICAL"]
+    finally:
+        for ctx in list(kernel_context.contexts.values()):
+            ctx.close()
+
+
 @pytest.mark.skipif(on_windows, reason="This test is flaky on Windows")
 async def test_kernel_lifecycle_reconnect_simple(short_cull_timeout):
     # a reconnect should be possible within the reconnect window

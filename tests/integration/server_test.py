@@ -220,6 +220,26 @@ def test_kernel_asyncio(browser: playwright.sync_api.Browser, solara_server, sol
         solara.server.settings.kernel.threaded = threaded
 
 
+def _session_cookie_attributes(response: requests.Response) -> str:
+    # the page sets only the session cookie, so the raw header is that cookie with its attributes
+    header = response.headers["set-cookie"].lower()
+    assert header.startswith(solara.server.server.COOKIE_KEY_SESSION_ID + "="), header
+    return header
+
+
+def test_session_cookie_attributes(solara_server, solara_app, extra_include_path):
+    with extra_include_path(HERE), solara_app("server_test:ClickButton"):
+        # Over plain http on localhost the cookie must not be Secure: Safari refuses a Secure cookie from
+        # http://localhost, after which reconnects and popouts fail with "Session id mismatch".
+        cookie = _session_cookie_attributes(requests.get(solara_server.base_url))
+        assert "secure" not in cookie
+        assert "samesite=lax" in cookie
+        # behind an https proxy we want a cross-site iframe to work, which requires Secure + SameSite=None
+        cookie = _session_cookie_attributes(requests.get(solara_server.base_url, headers={"x-forwarded-proto": "https"}))
+        assert "secure" in cookie
+        assert "samesite=none" in cookie
+
+
 def test_cdn_secure(solara_server, solara_app, extra_include_path):
     cdn_url = solara_server.base_url + "/_solara/cdn"
     assert solara.settings.assets.proxy

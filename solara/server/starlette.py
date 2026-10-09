@@ -357,7 +357,7 @@ async def _kernel_connection(ws: starlette.websockets.WebSocket):
 
     if not session_id:
         logger.warning("no session cookie")
-        session_id = "session-id-cookie-unavailable:" + str(uuid4())
+        session_id = kernel_context.SESSION_ID_COOKIE_UNAVAILABLE_PREFIX + str(uuid4())
     # we use the jupyter session_id query parameter as the key/id
     # for a page scope.
     page_id = ws.query_params["session_id"]
@@ -610,11 +610,14 @@ See also https://solara.dev/documentation/getting_started/deploying/self-hosted
     samesite = "lax"
     secure = False
     httponly = settings.session.http_only
-    # we want samesite, so we can set a cookie when embedded in an iframe, such as on huggingface
+    # we want samesite=none, so the cookie is also set when embedded in a cross-site iframe, such as on huggingface
     # however, samesite=none requires Secure https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite
-    # when hosted on the localhost domain we can always set the Secure flag
-    # to allow samesite https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#restrict_access_to_cookies
-    if request.scope["scheme"] == "https" or request.headers.get("x-forwarded-proto", "http") == "https" or request.base_url.hostname == "localhost":
+    # Over plain http on localhost we deliberately do NOT set Secure: Chrome and Firefox accept a Secure cookie
+    # from http://localhost, but Safari does not (https://bugs.webkit.org/show_bug.cgi?id=218980), so Safari would
+    # never send the session cookie back. Every websocket then gets a fresh session id, and reconnects and popouts
+    # (ipypopout) fail with "Session id mismatch". A samesite=lax cookie is still sent to an iframe when the
+    # embedding page is on localhost as well (the port does not matter for samesite).
+    if request.scope["scheme"] == "https" or request.headers.get("x-forwarded-proto", "http") == "https":
         samesite = "none"
         secure = True
     elif request.base_url.hostname != "localhost":

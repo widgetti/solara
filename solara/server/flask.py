@@ -141,7 +141,7 @@ def kernels_connection(ws: simple_websocket.Server, kernel_id: str, name: str):
         logger.info("Solara kernel requested for session_id=%s kernel_id=%s", session_id, kernel_id)
         if session_id is None:
             logger.warning("no session cookie")
-            session_id = "session-id-cookie-unavailable:" + str(uuid4())
+            session_id = kernel_context.SESSION_ID_COOKIE_UNAVAILABLE_PREFIX + str(uuid4())
         ws_wrapper = WebsocketWrapper(ws)
         headers_dict: Dict[str, List[str]] = {}
         for k, v in request.headers.__iter__():
@@ -255,12 +255,12 @@ def read_root(path):
 
     samesite = "lax"
     secure = False
-    # we want samesite, so we can set a cookie when embedded in an iframe, such as on huggingface
+    # we want samesite=none, so the cookie is also set when embedded in a cross-site iframe, such as on huggingface
     # however, samesite=none requires Secure https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite
-    # when hosted on the localhost domain we can always set the Secure flag
-    # to allow samesite https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#restrict_access_to_cookies
+    # Over plain http on localhost we deliberately do NOT set Secure, since Safari does not accept a Secure cookie
+    # from http://localhost (see the starlette server for details).
     o = urlparse(request.base_url)
-    if request.headers.get("x-forwarded-proto", "http") == "https" or o.hostname == "localhost":
+    if request.headers.get("x-forwarded-proto", "http") == "https" or o.scheme == "https":
         samesite = "none"
         secure = True
 
