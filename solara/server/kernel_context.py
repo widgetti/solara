@@ -56,6 +56,10 @@ class PageStatus(enum.Enum):
     CLOSED = "closed"
 
 
+class PageClosedError(RuntimeError):
+    """A page tried to connect after its close beacon arrived."""
+
+
 def _get_or_create_event_loop() -> asyncio.AbstractEventLoop:
     # On Python 3.12+, asyncio.get_event_loop() raises RuntimeError when called
     # from the main thread after asyncio.run() has cleaned up the loop.
@@ -331,7 +335,7 @@ class VirtualKernelContext:
             if self.closed_event.is_set():
                 raise RuntimeError("Cannot connect a page to a closed kernel")
             if page_id in self.page_status and self.page_status.get(page_id) == PageStatus.CLOSED:
-                raise RuntimeError("Cannot connect a page that is already closed")
+                raise PageClosedError("Cannot connect a page that is already closed")
             self.page_status[page_id] = PageStatus.CONNECTED
             connection = next(self._connection_numbers)
             self._page_connections.setdefault(page_id, set()).add(connection)
@@ -514,7 +518,17 @@ class VirtualKernelContext:
             if self.closed_event.is_set():
                 logger.info("Kernel %s was already closed when page %s attempted to close", self.id, page_id)
                 return future
-            if self.page_status[page_id] == PageStatus.CLOSED:
+            status = self.page_status.get(page_id)
+            if status is None:
+                # The tab closed before its websocket connected, or the beacon reached a server
+                # process with a stale copy of this kernel. Mark the page closed, so page_connect
+                # refuses a websocket that connects late, but leave the kernel and its cull alone:
+                # the kernel may still be initializing, and the server closes it after the refused
+                # connect (see close_if_no_live_pages).
+                logger.info("Close page %s for kernel %s before it connected", redact_id(page_id), redact_id(self.id))
+                self.page_status[page_id] = PageStatus.CLOSED
+                return future
+            if status == PageStatus.CLOSED:
                 logger.info("Page %s already closed for kernel %s", page_id, self.id)
                 return future
             self.page_status[page_id] = PageStatus.CLOSED
@@ -536,6 +550,23 @@ class VirtualKernelContext:
             logger.info("No connected or disconnected pages, shutting down virtual kernel %s", self.id)
             self.close(reason="page-close")
         return future
+
+    def close_if_no_live_pages(self, reason: str):
+        """Close the kernel when no page is connected or disconnected.
+
+        The server calls this after page_connect refused a page whose close beacon came first, once
+        the kernel finished initializing. Use a reason other than "page-close", so the persisted
+        state is kept until its TTL: the tab never connected, so it never confirmed that state.
+        """
+        with self.lock:
+            if self.closed_event.is_set():
+                return
+            statuses = self.page_status.values()
+            if PageStatus.CONNECTED in statuses or PageStatus.DISCONNECTED in statuses:
+                return
+        # close() OUTSIDE self.lock: persistence teardown does backend I/O (§5.3)
+        logger.info("No connected or disconnected pages, shutting down virtual kernel %s", self.id)
+        self.close(reason=reason)
 
 
 try:
@@ -803,34 +834,42 @@ def _restore_on_connect(context: VirtualKernelContext, backend, session_id: str)
         logger.warning("state takeover identity mismatch for kernel %s (session hijack?); serving unpersisted", kernel_id)
         return
 
-    try:
-        manager = solara_state.attach(
-            context,
-            backend,
-            session_hmac=shmac,
-            schema_tag=schema_tag,
-            generation=result.generation,
-            envelopes=result.fields,
-            restore_reason=result.reason,
+    # The context is already in `contexts`, so it can close while the takeover waits, for instance
+    # when a reconnect of the same tab reused it and was refused after the tab's close beacon.
+    # close() sets _teardown_done under _teardown_lock before its teardown reads the manager and
+    # the worker, so attach under that lock: either the teardown stops them, or they never start.
+    with context._teardown_lock:
+        if context._teardown_done:
+            logger.info("virtual kernel %s closed during the state takeover; serving unpersisted", redact_id(kernel_id))
+            return
+        try:
+            manager = solara_state.attach(
+                context,
+                backend,
+                session_hmac=shmac,
+                schema_tag=schema_tag,
+                generation=result.generation,
+                envelopes=result.fields,
+                restore_reason=result.reason,
+            )
+        except Exception:  # noqa - e.g. PersistKeyError from an unresolved class-body persist=True
+            logger.exception("state attach failed for kernel %s; serving unpersisted", kernel_id)
+            return
+
+        if manager.recovery_failed:
+            # all-or-nothing bail-out happened inside attach (§4.3): keep the manager (it exposes the
+            # recovery-failed state for a future canRecover:false) but do NOT start a worker - the
+            # kernel runs fresh.
+            return
+
+        worker = solara_state.KernelFlushWorker(
+            manager,
+            breaker=breaker,
+            has_connected_page=lambda: _has_connected_page(context),
+            on_superseded=lambda: context.close(reason="superseded"),
         )
-    except Exception:  # noqa - e.g. PersistKeyError from an unresolved class-body persist=True
-        logger.exception("state attach failed for kernel %s; serving unpersisted", kernel_id)
-        return
-
-    if manager.recovery_failed:
-        # all-or-nothing bail-out happened inside attach (§4.3): keep the manager (it exposes the
-        # recovery-failed state for a future canRecover:false) but do NOT start a worker - the
-        # kernel runs fresh.
-        return
-
-    worker = solara_state.KernelFlushWorker(
-        manager,
-        breaker=breaker,
-        has_connected_page=lambda: _has_connected_page(context),
-        on_superseded=lambda: context.close(reason="superseded"),
-    )
-    context.state_flush_worker = worker
-    worker.start()
+        context.state_flush_worker = worker
+        worker.start()
 
 
 def _reuse_context_is_stale(context: VirtualKernelContext, backend) -> bool:
@@ -967,5 +1006,9 @@ def initialize_virtual_kernel(session_id: str, kernel_id: str, websocket: websoc
             # budget of the rejection protocol (§5.5)
             worker.new_epoch()
 
+    if context._teardown_done:
+        # closed during the state takeover: its kernel is gone, so there is nothing to wire, and
+        # page_connect refuses the closed kernel
+        return context
     _wire_kernel_streams(context, websocket)
     return context

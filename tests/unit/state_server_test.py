@@ -291,6 +291,28 @@ def test_page_close_deletes_hash(backend):
     assert backend.peek_generation("kern-pc") is None
 
 
+def test_close_during_takeover_does_not_attach(backend, monkeypatch):
+    # The context is in `contexts` while the takeover waits on the backend, so it can close then,
+    # for instance when a reconnect of the same tab reused it and was refused after the tab's close
+    # beacon. The takeover must not attach persistence or start a flush worker on the closed
+    # kernel, because nothing would ever stop them.
+    solara.reactive("start", persist=True, key="test.server.closetakeover")
+    kernel_id = "kern-close-takeover"
+    takeover = backend.takeover
+
+    def takeover_after_close(*args, **kwargs):
+        kc.contexts[kernel_id].close(reason="closed-before-connect")
+        return takeover(*args, **kwargs)
+
+    monkeypatch.setattr(backend, "takeover", takeover_after_close)
+    context = kc.initialize_virtual_kernel("sess-close-takeover", kernel_id, Mock())
+    assert context.closed_event.is_set()
+    assert context.state_persistence is None
+    assert context.state_flush_worker is None
+    with pytest.raises(RuntimeError, match="closed kernel"):
+        context.page_connect("p1")
+
+
 @pytest.mark.parametrize("reason", ["cull", "evicted", "server-shutdown"])
 def test_non_page_close_keeps_hash(backend, reason):
     context = _connect_flush(backend, f"test.server.keep.{reason}", 9, f"sess-{reason}", f"kern-{reason}")
