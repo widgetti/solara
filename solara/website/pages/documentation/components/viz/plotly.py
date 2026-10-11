@@ -18,46 +18,54 @@ df = px.data.iris()
 
 @solara.component
 def Page():
-    with solara.VBox() as main:
-        selection_data, set_selection_data = solara.use_state(None)
-        click_data, set_click_data = solara.use_state(None)
-        hover_data, set_hover_data = solara.use_state(None)
-        unhover_data, set_unhover_data = solara.use_state(None)
-        deselect_data, set_deselect_data = solara.use_state(None)
-        fig = px.scatter(df, x="sepal_width", y="sepal_length", color="species")
-        solara.FigurePlotly(
-            fig, on_selection=set_selection_data, on_click=set_click_data, on_hover=set_hover_data, on_unhover=set_unhover_data, on_deselect=set_deselect_data
-        )
+    state = solara.use_reactive(
+        {
+            "selection_data": None,
+            "click_data": None,
+            "hover_data": None,
+            "unhover_data": None,
+            "deselect_data": None,
+        }
+    )
 
-        solara.Markdown(
-            f"""
+    fig = px.scatter(df, x="sepal_width", y="sepal_length", color="species")
+    solara.FigurePlotly(
+        fig,
+        on_selection=lambda data: state.set({**state.value, "selection_data": data}),
+        on_click=lambda data: state.set({**state.value, "click_data": data}),
+        on_hover=lambda data: state.set({**state.value, "hover_data": data}),
+        on_unhover=lambda data: state.set({**state.value, "unhover_data": data}),
+        on_deselect=lambda data: state.set({**state.value, "deselect_data": data}),
+    )
+
+    solara.Markdown(
+        f"""
 # Events data
 ## selection
 ```
-{selection_data}
+{state.value['selection_data']}
 ```
 
 ## click
 ```
-{click_data}
+{state.value['click_data']}
 ```
 
 ## hover
 ```
-{hover_data}
+{state.value['hover_data']}
 ```
 
 ## unhover
 ```
-{unhover_data}
+{state.value['unhover_data']}
 ```
 
 ## deselect
 ```
-{deselect_data}
+{state.value['deselect_data']}
 ```
 
 
 """
-        )
-    return main
+    )
