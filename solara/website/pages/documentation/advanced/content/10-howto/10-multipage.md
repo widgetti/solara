@@ -132,7 +132,7 @@ Go to http://localhost:8765 ([or click here](http://localhost:8765)), explore th
 
 If you want to setup a multipage app in a single script, you do not need to define a `Page` component, but you can define a list of routes.
 
-```python
+```{.python pycafe-link}
 import solara
 
 
@@ -170,7 +170,8 @@ Solara recognizes this and will pass all routes such as `/tabular/foo` and `/tab
 
 An example Page component could look like this:
 
-```python
+```{.python pycafe-link}
+import solara
 @solara.component
 def Page(name: str = "foo"):
     subpages = ["foo", "bar", "solara", "react-ipywidgets"]
