@@ -40,6 +40,11 @@
     }
     </script>
     <style class="solara-template-css">
+        /* the body needs a definite height so percentage-height widget trees (e.g. ipypopout popouts) resolve, independent of the loader */
+        html,
+        body {
+            height: 100vh;
+        }
         {% include "loader-"~theme.loader~".css" %}
     </style>
     <!-- Include Vuetify background colours so static html from SSG renders the right general colour theme
