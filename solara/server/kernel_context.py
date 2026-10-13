@@ -60,6 +60,17 @@ class PageClosedError(RuntimeError):
     """A page tried to connect after its close beacon arrived."""
 
 
+def _set_event() -> threading.Event:
+    event = threading.Event()
+    event.set()
+    return event
+
+
+# How long a reconnect waits for the websocket that created its kernel to finish initializing it.
+# The state takeover is capped by state.connect_timeout, so this only runs out when something hangs.
+REUSE_WAIT_SECONDS = 10.0
+
+
 def _get_or_create_event_loop() -> asyncio.AbstractEventLoop:
     # On Python 3.12+, asyncio.get_event_loop() raises RuntimeError when called
     # from the main thread after asyncio.run() has cleaned up the loop.
@@ -131,6 +142,10 @@ class VirtualKernelContext:
     # off-lock, §5.3). A plain lock + flag rather than the racy outside-lock closed_event check.
     _teardown_lock: threading.Lock = dataclasses.field(default_factory=threading.Lock)
     _teardown_done: bool = False
+    # Cleared while the websocket that created this context initializes it (state takeover and
+    # attach). A reconnect that reuses the context waits for it, so it never gets a half-built
+    # kernel, and nothing it does can close the kernel during the takeover.
+    _initialized: threading.Event = dataclasses.field(default_factory=_set_event)
     _on_close_callbacks: List[Callable[[], None]] = dataclasses.field(default_factory=list)
     lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
     event_loop: asyncio.AbstractEventLoop = dataclasses.field(default_factory=_get_or_create_event_loop)
@@ -834,42 +849,34 @@ def _restore_on_connect(context: VirtualKernelContext, backend, session_id: str)
         logger.warning("state takeover identity mismatch for kernel %s (session hijack?); serving unpersisted", kernel_id)
         return
 
-    # The context is already in `contexts`, so it can close while the takeover waits, for instance
-    # when a reconnect of the same tab reused it and was refused after the tab's close beacon.
-    # close() sets _teardown_done under _teardown_lock before its teardown reads the manager and
-    # the worker, so attach under that lock: either the teardown stops them, or they never start.
-    with context._teardown_lock:
-        if context._teardown_done:
-            logger.info("virtual kernel %s closed during the state takeover; serving unpersisted", redact_id(kernel_id))
-            return
-        try:
-            manager = solara_state.attach(
-                context,
-                backend,
-                session_hmac=shmac,
-                schema_tag=schema_tag,
-                generation=result.generation,
-                envelopes=result.fields,
-                restore_reason=result.reason,
-            )
-        except Exception:  # noqa - e.g. PersistKeyError from an unresolved class-body persist=True
-            logger.exception("state attach failed for kernel %s; serving unpersisted", kernel_id)
-            return
-
-        if manager.recovery_failed:
-            # all-or-nothing bail-out happened inside attach (§4.3): keep the manager (it exposes the
-            # recovery-failed state for a future canRecover:false) but do NOT start a worker - the
-            # kernel runs fresh.
-            return
-
-        worker = solara_state.KernelFlushWorker(
-            manager,
-            breaker=breaker,
-            has_connected_page=lambda: _has_connected_page(context),
-            on_superseded=lambda: context.close(reason="superseded"),
+    try:
+        manager = solara_state.attach(
+            context,
+            backend,
+            session_hmac=shmac,
+            schema_tag=schema_tag,
+            generation=result.generation,
+            envelopes=result.fields,
+            restore_reason=result.reason,
         )
-        context.state_flush_worker = worker
-        worker.start()
+    except Exception:  # noqa - e.g. PersistKeyError from an unresolved class-body persist=True
+        logger.exception("state attach failed for kernel %s; serving unpersisted", kernel_id)
+        return
+
+    if manager.recovery_failed:
+        # all-or-nothing bail-out happened inside attach (§4.3): keep the manager (it exposes the
+        # recovery-failed state for a future canRecover:false) but do NOT start a worker - the
+        # kernel runs fresh.
+        return
+
+    worker = solara_state.KernelFlushWorker(
+        manager,
+        breaker=breaker,
+        has_connected_page=lambda: _has_connected_page(context),
+        on_superseded=lambda: context.close(reason="superseded"),
+    )
+    context.state_flush_worker = worker
+    worker.start()
 
 
 def _reuse_context_is_stale(context: VirtualKernelContext, backend) -> bool:
@@ -961,9 +968,9 @@ def initialize_virtual_kernel(session_id: str, kernel_id: str, websocket: websoc
                     raise RuntimeError("too many live kernels for this session")
             kernel = Kernel()
             logger.info("new virtual kernel: %s", kernel_id)
-            context = contexts[kernel_id] = VirtualKernelContext(
-                id=kernel_id, session_id=session_id, kernel=kernel, control_sockets=[], widgets={}, templates={}
-            )
+            context = VirtualKernelContext(id=kernel_id, session_id=session_id, kernel=kernel, control_sockets=[], widgets={}, templates={})
+            context._initialized.clear()
+            contexts[kernel_id] = context
             newly_created = True
 
     if mismatch:
@@ -981,12 +988,36 @@ def initialize_virtual_kernel(session_id: str, kernel_id: str, websocket: websoc
         raise ValueError("Session id mismatch")
 
     if newly_created:
-        with context:
-            widgets.register_comm_target(context.kernel)
-            appmodule.register_solara_comm_target(context.kernel)
-        if backend is not None:
-            _restore_on_connect(context, backend, session_id)
+        try:
+            with context:
+                widgets.register_comm_target(context.kernel)
+                appmodule.register_solara_comm_target(context.kernel)
+            if backend is not None:
+                _restore_on_connect(context, backend, session_id)
+            if context._teardown_done:
+                # the server shut down, or the kernel was evicted, during the state takeover: its
+                # kernel is gone, so there is nothing to wire, and page_connect refuses it
+                return context
+            _wire_kernel_streams(context, websocket)
+        except BaseException:
+            # do not let a waiting reconnect reuse a half-built kernel
+            try:
+                context.close(reason="init-failed")
+            except Exception:  # noqa
+                logger.exception("error closing virtual kernel %s after a failed initialization", kernel_id)
+            raise
+        finally:
+            context._initialized.set()
+        return context
     else:
+        # wait until the websocket that created this context finished initializing it, before we
+        # look at its state or move it to our event loop
+        if not context._initialized.wait(timeout=REUSE_WAIT_SECONDS + solara.server.settings.state.connect_timeout):
+            logger.warning("virtual kernel %s is still initializing; refusing this connection", redact_id(kernel_id))
+            return None
+        if context._teardown_done:
+            # it closed while we waited: get a new kernel
+            return initialize_virtual_kernel(session_id, kernel_id, websocket)
         # reuse branch (§5.1): verify ownership against the shared backend before serving
         if backend is not None and context.state_persistence is not None and _reuse_context_is_stale(context, backend):
             logger.info("virtual kernel %s superseded (generation mismatch); recreating with a fresh takeover", kernel_id)
@@ -1007,7 +1038,7 @@ def initialize_virtual_kernel(session_id: str, kernel_id: str, websocket: websoc
             worker.new_epoch()
 
     if context._teardown_done:
-        # closed during the state takeover: its kernel is gone, so there is nothing to wire, and
+        # closed after the wait above: its kernel is gone, so there is nothing to wire, and
         # page_connect refuses the closed kernel
         return context
     _wire_kernel_streams(context, websocket)

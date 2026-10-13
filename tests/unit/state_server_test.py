@@ -291,26 +291,48 @@ def test_page_close_deletes_hash(backend):
     assert backend.peek_generation("kern-pc") is None
 
 
-def test_close_during_takeover_does_not_attach(backend, monkeypatch):
-    # The context is in `contexts` while the takeover waits on the backend, so it can close then,
-    # for instance when a reconnect of the same tab reused it and was refused after the tab's close
-    # beacon. The takeover must not attach persistence or start a flush worker on the closed
-    # kernel, because nothing would ever stop them.
-    solara.reactive("start", persist=True, key="test.server.closetakeover")
-    kernel_id = "kern-close-takeover"
+def test_reconnect_waits_for_the_takeover(backend, monkeypatch):
+    # One tab: its first websocket creates the kernel and waits in the state takeover, its socket
+    # drops, and the reconnect reuses the kernel. The tab then closes, so the close beacon marks the
+    # page closed, and the reconnect is refused and closes the kernel. The reconnect must wait for
+    # the takeover, so that close sees the flush worker and stops it, instead of the takeover
+    # starting a worker on a closed kernel afterwards.
+    solara.reactive("start", persist=True, key="test.server.reusewait")
+    monkeypatch.setattr(solara.server.settings.state, "connect_timeout", 5.0)
+    session_id, kernel_id = "sess-reuse-wait", "kern-reuse-wait"
     takeover = backend.takeover
+    in_takeover = threading.Event()
+    release = threading.Event()
 
-    def takeover_after_close(*args, **kwargs):
-        kc.contexts[kernel_id].close(reason="closed-before-connect")
+    def slow_takeover(*args, **kwargs):
+        in_takeover.set()
+        release.wait(5)
         return takeover(*args, **kwargs)
 
-    monkeypatch.setattr(backend, "takeover", takeover_after_close)
-    context = kc.initialize_virtual_kernel("sess-close-takeover", kernel_id, Mock())
-    assert context.closed_event.is_set()
-    assert context.state_persistence is None
-    assert context.state_flush_worker is None
-    with pytest.raises(RuntimeError, match="closed kernel"):
+    monkeypatch.setattr(backend, "takeover", slow_takeover)
+    first = threading.Thread(target=kc.initialize_virtual_kernel, args=(session_id, kernel_id, Mock()))
+    first.start()
+    assert in_takeover.wait(5)
+    context = kc.contexts[kernel_id]
+    reused = []
+    second = threading.Thread(target=lambda: reused.append(kc.initialize_virtual_kernel(session_id, kernel_id, Mock())))
+    second.start()
+    second.join(0.2)
+    assert second.is_alive(), "the reconnect should wait for the takeover"
+
+    context.page_close("p1")  # the close beacon comes before the page connects
+    release.set()
+    first.join(5)
+    second.join(5)
+    assert reused == [context]
+    worker = context.state_flush_worker
+    assert worker is not None
+
+    with pytest.raises(kc.PageClosedError):
         context.page_connect("p1")
+    context.close_if_no_live_pages(reason="closed-before-connect")
+    assert context.closed_event.is_set()
+    assert worker._closed
 
 
 @pytest.mark.parametrize("reason", ["cull", "evicted", "server-shutdown"])

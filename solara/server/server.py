@@ -128,7 +128,7 @@ async def app_loop(
 ):
     context = initialize_virtual_kernel(session_id, kernel_id, ws)
     if context is None:
-        logging.warning("invalid kernel id: %r", kernel_id)
+        logging.warning("no virtual kernel for kernel id: %r", kernel_id)
         # to avoid very fast reconnects (we are in a thread anyway)
         time.sleep(0.5)
         return
