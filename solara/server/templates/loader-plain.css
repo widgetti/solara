@@ -1,3 +1,9 @@
+/* the body needs a definite height so percentage-height widget trees (e.g. ipypopout popouts) resolve, like with the solara loader */
+html,
+body {
+    height: 100vh;
+}
+
 #loader-container {
     width: 100vw;
     height: 100vh;
