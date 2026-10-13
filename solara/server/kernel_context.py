@@ -142,6 +142,9 @@ class VirtualKernelContext:
     # off-lock, §5.3). A plain lock + flag rather than the racy outside-lock closed_event check.
     _teardown_lock: threading.Lock = dataclasses.field(default_factory=threading.Lock)
     _teardown_done: bool = False
+    # Set under self.lock in the same step that finds no live page, before close() runs outside
+    # the lock, so page_connect cannot connect a page to a kernel that is about to close.
+    _closing: bool = False
     # Cleared while the websocket that created this context initializes it (state takeover and
     # attach). A reconnect that reuses the context waits for it, so it never gets a half-built
     # kernel, and nothing it does can close the kernel during the takeover.
@@ -335,6 +338,9 @@ class VirtualKernelContext:
                 logger.debug("State: %r", state)
                 pickle.dump(state, f)
 
+    def _is_closing(self) -> bool:
+        return self._closing or self._teardown_done or self.closed_event.is_set()
+
     def page_connect(self, page_id: str) -> int:
         """Signal that a page has connected, and cancel a scheduled kernel cull.
 
@@ -347,7 +353,7 @@ class VirtualKernelContext:
             raise RuntimeError("Cannot connect a page to a closed kernel")
         logger.info("Connect page %s for kernel %s", page_id, self.id)
         with self.lock:
-            if self.closed_event.is_set():
+            if self.closed_event.is_set() or self._closing:
                 raise RuntimeError("Cannot connect a page to a closed kernel")
             if page_id in self.page_status and self.page_status.get(page_id) == PageStatus.CLOSED:
                 raise PageClosedError("Cannot connect a page that is already closed")
@@ -557,6 +563,7 @@ class VirtualKernelContext:
                 future = self._bump_kernel_cull()
             if not (has_connected_pages or has_disconnected_pages):
                 should_close = True
+                self._closing = True
             else:
                 logger.info("Still have connected or disconnected pages, keeping virtual kernel %s alive", self.id)
         if should_close:
@@ -579,6 +586,7 @@ class VirtualKernelContext:
             statuses = self.page_status.values()
             if PageStatus.CONNECTED in statuses or PageStatus.DISCONNECTED in statuses:
                 return
+            self._closing = True
         # close() OUTSIDE self.lock: persistence teardown does backend I/O (§5.3)
         logger.info("No connected or disconnected pages, shutting down virtual kernel %s", self.id)
         self.close(reason=reason)
@@ -929,9 +937,9 @@ def initialize_virtual_kernel(session_id: str, kernel_id: str, websocket: websoc
 
     # Reserve or find the context slot under a small lock (no backend I/O here, §5.1). A brand-new
     # context is created and registered immediately - the slot is "reserved" - so a concurrent
-    # reconnect for the same kernel finds it via the reuse branch (its state_persistence is still
-    # None then -> not stale) instead of racing a second takeover, while the takeover I/O itself
-    # runs off-lock below.
+    # reconnect for the same kernel finds it via the reuse branch, which waits on _initialized
+    # until the takeover is done, instead of racing a second takeover, while the takeover I/O
+    # itself runs off-lock below.
     with _init_lock:
         context = contexts.get(kernel_id)
         # A context whose close() has begun must not be reused. After an evict/cull/supersede the
@@ -941,7 +949,7 @@ def initialize_virtual_kernel(session_id: str, kernel_id: str, websocket: websoc
         # set. _teardown_done flips at the very start of close(), before the socket drop that
         # triggers the reconnect, so it reliably flags the doomed context here. close() guards its
         # own `del contexts` by identity, so overwriting the slot below is safe.
-        if context is not None and (context._teardown_done or context.closed_event.is_set()):
+        if context is not None and context._is_closing():
             context = None
         mismatch = context is not None and context.session_id != session_id
         newly_created = False
@@ -994,7 +1002,7 @@ def initialize_virtual_kernel(session_id: str, kernel_id: str, websocket: websoc
                 appmodule.register_solara_comm_target(context.kernel)
             if backend is not None:
                 _restore_on_connect(context, backend, session_id)
-            if context._teardown_done:
+            if context._is_closing():
                 # the server shut down, or the kernel was evicted, during the state takeover: its
                 # kernel is gone, so there is nothing to wire, and page_connect refuses it
                 return context
@@ -1015,9 +1023,11 @@ def initialize_virtual_kernel(session_id: str, kernel_id: str, websocket: websoc
         if not context._initialized.wait(timeout=REUSE_WAIT_SECONDS + solara.server.settings.state.connect_timeout):
             logger.warning("virtual kernel %s is still initializing; refusing this connection", redact_id(kernel_id))
             return None
-        if context._teardown_done:
-            # it closed while we waited: get a new kernel
-            return initialize_virtual_kernel(session_id, kernel_id, websocket)
+        if context._is_closing():
+            # It closed while we waited, for instance because the beacon of this very tab came
+            # first. Do not build a new kernel here: it would not know the page is closed. The
+            # server drops this websocket, and a live tab reconnects to a new kernel.
+            return context
         # reuse branch (§5.1): verify ownership against the shared backend before serving
         if backend is not None and context.state_persistence is not None and _reuse_context_is_stale(context, backend):
             logger.info("virtual kernel %s superseded (generation mismatch); recreating with a fresh takeover", kernel_id)
@@ -1037,7 +1047,7 @@ def initialize_virtual_kernel(session_id: str, kernel_id: str, websocket: websoc
             # budget of the rejection protocol (§5.5)
             worker.new_epoch()
 
-    if context._teardown_done:
+    if context._is_closing():
         # closed after the wait above: its kernel is gone, so there is nothing to wire, and
         # page_connect refuses the closed kernel
         return context

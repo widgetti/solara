@@ -132,7 +132,7 @@ async def app_loop(
         # to avoid very fast reconnects (we are in a thread anyway)
         time.sleep(0.5)
         return
-    if context._teardown_done:
+    if context._is_closing():
         # closed while it initialized: drop this websocket, so the client reconnects to a new kernel
         logger.info("virtual kernel %s closed before page %s connected", redact_id(kernel_id), redact_id(page_id))
         return

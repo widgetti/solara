@@ -350,6 +350,29 @@ async def test_app_loop_close_beacon_before_connect_with_live_page():
 
 
 @pytest.mark.skipif(on_windows, reason="This test is flaky on Windows")
+async def test_close_if_no_live_pages_refuses_a_connect_before_close():
+    # close() runs outside the lock, after the check for live pages. A page that connects in
+    # between must be refused, not connected to a kernel that is about to close.
+    context = kernel_context.initialize_virtual_kernel("session-id-1", "kernel-id-closing", Mock())
+    close = context.close
+    refused = []
+
+    def close_after_a_connect(reason="unknown"):
+        try:
+            context.page_connect("page-id-late")
+        except RuntimeError:
+            refused.append(True)
+        close(reason=reason)
+
+    context.close = close_after_a_connect
+    context.page_close("page-id-1")
+    context.close_if_no_live_pages(reason="closed-before-connect")
+    assert refused == [True]
+    assert context.closed_event.is_set()
+    assert "page-id-late" not in context._page_connections
+
+
+@pytest.mark.skipif(on_windows, reason="This test is flaky on Windows")
 async def test_app_loop_reconnect_before_disconnect(short_cull_timeout):
     # same as test_kernel_lifecycle_reconnect_before_disconnect, using the websocket handler
     websocket_old = WebsocketOpenUntilDropped()
