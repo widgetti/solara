@@ -7,7 +7,7 @@ aplus==0.11.0
 argon2-cffi==25.1.0
 argon2-cffi-bindings==26.1.0
 arrow==1.4.0
-ast_serialize==0.12.1
+ast_serialize==0.13.0
 asttokens==3.0.2
 async-timeout==5.0.1
 attrs==26.1.0
@@ -83,7 +83,7 @@ ipywebrtc==0.6.0
 ipywidgets==8.1.9
 isoduration==20.11.0
 itsdangerous==2.2.0
-jedi==0.20.0
+jedi==0.20.1
 Jinja2==3.1.6
 jiter==0.17.0
 joserfc==1.7.5
@@ -211,7 +211,7 @@ toolz==1.2.0
 tornado==6.5.10
 traitlets==5.16.1
 traittypes==0.2.3
-truststore==0.10.4
+truststore==0.10.5
 types-Markdown==3.10.2.20261007
 types-PyYAML==6.0.12.20260906
 types-requests==2.33.0.20261006
