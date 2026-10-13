@@ -159,6 +159,12 @@ async def app_loop(
             session.websockets.discard(ws)
         context.close_if_no_live_pages(reason="closed-before-connect")
         return
+    except RuntimeError:
+        if not context._is_closing():
+            raise
+        # the kernel started to close after the check above: drop this websocket, so the client
+        # reconnects to a new kernel
+        return
     try:
         with run_context, context:
             if user:

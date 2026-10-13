@@ -412,6 +412,8 @@ class VirtualKernelContext:
                 logger.info("Timeout reached, checking if we should be shutting down virtual kernel %s", self.id)
                 with self.lock:
                     has_connected_pages = PageStatus.CONNECTED in self.page_status.values()
+                    # reserve the close, so page_connect refuses a page until close() has run
+                    self._closing = self._closing or not has_connected_pages
                 if has_connected_pages:
                     logger.info("We have (re)connected pages, keeping the virtual kernel %s alive", self.id)
                 else:
