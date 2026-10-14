@@ -82,3 +82,46 @@ def test_kernel_lifecycle_close_while_disconnected(
         page_session.locator("text=Clicks-2").wait_for()
         page_session.goto("about:blank")
         assert context.closed_event.wait(timeout=20)
+
+
+@solara.component
+def ClickButtonAndDownloadLink():
+    ClickButton()
+    # a plain link to a file the server sends as an attachment, the browser saves it and stays
+    solara.v.Html(tag="a", attributes={"href": "report.csv", "id": "download"}, children=["Download"])
+
+
+def test_kernel_survives_a_download_link(
+    browser: playwright.sync_api.Browser,
+    context_session: playwright.sync_api.BrowserContext,
+    solara_server,
+    solara_app,
+    extra_include_path,
+):
+    # Our own page: the route below intercepts requests of the page it is on, and on the shared
+    # page_session it would also catch the close beacons that later tests send from pagehide.
+    page = context_session.new_page()
+    try:
+        with extra_include_path(HERE), solara_app("lifecycle_test:ClickButtonAndDownloadLink"):
+            kernel_context.contexts.clear()
+            page.route(
+                "**/report.csv",
+                lambda route: route.fulfill(
+                    body="a,b\n1,2\n", headers={"Content-Type": "text/csv", "Content-Disposition": 'attachment; filename="report.csv"'}
+                ),
+            )
+            page.goto(solara_server.base_url)
+            page.locator("text=Clicks-0").click()
+            page.locator("text=Clicks-1").wait_for()
+            context = list(kernel_context.contexts.values())[0]
+            # the link starts a navigation (beforeunload fires), but the response is a download
+            with page.expect_download():
+                page.locator("#download").click()
+            page.wait_for_timeout(500)
+            assert page.url == solara_server.base_url + "/"
+            # the page stays, so it must keep working
+            page.locator("text=Clicks-1").click()
+            page.locator("text=Clicks-2").wait_for()
+            assert not context.closed_event.is_set()
+    finally:
+        page.close()
