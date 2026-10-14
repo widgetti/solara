@@ -6,7 +6,7 @@ appnope==1.0.0
 ast_serialize==0.13.0
 asttokens==3.0.2
 attrs==26.1.0
-Authlib==1.8.0
+Authlib==1.9.0
 beautifulsoup4==4.15.0
 blinker==1.9.0
 bqplot==0.12.47
@@ -71,7 +71,7 @@ jupyterlab_widgets==3.0.17
 kiwisolver==1.5.1
 librt==0.16.0
 lupa==2.8
-Markdown==3.11
+Markdown==3.11.1
 markdown-it-py==4.2.0
 MarkupSafe==3.0.4
 matplotlib==3.11.2
@@ -87,7 +87,7 @@ nest-asyncio2==1.7.4
 nodeenv==1.11.0
 numpy==1.26.4
 objgraph==3.6.2
-openai==3.29.0
+openai==3.31.0
 packaging==26.3
 pandas==3.0.6
 parso==0.8.7
@@ -96,7 +96,7 @@ pexpect==4.9.0
 pillow==12.3.0
 pixelmatch==0.4.0
 platformdirs==4.13.0
-playwright==1.63.0
+playwright==1.64.0
 plotly==7.1.0
 pluggy==1.6.0
 polars==2.0.0
@@ -111,7 +111,7 @@ pyarrow==26.0.0
 pycparser==3.11
 pydantic==2.14.1
 pydantic_core==2.50.1
-pyee==13.0.1
+pyee==14.0.0
 Pygments==2.21.0
 pymdown-extensions==12.2
 pyparsing==3.3.3
@@ -156,7 +156,7 @@ types-requests==2.33.0.20261006
 typing-inspection==0.4.4
 typing_extensions==4.16.0
 urllib3==2.8.0
-uv==0.13.0
+uv==0.13.1
 uvicorn==0.54.0
 vega-datasets==0.9.0
 virtualenv==21.14.7
