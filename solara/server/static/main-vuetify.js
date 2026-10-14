@@ -174,6 +174,13 @@ async function solaraInit(mountId, appName) {
             window.navigator.sendBeacon(close_url);
         }
     });
+    window.addEventListener('pageshow', function (e) {
+        // Back/forward can show this page from the browser's memory (bfcache), but pagehide
+        // already closed its kernel: load the page again to get a new one.
+        if (e.persisted) {
+            location.reload();
+        }
+    });
     let kernel = await solara.connectKernel(solara.jupyterRootPath, kernelId)
     if (!kernel) {
         return;
