@@ -125,3 +125,34 @@ def test_kernel_survives_a_download_link(
             assert not context.closed_event.is_set()
     finally:
         page.close()
+
+
+def test_page_restored_by_back_button_reloads(
+    browser_type: playwright.sync_api.BrowserType,
+    browser_name: str,
+    solara_server,
+    solara_app,
+    extra_include_path,
+):
+    if browser_name != "chromium":
+        pytest.skip("only chromium")
+    # Playwright turns the back/forward cache off; the full chromium build (not the headless shell) has it
+    browser = browser_type.launch(channel="chromium", ignore_default_args=["--disable-back-forward-cache"])
+    try:
+        page = browser.new_page()
+        page.add_init_script("window.addEventListener('pageshow', (e) => { if (e.persisted) sessionStorage.setItem('restored', '1'); })")
+        with extra_include_path(HERE), solara_app("lifecycle_test:ClickButton"):
+            page.goto(solara_server.base_url)
+            page.locator("text=Clicks-0").click()
+            page.locator("text=Clicks-1").wait_for()
+            page.goto(solara_server.base_url + "/static/assets/theme-light.css")
+            page.wait_for_timeout(500)
+            # not page.go_back(): it waits for a load event, which a page restored from memory does not fire
+            page.evaluate("history.back()")
+            # the page came back from memory with a closed kernel, so it must load again
+            page.locator("text=Clicks-0").wait_for()
+            assert page.evaluate("sessionStorage.getItem('restored')") == "1"
+            page.locator("text=Clicks-0").click()
+            page.locator("text=Clicks-1").wait_for()
+    finally:
+        browser.close()
