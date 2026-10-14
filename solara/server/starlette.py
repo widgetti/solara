@@ -341,7 +341,7 @@ async def kernel_connection(ws: starlette.websockets.WebSocket):
 
 
 async def _kernel_connection(ws: starlette.websockets.WebSocket):
-    session_id = ws.cookies.get(server.COOKIE_KEY_SESSION_ID)
+    session_id = server.get_session_id_cookie(ws.cookies)
 
     if settings.oauth.private and not has_auth_support:
         raise RuntimeError("SOLARA_OAUTH_PRIVATE requires solara-enterprise")
@@ -445,7 +445,7 @@ def close(request: Request):
             # otherwise erase another session's saved state. A real same-origin unload beacon carries
             # the session cookie; verify it (as the evict route does). On a missing/mismatched cookie,
             # skip the close - the kernel just culls later.
-            session_id = request.cookies.get(server.COOKIE_KEY_SESSION_ID)
+            session_id = server.get_session_id_cookie(request.cookies)
             if session_id and session_id == context.session_id:
                 context.page_close(page_id)
             else:
@@ -478,7 +478,7 @@ async def evict(request: Request):
     context = kernel_context.contexts.get(kernel_id, None)
     if context is None:
         return Response(status_code=404)
-    session_id = request.cookies.get(server.COOKIE_KEY_SESSION_ID)
+    session_id = server.get_session_id_cookie(request.cookies)
     if not session_id or session_id != context.session_id:
         return Response(status_code=403)
     if settings.kernel.threaded:
@@ -606,7 +606,7 @@ See also https://solara.dev/documentation/getting_started/deploying/self-hosted
         return await login(request)
 
     response = HTMLResponse(content=content)
-    session_id = request.cookies.get(server.COOKIE_KEY_SESSION_ID) or str(uuid4())
+    session_id = server.get_session_id_cookie(request.cookies) or str(uuid4())
     samesite = "lax"
     secure = False
     httponly = settings.session.http_only
@@ -637,6 +637,14 @@ Also check out the following Solara documentation:
         secure=secure,  # type: ignore
         httponly=httponly,  # type: ignore
     )  # type: ignore
+    if request.scope["scheme"] != "https" and request.headers.get("x-forwarded-proto", "http") != "https" and request.base_url.hostname == "localhost":
+        response.set_cookie(
+            server.COOKIE_KEY_SESSION_ID_LAX,
+            value=session_id,
+            expires="Fri, 01 Jan 2038 00:00:00 GMT",
+            samesite="lax",
+            httponly=httponly,
+        )
     return response
 
 
