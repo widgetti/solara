@@ -137,7 +137,7 @@ def kernels_connection(ws: simple_websocket.Server, kernel_id: str, name: str):
 
     try:
         page_id = request.args["session_id"]
-        session_id = request.cookies.get(server.COOKIE_KEY_SESSION_ID)
+        session_id = server.get_session_id_cookie(request.cookies)
         logger.info("Solara kernel requested for session_id=%s kernel_id=%s", session_id, kernel_id)
         if session_id is None:
             logger.warning("no session cookie")
@@ -241,7 +241,7 @@ def read_root(path):
     if not settings.main.base_url:
         settings.main.base_url = url_for("blueprint-solara.read_root", _external=True)
 
-    session_id = request.cookies.get(server.COOKIE_KEY_SESSION_ID) or str(uuid4())
+    session_id = server.get_session_id_cookie(request.cookies) or str(uuid4())
     if root_path:
         path = flask.request.path[len(root_path) :]
     content = server.read_root(path, root_path=root_path)
@@ -267,6 +267,8 @@ def read_root(path):
     assert session_id is not None
     response = flask.Response(content, mimetype="text/html")
     response.set_cookie(server.COOKIE_KEY_SESSION_ID, value=session_id, secure=secure, samesite=samesite)
+    if request.headers.get("x-forwarded-proto", "http") != "https" and o.scheme != "https" and o.hostname == "localhost":
+        response.set_cookie(server.COOKIE_KEY_SESSION_ID_LAX, value=session_id, samesite="lax")
     return response
 
 
