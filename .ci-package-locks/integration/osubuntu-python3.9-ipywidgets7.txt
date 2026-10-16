@@ -170,7 +170,7 @@ pytest-retry==1.7.0
 pytest-timeout==2.4.0
 pytest-xdist==3.8.0
 python-dateutil==2.9.0.post0
-python-discovery==1.6.2
+python-discovery==1.6.3
 python-dotenv==1.2.1
 python-json-logger==4.0.0
 python-slugify==8.0.4
@@ -189,7 +189,7 @@ rfc3987-syntax==1.1.0
 rich==15.0.0
 rich-click==1.9.9
 rpds-py==0.27.1
-ruff==0.17.0
+ruff==0.17.1
 Send2Trash==2.1.0
 simple-websocket==1.1.0
 simplejson==4.2.0
@@ -224,7 +224,7 @@ vaex-hdf5==0.15.0
 vaex-jupyter==0.9.0
 vaex-viz==0.6.0
 vega-datasets==0.9.0
-virtualenv==21.14.7
+virtualenv==21.14.8
 voila==0.3.8
 watchdog==6.0.0
 watchfiles==1.1.1

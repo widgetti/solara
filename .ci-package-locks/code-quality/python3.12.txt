@@ -4,8 +4,8 @@ filelock==4.2.0
 identify==2.6.20
 nodeenv==1.11.0
 packaging==26.3
-platformdirs==4.13.0
+platformdirs==4.13.3
 pre_commit==4.7.0
-python-discovery==1.6.2
+python-discovery==1.6.3
 PyYAML==6.0.3
-virtualenv==21.14.7
+virtualenv==21.14.8
