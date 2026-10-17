@@ -191,11 +191,14 @@ The custom `SolaraInteractiveShell` (in `solara/server/shell.py`) disables sever
 def init_sys_modules(self):
     pass  # don't create a __main__, it will cause a mem leak
 
+
 def init_prefilter(self):
     pass  # avoid consuming memory
 
+
 def init_history(self):
     self.history_manager = Mock()  # don't accumulate history
+
 
 def reset(self, new_session=True, aggressive=False):
     pass  # IPython's reset() calls gc.collect() which causes slow shutdowns
@@ -220,6 +223,7 @@ When adding a new feature that manages resources (widgets, connections, tasks, c
 ```python
 import gc
 import weakref
+
 
 def test_my_feature_does_not_leak():
     # 1. Create the object
@@ -270,7 +274,7 @@ import objgraph
 chain = objgraph.find_backref_chain(leaked_obj, objgraph.is_proper_module, max_depth=20)
 for i, item in enumerate(chain):
     type_name = type(item).__name__
-    if hasattr(item, '__name__'):
+    if hasattr(item, "__name__"):
         type_name += f" ({item.__name__})"
     print(f"  [{i:2d}] {type_name}")
 ```
