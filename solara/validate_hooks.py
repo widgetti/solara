@@ -30,13 +30,17 @@ cause_to_noqa_code = {v: k for k, v in noqa_code_to_cause.items()}
 noqa_pattern = re.compile(r".*# noqa(?::\s*([A-Z]{2,3}\d{2,3})(?:,\s*([A-Z]{2,3}\d{2,3}))*)?")
 
 
+ComprehensionNodeType = t.Union[ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp]
+ComprehensionNodes = (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)
+
 if sys.version_info < (3, 11):
-    ScopeNodeType = t.Union[ast.For, ast.While, ast.If, ast.Try, ast.FunctionDef, ast.AsyncFunctionDef]
+    BodyScopeNodeType = t.Union[ast.For, ast.While, ast.If, ast.Try, ast.FunctionDef, ast.AsyncFunctionDef]
     TryNodes = (ast.Try,)
 else:
     # except* nodes are only standardized in 3.11+
-    ScopeNodeType = t.Union[ast.For, ast.While, ast.If, ast.Try, ast.TryStar, ast.FunctionDef, ast.AsyncFunctionDef]
+    BodyScopeNodeType = t.Union[ast.For, ast.While, ast.If, ast.Try, ast.TryStar, ast.FunctionDef, ast.AsyncFunctionDef]
     TryNodes = (ast.Try, ast.TryStar)
+ScopeNodeType = t.Union[BodyScopeNodeType, ComprehensionNodeType]
 
 
 def line_to_noqa(line: str) -> t.Optional[t.Set[InvalidReactivityCause]]:
@@ -127,7 +131,7 @@ class HookValidator(ast.NodeVisitor):
     def node_to_scope_cause(self, node: ScopeNodeType) -> InvalidReactivityCause:
         if isinstance(node, ast.If):
             return InvalidReactivityCause.CONDITIONAL_USE
-        elif isinstance(node, (ast.For, ast.While)):
+        elif isinstance(node, (ast.For, ast.While, *ComprehensionNodes)):
             return InvalidReactivityCause.LOOP_USE
         elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             return InvalidReactivityCause.NESTED_FUNCTION_USE
@@ -169,6 +173,39 @@ class HookValidator(ast.NodeVisitor):
         def visit_TryStar(self, node: ast.TryStar) -> t.Any:
             self._visit_children_using_scope(node)
 
+    def visit_ListComp(self, node: ast.ListComp):
+        self._visit_comprehension(node)
+
+    def visit_SetComp(self, node: ast.SetComp):
+        self._visit_comprehension(node)
+
+    def visit_DictComp(self, node: ast.DictComp):
+        self._visit_comprehension(node)
+
+    def visit_GeneratorExp(self, node: ast.GeneratorExp):
+        self._visit_comprehension(node)
+
+    def _visit_comprehension(self, node: ComprehensionNodeType):
+        """A comprehension is a loop, so hooks inside it are flagged like hooks in a for loop.
+
+        The iterable of the first `for` is the exception: Python evaluates it once, in the
+        enclosing scope, so `[... for x in use_state(...)[0]]` is a valid hook use.
+        """
+        first, *rest = node.generators
+        self.visit(first.iter)
+        outer_scope = self.outer_scope
+        self.outer_scope = node
+        for condition in first.ifs:
+            self.visit(condition)
+        for generator in rest:
+            self.visit(generator)
+        if isinstance(node, ast.DictComp):
+            self.visit(node.key)
+            self.visit(node.value)
+        else:
+            self.visit(node.elt)
+        self.outer_scope = outer_scope
+
     def _check_decorator_hooks(self, node: t.Union[ast.FunctionDef, ast.AsyncFunctionDef]):
         """Check if any decorators are hooks (e.g. @use_effect, @solara.use_effect, or @use_task(...))."""
         for decorator in node.decorator_list:
@@ -199,7 +236,7 @@ class HookValidator(ast.NodeVisitor):
         self._visit_children_using_scope(node)
         self.function_scope = old_function_scope
 
-    def _visit_children_using_scope(self, node: ScopeNodeType):
+    def _visit_children_using_scope(self, node: BodyScopeNodeType):
         outer_scope = self.outer_scope
         self.outer_scope = node
         for child in node.body:

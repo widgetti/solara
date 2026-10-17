@@ -251,3 +251,96 @@ def test_hook_use_invalid_assign():
             alias = solara.use_state
             if 1 < 3:
                 alias(1)
+
+
+def test_hook_use_invalid_comprehension():
+    # a comprehension is a loop, so a hook in it runs a variable number of times
+    with hook_check_raise(), pytest.raises(HookValidationError, match="within a loop"):
+
+        @solara.component
+        def Page():
+            values = [solara.use_state(i) for i in range(10)]
+            solara.Text(str(values))
+
+    with hook_check_raise(), pytest.raises(HookValidationError, match="within a loop"):
+
+        @solara.component
+        def PageSet():
+            values = {solara.use_state(i)[0] for i in range(10)}
+            solara.Text(str(values))
+
+    with hook_check_raise(), pytest.raises(HookValidationError, match="within a loop"):
+
+        @solara.component
+        def PageDictValue():
+            values = {i: solara.use_state(i) for i in range(10)}
+            solara.Text(str(values))
+
+    with hook_check_raise(), pytest.raises(HookValidationError, match="within a loop"):
+
+        @solara.component
+        def PageDictKey():
+            values = {solara.use_state(i)[0]: i for i in range(10)}
+            solara.Text(str(values))
+
+    with hook_check_raise(), pytest.raises(HookValidationError, match="within a loop"):
+
+        @solara.component
+        def PageGenerator():
+            values = list(solara.use_state(i) for i in range(10))
+            solara.Text(str(values))
+
+    with hook_check_raise(), pytest.raises(HookValidationError, match="within a loop"):
+        # the condition runs once per element
+        @solara.component
+        def PageCondition():
+            values = [i for i in range(10) if solara.use_state(i)[0]]
+            solara.Text(str(values))
+
+    with hook_check_raise(), pytest.raises(HookValidationError, match="within a loop"):
+        # only the first iterable is evaluated once, the inner one runs once per outer element
+        @solara.component
+        def PageNestedIterable():
+            values = [j for i in range(10) for j in solara.use_state([i])[0]]
+            solara.Text(str(values))
+
+    with hook_check_warn(), pytest.warns(UserWarning, match="within a loop"):
+
+        @solara.component
+        def Page2():
+            values = [solara.use_state(i) for i in range(10)]
+            solara.Text(str(values))
+
+    @solara.component
+    def Page3():  # noqa: SH103
+        values = [solara.use_state(i) for i in range(10)]
+        solara.Text(str(values))
+
+    @solara.component
+    def Page4():
+        values = [solara.use_state(i) for i in range(10)]  # noqa: SH103
+        solara.Text(str(values))
+
+
+def test_hook_use_comprehension_first_iterable():
+    # the first iterable of a comprehension is evaluated once, in the enclosing scope,
+    # so a hook there is called a constant number of times
+    with hook_check_raise():
+
+        @solara.component
+        def Page():
+            doubled = [i * 2 for i in solara.use_state([1, 2, 3])[0]]
+            solara.Text(str(doubled))
+
+        @solara.component
+        def Page2():
+            lookup = {i: str(i) for i in solara.use_state([1, 2, 3])[0] if i > 1}
+            solara.Text(str(lookup))
+
+    with hook_check_raise(), pytest.raises(HookValidationError, match="within a conditional"):
+        # the comprehension does not hide the enclosing scope
+        @solara.component
+        def Page3():
+            if 1 > 3:
+                doubled = [i * 2 for i in solara.use_state([1, 2, 3])[0]]
+                solara.Text(str(doubled))
