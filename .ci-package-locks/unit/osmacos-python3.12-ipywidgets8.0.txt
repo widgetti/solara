@@ -3,7 +3,7 @@ annotated-types==0.8.0
 anyio==4.15.1
 anywidget==0.11.0
 appnope==1.0.0
-ast_serialize==0.13.0
+ast_serialize==0.13.1
 asttokens==3.0.2
 attrs==26.1.0
 Authlib==1.9.1
@@ -28,7 +28,7 @@ cryptography==50.0.2
 cycler==0.12.1
 debugpy==1.8.22
 diskcache==5.6.3
-distlib==0.4.3
+distlib==0.4.4
 executing==2.3.0
 fakeredis==2.40.0
 fastjsonschema==2.22.2
@@ -86,14 +86,14 @@ nbformat==5.11.1
 nest-asyncio2==1.7.4
 nodeenv==1.11.0
 numpy==1.26.4
-objgraph==3.6.2
-openai==3.31.0
+objgraph==3.7.0
+openai==3.33.0
 packaging==26.3
 pandas==3.0.6
 parso==0.8.7
 pathspec==1.1.1
 pexpect==4.9.0
-pillow==12.3.0
+pillow==13.0.0
 pixelmatch==0.4.0
 platformdirs==4.13.3
 playwright==1.64.0

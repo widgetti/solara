@@ -5,7 +5,7 @@ anywidget==0.11.0
 argon2-cffi==25.1.0
 argon2-cffi-bindings==26.1.0
 arrow==1.4.0
-ast_serialize==0.13.0
+ast_serialize==0.13.1
 asttokens==3.0.2
 async-lru==2.4.0
 attrs==26.1.0
@@ -34,7 +34,7 @@ cycler==0.12.1
 debugpy==1.8.22
 defusedxml==0.7.1
 diskcache==5.6.3
-distlib==0.4.3
+distlib==0.4.4
 executing==2.3.0
 fakeredis==2.40.0
 fastjsonschema==2.22.2
@@ -111,15 +111,15 @@ nodeenv==1.11.0
 notebook==7.6.3
 notebook_shim==0.2.4
 numpy==1.26.4
-objgraph==3.6.2
-openai==3.31.0
+objgraph==3.7.0
+openai==3.33.0
 packaging==26.3
 pandas==3.0.6
 pandocfilters==1.5.1
 parso==0.8.7
 pathspec==1.1.1
 pexpect==4.9.0
-pillow==12.3.0
+pillow==13.0.0
 pixelmatch==0.4.0
 platformdirs==4.13.3
 playwright==1.64.0
