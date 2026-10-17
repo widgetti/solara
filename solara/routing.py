@@ -1,5 +1,6 @@
 import abc
 import logging
+import warnings
 from typing import Callable, List, Optional, Tuple, Union, cast
 
 import solara
@@ -39,15 +40,15 @@ class _Location(_LocationBase):
 
 
 class Router:
-    search: Optional[str]
+    query: Optional[str]
 
     def __init__(self, path: str, routes: List[solara.Route], set_path: Callable[[str], None] = None):
         # see https://developer.mozilla.org/en-US/docs/Web/API/Location for anatomy/nomenclature
         if "?" in path:
-            self.path, self.search = path.split("?", 1)
+            self.path, self.query = path.split("?", 1)
         else:
             self.path = path
-            self.search = None
+            self.query = None
         del path
         self.set_path = set_path
         self.parts = (self.path or "").strip("/").split("/")
@@ -81,6 +82,26 @@ class Router:
 
         assert len(self.path_routes) == len(self.path_routes_siblings)
         self.possible_match = (len(self.path_routes[-1].children) == 0) if self.path_routes else False
+
+    @property
+    def search(self) -> Optional[str]:
+        warnings.warn(
+            "Router.search is deprecated. Use Router.query instead. "
+            "Note: Router.search returned the query string without the leading '?' "
+            "(inconsistent with the URL spec). Router.query has the same behavior.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.query
+
+    @search.setter
+    def search(self, value: Optional[str]):
+        warnings.warn(
+            "Router.search is deprecated. Use Router.query instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        self.query = value
 
     def push(self, path: str):
         assert self.set_path is not None
