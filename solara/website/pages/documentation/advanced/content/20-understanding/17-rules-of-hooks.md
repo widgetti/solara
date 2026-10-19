@@ -6,7 +6,7 @@ description: Learn the rules that govern the usage of hooks in your Solara appli
 
 Hooks are Python function whose name start with `use_`. The most used hook is [use_state](https://solara.dev/documentation/api/hooks/use_state) which is used to manage the state of a component.
 
-Hooks can only be called at the top level of a function component or a custom hook. They cannot be called inside loops, conditions, or nested functions.
+Hooks can only be called at the top level of a function component or a custom hook. They cannot be called inside loops (including comprehensions), conditions, or nested functions.
 The reason for this is that hooks rely on the order in which they are called to maintain state between renders. If a hook is called conditionally, it may not be called on every render, which can mix up the states.
 
 ```python
@@ -142,6 +142,20 @@ def Page():
         solara.use_state(1)  # will cause the use_state to not always be a constant number of times
     solara.Text("Done")
 ```
+
+A list, set or dict comprehension, or a generator expression, is a loop as well:
+
+```python
+import solara
+
+
+@solara.component
+def Page():
+    values = [solara.use_state(i) for i in range(x)]  # same problem: use_state is called x times
+    solara.Text("Done")
+```
+
+Only the first iterable of a comprehension (`range(x)` above) is evaluated once, outside the loop, so a hook call there is allowed.
 
 ### Nested function use (SH104)
 
