@@ -30,7 +30,7 @@ module.exports = {
       const files = items.map(i => i.webkitGetAsEntry())
       const fileHolders = files.filter(f => f.isFile)
       const nativeFilesPromises = fileHolders.map(fileHolder => new Promise((rs, rj) => fileHolder.file(rs, rj)))
-      const nativeFiles = await Promise.all(nativeFilesPromises)
+      const nativeFiles = (await Promise.all(nativeFilesPromises)).filter(this.fileIsAccepted)
 
       this.native_file_info = nativeFiles
       this.file_info = this.native_file_info.map(
@@ -42,6 +42,23 @@ module.exports = {
     });
   },
   methods: {
+    fileIsAccepted(file) {
+      if (!this.accept) {
+        return true;
+      }
+      const name = file.name.toLowerCase();
+      const type = file.type.toLowerCase();
+      return this.accept.split(',').some(value => {
+        const token = value.trim().toLowerCase();
+        if (token.startsWith('.')) {
+          return name.endsWith(token);
+        }
+        if (token.endsWith('/*')) {
+          return type.startsWith(token.slice(0, -1));
+        }
+        return type === token;
+      });
+    },
     jupyter_clear() {
       this.native_file_info = [];
       this.file_info = [];
