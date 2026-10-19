@@ -24,7 +24,7 @@ branca==0.8.2
 brotli==1.2.0
 bump2version==1.0.1
 cachetools==5.5.2
-certifi==2026.7.22
+certifi==2026.10.18
 cffi==1.17.1
 cfgv==3.4.0
 charset-normalizer==3.5.2
