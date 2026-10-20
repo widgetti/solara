@@ -1,5 +1,21 @@
 # Solara Changelog
 
+## Version 1.64.1
+
+- Bug Fix: Clicking a download link no longer disconnects the app. [#1253](https://github.com/widgetti/solara/pull/1253)
+- Bug Fix: Pages restored by the browser's Back button reload to reconnect to a live kernel. [#1255](https://github.com/widgetti/solara/pull/1255)
+- Bug Fix: Safari sessions remain stable on `http://localhost`, while cross-site iframe support stays intact. [#1254](https://github.com/widgetti/solara/pull/1254)
+- Bug Fix: The plain loader gives `html` and `body` a viewport height. [#1252](https://github.com/widgetti/solara/pull/1252)
+- Bug Fix: Hook validation detects hooks inside comprehensions and generator expressions. [#1257](https://github.com/widgetti/solara/pull/1257)
+- Bug Fix: Vue 3 `AppLayout` reserves space for its sidebar and allows wide sidebar content to scroll horizontally. [#1239](https://github.com/widgetti/solara/pull/1239)
+- Bug Fix: File browser selections are easier to see in dark mode. [#1246](https://github.com/widgetti/solara/pull/1246)
+- Bug Fix: `define_module(dependencies=...)` works on the Solara server for ipyreact and ipyvue modules. [#1244](https://github.com/widgetti/solara/pull/1244)
+- Performance: The Starlette server caches compressed static files instead of compressing them on every request. [#1243](https://github.com/widgetti/solara/pull/1243)
+  Install `solara[brotli]` to enable Brotli compression; gzip remains the default.
+- Packaging: `solara-assets` 1.64.1 is unavailable on PyPI because the project has reached its storage limit.
+  The latest available asset package is 1.58.2.
+  This blocks installing `solara[assets]==1.64.1` and `solara[all]==1.64.1`.
+
 ## Version 1.64.0
 
 - Feature: Packages outside Solara can hot reload the non-Python files they read, such as templates, with `solara.server.reload.watch_file(path, on_change=None)`. Without `on_change`, a change to the file reloads the app, which re-imports the app's own modules but not installed packages. With `on_change`, Solara calls `on_change(path)` and does not reload. It works only in development mode. See [Reloading](/documentation/advanced/reference/reloading). [#1232](https://github.com/widgetti/solara/pull/1232)
