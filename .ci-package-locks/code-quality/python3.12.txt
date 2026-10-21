@@ -8,4 +8,4 @@ platformdirs==4.13.5
 pre_commit==4.7.0
 python-discovery==1.6.4
 PyYAML==6.0.3
-virtualenv==21.14.11
+virtualenv==21.14.12
