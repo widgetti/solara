@@ -156,3 +156,29 @@ def test_page_restored_by_back_button_reloads(
             page.locator("text=Clicks-1").wait_for()
     finally:
         browser.close()
+
+
+def test_widget_send_after_pagehide_is_dropped(
+    browser: playwright.sync_api.Browser,
+    context_session: playwright.sync_api.BrowserContext,
+    solara_server,
+    solara_app,
+    extra_include_path,
+):
+    # pagehide disposes the kernel, but the page can still run handlers before it goes away, such as
+    # the blur of a focused input. Their sends have nowhere to go: drop them instead of throwing.
+    page = context_session.new_page()
+    errors = []
+    page.on("console", lambda msg: errors.append(msg.text) if msg.type == "error" else None)
+    page.on("pageerror", lambda error: errors.append(str(error)))
+    try:
+        with extra_include_path(HERE), solara_app("lifecycle_test:ClickButton"):
+            page.goto(solara_server.base_url + "?solara-no-close-beacon")
+            page.locator("text=Clicks-0").click()
+            page.locator("text=Clicks-1").wait_for()
+            page.evaluate("window.dispatchEvent(new PageTransitionEvent('pagehide'))")
+            page.locator("text=Clicks-1").click()
+            page.wait_for_timeout(500)
+            assert [error for error in errors if "Cannot send" in error] == []
+    finally:
+        page.close()
