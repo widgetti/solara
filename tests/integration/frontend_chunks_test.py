@@ -303,8 +303,8 @@ def test_minimal_lazy_output(page_session: playwright.sync_api.Page, solara_serv
             page_session.locator("strong >> text=md-bold-two").wait_for()
             page_session.locator("code.cm-s-jupyter >> span.cm-variable >> text=x").wait_for()
     assert recorder.chunk_requests().get("output-widget") == 1
-    # ipywidgets 8 also shows a Checkbox (jupyter-controls)
-    lazy = {"output-widget"} | ({"jupyter-controls"} if ipywidgets_major >= 8 else set())
+    # ipywidgets 8 also shows a Checkbox (jupyter-controls), and each page loads the Vue template compiler (vue-sfc)
+    lazy = {"output-widget", *_vue_sfc_warnings("minimal")} | ({"jupyter-controls"} if ipywidgets_major >= 8 else set())
     assert set(recorder.lazy_warnings()) == lazy
     assert len(_server_warnings(caplog)) == len(lazy)
     assert recorder.errors() == []
