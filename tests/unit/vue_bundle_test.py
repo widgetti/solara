@@ -1,94 +1,208 @@
-import json
+import importlib
+import sys
 from pathlib import Path
 
 import pytest
 
+import solara
 from solara.components import vue_bundle
 
 ipyvue = pytest.importorskip("ipyvue")
+
+if not hasattr(ipyvue, "define_module"):
+    pytest.skip("requires ipyvue with ES module support", allow_module_level=True)
+
+from solara.server import kernel_context  # noqa: E402
+from solara.server.kernel import Kernel  # noqa: E402
+
+KEY = "0123456789ab"
 
 
 @pytest.fixture()
 def clean_state(monkeypatch):
     files = dict(vue_bundle._vue_files)
     vue_bundle._vue_files.clear()
-    vue_bundle._manifests = None
-    vue_bundle._manifest_names.clear()
-    vue_bundle._loaded_bundles.clear()
-    monkeypatch.delenv("SOLARA_VUE_BUNDLES", raising=False)
+    monkeypatch.setattr(vue_bundle, "_exports", None)
+    monkeypatch.setattr(vue_bundle, "_root", None)
+    monkeypatch.setattr(vue_bundle, "_keys", {})
+    monkeypatch.setattr(vue_bundle, "_warned", set())
     try:
         yield
     finally:
         vue_bundle._vue_files.clear()
         vue_bundle._vue_files.update(files)
-        vue_bundle._manifests = None
-        vue_bundle._manifest_names.clear()
-        vue_bundle._loaded_bundles.clear()
 
 
-def _make_template(tmp_path: Path, name: str, source: str) -> Path:
-    file = tmp_path / "app" / "components" / name
-    file.parent.mkdir(parents=True, exist_ok=True)
-    file.write_text(source)
-    return file
+@pytest.fixture()
+def defined(monkeypatch):
+    calls = []
+    monkeypatch.setattr(ipyvue, "define_module", lambda name, **kwargs: calls.append((name, kwargs)))
+    return calls
 
 
-def test_write_entry_and_manifest(clean_state, tmp_path: Path):
-    a = _make_template(tmp_path, "a.vue", "<template><div>a</div></template>")
-    b = _make_template(tmp_path, "b.vue", "<template><div>b</div></template>")
+@pytest.fixture()
+def virtual_context():
+    context = kernel_context.VirtualKernelContext(id="vue-bundle-test", kernel=Kernel(), session_id="session-vue-bundle")
+    try:
+        with context:
+            yield context
+    finally:
+        context.close()
+
+
+def _write(path: Path, text: str) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text)
+    return path
+
+
+def _bundle(public: Path, exports, name="vue/app.mjs") -> Path:
+    items = ", ".join(f"c{i} as {export}" for i, export in enumerate(exports))
+    return _write(public / name, f"const c0 = {{}};\nexport {{ {items} }};\n")
+
+
+def test_entry(clean_state, tmp_path: Path):
+    root = tmp_path / "src"
+    a = _write(root / "components" / "a.vue", "<template><div>a</div></template>")
+    b = _write(root / "b.vue", "<template><div>b</div></template>")
+    outside = _write(tmp_path / "lib" / "c.vue", "<template><div>c</div></template>")
     vue_bundle.record(a, "CompA")
-    vue_bundle.record(b, "CompB")
+    vue_bundle.record(b, "2nd.Comp")
+    vue_bundle.record(outside, "Library")
 
-    entry = vue_bundle.write_bundle_entry(tmp_path / "bundle", name="test-components")
-    lines = entry.read_text().splitlines()
-    assert any('from "../app/components/a.vue";' in line for line in lines)
-    assert any(line.startswith("export const CompA = ") and 'name: "CompA"' in line for line in lines)
-    manifest = json.loads((tmp_path / "bundle" / "test-components-manifest.json").read_text())
-    assert manifest["name"] == "test-components"
-    entry_a = next(v for k, v in manifest["components"].items() if k.endswith("a.vue"))
-    assert entry_a["export"] == "CompA"
-    assert entry_a["sha1"] == vue_bundle._sha1(a)
+    code = vue_bundle.entry_code(tmp_path / "vue" / "entry.js", root.resolve())
+    key_a = vue_bundle.key(a.resolve(), root.resolve())
+    assert 'import _c0 from "../src/components/a.vue";' in code
+    assert f'export const CompA_{key_a} = {{ name: "CompA", ..._c0 }};' in code
+    assert f"export const _2nd_Comp_{vue_bundle.key(b.resolve(), root.resolve())} = " in code
+    # library templates (outside the app root) are not bundled
+    assert "c.vue" not in code
 
-
-def test_lookup_by_content_hash(clean_state, tmp_path: Path, monkeypatch):
-    a = _make_template(tmp_path, "a.vue", "<template><div>a</div></template>")
-    vue_bundle.record(a, "CompA")
-    vue_bundle.write_bundle_entry(tmp_path / "bundle", name="test-components")
-    monkeypatch.setenv("SOLARA_VUE_BUNDLES", str(tmp_path / "bundle" / "test-components-manifest.json"))
-    vue_bundle._manifests = None
-
-    assert vue_bundle.enabled()
-    assert vue_bundle.lookup(a) == ("test-components", "CompA")
-
-    # stale: content changed after the bundle was generated
+    # the key covers the path relative to the root and the content
+    assert len(key_a) == 12
+    copy = _write(root / "other" / "a.vue", a.read_text())
+    assert vue_bundle.key(copy.resolve(), root.resolve()) != key_a
     a.write_text("<template><div>a2</div></template>")
-    with pytest.raises(RuntimeError, match="changed since bundle"):
-        vue_bundle.lookup(a)
-
-    # missing: never bundled
-    c = _make_template(tmp_path, "c.vue", "<template><div>c</div></template>")
-    with pytest.raises(RuntimeError, match=r"not in any of the bundles.*test-components"):
-        vue_bundle.lookup(c)
+    assert vue_bundle.key(a.resolve(), root.resolve()) != key_a
 
 
-@pytest.mark.skipif(not hasattr(ipyvue, "define_module"), reason="needs ipyvue with ES module support")
-def test_component_vue_uses_bundle(clean_state, tmp_path: Path, monkeypatch):
-    a = _make_template(tmp_path, "a.vue", "<template><div>{{ value }}</div></template>")
-    vue_bundle.record(a, "CompA")
-    vue_bundle.write_bundle_entry(tmp_path / "bundle", name="test-components")
-    monkeypatch.setenv("SOLARA_VUE_BUNDLES", str(tmp_path / "bundle" / "test-components-manifest.json"))
-    vue_bundle._manifests = None
+def test_parse_exports():
+    plain = f"const x = 1;\nexport {{\n  a as Foo_{KEY},\n  b as Bar_ba9876543210,\n  helper\n}};\n//# sourceMappingURL=app.mjs.map\n"
+    assert vue_bundle.parse_exports(plain) == {KEY: f"Foo_{KEY}", "ba9876543210": "Bar_ba9876543210"}
+    minified = f'const a={{}},b={{}};export{{a as Foo_{KEY},b as "$Bar_ba9876543210"}};'
+    assert vue_bundle.parse_exports(minified) == {KEY: f"Foo_{KEY}", "ba9876543210": "$Bar_ba9876543210"}
+    reexport = f'export {{ a as Foo_{KEY} }};\nexport {{ default as Bar_ba9876543210 }} from "./other.mjs";\n'
+    assert vue_bundle.parse_exports(reexport) == {KEY: f"Foo_{KEY}", "ba9876543210": "Bar_ba9876543210"}
+    # export-like text that is not the module's export list
+    literal = f'const s = "export {{ a as Fake_{KEY} }}";\nconsole.log(s);\nexport {{ b as Real_ba9876543210 }};\n'
+    assert vue_bundle.parse_exports(literal) == {"ba9876543210": "Real_ba9876543210"}
+    assert vue_bundle.parse_exports(f'const s = "export {{ a as Fake_{KEY} }}";\nconsole.log(s);\n') == {}
 
-    from solara.components.component_vue import _widget_vue
 
-    # simulate what @component_vue does for a template resolved via the bundle
-    module, export = vue_bundle.lookup(a)
-    assert (module, export) == ("test-components", "CompA")
+def test_load(clean_state, tmp_path: Path, defined):
+    public = tmp_path / "public"
+    _bundle(public, [f"Foo_{KEY}"])
+    assert vue_bundle.load("vue/app.mjs", tmp_path / "src", public)
+    assert defined == [(vue_bundle.MODULE_NAME, {"url": "/static/public/vue/app.mjs"})]
+    assert vue_bundle._exports == {KEY: f"Foo_{KEY}"}
+    # absolute paths are fine when inside the public dir
+    assert vue_bundle.load(str(public / "vue" / "app.mjs"), tmp_path / "src", public)
 
-    @_widget_vue(None, esm_module=module, esm_export=export)
-    def Widget(value: int = 0):
-        pass
 
-    widget = Widget(value=3)
-    assert widget.template.esm_module == "test-components"
-    assert widget.template.esm_export == export
+def test_load_falls_back_to_source(clean_state, tmp_path: Path, defined):
+    public = tmp_path / "public"
+    _write(tmp_path / "elsewhere" / "app.mjs", f"export {{ a as Foo_{KEY} }};")
+    _write(public / "empty.mjs", "export { a as Foo };")
+    assert not vue_bundle.load("missing.mjs", tmp_path, public)
+    assert not vue_bundle.load("../elsewhere/app.mjs", tmp_path, public)
+    assert not vue_bundle.load(str(tmp_path / "elsewhere" / "app.mjs"), tmp_path, public)
+    assert not vue_bundle.load("empty.mjs", tmp_path, public)
+    assert defined == []
+    assert vue_bundle._exports is None
+
+
+def test_lookup(clean_state, tmp_path: Path, defined, monkeypatch):
+    root = tmp_path / "src"
+    a = _write(root / "a.vue", "<template><div>a</div></template>")
+    miss = _write(root / "miss.vue", "<template><div>miss</div></template>")
+    library = _write(tmp_path / "lib" / "lib.vue", "<template><div>lib</div></template>")
+    export = vue_bundle.export_name("A", vue_bundle.key(a.resolve(), root.resolve()))
+    _bundle(tmp_path / "public", [export])
+    assert vue_bundle.load("vue/app.mjs", root, tmp_path / "public")
+
+    monkeypatch.setattr(solara, "_using_solara_server", lambda: False)
+    assert vue_bundle.lookup(a) is None
+    monkeypatch.setattr(solara, "_using_solara_server", lambda: True)
+    assert vue_bundle.lookup(a) == export
+    assert vue_bundle.lookup(miss) is None
+    assert vue_bundle.lookup(library) is None
+    assert vue_bundle.lookup(root / "deleted.vue") is None  # OSError
+    assert vue_bundle._warned == {miss}
+
+
+@pytest.mark.parametrize("vuetify", [True, False])
+def test_widget(clean_state, tmp_path: Path, defined, monkeypatch, virtual_context, vuetify):
+    # a component in pkg/__init__.py is decorated before the server loads the
+    # bundle (find_spec runs it), so the choice must happen at widget creation
+    root = tmp_path / "pkg"
+    vuetify_arg = "True" if vuetify else "False"
+    _write(
+        root / "__init__.py",
+        "import solara\n"
+        f"@solara.component_vue('hit.vue', vuetify={vuetify_arg})\n"
+        "def Hit(value: int = 0): pass\n"
+        f"@solara.component_vue('miss.vue', vuetify={vuetify_arg})\n"
+        "def Miss(value: int = 0): pass\n",
+    )
+    hit = _write(root / "hit.vue", "<template><div>{{ value }}</div></template>")
+    _write(root / "miss.vue", "<template><span>{{ value }}</span></template>")
+    monkeypatch.syspath_prepend(str(tmp_path))
+    monkeypatch.delitem(sys.modules, "pkg", raising=False)
+    pkg = importlib.import_module("pkg")
+    try:
+        export = vue_bundle.export_name("Hit", vue_bundle.key(hit.resolve(), root.resolve()))
+        _bundle(tmp_path / "public", [export])
+        assert vue_bundle.load("vue/app.mjs", vue_bundle.app_root("pkg"), tmp_path / "public")
+        monkeypatch.setattr(solara, "_using_solara_server", lambda: True)
+
+        box, rc = solara.render(solara.Column(children=[pkg.Hit(value=1), pkg.Hit(value=2), pkg.Miss(value=3)]), handle_error=False)
+        hit1, hit2, miss = box.children[0].children
+        assert hit1.template.esm_module == vue_bundle.MODULE_NAME
+        assert hit1.template.esm_export == export
+        # one Template widget per kernel
+        assert hit2.template is hit1.template
+        assert miss.template.esm_module is None
+        assert miss.template.template == "<template><span>{{ value }}</span></template>"
+        rc.close()
+    finally:
+        sys.modules.pop("pkg", None)
+
+
+def test_cli(clean_state, tmp_path: Path, monkeypatch):
+    from click.testing import CliRunner
+
+    from solara.__main__ import cli
+
+    src = tmp_path / "src"
+    _write(src / "app.py", "import solara\n@solara.component_vue('card.vue')\ndef MyCard(value: int = 0): pass\n")
+    card = _write(src / "card.vue", "<template><div>card</div></template>")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, "path", list(sys.path))
+    runner = CliRunner()
+
+    result = runner.invoke(cli, ["vue-bundle", "src/app.py", "-o", "vue/entry.js", "--vite-config"])
+    assert result.exit_code == 0, result.output
+    export = vue_bundle.export_name("MyCard", vue_bundle.key(card.resolve(), src.resolve()))
+    assert f"export const {export} = " in (tmp_path / "vue" / "entry.js").read_text()
+    config = (tmp_path / "vue" / "vite.config.mjs").read_text()
+    assert 'outDir: "../public/vue"' in config and "publicDir: false" in config
+
+    check = ["vue-bundle", "src/app.py", "--check", "--bundle", "vue/app.mjs"]
+    assert runner.invoke(cli, check).exit_code == 1  # not built yet
+    _bundle(tmp_path / "public", [export])
+    result = runner.invoke(cli, check)
+    assert result.exit_code == 0, result.output
+    card.write_text("<template><div>edited</div></template>")
+    result = runner.invoke(cli, check)
+    assert result.exit_code == 1
+    assert "card.vue" in result.output

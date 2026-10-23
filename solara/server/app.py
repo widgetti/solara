@@ -21,6 +21,8 @@ from reacton import ipywidgets
 
 import solara
 import solara.lifecycle
+import solara.settings
+from solara.components import vue_bundle
 from solara.util import nested_get
 
 from . import kernel_context, patch, reload, settings
@@ -133,6 +135,9 @@ class AppScript:
             context = None
         if context is not None:
             raise RuntimeError(f"We should not have an existing Solara app context when running an app for the first time: {context}")
+        if solara.settings.main.vue_bundle:
+            # before the app runs, so a template's widget can already pick the bundle
+            vue_bundle.load(solara.settings.main.vue_bundle, vue_bundle.app_root(self.name), self.directory.parent / "public")
         dummy_kernel_context = kernel_context.create_dummy_context()
         with dummy_kernel_context:
             app = self._execute()

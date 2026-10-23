@@ -1,40 +1,44 @@
-"""Serve component_vue templates from a precompiled ES module bundle.
+"""Serve the app's component_vue templates from one prebuilt ES module.
 
-The @component_vue decorator records every .vue file it is given. From that,
-`write_bundle_entry` generates a vite/rollup entry (one export per template)
-plus a manifest mapping each template's content hash to its export name.
+`solara vue-bundle app.py -o vue/entry.js` imports the app and writes a vite
+entry with one export per template under the app root. The export name is
+`<ComponentName>_<key>`, where key is a hash of the template's path (relative
+to the app root) and content. The built .mjs therefore needs no manifest: the
+server reads the export names from it, and a template whose key is missing
+(edited, or not imported when the entry was written) falls back to source.
 
-With SOLARA_VUE_BUNDLES set (comma-separated manifest paths), component_vue
-resolves templates through the manifests instead of shipping their source:
-the widget uses Template(esm_module=..., esm_export=...) (requires ipyvue
-with ES module support). A template whose current content hash is not in any
-manifest is a hard error - a changed file means the bundle is stale.
-
-Building the bundle (running vite) and defining the module
-(ipyvue.define_module with a Path or url) remain the application's
-responsibility; solara only generates text and checks it.
+Solara's own (library) templates are never bundled.
 """
 
 import hashlib
-import json
 import logging
 import os
-import pathlib
 import re
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+import sys
+from pathlib import Path, PurePath
+from typing import Dict, Optional, Set
+
+import solara
+
+logger = logging.getLogger("solara.components.vue_bundle")
+
+MODULE_NAME = "solara-vue-bundle"
+BUNDLE_FILE_NAME = "app.mjs"
 
 # every .vue file passed to @component_vue, in import order, with the
-# decorated function's name (used as the export name)
+# decorated function's name
 _vue_files: Dict[Path, str] = {}
 
-_manifests: Optional[Dict[str, Tuple[str, str]]] = None  # sha1 -> (module, export)
-_manifest_names: Dict[str, List[str]] = {}  # basename -> manifest names, for errors
-_loaded_bundles: List[str] = []  # manifest names, for errors
+# the loaded bundle: key -> export name, or None when bundle mode is off
+_exports: Optional[Dict[str, str]] = None
+_root: Optional[Path] = None
+_keys: Dict[Path, Optional[str]] = {}
+_warned: Set[Path] = set()
 
-
-def _sha1(path: Path) -> str:
-    return hashlib.sha1(path.read_bytes()).hexdigest()  # noqa: S324 - content id, not security
+_EXPORT_NAME = re.compile(r"^[A-Za-z_$][\w$]*_([0-9a-f]{12})$")
+# an export list, optionally a re-export: export { a as Foo_<key>, b } from "x";
+_EXPORT_BLOCK = re.compile(r"""export\s*\{([^}]*)\}(?:\s*from\s*(?:"[^"]*"|'[^']*'))?\s*;?""")
+_TRAILING_COMMENTS = re.compile(r"""^(?:\s+|//[^\n]*|/\*[\s\S]*?\*/)*$""")
 
 
 def record(vue_file: Path, component_name: str) -> None:
@@ -43,80 +47,227 @@ def record(vue_file: Path, component_name: str) -> None:
         _vue_files[vue_file] = component_name
 
 
-def _load_manifests() -> Dict[str, Tuple[str, str]]:
-    global _manifests
-    if _manifests is None:
-        _manifests = {}
-        for manifest_path in os.environ.get("SOLARA_VUE_BUNDLES", "").split(","):
-            if not manifest_path.strip():
-                continue
-            manifest = json.loads(Path(manifest_path.strip()).read_text(encoding="utf8"))
-            _loaded_bundles.append(manifest["name"])
-            for file, entry in manifest["components"].items():
-                _manifests[entry["sha1"]] = (manifest["name"], entry["export"])
-                _manifest_names.setdefault(Path(file).name, []).append(manifest["name"])
-    return _manifests
+def app_root(app: str) -> Path:
+    """The directory whose templates belong to the app: the script's (or
+    notebook's) directory, the directory itself, or the top-level package of a
+    module. Used by the CLI and the server, so both agree on the keys."""
+    path = Path(app)
+    if app.endswith(".py") or app.endswith(".ipynb"):
+        return path.resolve().parent
+    if path.is_dir():
+        return path.resolve()
+    import importlib.util
+
+    # only the top-level name: find_spec of a dotted name runs the parent packages
+    spec = importlib.util.find_spec(app.split(".")[0])
+    if spec is None or spec.origin is None:
+        raise ImportError(f"Module {app} cannot be found")
+    return Path(spec.origin).resolve().parent
 
 
-def enabled() -> bool:
-    return bool(os.environ.get("SOLARA_VUE_BUNDLES"))
+def public_dir(app: str) -> Path:
+    """The dir solara serves at /static/public for the app (as AppScript does)."""
+    path = Path(app)
+    if app.endswith(".py") or app.endswith(".ipynb"):
+        directory = path.resolve().parent
+    elif path.is_dir():
+        directory = path.resolve()
+    else:
+        import importlib.util
+
+        spec = importlib.util.find_spec(app)
+        if spec is None or spec.origin is None:
+            raise ImportError(f"Module {app} cannot be found")
+        directory = Path(spec.origin).resolve().parent
+    return directory.parent / "public"
 
 
-def lookup(vue_file: Path) -> Tuple[str, str]:
-    """Resolve a template to (esm_module, esm_export), or raise if the bundle
-    does not contain the template's current content."""
-    manifests = _load_manifests()
-    entry = manifests.get(_sha1(vue_file))
-    if entry is not None:
-        return entry
-    if vue_file.name in _manifest_names:
-        raise RuntimeError(f"{vue_file} changed since bundle {_manifest_names[vue_file.name]} was built, rebuild it (see write_bundle_entry)")
-    raise RuntimeError(
-        f"{vue_file} is not in any of the bundles {_loaded_bundles} (from SOLARA_VUE_BUNDLES); regenerate and rebuild the bundle that should contain it"
-    )
+def key(vue_file: Path, root: Path) -> str:
+    relative = PurePath(os.path.relpath(vue_file, root)).as_posix()
+    content = vue_file.read_bytes()
+    return hashlib.sha1(relative.encode("utf8") + b"\0" + content).hexdigest()[:12]  # noqa: S324 - content id, not security
 
 
-def _export_names() -> Dict[Path, str]:
-    # the python component name, readable in the entry, the bundle and vue
-    # devtools; only a within-bundle name collision (two components with the
-    # same function name) gets a content-hash suffix to stay unique
-    names: Dict[Path, str] = {}
-    seen: Dict[str, Path] = {}
-    for vue_file, component_name in _vue_files.items():
-        name = re.sub(r"[^a-zA-Z0-9]", "_", component_name)
-        if name in seen:
-            logging.getLogger("solara").warning(
-                "duplicate component name %s (%s and %s); disambiguating with a content-hash suffix", name, seen[name], vue_file
-            )
-            name = f"{name}_{_sha1(vue_file)[:8]}"
-        else:
-            seen[name] = vue_file
-        names[vue_file] = name
-    return names
+def export_name(component_name: str, key: str) -> str:
+    name = re.sub(r"[^A-Za-z0-9_$]", "_", component_name)
+    if not name or name[0].isdigit():
+        name = "_" + name
+    return f"{name}_{key}"
 
 
-def write_bundle_entry(directory: Path, name: str = "app-components") -> Path:
-    """Write <name>-entry.js and <name>-manifest.json for every component_vue
-    template imported so far; returns the entry path. Import the application
-    first, then call this, then run the bundler on the entry."""
-    directory = Path(directory)
-    directory.mkdir(parents=True, exist_ok=True)
-    if not _vue_files:
-        raise RuntimeError("no component_vue templates recorded; import the application first")
-    lines = []
+def _inside(path: Path, root: Path) -> bool:
+    try:
+        path.relative_to(root)
+        return True
+    except ValueError:
+        return False
+
+
+def app_templates(root: Path) -> Dict[Path, str]:
+    """Recorded templates under the app root, with their component names."""
+    return {file: name for file, name in _vue_files.items() if _inside(file, root)}
+
+
+def entry_code(entry: Path, root: Path) -> str:
+    entry = entry.resolve()
+    lines = ["// generated by `solara vue-bundle`, do not edit"]
     exports = []
-    components = {}
-    export_names = _export_names()
-    for i, vue_file in enumerate(_vue_files):
-        export = export_names[vue_file]
-        relative = pathlib.PurePath(os.path.relpath(vue_file, directory)).as_posix()
+    for i, (vue_file, component_name) in enumerate(app_templates(root).items()):
+        name = export_name(component_name, key(vue_file, root))
+        relative = PurePath(os.path.relpath(vue_file, entry.parent)).as_posix()
+        if not relative.startswith("."):
+            relative = "./" + relative
         lines.append(f'import _c{i} from "{relative}";')
-        # give the component a devtools/debugging name; an explicit name in
-        # the SFC wins (spread comes after)
-        exports.append(f'export const {export} = {{ name: "{export}", ..._c{i} }};')
-        components[str(vue_file)] = {"export": export, "sha1": _sha1(vue_file)}
-    lines += [""] + exports
-    entry = directory / f"{name}-entry.js"
-    entry.write_text("// generated by solara.components.vue_bundle.write_bundle_entry - do not edit\n" + "\n".join(lines) + "\n", encoding="utf8")
-    (directory / f"{name}-manifest.json").write_text(json.dumps({"name": name, "components": components}, indent=2) + "\n", encoding="utf8")
-    return entry
+        # a readable name in vue devtools; an explicit name in the SFC wins
+        component = re.sub(r"[^A-Za-z0-9_$]", "_", component_name)
+        exports.append(f'export const {name} = {{ name: "{component}", ..._c{i} }};')
+    return "\n".join(lines + [""] + exports) + "\n"
+
+
+_VITE_CONFIG = """\
+// starter config written by `solara vue-bundle --vite-config`; solara never overwrites it
+import { defineConfig } from "vite";
+import vue from "@vitejs/plugin-vue2";
+import cssInjectedByJs from "vite-plugin-css-injected-by-js";
+
+// ipyvue templates use `module.exports = {...}`, an ES module needs `export default`
+const moduleExports = {
+  name: "solara-module-exports",
+  enforce: "pre",
+  transform(code, id) {
+    if (!id.endsWith(".vue")) return null;
+    return code.replace(/(<script[^>]*>)([\\s\\S]*?)(<\\/script>)/, (m, a, body, c) => a + body.replace(/module\\.exports\\s*=/, "export default") + c);
+  },
+};
+
+export default defineConfig({
+  // css-injected-by-js: lib mode writes a separate .css file that nothing loads
+  plugins: [moduleExports, vue(), cssInjectedByJs()],
+  // the out dir is inside the app's public dir, do not copy it into itself
+  publicDir: false,
+  build: {
+    outDir: "%(out_dir)s",
+    emptyOutDir: true,
+    lib: { entry: "%(entry)s", formats: ["es"], fileName: () => "%(file_name)s" },
+    rollupOptions: {
+      // ipyvue provides vue through the import map
+      external: ["vue"],
+      output: { inlineDynamicImports: true },
+    },
+  },
+});
+"""
+
+
+def vite_config(entry: str, out_dir: str) -> str:
+    return _VITE_CONFIG % {"entry": entry, "out_dir": out_dir, "file_name": BUNDLE_FILE_NAME}
+
+
+def parse_exports(code: str) -> Dict[str, str]:
+    """Map key -> export name, from the export list at the end of a built
+    module (rollup/vite keep export names, also when minified). Text elsewhere
+    in the module, such as a string literal, is ignored."""
+    matches = list(_EXPORT_BLOCK.finditer(code))
+    exports: Dict[str, str] = {}
+    if not matches:
+        return exports
+    # rollup ends an entry chunk with its export statements; take the trailing
+    # run of them (a re-export can sit next to the local export list)
+    end = len(code)
+    for match in reversed(matches):
+        if not _TRAILING_COMMENTS.match(code[match.end() : end]):
+            break
+        end = match.start()
+        for item in match.group(1).split(","):
+            name = item.strip().split(" as ")[-1].strip().strip("\"'")
+            found = _EXPORT_NAME.match(name)
+            if found:
+                exports[found.group(1)] = name
+    return exports
+
+
+def resolve_bundle(setting: str, public_dir: Path) -> Optional[Path]:
+    """The bundle file for the setting (relative to the served public dir, or
+    absolute inside it), or None when it is outside the public dir."""
+    public_dir = public_dir.resolve()
+    path = Path(setting)
+    if not path.is_absolute():
+        path = public_dir / path
+    path = path.resolve()
+    return path if _inside(path, public_dir) else None
+
+
+def load(setting: Optional[str], root: Path, public_dir: Path) -> bool:
+    """Turn bundle mode on for the app at root, and define the module.
+
+    Runs once at server startup. On any problem, warn and keep source mode."""
+    global _exports, _root
+    if not setting:
+        return False
+    import ipyvue
+
+    if not hasattr(ipyvue, "define_module"):
+        logger.warning("SOLARA_VUE_BUNDLE needs ipyvue with ES module support, serving template source")
+        return False
+    path = resolve_bundle(setting, public_dir)
+    if path is None:
+        logger.warning("SOLARA_VUE_BUNDLE=%s is not inside %s, serving template source", setting, public_dir)
+        return False
+    try:
+        exports = parse_exports(path.read_text(encoding="utf8"))
+    except OSError as e:
+        logger.warning("cannot read SOLARA_VUE_BUNDLE=%s (%s), serving template source", path, e)
+        return False
+    if not exports:
+        logger.warning("%s has no solara vue-bundle exports, serving template source", path)
+        return False
+    _exports = exports
+    _root = root.resolve()
+    _keys.clear()
+    url = "/static/public/" + path.relative_to(public_dir.resolve()).as_posix()
+    # through the module attribute: solara server patches define_module
+    ipyvue.define_module(MODULE_NAME, url=url)
+    logger.info("serving %d component_vue templates from %s", len(exports), url)
+    return True
+
+
+def lookup(vue_file: Path) -> Optional[str]:
+    """The bundle export for a template, or None to serve its source."""
+    if _exports is None or _root is None or not solara._using_solara_server():
+        return None
+    if vue_file not in _keys:
+        file_key = None
+        resolved = vue_file.resolve()
+        if _inside(resolved, _root):
+            try:
+                file_key = key(resolved, _root)
+            except OSError:
+                pass
+        # production only: templates do not change while the server runs
+        _keys[vue_file] = file_key
+    file_key = _keys[vue_file]
+    if file_key is None:
+        return None
+    export = _exports.get(file_key)
+    if export is None and vue_file not in _warned:
+        _warned.add(vue_file)
+        logger.warning("%s is not in the vue bundle (edited or not imported by `solara vue-bundle`), serving its source", vue_file)
+    return export
+
+
+def get_template(abs_path: str):
+    """The Template widget for a component_vue template: a shared ESM
+    Template in bundle mode, or the (watched) source template."""
+    export = lookup(Path(abs_path))
+    if export is None:
+        # look it up at call time: solara server patches get_template to watch the file
+        return sys.modules["ipyvue.VueTemplateWidget"].get_template(abs_path)  # type: ignore
+    import ipyvue as vue
+
+    # per kernel under solara server; the key is not a path, so a file change
+    # (AppScript.on_file_change) never touches it
+    registry = sys.modules["ipyvue.Template"].template_registry  # type: ignore
+    registry_key = f"{MODULE_NAME}:{export}"
+    if registry_key not in registry:
+        registry[registry_key] = vue.Template(esm_module=MODULE_NAME, esm_export=export)
+    return registry[registry_key]

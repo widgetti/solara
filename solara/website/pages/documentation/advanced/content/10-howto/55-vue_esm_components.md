@@ -122,47 +122,126 @@ is watched, so a bundler in watch mode gives in-place hot reload.
 
 ## Bundling all component_vue templates
 
-`@solara.component_vue` records every template it is given, so solara can generate the
-bundler input for the whole application:
+Your app code keeps `@solara.component_vue("foo.vue")` as it is. In production, solara can
+serve all of the app's templates from one prebuilt ES module instead of their source.
+Solara defines the module itself (named `solara-vue-bundle`), so the app never calls
+`define_module` for it.
 
-```bash
-solara vue-bundle app.py --output vue-components/src --name app-components
-# writes app-components-entry.js (one named export per template)
-# and app-components-manifest.json (content hash -> export)
+For a layout like this:
+
+```
+src/solara_app.py      # the app, with its .vue files under src/
+vue/                   # the vite project (package.json, node_modules)
+public/                # served at /static/public
 ```
 
-Build the entry with vite (`vue` external — ipyvue provides it via the import map):
+1. Write the vite entry, and a starter vite config the first time:
+
+    ```bash
+    solara vue-bundle src/solara_app.py -o vue/entry.js --vite-config
+    ```
+
+    The command imports the app and writes one export per `component_vue` template under the
+    app root (the script's directory, or the top-level package of a module). Solara's own
+    templates are not in it. Run it again after you add or edit a template.
+
+2. Build it (needs `vite`, `@vitejs/plugin-vue2` and `vite-plugin-css-injected-by-js`):
+
+    ```bash
+    cd vue && npx vite build      # writes public/vue/app.mjs
+    ```
+
+3. Run with the bundle, as a path relative to the public directory:
+
+    ```bash
+    SOLARA_VUE_BUNDLE=vue/app.mjs solara run src/solara_app.py
+    ```
+
+The page preloads the bundle with a versioned url, and solara serves it with an immutable
+cache header (see above).
+
+Each export is named `<ComponentName>_<key>`, for example `MyCard_6d0c4e3fef1e`. The key is a
+hash of the template's path (relative to the app root) and its content. At startup solara reads
+the export names from the built file, so there is no manifest. When a widget is created,
+solara looks up the key of its template. When the key is not in the bundle, for example
+after an edit without a rebuild, solara logs a warning and serves the template source, as
+without the setting. A missing or unreadable bundle also falls back to source, with a warning.
+
+Use bundle mode in production only: solara does not watch the templates in this mode, so an
+edit needs a rebuild and a restart. Develop with `SOLARA_VUE_BUNDLE` unset. It only has an
+effect under the solara server, not in Jupyter.
+
+### The vite config
+
+`--vite-config` writes `vue/vite.config.mjs` only when it does not exist, so you can edit it:
 
 ```js
-// vue-components/vite.config.mjs
 import { defineConfig } from "vite";
-import vue from "@vitejs/plugin-vue"; // or @vitejs/plugin-vue2 on the vue2 stack
+import vue from "@vitejs/plugin-vue2";
+import cssInjectedByJs from "vite-plugin-css-injected-by-js";
+
+// ipyvue templates use `module.exports = {...}`, an ES module needs `export default`
+const moduleExports = {
+  name: "solara-module-exports",
+  enforce: "pre",
+  transform(code, id) {
+    if (!id.endsWith(".vue")) return null;
+    return code.replace(/(<script[^>]*>)([\s\S]*?)(<\/script>)/, (m, a, body, c) => a + body.replace(/module\.exports\s*=/, "export default") + c);
+  },
+};
 
 export default defineConfig({
-  plugins: [vue()],
+  // css-injected-by-js: lib mode writes a separate .css file that nothing loads
+  plugins: [moduleExports, vue(), cssInjectedByJs()],
+  // the out dir is inside the app's public dir, do not copy it into itself
+  publicDir: false,
   build: {
-    lib: { entry: "src/app-components-entry.js", formats: ["es"], fileName: () => "app-components.mjs" },
-    rollupOptions: { external: ["vue"] },
-    // debugging: external map next to the bundle for url-served production
-    // bundles; use "inline" when serving the module file-backed (blob urls
-    // cannot resolve a relative sourceMappingURL)
-    sourcemap: true,
+    outDir: "../public/vue",
+    emptyOutDir: true,
+    lib: { entry: "entry.js", formats: ["es"], fileName: () => "app.mjs" },
+    rollupOptions: {
+      // ipyvue provides vue through the import map
+      external: ["vue"],
+      output: { inlineDynamicImports: true },
+    },
   },
 });
 ```
 
-Then define the module (as above) and turn the mode on:
+`emptyOutDir` clears `public/vue` only, so keep other files out of it.
+
+### Check the bundle in CI
 
 ```bash
-SOLARA_VUE_BUNDLES=vue-components/src/app-components-manifest.json solara run app.py
+solara vue-bundle src/solara_app.py --check --bundle vue/app.mjs
 ```
 
-With the variable set, `component_vue` resolves every template through the manifests
-instead of shipping its source: lookup is by content hash, so a template edited after
-the bundle was built is a hard error (stale bundle) rather than silent drift. Unset,
-everything behaves as before — that is the development mode, with per-template hot
-reload. Each generated export carries the template's file name as the component
-`name`, so vue devtools and warnings stay readable.
+This exits with 1, and lists the templates, when a template of the app is not in the bundle
+or the bundle is missing. Without `--bundle`, it uses `SOLARA_VUE_BUNDLE`.
+
+### Limits
+
+- An ES module runs in strict mode. A template that assigns to an undeclared variable at load
+  time throws, and one template that throws at load breaks the whole bundle. Load the bundle
+  in node in CI, with `vue` stubbed (node 22.15 or later):
+
+    ```js
+    // smoke.mjs, run as: node smoke.mjs public/vue/app.mjs
+    import { registerHooks } from "node:module";
+    const vue = "data:text/javascript,export default {}; export const h = () => null;";
+    registerHooks({ resolve: (specifier, context, next) => (specifier === "vue" ? { url: vue, shortCircuit: true } : next(specifier, context)) });
+    const bundle = await import(new URL(process.argv[2], `file://${process.cwd()}/`).href);
+    console.log(Object.keys(bundle).join("\n"));
+    ```
+
+    Add the names your templates import from `vue` to the stub.
+- An undeclared variable inside a method fails only when the method runs. Use eslint with
+  `no-undef` to find these.
+- Only `module.exports = {...}` and `export default {...}` work. The `exports.foo = ...` style
+  does not.
+- Only templates in modules that the app imports at startup get into the entry. A template in
+  a module that the app imports later serves its source.
+- The url gets the root path when solara runs under a root path with the starlette server.
 
 ## Using a precompiled component as a tag
 

@@ -1,5 +1,6 @@
 import inspect
 import os
+from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Type
 
 import ipyvue as vue
@@ -9,6 +10,8 @@ import traitlets
 import typing_extensions
 
 import solara
+
+from . import vue_bundle
 
 P = typing_extensions.ParamSpec("P")
 
@@ -89,12 +92,26 @@ def _widget_vue(
                     return vue.Template(esm_module=esm_module, esm_export=esm_export)
 
         else:
+            assert vue_path is not None
+            # the same path ipyvue builds from template_file
+            abs_path = os.path.join(os.path.dirname(os.path.abspath(inspect.getfile(func))), vue_path)
 
+            # no template_file: ipyvue would set the template in __init__ and
+            # skip this default, which picks bundle or source per widget
+            # (see solara/components/vue_bundle.py)
             class VuetifyWidgetSolara(v.VuetifyTemplate):  # type: ignore[no-redef]
-                template_file = (os.path.abspath(inspect.getfile(func)), vue_path)
+                template_file = None
+
+                @traitlets.default("template")
+                def _default_template(self):
+                    return vue_bundle.get_template(abs_path)
 
             class VueWidgetSolara(vue.VueTemplate):  # type: ignore[no-redef]
-                template_file = (os.path.abspath(inspect.getfile(func)), vue_path)
+                template_file = None
+
+                @traitlets.default("template")
+                def _default_template(self):
+                    return vue_bundle.get_template(abs_path)
 
         base_class = VuetifyWidgetSolara if vuetify else VueWidgetSolara
         widget_class = _widget_from_signature("VueWidgetSolaraSub", base_class, func, "vue_", to_json=to_json, from_json=from_json, tags=tags)
@@ -216,19 +233,9 @@ def component_vue(
         raise RuntimeError("esm_module requires ipyvue with ES module support")
 
     def decorator(func: Callable[P, None]):
-        nonlocal vue_path, esm_module, esm_export
         if vue_path is not None:
-            from pathlib import Path
-
-            from . import vue_bundle
-
-            vue_file = Path(inspect.getfile(func)).parent / vue_path
-            vue_bundle.record(vue_file, func.__name__)
-            if vue_bundle.enabled():
-                # serve the template from the precompiled bundle instead of
-                # shipping its source (see solara/components/vue_bundle.py)
-                esm_module, esm_export = vue_bundle.lookup(vue_file)
-                vue_path = None
+            # for `solara vue-bundle`, which writes the bundle entry
+            vue_bundle.record(Path(inspect.getfile(func)).parent / vue_path, func.__name__)
         VueWidgetSolaraSub = _widget_vue(
             vue_path, vuetify=vuetify, to_json=to_json, from_json=from_json, tags=tags, esm_module=esm_module, esm_export=esm_export
         )(func)
