@@ -148,7 +148,7 @@ public/                # served at /static/public
 2. Build it (needs `vite`, `@vitejs/plugin-vue2` or for ipyvue 3 `@vitejs/plugin-vue`, and `vite-plugin-css-injected-by-js`):
 
     ```bash
-    cd vue && npx vite build      # writes public/vue/app.mjs
+    cd vue && npx vite build      # writes public/vue/app.mjs and public/vue/app.mjs.json
     ```
 
 3. Run with the bundle, as a path relative to the public directory:
@@ -162,10 +162,9 @@ cache header (see above).
 
 Each export is named `<ComponentName>_<key>`, for example `MyCard_6d0c4e3fef1e`. The key is a
 hash of the template's path (relative to the app root) and its content. The `solara-vue-bundle`
-plugin in the vite config below writes the export names on the last lines of the built file,
-and solara reads them at startup, so there is no manifest. A bundle built without that plugin
-is not used. When a widget is created,
-solara looks up the key of its template. When the key is not in the bundle, for example
+plugin in the vite config below writes the export names to `app.mjs.json` in the same build,
+and solara reads that file at startup. Deploy `app.mjs` and `app.mjs.json` together. Without
+the `.json` file, solara does not use the bundle. When a widget is created, solara looks up the key of its template. When the key is not in the bundle, for example
 after an edit without a rebuild, solara logs a warning and serves the template source, as
 without the setting. A missing or unreadable bundle also falls back to source, with a warning.
 
@@ -212,15 +211,11 @@ const solaraVueBundle = {
     const value = body.slice(expr.right.start, expr.right.end);
     return code.slice(0, offset + stmt.start) + "export default (" + value + ");" + code.slice(offset + stmt.end);
   },
-  // solara reads the export names from this line; it goes after the code (and
-  // before a sourceMappingURL line), so source map line numbers stay valid
+  // solara reads the export names from <bundle>.json, written by the same build
   generateBundle(options, bundle) {
     for (const chunk of Object.values(bundle)) {
       if (chunk.type !== "chunk" || !chunk.isEntry) continue;
-      const marker = `// solara-vue-bundle-exports: ${chunk.exports.join(",")}\n`;
-      const code = chunk.code.endsWith("\n") ? chunk.code : chunk.code + "\n";
-      const at = code.lastIndexOf("\n//# sourceMappingURL=") + 1;
-      chunk.code = at > 0 ? code.slice(0, at) + marker + code.slice(at) : code + marker;
+      this.emitFile({ type: "asset", fileName: chunk.fileName + ".json", source: JSON.stringify({ exports: chunk.exports }, null, 2) + "\n" });
     }
   },
 };

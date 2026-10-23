@@ -3,14 +3,16 @@
 `solara vue-bundle app.py -o vue/entry.js` imports the app and writes a vite
 entry with one export per template under the app root. The export name is
 `<ComponentName>_<key>`, where key is a hash of the template's path (relative
-to the app root) and content. The built .mjs therefore needs no manifest: the
-server reads the export names from it, and a template whose key is missing
-(edited, or not imported when the entry was written) falls back to source.
+to the app root) and content. The vite build writes the export names to
+<bundle>.json next to the bundle, the server reads them, and a template whose
+key is missing (edited, or not imported when the entry was written) falls back
+to source.
 
 Solara's own (library) templates are never bundled.
 """
 
 import hashlib
+import json
 import logging
 import os
 import re
@@ -38,8 +40,7 @@ _warned: Set[Path] = set()
 _EXPORT_NAME = re.compile(r"^[A-Za-z_$][\w$]*_([0-9a-f]{12})$")
 # an export list, optionally a re-export: export { a as Foo_<key>, b } from "x";
 # the last lines of a bundle built with the starter vite config
-EXPORTS_MARKER = "// solara-vue-bundle-exports:"
-NO_MARKER = "built without solara's vite plugin (see `solara vue-bundle --vite-config`)"
+NO_MANIFEST = "no %s.json next to the bundle; build it with solara's vite plugin (see `solara vue-bundle --vite-config`)"
 
 
 def record(vue_file: Path, component_name: str) -> None:
@@ -166,15 +167,11 @@ const solaraVueBundle = {
     const value = body.slice(expr.right.start, expr.right.end);
     return code.slice(0, offset + stmt.start) + "export default (" + value + ");" + code.slice(offset + stmt.end);
   },
-  // solara reads the export names from this line; it goes after the code (and
-  // before a sourceMappingURL line), so source map line numbers stay valid
+  // solara reads the export names from <bundle>.json, written by the same build
   generateBundle(options, bundle) {
     for (const chunk of Object.values(bundle)) {
       if (chunk.type !== "chunk" || !chunk.isEntry) continue;
-      const marker = `// solara-vue-bundle-exports: ${chunk.exports.join(",")}\n`;
-      const code = chunk.code.endsWith("\n") ? chunk.code : chunk.code + "\n";
-      const at = code.lastIndexOf("\n//# sourceMappingURL=") + 1;
-      chunk.code = at > 0 ? code.slice(0, at) + marker + code.slice(at) : code + marker;
+      this.emitFile({ type: "asset", fileName: chunk.fileName + ".json", source: JSON.stringify({ exports: chunk.exports }, null, 2) + "\n" });
     }
   },
 };
@@ -208,16 +205,23 @@ def vite_config(entry: str, out_dir: str) -> str:
     return _VITE_CONFIG % {"entry": entry, "out_dir": out_dir, "file_name": BUNDLE_FILE_NAME, "vue_plugin": vue_plugin}
 
 
-def parse_exports(code: str) -> Optional[Dict[str, str]]:
-    """Map key -> export name, from the marker line that the starter vite
-    config appends to the bundle, or None when there is no marker."""
-    # the last one: the plugin adds it after all code, a later plugin may add lines
-    # after it, and a marker-like line in user code always comes before it
-    for line in reversed(code.splitlines()):
-        if line.startswith(EXPORTS_MARKER):
-            names = (name.strip() for name in line[len(EXPORTS_MARKER) :].split(","))
-            return {found.group(1): name for name in names for found in [_EXPORT_NAME.match(name)] if found}
-    return None
+def parse_manifest(text: str) -> Optional[Dict[str, str]]:
+    """Map key -> export name, from the <bundle>.json that the starter vite
+    config writes, or None when it is not valid."""
+    try:
+        names = json.loads(text)["exports"]
+    except (ValueError, TypeError, KeyError):
+        return None
+    if not isinstance(names, list):
+        return None
+    return {found.group(1): name for name in names if isinstance(name, str) for found in [_EXPORT_NAME.match(name)] if found}
+
+
+def read_manifest(bundle: Path) -> Optional[Dict[str, str]]:
+    try:
+        return parse_manifest(bundle.with_name(bundle.name + ".json").read_text(encoding="utf8"))
+    except OSError:
+        return None
 
 
 def resolve_bundle(setting: str, public_dir: Path) -> Optional[Path]:
@@ -247,13 +251,12 @@ def load(setting: Optional[str], root: Path, public_dir: Path) -> bool:
     if path is None:
         logger.warning("SOLARA_VUE_BUNDLE=%s is not inside %s, serving template source", setting, public_dir)
         return False
-    try:
-        exports = parse_exports(path.read_text(encoding="utf8"))
-    except OSError as e:
-        logger.warning("cannot read SOLARA_VUE_BUNDLE=%s (%s), serving template source", path, e)
+    if not path.is_file():
+        logger.warning("SOLARA_VUE_BUNDLE=%s not found, serving template source", path)
         return False
+    exports = read_manifest(path)
     if exports is None:
-        logger.warning("%s is %s, serving template source", path, NO_MARKER)
+        logger.warning("%s: " + NO_MANIFEST + ", serving template source", path, path.name)
         return False
     if not exports:
         logger.warning("%s has no solara vue-bundle exports, serving template source", path)

@@ -817,9 +817,9 @@ def vue_bundle(app: str, output: typing.Optional[Path], vite_config: bool, check
         if bundle_path is None or not bundle_path.exists():
             rprint(f"[red]bundle {setting} not found in {public_dir}[/red]")
             sys.exit(1)
-        exports = vb.parse_exports(bundle_path.read_text(encoding="utf8"))
+        exports = vb.read_manifest(bundle_path)
         if exports is None:
-            rprint(f"[red]{bundle_path} is {vb.NO_MARKER}[/red]")
+            rprint(f"[red]{bundle_path}: {vb.NO_MANIFEST % bundle_path.name}[/red]")
             sys.exit(1)
         missing = [file for file in templates if vb.key(file, root) not in exports]
         for file in missing:
