@@ -813,30 +813,40 @@ def vue_bundle(app: str, output: typing.Optional[Path], vite_config: bool, check
         setting = bundle or solara.settings.main.vue_bundle
         if not setting:
             raise click.UsageError("pass --bundle or set SOLARA_VUE_BUNDLE")
-        path = vb.resolve_bundle(setting, public_dir)
-        if path is None or not path.exists():
+        bundle_path = vb.resolve_bundle(setting, public_dir)
+        if bundle_path is None or not bundle_path.exists():
             rprint(f"[red]bundle {setting} not found in {public_dir}[/red]")
             sys.exit(1)
-        exports = vb.parse_exports(path.read_text(encoding="utf8"))
+        exports = vb.parse_exports(bundle_path.read_text(encoding="utf8"))
+        if exports is None:
+            rprint(f"[red]{bundle_path} is {vb.NO_MARKER}[/red]")
+            sys.exit(1)
         missing = [file for file in templates if vb.key(file, root) not in exports]
         for file in missing:
-            rprint(f"[red]not in {path}: {file}[/red]")
+            rprint(f"[red]not in {bundle_path}: {file}[/red]")
         if missing:
             sys.exit(1)
-        rprint(f"all {len(templates)} templates are in {path}")
+        rprint(f"all {len(templates)} templates are in {bundle_path}")
         return
     assert output is not None
     if not templates:
         raise click.ClickException(f"no component_vue templates found under {root}")
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(vb.entry_code(output, root), encoding="utf8")
+    try:
+        code = vb.entry_code(output, root)
+    except RuntimeError as e:
+        raise click.UsageError(str(e))
+    output.write_text(code, encoding="utf8")
     rprint(f"wrote {output} ({len(templates)} templates)")
     if vite_config:
         config = output.parent / "vite.config.mjs"
         if config.exists():
             rprint(f"{config} exists, not overwritten")
         else:
-            out_dir = Path(os.path.relpath(public_dir / "vue", output.parent.resolve())).as_posix()
+            try:
+                out_dir = Path(os.path.relpath(public_dir / "vue", output.parent.resolve())).as_posix()
+            except ValueError:  # windows: another drive
+                raise click.UsageError(f"the entry {output} and the public dir {public_dir} must be on the same drive")
             config.write_text(vb.vite_config(output.name, out_dir), encoding="utf8")
             rprint(f"wrote {config}; next: cd {output.parent} && npx vite build, then run with SOLARA_VUE_BUNDLE=vue/{vb.BUNDLE_FILE_NAME}")
 

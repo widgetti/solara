@@ -58,7 +58,8 @@ def _write(path: Path, text: str) -> Path:
 
 def _bundle(public: Path, exports, name="vue/app.mjs") -> Path:
     items = ", ".join(f"c{i} as {export}" for i, export in enumerate(exports))
-    return _write(public / name, f"const c0 = {{}};\nexport {{ {items} }};\n")
+    marker = vue_bundle.EXPORTS_MARKER + " " + ",".join(exports)
+    return _write(public / name, f"const c0 = {{}};\nexport {{ {items} }};\n{marker}\n")
 
 
 def test_entry(clean_state, tmp_path: Path):
@@ -86,21 +87,28 @@ def test_entry(clean_state, tmp_path: Path):
     assert vue_bundle.key(a.resolve(), root.resolve()) != key_a
 
 
+def test_entry_other_drive(clean_state, tmp_path: Path, monkeypatch):
+    root = tmp_path / "src"
+    vue_bundle.record(_write(root / "a.vue", "<template><div>a</div></template>"), "CompA")
+
+    def relpath(path, start):
+        raise ValueError("path is on mount 'D:', start on mount 'C:'")
+
+    monkeypatch.setattr(vue_bundle.os.path, "relpath", relpath)
+    monkeypatch.setattr(vue_bundle, "key", lambda file, root: KEY)
+    with pytest.raises(RuntimeError, match="same drive"):
+        vue_bundle.entry_code(tmp_path / "vue" / "entry.js", root.resolve())
+
+
 def test_parse_exports():
-    plain = f"const x = 1;\nexport {{\n  a as Foo_{KEY},\n  b as Bar_ba9876543210,\n  helper\n}};\n//# sourceMappingURL=app.mjs.map\n"
-    assert vue_bundle.parse_exports(plain) == {KEY: f"Foo_{KEY}", "ba9876543210": "Bar_ba9876543210"}
-    minified = f'const a={{}},b={{}};export{{a as Foo_{KEY},b as "$Bar_ba9876543210"}};'
-    assert vue_bundle.parse_exports(minified) == {KEY: f"Foo_{KEY}", "ba9876543210": "$Bar_ba9876543210"}
-    reexport = f'export {{ a as Foo_{KEY} }};\nexport {{ default as Bar_ba9876543210 }} from "./other.mjs";\n'
-    assert vue_bundle.parse_exports(reexport) == {KEY: f"Foo_{KEY}", "ba9876543210": "Bar_ba9876543210"}
-    # export-like text that is not the module's export list
-    literal = f'const s = "export {{ a as Fake_{KEY} }}";\nconsole.log(s);\nexport {{ b as Real_ba9876543210 }};\n'
-    assert vue_bundle.parse_exports(literal) == {"ba9876543210": "Real_ba9876543210"}
-    assert vue_bundle.parse_exports(f'const s = "export {{ a as Fake_{KEY} }}";\nconsole.log(s);\n') == {}
-    # an export list in a trailing comment is not an export
-    commented = f"export {{ b as Real_ba9876543210 }};\n// export {{ a as Fake_{KEY} }};\n/* export {{ c as Fake2_{KEY} }} */\n"
-    assert vue_bundle.parse_exports(commented) == {"ba9876543210": "Real_ba9876543210"}
-    assert vue_bundle.parse_exports(f"const a = 1;\n// export {{ a as Fake_{KEY} }};\n") == {}
+    marker = f"{vue_bundle.EXPORTS_MARKER} Foo_{KEY},$Bar_ba9876543210,helper"
+    code = f"const a={{}},b={{}};export{{a as Foo_{KEY},b as $Bar_ba9876543210}};\n{marker}\n//# sourceMappingURL=app.mjs.map\n"
+    assert vue_bundle.parse_exports(code) == {KEY: f"Foo_{KEY}", "ba9876543210": "$Bar_ba9876543210"}
+    # export-like text anywhere else does not count, only the marker line
+    fake = f'const s = "export {{ a as Fake_aaaaaaaaaaaa }}";\n// export {{ b as Fake_bbbbbbbbbbbb }};\n{marker}\n'
+    assert vue_bundle.parse_exports(fake) == {KEY: f"Foo_{KEY}", "ba9876543210": "$Bar_ba9876543210"}
+    # built without the solara plugin: no marker
+    assert vue_bundle.parse_exports(f"export {{ a as Foo_{KEY} }};\n") is None
 
 
 def test_load(clean_state, tmp_path: Path, defined):
@@ -116,11 +124,13 @@ def test_load(clean_state, tmp_path: Path, defined):
 def test_load_falls_back_to_source(clean_state, tmp_path: Path, defined):
     public = tmp_path / "public"
     _write(tmp_path / "elsewhere" / "app.mjs", f"export {{ a as Foo_{KEY} }};")
-    _write(public / "empty.mjs", "export { a as Foo };")
+    _write(public / "empty.mjs", f"export {{ a as Foo }};\n{vue_bundle.EXPORTS_MARKER} Foo\n")
+    _write(public / "nomarker.mjs", f"export {{ a as Foo_{KEY} }};\n")
     assert not vue_bundle.load("missing.mjs", tmp_path, public)
     assert not vue_bundle.load("../elsewhere/app.mjs", tmp_path, public)
     assert not vue_bundle.load(str(tmp_path / "elsewhere" / "app.mjs"), tmp_path, public)
     assert not vue_bundle.load("empty.mjs", tmp_path, public)
+    assert not vue_bundle.load("nomarker.mjs", tmp_path, public)
     assert defined == []
     assert vue_bundle._exports is None
 
@@ -200,9 +210,14 @@ def test_cli(clean_state, tmp_path: Path, monkeypatch):
     assert f"export const {export} = " in (tmp_path / "vue" / "entry.js").read_text()
     config = (tmp_path / "vue" / "vite.config.mjs").read_text()
     assert 'outDir: "../public/vue"' in config and "publicDir: false" in config
+    assert vue_bundle.EXPORTS_MARKER in config and "this.parse(" in config
 
     check = ["vue-bundle", "src/app.py", "--check", "--bundle", "vue/app.mjs"]
     assert runner.invoke(cli, check).exit_code == 1  # not built yet
+    _write(tmp_path / "public" / "vue" / "app.mjs", f"export {{ a as {export} }};\n")
+    result = runner.invoke(cli, check)
+    assert result.exit_code == 1
+    assert "built without solara's vite plugin" in result.output
     _bundle(tmp_path / "public", [export])
     result = runner.invoke(cli, check)
     assert result.exit_code == 0, result.output

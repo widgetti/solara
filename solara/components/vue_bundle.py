@@ -37,7 +37,9 @@ _warned: Set[Path] = set()
 
 _EXPORT_NAME = re.compile(r"^[A-Za-z_$][\w$]*_([0-9a-f]{12})$")
 # an export list, optionally a re-export: export { a as Foo_<key>, b } from "x";
-_EXPORT_BLOCK = re.compile(r"""export\s*\{([^}]*)\}(?:\s*from\s*(?:"[^"]*"|'[^']*'))?(?:\s*;)?""")
+# the last lines of a bundle built with the starter vite config
+EXPORTS_MARKER = "// solara-vue-bundle-exports:"
+NO_MARKER = "built without solara's vite plugin (see `solara vue-bundle --vite-config`)"
 
 
 def record(vue_file: Path, component_name: str) -> None:
@@ -116,7 +118,10 @@ def entry_code(entry: Path, root: Path) -> str:
     exports = []
     for i, (vue_file, component_name) in enumerate(app_templates(root).items()):
         name = export_name(component_name, key(vue_file, root))
-        relative = PurePath(os.path.relpath(vue_file, entry.parent)).as_posix()
+        try:
+            relative = PurePath(os.path.relpath(vue_file, entry.parent)).as_posix()
+        except ValueError:  # windows: another drive
+            raise RuntimeError(f"the entry {entry} and the template {vue_file} must be on the same drive")
         if not relative.startswith("."):
             relative = "./" + relative
         lines.append(f'import _c{i} from "{relative}";')
@@ -126,21 +131,45 @@ def entry_code(entry: Path, root: Path) -> str:
     return "\n".join(lines + [""] + exports) + "\n"
 
 
-_VITE_CONFIG = """\
-// starter config written by `solara vue-bundle --vite-config`; solara never overwrites it
+_VITE_CONFIG = r"""// starter config written by `solara vue-bundle --vite-config`; solara never overwrites it
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import vue from "%(vue_plugin)s";
 import cssInjectedByJs from "vite-plugin-css-injected-by-js";
 
-// ipyvue templates use `module.exports = {...}`, an ES module needs `export default`
-const moduleExports = {
-  name: "solara-module-exports",
+const solaraVueBundle = {
+  name: "solara-vue-bundle",
   enforce: "pre",
+  // ipyvue templates use `module.exports = {...}`, an ES module needs `export default`
   transform(code, id) {
     if (!id.endsWith(".vue")) return null;
-    return code.replace(/(<script[^>]*>)([\\s\\S]*?)(<\\/script>)/, (m, a, body, c) => a + body.replace(/^(\\s*)module\\.exports\\s*=/m, "$1export default") + c);
+    const script = /(<script[^>]*>)([\s\S]*?)<\/script>/.exec(code);
+    if (!script) return null;
+    let ast;
+    try {
+      ast = this.parse(script[2]);
+    } catch {
+      return null;
+    }
+    const isModuleExports = (e) =>
+      e.type === "AssignmentExpression" && e.operator === "=" && e.left.type === "MemberExpression" && !e.left.computed &&
+      e.left.object.type === "Identifier" && e.left.object.name === "module" && e.left.property.name === "exports";
+    const node = ast.body.find((s) => s.type === "ExpressionStatement" && isModuleExports(s.expression));
+    if (!node) return null;
+    const offset = script.index + script[1].length;
+    return code.slice(0, offset + node.expression.left.start) + "export default " + code.slice(offset + node.expression.right.start);
+  },
+  // solara reads the export names from this line; it goes after the code (and
+  // before a sourceMappingURL line), so source map line numbers stay valid
+  generateBundle(options, bundle) {
+    for (const chunk of Object.values(bundle)) {
+      if (chunk.type !== "chunk" || !chunk.isEntry) continue;
+      const marker = `// solara-vue-bundle-exports: ${chunk.exports.join(",")}\n`;
+      const code = chunk.code.endsWith("\n") ? chunk.code : chunk.code + "\n";
+      const at = code.lastIndexOf("\n//# sourceMappingURL=") + 1;
+      chunk.code = at > 0 ? code.slice(0, at) + marker + code.slice(at) : code + marker;
+    }
   },
 };
 
@@ -148,7 +177,7 @@ export default defineConfig({
   // entry and outDir are relative to this file, also for `vite build -c vue/vite.config.mjs`
   root: path.dirname(fileURLToPath(import.meta.url)),
   // css-injected-by-js: lib mode writes a separate .css file that nothing loads
-  plugins: [moduleExports, vue(), cssInjectedByJs()],
+  plugins: [solaraVueBundle, vue(), cssInjectedByJs()],
   // the out dir is inside the app's public dir, do not copy it into itself
   publicDir: false,
   build: {
@@ -173,39 +202,14 @@ def vite_config(entry: str, out_dir: str) -> str:
     return _VITE_CONFIG % {"entry": entry, "out_dir": out_dir, "file_name": BUNDLE_FILE_NAME, "vue_plugin": vue_plugin}
 
 
-def parse_exports(code: str) -> Dict[str, str]:
-    """Map key -> export name, from the export list at the end of a built
-    module (rollup/vite keep export names, also when minified). Text elsewhere
-    in the module, such as a string literal, is ignored."""
-    exports: Dict[str, str] = {}
-    by_end = {match.end(): match for match in _EXPORT_BLOCK.finditer(code)}
-    # rollup ends an entry chunk with its export statements; walk back over
-    # them (a re-export can sit next to the local export list)
-    end = _strip_trailing_comments(code, len(code))
-    while end in by_end:
-        match = by_end[end]
-        for item in match.group(1).split(","):
-            name = item.strip().split(" as ")[-1].strip().strip("\"'")
-            found = _EXPORT_NAME.match(name)
-            if found:
-                exports[found.group(1)] = name
-        end = _strip_trailing_comments(code, match.start())
-    return exports
-
-
-def _strip_trailing_comments(code: str, end: int) -> int:
-    """The end of code[:end] without trailing whitespace, `//` comment lines
-    and `/* */` comments (e.g. the sourceMappingURL line)."""
-    while True:
-        text = code[:end].rstrip()
-        if text.endswith("*/") and "/*" in text:
-            end = text.rindex("/*")
-            continue
-        line_start = text.rfind("\n") + 1
-        if text[line_start:].lstrip().startswith("//"):
-            end = line_start
-            continue
-        return len(text)
+def parse_exports(code: str) -> Optional[Dict[str, str]]:
+    """Map key -> export name, from the marker line that the starter vite
+    config appends to the bundle, or None when there is no marker."""
+    for line in code.rstrip().splitlines()[-5:]:
+        if line.startswith(EXPORTS_MARKER):
+            names = (name.strip() for name in line[len(EXPORTS_MARKER) :].split(","))
+            return {found.group(1): name for name in names for found in [_EXPORT_NAME.match(name)] if found}
+    return None
 
 
 def resolve_bundle(setting: str, public_dir: Path) -> Optional[Path]:
@@ -239,6 +243,9 @@ def load(setting: Optional[str], root: Path, public_dir: Path) -> bool:
         exports = parse_exports(path.read_text(encoding="utf8"))
     except OSError as e:
         logger.warning("cannot read SOLARA_VUE_BUNDLE=%s (%s), serving template source", path, e)
+        return False
+    if exports is None:
+        logger.warning("%s is %s, serving template source", path, NO_MARKER)
         return False
     if not exports:
         logger.warning("%s has no solara vue-bundle exports, serving template source", path)

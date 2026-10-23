@@ -161,8 +161,10 @@ The page preloads the bundle with a versioned url, and solara serves it with an 
 cache header (see above).
 
 Each export is named `<ComponentName>_<key>`, for example `MyCard_6d0c4e3fef1e`. The key is a
-hash of the template's path (relative to the app root) and its content. At startup solara reads
-the export names from the built file, so there is no manifest. When a widget is created,
+hash of the template's path (relative to the app root) and its content. The `solara-vue-bundle`
+plugin in the vite config below writes the export names on the last lines of the built file,
+and solara reads them at startup, so there is no manifest. A bundle built without that plugin
+is not used. When a widget is created,
 solara looks up the key of its template. When the key is not in the bundle, for example
 after an edit without a rebuild, solara logs a warning and serves the template source, as
 without the setting. A missing or unreadable bundle also falls back to source, with a warning.
@@ -182,13 +184,38 @@ import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue2"; // @vitejs/plugin-vue for ipyvue 3 (vue 3)
 import cssInjectedByJs from "vite-plugin-css-injected-by-js";
 
-// ipyvue templates use `module.exports = {...}`, an ES module needs `export default`
-const moduleExports = {
-  name: "solara-module-exports",
+const solaraVueBundle = {
+  name: "solara-vue-bundle",
   enforce: "pre",
+  // ipyvue templates use `module.exports = {...}`, an ES module needs `export default`
   transform(code, id) {
     if (!id.endsWith(".vue")) return null;
-    return code.replace(/(<script[^>]*>)([\s\S]*?)(<\/script>)/, (m, a, body, c) => a + body.replace(/^(\s*)module\.exports\s*=/m, "$1export default") + c);
+    const script = /(<script[^>]*>)([\s\S]*?)<\/script>/.exec(code);
+    if (!script) return null;
+    let ast;
+    try {
+      ast = this.parse(script[2]);
+    } catch {
+      return null;
+    }
+    const isModuleExports = (e) =>
+      e.type === "AssignmentExpression" && e.operator === "=" && e.left.type === "MemberExpression" && !e.left.computed &&
+      e.left.object.type === "Identifier" && e.left.object.name === "module" && e.left.property.name === "exports";
+    const node = ast.body.find((s) => s.type === "ExpressionStatement" && isModuleExports(s.expression));
+    if (!node) return null;
+    const offset = script.index + script[1].length;
+    return code.slice(0, offset + node.expression.left.start) + "export default " + code.slice(offset + node.expression.right.start);
+  },
+  // solara reads the export names from this line; it goes after the code (and
+  // before a sourceMappingURL line), so source map line numbers stay valid
+  generateBundle(options, bundle) {
+    for (const chunk of Object.values(bundle)) {
+      if (chunk.type !== "chunk" || !chunk.isEntry) continue;
+      const marker = `// solara-vue-bundle-exports: ${chunk.exports.join(",")}\n`;
+      const code = chunk.code.endsWith("\n") ? chunk.code : chunk.code + "\n";
+      const at = code.lastIndexOf("\n//# sourceMappingURL=") + 1;
+      chunk.code = at > 0 ? code.slice(0, at) + marker + code.slice(at) : code + marker;
+    }
   },
 };
 
@@ -196,7 +223,7 @@ export default defineConfig({
   // entry and outDir are relative to this file, also for `vite build -c vue/vite.config.mjs`
   root: path.dirname(fileURLToPath(import.meta.url)),
   // css-injected-by-js: lib mode writes a separate .css file that nothing loads
-  plugins: [moduleExports, vue(), cssInjectedByJs()],
+  plugins: [solaraVueBundle, vue(), cssInjectedByJs()],
   // the out dir is inside the app's public dir, do not copy it into itself
   publicDir: false,
   build: {
@@ -241,7 +268,7 @@ or the bundle is missing. Without `--bundle`, it uses `SOLARA_VUE_BUNDLE`.
     Add the names your templates import from `vue` to the stub.
 - An undeclared variable inside a method fails only when the method runs. Use eslint with
   `no-undef` to find these.
-- Only `module.exports = {...}` at the start of a line and `export default {...}` work. The
+- Only a top-level `module.exports = {...}` statement and `export default {...}` work. The
   `exports.foo = ...` style does not.
 - Only templates in modules that the app imports at startup get into the entry. A template in
   a module that the app imports later serves its source.
