@@ -1,8 +1,6 @@
 import io
 from typing import Any, List
 
-import ipywidgets
-import reacton.core
 import solara
 from solara.alias import rw
 
@@ -13,7 +11,7 @@ def FigureMatplotlib(
     dependencies: List[Any] = None,
     format: str = "svg",
     **kwargs,
-) -> reacton.core.ValueElement[ipywidgets.Image, bytes]:
+):
     """Display a matplotlib figure.
 
 

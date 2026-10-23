@@ -1,14 +1,10 @@
-from typing import Any, Union
-
-import ipyvuetify
-import reacton.core
 import solara
 from solara.alias import rv, rvue
 from solara.util import IPYVUETIFY_V3
 
 
 @solara.component
-def LinkTab(path, label) -> reacton.core.ValueElement[ipyvuetify.Tab, Any]:
+def LinkTab(path, label):
     # both adding href to tab or adding Link makes vuetify buggy
     with rv.Tab() as tab:
         # with solara.Link(path):
@@ -23,9 +19,7 @@ def LinkTab(path, label) -> reacton.core.ValueElement[ipyvuetify.Tab, Any]:
 
 
 @solara.component
-def TabNavigation(
-    children=[], vertical=False, **kwargs
-) -> Union[reacton.core.ValueElement[ipyvuetify.Alert, Any], reacton.core.ValueElement[ipyvuetify.Tabs, Any]]:
+def TabNavigation(children=[], vertical=False, **kwargs):
     children = children or []
     route_current, all_routes = solara.use_route()
 

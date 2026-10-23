@@ -1,7 +1,6 @@
 from typing import Any, Callable
 
 import ipyvuetify
-import reacton.core
 import traitlets
 
 import solara
@@ -52,7 +51,7 @@ def FigureEcharts(
     maps: dict = {},
     attributes={"style": "height: 400px;"},
     responsive: bool = False,
-) -> reacton.core.Element[EchartsWidget]:
+):
     """Create a Echarts figure.
 
     See [The Echarts website for examples](https://echarts.apache.org/)

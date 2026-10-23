@@ -1,7 +1,3 @@
-from typing import Any
-
-import ipyvuetify
-import reacton.core
 import solara
 from solara.alias import rv
 from solara.util import IPYVUETIFY_V3
@@ -11,7 +7,7 @@ if IPYVUETIFY_V3:
 
 
 @solara.component
-def Details(summary="Summary", children=[], expand=False) -> reacton.core.ValueElement[ipyvuetify.ExpansionPanels, Any]:
+def Details(summary="Summary", children=[], expand=False):
     """Creates an expandable/collapsible section with a summary and additional children content
 
     ```solara

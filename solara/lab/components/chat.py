@@ -13,7 +13,7 @@ def ChatBox(
     children: List[solara.Element] = [],
     style: Optional[Union[str, Dict[str, str]]] = None,
     classes: List[str] = [],
-) -> None:
+):
     """
     The ChatBox component is a container for ChatMessage components.
     Its primary use is to ensure the proper ordering of messages,
@@ -53,7 +53,7 @@ def ChatInput(
     input_text_style: Optional[Union[str, Dict[str, str]]] = None,
     classes: List[str] = [],
     input_text_classes: List[str] = [],
-) -> None:
+):
     """
     The ChatInput component renders a text input together with a send button.
 
@@ -129,7 +129,7 @@ def ChatMessage(
     notch: bool = False,
     style: Optional[Union[str, Dict[str, str]]] = None,
     classes: List[str] = [],
-) -> None:
+):
     """
     The ChatMessage component renders a message. Messages with `user=True` are rendered on the right side of the screen,
     all others on the left.

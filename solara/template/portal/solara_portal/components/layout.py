@@ -1,10 +1,6 @@
-from typing import Any
-
-import ipyvuetify
-import reacton.core
 import solara
 
 
 @solara.component
-def Layout(children=[]) -> reacton.core.ValueElement[ipyvuetify.Sheet, Any]:
+def Layout(children=[]):
     return solara.VBox(children=children)

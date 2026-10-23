@@ -1,7 +1,6 @@
 from typing import Callable
 
 import ipyvuetify
-import reacton.core
 import traitlets
 
 import solara
@@ -23,7 +22,7 @@ class MarkdownEditorWidget(ipyvuetify.VuetifyTemplate):
 
 
 @solara.component
-def MarkdownEditor(value: str = "", on_value: Callable[[str], None] = None) -> reacton.core.Element[MarkdownEditorWidget]:
+def MarkdownEditor(value: str = "", on_value: Callable[[str], None] = None):
     """WYSIWYG (visual) Markdown editor.
 
     ## Arguments

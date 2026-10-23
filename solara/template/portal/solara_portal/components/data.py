@@ -1,7 +1,3 @@
-from typing import Any
-
-import ipyvuetify
-import reacton.core
 import reacton.ipyvuetify as rv
 import solara
 
@@ -9,7 +5,7 @@ from ..data import dfs
 
 
 @solara.component
-def DataCard(name) -> reacton.core.ValueElement[ipyvuetify.Card, Any]:
+def DataCard(name):
     df = dfs[name].df
     with rv.Card(max_width="400px") as main:
         with solara.Link(f"/tabular/{name}"):
@@ -23,7 +19,7 @@ def DataCard(name) -> reacton.core.ValueElement[ipyvuetify.Card, Any]:
 
 
 @solara.component
-def Overview() -> reacton.core.ValueElement[ipyvuetify.Row, Any]:
+def Overview():
     with solara.ColumnsResponsive(12) as main:
         with solara.Card("Datasets"):
             with solara.ColumnsResponsive(12, small=6, large=4):

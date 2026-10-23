@@ -1,10 +1,9 @@
 import operator
 import os
 from functools import reduce
-from typing import Any, Callable, Dict, List, NoReturn, Union
+from typing import Any, Callable, Dict, List, NoReturn
 
 import ipyvuetify as v
-import reacton.core
 
 try:
     import numpy as np
@@ -136,9 +135,7 @@ def use_df_pivot_data(df, x: List[str], y: List[str], aggregation: solara.Aggreg
 
 
 @solara.component
-def PivotTableView(
-    data: solara.PivotTableData, selected: Dict[str, Any] = {}, on_selected: Callable[[Dict[str, Any]], None] = None, style=""
-) -> reacton.core.Element[PivotTableWidget]:
+def PivotTableView(data: solara.PivotTableData, selected: Dict[str, Any] = {}, on_selected: Callable[[Dict[str, Any]], None] = None, style=""):
     return PivotTableWidget.element(d=data, selected=selected, on_selected=on_selected, style_=style)
 
 
@@ -150,7 +147,7 @@ def PivotTable(
     aggregation: solara.Aggregation = solara.AggregationCount(type="count"),
     selected: Dict[str, Any] = {},
     on_selected: Callable[[Dict[str, Any]], None] = None,
-) -> Union[reacton.core.ValueElement[v.Alert, Any], reacton.core.ValueElement[v.Sheet, Any]]:
+):
     x = x.copy()
     y = y.copy()
     filter, set_filter = solara.use_cross_filter(id(df), "pivottable")
@@ -216,7 +213,7 @@ def PivotTableCard(
     y=[],
     selected: Dict[str, Any] = {},
     on_selected: Callable[[Dict[str, Any]], None] = None,
-) -> reacton.core.ValueElement[v.Card, Any]:
+):
     items = use_df_column_names(df)
     with rv.Card(elevation=2, style_="position: relative", height=cardheight) as main:
         with rv.CardTitle(children=["Pivot table"]):

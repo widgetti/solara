@@ -1,7 +1,5 @@
-from typing import Any, Callable, Dict, List, Optional, TypeVar, Union
+from typing import Callable, Dict, List, Optional, TypeVar, Union
 
-import ipyvuetify
-import reacton.core
 import solara
 from solara import v
 from solara.util import IPYVUETIFY_V3
@@ -17,7 +15,7 @@ def Tab(
     style: Union[str, Dict[str, str], None] = None,
     children: List[solara.Element] = [],
     tab_children: List[Union[solara.Element, str]] = [],
-) -> reacton.core.ValueElement[ipyvuetify.Tab, Any]:
+):
     """An item in a Tabs component.
 
     (*Note: [This component is experimental and its API may change in the future](/documentation/getting_started/what-is-lab).*)
@@ -65,7 +63,7 @@ def Tabs(
     align: str = "left",
     lazy=False,
     children: List[solara.Element] = [],
-) -> reacton.core.ValueElement[ipyvuetify.Tabs, Any]:
+):
     """A tabbed container showing one tab at a time.
 
     (*Note: [This component is experimental and its API may change in the future](/documentation/getting_started/what-is-lab).*)

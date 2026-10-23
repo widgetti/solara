@@ -1,7 +1,6 @@
 from typing import Dict, List
 
 import ipyvue
-import reacton.core
 import traitlets
 
 import solara
@@ -26,7 +25,7 @@ class SqlCodeWidget(ipyvue.VueTemplate):
 
 
 @solara.component
-def SqlCode(label="Query", query: str = None, tables: Dict[str, List[str]] = None, on_query=None, height="180px") -> reacton.core.Element[SqlCodeWidget]:
+def SqlCode(label="Query", query: str = None, tables: Dict[str, List[str]] = None, on_query=None, height="180px"):
     """SQL textfield input with auto complete and SQL syntax highlighting.
 
     To get auto complete for the column names, prefix it with the table name, i.e. "titanic.sur ctrl+space"

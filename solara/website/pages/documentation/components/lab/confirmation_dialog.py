@@ -38,8 +38,7 @@ def Page():
             with solara.Row(style={"align-items": "center"}):
                 solara.Text(user)
                 solara.v.Spacer()
-                # mypy cannot infer the type of a lambda with a default argument
-                solara.Button(icon_name="mdi-delete", on_click=lambda user=user: ask_to_delete_user(user), icon=True)  # type: ignore[misc]
+                solara.Button(icon_name="mdi-delete", on_click=lambda user=user: ask_to_delete_user(user), icon=True)
         if not users.value:
             solara.Text("(no users left)")
 

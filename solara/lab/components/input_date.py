@@ -70,7 +70,7 @@ def InputDate(
     prefix: Optional[str] = None,
     suffix: Optional[str] = None,
     clearable: bool = False,
-) -> None:
+):
     """
     Show a textfield, which when clicked, opens a datepicker. The input date should be of type `datetime.date`.
 
@@ -252,7 +252,7 @@ def InputDateRange(
     placeholder: Optional[str] = None,
     prefix: Optional[str] = None,
     suffix: Optional[str] = None,
-) -> None:
+):
     """
     Show a textfield, which when clicked, opens a datepicker that allows users to select a range of dates by choosing a starting and ending date.
     The input dates should be stored in a reactive tuple of type `datetime.date`. The list should contain either precisely two elements.

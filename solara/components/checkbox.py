@@ -1,8 +1,6 @@
-from typing import Any, Callable, Union
+from typing import Callable, Union
 
-import ipyvuetify
 import reacton
-import reacton.core
 import reacton.ipyvuetify as v
 
 import solara
@@ -17,7 +15,7 @@ def Checkbox(
     on_value: Callable[[bool], None] = None,
     disabled=False,
     style: str = None,
-) -> reacton.core.ValueElement[ipyvuetify.Checkbox, Any]:
+):
     """A checkbox is a widget that allows the user to toggle a boolean state.
 
     Basic examples

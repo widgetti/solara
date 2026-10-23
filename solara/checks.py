@@ -5,11 +5,9 @@ import subprocess
 import sys
 import warnings
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 import IPython.display
-import ipyvuetify
-import reacton.core
 from IPython.core.interactiveshell import InteractiveShell
 from IPython.display import display
 
@@ -57,7 +55,7 @@ def should_perform_solara_check():
 
 
 @solara.component
-def JupyterCheck() -> reacton.core.ValueElement[ipyvuetify.Html, Any]:
+def JupyterCheck():
     # We do 2 calls home:
     #  * 1 from pure js (should always work)
     #  * 1 from a widget (might not work)
@@ -104,7 +102,7 @@ document.body.appendChild(iframe);
 
 
 @solara.component
-def SolaraCheck() -> reacton.core.ValueElement[ipyvuetify.Html, Any]:
+def SolaraCheck():
     def flag_solara_checked():
         try:
             solara_checked_path.write_text("")

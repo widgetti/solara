@@ -58,7 +58,7 @@ def use_title_set(title: str, offset: int):
 
 
 @solara.component
-def Title(title: str) -> reacton.core.Element[TitleWidget]:
+def Title(title: str):
     """Set the title of a page.
 
     ```python

@@ -34,7 +34,7 @@ def FileDownload(
     mime_type: str = "application/octet-stream",
     string_encoding: str = "utf-8",
     children=[],
-) -> None:
+):
     """Download a file or data.
 
     ## Simple usage

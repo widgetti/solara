@@ -2,7 +2,6 @@ import threading
 import typing
 from typing import Any, Callable, List, Optional, Union, cast
 
-import reacton.core
 import traitlets
 from ipyvue import Template
 from ipyvuetify.extra import FileInput
@@ -36,7 +35,7 @@ def _FileDrop(
     on_file: Union[None, Callable[[FileInfo], None], Callable[[List[FileInfo]], None]] = None,
     lazy: bool = True,
     multiple: bool = False,
-) -> reacton.core.Element[FileDropZone]:
+):
     """Generic implementation used by FileDrop and FileDropMultiple.
 
     If multiple=True, multiple files can be uploaded.
@@ -89,7 +88,7 @@ def FileDrop(
     on_total_progress: Optional[Callable[[float], None]] = None,
     on_file: Optional[Callable[[FileInfo], None]] = None,
     lazy: bool = True,
-) -> reacton.core.Element[FileDropZone]:
+):
     """Region a user can drop a file into for file uploading.
 
     If lazy=True, no file content will be loaded into memory,
@@ -144,7 +143,7 @@ def FileDropMultiple(
     on_total_progress: Optional[Callable[[float], None]] = None,
     on_file: Optional[Callable[[List[FileInfo]], None]] = None,
     lazy: bool = True,
-) -> reacton.core.Element[FileDropZone]:
+):
     """Region a user can drop multiple files into for file uploading.
 
     Almost identical to `FileDrop` except that multiple files can be dropped and `on_file` is called

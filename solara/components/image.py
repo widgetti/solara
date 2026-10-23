@@ -3,8 +3,6 @@ from io import BytesIO
 from pathlib import Path
 from typing import List, Optional, Union
 
-import ipywidgets
-import reacton.core
 import solara
 from solara.alias import rw
 
@@ -19,7 +17,7 @@ def Image(
     width: Optional[str] = None,
     format="png",
     classes: List[str] = [],
-) -> reacton.core.ValueElement[ipywidgets.Image, bytes]:
+):
     """Displays an image from a URL, Path, numpy data, bytes or PIL image.
 
     If passed as bytes, the image is assumed to be in the format specified by the `format` argument.

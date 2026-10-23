@@ -1,5 +1,4 @@
 import ipyvue
-import reacton.core
 import traitlets
 
 import solara
@@ -14,7 +13,7 @@ class SpinnerSolaraWidget(ipyvue.VueTemplate):
 
 
 @solara.component
-def SpinnerSolara(size="64px", color_back="#FFCF64", color_front="#FF8C3E") -> reacton.core.Element[SpinnerSolaraWidget]:
+def SpinnerSolara(size="64px", color_back="#FFCF64", color_front="#FF8C3E"):
     """Spinner component with the Solara logo to indicate the app is busy.
 
     ## Examples

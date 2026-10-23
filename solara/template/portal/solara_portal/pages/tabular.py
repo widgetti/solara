@@ -3,10 +3,8 @@ and pass the last part of the url as argument to the Page component, so we can r
 dynamically.
 """
 
-from typing import Any, Optional, Union
+from typing import Optional
 
-import ipyvuetify
-import reacton.core
 import solara
 
 from .. import data
@@ -14,9 +12,7 @@ from ..components import data as data_components
 
 
 @solara.component
-def Page(
-    name: Optional[str] = None, page: int = 0, page_size=100
-) -> Union[reacton.core.ValueElement[ipyvuetify.Sheet, Any], reacton.core.ValueElement[ipyvuetify.Row, Any]]:
+def Page(name: Optional[str] = None, page: int = 0, page_size=100):
     if name is None or name not in data.dfs:
         with solara.Column() as main:
             solara.Title("Solara demo » table view")

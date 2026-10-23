@@ -5,7 +5,6 @@ from typing import Callable
 import numpy as np
 import plotly.express as px
 import plotly.graph_objs as go
-import reacton.core
 import typing_extensions
 
 # behave as the px module
@@ -13,9 +12,6 @@ from plotly.express import *  # noqa: F401, F403
 from plotly.express._core import make_figure
 
 import solara
-
-if typing.TYPE_CHECKING:
-    from plotly.graph_objs._figurewidget import FigureWidget
 
 P = typing_extensions.ParamSpec("P")
 T = typing.TypeVar("T")
@@ -117,7 +113,7 @@ _patch()
 
 
 @solara.component
-def CrossFilteredFigurePlotly(fig) -> "reacton.core.Element[FigureWidget]":
+def CrossFilteredFigurePlotly(fig):
     first_arg_name = fig._func.__code__.co_varnames[0]
     kwargs = fig._kwargs.copy()
     kwargs.update(zip(fig._func.__code__.co_varnames, fig._args))

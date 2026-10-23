@@ -1,7 +1,3 @@
-from typing import Any, Union
-
-import ipyvuetify
-import reacton.core
 import solara
 
 from ... import data
@@ -9,7 +5,7 @@ from ...components import Layout
 
 
 @solara.component
-def Page(name: str, page: int = 0, page_size=100) -> Union[reacton.core.ValueElement[ipyvuetify.Alert, Any], reacton.core.ValueElement[ipyvuetify.Sheet, Any]]:
+def Page(name: str, page: int = 0, page_size=100):
     if name not in data.dfs:
         return solara.Error(f"No such dataframe: {name!r}")
     df = data.dfs[name]
