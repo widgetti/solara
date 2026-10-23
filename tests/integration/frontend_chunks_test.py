@@ -940,7 +940,8 @@ def test_jquery(page_session: playwright.sync_api.Page, solara_server, solara_ap
                 assert page_session.locator(".jquery-text").evaluate("el => getComputedStyle(el).fontWeight") == "700"
                 views = page_session.evaluate(JQUERY_VIEWS)
             else:
-                _wait_for(page_session, lambda: _server_warnings(caplog), "the server warning")
+                # the vue-sfc warning can come first: wait for the one of jquery
+                _wait_for(page_session, lambda: [message for message in _server_warnings(caplog) if "'jquery'" in message], "the server warning")
                 if ipywidgets_major >= 8:
                     # the error view of ipywidgets 8 shows the error after a click
                     page_session.locator(".jupyter-widgets-error-widget").click()
@@ -950,7 +951,11 @@ def test_jquery(page_session: playwright.sync_api.Page, solara_server, solara_ap
     finally:
         unroute()
     server_warnings = _server_warnings(caplog)
-    assert recorder.lazy_warnings() == []
+    assert recorder.lazy_warnings() == _vue_sfc_warnings(preset)
+    # the server warns once for vue-sfc when the page does not preload it; the checks below are about jquery
+    vue_sfc_server_warnings = [message for message in server_warnings if 'Add "+vue-sfc" to --frontend' in message]
+    assert len(vue_sfc_server_warnings) == len(_vue_sfc_warnings(preset))
+    server_warnings = [message for message in server_warnings if message not in vue_sfc_server_warnings]
     if preset != "minimal":
         assert views["backbone"] is True
         assert views["vue"] and all(views["vue"]), views
