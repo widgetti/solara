@@ -311,6 +311,8 @@ FEATURE_PARTS = [
     r'<link href="[^"]*/main8\.[a-z-]+\.css"[^>]*></link>',
     r'<template data-solara-css-slot="[a-z-]+"></template>',
     r'<script src="[^"]*/solara-vuetify-app8\.[a-z-]+\.min\.js" onerror="event\.target\.remove\(\)"></script>',
+    # ipyvue >= 3.1 has its SFC compiler in a chunk, which the page preloads with the vue-sfc feature
+    r'<script defer src="[^"]*/nodeps-vue-sfc\.js[^"]*" data-webpack="jupyter-vue-nodeps:chunk-vue-sfc" onerror="event\.target\.remove\(\)"></script>',
     r"<script>\s*window\.solaraFrontend = .*?</script>",
     r"<script>\s*// run the chunks of the preloaded features.*?</script>",
     r"// the AMD modules of the bundle.*?defineAppAmdModules\(\);",
