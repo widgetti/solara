@@ -163,7 +163,7 @@ const solaraVueBundle = {
     if (!stmt) return null;
     // replace the whole statement, so parentheses around it or its value stay balanced
     const expr = stmt.expression;
-    const value = body.slice(body.indexOf("=", expr.left.end) + 1, expr.end);
+    const value = body.slice(expr.right.start, expr.right.end);
     return code.slice(0, offset + stmt.start) + "export default (" + value + ");" + code.slice(offset + stmt.end);
   },
   // solara reads the export names from this line; it goes after the code (and
