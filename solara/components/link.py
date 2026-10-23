@@ -1,6 +1,7 @@
 from typing import Dict, List, Union
 
 import ipyvue as vue
+import reacton.core
 import reacton.ipyvue as vuer
 import solara
 
@@ -12,7 +13,7 @@ def Link(
     nofollow=False,
     style: Union[str, Dict[str, str], None] = None,
     classes: List[str] = [],
-):
+) -> reacton.core.Element[vue.Html]:
     """Makes clicking on child elements navigate to a route.
 
     See also:

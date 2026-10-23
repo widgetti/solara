@@ -1,5 +1,6 @@
 from typing import Any, Callable
 
+import reacton.core
 import solara
 import solara.widgets
 
@@ -9,7 +10,7 @@ def FigureAltair(
     chart,
     on_click: Callable[[Any], None] = None,
     on_hover: Callable[[Any], None] = None,
-):
+) -> reacton.core.Element[solara.widgets.VegaLite]:
     """Renders an Altair chart using VegaLite.
 
     See also [our altair example](/documentation/examples/libraries/altair).

@@ -1,3 +1,7 @@
+from typing import Any, Union
+
+import ipyvuetify
+import reacton.core
 import solara
 from solara.alias import rv
 from solara.util import IPYVUETIFY_V3
@@ -7,7 +11,7 @@ from ..data import articles, names
 
 
 @solara.component
-def PeopleCard(name):
+def PeopleCard(name) -> reacton.core.ValueElement[ipyvuetify.Card, Any]:
     with solara.Card(f"Employee of the Month: {name}") as main:
         with rv.CardText():
             solara.Markdown(
@@ -22,7 +26,7 @@ def PeopleCard(name):
 
 
 @solara.component
-def Layout(children=[]):
+def Layout(children=[]) -> Union[reacton.core.ValueElement[ipyvuetify.Html, Any], reacton.core.ValueElement[ipyvuetify.Dialog, Any]]:
     router = solara.use_context(solara.routing.router_context)
     with solara.VBox() as navigation:
         if IPYVUETIFY_V3:
@@ -66,7 +70,7 @@ def Layout(children=[]):
 
 
 @solara.component
-def Page():
+def Page() -> reacton.core.ValueElement[ipyvuetify.Sheet, Any]:
     with solara.VBox() as main:
         solara.Title("Solara demo » Home")
         data.Overview()

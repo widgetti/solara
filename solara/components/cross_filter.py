@@ -2,10 +2,12 @@ import operator
 from typing import Any, Dict, List, Optional, cast
 
 import ipyvuetify
+import reacton.core
 import reacton.ipyvuetify as v
 import solara
 import traitlets
 from solara import CellAction, ColumnAction
+from solara.components.datatable import DataTableWidget
 from solara.util import IPYVUETIFY_V3
 
 from ..lab.hooks.dataframe import use_df_column_names
@@ -52,7 +54,7 @@ def CrossFilterSelect(
     invert=False,
     configurable=True,
     classes: List[str] = [],
-):
+) -> reacton.core.ValueElement[ipyvuetify.Sheet, Any]:
     """A Select widget that will cross filter a DataFrame.
 
     See [use_cross_filter](/documentation/api/hooks/use_cross_filter) for more information about how to use cross filtering.
@@ -165,7 +167,7 @@ def CrossFilterSelect(
 
 
 @solara.component
-def CrossFilterReport(df, classes: List[str] = []):
+def CrossFilterReport(df, classes: List[str] = []) -> reacton.core.ValueElement[ipyvuetify.Sheet, Any]:
     """Shows a report of the current cross filter state.
 
     Shows number of rows filtered, and the total number of rows.
@@ -217,7 +219,7 @@ def CrossFilterSlider(
     enable: bool = True,
     mode: str = "==",
     configurable=True,
-):
+) -> reacton.core.ValueElement[ipyvuetify.Sheet, Any]:
     """A Slider widget that will cross filter a DataFrame.
 
     See [use_cross_filter](/documentation/api/hooks/use_cross_filter) for more information about how to use cross filtering.
@@ -321,7 +323,9 @@ def CrossFilterSlider(
 
 
 @solara.component
-def CrossFilterDataFrame(df, items_per_page=20, column_actions: List[ColumnAction] = [], cell_actions: List[CellAction] = [], scrollable=False):
+def CrossFilterDataFrame(
+    df, items_per_page=20, column_actions: List[ColumnAction] = [], cell_actions: List[CellAction] = [], scrollable=False
+) -> reacton.core.Element[DataTableWidget]:
     """Display a DataFrame with filters applied from the cross filter.
 
     This component wraps [DataFrame](/documentation/components/data/dataframe).

@@ -1,11 +1,16 @@
 import warnings
-from typing import Any, Callable, Dict, List, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Union
 
+import ipyvuetify
 import reacton
+import reacton.core
 import reacton.ipyvuetify as v
 import solara
 import solara.widgets
 from solara.util import IPYVUETIFY_V3, _combine_classes
+
+if TYPE_CHECKING:
+    from plotly.graph_objs._figurewidget import FigureWidget
 
 Navigator = reacton.core.ComponentWidget(solara.widgets.Navigator)
 GridDraggable = reacton.core.ComponentWidget(solara.widgets.GridLayout)
@@ -14,7 +19,9 @@ GridLayout = GridDraggable
 
 
 @solara.component
-def ListItem(title, icon_name: str = None, children=[], value=None):
+def ListItem(
+    title, icon_name: str = None, children=[], value=None
+) -> Union[reacton.core.ValueElement[ipyvuetify.ListGroup, Any], reacton.core.ValueElement[ipyvuetify.ListItem, Any]]:
     if value is None:
         value = title
     if IPYVUETIFY_V3:
@@ -96,13 +103,13 @@ def ui_slider(value=1, label="", min=0, max=100, key=None, tick_labels=None, thu
 
 
 @solara.component
-def Text(text, style: Union[str, Dict[str, str], None] = None, classes: List[str] = []):
+def Text(text, style: Union[str, Dict[str, str], None] = None, classes: List[str] = []) -> reacton.core.ValueElement[ipyvuetify.Html, Any]:
     style_flat = solara.util._flatten_style(style)
     return v.Html(tag="span", class_=_combine_classes(classes), style_=style_flat, children=[text])
 
 
 @solara.component
-def Div(children=[], classes: List[str] = [], style: Union[str, Dict[str, str], None] = None, **kwargs):
+def Div(children=[], classes: List[str] = [], style: Union[str, Dict[str, str], None] = None, **kwargs) -> reacton.core.ValueElement[ipyvuetify.Html, Any]:
     style_flat = solara.util._flatten_style(style)
     classes = classes.copy()
     kwargs = kwargs.copy()
@@ -116,12 +123,14 @@ def Div(children=[], classes: List[str] = [], style: Union[str, Dict[str, str], 
 
 
 @solara.component
-def Preformatted(text, **kwargs):
+def Preformatted(text, **kwargs) -> reacton.core.ValueElement[ipyvuetify.Html, Any]:
     return v.Html(tag="pre", children=[text], **kwargs)
 
 
 @solara.component
-def IconButton(icon_name: str = None, on_click: Callable[[], None] = None, children: list = [], click_event="click", **kwargs):
+def IconButton(
+    icon_name: str = None, on_click: Callable[[], None] = None, children: list = [], click_event="click", **kwargs
+) -> reacton.core.ValueElement[ipyvuetify.Btn, Any]:
     return solara.Button(icon_name=icon_name, on_click=on_click, children=children, icon=True, click_event=click_event, **kwargs)
 
 
@@ -153,7 +162,7 @@ def HTML(tag="div", unsafe_innerHTML=None, style: str = None, classes: List[str]
 
 
 @solara.component
-def VBox(children=[], grow=True, align_items="stretch", classes: List[str] = []):
+def VBox(children=[], grow=True, align_items="stretch", classes: List[str] = []) -> reacton.core.ValueElement[ipyvuetify.Sheet, Any]:
     """Deprecated. Use `Column` instead."""
     style = f"flex-direction: column; align-items: {align_items};"
     if grow:
@@ -163,7 +172,7 @@ def VBox(children=[], grow=True, align_items="stretch", classes: List[str] = [])
 
 
 @solara.component
-def HBox(children=[], grow=True, align_items="stretch", classes: List[str] = []):
+def HBox(children=[], grow=True, align_items="stretch", classes: List[str] = []) -> reacton.core.ValueElement[ipyvuetify.Sheet, Any]:
     """Deprecated. Use `Row` instead."""
     style = f"flex-direction: row; align-items: {align_items}; "
     if grow:
@@ -173,7 +182,9 @@ def HBox(children=[], grow=True, align_items="stretch", classes: List[str] = [])
 
 
 @solara.component
-def Row(children=[], gap="12px", justify="start", margin: int = 0, classes: List[str] = [], style: Union[str, Dict[str, str], None] = None):
+def Row(
+    children=[], gap="12px", justify="start", margin: int = 0, classes: List[str] = [], style: Union[str, Dict[str, str], None] = None
+) -> reacton.core.ValueElement[ipyvuetify.Sheet, Any]:
     """Lays out children in a row, side by side, with the given gap between them.
 
     See also [Column](/documentation/components/layout/column).
@@ -260,7 +271,9 @@ def Column(children=[], gap="12px", align="stretch", margin: int = 0, classes: L
 
 
 @solara.component
-def GridFixed(columns=4, column_gap="10px", row_gap="10px", children=[], align_items="stretch", justify_items="stretch"):
+def GridFixed(
+    columns=4, column_gap="10px", row_gap="10px", children=[], align_items="stretch", justify_items="stretch"
+) -> reacton.core.ValueElement[ipyvuetify.Html, Any]:
     """
 
     See css grid spec:
@@ -274,7 +287,7 @@ def GridFixed(columns=4, column_gap="10px", row_gap="10px", children=[], align_i
 
 
 @solara.component
-def Padding(size, children=[], grow=True):
+def Padding(size, children=[], grow=True) -> reacton.core.ValueElement[ipyvuetify.Sheet, Any]:
     style = "flex-direction: row;"
     if grow:
         style += "flex-grow: 1;"
@@ -291,7 +304,7 @@ def FigurePlotly(
     on_unhover: Callable[[Any], None] = None,
     on_relayout: Callable[[Any], None] = None,
     dependencies=None,
-):
+) -> "reacton.core.Element[FigureWidget]":
     from plotly.graph_objs._figurewidget import FigureWidget
 
     def on_points_callback(data):
@@ -327,7 +340,7 @@ def FigurePlotly(
 
 
 @solara.component
-def Code(path, path_header=None):
+def Code(path, path_header=None) -> reacton.core.ValueElement[ipyvuetify.ExpansionPanels, Any]:
     path_header = path_header or path
     with open(path) as f:
         code = f.read()

@@ -1,5 +1,6 @@
-from typing import Callable, Dict, List, Optional, Tuple, Union, cast
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union, cast
 
+import ipyvuetify
 import reacton
 import reacton.core
 import reacton.ipyvuetify as v
@@ -14,7 +15,7 @@ from . import title as t
 
 
 @solara.component
-def AppIcon(open=False, on_click=None, **kwargs):
+def AppIcon(open=False, on_click=None, **kwargs) -> reacton.core.ValueElement[ipyvuetify.AppBarNavIcon, Any]:
     def click(*ignore):
         on_click()
 
@@ -86,7 +87,7 @@ apptitle_portal = ElementPortal()
 
 
 @solara.component
-def AppBar(children=[]):
+def AppBar(children=[]) -> reacton.core.ValueElement[ipyvuetify.Html, Any]:
     """Puts its children in the app bar of the AppLayout (or any layout that supports it).
 
     This component does not need to be a direct child of the AppLayout, it can be at any level in your component tree.
@@ -127,7 +128,7 @@ def AppBar(children=[]):
 
 
 @solara.component
-def AppBarTitle(children=[]):
+def AppBarTitle(children=[]) -> reacton.core.ValueElement[ipyvuetify.Html, Any]:
     """Puts its children in the title section of the AppBar (or any layout that supports it).
 
     This component does not need to be a direct child of the AppBar, it can be at any level in your component tree.
@@ -157,7 +158,7 @@ def AppBarTitle(children=[]):
 
 
 @solara.component
-def Sidebar(children=[]):
+def Sidebar(children=[]) -> reacton.core.ValueElement[ipyvuetify.Html, Any]:
     """Puts its children in the sidebar of the AppLayout (or any layout that supports it).
     This component does not need to be a direct child of the AppLayout, it can be at any level in your component tree.
 
@@ -202,7 +203,7 @@ def AppLayout(
     color: Optional[str] = "primary",
     classes: List[str] = [],
     style: Optional[Union[str, Dict[str, str]]] = None,
-):
+) -> Union[reacton.core.ValueElement[ipyvuetify.Html, Any], reacton.core.ValueElement[ipyvuetify.Dialog, Any]]:
     """The default layout for Solara apps. It consists of an toolbar bar, a sidebar and a main content area.
 
      * The title of the app is set using the [Title](/documentation/components/page/title) component.
@@ -418,7 +419,9 @@ def AppLayout(
 
 
 @solara.component
-def _AppLayoutEmbed(children=[], sidebar_open=True, title=None):
+def _AppLayoutEmbed(
+    children=[], sidebar_open=True, title=None
+) -> Union[reacton.core.ValueElement[ipyvuetify.Html, Any], reacton.core.ValueElement[ipyvuetify.Dialog, Any]]:
     """Forces the embed more for a AppLayout. This is used by default in Jupyter."""
     should_use_embed.provide(True)
 

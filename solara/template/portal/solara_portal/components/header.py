@@ -2,5 +2,5 @@ import solara
 
 
 @solara.component
-def Header():
+def Header() -> None:
     pass

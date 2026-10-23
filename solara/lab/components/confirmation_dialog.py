@@ -55,7 +55,7 @@ def ConfirmationDialog(
     children: List[solara.Element] = [],
     max_width: Union[int, str] = 500,
     persistent: bool = False,
-):
+) -> None:
     """A dialog used to confirm a user action.
 
     (*Note: [This component is experimental and its API may change in the future](/documentation/getting_started/what-is-lab).*)

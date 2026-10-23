@@ -8,6 +8,7 @@ from typing import Any, Callable, Dict, Generic, List, Optional, TypeVar, Union,
 
 import humanize
 import ipyvuetify as vy
+import reacton.core
 import traitlets
 
 try:
@@ -506,7 +507,7 @@ def FileBrowser(
     start_directory=None,
     can_select=False,
     watch: bool = False,
-):
+) -> reacton.core.ValueElement[vy.Html, Any]:
     """File/directory browser at the server side.
 
     There are two modes possible

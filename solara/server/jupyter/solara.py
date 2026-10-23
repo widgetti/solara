@@ -14,7 +14,7 @@ logger = logging.getLogger("solara.server.jupyter.solara")
 
 
 @solara.component
-def Page():
+def Page() -> None:
     solara.Error("Hi, you should not see this, we only support ipypopout for now")
 
 

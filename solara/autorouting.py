@@ -10,6 +10,7 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any, Callable, Dict, List, Optional, cast
 
+import ipyvuetify
 import ipywidgets
 import reacton
 import reacton.core
@@ -99,7 +100,9 @@ def arg_cast(args: List[str], f: Callable):
 
 
 @solara.component
-def RoutingProvider(children: List[reacton.core.Element] = [], routes: List[solara.Route] = [], pathname: str = ""):
+def RoutingProvider(
+    children: List[reacton.core.Element] = [], routes: List[solara.Route] = [], pathname: str = ""
+) -> reacton.core.ValueElement[ipyvuetify.Sheet, Any]:
     """Wraps the app, adds extra context, like navigation/routing."""
     path, set_path = solara.use_state(pathname, key="solara-context-path")
 

@@ -6,6 +6,7 @@ from typing import Any, Callable, List, Optional, cast
 
 import ipyvuetify as v
 import ipywidgets
+import reacton.core
 import solara
 import solara.hooks.dataframe
 import solara.lab
@@ -90,7 +91,7 @@ def DataTable(
     scrollable=False,
     on_column_header_hover: Optional[Callable[[Optional[str]], None]] = None,
     column_header_info: Optional[solara.Element] = None,
-):
+) -> reacton.core.Element[DataTableWidget]:
     total_length = df_len(df)
     options = {"descending": False, "page": page + 1, "itemsPerPage": items_per_page, "sortBy": [], "totalItems": total_length}
     options, set_options = solara.use_state(options, key="options")
@@ -152,7 +153,7 @@ def DataFrame(
     scrollable=False,
     on_column_header_hover: Optional[Callable[[Optional[str]], None]] = None,
     column_header_info: Optional[solara.Element] = None,
-):
+) -> reacton.core.Element[DataTableWidget]:
     """Displays a Pandas dataframe in a table.
 
     Pass in a dataframe as first argument, and optionally how many items per page to display.

@@ -1,5 +1,7 @@
-from typing import Optional
+from typing import Any, Optional, Union
 
+import ipyvuetify
+import reacton.core
 import solara
 
 from ... import data
@@ -7,7 +9,9 @@ from ...components.article import Overview
 
 
 @solara.component
-def Page(name: Optional[str] = None, page: int = 0, page_size=100):
+def Page(
+    name: Optional[str] = None, page: int = 0, page_size=100
+) -> Union[reacton.core.ValueElement[ipyvuetify.Sheet, Any], reacton.core.ValueElement[ipyvuetify.Alert, Any], reacton.core.ValueElement[ipyvuetify.Row, Any]]:
     if name is None:
         with solara.Column() as main:
             solara.Title("Solara demo » Articles")

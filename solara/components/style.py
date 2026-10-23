@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Optional, Union, cast
 
 import ipyvuetify as v
+import reacton.core
 
 try:
     import watchfiles
@@ -18,7 +19,7 @@ logger = logging.getLogger("solara.Style")
 
 
 @solara.component
-def Style(value: Union[str, Path] = ""):
+def Style(value: Union[str, Path] = "") -> reacton.core.Element[v.VuetifyTemplate]:
     """Add a custom piece of CSS.
 
     Note that this is considered an advanced feature, and should be used with caution.

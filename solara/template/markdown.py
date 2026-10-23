@@ -20,7 +20,7 @@ code = "formatted" and "supports highlighting"
 
 
 @solara.component
-def MarkdownEditor():
+def MarkdownEditor() -> None:
     markdown_text, set_markdown_text = solara.use_state(markdown_initial)
     with solara.ColumnsResponsive(12, medium=6):
         with solara.Column():

@@ -1,7 +1,10 @@
-from typing import List, cast
+from typing import Any, List, cast
 
+import ipyvuetify
+import ipywidgets
 import numpy as np
 import reacton.bqplot as bqplot
+import reacton.core
 import reacton.ipyvuetify as v
 import reacton.ipywidgets as w
 
@@ -24,7 +27,9 @@ cardheight = "100%"
 
 
 @solara.component
-def ExpressionEditor(df, value: str, label="Custom expression", on_value=None, placeholder="Enter an expression", prepend_icon="function"):
+def ExpressionEditor(
+    df, value: str, label="Custom expression", on_value=None, placeholder="Enter an expression", prepend_icon="function"
+) -> reacton.core.ValueElement[ipyvuetify.TextField, Any]:
     """Editor for expression for Vaex, on_value will only be triggered for valid expressions"""
 
     def get_error(value):
@@ -71,7 +76,7 @@ def ExpressionEditor(df, value: str, label="Custom expression", on_value=None, p
 
 
 @solara.component
-def FilterCard(df):
+def FilterCard(df) -> reacton.core.ValueElement[ipyvuetify.Card, Any]:
     filter, set_filter = use_cross_filter(id(df), "filter-custom")
 
     with v.Card(elevation=2, height=cardheight) as main:
@@ -83,7 +88,7 @@ def FilterCard(df):
 
 
 @solara.component
-def Table(df, n=5):
+def Table(df, n=5) -> reacton.core.Element[ipywidgets.Output]:
     output_c = w.Output()
 
     def output():
@@ -100,7 +105,7 @@ def Table(df, n=5):
 
 
 @solara.component
-def TableCard(df):
+def TableCard(df) -> reacton.core.ValueElement[ipyvuetify.Card, Any]:
     filter, set_filter = use_cross_filter(id(df), "table")
     dff = df
     filtered = False
@@ -123,7 +128,7 @@ def TableCard(df):
 
 
 @solara.component
-def HistogramCard(df, column=None, max_unique=100):
+def HistogramCard(df, column=None, max_unique=100) -> reacton.core.ValueElement[ipyvuetify.Card, Any]:
     filter, set_filter = use_cross_filter(id(df), "filter-histogram")
     dff = df  # filter(df)
 
@@ -212,7 +217,7 @@ def HistogramCard(df, column=None, max_unique=100):
 
 
 @solara.component
-def ScatterCard(df, x=None, y=None, color=None):
+def ScatterCard(df, x=None, y=None, color=None) -> reacton.core.ValueElement[ipyvuetify.Card, Any]:
     filter, set_filter = use_cross_filter(id(df), "filter-scatter")
     dff = df
     if filter:
@@ -353,7 +358,7 @@ cardheight = "100%"
 
 
 @solara.component
-def HeatmapCard(df, x=None, y=None, debounce=True):
+def HeatmapCard(df, x=None, y=None, debounce=True) -> reacton.core.ValueElement[ipyvuetify.Card, Any]:
     limit_keys = "xmin xmax ymin ymax".split()
     limits, set_limits = solara.use_state(dict.fromkeys(limit_keys))
     contrast, set_contrast = solara.use_state([0.5, 99.5])
@@ -484,7 +489,7 @@ def HeatmapCard(df, x=None, y=None, debounce=True):
 
 
 @solara.component
-def SummaryCard(df):
+def SummaryCard(df) -> reacton.core.ValueElement[ipyvuetify.Card, Any]:
     filter, set_filter = use_cross_filter(id(df), "summary")
     dff = df
     filtered = False
@@ -512,7 +517,7 @@ def SummaryCard(df):
 
 
 @solara.component
-def DropdownCard(df, column=None):
+def DropdownCard(df, column=None) -> reacton.core.ValueElement[ipyvuetify.Card, Any]:
     max_unique = 100
     filter, set_filter = use_cross_filter(id(df), "filter-dropdown")
     columns = use_df_column_names(df)

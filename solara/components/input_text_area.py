@@ -1,5 +1,7 @@
-from typing import Callable, Optional, Union, List
+from typing import Any, Callable, Optional, Union, List
 from .input import use_change
+import ipyvuetify
+import reacton.core
 import solara
 from solara.alias import rv as v
 from solara.util import IPYVUETIFY_V3
@@ -22,7 +24,7 @@ def InputTextArea(
     placeholder: Optional[str] = None,
     prefix: Optional[str] = None,
     suffix: Optional[str] = None,
-):
+) -> reacton.core.ValueElement[ipyvuetify.Textarea, Any]:
     r"""Free form text area input.
 
     ### Basic example:

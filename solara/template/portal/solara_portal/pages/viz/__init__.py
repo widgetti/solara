@@ -3,9 +3,11 @@ meaning it will catch urls like /viz/scatter/titanic and pass two argument to th
 so we can render content dynamically.
 """
 
-from typing import Optional
+from typing import Any, Optional
 
+import ipyvuetify
 import plotly.express as px
+import reacton.core
 import solara
 
 from ... import data
@@ -16,7 +18,9 @@ def title(type: str, name: str):
 
 
 @solara.component
-def Page(type: Optional[str] = None, name: Optional[str] = None, x: Optional[str] = None, y: Optional[str] = None):
+def Page(
+    type: Optional[str] = None, name: Optional[str] = None, x: Optional[str] = None, y: Optional[str] = None
+) -> reacton.core.ValueElement[ipyvuetify.Row, Any]:
     type, set_type = solara.use_state_or_update(type)
     name, set_name = solara.use_state_or_update(name)
     x, set_x = solara.use_state_or_update(x)

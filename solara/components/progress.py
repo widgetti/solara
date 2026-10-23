@@ -12,7 +12,7 @@ def ProgressLinear(
     color="primary",
     style: Union[str, Dict[str, str], None] = None,
     classes: List[str] = [],
-):
+) -> None:
     """Progress bar component showing a percentage, indeterminate or hidden.
 
      * When `value` is `True`, the progress bar will be indeterminate.

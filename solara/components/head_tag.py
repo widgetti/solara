@@ -15,7 +15,7 @@ class HeadTagWidget(vy.VuetifyTemplate):
 
 
 @solara.component
-def HeadTag(tagname: str, key=None, attributes: Optional[dict] = None):
+def HeadTag(tagname: str, key=None, attributes: Optional[dict] = None) -> reacton.core.Element[HeadTagWidget]:
     """Add a child element to head element, or replace a meta tag with the same tagname and key.
 
     This component should be used inside a [Head](/documentation/components/page/head) component, e.g.:

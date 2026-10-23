@@ -4,7 +4,7 @@ clicks = solara.reactive(0)
 
 
 @solara.component
-def Page():
+def Page() -> None:
     color = "green"
     if clicks.value >= 5:
         color = "red"

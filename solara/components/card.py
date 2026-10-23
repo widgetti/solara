@@ -75,7 +75,7 @@ def Card(
 
 
 @solara.component
-def CardActions(children: List[solara.Element] = []):
+def CardActions(children: List[solara.Element] = []) -> None:
     """Container for actions in a card.
 
     See [Card](/documentation/components/layout/card) for an example.

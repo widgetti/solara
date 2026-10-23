@@ -3,6 +3,7 @@ from typing import Any, Callable, Optional, TypeVar, Union, cast, overload, List
 import ipyvue
 import ipyvuetify as vw
 import reacton
+import reacton.core
 from typing_extensions import Literal
 
 import solara
@@ -291,7 +292,7 @@ def InputFloat(
     placeholder: Optional[str] = None,
     prefix: Optional[str] = None,
     suffix: Optional[str] = None,
-):
+) -> reacton.core.ValueElement[vw.TextField, Any]:
     """Numeric input (floats).
 
     Basic example:
@@ -423,7 +424,7 @@ def InputInt(
     placeholder: Optional[str] = None,
     prefix: Optional[str] = None,
     suffix: Optional[str] = None,
-):
+) -> reacton.core.ValueElement[vw.TextField, Any]:
     """Numeric input (integers).
 
     Basic example:
@@ -553,7 +554,7 @@ def _InputNumeric(
     placeholder: Optional[str] = None,
     prefix: Optional[str] = None,
     suffix: Optional[str] = None,
-):
+) -> reacton.core.ValueElement[vw.TextField, Any]:
     """Numeric input.
 
     ## Arguments

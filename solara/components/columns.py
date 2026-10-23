@@ -1,6 +1,8 @@
 import itertools
-from typing import Dict, List, Union
+from typing import Any, Dict, List, Union
 
+import ipyvuetify
+import reacton.core
 import reacton.ipyvuetify as rv
 
 import solara
@@ -27,7 +29,7 @@ def Columns(
     children=[],
     classes: List[str] = [],
     style: Union[str, Dict[str, str], None] = None,
-):
+) -> reacton.core.ValueElement[ipyvuetify.Row, Any]:
     """Lays out children in columns, with relative widths specified as a list of floats or ints.
 
     Widths are relative to each other, so [1, 2, 1] will result in 1/4, 1/2, 1/4 width columns.
@@ -95,7 +97,7 @@ def ColumnsResponsive(
     gutters_dense=False,
     classes: List[str] = [],
     style: Union[str, Dict[str, str], None] = None,
-):
+) -> reacton.core.ValueElement[ipyvuetify.Row, Any]:
     """Lay our children in columns, on a 12 point grid system that is responsive to screen size.
 
     If a single number is specified, or less values than children, the values will be cycled.

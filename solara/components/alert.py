@@ -1,5 +1,7 @@
 from typing import Any, Dict, List, Optional, Union
 
+import ipyvuetify
+import reacton.core
 import reacton.ipyvuetify as v
 
 import solara
@@ -86,7 +88,7 @@ def Info(
     children=[],
     classes: List[str] = [],
     **kwargs,
-):
+) -> reacton.core.ValueElement[ipyvuetify.Alert, Any]:
     """Display a info message (blue color).
 
     ## Arguments
@@ -112,7 +114,7 @@ def Warning(
     children=[],
     classes: List[str] = [],
     **kwargs,
-):
+) -> reacton.core.ValueElement[ipyvuetify.Alert, Any]:
     """Display a warning message (orange color).
 
     ## Arguments

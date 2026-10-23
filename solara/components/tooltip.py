@@ -1,5 +1,7 @@
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
+import ipyvuetify
+import reacton.core
 import reacton.ipyvuetify as v
 
 import solara
@@ -11,7 +13,7 @@ def Tooltip(
     tooltip: Union[str, solara.Element],
     children=[],
     color: Optional[str] = None,
-):
+) -> reacton.core.ValueElement[ipyvuetify.Tooltip, Any]:
     """A tooltip that is shown when you hover above an element.
 
     Not all components support tooltips, in case it does not work,

@@ -285,7 +285,7 @@ def formatter(unsafe_solara_execute: bool, cleanups: List[Callable[[], None]]):
 
 
 @solara.component
-def MarkdownIt(md_text: str, highlight: List[int] = [], unsafe_solara_execute: bool = False):
+def MarkdownIt(md_text: str, highlight: List[int] = [], unsafe_solara_execute: bool = False) -> reacton.core.Element[v.VuetifyTemplate]:
     md_text = textwrap.dedent(md_text)
 
     from markdown_it import MarkdownIt as MarkdownItMod
