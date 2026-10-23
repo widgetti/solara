@@ -218,7 +218,8 @@ const solaraVueBundle = {
       style = { id: cssId ? `ipyvue-${cssId}` : `ipyvue-solara-vue-bundle-${path.basename(id, ".vue")}-${hash}`, css: first.content };
     }
     // blank removed blocks, tags included, so all offsets stay valid (never a self-closing one)
-    const removed = (style ? [first, ...ignored] : ignored).filter((b) => !selfClosing(b));
+    const dropped = ignored.filter((b) => !selfClosing(b));
+    const removed = style ? [first, ...dropped] : dropped;
     const blank = (text, blocks) =>
       blocks.reduce((t, b) => {
         const [start, end] = [t.lastIndexOf("<style", b.start), t.indexOf(">", b.end) + 1];
@@ -267,12 +268,12 @@ const solaraVueBundle = {
     }
     if (esm) {
       const declaration = body.slice(esm.declaration.start, esm.declaration.end);
-      return style ? replace(esm.declaration.start, esm.declaration.end, wrap("(" + declaration + ")")) : ignored.length ? blank(code, ignored) : null;
+      return style ? replace(esm.declaration.start, esm.declaration.end, wrap("(" + declaration + ")")) : dropped.length ? blank(code, dropped) : null;
     }
     const named = ast.body.some((s) => s.type === "ExportNamedDeclaration" && s.specifiers.some((x) => (x.exported.name || x.exported.value) === "default"));
     if (named) {
       // a default export that cannot be wrapped: leave the first style to plugin-vue
-      return ignored.length ? blank(code, ignored) : null;
+      return dropped.length ? blank(code, dropped) : null;
     }
     // module.exports below the top level: ipyvue runs it, the bundle cannot, so fail the build
     const usesModuleExports = (node) =>
