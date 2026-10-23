@@ -134,16 +134,23 @@ import { defineConfig } from "vite";
 import vue from "%(vue_plugin)s";
 import cssInjectedByJs from "vite-plugin-css-injected-by-js";
 
-// added to each template with a global <style>: insert it once, when a component is first
-// created, as ipyvue does in source mode (injecting all css at load leaks global rules)
+// ipyvue.scoped_css_support when this config was written: without it, ipyvue treats
+// <style scoped> as a global style
+const SCOPED_CSS_SUPPORT = %(scoped_css_support)s;
+
+// added to each template with a style, to apply it as ipyvue's source mode does: only when a
+// component is first created (injecting all css at load leaks global rules), into one
+// element per id, updated when the css differs
 const STYLE_HELPER = `
 function __solaraStyle(c, id, css) {
   const mixin = { beforeCreate() {
-    if (document.getElementById(id)) return;
-    const style = document.createElement("style");
-    style.id = id;
-    style.textContent = css;
-    document.head.appendChild(style);
+    let style = document.getElementById(id);
+    if (!style) {
+      style = document.createElement("style");
+      style.id = id;
+      document.head.appendChild(style);
+    }
+    if (style.innerHTML !== css) style.innerHTML = css;
   } };
   c.mixins = [...(c.mixins || []), mixin];
   return c;
@@ -159,29 +166,33 @@ const solaraVueBundle = {
     const masked = code.replace(/<!--[\s\S]*?-->/g, (c) => " ".repeat(c.length));
     const script = /(<script[^>]*>)([\s\S]*?)<\/script>/.exec(masked);
     const inScript = (i) => script && i >= script.index && i < script.index + script[0].length;
-    // global css styles; scoped and lang styles stay with plugin-vue and css-injected-by-js
-    const stem = path.basename(id, ".vue");
-    const hash = createHash("sha1").update(id).digest("hex").slice(0, 8);
-    const styles = [];
-    for (const m of masked.matchAll(/<style(\s[^>]*)?>([\s\S]*?)<\/style>/g)) {
-      const attrs = m[1] || "";
-      if (inScript(m.index)) continue;
+    // like ipyvue: only the first <style> counts; lang styles (and scoped ones, with scoped
+    // css support) stay with plugin-vue and css-injected-by-js
+    const [first, ...ignored] = [...masked.matchAll(/<style(\s[^>]*)?>([\s\S]*?)<\/style>/g)].filter((m) => !inScript(m.index));
+    let style = null;
+    if (first) {
+      const attrs = first[1] || "";
       const lang = /(?:^|\s)lang\s*=\s*["']?([\w-]+)/.exec(attrs);
-      if (/(?:^|\s)scoped(?=[\s=]|$)/.test(attrs) || (lang && lang[1] !== "css")) continue;
-      const styleId = /(?:^|\s)id\s*=\s*["']([^"']*)["']/.exec(attrs);
-      const start = m.index + "<style".length + attrs.length + 1;
-      styles.push({
-        start: m.index,
-        end: m.index + m[0].length,
-        id: styleId ? styleId[1] : `solara-vue-bundle-${stem}-${hash}${styles.length ? "-" + styles.length : ""}`,
-        css: code.slice(start, start + m[2].length),
-      });
+      const scoped = /(?:^|\s)scoped(?=[\s=]|$)/.test(attrs);
+      if (!(lang && lang[1] !== "css") && !(scoped && SCOPED_CSS_SUPPORT)) {
+        const styleId = /(?:^|\s)id\s*=\s*["']([^"']*)["']/.exec(attrs);
+        const hash = createHash("sha1").update(id).digest("hex").slice(0, 8);
+        const start = first.index + "<style".length + attrs.length + 1;
+        style = {
+          // ipyvue's element id; without an id, one element per file (ipyvue: one per view)
+          id: styleId ? `ipyvue-${styleId[1]}` : `ipyvue-solara-vue-bundle-${path.basename(id, ".vue")}-${hash}`,
+          css: code.slice(start, start + first[2].length),
+        };
+      }
     }
-    const wrap = (value) => styles.reduce((c, s) => `__solaraStyle(${c}, ${JSON.stringify(s.id)}, ${JSON.stringify(s.css)})`, value);
-    // blank the extracted styles, so all offsets stay valid
-    const blank = (text) => styles.reduce((t, s) => t.slice(0, s.start) + t.slice(s.start, s.end).replace(/[^\n]/g, " ") + t.slice(s.end), text);
+    // blank the removed blocks, so all offsets stay valid
+    const removed = style ? [first, ...ignored] : ignored;
+    const blank = (text, blocks) =>
+      blocks.reduce((t, m) => t.slice(0, m.index) + t.slice(m.index, m.index + m[0].length).replace(/[^\n]/g, " ") + t.slice(m.index + m[0].length), text);
+    const wrap = (value) => (style ? `__solaraStyle(${value}, ${JSON.stringify(style.id)}, ${JSON.stringify(style.css)})` : value);
     if (!script) {
-      return styles.length ? blank(code) + `\n<script>\nexport default ${wrap("{}")};\n${STYLE_HELPER}</script>\n` : null;
+      if (!removed.length) return null;
+      return blank(code, removed) + (style ? `\n<script>\nexport default ${wrap("{}")};\n${STYLE_HELPER}</script>\n` : "");
     }
     const offset = script.index + script[1].length;
     const body = code.slice(offset, offset + script[2].length);
@@ -202,17 +213,18 @@ const solaraVueBundle = {
       // replace the whole statement, so parentheses around it or its value stay balanced
       const value = body.slice(stmt.expression.right.start, stmt.expression.right.end);
       [start, end, replacement] = [stmt.start, stmt.end, `export default ${wrap("(" + value + ")")};`];
-    } else if (esm && styles.length) {
+    } else if (esm && style) {
       const declaration = body.slice(esm.declaration.start, esm.declaration.end);
       [start, end, replacement] = [esm.declaration.start, esm.declaration.end, wrap("(" + declaration + ")")];
     } else {
-      return null;
+      // no default export to attach the style to: leave the first block to plugin-vue
+      return ignored.length ? blank(code, ignored) : null;
     }
     const scriptEnd = offset + body.length;
-    const source = blank(code);
+    const source = blank(code, removed);
     return (
       source.slice(0, offset + start) + replacement + source.slice(offset + end, scriptEnd) +
-      (styles.length ? STYLE_HELPER : "") + source.slice(scriptEnd)
+      (style ? STYLE_HELPER : "") + source.slice(scriptEnd)
     );
   },
   // solara reads the export names from <bundle>.json, written by the same build
@@ -231,7 +243,7 @@ export default defineConfig({
     solaraVueBundle,
     // ipyvue does not rewrite <img src="/static/...">, so plugin-vue must not turn them into imports
     vue({ template: { transformAssetUrls: false } }),
-    // scoped and lang styles: lib mode writes a separate .css file that nothing loads
+    // lang (and supported scoped) styles: lib mode writes a separate .css file that nothing loads
     cssInjectedByJs(),
   ],
   // the out dir is inside the app's public dir, do not copy it into itself
@@ -255,7 +267,14 @@ def vite_config(entry: str, out_dir: str) -> str:
 
     # ipyvue 3 runs vue 3, ipyvue 1 runs vue 2
     vue_plugin = "@vitejs/plugin-vue" if int(ipyvue.__version__.split(".")[0]) >= 3 else "@vitejs/plugin-vue2"
-    return _VITE_CONFIG % {"entry": entry, "out_dir": out_dir, "file_name": BUNDLE_FILE_NAME, "vue_plugin": vue_plugin}
+    scoped_css_support = "true" if getattr(ipyvue, "scoped_css_support", False) else "false"
+    return _VITE_CONFIG % {
+        "entry": entry,
+        "out_dir": out_dir,
+        "file_name": BUNDLE_FILE_NAME,
+        "vue_plugin": vue_plugin,
+        "scoped_css_support": scoped_css_support,
+    }
 
 
 def parse_manifest(text: str) -> Optional[Dict[str, str]]:

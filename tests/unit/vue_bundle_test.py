@@ -236,6 +236,7 @@ def test_cli(clean_state, tmp_path: Path, monkeypatch):
     assert 'outDir: "../public/vue"' in config and "publicDir: false" in config
     assert "emitFile(" in config and "this.parse(" in config
     assert "__solaraStyle" in config and "transformAssetUrls: false" in config
+    assert f"const SCOPED_CSS_SUPPORT = {'true' if getattr(ipyvue, 'scoped_css_support', False) else 'false'};" in config
 
     check = ["vue-bundle", "src/app.py", "--check", "--bundle", "vue/app.mjs"]
     assert runner.invoke(cli, check).exit_code == 1  # not built yet
