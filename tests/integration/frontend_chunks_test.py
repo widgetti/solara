@@ -307,7 +307,7 @@ def test_markdown_katex_bundled(page_session: playwright.sync_api.Page, solara_s
 def test_full_applayout_content_below_app_bar(
     page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, recorder, frontend_setting
 ):
-    # the minified Vuetify CSS must keep the cascade of .v-main: padding-top stays 64px, so the content is not under the app bar
+    # Vuetify's CSS must keep the cascade of .v-main: padding-top stays 64px, so the content is not under the app bar
     frontend_setting("full")
     with extra_include_path(HERE), solara_app("frontend_chunks_test:SidebarApp"):
         page_session.goto(solara_server.base_url)

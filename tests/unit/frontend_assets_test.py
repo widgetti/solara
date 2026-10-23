@@ -113,11 +113,12 @@ def test_assets_match_dist(vue3):
 
 @pytest.mark.parametrize("ipywidgets_major", [7, 8])
 def test_vuetify_css_keeps_v_main_longhands(ipywidgets_major):
-    # the minifier must not merge Vuetify's .v-main padding longhands into the earlier shorthand: with an
-    # invalid --v-layout-left (a width="min-content" drawer) the shorthand is void, and padding-top would be 0
+    # the build does not minify the CSS (as the published bundles): a minifier (cssnano) merged Vuetify's .v-main padding
+    # longhands into the earlier shorthand, and with an invalid --v-layout-left (a width="min-content" drawer) the
+    # shorthand is void, so padding-top was 0
     dist = _dist(True)
     css = (dist / frontend_assets.css_file("vuetify", ipywidgets_major)).read_text(encoding="utf8")
-    rules = re.findall(r"(?:^|})\.v-main\{([^}]*)\}", css)
+    rules = [re.sub(r"\s+", "", rule) for rule in re.findall(r"(?:^|})\s*\.v-main\s*\{([^}]*)\}", css)]
     padded = [rule for rule in rules if "padding" in rule]
     assert padded, "no .v-main padding rule"
     assert "padding-top:var(--v-layout-top)" in padded[-1]

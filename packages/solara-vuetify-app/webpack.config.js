@@ -1,7 +1,6 @@
 const path = require('path');
 const webpack = require('webpack');
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
-const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 const TerserPlugin = require("terser-webpack-plugin");
 const { slotInsert, cssChunkFilename, DropCssPlugin, WrapUmdFactoryPlugin, ChunkGuardPlugin, DedupePackagesPlugin } = require("../solara-widget-manager/webpack-plugins");
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
@@ -71,17 +70,14 @@ function config(major, production) {
             splitChunks: false,
             // the bundle analyzer shows more detail without module concatenation
             concatenateModules: analyze ? false : undefined,
+            // JS only: the CSS is not minified, as in the published bundles; a CSS minimizer can change the
+            // cascade (cssnano merged Vuetify's var() longhands into one shorthand, which an invalid var then voids)
             minimizer: [
                 // without ascii_only, the chunks need <meta charset="utf-8"> on the page.
                 // wrap_func_args (the default before terser 5.43) keeps a function passed as an argument in
                 // parentheses, as in the published bundles: V8 then compiles the UMD factory, "(self,(()=>...))",
                 // eagerly and off the main thread, instead of lazily on the main thread (see WrapUmdFactoryPlugin)
                 new TerserPlugin({ terserOptions: { format: { ascii_only: true, wrap_func_args: true } } }),
-                // also removes the duplicate Vuetify rules (dist + lib CSS), keeping the last copy.
-                // mergeLonghand off: merging var() longhands into a shorthand changes the cascade, e.g.
-                // Vuetify's .v-main padding-top/left longhands became one padding shorthand, and one invalid
-                // var (--v-layout-left: NaN with a width="min-content" drawer) then voided padding-top as well
-                new CssMinimizerPlugin({ minimizerOptions: { preset: ['default', { mergeLonghand: false }] } }),
             ],
         },
         resolve: {
