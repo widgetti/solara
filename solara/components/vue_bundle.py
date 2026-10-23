@@ -241,8 +241,9 @@ export default defineConfig({
   root: path.dirname(fileURLToPath(import.meta.url)),
   plugins: [
     solaraVueBundle,
-    // ipyvue does not rewrite <img src="/static/...">, so plugin-vue must not turn them into imports
-    vue({ template: { transformAssetUrls: false } }),
+    // ipyvue does not rewrite <img src="/static/...">, so plugin-vue must not turn them into imports;
+    // whitespace as vue's in-browser compiler (source mode) handles it
+    vue({ template: { transformAssetUrls: false, compilerOptions: { whitespace: "%(whitespace)s" } } }),
     // lang (and supported scoped) styles: lib mode writes a separate .css file that nothing loads
     cssInjectedByJs(),
   ],
@@ -266,7 +267,8 @@ def vite_config(entry: str, out_dir: str) -> str:
     import ipyvue
 
     # ipyvue 3 runs vue 3, ipyvue 1 runs vue 2
-    vue_plugin = "@vitejs/plugin-vue" if int(ipyvue.__version__.split(".")[0]) >= 3 else "@vitejs/plugin-vue2"
+    vue3 = int(ipyvue.__version__.split(".")[0]) >= 3
+    vue_plugin = "@vitejs/plugin-vue" if vue3 else "@vitejs/plugin-vue2"
     scoped_css_support = "true" if getattr(ipyvue, "scoped_css_support", False) else "false"
     return _VITE_CONFIG % {
         "entry": entry,
@@ -274,6 +276,8 @@ def vite_config(entry: str, out_dir: str) -> str:
         "file_name": BUNDLE_FILE_NAME,
         "vue_plugin": vue_plugin,
         "scoped_css_support": scoped_css_support,
+        # the default of each vue version's runtime compiler; plugin-vue2 condenses
+        "whitespace": "condense" if vue3 else "preserve",
     }
 
 

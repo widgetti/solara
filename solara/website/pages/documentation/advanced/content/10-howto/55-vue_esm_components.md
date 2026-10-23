@@ -298,8 +298,9 @@ export default defineConfig({
   root: path.dirname(fileURLToPath(import.meta.url)),
   plugins: [
     solaraVueBundle,
-    // ipyvue does not rewrite <img src="/static/...">, so plugin-vue must not turn them into imports
-    vue({ template: { transformAssetUrls: false } }),
+    // ipyvue does not rewrite <img src="/static/...">, so plugin-vue must not turn them into imports;
+    // whitespace as vue's in-browser compiler (source mode) handles it
+    vue({ template: { transformAssetUrls: false, compilerOptions: { whitespace: "preserve" } } }),
     // lang (and supported scoped) styles: lib mode writes a separate .css file that nothing loads
     cssInjectedByJs(),
   ],
