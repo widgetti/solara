@@ -222,14 +222,15 @@ def test_cli(clean_state, tmp_path: Path, monkeypatch):
     _write(tmp_path / "public" / "vue" / "app.mjs", f"export {{ a as {export} }};\n")
     result = runner.invoke(cli, check)
     assert result.exit_code == 1
-    assert "built without solara's vite plugin" in result.output
+    # rich wraps long lines (long tmp paths in CI)
+    assert "built without solara's vite plugin" in " ".join(result.output.split())
     _bundle(tmp_path / "public", [export])
     result = runner.invoke(cli, check)
     assert result.exit_code == 0, result.output
     card.write_text("<template><div>edited</div></template>")
     result = runner.invoke(cli, check)
     assert result.exit_code == 1
-    assert "card.vue" in result.output
+    assert "card.vue" in " ".join(result.output.split())
 
 
 def test_app_root_namespace_package(clean_state, tmp_path: Path, monkeypatch):
@@ -287,7 +288,7 @@ def test_cli_package_app(clean_state, tmp_path: Path, monkeypatch):
         result = runner.invoke(cli, ["vue-bundle", "other/app.py:Page", "--check", "--bundle", "vue/app.mjs"])
         # no templates under other/: checking nothing must not pass
         assert result.exit_code == 1
-        assert "no component_vue templates found" in result.output
+        assert "no component_vue templates found" in " ".join(result.output.split())
     finally:
         for name in list(sys.modules):
             if name == "mypkg" or name.startswith("mypkg."):
