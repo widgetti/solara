@@ -86,6 +86,27 @@ def test_redefine_module_updates_live_widget(virtual_context):
     assert widget.code == "export default 2"
 
 
+def test_define_module_dependencies(virtual_context):
+    esm_vue.define_module("esm-vue-test-dep-a", code="export default 1")
+    esm_vue.define_module("esm-vue-test-dep-b", code="export default 2")
+    esm_vue.define_module("esm-vue-test-dep-c", code="export default 3", dependencies=[])
+    widgets = esm_vue.create_modules()
+    # by default a module depends on every earlier module
+    assert widgets["esm-vue-test-dep-b"].dependencies == ["esm-vue-test-dep-a"]
+    # an explicit list is used as given
+    assert widgets["esm-vue-test-dep-c"].dependencies == []
+    # a redefinition without dependencies keeps the first list
+    esm_vue.define_module("esm-vue-test-dep-c", code="export default 4")
+    assert esm_vue.create_modules()["esm-vue-test-dep-c"] is widgets["esm-vue-test-dep-c"]
+    assert widgets["esm-vue-test-dep-c"].dependencies == []
+    # a redefinition with dependencies overrides it
+    esm_vue.define_module("esm-vue-test-dep-c", code="export default 5", dependencies=["esm-vue-test-dep-a"])
+    assert widgets["esm-vue-test-dep-c"].dependencies == ["esm-vue-test-dep-a"]
+    esm_vue.define_module("esm-vue-test-dep-url", url="https://cdn.example/x.mjs", dependencies=[])
+    esm_vue.define_module("esm-vue-test-dep-url", url="https://cdn.example/x.mjs", dependencies=["esm-vue-test-dep-b"])
+    assert esm_vue.create_modules()["esm-vue-test-dep-url"].dependencies == ["esm-vue-test-dep-b"]
+
+
 def test_define_module_path_is_watched(clean_esm_state, tmp_path: Path, monkeypatch):
     from solara.server import reload
 

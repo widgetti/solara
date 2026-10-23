@@ -35,7 +35,7 @@ def _kernel_lock(kernel_id: str) -> threading.RLock:
         return kernel_lock
 
 
-def define_module(name: str, module: Optional[Path] = None, *, code: Optional[str] = None, url: Optional[str] = None):
+def define_module(name: str, module: Optional[Path] = None, *, code: Optional[str] = None, url: Optional[str] = None, dependencies: Optional[List[str]] = None):
     if sum(x is not None for x in (module, code, url)) != 1:
         raise TypeError("pass exactly one of module (a Path), code or url")
     if module is not None and not isinstance(module, Path):
@@ -49,11 +49,12 @@ def define_module(name: str, module: Optional[Path] = None, *, code: Optional[st
         assert module is not None
         source = module
     with lock:
-        dependencies = list(_modules.keys())
+        if dependencies is None:
+            dependencies = list(_modules.keys())
+            if name in _modules:
+                _old_module, dependencies = _modules[name]
         logger.info("define vue module %s (dependencies=%r)", name, dependencies)
-        if name in _modules:
-            _old_module, dependencies = _modules[name]
-        _modules[name] = (source, dependencies)
+        _modules[name] = (source, list(dependencies))
     if isinstance(module, Path):
         # rebuilding the bundle (e.g. vite build --watch) triggers a normal
         # solara reload, which re-reads the file in create_modules
@@ -139,7 +140,7 @@ def create_modules():
                 if widget.code != code:
                     widget.code = code
                     logger.info("update vue module %s", name)
-                if widget.dependencies != dependencies:
-                    widget.dependencies = dependencies
+            if widget.dependencies != dependencies:
+                widget.dependencies = dependencies
             widgets[name] = widget
     return widgets

@@ -25,6 +25,14 @@ from .kernel import Kernel, deserialize_binary_message
 from .kernel_context import initialize_virtual_kernel
 
 COOKIE_KEY_SESSION_ID = "solara-session-id"
+# Safari refuses the Secure session cookie from http://localhost (https://bugs.webkit.org/show_bug.cgi?id=218980),
+# so on http://localhost we also set this SameSite=Lax copy without Secure
+COOKIE_KEY_SESSION_ID_LAX = "solara-session-id-lax"
+
+
+def get_session_id_cookie(cookies) -> Optional[str]:
+    return cookies.get(COOKIE_KEY_SESSION_ID) or cookies.get(COOKIE_KEY_SESSION_ID_LAX)
+
 
 T = TypeVar("T")
 

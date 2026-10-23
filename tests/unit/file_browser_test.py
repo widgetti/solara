@@ -440,6 +440,60 @@ def test_file_browser_multiple_requires_path_directory(tmp_path: Path):
         solara.render_fixed(solara.FileBrowserMultiple(str(tmp_path)), handle_error=False)
 
 
+def test_file_browser_multiple_frontend_selection(tmp_path: Path):
+    (tmp_path / "z-dir").mkdir()
+    for name in ["a.txt", "b.txt", "c.txt"]:
+        (tmp_path / name).touch()
+    selected = solara.reactive([tmp_path / "outside" / "kept.txt"])
+    on_paths_select = unittest.mock.MagicMock()
+    div, rc = solara.render_fixed(
+        solara.FileBrowserMultiple(
+            tmp_path, selected=selected, on_paths_select=on_paths_select, directory_first=True, filter=lambda path: path.name != "b.txt"
+        ),
+        handle_error=False,
+    )
+    try:
+        file_list = div.children[1]
+        file_list.test_click("z-dir")
+        on_paths_select.reset_mock()
+        file_list.click_event = {
+            "name": "c.txt",
+            "is_file": True,
+            "selected_names": ["z-dir", "a.txt", "c.txt", "c.txt", "b.txt", "..", "missing.txt"],
+            "click_id": 1,
+        }
+        expected = [tmp_path / "outside" / "kept.txt", tmp_path / "z-dir", tmp_path / "a.txt", tmp_path / "c.txt"]
+        assert selected.value == expected
+        on_paths_select.assert_called_once_with(expected)
+        assert file_list.selected_names == ["z-dir", "a.txt", "c.txt"]
+    finally:
+        rc.close()
+
+
+def test_file_browser_multiple_rejects_stale_selection(tmp_path: Path):
+    subdir = tmp_path / "subdir"
+    subdir.mkdir()
+    for directory in [tmp_path, subdir]:
+        for name in ["a.txt", "b.txt"]:
+            (directory / name).touch()
+    location = solara.reactive(tmp_path)
+    selected = solara.reactive(cast(List[Path], []))
+    div, rc = solara.render_fixed(solara.FileBrowserMultiple(location, selected=selected), handle_error=False)
+    try:
+        file_list = div.children[1]
+        file_list.test_click("a.txt")
+        old_location = file_list.location
+        location.value = subdir
+        file_list.click_event = {"name": "b.txt", "is_file": True, "selected_names": ["a.txt", "b.txt"], "location": old_location}
+        assert selected.value == [tmp_path / "a.txt"]
+        file_list.click_event = {"name": "removed.txt", "is_file": True, "selected_names": ["a.txt"]}
+        assert selected.value == [tmp_path / "a.txt"]
+        file_list.click_event = {"name": "a.txt", "is_file": True, "selected_names": [None]}
+        assert selected.value == [tmp_path / "a.txt"]
+    finally:
+        rc.close()
+
+
 def test_file_browser_base_supports_generic_source():
     file_browser = solara.components.file_browser
 

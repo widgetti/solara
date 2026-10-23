@@ -1,5 +1,6 @@
 import threading
 from pathlib import Path
+from typing import Dict
 
 import playwright
 import playwright.sync_api
@@ -218,6 +219,29 @@ def test_kernel_asyncio(browser: playwright.sync_api.Browser, solara_server, sol
         context1.close()
         context2.close()
         solara.server.settings.kernel.threaded = threaded
+
+
+def _session_cookies(response: requests.Response) -> Dict[str, str]:
+    headers = [header.lower() for header in response.raw.headers.getlist("set-cookie")]
+    return {header.split("=", 1)[0]: header for header in headers}
+
+
+def test_session_cookies(solara_server, solara_app, extra_include_path):
+    with extra_include_path(HERE), solara_app("server_test:ClickButton"):
+        # on http://localhost: Secure + SameSite=None for cross-site iframes, plus a Lax copy for Safari
+        cookies = _session_cookies(requests.get(solara_server.base_url))
+        secure = cookies[solara.server.server.COOKIE_KEY_SESSION_ID]
+        lax = cookies[solara.server.server.COOKIE_KEY_SESSION_ID_LAX]
+        assert "secure" in secure and "samesite=none" in secure
+        assert "secure" not in lax and "samesite=lax" in lax
+        assert secure.split(";")[0].split("=")[1] == lax.split(";")[0].split("=")[1]
+        # Safari only sends the Lax copy back: the server must keep using that session id
+        cookies = _session_cookies(requests.get(solara_server.base_url, cookies={solara.server.server.COOKIE_KEY_SESSION_ID_LAX: "safari-id"}))
+        assert cookies[solara.server.server.COOKIE_KEY_SESSION_ID].startswith(solara.server.server.COOKIE_KEY_SESSION_ID + "=safari-id;")
+        # over https Safari accepts the Secure cookie, so no Lax copy
+        cookies = _session_cookies(requests.get(solara_server.base_url, headers={"x-forwarded-proto": "https"}))
+        assert solara.server.server.COOKIE_KEY_SESSION_ID in cookies
+        assert solara.server.server.COOKIE_KEY_SESSION_ID_LAX not in cookies
 
 
 def test_cdn_secure(solara_server, solara_app, extra_include_path):

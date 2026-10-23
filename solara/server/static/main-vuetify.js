@@ -229,12 +229,22 @@ async function solaraInit(mountId, appName) {
     const searchParams = new URLSearchParams(window.location.search);
     let kernelId = searchParams.get('kernelid') || generateUuid()
     let unloading = false;
-    window.addEventListener('beforeunload', function (e) {
+    // Not beforeunload: it fires when a navigation starts, also when the page then stays (a download
+    // or mailto: link), which left a page that looks alive on a closed kernel. pagehide fires when
+    // the page really goes away; during a slow reload, the old page keeps working until then.
+    window.addEventListener('pagehide', function (e) {
         unloading = true;
         kernel.dispose()
         // allow to opt-out to make testing easier
         if (!searchParams.has('solara-no-close-beacon')) {
             window.navigator.sendBeacon(close_url);
+        }
+    });
+    window.addEventListener('pageshow', function (e) {
+        // Back/forward can show this page from the browser's memory (bfcache), but pagehide
+        // already closed its kernel: load the page again to get a new one.
+        if (e.persisted) {
+            location.reload();
         }
     });
     let kernel = await solara.connectKernel(solara.jupyterRootPath, kernelId)
