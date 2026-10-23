@@ -202,7 +202,24 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
         if self.portal is None:
             asyncio.ensure_future(_close_exc())
         else:
-            self.portal.call(_close_exc)
+            self._portal_call(_close_exc)
+
+    def _portal_call(self, func, *args):
+        assert self.portal is not None
+        try:
+            return self.portal.call(func, *args)
+        except RuntimeError as e:
+            # The websocket handler stops the portal when it exits. Another thread (e.g. the
+            # close beacon shutting down the kernel) can still hold this websocket from a copy of
+            # the kernel's websocket set, so treat a stopped portal as a closed websocket.
+            # The second message is for a portal that stops between anyio's running check and
+            # the start of the task.
+            if "portal is not running" in repr(e) or "no new tasks can be started" in repr(e):
+                raise websocket.WebSocketDisconnect() from e
+            raise
+        except concurrent.futures.CancelledError as e:
+            # the portal cancelled the call because the websocket handler is stopping
+            raise websocket.WebSocketDisconnect() from e
 
     def send_text(self, data: str) -> None:
         if self.sync_writer is not None:
@@ -231,7 +248,7 @@ await to_thread.run_sync(my_update)
                     self.tasks.add(task)
                     task.add_done_callback(self.tasks.discard)
                 else:
-                    self.portal.call(self._send_text_exc, data)
+                    self._portal_call(self._send_text_exc, data)
 
     def send_bytes(self, data: bytes) -> None:
         if self.sync_writer is not None:
@@ -260,7 +277,7 @@ await to_thread.run_sync(my_update)
                     self.tasks.add(task)
                     task.add_done_callback(self.tasks.discard)
 
-                self.portal.call(self._send_bytes_exc, data)
+                self._portal_call(self._send_bytes_exc, data)
 
     async def receive(self):
         if self.portal is None:
