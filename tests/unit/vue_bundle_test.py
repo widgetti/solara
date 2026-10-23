@@ -62,17 +62,25 @@ def test_entry(clean_state, tmp_path: Path):
     b = _write(root / "2nd.vue", "<template><div>b</div></template>")
     _write(root / "node_modules" / "dep" / "dep.vue", "<template><div>dep</div></template>")
     _write(root / ".cache" / "hidden.vue", "<template><div>hidden</div></template>")
+    _write(root / "__pycache__" / "cached.vue", "<template><div>cached</div></template>")
+    _write(root / "env" / "pyvenv.cfg", "")
+    _write(root / "env" / "lib" / "venv.vue", "<template><div>venv</div></template>")
+    _write(root / "lib" / "site-packages" / "pkg" / "installed.vue", "<template><div>installed</div></template>")
+    _write(root / "tests" / "fixture.vue", "<template><div>fixture</div></template>")
     _write(tmp_path / "lib" / "lib.vue", "<template><div>lib</div></template>")
 
-    # every .vue under the root, sorted, without node_modules and hidden dirs
-    assert vue_bundle.app_templates(root) == [b.resolve(), a.resolve()]
-    code = vue_bundle.entry_code(tmp_path / "vue" / "entry.js", root)
+    # every .vue under the root, sorted, without tool dirs, venvs and excluded globs
+    assert vue_bundle.app_templates(root, ["tests/**"]) == [b.resolve(), a.resolve()]
+    assert (root / "tests" / "fixture.vue").resolve() in vue_bundle.app_templates(root)
+    code = vue_bundle.entry_code(tmp_path / "vue" / "entry.js", root, ["tests/**"])
     key_a = vue_bundle.key(a.resolve(), root.resolve())
     assert 'import _c0 from "../src/2nd.vue";' in code
     assert 'import _c1 from "../src/components/transcript-entry.vue";' in code
-    assert f'export const transcript_entry_{key_a} = {{ name: "transcript_entry", ..._c1 }};' in code
-    assert f'export const _2nd_{vue_bundle.key(b.resolve(), root.resolve())} = {{ name: "_2nd", ..._c0 }};' in code
-    assert "dep.vue" not in code and "hidden.vue" not in code and "lib.vue" not in code
+    # the vue name is the (unique) export name, not the stem, which may equal a global tag
+    assert f'export const transcript_entry_{key_a} = {{ name: "transcript_entry_{key_a}", ..._c1 }};' in code
+    key_b = vue_bundle.key(b.resolve(), root.resolve())
+    assert f'export const _2nd_{key_b} = {{ name: "_2nd_{key_b}", ..._c0 }};' in code
+    assert "transcript-entry.vue" in code and "2nd.vue" in code and code.count("import _c") == 2
 
     # the key covers the path relative to the root and the content
     assert len(key_a) == 12
@@ -247,6 +255,11 @@ def test_cli(clean_state, tmp_path: Path, monkeypatch):
     assert "no app.mjs.json next to the bundle" in " ".join(result.output.split())
     _bundle(tmp_path / "public", [export])
     result = runner.invoke(cli, check)
+    assert result.exit_code == 0, result.output
+    # a file that is not in the bundle fails the check, unless --exclude skips it, as for the entry
+    _write(src / "tests" / "fixture.vue", "<template><div>fixture</div></template>")
+    assert runner.invoke(cli, check).exit_code == 1
+    result = runner.invoke(cli, check + ["--exclude", "tests/**"])
     assert result.exit_code == 0, result.output
     card.write_text("<template><div>edited</div></template>")
     result = runner.invoke(cli, check)

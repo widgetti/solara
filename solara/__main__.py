@@ -767,12 +767,14 @@ def main():
 @click.option("--vite-config", is_flag=True, help="Also write a starter vite.config.mjs next to the entry, if none exists.")
 @click.option("--check", is_flag=True, help="Exit 1 when a template of the app is not in the built bundle (for CI).")
 @click.option("--bundle", help="The built bundle for --check, relative to the public dir (default: SOLARA_VUE_BUNDLE).")
-def vue_bundle(app: str, output: typing.Optional[Path], vite_config: bool, check: bool, bundle: typing.Optional[str]):
+@click.option("--exclude", multiple=True, help="Skip .vue files whose path relative to the app root matches this glob, e.g. 'tests/**'. Repeatable.")
+def vue_bundle(app: str, output: typing.Optional[Path], vite_config: bool, check: bool, bundle: typing.Optional[str], exclude: typing.Tuple[str, ...]):
     """Write a vite entry for every .vue file of the app, or check a built bundle.
 
     APP is a script (app.py), a directory, or a module (my.app), as for `solara run`.
     It is not imported: it only gives the app root, whose .vue files are all
-    bundled (except under node_modules and hidden dirs), and the public dir.
+    bundled (except node_modules, hidden dirs, virtual envs, site-packages and
+    --exclude globs), and the public dir.
     Build the entry with vite, then run with SOLARA_VUE_BUNDLE set to the
     built .mjs, relative to the public dir.
     """
@@ -791,7 +793,7 @@ def vue_bundle(app: str, output: typing.Optional[Path], vite_config: bool, check
     sys.path.insert(0, os.getcwd())
     root = vb.app_root(name)
     public_dir = vb.public_dir(name)
-    templates = vb.app_templates(root)
+    templates = vb.app_templates(root, exclude)
     if check and not templates:
         rprint(f"[red]no .vue files found under {root}[/red]")
         sys.exit(1)
@@ -819,7 +821,7 @@ def vue_bundle(app: str, output: typing.Optional[Path], vite_config: bool, check
         raise click.ClickException(f"no .vue files found under {root}")
     output.parent.mkdir(parents=True, exist_ok=True)
     try:
-        code = vb.entry_code(output, root)
+        code = vb.entry_code(output, root, exclude)
     except RuntimeError as e:
         raise click.UsageError(str(e))
     output.write_text(code, encoding="utf8")
