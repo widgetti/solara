@@ -28,11 +28,11 @@ def test_asset_urls(vue3, ipywidgets_major, production):
         assert css.data_href == f"main{ipywidgets_major}.{css.slot}.css"
         # Vuetify's CSS keeps its file name (and slot), main{M}.vuetify.css
         assert css.slot == ("vuetify" if css.feature == "vuetify-css" else css.feature)
-    # Vuetify's CSS has the place it had: on Vue 3 the CSS of the vuetify chunk (after the core CSS), on Vue 2 the start
-    # of the core CSS (before it)
-    assert [css.feature for css in assets.head_first_css] == ([] if vue3 else ["vuetify-css"])
-    assert [css.feature for css in assets.head_css] == (["vuetify-css"] if vue3 else []) + ["katex", "jupyter-css"]
-    assert [css.feature for css in assets.body_css] == ["mdi", "material-icons", "roboto"]
+    # the CSS of the published bundles, in their order: main{M}.css was Vuetify's CSS, KaTeX's CSS, the core CSS and the
+    # widgets CSS; fonts.css (in the body) had the fonts in a different order on Vue 2 and Vue 3
+    assert [css.feature for css in assets.head_first_css] == ["vuetify-css", "katex"]
+    assert [css.feature for css in assets.head_css] == ["jupyter-css"]
+    assert [css.feature for css in assets.body_css] == (["mdi", "material-icons", "roboto"] if vue3 else ["roboto", "material-icons", "mdi"])
     expected_chunks = (["vuetify"] if vue3 else []) + ["katex", "sanitizer", "jupyter-controls", "output-widget"]
     assert assets.chunk_names == expected_chunks
     assert assets.chunk_js == [f"{base}solara-vuetify-app{ipywidgets_major}.{name}{suffix}" for name in expected_chunks]
@@ -44,23 +44,25 @@ def test_asset_urls(vue3, ipywidgets_major, production):
     # Vuetify brings mdi, and roboto and Vuetify's CSS come with it; the rest is not preloaded: only the slot, so a lazy load
     # puts the CSS in the same place
     linked = [css.feature for css in assets.head_first_css + assets.head_css + assets.body_css if css.url]
-    assert linked == ["vuetify-css", "mdi", "roboto"]
+    assert linked == ["vuetify-css"] + (["mdi", "roboto"] if vue3 else ["roboto", "mdi"])
 
     controls = frontend.effective(frontend.parse("minimal,+jupyter-controls"), vue3=vue3)
     assets = frontend_assets.page_assets(vue3, ipywidgets_major, production, CDN, controls)
     assert assets.chunk_names == (["vuetify"] if vue3 else []) + ["sanitizer", "jupyter-controls"]
-    assert [css.feature for css in assets.head_css if css.url] == (["vuetify-css"] if vue3 else []) + ["jupyter-css"]
+    assert [css.feature for css in assets.head_first_css if css.url] == ["vuetify-css"]
+    assert [css.feature for css in assets.head_css if css.url] == ["jupyter-css"]
 
     # Vuetify's icons need the mdi font, and the Roboto font and Vuetify's CSS come with it
     vuetify = frontend.effective(frontend.parse("minimal,+vuetify"), vue3=vue3)
     assets = frontend_assets.page_assets(vue3, ipywidgets_major, production, CDN, vuetify)
-    assert [css.feature for css in assets.body_css if css.url] == ["mdi", "roboto"]
+    assert [css.feature for css in assets.body_css if css.url] == (["mdi", "roboto"] if vue3 else ["roboto", "mdi"])
     assert [css.feature for css in assets.head_first_css + assets.head_css if css.url] == ["vuetify-css"]
     # unless the app uses its own font
     for spec in ["minimal,+vuetify,-roboto", "full,-roboto"]:
         own_font = frontend.effective(frontend.parse(spec), vue3=vue3)
         assets = frontend_assets.page_assets(vue3, ipywidgets_major, production, CDN, own_font)
-        assert [css.feature for css in assets.body_css if css.url] == ["mdi"] + (["material-icons"] if spec == "full,-roboto" else [])
+        icons = ["mdi"] + (["material-icons"] if spec == "full,-roboto" else [])
+        assert [css.feature for css in assets.body_css if css.url] == (icons if vue3 else icons[::-1])
     # unless the app ships its own Vuetify CSS: no link, only the slot
     for spec in ["full,-vuetify-css", "minimal,+vuetify,-vuetify-css", "minimal,-vuetify-css"]:
         own_css = frontend.effective(frontend.parse(spec), vue3=vue3)
@@ -73,7 +75,7 @@ def test_asset_urls(vue3, ipywidgets_major, production):
             "minimal,+vuetify,-vuetify-css": ["mdi", "roboto"],
             "minimal,-vuetify-css": ["mdi", "roboto"],
         }
-        assert [css.feature for css in assets.body_css if css.url] == fonts[spec], spec
+        assert [css.feature for css in assets.body_css if css.url] == (fonts[spec] if vue3 else fonts[spec][::-1]), spec
         # Vuetify itself stays
         assert ("vuetify" in assets.chunk_names) == vue3
 

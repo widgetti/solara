@@ -25,7 +25,7 @@
     {% block header %}
 
     {{ pre_rendered_css | safe }}
-    {#- the CSS before the core CSS (Vuetify's CSS on Vue 2); the whitespace control keeps the page as before without it #}
+    {#- the CSS before the core CSS (Vuetify's and KaTeX's); the whitespace control keeps the page as before without it #}
     {%- for css in frontend_assets.head_first_css %}
     {% if css.url %}
     <link href="{{css.url}}" rel="stylesheet" class="solara-template-css" data-href="{{css.data_href}}"></link>

@@ -57,14 +57,15 @@ LAZY_CHUNKS: Tuple[str, ...] = ("codemirror", "codemirror-modes")
 # Per Vue version (key: Vue 3), the chunks in the canonical order: the order of the <script> tags, and
 # within "head-first", "head" and "body" the order of the CSS links. Font-awesome and mermaid come from their own
 # CDN packages, and vue-sfc from ipyvue, so they are not in this table.
-# Vuetify's CSS is the feature vuetify-css, so an app can ship its own. Its file keeps the name main{M}.vuetify.css,
-# and its place: on Vue 3 it was the CSS of the vuetify chunk, right after the core CSS; on Vue 2 it was the start of
-# the core CSS (main{M}.css), so it comes right before the core CSS there.
+# The full page has the CSS of the published bundles, in their order. Their main{M}.css (in the head) was Vuetify's
+# CSS, KaTeX's CSS, the core CSS (the main{M}.css of now) and the widgets CSS (jupyter-css). Their fonts.css (in the
+# body) was Roboto, Material Icons and MDI on Vue 2, and MDI, Material Icons and Roboto on Vue 3.
+# Vuetify's CSS is the feature vuetify-css, so an app can ship its own. Its file keeps the name main{M}.vuetify.css.
 CHUNKS: Dict[bool, Tuple[Chunk, ...]] = {
     True: (
         Chunk("vuetify", js=True),
-        Chunk("vuetify-css", stub=True, css="head", css_name="vuetify"),
-        Chunk("katex", js=True, css="head"),
+        Chunk("vuetify-css", stub=True, css="head-first", css_name="vuetify"),
+        Chunk("katex", js=True, css="head-first"),
         Chunk("jupyter-css", stub=True, css="head"),
         Chunk("jupyter-controls", js=True, needs=("sanitizer",)),
         Chunk("output-widget", js=True, needs=("sanitizer",)),
@@ -75,13 +76,13 @@ CHUNKS: Dict[bool, Tuple[Chunk, ...]] = {
     # Vuetify's JS is in the core bundle of the Vue 2 build
     False: (
         Chunk("vuetify-css", stub=True, css="head-first", css_name="vuetify"),
-        Chunk("katex", js=True, css="head"),
+        Chunk("katex", js=True, css="head-first"),
         Chunk("jupyter-css", stub=True, css="head"),
         Chunk("jupyter-controls", js=True, needs=("sanitizer",)),
         Chunk("output-widget", js=True, needs=("sanitizer",)),
-        Chunk("mdi", stub=True, css="body"),
-        Chunk("material-icons", stub=True, css="body"),
         Chunk("roboto", stub=True, css="body"),
+        Chunk("material-icons", stub=True, css="body"),
+        Chunk("mdi", stub=True, css="body"),
     ),
 }
 

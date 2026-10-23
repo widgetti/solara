@@ -359,9 +359,11 @@ def test_legacy_page(page, monkeypatch, vue3):
     chunks = ["vuetify", "katex", "sanitizer", "jupyter-controls", "output-widget"] if vue3 else ["katex", "sanitizer", "jupyter-controls", "output-widget"]
     scripts = re.findall(r'<script src="[^"]*/solara-vuetify-app8(\.[a-z-]+)?\.min\.js"(?: onerror="event\.target\.remove\(\)")?></script>', html)
     assert scripts == ["", *(f".{chunk}" for chunk in chunks)]
-    # Vuetify's CSS (main8.vuetify.css) is the first chunk CSS: on Vue 2 before the core CSS, on Vue 3 after it
-    css = ["vuetify", "katex", "jupyter-css", "mdi", "material-icons", "roboto"]
-    assert re.findall(r'<link href="[^"]*/main8\.([a-z-]+)\.css"[^>]*data-href="main8\.\1\.css"', html) == css
+    # the CSS of the published bundles, in their order: Vuetify's CSS, KaTeX's CSS, the core CSS, the widgets CSS, and
+    # the fonts in the order of their fonts.css
+    fonts = ["mdi", "material-icons", "roboto"] if vue3 else ["roboto", "material-icons", "mdi"]
+    links = re.findall(r'<link href="[^"]*/main8(\.[a-z-]+)?\.css"[^>]*>', html)
+    assert links == [".vuetify", ".katex", "", ".jupyter-css", *(f".{font}" for font in fonts)]
     assert '"spec": "full"' in html
     assert "solara.setEnabledFeatures(solaraFrontend.features);" in html
     assert "solara.loadPreloadedFeaturesSync()" in html
@@ -425,15 +427,16 @@ CORE_CSS = r'<link href="[^"]*/main8\.css" rel="stylesheet" class="solara-templa
 
 @pytest.mark.parametrize("vue3", [True, False])
 def test_vuetify_css(page, monkeypatch, vue3):
-    # Vuetify's CSS comes with Vuetify, at the place it had before it was a feature of its own: on Vue 3 the CSS of the
-    # vuetify chunk, right after the core CSS; on Vue 2 the start of the core CSS (main8.css), so right before it
+    # Vuetify's CSS comes with Vuetify, at the place it had in the published bundles: the start of their main8.css, so
+    # before KaTeX's CSS (or its slot) and the core CSS
     monkeypatch.setattr(server, "vue3", vue3)
+    katex_css = r'(?:<link href="[^"]*/main8\.katex\.css"[^>]*></link>\s*)?<template data-solara-css-slot="katex"></template>'
     for spec in ["full", "minimal,+vuetify", "minimal"]:
         html = page(frontend=spec)
         assert len(re.findall(VUETIFY_CSS, html)) == 1
         # the slot (for a lazy load) is right after the link
         vuetify_css = VUETIFY_CSS + r'\s*<template data-solara-css-slot="vuetify"></template>'
-        assert re.search(CORE_CSS + r"\s*" + vuetify_css if vue3 else vuetify_css + r"\s*" + CORE_CSS, html), spec
+        assert re.search(vuetify_css + r"\s*" + katex_css + r"\s*" + CORE_CSS, html), spec
         assert re.search(r'window\.solaraFrontend = \{[^\n]*"features": \[[^\]]*"vuetify-css"', html)
     # an app with its own Vuetify CSS (-vuetify-css): no link, only the slot
     for spec in ["full,-vuetify-css", "minimal,-vuetify-css", "minimal,+vuetify,-vuetify-css"]:
