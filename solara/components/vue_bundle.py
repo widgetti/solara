@@ -107,6 +107,18 @@ def _inside(path: Path, root: Path) -> bool:
 _SKIP_DIRS = {"node_modules", "__pycache__", "site-packages", "dist-packages"}
 
 
+def _skipped_dir(directory: Path) -> bool:
+    return directory.name in _SKIP_DIRS or directory.name.startswith(".") or (directory / "pyvenv.cfg").exists()
+
+
+def _matches(relative: str, pattern: str) -> bool:
+    """fnmatch on the path relative to the app root (`*` also matches `/`); a
+    leading `./` is ignored, and `**/x` also matches `x` at the top level."""
+    if pattern.startswith("./"):
+        pattern = pattern[2:]
+    return fnmatch.fnmatch(relative, pattern) or (pattern.startswith("**/") and fnmatch.fnmatch(relative, pattern[3:]))
+
+
 def app_templates(root: Path, exclude: Sequence[str] = ()) -> List[Path]:
     """Every .vue file under the app root, sorted. Skips node_modules, hidden dirs,
     __pycache__, virtual envs and site-packages, and paths (relative to the root)
@@ -114,17 +126,12 @@ def app_templates(root: Path, exclude: Sequence[str] = ()) -> List[Path]:
     root = root.resolve()
 
     def excluded(relative: str) -> bool:
-        return any(fnmatch.fnmatch(relative, pattern) for pattern in exclude)
+        return any(_matches(relative, pattern) for pattern in exclude)
 
     templates = []
     for directory, dirs, files in os.walk(root):
         base = Path(directory)
-        dirs[:] = [
-            name
-            for name in dirs
-            if not (name in _SKIP_DIRS or name.startswith(".") or (base / name / "pyvenv.cfg").exists())
-            and not excluded((base / name).relative_to(root).as_posix())
-        ]
+        dirs[:] = [name for name in dirs if not _skipped_dir(base / name) and not excluded((base / name).relative_to(root).as_posix())]
         templates += [base / name for name in files if name.endswith(".vue") and not excluded((base / name).relative_to(root).as_posix())]
     return sorted(templates)
 
@@ -192,12 +199,17 @@ const solaraVueBundle = {
   transform(code, id) {
     if (!id.endsWith(".vue")) return null;
     // the top-level blocks, as ipyvue reads them with vue's sfc parser
-    const { script, styles } = parseSfc(code);
+    const parsed = parseSfc(code);
+    // a self-closing block (<style/>, <script/>) has no content and no end offset
+    const selfClosing = (b) => code.slice(0, b.start).endsWith("/>");
+    // a self-closing script counts as no script; its tag goes, so the added one is the only one
+    const scriptTag = parsed.script && selfClosing(parsed.script) ? [code.lastIndexOf("<script", parsed.script.start), parsed.script.start] : null;
+    const script = scriptTag ? null : parsed.script;
     // like ipyvue: only the first <style> counts; lang styles (and scoped ones, with scoped
     // css support) stay with plugin-vue and css-injected-by-js
-    const [first, ...ignored] = styles;
+    const [first, ...ignored] = parsed.styles;
     let style = null;
-    if (first && !(first.attrs.lang && first.attrs.lang !== "css") && !(first.attrs.scoped && SCOPED_CSS_SUPPORT)) {
+    if (first && !selfClosing(first) && !(first.attrs.lang && first.attrs.lang !== "css") && !(first.attrs.scoped && SCOPED_CSS_SUPPORT)) {
       // the path relative to this config, so the id is the same wherever the project lives
       const relative = path.relative(ROOT, id).split(path.sep).join("/");
       const hash = createHash("sha1").update(relative).digest("hex").slice(0, 8);
@@ -205,8 +217,8 @@ const solaraVueBundle = {
       // ipyvue's element id; without an id, one element per file (ipyvue: one per view)
       style = { id: cssId ? `ipyvue-${cssId}` : `ipyvue-solara-vue-bundle-${path.basename(id, ".vue")}-${hash}`, css: first.content };
     }
-    // blank removed blocks, tags included, so all offsets stay valid
-    const removed = style ? [first, ...ignored] : ignored;
+    // blank removed blocks, tags included, so all offsets stay valid (never a self-closing one)
+    const removed = (style ? [first, ...ignored] : ignored).filter((b) => !selfClosing(b));
     const blank = (text, blocks) =>
       blocks.reduce((t, b) => {
         const [start, end] = [t.lastIndexOf("<style", b.start), t.indexOf(">", b.end) + 1];
@@ -215,8 +227,10 @@ const solaraVueBundle = {
     const wrap = (value) => (style ? `__solaraStyle(${value}, ${js(style.id)}, ${js(style.css)})` : value);
     const helper = style ? STYLE_HELPER : "";
     if (!script) {
-      if (!removed.length) return null;
-      return blank(code, removed) + (style ? `\n<script>\nexport default ${wrap("{}")};\n${helper}</script>\n` : "");
+      if (!removed.length && !style) return null;
+      let source = blank(code, removed);
+      if (scriptTag && style) source = source.slice(0, scriptTag[0]) + " ".repeat(scriptTag[1] - scriptTag[0]) + source.slice(scriptTag[1]);
+      return source + (style ? `\n<script>\nexport default ${wrap("{}")};\n${helper}</script>\n` : "");
     }
     const [offset, body] = [script.start, script.content];
     const replace = (start, end, text) => {
@@ -259,6 +273,17 @@ const solaraVueBundle = {
     if (named) {
       // a default export that cannot be wrapped: leave the first style to plugin-vue
       return ignored.length ? blank(code, ignored) : null;
+    }
+    // module.exports below the top level: ipyvue runs it, the bundle cannot, so fail the build
+    const usesModuleExports = (node) =>
+      Array.isArray(node)
+        ? node.some(usesModuleExports)
+        : !!node && typeof node === "object" &&
+          ((node.type === "MemberExpression" && !node.computed && node.object.type === "Identifier" && node.object.name === "module" &&
+            node.property.name === "exports") || Object.values(node).some(usesModuleExports));
+    if (usesModuleExports(ast.body)) {
+      // rollup puts the file name in front
+      this.error("module.exports is only supported as a top-level statement");
     }
     // no default export: ipyvue uses {}, and the style still goes in on first use
     return replace(body.length, body.length, `\nexport default ${wrap("{}")};\n`);
@@ -407,7 +432,8 @@ def lookup(vue_file: Path) -> Optional[str]:
     if vue_file not in _keys:
         file_key = None
         resolved = vue_file.resolve()
-        if _inside(resolved, _root):
+        # as the collector: files in venvs, site-packages etc. are never bundled, miss silently
+        if _inside(resolved, _root) and not any(_skipped_dir(parent) for parent in resolved.parents if _inside(parent, _root) and parent != _root):
             try:
                 file_key = key(resolved, _root)
             except OSError:

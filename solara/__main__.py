@@ -767,7 +767,11 @@ def main():
 @click.option("--vite-config", is_flag=True, help="Also write a starter vite.config.mjs next to the entry, if none exists.")
 @click.option("--check", is_flag=True, help="Exit 1 when a template of the app is not in the built bundle (for CI).")
 @click.option("--bundle", help="The built bundle for --check, relative to the public dir (default: SOLARA_VUE_BUNDLE).")
-@click.option("--exclude", multiple=True, help="Skip .vue files whose path relative to the app root matches this glob, e.g. 'tests/**'. Repeatable.")
+@click.option(
+    "--exclude",
+    multiple=True,
+    help="Skip .vue files (and dirs) whose path relative to the app root matches this fnmatch glob, e.g. 'tests/**'. `*` also matches `/`, a leading `./` is ignored, and `**/x` also matches `x` at the top. Repeatable.",
+)
 def vue_bundle(app: str, output: typing.Optional[Path], vite_config: bool, check: bool, bundle: typing.Optional[str], exclude: typing.Tuple[str, ...]):
     """Write a vite entry for every .vue file of the app, or check a built bundle.
 

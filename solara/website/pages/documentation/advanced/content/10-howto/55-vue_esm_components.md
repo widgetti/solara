@@ -149,7 +149,9 @@ public/                # served at /static/public
     `node_modules`, hidden directories, `__pycache__`, virtual environments (a directory with a
     `pyvenv.cfg`) and `site-packages`/`dist-packages`. Solara's own templates are not in it.
     Skip more with `--exclude`, a glob for the path relative to the app root, for example
-    `--exclude 'tests/**'`; repeat it for more globs. Run the command again after you add,
+    `--exclude 'tests/**'`; repeat it for more globs. The glob uses python's `fnmatch`, so `*`
+    also matches `/`. A leading `./` is ignored, and `**/x.vue` also matches `x.vue` at the top
+    level. A glob that matches a directory skips all of it. Run the command again after you add,
     rename or remove a `.vue` file.
 
 2. Build it (needs `vite`, `@vitejs/plugin-vue2` or for ipyvue 3 `@vitejs/plugin-vue`, and `vite-plugin-css-injected-by-js`):
@@ -233,12 +235,17 @@ const solaraVueBundle = {
   transform(code, id) {
     if (!id.endsWith(".vue")) return null;
     // the top-level blocks, as ipyvue reads them with vue's sfc parser
-    const { script, styles } = parseSfc(code);
+    const parsed = parseSfc(code);
+    // a self-closing block (<style/>, <script/>) has no content and no end offset
+    const selfClosing = (b) => code.slice(0, b.start).endsWith("/>");
+    // a self-closing script counts as no script; its tag goes, so the added one is the only one
+    const scriptTag = parsed.script && selfClosing(parsed.script) ? [code.lastIndexOf("<script", parsed.script.start), parsed.script.start] : null;
+    const script = scriptTag ? null : parsed.script;
     // like ipyvue: only the first <style> counts; lang styles (and scoped ones, with scoped
     // css support) stay with plugin-vue and css-injected-by-js
-    const [first, ...ignored] = styles;
+    const [first, ...ignored] = parsed.styles;
     let style = null;
-    if (first && !(first.attrs.lang && first.attrs.lang !== "css") && !(first.attrs.scoped && SCOPED_CSS_SUPPORT)) {
+    if (first && !selfClosing(first) && !(first.attrs.lang && first.attrs.lang !== "css") && !(first.attrs.scoped && SCOPED_CSS_SUPPORT)) {
       // the path relative to this config, so the id is the same wherever the project lives
       const relative = path.relative(ROOT, id).split(path.sep).join("/");
       const hash = createHash("sha1").update(relative).digest("hex").slice(0, 8);
@@ -246,8 +253,8 @@ const solaraVueBundle = {
       // ipyvue's element id; without an id, one element per file (ipyvue: one per view)
       style = { id: cssId ? `ipyvue-${cssId}` : `ipyvue-solara-vue-bundle-${path.basename(id, ".vue")}-${hash}`, css: first.content };
     }
-    // blank removed blocks, tags included, so all offsets stay valid
-    const removed = style ? [first, ...ignored] : ignored;
+    // blank removed blocks, tags included, so all offsets stay valid (never a self-closing one)
+    const removed = (style ? [first, ...ignored] : ignored).filter((b) => !selfClosing(b));
     const blank = (text, blocks) =>
       blocks.reduce((t, b) => {
         const [start, end] = [t.lastIndexOf("<style", b.start), t.indexOf(">", b.end) + 1];
@@ -256,8 +263,10 @@ const solaraVueBundle = {
     const wrap = (value) => (style ? `__solaraStyle(${value}, ${js(style.id)}, ${js(style.css)})` : value);
     const helper = style ? STYLE_HELPER : "";
     if (!script) {
-      if (!removed.length) return null;
-      return blank(code, removed) + (style ? `\n<script>\nexport default ${wrap("{}")};\n${helper}</script>\n` : "");
+      if (!removed.length && !style) return null;
+      let source = blank(code, removed);
+      if (scriptTag && style) source = source.slice(0, scriptTag[0]) + " ".repeat(scriptTag[1] - scriptTag[0]) + source.slice(scriptTag[1]);
+      return source + (style ? `\n<script>\nexport default ${wrap("{}")};\n${helper}</script>\n` : "");
     }
     const [offset, body] = [script.start, script.content];
     const replace = (start, end, text) => {
@@ -300,6 +309,17 @@ const solaraVueBundle = {
     if (named) {
       // a default export that cannot be wrapped: leave the first style to plugin-vue
       return ignored.length ? blank(code, ignored) : null;
+    }
+    // module.exports below the top level: ipyvue runs it, the bundle cannot, so fail the build
+    const usesModuleExports = (node) =>
+      Array.isArray(node)
+        ? node.some(usesModuleExports)
+        : !!node && typeof node === "object" &&
+          ((node.type === "MemberExpression" && !node.computed && node.object.type === "Identifier" && node.object.name === "module" &&
+            node.property.name === "exports") || Object.values(node).some(usesModuleExports));
+    if (usesModuleExports(ast.body)) {
+      // rollup puts the file name in front
+      this.error("module.exports is only supported as a top-level statement");
     }
     // no default export: ipyvue uses {}, and the style still goes in on first use
     return replace(body.length, body.length, `\nexport default ${wrap("{}")};\n`);

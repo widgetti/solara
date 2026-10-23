@@ -72,6 +72,9 @@ def test_entry(clean_state, tmp_path: Path):
     # every .vue under the root, sorted, without tool dirs, venvs and excluded globs
     assert vue_bundle.app_templates(root, ["tests/**"]) == [b.resolve(), a.resolve()]
     assert (root / "tests" / "fixture.vue").resolve() in vue_bundle.app_templates(root)
+    # a leading ./ is ignored, and **/ also matches at the top level
+    assert vue_bundle.app_templates(root, ["./tests/**"]) == [b.resolve(), a.resolve()]
+    assert vue_bundle.app_templates(root, ["**/2nd.vue", "**/fixture.vue"]) == [a.resolve()]
     code = vue_bundle.entry_code(tmp_path / "vue" / "entry.js", root, ["tests/**"])
     key_a = vue_bundle.key(a.resolve(), root.resolve())
     assert 'import _c0 from "../src/2nd.vue";' in code
@@ -146,6 +149,10 @@ def test_lookup(clean_state, tmp_path: Path, defined, monkeypatch):
     a = _write(root / "a.vue", "<template><div>a</div></template>")
     miss = _write(root / "miss.vue", "<template><div>miss</div></template>")
     library = _write(tmp_path / "lib" / "lib.vue", "<template><div>lib</div></template>")
+    # never bundled (as the collector skips them), so they miss without a warning
+    _write(root / "env" / "pyvenv.cfg", "")
+    in_venv = _write(root / "env" / "lib" / "venv.vue", "<template><div>venv</div></template>")
+    installed = _write(root / "lib" / "site-packages" / "pkg" / "installed.vue", "<template><div>installed</div></template>")
     export = vue_bundle.export_name(a, vue_bundle.key(a.resolve(), root.resolve()))
     _bundle(tmp_path / "public", [export])
     assert vue_bundle.load("vue/app.mjs", root, tmp_path / "public")
@@ -156,6 +163,8 @@ def test_lookup(clean_state, tmp_path: Path, defined, monkeypatch):
     assert vue_bundle.lookup(a) == export
     assert vue_bundle.lookup(miss) is None
     assert vue_bundle.lookup(library) is None
+    assert vue_bundle.lookup(in_venv) is None
+    assert vue_bundle.lookup(installed) is None
     assert vue_bundle.lookup(root / "deleted.vue") is None  # OSError
     assert vue_bundle._warned == {miss}
 
