@@ -126,3 +126,45 @@ def test_errors_without_controls(minimal, kernel_context, no_kernel_context):
         assert widget.children == ["<b>Traceback</b>"]
     element = solara.server.app._error_element("Traceback")
     assert element.component.widget is ipyvue.Html
+
+
+@pytest.fixture
+def vue_sfc_chunk(monkeypatch):
+    """ipyvue >= 3.1: the template compiler is a chunk of its own (vue-sfc), which compiles every Vue template."""
+    monkeypatch.setattr(frontend, "_vue_sfc_chunk_exists", lambda: True)
+
+
+has_esm_module = "esm_module" in ipyvue.Template.class_trait_names()
+
+
+def test_vue_template_needs_vue_sfc(minimal, vue_sfc_chunk, caplog):
+    without, with_sfc = frontend.parse("minimal"), frontend.parse("minimal,+vue-sfc")
+    text = ipyvue.VueTemplate(template="<template><div>text</div></template>")
+    widget = ipyvue.VueTemplate(template=ipyvue.Template(template="<template><div>widget</div></template>"))
+    for template in [text, widget]:
+        assert frontend.missing_feature(template, without) == "vue-sfc"
+        assert frontend.missing_feature(template, with_sfc) is None
+    # a widget without a template does not need it
+    assert frontend.missing_feature(ipyvue.Html(tag="div"), without) is None
+    # one warning, for the first template
+    messages = frontend_warnings(caplog)
+    assert len(messages) == 1
+    assert "'vue-sfc'" in messages[0] and "--frontend=minimal,+vue-sfc" in messages[0]
+
+
+@pytest.mark.skipif(not has_esm_module, reason="Template.esm_module is new in ipyvue 3.1")
+def test_precompiled_template_needs_no_vue_sfc(minimal, vue_sfc_chunk, caplog):
+    without = frontend.parse("minimal")
+    precompiled = ipyvue.VueTemplate(template=ipyvue.Template(esm_module="my-template"))
+    assert frontend.missing_feature(precompiled, without) is None
+    # a template string in components still needs the compiler
+    with_component = ipyvue.VueTemplate(template=ipyvue.Template(esm_module="my-template"), components={"my-part": "<template><b>part</b></template>"})
+    assert frontend.missing_feature(with_component, without) == "vue-sfc"
+
+
+def test_no_vue_sfc_chunk(minimal, monkeypatch, caplog):
+    # ipyvue 3.0: the compiler is part of jupyter-vue, so a Vue template needs no feature
+    monkeypatch.setattr(frontend, "_vue_sfc_chunk_exists", lambda: False)
+    template = ipyvue.VueTemplate(template="<template><div>text</div></template>")
+    assert frontend.missing_feature(template, frontend.parse("minimal")) is None
+    assert frontend_warnings(caplog) == []

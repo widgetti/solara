@@ -125,7 +125,7 @@ def test_lazy_regex_lists_distinct_features():
     texts = [
         # the browser console (solara-widget-manager features.ts, and main-vuetify.js for vue-sfc)
         'solara: frontend feature "vuetify" was not preloaded, it loads now. Add "+vuetify" to --frontend (SOLARA_FRONTEND) to preload it.',
-        'solara: frontend feature "vue-sfc" was not preloaded, it loads now (script setup). Add "+vue-sfc" to --frontend (SOLARA_FRONTEND) to preload it.',
+        'solara: frontend feature "vue-sfc" was not preloaded, it loads now. Add "+vue-sfc" to --frontend (SOLARA_FRONTEND) to preload it.',
         # the server log (solara.server.frontend._warn_once): the example names more features than the one that loaded
         "WARNING solara.server.frontend: The page needs the frontend feature 'jupyter-controls', which this server does not preload. "
         "The browser loads it on first use, which slows down that first render. "

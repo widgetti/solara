@@ -127,7 +127,8 @@ if (window.solara && typeof solara.onLazyLoad === 'function') {
     solara.onLazyLoad(reportLazyLoad);
 }
 
-// jupyter-vue (ipyvue >= 3.1) has its SFC compiler in a chunk, and tells when it needs it
+// jupyter-vue (ipyvue >= 3.1) has its SFC compiler in a chunk, and tells when it loads it: for the
+// first Vue template of the page (a template precompiled to an ES module does not need it)
 let vueSfcWarned = false;
 window.addEventListener('jupyter-vue:load-chunk', (event) => {
     const chunk = event.detail && event.detail.chunk;
@@ -135,11 +136,8 @@ window.addEventListener('jupyter-vue:load-chunk', (event) => {
         return;
     }
     vueSfcWarned = true;
-    console.warn(
-        'solara: frontend feature "vue-sfc" was not preloaded, it loads now' +
-        (event.detail.reason ? ` (${event.detail.reason})` : '') +
-        '. Add "+vue-sfc" to --frontend (SOLARA_FRONTEND) to preload it.'
-    );
+    // the wording of the other lazy load warnings (solara-widget-manager features.ts)
+    console.warn('solara: frontend feature "vue-sfc" was not preloaded, it loads now. Add "+vue-sfc" to --frontend (SOLARA_FRONTEND) to preload it.');
     reportLazyLoad('vue-sfc');
 });
 

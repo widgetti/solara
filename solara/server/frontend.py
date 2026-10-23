@@ -16,7 +16,6 @@ must not break ``import solara`` there. The CLI and solara.server.starlette chec
 import dataclasses
 import difflib
 import logging
-import re
 import sys
 import threading
 from functools import lru_cache
@@ -312,21 +311,14 @@ def _vue_sfc_chunk_exists() -> bool:
     return (Path(ipyvue.__file__).parent / "nbextension" / "nodeps-vue-sfc.js").exists()
 
 
-# Template features that ipyvue compiles only with the full SFC compiler (the vue-sfc chunk).
-_SFC_ONLY = re.compile(r"<script[^>]*\bsetup\b|<style[^>]*\bscoped\b|lang=[\"']ts[\"']")
-
-
-@lru_cache(maxsize=256)
-def _template_needs_sfc(template: str) -> bool:
-    return _SFC_ONLY.search(template) is not None
-
-
-def _template_text(widget) -> Optional[str]:
-    template = getattr(widget, "template", None)
-    if template is not None and not isinstance(template, str):
-        # an ipyvue.Template widget
-        template = getattr(template, "template", None)
-    return template if isinstance(template, str) else None
+def _template_needs_sfc(widget) -> bool:
+    # ipyvue >= 3.1 compiles every Vue template with the SFC compiler (the vue-sfc chunk). A template that is
+    # precompiled to an ES module (the esm_module of its Template widget) does not need it, but the template
+    # strings in components still do.
+    template = widget.template
+    if not (isinstance(template, ipyvue.Template) and getattr(template, "esm_module", None)):
+        return True
+    return any(isinstance(component, str) for component in (widget.components or {}).values())
 
 
 def missing_feature(widget, frontend: Frontend) -> Optional[str]:
@@ -335,10 +327,8 @@ def missing_feature(widget, frontend: Frontend) -> Optional[str]:
         feature = MODULE_FEATURE.get(module) if isinstance(module, str) else None
         if feature is not None and feature not in frontend:
             return feature
-    if vue3 and "vue-sfc" not in frontend and _vue_sfc_chunk_exists():
-        template = _template_text(widget)
-        if template is not None and _template_needs_sfc(template):
-            return "vue-sfc"
+    if vue3 and isinstance(widget, ipyvue.VueTemplate) and "vue-sfc" not in frontend and _vue_sfc_chunk_exists() and _template_needs_sfc(widget):
+        return "vue-sfc"
     return None
 
 

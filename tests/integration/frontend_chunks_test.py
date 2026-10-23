@@ -19,6 +19,9 @@ HERE = Path(__file__).parent
 # the vuetify3 lane: the Vue 2 build keeps Vuetify in its core bundle, so it cannot leave it out
 vue3 = frontend.vue3
 ipywidgets_major = int(ipywidgets.__version__.split(".")[0])
+# ipyvue >= 3.1 has its template compiler in a chunk (vue-sfc), and compiles every Vue template with it. Every
+# Solara page has a Vue template, so a page that does not preload vue-sfc lazy loads it, with one warning.
+vue_sfc_chunk = vue3 and frontend._vue_sfc_chunk_exists()
 
 # a JS chunk of the app bundle, e.g. .../solara-vuetify3-app@5.2.0/dist/solara-vuetify-app8.katex.js
 CHUNK_RE = re.compile(r"/@widgetti/solara-vuetify3?-app@[^/]+/dist/solara-vuetify-app\d\.([a-z-]+)(?:\.min)?\.js")
@@ -188,6 +191,11 @@ def _server_warnings(caplog) -> List[str]:
     return [record.getMessage() for record in caplog.records if record.name == "solara.server.frontend" and record.levelno >= logging.WARNING]
 
 
+def _vue_sfc_warnings(preset: str, pages: int = 1) -> List[str]:
+    """The vue-sfc lazy load warnings of the pages a test opens: one per page, unless the page preloads it."""
+    return ["vue-sfc"] * pages if vue_sfc_chunk and "vue-sfc" not in frontend.parse(preset) else []
+
+
 def _expected_chunks() -> List[str]:
     production = solara.server.settings.main.mode == "production"
     return frontend_assets.page_assets(vue3, ipywidgets_major, production, "", frontend.current()).chunk_names
@@ -270,11 +278,13 @@ def test_minimal_lazy_controls(page_session: playwright.sync_api.Page, solara_se
     assert chunks.get("jupyter-controls") == 1
     assert "katex" not in chunks
     assert "output-widget" not in chunks
-    assert recorder.lazy_warnings() == ["jupyter-controls"]
+    # one warning per feature, in the browser console and in the server log
+    assert sorted(recorder.lazy_warnings()) == sorted(["jupyter-controls", *_vue_sfc_warnings("minimal")])
     assert recorder.errors() == []
     server_warnings = _server_warnings(caplog)
-    assert len(server_warnings) == 1
-    assert 'Add "+jupyter-controls" to --frontend' in server_warnings[0]
+    assert len(server_warnings) == 1 + len(_vue_sfc_warnings("minimal"))
+    assert len([message for message in server_warnings if 'Add "+jupyter-controls" to --frontend' in message]) == 1
+    assert len([message for message in server_warnings if 'Add "+vue-sfc" to --frontend' in message]) == len(_vue_sfc_warnings("minimal"))
 
 
 @pytest.mark.parametrize("preset", ["full", "minimal"])
@@ -291,6 +301,8 @@ def test_markdown_katex_bundled(page_session: playwright.sync_api.Page, solara_s
         if preset == "minimal":
             # markdown without math does not load katex
             assert "katex" not in recorder.chunk_requests()
+        # each page warns once for the Vue template compiler (a new page, a new browser context)
+        assert recorder.lazy_warnings() == _vue_sfc_warnings(preset)
         with solara_app("frontend_chunks_test:MarkdownMath"):
             page_session.goto(solara_server.base_url)
             page_session.locator(".katex >> .mord >> text=E").first.wait_for()
@@ -298,7 +310,7 @@ def test_markdown_katex_bundled(page_session: playwright.sync_api.Page, solara_s
     assert not [url for url in recorder.urls if "katex@" in url]
     if preset == "minimal":
         assert recorder.chunk_requests().get("katex") == 1
-        assert recorder.lazy_warnings() == ["katex"]
+        assert recorder.lazy_warnings() == [*_vue_sfc_warnings(preset, pages=2), "katex"]
     else:
         assert recorder.lazy_warnings() == []
     assert recorder.errors() == []
@@ -432,7 +444,7 @@ def test_vuetify_theme_colors(page_session: playwright.sync_api.Page, solara_ser
         with solara_app("frontend_chunks_test:ThemedButton"):
             page_session.goto(solara_server.base_url)
             playwright.sync_api.expect(page_session.locator(".themed-button")).to_have_css("background-color", "rgb(255, 0, 0)")
-    assert recorder.lazy_warnings() == []
+    assert recorder.lazy_warnings() == _vue_sfc_warnings(preset, pages=2)
     assert recorder.errors() == []
 
 
@@ -508,7 +520,7 @@ def test_vuetify_has_roboto(page_session: playwright.sync_api.Page, solara_serve
     assert roboto == ({"count": 0, "atSlot": False, "faces": False} if own_font else {"count": 1, "atSlot": True, "faces": True})
     # a css-only feature that is preloaded needs no JS
     assert recorder.chunk_requests().get("roboto") is None
-    assert recorder.lazy_warnings() == []
+    assert recorder.lazy_warnings() == _vue_sfc_warnings(preset)
     assert recorder.errors() == []
 
 
@@ -542,5 +554,5 @@ def test_vuetify_css(page_session: playwright.sync_api.Page, solara_server, sola
     assert len([url for url in recorder.urls if re.search(r"/main\d\.vuetify\.css", url)]) == (0 if own_css else 1)
     # a css-only feature that is preloaded needs no JS
     assert recorder.chunk_requests().get("vuetify-css") is None
-    assert recorder.lazy_warnings() == []
+    assert recorder.lazy_warnings() == _vue_sfc_warnings(preset)
     assert recorder.errors() == []

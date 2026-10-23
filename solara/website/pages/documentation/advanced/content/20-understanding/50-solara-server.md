@@ -136,13 +136,16 @@ The features are:
 | `jupyter-css` | The CSS of the ipywidgets controls. |
 | `katex` | Math rendering (KaTeX), for example in `solara.Markdown`. |
 | `mermaid` | Mermaid diagrams in `solara.Markdown`. The page never preloads it: when it is on, it loads when the first `solara.Markdown` mounts. |
-| `vue-sfc` | The full Vue single-file-component compiler of ipyvue, for templates with `<script setup>`, `<style scoped>` or `lang="ts"`. Vue 3 only. |
+| `vue-sfc` | The compiler of ipyvue for Vue templates (ipyvue 3.1 and newer, Vue 3 only). ipyvue compiles every Vue template with it, so every page with a Vue template needs it. Every Solara page has one. A template that is precompiled to an ES module (`esm_module`) does not need it. |
 
 The `minimal` preset has none of these features, except `vuetify`, `mdi`, and the `roboto` and `vuetify-css` that come with `vuetify` (unless you add `-roboto` or `-vuetify-css`). Vue, Vuetify, the widget core and the notebook extensions are always on.
 
 A feature that the page does not preload still works: the browser loads it the first time a widget needs it.
 That first render is slower, so the server logs a warning (once per feature) that names the flag to add, for example `--frontend=minimal,+jupyter-controls`.
 The browser console shows the same warning.
+`minimal` leaves out `vue-sfc`, so on Vue 3 the browser loads it on first use, with a warning.
+Every Solara page has a Vue template, so every page loads `vue-sfc` in this way.
+Add `+vue-sfc` to preload it, for example `--frontend=minimal,+vue-sfc`.
 With `SOLARA_DEFAULT_CONTAINER=Fragment`, `minimal` loads `jupyter-controls` the first time a component renders more than one element without a container, because reacton then wraps those elements in its `Fragment`, an ipywidgets `VBox`.
 The fonts and icon sets are an exception: the browser never loads `material-icons` or `font-awesome` on demand, and nothing warns.
 Without them, those icons do not show, so add them when your app uses them.
