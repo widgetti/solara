@@ -769,7 +769,7 @@ def test_lumino_requirejs(page_session: playwright.sync_api.Page, solara_server,
                 page_session.wait_for_timeout(300)
             if preset == "minimal":
                 assert "lumino" not in recorder.chunk_requests()
-                assert recorder.lazy_warnings() == []
+                assert recorder.lazy_warnings() == _vue_sfc_warnings(preset)
             # a widget that asks requirejs for @lumino/widgets
             with solara_app("frontend_chunks_test:LuminoApp"):
                 page_session.goto(solara_server.base_url)
@@ -784,12 +784,14 @@ def test_lumino_requirejs(page_session: playwright.sync_api.Page, solara_server,
     else:
         # loads once, with one warning in the browser and one in the server log, which name the module that asked
         assert recorder.chunk_requests().get("lumino") == 1
-        assert recorder.lazy_warnings() == ["lumino"]
+        assert sorted(recorder.lazy_warnings()) == sorted(["lumino", *_vue_sfc_warnings(preset, pages=2)])
         warnings = [msg.text for msg in recorder.console if msg.type == "warning" and 'Add "+lumino"' in msg.text]
         assert 'for the requirejs module "@lumino/widgets"' in warnings[0]
-        assert len(server_warnings) == 1
-        assert "The requirejs module '@lumino/widgets' of the page needs the frontend feature 'lumino'" in server_warnings[0]
-        assert 'Add "+lumino" to --frontend' in server_warnings[0]
+        # the server warns once per feature, so once for vue-sfc
+        assert len(server_warnings) == 1 + len(_vue_sfc_warnings(preset))
+        lumino_warnings = [message for message in server_warnings if 'Add "+lumino" to --frontend' in message]
+        assert len(lumino_warnings) == 1
+        assert "The requirejs module '@lumino/widgets' of the page needs the frontend feature 'lumino'" in lumino_warnings[0]
     assert recorder.errors() == []
 
 
@@ -808,9 +810,9 @@ def test_tab(page_session: playwright.sync_api.Page, solara_server, solara_app, 
         assert server_warnings == []
     else:
         # the controls bring lumino along: the warning names jupyter-controls, not lumino
-        assert recorder.lazy_warnings() == ["jupyter-controls"]
-        assert len(server_warnings) == 1
-        assert 'Add "+jupyter-controls" to --frontend' in server_warnings[0]
+        assert sorted(recorder.lazy_warnings()) == sorted(["jupyter-controls", *_vue_sfc_warnings(preset)])
+        assert len(server_warnings) == 1 + len(_vue_sfc_warnings(preset))
+        assert len([message for message in server_warnings if 'Add "+jupyter-controls" to --frontend' in message]) == 1
     assert recorder.errors() == []
 
 
