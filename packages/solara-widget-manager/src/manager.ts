@@ -56,6 +56,20 @@ const WIDGET_MIMETYPE = 'application/vnd.jupyter.widget-view+json';
  */
 export const CONTROL_COMM_TIMEOUT = 500;
 
+// pagehide disposes the kernel, and with it every comm, but the page can still run handlers before
+// it goes away, such as the blur of a focused input. Their sends have nowhere to go: drop them
+// instead of throwing "Cannot send".
+const commSend = base.shims.services.Comm.prototype.send;
+base.shims.services.Comm.prototype.send = function (
+  this: base.shims.services.Comm,
+  ...args: Parameters<typeof commSend>
+): string {
+  if (this.jsServicesComm.isDisposed) {
+    return '';
+  }
+  return commSend.apply(this, args);
+};
+
 /**
  * A custom widget manager to render widgets with Voila
  */
