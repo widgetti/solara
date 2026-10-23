@@ -101,11 +101,15 @@ By default, solara runs in development mode. This means, it will:
 
 To disabled all of these option, pass the `--production` flag, or set the environment variable `SOLARA_MODE=production`.
 
-## Frontend features
+## Frontend features (experimental)
 
 The page that the Solara server sends to the browser loads the frontend code in parts, called features.
 By default, the page preloads all features (the `full` preset), so every widget renders at once.
 If your app does not use some features, you can leave them out, and the page loads faster.
+
+This setting is experimental.
+The feature names, the presets other than `full`, and the features in `minimal` can change in a minor release.
+An unknown feature name stops the server at startup, with an error that lists the valid names.
 
 Use the `--frontend` option, the `SOLARA_FRONTEND` environment variable, or `solara.server.settings.main.frontend`.
 The value is a preset, `full` or `minimal`, followed by `+feature` or `-feature`:

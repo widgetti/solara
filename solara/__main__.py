@@ -239,6 +239,7 @@ if "SOLARA_MODE" in os.environ:
     callback=_check_frontend,
     help="Which frontend features the page preloads: a preset (full, minimal) followed by +feature or -feature,"
     " for example 'minimal,+katex' or 'full,-mermaid'. A feature that is not preloaded loads on first use, with a warning."
+    " (experimental: the feature names and the minimal preset can change in a minor release)"
     f" Features: {', '.join(solara.server.frontend.FEATURES)}. [default: {settings.main.frontend!r}]",
 )
 @click.option(
