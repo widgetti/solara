@@ -190,21 +190,27 @@ const solaraVueBundle = {
   // ipyvue templates use `module.exports = {...}`, an ES module needs `export default`
   transform(code, id) {
     if (!id.endsWith(".vue")) return null;
-    const script = /(<script[^>]*>)([\s\S]*?)<\/script>/.exec(code);
+    // find the script in a copy with html comments blanked out, offsets stay the same
+    const masked = code.replace(/<!--[\s\S]*?-->/g, (c) => " ".repeat(c.length));
+    const script = /(<script[^>]*>)([\s\S]*?)<\/script>/.exec(masked);
     if (!script) return null;
+    const offset = script.index + script[1].length;
+    const body = code.slice(offset, offset + script[2].length);
     let ast;
     try {
-      ast = this.parse(script[2]);
+      ast = this.parse(body);
     } catch {
       return null;
     }
     const isModuleExports = (e) =>
       e.type === "AssignmentExpression" && e.operator === "=" && e.left.type === "MemberExpression" && !e.left.computed &&
       e.left.object.type === "Identifier" && e.left.object.name === "module" && e.left.property.name === "exports";
-    const node = ast.body.find((s) => s.type === "ExpressionStatement" && isModuleExports(s.expression));
-    if (!node) return null;
-    const offset = script.index + script[1].length;
-    return code.slice(0, offset + node.expression.left.start) + "export default " + code.slice(offset + node.expression.right.start);
+    const stmt = ast.body.find((s) => s.type === "ExpressionStatement" && isModuleExports(s.expression));
+    if (!stmt) return null;
+    // replace the whole statement, so parentheses around it or its value stay balanced
+    const expr = stmt.expression;
+    const value = body.slice(body.indexOf("=", expr.left.end) + 1, expr.end);
+    return code.slice(0, offset + stmt.start) + "export default (" + value + ");" + code.slice(offset + stmt.end);
   },
   // solara reads the export names from this line; it goes after the code (and
   // before a sourceMappingURL line), so source map line numbers stay valid

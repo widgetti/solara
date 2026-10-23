@@ -107,6 +107,11 @@ def test_parse_exports():
     # export-like text anywhere else does not count, only the marker line
     fake = f'const s = "export {{ a as Fake_aaaaaaaaaaaa }}";\n// export {{ b as Fake_bbbbbbbbbbbb }};\n{marker}\n'
     assert vue_bundle.parse_exports(fake) == {KEY: f"Foo_{KEY}", "ba9876543210": "$Bar_ba9876543210"}
+    # a later plugin can add lines after the marker; a marker-like line in user code comes first
+    footer = "\n".join(f"console.log({i});" for i in range(12))
+    late = f"// solara-vue-bundle-exports: Fake_aaaaaaaaaaaa\nexport{{a as Foo_{KEY}}};\n{marker}\n{footer}\n"
+    assert late.splitlines()[-13] == marker
+    assert vue_bundle.parse_exports(late) == {KEY: f"Foo_{KEY}", "ba9876543210": "$Bar_ba9876543210"}
     # built without the solara plugin: no marker
     assert vue_bundle.parse_exports(f"export {{ a as Foo_{KEY} }};\n") is None
 
