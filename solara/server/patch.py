@@ -17,6 +17,7 @@ from IPython.core.interactiveshell import InteractiveShell
 
 import solara
 import solara.util
+from solara.components import vue_bundle
 
 from . import app, kernel_context, reload, settings
 from .utils import pdb_guard
@@ -267,6 +268,10 @@ def auto_watch_get_template(get_template):
     """Wraps get_template and adds a file listener for automatic .vue file reloading"""
 
     def wrapper(abs_path):
+        # in bundle mode, a file in the bundle needs no source and no watcher
+        template = vue_bundle.esm_template(abs_path)
+        if template is not None:
+            return template
         template = get_template(abs_path)
         with kernel_context.without_context():
             reload.watch_file(abs_path, on_change=_update_templates)
@@ -417,6 +422,12 @@ def patch_ipyvue_esm():
     ipyvue.esm.define_module = esm_vue.define_module
     ipyvue.esm.get_module_names = esm_vue.get_module_names
     ipyvue.define_module = esm_vue.define_module
+
+    if hasattr(ipyvue, "register_component_from_esm"):
+        component_mod_vue = sys.modules["ipyvue.VueComponentRegistry"]
+        register = vue_bundle.patch_register_component_from_file(component_mod_vue.register_component_from_file)
+        component_mod_vue.register_component_from_file = register  # type: ignore
+        ipyvue.register_component_from_file = register
 
 
 @solara.util.once

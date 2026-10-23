@@ -120,10 +120,13 @@ For urls solara serves itself this enables aggressive caching without staleness:
 The same applies to ipyreact modules. During development, prefer the `Path` form: the file
 is watched, so a bundler in watch mode gives in-place hot reload.
 
-## Bundling all component_vue templates
+## Bundling all .vue files of an app
 
-Your app code keeps `@solara.component_vue("foo.vue")` as it is. In production, solara can
-serve all of the app's templates from one prebuilt ES module instead of their source.
+Your app code stays as it is. In production, solara can serve all of the app's `.vue` files
+from one prebuilt ES module instead of their source. This covers
+[`@solara.component_vue`](/documentation/api/utilities/component_vue) components,
+`ipyvue.VueTemplate` widgets with a `template_file`, and components registered with
+`ipyvue.register_component_from_file`, also when the app registers them at render time.
 Solara defines the module itself (named `solara-vue-bundle`), so the app never calls
 `define_module` for it.
 
@@ -141,9 +144,10 @@ public/                # served at /static/public
     solara vue-bundle src/solara_app.py -o vue/entry.js --vite-config
     ```
 
-    The command imports the app and writes one export per `component_vue` template under the
-    app root (the script's directory, or the top-level package of a module). Solara's own
-    templates are not in it. Run it again after you add or edit a template.
+    The command does not import the app. It writes one export for every `.vue` file under the
+    app root (the script's directory, or the top-level package of a module), sorted, without
+    `node_modules` and hidden directories. Solara's own templates are not in it. Run it again
+    after you add, rename or remove a `.vue` file.
 
 2. Build it (needs `vite`, `@vitejs/plugin-vue2` or for ipyvue 3 `@vitejs/plugin-vue`, and `vite-plugin-css-injected-by-js`):
 
@@ -160,11 +164,14 @@ public/                # served at /static/public
 The page preloads the bundle with a versioned url, and solara serves it with an immutable
 cache header (see above).
 
-Each export is named `<ComponentName>_<key>`, for example `MyCard_6d0c4e3fef1e`. The key is a
-hash of the template's path (relative to the app root) and its content. The `solara-vue-bundle`
+Each export is named after the file: `<file stem>_<key>`, for example
+`transcript_entry_6d0c4e3fef1e` for `transcript-entry.vue`. The key is a hash of the file's
+path (relative to the app root) and its content. The `solara-vue-bundle`
 plugin in the vite config below writes the export names to `app.mjs.json` in the same build,
 and solara reads that file at startup. Deploy `app.mjs` and `app.mjs.json` together. Without
-the `.json` file, solara does not use the bundle. When a widget is created, solara looks up the key of its template. When the key is not in the bundle, for example
+the `.json` file, solara does not use the bundle. When ipyvue loads a template file or
+registers a component file, solara looks up the key of that file. When the key is not in the
+bundle, for example
 after an edit without a rebuild, solara logs a warning and serves the template source, as
 without the setting. A missing or unreadable bundle also falls back to source, with a warning.
 
@@ -248,8 +255,8 @@ export default defineConfig({
 solara vue-bundle src/solara_app.py --check --bundle vue/app.mjs
 ```
 
-This exits with 1, and lists the templates, when a template of the app is not in the bundle
-or the bundle is missing. Without `--bundle`, it uses `SOLARA_VUE_BUNDLE`.
+This exits with 1, and lists the files, when a `.vue` file under the app root is not in the
+bundle, when there are no `.vue` files, or when the bundle is missing. Without `--bundle`, it uses `SOLARA_VUE_BUNDLE`.
 
 ### Limits
 
@@ -271,8 +278,6 @@ or the bundle is missing. Without `--bundle`, it uses `SOLARA_VUE_BUNDLE`.
   `no-undef` to find these.
 - Only a top-level `module.exports = {...}` statement and `export default {...}` work. The
   `exports.foo = ...` style does not.
-- Only templates in modules that the app imports at startup get into the entry. A template in
-  a module that the app imports later serves its source.
 - The url gets the root path when solara runs under a root path with the starlette server.
 
 ## Using a precompiled component as a tag

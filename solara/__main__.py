@@ -768,46 +768,32 @@ def main():
 @click.option("--check", is_flag=True, help="Exit 1 when a template of the app is not in the built bundle (for CI).")
 @click.option("--bundle", help="The built bundle for --check, relative to the public dir (default: SOLARA_VUE_BUNDLE).")
 def vue_bundle(app: str, output: typing.Optional[Path], vite_config: bool, check: bool, bundle: typing.Optional[str]):
-    """Write a vite entry for the app's component_vue templates, or check a built bundle.
+    """Write a vite entry for every .vue file of the app, or check a built bundle.
 
     APP is a script (app.py), a directory, or a module (my.app), as for `solara run`.
+    It is not imported: it only gives the app root, whose .vue files are all
+    bundled (except under node_modules and hidden dirs), and the public dir.
     Build the entry with vite, then run with SOLARA_VUE_BUNDLE set to the
-    built .mjs, relative to the public dir. Templates outside the app root
-    (e.g. solara's own) are not bundled.
+    built .mjs, relative to the public dir.
     """
-    import importlib
-
-    import solara.autorouting
     import solara.settings
     from solara.components import vue_bundle as vb
 
     if not check and output is None:
         raise click.UsageError("pass -o/--output (or --check)")
-    # import the app as AppScript does, so pages imported through routes count too
+    # the app name as AppScript reads it
     name = app
     if ":" in app:
         name = app.rsplit(":", 1)[0]
         if len(name) == 1:  # a windows drive letter, restore
             name = app
-    path = Path(name)
-    if name.endswith(".py") or name.endswith(".ipynb"):
-        sys.path.insert(0, str(path.resolve().parent))
-    else:
-        # before app_root and public_dir: they look the module up
-        sys.path.insert(0, os.getcwd())
+    # app_root and public_dir look a module app up, as `solara run` does from cwd
+    sys.path.insert(0, os.getcwd())
     root = vb.app_root(name)
     public_dir = vb.public_dir(name)
-    if name.endswith(".py"):
-        solara.autorouting._generate_route_path(path, first=True, initial_namespace={"__name__": "__main__"})
-    elif name.endswith(".ipynb"):
-        solara.autorouting._generate_route_path(path, first=True)
-    elif path.is_dir():
-        solara.autorouting.generate_routes_directory(path)
-    else:
-        solara.autorouting.generate_routes(importlib.import_module(name))
     templates = vb.app_templates(root)
     if check and not templates:
-        rprint(f"[red]no component_vue templates found under {root}[/red]")
+        rprint(f"[red]no .vue files found under {root}[/red]")
         sys.exit(1)
     if check:
         setting = bundle or solara.settings.main.vue_bundle
@@ -830,7 +816,7 @@ def vue_bundle(app: str, output: typing.Optional[Path], vite_config: bool, check
         return
     assert output is not None
     if not templates:
-        raise click.ClickException(f"no component_vue templates found under {root}")
+        raise click.ClickException(f"no .vue files found under {root}")
     output.parent.mkdir(parents=True, exist_ok=True)
     try:
         code = vb.entry_code(output, root)

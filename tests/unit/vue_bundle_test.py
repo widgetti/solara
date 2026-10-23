@@ -1,5 +1,5 @@
-import importlib
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -21,17 +21,10 @@ KEY = "0123456789ab"
 
 @pytest.fixture()
 def clean_state(monkeypatch):
-    files = dict(vue_bundle._vue_files)
-    vue_bundle._vue_files.clear()
     monkeypatch.setattr(vue_bundle, "_exports", None)
     monkeypatch.setattr(vue_bundle, "_root", None)
     monkeypatch.setattr(vue_bundle, "_keys", {})
     monkeypatch.setattr(vue_bundle, "_warned", set())
-    try:
-        yield
-    finally:
-        vue_bundle._vue_files.clear()
-        vue_bundle._vue_files.update(files)
 
 
 @pytest.fixture()
@@ -65,24 +58,25 @@ def _bundle(public: Path, exports, name="vue/app.mjs") -> Path:
 
 def test_entry(clean_state, tmp_path: Path):
     root = tmp_path / "src"
-    a = _write(root / "components" / "a.vue", "<template><div>a</div></template>")
-    b = _write(root / "b.vue", "<template><div>b</div></template>")
-    outside = _write(tmp_path / "lib" / "c.vue", "<template><div>c</div></template>")
-    vue_bundle.record(a, "CompA")
-    vue_bundle.record(b, "2nd.Comp")
-    vue_bundle.record(outside, "Library")
+    a = _write(root / "components" / "transcript-entry.vue", "<template><div>a</div></template>")
+    b = _write(root / "2nd.vue", "<template><div>b</div></template>")
+    _write(root / "node_modules" / "dep" / "dep.vue", "<template><div>dep</div></template>")
+    _write(root / ".cache" / "hidden.vue", "<template><div>hidden</div></template>")
+    _write(tmp_path / "lib" / "lib.vue", "<template><div>lib</div></template>")
 
-    code = vue_bundle.entry_code(tmp_path / "vue" / "entry.js", root.resolve())
+    # every .vue under the root, sorted, without node_modules and hidden dirs
+    assert vue_bundle.app_templates(root) == [b.resolve(), a.resolve()]
+    code = vue_bundle.entry_code(tmp_path / "vue" / "entry.js", root)
     key_a = vue_bundle.key(a.resolve(), root.resolve())
-    assert 'import _c0 from "../src/components/a.vue";' in code
-    assert f'export const CompA_{key_a} = {{ name: "CompA", ..._c0 }};' in code
-    assert f"export const _2nd_Comp_{vue_bundle.key(b.resolve(), root.resolve())} = " in code
-    # library templates (outside the app root) are not bundled
-    assert "c.vue" not in code
+    assert 'import _c0 from "../src/2nd.vue";' in code
+    assert 'import _c1 from "../src/components/transcript-entry.vue";' in code
+    assert f'export const transcript_entry_{key_a} = {{ name: "transcript_entry", ..._c1 }};' in code
+    assert f'export const _2nd_{vue_bundle.key(b.resolve(), root.resolve())} = {{ name: "_2nd", ..._c0 }};' in code
+    assert "dep.vue" not in code and "hidden.vue" not in code and "lib.vue" not in code
 
     # the key covers the path relative to the root and the content
     assert len(key_a) == 12
-    copy = _write(root / "other" / "a.vue", a.read_text())
+    copy = _write(root / "other" / "transcript-entry.vue", a.read_text())
     assert vue_bundle.key(copy.resolve(), root.resolve()) != key_a
     a.write_text("<template><div>a2</div></template>")
     assert vue_bundle.key(a.resolve(), root.resolve()) != key_a
@@ -90,7 +84,7 @@ def test_entry(clean_state, tmp_path: Path):
 
 def test_entry_other_drive(clean_state, tmp_path: Path, monkeypatch):
     root = tmp_path / "src"
-    vue_bundle.record(_write(root / "a.vue", "<template><div>a</div></template>"), "CompA")
+    _write(root / "a.vue", "<template><div>a</div></template>")
 
     def relpath(path, start):
         raise ValueError("path is on mount 'D:', start on mount 'C:'")
@@ -144,7 +138,7 @@ def test_lookup(clean_state, tmp_path: Path, defined, monkeypatch):
     a = _write(root / "a.vue", "<template><div>a</div></template>")
     miss = _write(root / "miss.vue", "<template><div>miss</div></template>")
     library = _write(tmp_path / "lib" / "lib.vue", "<template><div>lib</div></template>")
-    export = vue_bundle.export_name("A", vue_bundle.key(a.resolve(), root.resolve()))
+    export = vue_bundle.export_name(a, vue_bundle.key(a.resolve(), root.resolve()))
     _bundle(tmp_path / "public", [export])
     assert vue_bundle.load("vue/app.mjs", root, tmp_path / "public")
 
@@ -158,42 +152,67 @@ def test_lookup(clean_state, tmp_path: Path, defined, monkeypatch):
     assert vue_bundle._warned == {miss}
 
 
-@pytest.mark.parametrize("vuetify", [True, False])
-def test_widget(clean_state, tmp_path: Path, defined, monkeypatch, virtual_context, vuetify):
-    # a component in pkg/__init__.py is decorated before the server loads the
-    # bundle (find_spec runs it), so the choice must happen at widget creation
-    root = tmp_path / "pkg"
-    vuetify_arg = "True" if vuetify else "False"
-    _write(
-        root / "__init__.py",
-        "import solara\n"
-        f"@solara.component_vue('hit.vue', vuetify={vuetify_arg})\n"
-        "def Hit(value: int = 0): pass\n"
-        f"@solara.component_vue('miss.vue', vuetify={vuetify_arg})\n"
-        "def Miss(value: int = 0): pass\n",
-    )
-    hit = _write(root / "hit.vue", "<template><div>{{ value }}</div></template>")
-    _write(root / "miss.vue", "<template><span>{{ value }}</span></template>")
-    monkeypatch.syspath_prepend(str(tmp_path))
-    monkeypatch.delitem(sys.modules, "pkg", raising=False)
-    pkg = importlib.import_module("pkg")
-    try:
-        export = vue_bundle.export_name("Hit", vue_bundle.key(hit.resolve(), root.resolve()))
-        _bundle(tmp_path / "public", [export])
-        assert vue_bundle.load("vue/app.mjs", vue_bundle.app_root("pkg"), tmp_path / "public")
-        monkeypatch.setattr(solara, "_using_solara_server", lambda: True)
+def _load_bundle(root: Path, public: Path, files, monkeypatch):
+    exports = [vue_bundle.export_name(file, vue_bundle.key(file.resolve(), root.resolve())) for file in files]
+    _bundle(public, exports)
+    assert vue_bundle.load("vue/app.mjs", root, public)
+    monkeypatch.setattr(solara, "_using_solara_server", lambda: True)
+    return exports
 
-        box, rc = solara.render(solara.Column(children=[pkg.Hit(value=1), pkg.Hit(value=2), pkg.Miss(value=3)]), handle_error=False)
-        hit1, hit2, miss = box.children[0].children
-        assert hit1.template.esm_module == vue_bundle.MODULE_NAME
-        assert hit1.template.esm_export == export
-        # one Template widget per kernel
-        assert hit2.template is hit1.template
-        assert miss.template.esm_module is None
-        assert miss.template.template == "<template><span>{{ value }}</span></template>"
+
+def test_get_template(clean_state, tmp_path: Path, defined, monkeypatch, virtual_context):
+    # the patched get_template serves every template file: component_vue and template_file widgets
+    root = tmp_path / "src"
+    hit = _write(root / "hit.vue", "<template><div>{{ value }}</div></template>")
+    miss = _write(root / "miss.vue", "<template><span>{{ value }}</span></template>")
+    (export,) = _load_bundle(root, tmp_path / "public", [hit], monkeypatch)
+    from ipyvue import VueTemplate
+
+    class FileWidget(VueTemplate):
+        template_file = str(hit)
+
+    class MissWidget(VueTemplate):
+        template_file = (str(root / "app.py"), "miss.vue")
+
+    widget = FileWidget()
+    assert (widget.template.esm_module, widget.template.esm_export) == (vue_bundle.MODULE_NAME, export)
+    # one Template widget per kernel
+    assert FileWidget().template is widget.template
+    assert MissWidget().template.esm_module is None
+    assert MissWidget().template.template == miss.read_text()
+
+    for vuetify in [True, False]:
+        component = solara._component_vue(str(hit), vuetify=vuetify)(lambda value=0: None)
+        box, rc = solara.render(component(value=1), handle_error=False)
+        assert box.children[0].template is widget.template
         rc.close()
-    finally:
-        sys.modules.pop("pkg", None)
+
+
+def test_register_component_from_file(clean_state, tmp_path: Path, defined, monkeypatch, virtual_context):
+    if not hasattr(ipyvue, "register_component_from_esm"):
+        pytest.skip("requires ipyvue with register_component_from_esm")
+    from ipyvue.VueComponentRegistry import vue_component_files, vue_component_registry
+
+    root = tmp_path / "src"
+    hit = _write(root / "components" / "hit.vue", "<template><div>hit</div></template>")
+    miss = _write(root / "components" / "miss.vue", "<template><div>miss</div></template>")
+    (export,) = _load_bundle(root, tmp_path / "public", [hit], monkeypatch)
+    app = str(root / "app.py")
+
+    ipyvue.register_component_from_file("hit-component", "components/hit.vue", app)
+    component = vue_component_registry["hit-component"]
+    assert (component.esm_module, component.esm_export, component.component) == (vue_bundle.MODULE_NAME, export, "")
+    # the old argument order: (None, name, file)
+    ipyvue.register_component_from_file(None, "hit-old", str(hit))
+    assert vue_component_registry["hit-old"].esm_export == export
+
+    ipyvue.register_component_from_file("miss-component", "components/miss.vue", app)
+    component = vue_component_registry["miss-component"]
+    assert component.esm_module is None
+    assert component.component == miss.read_text()
+    # source components keep their bookkeeping for hot reload
+    assert vue_component_files[os.path.abspath(str(miss))] == "miss-component"
+    assert os.path.abspath(str(hit)) not in vue_component_files
 
 
 def test_cli(clean_state, tmp_path: Path, monkeypatch):
@@ -202,15 +221,16 @@ def test_cli(clean_state, tmp_path: Path, monkeypatch):
     from solara.__main__ import cli
 
     src = tmp_path / "src"
-    _write(src / "app.py", "import solara\n@solara.component_vue('card.vue')\ndef MyCard(value: int = 0): pass\n")
+    # the app is not imported: a component registered at render time counts too
+    _write(src / "app.py", "raise RuntimeError('not imported')\n")
     card = _write(src / "card.vue", "<template><div>card</div></template>")
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(sys, "path", list(sys.path))
     runner = CliRunner()
 
-    result = runner.invoke(cli, ["vue-bundle", "src/app.py", "-o", "vue/entry.js", "--vite-config"])
+    result = runner.invoke(cli, ["vue-bundle", "src/app.py:Page", "-o", "vue/entry.js", "--vite-config"])
     assert result.exit_code == 0, result.output
-    export = vue_bundle.export_name("MyCard", vue_bundle.key(card.resolve(), src.resolve()))
+    export = vue_bundle.export_name(card, vue_bundle.key(card.resolve(), src.resolve()))
     assert f"export const {export} = " in (tmp_path / "vue" / "entry.js").read_text()
     config = (tmp_path / "vue" / "vite.config.mjs").read_text()
     assert 'outDir: "../public/vue"' in config and "publicDir: false" in config
@@ -230,6 +250,11 @@ def test_cli(clean_state, tmp_path: Path, monkeypatch):
     result = runner.invoke(cli, check)
     assert result.exit_code == 1
     assert "card.vue" in " ".join(result.output.split())
+    # checking nothing must not pass
+    _write(tmp_path / "empty" / "app.py", "")
+    result = runner.invoke(cli, ["vue-bundle", "empty/app.py", "--check", "--bundle", "vue/app.mjs"])
+    assert result.exit_code == 1
+    assert "no .vue files found" in " ".join(result.output.split())
 
 
 def test_app_root_namespace_package(clean_state, tmp_path: Path, monkeypatch):
@@ -259,36 +284,3 @@ def test_load_error_keeps_server_up(clean_state, tmp_path: Path, monkeypatch, no
     finally:
         app_script.close()
     assert vue_bundle._exports is None
-
-
-def test_cli_package_app(clean_state, tmp_path: Path, monkeypatch):
-    # pages of a package app are imported through its routes, not by the package
-    from click.testing import CliRunner
-
-    from solara.__main__ import cli
-
-    _write(tmp_path / "mypkg" / "__init__.py", "")
-    _write(tmp_path / "mypkg" / "pages" / "__init__.py", "")
-    _write(
-        tmp_path / "mypkg" / "pages" / "card.py",
-        "import solara\n@solara.component_vue('card.vue')\ndef PageCard(value: int = 0): pass\n@solara.component\ndef Page():\n    PageCard()\n",
-    )
-    card = _write(tmp_path / "mypkg" / "pages" / "card.vue", "<template><div>card</div></template>")
-    _write(tmp_path / "other" / "app.py", "import solara\n@solara.component\ndef Page(): pass\n")
-    monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr(sys, "path", list(sys.path))
-    runner = CliRunner()
-    try:
-        result = runner.invoke(cli, ["vue-bundle", "mypkg.pages:Page", "-o", "vue/entry.js"])
-        assert result.exit_code == 0, result.output
-        export = vue_bundle.export_name("PageCard", vue_bundle.key(card.resolve(), (tmp_path / "mypkg").resolve()))
-        assert f"export const {export} = " in (tmp_path / "vue" / "entry.js").read_text()
-        # the selector form also works for scripts
-        result = runner.invoke(cli, ["vue-bundle", "other/app.py:Page", "--check", "--bundle", "vue/app.mjs"])
-        # no templates under other/: checking nothing must not pass
-        assert result.exit_code == 1
-        assert "no component_vue templates found" in " ".join(result.output.split())
-    finally:
-        for name in list(sys.modules):
-            if name == "mypkg" or name.startswith("mypkg."):
-                sys.modules.pop(name)
