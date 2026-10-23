@@ -37,8 +37,7 @@ _warned: Set[Path] = set()
 
 _EXPORT_NAME = re.compile(r"^[A-Za-z_$][\w$]*_([0-9a-f]{12})$")
 # an export list, optionally a re-export: export { a as Foo_<key>, b } from "x";
-_EXPORT_BLOCK = re.compile(r"""export\s*\{([^}]*)\}(?:\s*from\s*(?:"[^"]*"|'[^']*'))?\s*;?""")
-_TRAILING_COMMENTS = re.compile(r"""^(?:\s+|//[^\n]*|/\*[\s\S]*?\*/)*$""")
+_EXPORT_BLOCK = re.compile(r"""export\s*\{([^}]*)\}(?:\s*from\s*(?:"[^"]*"|'[^']*'))?(?:\s*;)?""")
 
 
 def record(vue_file: Path, component_name: str) -> None:
@@ -61,7 +60,10 @@ def app_root(app: str) -> Path:
     # only the top-level name: find_spec of a dotted name runs the parent packages
     spec = importlib.util.find_spec(app.split(".")[0])
     if spec is None or spec.origin is None:
-        raise ImportError(f"Module {app} cannot be found")
+        # a namespace package has no single root: use the app module's directory
+        spec = importlib.util.find_spec(app)
+        if spec is None or spec.origin is None:
+            raise ImportError(f"Module {app} cannot be found")
     return Path(spec.origin).resolve().parent
 
 
@@ -126,6 +128,8 @@ def entry_code(entry: Path, root: Path) -> str:
 
 _VITE_CONFIG = """\
 // starter config written by `solara vue-bundle --vite-config`; solara never overwrites it
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import vue from "%(vue_plugin)s";
 import cssInjectedByJs from "vite-plugin-css-injected-by-js";
@@ -136,11 +140,13 @@ const moduleExports = {
   enforce: "pre",
   transform(code, id) {
     if (!id.endsWith(".vue")) return null;
-    return code.replace(/(<script[^>]*>)([\\s\\S]*?)(<\\/script>)/, (m, a, body, c) => a + body.replace(/module\\.exports\\s*=/, "export default") + c);
+    return code.replace(/(<script[^>]*>)([\\s\\S]*?)(<\\/script>)/, (m, a, body, c) => a + body.replace(/^(\\s*)module\\.exports\\s*=/m, "$1export default") + c);
   },
 };
 
 export default defineConfig({
+  // entry and outDir are relative to this file, also for `vite build -c vue/vite.config.mjs`
+  root: path.dirname(fileURLToPath(import.meta.url)),
   // css-injected-by-js: lib mode writes a separate .css file that nothing loads
   plugins: [moduleExports, vue(), cssInjectedByJs()],
   // the out dir is inside the app's public dir, do not copy it into itself
@@ -171,23 +177,35 @@ def parse_exports(code: str) -> Dict[str, str]:
     """Map key -> export name, from the export list at the end of a built
     module (rollup/vite keep export names, also when minified). Text elsewhere
     in the module, such as a string literal, is ignored."""
-    matches = list(_EXPORT_BLOCK.finditer(code))
     exports: Dict[str, str] = {}
-    if not matches:
-        return exports
-    # rollup ends an entry chunk with its export statements; take the trailing
-    # run of them (a re-export can sit next to the local export list)
-    end = len(code)
-    for match in reversed(matches):
-        if not _TRAILING_COMMENTS.match(code[match.end() : end]):
-            break
-        end = match.start()
+    by_end = {match.end(): match for match in _EXPORT_BLOCK.finditer(code)}
+    # rollup ends an entry chunk with its export statements; walk back over
+    # them (a re-export can sit next to the local export list)
+    end = _strip_trailing_comments(code, len(code))
+    while end in by_end:
+        match = by_end[end]
         for item in match.group(1).split(","):
             name = item.strip().split(" as ")[-1].strip().strip("\"'")
             found = _EXPORT_NAME.match(name)
             if found:
                 exports[found.group(1)] = name
+        end = _strip_trailing_comments(code, match.start())
     return exports
+
+
+def _strip_trailing_comments(code: str, end: int) -> int:
+    """The end of code[:end] without trailing whitespace, `//` comment lines
+    and `/* */` comments (e.g. the sourceMappingURL line)."""
+    while True:
+        text = code[:end].rstrip()
+        if text.endswith("*/") and "/*" in text:
+            end = text.rindex("/*")
+            continue
+        line_start = text.rfind("\n") + 1
+        if text[line_start:].lstrip().startswith("//"):
+            end = line_start
+            continue
+        return len(text)
 
 
 def resolve_bundle(setting: str, public_dir: Path) -> Optional[Path]:
@@ -225,12 +243,12 @@ def load(setting: Optional[str], root: Path, public_dir: Path) -> bool:
     if not exports:
         logger.warning("%s has no solara vue-bundle exports, serving template source", path)
         return False
-    _exports = exports
-    _root = root.resolve()
-    _keys.clear()
     url = "/static/public/" + path.relative_to(public_dir.resolve()).as_posix()
     # through the module attribute: solara server patches define_module
     ipyvue.define_module(MODULE_NAME, url=url)
+    _exports = exports
+    _root = root.resolve()
+    _keys.clear()
     logger.info("serving %d component_vue templates from %s", len(exports), url)
     return True
 

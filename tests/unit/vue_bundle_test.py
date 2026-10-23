@@ -97,6 +97,10 @@ def test_parse_exports():
     literal = f'const s = "export {{ a as Fake_{KEY} }}";\nconsole.log(s);\nexport {{ b as Real_ba9876543210 }};\n'
     assert vue_bundle.parse_exports(literal) == {"ba9876543210": "Real_ba9876543210"}
     assert vue_bundle.parse_exports(f'const s = "export {{ a as Fake_{KEY} }}";\nconsole.log(s);\n') == {}
+    # an export list in a trailing comment is not an export
+    commented = f"export {{ b as Real_ba9876543210 }};\n// export {{ a as Fake_{KEY} }};\n/* export {{ c as Fake2_{KEY} }} */\n"
+    assert vue_bundle.parse_exports(commented) == {"ba9876543210": "Real_ba9876543210"}
+    assert vue_bundle.parse_exports(f"const a = 1;\n// export {{ a as Fake_{KEY} }};\n") == {}
 
 
 def test_load(clean_state, tmp_path: Path, defined):
@@ -206,3 +210,65 @@ def test_cli(clean_state, tmp_path: Path, monkeypatch):
     result = runner.invoke(cli, check)
     assert result.exit_code == 1
     assert "card.vue" in result.output
+
+
+def test_app_root_namespace_package(clean_state, tmp_path: Path, monkeypatch):
+    # a top-level namespace package (no __init__.py) has no origin
+    _write(tmp_path / "nsroot" / "myapp" / "app.py", "")
+    monkeypatch.syspath_prepend(str(tmp_path))
+    try:
+        assert vue_bundle.app_root("nsroot.myapp.app") == (tmp_path / "nsroot" / "myapp").resolve()
+    finally:
+        for name in ["nsroot", "nsroot.myapp", "nsroot.myapp.app"]:
+            sys.modules.pop(name, None)
+
+
+def test_load_error_keeps_server_up(clean_state, tmp_path: Path, monkeypatch, no_kernel_context):
+    from solara.server import app as appmod
+
+    _write(tmp_path / "app.py", "import solara\n@solara.component\ndef Page():\n    solara.Text('hi')\n")
+
+    def broken(*args, **kwargs):
+        raise RuntimeError("broken bundle")
+
+    monkeypatch.setattr(vue_bundle, "load", broken)
+    monkeypatch.setattr(solara.settings.main, "vue_bundle", "vue/app.mjs")
+    app_script = appmod.AppScript(str(tmp_path / "app.py"))
+    try:
+        app_script.init()
+    finally:
+        app_script.close()
+    assert vue_bundle._exports is None
+
+
+def test_cli_package_app(clean_state, tmp_path: Path, monkeypatch):
+    # pages of a package app are imported through its routes, not by the package
+    from click.testing import CliRunner
+
+    from solara.__main__ import cli
+
+    _write(tmp_path / "mypkg" / "__init__.py", "")
+    _write(tmp_path / "mypkg" / "pages" / "__init__.py", "")
+    _write(
+        tmp_path / "mypkg" / "pages" / "card.py",
+        "import solara\n@solara.component_vue('card.vue')\ndef PageCard(value: int = 0): pass\n@solara.component\ndef Page():\n    PageCard()\n",
+    )
+    card = _write(tmp_path / "mypkg" / "pages" / "card.vue", "<template><div>card</div></template>")
+    _write(tmp_path / "other" / "app.py", "import solara\n@solara.component\ndef Page(): pass\n")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, "path", list(sys.path))
+    runner = CliRunner()
+    try:
+        result = runner.invoke(cli, ["vue-bundle", "mypkg.pages:Page", "-o", "vue/entry.js"])
+        assert result.exit_code == 0, result.output
+        export = vue_bundle.export_name("PageCard", vue_bundle.key(card.resolve(), (tmp_path / "mypkg").resolve()))
+        assert f"export const {export} = " in (tmp_path / "vue" / "entry.js").read_text()
+        # the selector form also works for scripts
+        result = runner.invoke(cli, ["vue-bundle", "other/app.py:Page", "--check", "--bundle", "vue/app.mjs"])
+        # no templates under other/: checking nothing must not pass
+        assert result.exit_code == 1
+        assert "no component_vue templates found" in result.output
+    finally:
+        for name in list(sys.modules):
+            if name == "mypkg" or name.startswith("mypkg."):
+                sys.modules.pop(name)

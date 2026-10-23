@@ -145,7 +145,7 @@ public/                # served at /static/public
     app root (the script's directory, or the top-level package of a module). Solara's own
     templates are not in it. Run it again after you add or edit a template.
 
-2. Build it (needs `vite`, `@vitejs/plugin-vue2` and `vite-plugin-css-injected-by-js`):
+2. Build it (needs `vite`, `@vitejs/plugin-vue2` or for ipyvue 3 `@vitejs/plugin-vue`, and `vite-plugin-css-injected-by-js`):
 
     ```bash
     cd vue && npx vite build      # writes public/vue/app.mjs
@@ -176,8 +176,10 @@ effect under the solara server, not in Jupyter.
 `--vite-config` writes `vue/vite.config.mjs` only when it does not exist, so you can edit it:
 
 ```js
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
-import vue from "@vitejs/plugin-vue2";
+import vue from "@vitejs/plugin-vue2"; // @vitejs/plugin-vue for ipyvue 3 (vue 3)
 import cssInjectedByJs from "vite-plugin-css-injected-by-js";
 
 // ipyvue templates use `module.exports = {...}`, an ES module needs `export default`
@@ -186,11 +188,13 @@ const moduleExports = {
   enforce: "pre",
   transform(code, id) {
     if (!id.endsWith(".vue")) return null;
-    return code.replace(/(<script[^>]*>)([\s\S]*?)(<\/script>)/, (m, a, body, c) => a + body.replace(/module\.exports\s*=/, "export default") + c);
+    return code.replace(/(<script[^>]*>)([\s\S]*?)(<\/script>)/, (m, a, body, c) => a + body.replace(/^(\s*)module\.exports\s*=/m, "$1export default") + c);
   },
 };
 
 export default defineConfig({
+  // entry and outDir are relative to this file, also for `vite build -c vue/vite.config.mjs`
+  root: path.dirname(fileURLToPath(import.meta.url)),
   // css-injected-by-js: lib mode writes a separate .css file that nothing loads
   plugins: [moduleExports, vue(), cssInjectedByJs()],
   // the out dir is inside the app's public dir, do not copy it into itself
@@ -237,8 +241,8 @@ or the bundle is missing. Without `--bundle`, it uses `SOLARA_VUE_BUNDLE`.
     Add the names your templates import from `vue` to the stub.
 - An undeclared variable inside a method fails only when the method runs. Use eslint with
   `no-undef` to find these.
-- Only `module.exports = {...}` and `export default {...}` work. The `exports.foo = ...` style
-  does not.
+- Only `module.exports = {...}` at the start of a line and `export default {...}` work. The
+  `exports.foo = ...` style does not.
 - Only templates in modules that the app imports at startup get into the entry. A template in
   a module that the app imports later serves its source.
 - The url gets the root path when solara runs under a root path with the starlette server.

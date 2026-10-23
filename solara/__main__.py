@@ -776,7 +776,6 @@ def vue_bundle(app: str, output: typing.Optional[Path], vite_config: bool, check
     (e.g. solara's own) are not bundled.
     """
     import importlib
-    import runpy
 
     import solara.autorouting
     import solara.settings
@@ -784,17 +783,32 @@ def vue_bundle(app: str, output: typing.Optional[Path], vite_config: bool, check
 
     if not check and output is None:
         raise click.UsageError("pass -o/--output (or --check)")
-    root = vb.app_root(app)
-    public_dir = vb.public_dir(app)
-    if app.endswith(".py"):
-        sys.path.insert(0, str(Path(app).resolve().parent))
-        runpy.run_path(app)
-    elif Path(app).is_dir():
-        solara.autorouting.generate_routes_directory(Path(app))
+    # import the app as AppScript does, so pages imported through routes count too
+    name = app
+    if ":" in app:
+        name = app.rsplit(":", 1)[0]
+        if len(name) == 1:  # a windows drive letter, restore
+            name = app
+    path = Path(name)
+    if name.endswith(".py") or name.endswith(".ipynb"):
+        sys.path.insert(0, str(path.resolve().parent))
     else:
+        # before app_root and public_dir: they look the module up
         sys.path.insert(0, os.getcwd())
-        importlib.import_module(app)
+    root = vb.app_root(name)
+    public_dir = vb.public_dir(name)
+    if name.endswith(".py"):
+        solara.autorouting._generate_route_path(path, first=True, initial_namespace={"__name__": "__main__"})
+    elif name.endswith(".ipynb"):
+        solara.autorouting._generate_route_path(path, first=True)
+    elif path.is_dir():
+        solara.autorouting.generate_routes_directory(path)
+    else:
+        solara.autorouting.generate_routes(importlib.import_module(name))
     templates = vb.app_templates(root)
+    if check and not templates:
+        rprint(f"[red]no component_vue templates found under {root}[/red]")
+        sys.exit(1)
     if check:
         setting = bundle or solara.settings.main.vue_bundle
         if not setting:

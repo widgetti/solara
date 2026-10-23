@@ -137,7 +137,10 @@ class AppScript:
             raise RuntimeError(f"We should not have an existing Solara app context when running an app for the first time: {context}")
         if solara.settings.main.vue_bundle:
             # before the app runs, so a template's widget can already pick the bundle
-            vue_bundle.load(solara.settings.main.vue_bundle, vue_bundle.app_root(self.name), self.directory.parent / "public")
+            try:
+                vue_bundle.load(solara.settings.main.vue_bundle, vue_bundle.app_root(self.name), self.directory.parent / "public")
+            except Exception:
+                logger.warning("cannot load SOLARA_VUE_BUNDLE=%s, serving template source", solara.settings.main.vue_bundle, exc_info=True)
         dummy_kernel_context = kernel_context.create_dummy_context()
         with dummy_kernel_context:
             app = self._execute()
