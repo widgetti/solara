@@ -1,5 +1,6 @@
+import sys
 from copy import deepcopy
-from typing import Any, Callable, Dict, Union, cast
+from typing import Any, Callable, Dict, Optional, Union, cast
 
 import ipyvuetify.Themes
 from ipyvuetify.Themes import Theme
@@ -12,6 +13,19 @@ from solara.tasks import Proxy
 _original_theme = ipyvuetify.Themes.theme
 
 
+# The key in the user_dicts of a virtual kernel context for the theme ({"themes": ..., "dark": ...}) that a
+# page without the vuetify frontend feature sent with run. The theme widgets are Vuetify widgets, so the
+# server does not create them at run for such a page (see solara.server.app._defer_themes).
+_PAGE_THEME = "solara.lab.components.theming:page-theme"
+
+
+def _page_theme() -> Optional[Dict[str, Any]]:
+    kernel_context = sys.modules.get("solara.server.kernel_context")
+    if kernel_context is None or not kernel_context.has_current_context():
+        return None
+    return kernel_context.get_current_context().user_dicts.get(_PAGE_THEME)
+
+
 def _create_theme() -> Theme:
     """Create a per-kernel theme using ipyvuetify's current colors as defaults."""
     new_theme = Theme()
@@ -22,7 +36,19 @@ def _create_theme() -> Theme:
             if not name.startswith("_"):
                 setattr(target_colors, name, deepcopy(getattr(source_colors, name)))
 
+    page_theme = _page_theme()
+    if page_theme is not None:
+        # start from the theme of the page, so that changes of the app win, as when the run message sets it
+        _set_theme(page_theme["themes"], new_theme)
+        new_theme.dark_effective = page_theme["dark"]
     return new_theme
+
+
+def _theme_created() -> bool:
+    """Whether the theme widgets of the current kernel exist (accessing solara.lab.theme creates them)."""
+    storage = theme._instance._storage
+    scope_dict, _, _ = storage._get_dict()
+    return storage.storage_key in scope_dict
 
 
 theme = Proxy(_create_theme)
@@ -43,12 +69,12 @@ def use_dark_effective():
     return solara.use_trait_observe(theme, "dark_effective")
 
 
-def _set_theme(themes: Union[Dict[str, Dict[str, Any]], None]):
+def _set_theme(themes: Union[Dict[str, Dict[str, Any]], None], target: Optional[Theme] = None):
     if themes is None:
         return
 
     for theme_type in themes.keys():
-        widget = getattr(theme.themes, theme_type)
+        widget = getattr((target if target is not None else theme).themes, theme_type)
         # Vuetify 3 nests color values under ``colors``; Vuetify 2 uses the
         # flat mapping directly.
         colors = themes[theme_type].get("colors", themes[theme_type])

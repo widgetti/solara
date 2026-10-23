@@ -8,6 +8,7 @@ from reacton.core import Element
 
 import solara
 import solara.lab
+from solara.server import frontend
 from solara.util import IPYVUETIFY_V3
 
 from . import title as t
@@ -32,7 +33,8 @@ def _set_sidebar_default(updater: Callable[[PortalElements], PortalElements]):
 
 
 class ElementPortal:
-    def __init__(self):
+    def __init__(self, name: str = ""):
+        self.name = name
         self.context = solara.create_context(_set_sidebar_default)
 
     # TODO: can we generalize the use of 'portals' ? (i.e. transporting elements from one place to another)
@@ -49,6 +51,9 @@ class ElementPortal:
     def use_portal_add(self, children: List[Element], offset: int):
         key = solara.use_unique_key(prefix="portal-")
         set_portal_elements = solara.use_context(self.context)
+        if set_portal_elements is _set_sidebar_default and children:
+            # no layout shows these children
+            frontend.warn_no_layout(self.name)
         values: List[Tuple[int, Element]] = []
         for i, child in enumerate(children):
             values.append((offset + i, child))
@@ -80,9 +85,9 @@ class ElementPortal:
         solara.use_effect(add_cleanup, [])
 
 
-sidebar_portal = ElementPortal()
-appbar_portal = ElementPortal()
-apptitle_portal = ElementPortal()
+sidebar_portal = ElementPortal("solara.Sidebar")
+appbar_portal = ElementPortal("solara.AppBar")
+apptitle_portal = ElementPortal("solara.AppBarTitle")
 
 
 @solara.component
@@ -397,6 +402,9 @@ def AppLayout(
                 # v.Col which has this by default. If we do not use this, a solara.Column will
                 # use a margin: -12px which will make a horizontal scrollbar appear
                 solara.Div(style=style, classes=classes, children=children_content)
+        if not frontend.vuetify_enabled():
+            # the page without Vuetify has no <v-app>, but the drawer, app bar and main need the layout it provides
+            main = v.App(children=[main])
         if fullscreen:
             if IPYVUETIFY_V3:
                 dialog_element = v.Dialog(v_model=True, children=[], fullscreen=True, scrim=False, persistent=True, no_click_animation=True)

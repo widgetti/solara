@@ -1,0 +1,30 @@
+{# The page shell without Vuetify (--frontend without vuetify): plain Vue and solara- CSS classes (static/solara-vue.css). #}
+{% raw -%}
+<script type="x-template" id="vue-app-template" style="display: none">
+    <div :key="forceUpdateTrigger" class="solara-shell" :class="loadingPage ? 'solara-page-loading' : ''">
+        <div class="solara-progress-linear solara-progress-linear--indeterminate"
+            :style="{visibility: (kernelBusyLong && isMounted) ? 'visible' : 'hidden'}"></div>
+        <div v-if="needsRefresh || cancelAutoRefresh" class="solara-alert solara-alert--warning" role="alert">
+            <span v-if="needsRefresh">Could not restore session. Please refresh the page.</span>
+            <span v-else>App is disconnected, and may not function properly. Please refresh the page.</span>
+        </div>
+        {% endraw -%}
+        {% include ["loader-" ~ theme.loader ~ "-vue.html", "loader-" ~ theme.loader ~ ".html"] %}
+        {% raw -%}
+        <div v-if="(connectionStatus != 'connected') && wasConnected" class="solara-overlay" style="z-index: 100002;">
+            <div class="solara-overlay__content">
+                <div class="solara-spinner solara-spinner--large"></div>
+                <div>Server disconnected.</div>
+            </div>
+        </div>
+        <!-- soft-remount indicator: while the app re-runs on the new instance the mount point is
+             withheld from the DOM (see the loader templates), so we show a spinner here -->
+        <div v-if="remounting" class="solara-overlay solara-overlay--opaque" style="z-index: 100001;">
+            <div class="solara-overlay__content">
+                <div class="solara-spinner"></div>
+                <div style="margin-top: 16px;">Restoring session…</div>
+            </div>
+        </div>
+    </div>
+</script>
+{% endraw -%}

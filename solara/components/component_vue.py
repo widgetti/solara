@@ -9,6 +9,7 @@ import traitlets
 import typing_extensions
 
 import solara
+from solara.server import frontend
 
 P = typing_extensions.ParamSpec("P")
 
@@ -219,8 +220,13 @@ def component_vue(
         VueWidgetSolaraSub = _widget_vue(
             vue_path, vuetify=vuetify, to_json=to_json, from_json=from_json, tags=tags, esm_module=esm_module, esm_export=esm_export
         )(func)
+        name = repr(vue_path) if vue_path is not None else f"{esm_module}:{esm_export or 'default'}"
+        vuetify_hint = f"The component_vue template {name} (pass vuetify=False if it has no Vuetify tags)"
 
         def wrapper(*args, **kwargs):
+            if vuetify:
+                # warns before solara.server.patch does for the widget, with a hint that fits component_vue
+                frontend.warn_missing("vuetify", vuetify_hint)
             event_callbacks = {}
             kwargs = kwargs.copy()
             # take out all events named like event_foo and put them in a separate dict

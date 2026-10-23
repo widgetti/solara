@@ -4,10 +4,10 @@ Set with ``solara run --frontend``, ``SOLARA_FRONTEND`` or ``solara.server.setti
 The value is a preset (``full`` or ``minimal``) followed by ``+feature`` or ``-feature``, for example
 ``minimal,+katex`` or ``full,-mermaid``. A feature that is not preloaded still works: the browser loads
 it on first use, and the server logs one warning per feature that names the flag to add. The fonts and
-icon sets are the exception: they never load on demand. Vuetify (and the mdi icons it needs) is always on.
-Roboto comes with vuetify, but an app with its own font can leave it out with ``-roboto``. Vuetify's
-stylesheet (vuetify-css) also comes with vuetify, and an app that brings its own Vuetify CSS leaves it out
-with ``-vuetify-css``.
+icon sets are the exception: material-icons and font-awesome never load on demand, and mdi and roboto
+only load on demand together with vuetify (Vuetify's icons and typography use them). Roboto comes with
+vuetify, but an app with its own font can leave it out with ``-roboto``. Vuetify's stylesheet (vuetify-css)
+also comes with vuetify, and an app that brings its own Vuetify CSS leaves it out with ``-vuetify-css``.
 
 This module does not parse the setting at import time: Jupyter ignores the setting, and a bad value
 must not break ``import solara`` there. The CLI and solara.server.starlette check it early instead.
@@ -21,7 +21,7 @@ import sys
 import threading
 from functools import lru_cache
 from pathlib import Path
-from typing import Dict, FrozenSet, Iterable, Optional, Set, Tuple
+from typing import Dict, FrozenSet, Iterable, Optional, Set, Tuple, Type, TypeVar
 
 import ipyvue
 
@@ -58,28 +58,30 @@ REQUIRES: Dict[str, FrozenSet[str]] = {
 }
 # Features that come with a feature, unless the setting turns them off by name. Unlike REQUIRES, the feature
 # works without them: Vuetify's typography (e.g. the caption and font-weight-light classes) assumes the Roboto
-# font, but an app with its own font can leave Roboto out, for example with 'minimal,-roboto'. In the
+# font, but an app with its own font can leave Roboto out, for example with 'minimal,+vuetify,-roboto'. In the
 # same way, an app that ships its own Vuetify CSS (e.g. built from Vuetify's SASS) leaves out Vuetify's
 # stylesheet with '-vuetify-css'.
 COMES_WITH: Dict[str, FrozenSet[str]] = {
     "vuetify": frozenset({"roboto", "vuetify-css"}),
 }
 PRESETS: Dict[str, FrozenSet[str]] = {
-    # vuetify-css is not in full by itself, it comes with vuetify (COMES_WITH)
+    # vuetify-css is not in full by itself, it comes with vuetify: a page without Vuetify ('full,-vuetify') gets no
+    # Vuetify CSS
     "full": frozenset(FEATURES) - {"vuetify-css"},
     "minimal": frozenset(),
 }
 DEFAULT = "full"
 # widget module (_model_module or _view_module) -> the feature it needs
 MODULE_FEATURE: Dict[str, str] = {
+    "jupyter-vuetify": "vuetify",
     "@jupyter-widgets/controls": "jupyter-controls",
     "@jupyter-widgets/output": "output-widget",
 }
-# Features each build can leave out (key: Vue 3). Both builds keep Vuetify and what it needs (mdi): the page
-# shell and the default layout are made of Vuetify. The Vue 2 build has no vue-sfc chunk. Other features are
-# forced on. Vuetify's CSS (vuetify-css) is a file of its own, so it can be left out.
+# Features each build can leave out (key: Vue 3). The Vue 2 build keeps Vuetify in its core bundle, so it
+# also keeps what Vuetify needs (mdi), and has no vue-sfc chunk. Other features are forced on. Vuetify's CSS
+# (vuetify-css) is a file of its own on Vue 2 too, so it can be left out there.
 CAN_DISABLE: Dict[bool, FrozenSet[str]] = {
-    True: frozenset(FEATURES) - {"vuetify", *REQUIRES["vuetify"]},
+    True: frozenset(FEATURES),
     False: frozenset(FEATURES) - {"vuetify", *REQUIRES["vuetify"], "vue-sfc"},
 }
 HELP = "Use a preset (full, minimal) followed by +feature or -feature, for example 'minimal,+katex' or 'full,-mermaid'."
@@ -177,7 +179,7 @@ def parse(value: str) -> Frontend:
 
 
 def effective(frontend: Frontend, vue3: bool, fontawesome_enabled: bool = True) -> Frontend:
-    """The features this build really uses: some cannot be left out (vuetify, mdi), vue-sfc is Vue 3 only.
+    """The features this build really uses: some cannot be left out (Vue 2), vue-sfc is Vue 3 only.
 
     fontawesome_enabled=False (SOLARA_ASSETS_FONTAWESOME_ENABLED=false) is an alias for -font-awesome.
     """
@@ -187,17 +189,17 @@ def effective(frontend: Frontend, vue3: bool, fontawesome_enabled: bool = True) 
         features.discard("vue-sfc")  # there is no vue-sfc chunk on Vue 2
         all_features.discard("vue-sfc")
     forced = all_features - features - CAN_DISABLE[vue3]
-    # a preset (minimal) leaves them out silently, a '-vuetify' or '-mdi' in the spec warns
-    if forced & frontend.off:
+    if forced:
         logger.warning(
-            "The %s build cannot leave out %s, so they stay on. Vuetify is always on, and Vuetify needs the mdi icons.",
+            "The %s build cannot leave out %s, so they stay on.%s",
             "Vue 3" if vue3 else "Vue 2",
-            ", ".join(sorted(forced & frontend.off)),
+            ", ".join(sorted(forced)),
+            "" if vue3 else " Vuetify is in its core bundle, and Vuetify needs the mdi icons.",
         )
-    features |= forced
+        features |= forced
     if not fontawesome_enabled:
         features.discard("font-awesome")
-    # a forced Vuetify brings Roboto and Vuetify's CSS, unless the spec says '-roboto' or '-vuetify-css'
+    # a forced Vuetify (Vue 2) brings Roboto and Vuetify's CSS, unless the spec says '-roboto' or '-vuetify-css'
     return Frontend(spec=frontend.spec, features=_with_companions(features, frontend.off), off=frontend.off)
 
 
@@ -260,6 +262,27 @@ def active() -> Frontend:
     return _context_frontend() or current()
 
 
+def vuetify_enabled() -> bool:
+    """False only on a Solara server that runs without the vuetify feature.
+
+    Outside a virtual kernel context (Jupyter, or import time) this is always True, so Jupyter never changes.
+    """
+    frontend = _context_frontend()
+    return frontend is None or "vuetify" in frontend
+
+
+T = TypeVar("T")
+
+
+def template_class(vuetify_class: Type[T], vue_class: Type[T]) -> Type[T]:
+    """The widget class for a solara template that has no Vuetify tags.
+
+    vuetify_class (a VuetifyTemplate, as before) unless this server runs without the vuetify feature, then
+    vue_class (an ipyvue.VueTemplate with the same traits), so the page does not need Vuetify.
+    """
+    return vuetify_class if vuetify_enabled() else vue_class
+
+
 _warned: Set[str] = set()
 _warned_lock = threading.Lock()
 
@@ -293,6 +316,25 @@ def warn_missing(feature: str, what: str) -> None:
     if frontend is None or feature in frontend:
         return
     _warn_once(feature, what, frontend)
+
+
+def warn_no_layout(component: str) -> None:
+    """Log one warning per component per process when a Sidebar, AppBar or AppBarTitle has no layout to show it.
+
+    Only when the vuetify feature is off: then Solara uses no default layout (AppLayout is made of Vuetify widgets).
+    """
+    if vuetify_enabled():
+        return
+    key = f"no-layout:{component}"
+    with _warned_lock:
+        if key in _warned:
+            return
+        _warned.add(key)
+    logger.warning(
+        "%s: its children are not shown, because no layout shows them. Without the frontend feature 'vuetify', Solara uses no "
+        'default layout (AppLayout). Add "+vuetify" to --frontend (SOLARA_FRONTEND), or use solara.AppLayout or a Layout of your own.',
+        component,
+    )
 
 
 def log_lazy_load(feature: str) -> None:

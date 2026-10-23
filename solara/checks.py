@@ -8,10 +8,12 @@ from pathlib import Path
 from typing import Optional
 
 import IPython.display
+import ipyvue
 from IPython.core.interactiveshell import InteractiveShell
 from IPython.display import display
 
 import solara
+from solara.server import frontend
 from solara.util import get_solara_home
 
 HERE = Path(__file__).parent
@@ -110,7 +112,9 @@ def SolaraCheck():
             pass
 
     solara.use_effect(flag_solara_checked, [])
-    return solara.v.Html(
+    # a hidden iframe needs no Vuetify, so do not make the page load it
+    html = solara.v.Html if frontend.vuetify_enabled() else ipyvue.Html.element
+    return html(
         tag="iframe",
         attributes={
             "src": f"https://solara.dev/static/public/success.html?system=solara&check=widget&version={solara_version}",
