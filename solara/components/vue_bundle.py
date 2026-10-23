@@ -127,7 +127,7 @@ def entry_code(entry: Path, root: Path) -> str:
 _VITE_CONFIG = """\
 // starter config written by `solara vue-bundle --vite-config`; solara never overwrites it
 import { defineConfig } from "vite";
-import vue from "@vitejs/plugin-vue2";
+import vue from "%(vue_plugin)s";
 import cssInjectedByJs from "vite-plugin-css-injected-by-js";
 
 // ipyvue templates use `module.exports = {...}`, an ES module needs `export default`
@@ -160,7 +160,11 @@ export default defineConfig({
 
 
 def vite_config(entry: str, out_dir: str) -> str:
-    return _VITE_CONFIG % {"entry": entry, "out_dir": out_dir, "file_name": BUNDLE_FILE_NAME}
+    import ipyvue
+
+    # ipyvue 3 runs vue 3, ipyvue 1 runs vue 2
+    vue_plugin = "@vitejs/plugin-vue" if int(ipyvue.__version__.split(".")[0]) >= 3 else "@vitejs/plugin-vue2"
+    return _VITE_CONFIG % {"entry": entry, "out_dir": out_dir, "file_name": BUNDLE_FILE_NAME, "vue_plugin": vue_plugin}
 
 
 def parse_exports(code: str) -> Dict[str, str]:
