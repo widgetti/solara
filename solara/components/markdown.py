@@ -330,7 +330,9 @@ def _no_deep_copy_emojione(options, md):
 
 
 @solara.component
-def Markdown(md_text: str, unsafe_solara_execute=False, style: Union[str, Dict, None] = None, md_parser: Optional["markdown.Markdown"] = None):
+def Markdown(
+    md_text: str, unsafe_solara_execute=False, style: Union[str, Dict, None] = None, md_parser: Optional["markdown.Markdown"] = None
+) -> reacton.core.Element[v.VuetifyTemplate]:
     """Renders markdown text
 
     Renders markdown using https://python-markdown.github.io/

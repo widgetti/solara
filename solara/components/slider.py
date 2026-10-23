@@ -111,7 +111,7 @@ def SliderInt(
     thumb_label: Union[bool, Literal["always"]] = True,
     tick_labels: Union[List[str], Literal["end_points"], bool] = False,
     disabled: bool = False,
-):
+) -> reacton.core.ValueElement[ipyvuetify.Slider, Any]:
     """Slider for controlling an integer value.
 
     ### Basic example:
@@ -225,7 +225,7 @@ def SliderFloat(
     thumb_label: Union[bool, Literal["always"]] = True,
     tick_labels: Union[List[str], Literal["end_points"], bool] = False,
     disabled: bool = False,
-):
+) -> reacton.core.ValueElement[ipyvuetify.Slider, Any]:
     """Slider for controlling a float value.
 
     ### Basic example:
@@ -419,7 +419,7 @@ def SliderDate(
     max: date = date(2050, 12, 30),
     on_value: Callable[[date], None] = None,
     disabled: bool = False,
-):
+) -> reacton.core.Element[DateSliderWidget]:
     """Slider for controlling a date value.
 
     ### Basic example:

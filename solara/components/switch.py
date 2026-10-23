@@ -1,5 +1,7 @@
-from typing import Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
+import ipyvuetify
+import reacton.core
 import reacton.ipyvuetify as v
 
 import solara
@@ -17,7 +19,7 @@ def Switch(
     children: list = [],
     classes: List[str] = [],
     style: Optional[Union[str, Dict[str, str]]] = None,
-):
+) -> reacton.core.ValueElement[ipyvuetify.Switch, Any]:
     """A switch component provides users the ability to choose between two distinct values. But aesthetically different from a checkbox.
 
     Basic examples

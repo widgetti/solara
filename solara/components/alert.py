@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Union
 
 import ipyvuetify
 import reacton.core
@@ -24,7 +24,7 @@ def _alert_icon_v3(icon: Union[bool, str, None]):
 
 def _alert(
     alert_type: str,
-    label: Optional[str],
+    label: Union[str, solara.Element, None],
     icon: Union[bool, str, None],
     dense: bool,
     outlined: bool,
@@ -54,7 +54,7 @@ def _alert(
 
 @solara.component
 def Success(
-    label: Optional[str] = None,
+    label: Union[str, solara.Element, None] = None,
     icon: Union[bool, str, None] = True,
     dense=False,
     outlined=True,
@@ -62,7 +62,7 @@ def Success(
     children=[],
     classes: List[str] = [],
     **kwargs,
-):
+) -> reacton.core.ValueElement[ipyvuetify.Alert, Any]:
     """Display a success message (green color).
 
     ## Arguments
@@ -80,7 +80,7 @@ def Success(
 
 @solara.component
 def Info(
-    label: Optional[str] = None,
+    label: Union[str, solara.Element, None] = None,
     icon: Union[bool, str, None] = True,
     dense=False,
     outlined=True,
@@ -106,7 +106,7 @@ def Info(
 
 @solara.component
 def Warning(
-    label: Optional[str] = None,
+    label: Union[str, solara.Element, None] = None,
     icon: Union[bool, str, None] = True,
     dense=False,
     outlined=True,
@@ -132,7 +132,7 @@ def Warning(
 
 @solara.component
 def Error(
-    label: Optional[str] = None,
+    label: Union[str, solara.Element, None] = None,
     icon: Union[bool, str, None] = True,
     dense=False,
     outlined=True,
@@ -140,7 +140,7 @@ def Error(
     children=[],
     classes: List[str] = [],
     **kwargs,
-):
+) -> reacton.core.ValueElement[ipyvuetify.Alert, Any]:
     """Display an error message (red color).
 
     ## Arguments

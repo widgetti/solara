@@ -1,12 +1,13 @@
 from typing import Optional
 
+import reacton.core
 import solara
 
-from .head_tag import HeadTag
+from .head_tag import HeadTag, HeadTagWidget
 
 
 @solara.component
-def Meta(name: Optional[str] = None, property: Optional[str] = None, content: Optional[str] = None):
+def Meta(name: Optional[str] = None, property: Optional[str] = None, content: Optional[str] = None) -> reacton.core.Element[HeadTagWidget]:
     """Add a meta tag to the head element, or replace a meta tag with the same name and or property.
 
     This component should be used inside a [Head](/documentation/components/page/head) component, e.g.:

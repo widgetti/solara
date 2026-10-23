@@ -1,5 +1,7 @@
-from typing import Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
+import ipyvuetify
+import reacton.core
 import solara
 import solara.util
 from reacton import ipyvue
@@ -10,7 +12,7 @@ from solara.util import IPYVUETIFY_V3
 @solara.component
 def Button(
     label: str = None,
-    on_click: Callable[[], None] = None,
+    on_click: Callable[[], object] = None,
     icon_name: str = None,
     children: list = [],
     disabled=False,
@@ -22,7 +24,7 @@ def Button(
     style: Union[str, Dict[str, str], None] = None,
     value=None,
     **kwargs,
-):
+) -> reacton.core.ValueElement[ipyvuetify.Btn, Any]:
     """A button that can be clicked to trigger an event.
 
     ## Example

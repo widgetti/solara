@@ -135,7 +135,9 @@ def IconButton(
 
 
 @solara.component
-def HTML(tag="div", unsafe_innerHTML=None, style: str = None, classes: List[str] = [], attributes=None, class_: str = None):
+def HTML(
+    tag="div", unsafe_innerHTML=None, style: Union[str, Dict[str, str], None] = None, classes: List[str] = [], attributes=None, class_: str = None
+) -> reacton.core.Element[solara.widgets.HTML]:
     """Render an HTML tag with optional raw HTML text inside.
 
     # Arguments
@@ -225,7 +227,9 @@ def Row(
 
 
 @solara.component
-def Column(children=[], gap="12px", align="stretch", margin: int = 0, classes: List[str] = [], style: Union[str, Dict[str, str], None] = None):
+def Column(
+    children=[], gap="12px", align="stretch", margin: int = 0, classes: List[str] = [], style: Union[str, Dict[str, Union[str, int, float]], None] = None
+) -> reacton.core.ValueElement[ipyvuetify.Sheet, Any]:
     """Lays out children in a column on top of each other, with the given gap between them.
 
     See also [Row](/documentation/components/layout/row).

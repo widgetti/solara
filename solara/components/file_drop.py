@@ -33,10 +33,10 @@ class FileDropZone(FileInput):
 def _FileDrop(
     label="Drop file(s) here",
     on_total_progress: Optional[Callable[[float], None]] = None,
-    on_file: Optional[Callable[[Union[FileInfo, List[FileInfo]]], None]] = None,
+    on_file: Union[None, Callable[[FileInfo], None], Callable[[List[FileInfo]], None]] = None,
     lazy: bool = True,
     multiple: bool = False,
-):
+) -> reacton.core.Element[FileDropZone]:
     """Generic implementation used by FileDrop and FileDropMultiple.
 
     If multiple=True, multiple files can be uploaded.
@@ -70,10 +70,11 @@ def _FileDrop(
                     wired_files[i]["data"] = wired_files[i]["file_obj"].read()
                 else:
                     wired_files[i]["data"] = None
+            # multiple selects which of the two callback types on_file has
             if multiple:
-                on_file(wired_files)
+                cast(Callable[[List[FileInfo]], None], on_file)(wired_files)
             else:
-                on_file(wired_files[0])
+                cast(Callable[[FileInfo], None], on_file)(wired_files[0])
 
     result: solara.Result = hooks.use_thread(handle_file, [wired_files])
     if result.error:

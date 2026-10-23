@@ -1,5 +1,7 @@
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
+import ipyvuetify
+import reacton.core
 import reacton.ipyvuetify as v
 import solara
 from solara.util import _combine_classes
@@ -7,14 +9,14 @@ from solara.util import _combine_classes
 
 @solara.component
 def Card(
-    title: Optional[str] = None,
+    title: Union[str, solara.Element, None] = None,
     subtitle: Optional[str] = None,
     elevation: int = 2,
     margin=2,
     children: List[solara.Element] = [],
     classes: List[str] = [],
     style: Union[str, Dict[str, str], None] = None,
-):
+) -> reacton.core.ValueElement[ipyvuetify.Card, Any]:
     """A card combines a title, subtitle, content and actions into a single unit.
 
 
