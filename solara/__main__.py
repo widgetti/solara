@@ -761,5 +761,87 @@ def main():
     cli(args[1:])
 
 
+@cli.command()
+@click.argument("app")
+@click.option("-o", "--output", type=click.Path(dir_okay=False, path_type=Path), help="The vite entry to write, e.g. vue/entry.js.")
+@click.option("--vite-config", is_flag=True, help="Also write a starter vite.config.mjs next to the entry, if none exists.")
+@click.option("--check", is_flag=True, help="Exit 1 when a template of the app is not in the built bundle (for CI).")
+@click.option("--bundle", help="The built bundle for --check, relative to the public dir (default: SOLARA_VUE_BUNDLE).")
+@click.option(
+    "--exclude",
+    multiple=True,
+    help="Skip .vue files (and dirs) whose path relative to the app root matches this fnmatch glob, e.g. 'tests/**'. `*` also matches `/`, a leading `./` is ignored, and `**/x` also matches `x` at the top. Repeatable.",
+)
+def vue_bundle(app: str, output: typing.Optional[Path], vite_config: bool, check: bool, bundle: typing.Optional[str], exclude: typing.Tuple[str, ...]):
+    """Write a vite entry for every .vue file of the app, or check a built bundle.
+
+    APP is a script (app.py), a directory, or a module (my.app), as for `solara run`.
+    It is not imported: it only gives the app root, whose .vue files are all
+    bundled (except node_modules, hidden dirs, virtual envs, site-packages and
+    --exclude globs), and the public dir.
+    Build the entry with vite, then run with SOLARA_VUE_BUNDLE set to the
+    built .mjs, relative to the public dir.
+    """
+    import solara.settings
+    from solara.components import vue_bundle as vb
+
+    if not check and output is None:
+        raise click.UsageError("pass -o/--output (or --check)")
+    # the app name as AppScript reads it
+    name = app
+    if ":" in app:
+        name = app.rsplit(":", 1)[0]
+        if len(name) == 1:  # a windows drive letter, restore
+            name = app
+    # app_root and public_dir look a module app up, as `solara run` does from cwd
+    sys.path.insert(0, os.getcwd())
+    root = vb.app_root(name)
+    public_dir = vb.public_dir(name)
+    templates = vb.app_templates(root, exclude)
+    if check and not templates:
+        rprint(f"[red]no .vue files found under {root}[/red]")
+        sys.exit(1)
+    if check:
+        setting = bundle or solara.settings.main.vue_bundle
+        if not setting:
+            raise click.UsageError("pass --bundle or set SOLARA_VUE_BUNDLE")
+        bundle_path = vb.resolve_bundle(setting, public_dir)
+        if bundle_path is None or not bundle_path.exists():
+            rprint(f"[red]bundle {setting} not found in {public_dir}[/red]")
+            sys.exit(1)
+        exports = vb.read_manifest(bundle_path)
+        if exports is None:
+            rprint(f"[red]{bundle_path}: {vb.NO_MANIFEST % bundle_path.name}[/red]")
+            sys.exit(1)
+        missing = [file for file in templates if vb.key(file, root) not in exports]
+        for file in missing:
+            rprint(f"[red]not in {bundle_path}: {file}[/red]")
+        if missing:
+            sys.exit(1)
+        rprint(f"all {len(templates)} templates are in {bundle_path}")
+        return
+    assert output is not None
+    if not templates:
+        raise click.ClickException(f"no .vue files found under {root}")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        code = vb.entry_code(output, root, exclude)
+    except RuntimeError as e:
+        raise click.UsageError(str(e))
+    output.write_text(code, encoding="utf8")
+    rprint(f"wrote {output} ({len(templates)} templates)")
+    if vite_config:
+        config = output.parent / "vite.config.mjs"
+        if config.exists():
+            rprint(f"{config} exists, not overwritten")
+        else:
+            try:
+                out_dir = Path(os.path.relpath(public_dir / "vue", output.parent.resolve())).as_posix()
+            except ValueError:  # windows: another drive
+                raise click.UsageError(f"the entry {output} and the public dir {public_dir} must be on the same drive")
+            config.write_text(vb.vite_config(output.name, out_dir), encoding="utf8")
+            rprint(f"wrote {config}; next: cd {output.parent} && npx vite build, then run with SOLARA_VUE_BUNDLE=vue/{vb.BUNDLE_FILE_NAME}")
+
+
 if __name__ == "__main__":
     main()
