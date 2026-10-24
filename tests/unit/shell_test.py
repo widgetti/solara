@@ -23,3 +23,13 @@ def test_shell(no_kernel_context):
         IPython.display.display("test1")
         assert ws1.send.call_count == 1
         assert ws2.send.call_count == 1
+
+    assert kernel1.shell is not None
+    magics_manager = kernel1.shell.magics_manager
+    assert magics_manager is not None
+    registry = magics_manager.registry
+    # IPython 9 loads magics lazily (registry is a _MagicsRegistry); older versions
+    # create ScriptMagics with the shell, so there is nothing to skip there.
+    if type(registry).__name__ == "_MagicsRegistry":
+        # a new session should not pay for ScriptMagics (see SolaraInteractiveShell.__init__)
+        assert "ScriptMagics" not in dict.keys(registry)

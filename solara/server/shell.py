@@ -189,8 +189,13 @@ class SolaraInteractiveShell(InteractiveShell):
         atexit.unregister(self.atexit_operations)
 
         if self.magics_manager:
-            magic = self.magics_manager.registry["ScriptMagics"]
-            atexit.unregister(magic.kill_bg_processes)
+            # ScriptMagics registers kill_bg_processes with atexit, which would keep this
+            # shell alive until exit. IPython 9 loads it lazily, and registry[...] would
+            # load it for every session (8 argparse parsers, ~2.5 ms); dict.get does not.
+            # A %%script cell magic used later still loads it (and keeps the shell alive).
+            magic = dict.get(self.magics_manager.registry, "ScriptMagics")
+            if magic is not None:
+                atexit.unregister(magic.kill_bg_processes)
 
     def set_parent(self, parent):
         """Tell the children about the parent message."""
