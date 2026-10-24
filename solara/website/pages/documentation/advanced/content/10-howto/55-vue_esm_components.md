@@ -135,9 +135,7 @@ class MyWidget(ipyvue.VueTemplate):
         """
     ).tag(sync=True)
     enabled = traitlets.Bool(False).tag(sync=True)
-    components = traitlets.Dict(
-        {"my-toggle": {"esm_module": "my-components", "esm_export": "Toggle"}}
-    ).tag(sync=True, **widget_serialization)
+    components = traitlets.Dict({"my-toggle": {"esm_module": "my-components", "esm_export": "Toggle"}}).tag(sync=True, **widget_serialization)
 
     def vue_on_input(self, value):
         self.enabled = value
