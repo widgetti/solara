@@ -1,6 +1,7 @@
 from typing import List
 
 import reacton
+import reacton.core
 import solara
 
 

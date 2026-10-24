@@ -1,6 +1,6 @@
 import datetime as dt
 import logging
-from typing import Callable, Dict, List, Optional, Tuple, Union, cast
+from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union, cast
 
 import ipyvue
 import reacton
@@ -51,7 +51,7 @@ def use_close_menu(el: reacton.core.Element, is_open: solara.Reactive[bool]):
 @solara.component
 def InputDate(
     value: Union[solara.Reactive[Optional[dt.date]], Optional[dt.date]],
-    on_value: Optional[Callable[[Optional[dt.date]], None]] = None,
+    on_value: Union[None, Callable[[Optional[dt.date]], None], Callable[[dt.date], None]] = None,
     label: str = "Pick a date",
     children: List[solara.Element] = [],
     open_value: Union[solara.Reactive[bool], bool] = False,
@@ -232,8 +232,8 @@ def InputDate(
 
 @solara.component
 def InputDateRange(
-    value: Union[solara.Reactive[Tuple[Optional[dt.date], Optional[dt.date]]], Tuple[Optional[dt.date], Optional[dt.date]]],
-    on_value: Optional[Callable[[Optional[Tuple[Optional[dt.date], Optional[dt.date]]]], None]] = None,
+    value: Union[solara.Reactive[Tuple[Optional[dt.date], Optional[dt.date]]], Sequence[Optional[dt.date]]],
+    on_value: Optional[Callable[[Tuple[Optional[dt.date], Optional[dt.date]]], None]] = None,
     label: str = "Select dates",
     children: List[solara.Element] = [],
     open_value: Union[solara.Reactive[bool], bool] = False,
@@ -357,7 +357,7 @@ def InputDateRange(
     del open_value, on_open_value
     style_flat = solara.util._flatten_style(style)
 
-    def dates_to_string(dates: Tuple[Optional[dt.date], Optional[dt.date]]):
+    def dates_to_string(dates: Sequence[Optional[dt.date]]):
         string_dates = [date.strftime(date_format) if date is not None else "" for date in dates]
         if (len(dates) < 2 or dates[1] is None) and not optional:
             return string_dates[0] if string_dates else "", f"Please select two {date_picker_type}s"
