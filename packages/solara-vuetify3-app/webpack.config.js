@@ -2,7 +2,8 @@ const path = require('path');
 const webpack = require('webpack');
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const TerserPlugin = require("terser-webpack-plugin");
-const { slotInsert, cssChunkFilename, MoveCssPlugin, DropCssPlugin, WrapUmdFactoryPlugin, ChunkGuardPlugin, DedupePackagesPlugin } = require("../solara-widget-manager/webpack-plugins");
+const fs = require('fs');
+const { slotInsert, cssChunkFilename, MoveCssPlugin, DropCssPlugin, WrapUmdFactoryPlugin, ChunkGuardPlugin, DedupePackagesPlugin, splitLuminoPlugin } = require("../solara-widget-manager/webpack-plugins");
 
 // Each frontend feature (vuetify, katex, jupyter-controls, ...) is a named async chunk:
 // solara-vuetify-app{M}.{feature}{.min}.js and main{M}.{feature}.css.
@@ -59,6 +60,8 @@ function config(major, production) {
             }),
             new ChunkGuardPlugin(),
             new DedupePackagesPlugin(),
+            // Lumino split per file: the core keeps the parts it uses, the lumino chunk gets the rest
+            splitLuminoPlugin(fs.realpathSync(path.resolve(__dirname, 'node_modules', widgetManager))),
             // only the parts of the @jupyterlab/services index that we use (see solara-widget-manager/src/services.ts)
             new webpack.NormalModuleReplacementPlugin(
                 /@jupyterlab[\\/]services[\\/]lib[\\/]index\.js$/,
