@@ -17,7 +17,7 @@ branca==0.8.2
 brotli==1.2.1
 bump2version==1.0.1
 cachetools==5.5.2
-certifi==2026.10.19
+certifi==2026.10.23
 cffi==1.17.1
 cfgv==3.4.0
 charset-normalizer==3.5.2
@@ -147,7 +147,7 @@ pytz==2026.5
 pywin32==311
 PyYAML==6.0.3
 pyzmq==27.1.0
-reacton==1.11.0
+reacton==1.11.1
 redis==6.1.1
 referencing==0.35.1
 requests==2.32.4
