@@ -231,7 +231,7 @@ virtualenv==21.14.13
 voila==0.3.8
 watchdog==6.0.0
 watchfiles==1.1.1
-wcwidth==0.9.3
+wcwidth==0.9.4
 webcolors==24.11.1
 webencodings==0.5.1
 websocket-client==1.9.0
