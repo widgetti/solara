@@ -129,14 +129,14 @@ fragility by using AST-node resolution instead of line parsing. `executing` is a
 a transitive dependency (via ipython); declare it explicitly in `pyproject.toml`.
 
 ```python
-count = solara.reactive(0, persist=True)              # key auto-derived: "myapp.pages:count"
+count = solara.reactive(0, persist=True)  # key auto-derived: "myapp.pages:count"
 count = solara.reactive(0, persist=True, key="myapp.count")  # explicit, refactor-proof
 
 filters = solara.reactive(
     Filters(),
     persist=solara.PersistConfig(
         key="myapp.filters",
-        serializer="json",         # default; or "pickle" (gated, §4.2), or a registered custom codec
+        serializer="json",  # default; or "pickle" (gated, §4.2), or a registered custom codec
     ),
 )
 ```
@@ -629,18 +629,18 @@ package never eagerly drags server modules on solara.state's account:
 
 ```python
 class State(BaseSettings):
-    backend: str = ""                  # "" = disabled; name in state_backend_map ("redis", "memory", ...)
-    url: str = ""                      # backend DSN, e.g. "redis://localhost:6379/0"
-    secret_keys: List[str] = []        # HMAC keys; verify-any, sign-first (rotation §4.2). REQUIRED when enabled
-    allow_pickle: bool = False         # deployer gate; serializer="pickle" raises without it (§4.2)
-    ttl: Optional[str] = None          # default: kernel.cull_timeout
-    orphan_cull_timeout: str = "5m"    # applies only with a shared backend (§5.4)
-    prefix: str = "solara:state:"      # key prefix / table name, backend-interpreted
+    backend: str = ""  # "" = disabled; name in state_backend_map ("redis", "memory", ...)
+    url: str = ""  # backend DSN, e.g. "redis://localhost:6379/0"
+    secret_keys: List[str] = []  # HMAC keys; verify-any, sign-first (rotation §4.2). REQUIRED when enabled
+    allow_pickle: bool = False  # deployer gate; serializer="pickle" raises without it (§4.2)
+    ttl: Optional[str] = None  # default: kernel.cull_timeout
+    orphan_cull_timeout: str = "5m"  # applies only with a shared backend (§5.4)
+    prefix: str = "solara:state:"  # key prefix / table name, backend-interpreted
     flush_debounce: str = "300ms"
-    connect_timeout: float = 0.3       # hard cap on takeover/flush blocking
-    breaker_failures: int = 3          # circuit breaker: consecutive failures to open
-    breaker_window: str = "30s"        # open duration before a half-open probe
-    schema_tag: str = ""               # state-schema tag ("" -> derived); mismatch => clean state reset (§6.1)
+    connect_timeout: float = 0.3  # hard cap on takeover/flush blocking
+    breaker_failures: int = 3  # circuit breaker: consecutive failures to open
+    breaker_window: str = "30s"  # open duration before a half-open probe
+    schema_tag: str = ""  # state-schema tag ("" -> derived); mismatch => clean state reset (§6.1)
     auto_remount: Optional[bool] = None  # None: on iff backend set; can force on/off
     bailout_storm_threshold: float = 0.5  # bail-out rate valve (§4.3)
 
@@ -672,11 +672,14 @@ class StateBackend(Protocol):
     def takeover(self, kernel_id, session_hmac) -> tuple[int, dict[str, bytes]]:
         """Atomically claim ownership and read all envelopes: bump-then-read as one
         unit. Returns (new_generation, fields). Raises/None on identity mismatch."""
+
     def flush(self, kernel_id, generation, fields: dict[str, bytes], ttl) -> bool:
         """Atomically write the batch iff generation still matches (fenced).
         Returns False when rejected."""
+
     def peek_generation(self, kernel_id) -> Optional[int]:
         """Cheap ownership check (reuse branch, owns_state() probe)."""
+
     def delete(self, kernel_id) -> None:
         """Atomic wipe on clean close."""
 ```
