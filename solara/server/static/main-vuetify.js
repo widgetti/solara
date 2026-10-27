@@ -189,6 +189,9 @@ async function solaraInit(mountId, appName) {
     function onSessionLost() {
         // like fallbackToDialog, but without shutdownKernel: the kernel is disposed already
         app.$data.remounting = false;
+        // a pinned ?kernelid= page can lose its session on the first connect, before solaraMount:
+        // drop the loader so the dialog is reachable (this also mounts a pre-rendered page)
+        app.$data.loading = false;
         app.$data.needsRefresh = true;
     }
     // this listener runs before KernelConnection's onclose, so dispose() stops the reconnect

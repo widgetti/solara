@@ -179,3 +179,22 @@ def test_session_lost_with_pinned_kernel_id_shows_dialog(
         assert navigations == []
         assert len(_mismatch_records(caplog)) == 1
         page_session.goto("about:blank")
+
+
+@skip_vue3
+def test_session_lost_on_first_connect_shows_dialog(page_session: playwright.sync_api.Page, solara_server, solara_app, extra_include_path, production, caplog):
+    # e.g. ipypopout opens ?kernelid= of a live kernel after the cookie changed: the first connect
+    # fails before the app mounts, and the dialog must not stay hidden behind the loader
+    with extra_include_path(HERE), solara_app("session_lost_test:Page"):
+        caplog.set_level(logging.INFO)
+        context = _load(page_session, solara_server.base_url)
+        page_session.context.clear_cookies()
+        popout = page_session.context.new_page()
+        try:
+            popout.goto(solara_server.base_url + f"?kernelid={context.id}")
+            # trial: only check that the button can be clicked (visible, not covered)
+            popout.locator("text=Refresh now").click(trial=True, timeout=10_000)
+            assert len(_mismatch_records(caplog)) == 1
+        finally:
+            popout.close()
+        page_session.goto("about:blank")
