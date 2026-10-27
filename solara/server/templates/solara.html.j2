@@ -75,7 +75,7 @@
         {% endraw -%}
         {# {% include "transition-domino.html" %} #}
         {% include "loader-" ~ theme.loader ~ ".html" %}
-        <v-overlay style="z-index: 100002;" v-bind="vue3 ? { modelValue: (connectionStatus != 'connected') && wasConnected } : { value: (connectionStatus != 'connected') && wasConnected }">
+        <v-overlay style="z-index: 100002;" v-bind="vue3 ? { modelValue: (connectionStatus != 'connected') && wasConnected && !needsRefresh } : { value: (connectionStatus != 'connected') && wasConnected && !needsRefresh }">
             <v-progress-circular indeterminate size="128" style="text-align: center;">Server
                 disconnected.</v-progress-circular>
         </v-overlay>
@@ -396,9 +396,12 @@
                     }
                 },
                 needsRefresh: function (value) {
-                    if(solara.forceRefresh) {
+                    // a pinned kernel id (e.g. ipypopout) survives a reload, so a reload would
+                    // hit the same dead kernel again: show the dialog instead
+                    const kernelPinned = new URLSearchParams(window.location.search).has('kernelid');
+                    if(solara.forceRefresh && !kernelPinned) {
                         this.reload();
-                    } else if (this.needsRefresh && !this.cancelAutoRefresh && !solara.production) {
+                    } else if (this.needsRefresh && !this.cancelAutoRefresh && !solara.production && !kernelPinned) {
                         console.log('value for needRefresh', value);
                         setTimeout(() => {
                             console.log('this.autoRefreshCount', this.autoRefreshCount)

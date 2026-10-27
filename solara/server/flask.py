@@ -2,6 +2,7 @@ import asyncio
 import logging
 import mimetypes
 import os
+import socket
 import threading
 from http.server import HTTPServer
 from pathlib import Path
@@ -13,6 +14,7 @@ import flask
 import simple_websocket
 from flask import Blueprint, Flask, abort, request, send_from_directory, url_for
 from flask_sock import Sock
+from wsproto.events import CloseConnection
 
 try:
     import solara_enterprise  # type: ignore
@@ -160,6 +162,24 @@ def kernels_connection(ws: simple_websocket.Server, kernel_id: str, name: str):
                 user=user,
             )
         )
+    except kernel_context.SessionIdMismatchError:
+        # close with a dedicated code, so the client stops reconnecting
+        try:
+            # After we return, flask-sock (werkzeug server) writes an HTTP response on the upgraded socket.
+            # The browser parses it as a frame ("Invalid frame header") and reports 1006, not our code.
+            # So: send the close frame ourselves (ws.close() would stop the reader thread before the
+            # browser answers), let the reader thread finish the closing handshake, then shut the TCP
+            # connection down so nothing else reaches the browser. The reader thread's sock.close() does
+            # not do that: werkzeug still holds a file object on the same socket.
+            ws.sock.send(ws.ws.send(CloseConnection(kernel_context.SESSION_LOST_CLOSE_CODE, "session id mismatch")))
+            ws.thread.join(timeout=5)
+            try:
+                ws.sock.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
+            logger.info("closed websocket for kernel=%s with session lost code %d", kernel_id, kernel_context.SESSION_LOST_CLOSE_CODE)
+        except:  # noqa
+            pass
     except:  # noqa
         logger.exception("Error in kernel handler")
         raise

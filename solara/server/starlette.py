@@ -424,6 +424,8 @@ async def _kernel_connection(ws: starlette.websockets.WebSocket):
         # sometimes throws: RuntimeError: Already running asyncio in this thread
         anyio.run(run_wrapper)  # type: ignore
 
+    # set when the session id does not match the kernel's, so the client stops reconnecting
+    close_code: Optional[int] = None
     # this portal allows us to sync call the websocket calls from this current event loop we are in
     # each websocket however, is handled from a separate thread
     try:
@@ -431,10 +433,18 @@ async def _kernel_connection(ws: starlette.websockets.WebSocket):
             async with anyio.from_thread.BlockingPortal() as portal:
                 ws_wrapper = WebsocketWrapper(ws, portal)
                 thread_return = anyio.to_thread.run_sync(websocket_thread_runner, ws_wrapper, portal, limiter=limiter)  # type: ignore
-                await thread_return
+                # catch it here: at the portal exit anyio wraps it in an ExceptionGroup.
+                # Await nothing else in this block, the thread has cancelled the portal.
+                try:
+                    await thread_return
+                except kernel_context.SessionIdMismatchError:
+                    close_code = kernel_context.SESSION_LOST_CLOSE_CODE
         else:
             ws_wrapper = WebsocketWrapper(ws, None)
-            await run(ws_wrapper)
+            try:
+                await run(ws_wrapper)
+            except kernel_context.SessionIdMismatchError:
+                close_code = kernel_context.SESSION_LOST_CLOSE_CODE
     finally:
         if settings.main.experimental_performance:
             try:
@@ -442,7 +452,11 @@ async def _kernel_connection(ws: starlette.websockets.WebSocket):
             except:  # noqa
                 logger.exception("error cancelling websocket task")
         try:
-            await ws.close()
+            if close_code is not None:
+                await ws.close(code=close_code, reason="session id mismatch")
+                logger.info("closed websocket for kernel=%s with session lost code %d", redact_id(kernel_id), close_code)
+            else:
+                await ws.close()
         except:  # noqa
             pass
 

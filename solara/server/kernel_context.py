@@ -43,6 +43,16 @@ class Local(threading.local):
 
 
 local = Local()
+
+# websocket close code sent when a reconnect brings a different session id (cookie lost or changed).
+# The client (main-vuetify.js, SESSION_LOST_CLOSE_CODE) stops reconnecting when it sees it.
+SESSION_LOST_CLOSE_CODE = 4001
+
+
+class SessionIdMismatchError(ValueError):
+    pass
+
+
 # same idea, but for `async with ...`
 if typing.TYPE_CHECKING:
     async_stack = contextvars.ContextVar[Union[Tuple[Union[None, "VirtualKernelContext"], ...], None]](name="async_stack", default=None)
@@ -938,14 +948,14 @@ def initialize_virtual_kernel(session_id: str, kernel_id: str, websocket: websoc
         # redact both session ids: they are bearer credentials for takeover once persistence is on.
         # The client message must NOT echo them back either (it reaches an attacker's browser).
         logger.critical(
-            "Session id mismatch when reusing kernel (hack attempt?): %s != %s",
+            "Session id mismatch when reusing kernel (session cookie lost or changed): %s != %s",
             redact_id(context.session_id),
             redact_id(session_id),
         )
-        websocket.send_text("Session id mismatch when reusing kernel (hack attempt?)")
+        websocket.send_text("Session id mismatch when reusing kernel (session cookie lost or changed), please reload the page")
         # to avoid very fast reconnects (we are in a thread anyway)
         time.sleep(0.5)
-        raise ValueError("Session id mismatch")
+        raise SessionIdMismatchError("Session id mismatch")
 
     if newly_created:
         with context:
