@@ -26,9 +26,10 @@ defaults:
   run:
     shell: bash {0}
 
+# ubuntu-latest (26.04) has no python 3.8/3.9 and playwright has no chromium for it yet
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v6
@@ -111,7 +112,7 @@ jobs:
             packages/solara-vuetify3-app/dist
 
   code-quality:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -177,7 +178,7 @@ jobs:
 
   test-install:
     needs: [build]
-    runs-on: ${{ matrix.os }}-latest
+    runs-on: ${{ matrix.os == 'ubuntu' && 'ubuntu-24.04' || format('{0}-latest', matrix.os) }}
     strategy:
       fail-fast: false
       matrix:
@@ -253,7 +254,7 @@ jobs:
   pyinstaller-test:
     needs: [build]
     timeout-minutes: 15
-    runs-on: ${{ matrix.os }}-latest
+    runs-on: ${{ matrix.os == 'ubuntu' && 'ubuntu-24.04' || format('{0}-latest', matrix.os) }}
     strategy:
       fail-fast: false
       matrix:
@@ -362,7 +363,7 @@ jobs:
   integration-test:
     needs: [build]
     timeout-minutes: 25
-    runs-on: ${{ matrix.os }}-latest
+    runs-on: ${{ matrix.os == 'ubuntu' && 'ubuntu-24.04' || format('{0}-latest', matrix.os) }}
     strategy:
       fail-fast: false
       matrix:
@@ -490,7 +491,7 @@ jobs:
   integration-test-vue3:
     needs: [build]
     timeout-minutes: 15
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -617,7 +618,7 @@ jobs:
 
   unit-test:
     needs: [build]
-    runs-on: ${{ matrix.os }}-latest
+    runs-on: ${{ matrix.os == 'ubuntu' && 'ubuntu-24.04' || format('{0}-latest', matrix.os) }}
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -726,7 +727,7 @@ jobs:
 
   unit-test-vue3:
     needs: [build]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
 
     steps:
@@ -769,7 +770,7 @@ jobs:
   update-ci-package-locks:
     needs:
       [build, code-quality, integration-test, integration-test-vue3, unit-test, unit-test-vue3]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v6
@@ -812,7 +813,7 @@ jobs:
         unit-test,
         unit-test-vue3,
       ]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       id-token: write # this permission is mandatory for trusted publishing
 
@@ -913,7 +914,7 @@ jobs:
         run: rm -rf packages/solara-assets/dist
 
   check_pycafe:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
       - run: |

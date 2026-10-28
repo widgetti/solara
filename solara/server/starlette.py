@@ -24,7 +24,6 @@ import anyio.from_thread
 import anyio.to_thread
 import starlette.websockets
 import uvicorn.server
-import websockets.legacy.http
 import websockets.exceptions
 
 from solara.server.utils import path_is_child_of, redact_id
@@ -100,6 +99,10 @@ prefix = ""
 # Since starlette seems to accept really large values for http, lets do the same for websockets
 # An arbitrarily large value we settled on for now is 32kb
 # If we don't do this, users with many cookies will fail to get a websocket connection.
+with warnings.catch_warnings():
+    # websockets 14 deprecates the legacy module (17 warns on import), but uvicorn can still use it
+    warnings.simplefilter("ignore", DeprecationWarning)
+    import websockets.legacy.http
 ws_major_version = int(websockets.__version__.split(".")[0])
 if ws_major_version >= 13:
     websockets.legacy.http.MAX_LINE_LENGTH = int(os.environ.get("WEBSOCKETS_MAX_LINE_LENGTH", str(1024 * 32)))  # type: ignore
