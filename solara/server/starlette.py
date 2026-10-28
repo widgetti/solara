@@ -279,8 +279,8 @@ await to_thread.run_sync(my_update)
                     task = self.event_loop.create_task(self._send_bytes_exc(data))
                     self.tasks.add(task)
                     task.add_done_callback(self.tasks.discard)
-
-                self._portal_call(self._send_bytes_exc, data)
+                else:
+                    self._portal_call(self._send_bytes_exc, data)
 
     async def receive(self):
         if self.portal is None:

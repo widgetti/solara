@@ -41,3 +41,29 @@ def test_send_websockets_drops_websocket_with_stopped_portal_silently(caplog):
         kernel.send_websockets(websockets, b"hi")
     assert websockets == set()
     assert caplog.records == []
+
+
+class _FakeWebSocket:
+    def __init__(self):
+        self.sent: list = []
+
+    async def send_text(self, data):
+        self.sent.append(data)
+
+    async def send_bytes(self, data):
+        self.sent.append(data)
+
+
+@pytest.mark.parametrize("data", ["hi", b"hi"], ids=["text", "bytes"])
+def test_send_from_event_loop_thread_schedules_a_task(data):
+    async def run():
+        fake = _FakeWebSocket()
+        async with anyio.from_thread.BlockingPortal() as portal:
+            ws = WebsocketWrapper(cast(Any, fake), portal)
+            send = ws.send_bytes if isinstance(data, bytes) else ws.send_text
+            with pytest.warns(UserWarning, match="event loop thread"):
+                send(data)
+            await asyncio.gather(*ws.tasks)
+        return fake.sent
+
+    assert asyncio.run(run()) == [data]
