@@ -181,7 +181,35 @@ async function solaraInit(mountId, appName) {
             location.reload();
         }
     });
-    let kernel = await solara.connectKernel(solara.jupyterRootPath, kernelId)
+    // The server closes with this code when a reconnect brings a different session id (cookie
+    // lost or changed). Reconnecting cannot fix that, so we stop and show the refresh UI.
+    // Keep in sync with SESSION_LOST_CLOSE_CODE in solara/server/kernel_context.py.
+    const SESSION_LOST_CLOSE_CODE = 4001;
+    let sessionLost = false;
+    function onSessionLost() {
+        // like fallbackToDialog, but without shutdownKernel: the kernel is disposed already
+        app.$data.remounting = false;
+        // a pinned ?kernelid= page can lose its session on the first connect, before solaraMount:
+        // drop the loader so the dialog is reachable (this also mounts a pre-rendered page)
+        app.$data.loading = false;
+        app.$data.needsRefresh = true;
+    }
+    // this listener runs before KernelConnection's onclose, so dispose() stops the reconnect
+    class SessionAwareWebSocket extends window.WebSocket {
+        constructor(...args) {
+            super(...args);
+            this.addEventListener('close', (evt) => {
+                if (evt.code !== SESSION_LOST_CLOSE_CODE || sessionLost) {
+                    return;
+                }
+                console.warn('solara: session lost (session cookie lost or changed), not reconnecting');
+                sessionLost = true;
+                kernel.dispose();
+                onSessionLost();
+            });
+        }
+    }
+    let kernel = await solara.connectKernel(solara.jupyterRootPath, kernelId, { WebSocket: SessionAwareWebSocket })
     if (!kernel) {
         return;
     }

@@ -138,3 +138,24 @@ def test_restart_initialization_error_does_not_wedge_close(no_kernel_context):
 
     context.close()
     assert context.closed_event.wait(timeout=5)
+
+
+def test_reconnect_with_other_session_id_raises_session_id_mismatch(no_kernel_context):
+    from solara.server import kernel_context
+
+    kernel_context.initialize_virtual_kernel("session-a", "kernel-mismatch", Mock())
+    try:
+        websocket = Mock()
+        # the session cookie got lost or changed: the reconnect brings a different session id
+        with pytest.raises(kernel_context.SessionIdMismatchError):
+            kernel_context.initialize_virtual_kernel("session-b", "kernel-mismatch", websocket)
+        websocket.send_text.assert_called_once()
+        message = websocket.send_text.call_args[0][0]
+        assert "please reload the page" in message
+        # the client sees this message, so it must not echo the session ids
+        assert "session-a" not in message and "session-b" not in message
+        # the existing kernel stays with its own session
+        assert kernel_context.contexts["kernel-mismatch"].session_id == "session-a"
+    finally:
+        for live_context in list(kernel_context.contexts.values()):
+            live_context.close()
