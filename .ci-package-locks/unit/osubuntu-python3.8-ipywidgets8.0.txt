@@ -144,7 +144,7 @@ python-dotenv==1.0.1
 python-slugify==8.0.4
 python-utils==3.8.2
 pythreejs==2.4.2
-pytz==2026.5
+pytz==2026.6
 PyYAML==6.0.3
 pyzmq==27.1.0
 reacton==1.11.1
@@ -154,7 +154,7 @@ requests==2.32.4
 rich==14.3.4
 rich-click==1.9.9
 rpds-py==0.20.1
-ruff==0.17.2
+ruff==0.17.3
 simple-websocket==1.1.0
 simplejson==4.2.0
 six==1.17.0
@@ -175,9 +175,9 @@ types-Markdown==3.7.0.20241204
 types-PyYAML==6.0.12.20241230
 types-requests==2.32.0.20241016
 typing_extensions==4.13.2
-tzdata==2026.5
+tzdata==2026.6
 urllib3==2.2.3
-uv==0.13.5
+uv==0.13.6
 uvicorn==0.33.0
 vaex-core==4.17.1
 vaex-hdf5==0.15.0
