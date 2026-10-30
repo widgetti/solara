@@ -5,7 +5,10 @@
 # solara-assets was replaced by solara-assets2).
 __version__ = "1.0.0"
 
-# Hash of the packages and prune rules in hatch_build.py that this version
-# ships. tests/unit/solara_assets_test.py fails when they differ: bump
-# __version__ (and the solara[assets] pin) and update this hash.
-content_hash = "b73aac8aec8a0db8"
+# For each published version, the hash of the packages and prune rules in
+# hatch_build.py that it ships. Only append, never edit an entry.
+# tests/unit/solara_assets_test.py checks that the last entry matches
+# hatch_build.py and __version__, and that each version has a new hash.
+content_hashes = {
+    "1.0.0": "b73aac8aec8a0db8",
+}
