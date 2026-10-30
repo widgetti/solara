@@ -7,13 +7,23 @@
  * The full license is in the file LICENSE, distributed with this software. *
  ****************************************************************************/
 
-import '../style/index.css';
-
 export {
   RenderMimeRegistry,
   standardRendererFactories
 } from '@jupyterlab/rendermime';
 export { connectKernel, shutdownKernel } from './kernel';
 export { WidgetManager } from './manager';
-export { KatexTypesetter, renderKatex } from './katex';
+export { KatexTypesetter, renderKatex, loadKatex } from './katex';
 export { extendedRendererFactories } from './rendermime';
+export {
+  registerFeature,
+  provideFeature,
+  setEnabledFeatures,
+  isEnabled,
+  hasFeature,
+  loadFeature,
+  loadPreloadedFeaturesSync,
+  getLoadedFeature,
+  onLazyLoad
+} from './features';
+export { defineAmdModules } from './amd';
