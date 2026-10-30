@@ -15,6 +15,8 @@ packages = [
     ["vega-lite", "5.2.0"],
     ["vega-embed", "6.20.2"],
     ["@widgetti/vue-grid-layout", "2.3.13-alpha.2"],
+    # the Vue 3 port of vue-grid-layout, for GridDraggable under ipyvue 3
+    ["grid-layout-plus", "1.1.1"],
     ["@widgetti/solara-milkdown", "6.3.0"],
     ["echarts", "5.4.0"],
     ["font-awesome", "4.5.0"],
@@ -37,6 +39,9 @@ PRUNE_PATTERNS_PER_PACKAGE = {
     # mermaid: solara only loads dist/mermaid.min.js. mermaid.js is the 6+ MB
     # unminified twin — nothing in the template/components points at it.
     "mermaid": ["dist/mermaid.js"],
+    # grid-layout-plus: solara only loads dist/grid-layout-plus.mjs. The rest is the
+    # same code in other module formats, for bundlers.
+    "grid-layout-plus": ["es", "lib", "src", "dist/grid-layout-plus.cjs", "dist/grid-layout-plus.js"],
 }
 
 
