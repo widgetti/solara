@@ -54,7 +54,7 @@ flask-sock==0.7.0
 folium==0.20.0
 fonttools==4.60.2
 fqdn==1.6.0
-frozendict==2.4.7
+frozendict==2.5.0
 fsspec==2025.10.0
 future==1.0.0
 greenlet==3.2.5
@@ -126,7 +126,7 @@ nbclient==0.5.13
 nbconvert==6.5.4
 nbformat==5.10.4
 nest-asyncio==1.6.0
-nodeenv==1.11.0
+nodeenv==1.11.1
 notebook==6.5.7
 notebook_shim==0.2.4
 numpy==1.26.4
@@ -155,7 +155,7 @@ psygnal==0.14.2
 pure_eval==0.2.4
 pyarrow==21.0.0
 pycparser==2.23
-pydantic==1.10.26
+pydantic==1.10.27
 pyee==12.1.1
 Pygments==2.21.0
 pymdown-extensions==10.21.3

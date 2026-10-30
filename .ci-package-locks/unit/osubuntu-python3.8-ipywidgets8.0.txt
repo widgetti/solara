@@ -44,7 +44,7 @@ Flask==3.0.3
 flask-sock==0.7.0
 folium==0.18.0
 fonttools==4.57.0
-frozendict==2.4.7
+frozendict==2.5.0
 fsspec==2025.3.0
 future==1.0.0
 greenlet==3.1.1
@@ -98,7 +98,7 @@ mypy_extensions==1.1.0
 narwhals==1.42.1
 nbformat==5.10.4
 nest-asyncio==1.6.0
-nodeenv==1.11.0
+nodeenv==1.11.1
 numpy==1.24.4
 objgraph==3.6.2
 openai==2.2.0

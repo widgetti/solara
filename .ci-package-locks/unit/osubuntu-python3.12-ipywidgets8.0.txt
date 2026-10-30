@@ -51,7 +51,7 @@ ipycanvas==0.14.3
 ipykernel==7.4.0
 ipyleaflet==0.20.0
 ipyreact==0.7.0
-ipython==9.17.1
+ipython==9.18.0
 ipython_pygments_lexers==1.1.1
 ipyvue==3.1.1
 ipyvuetify==3.1.0
@@ -83,7 +83,7 @@ mypy_extensions==1.1.0
 narwhals==2.28.0
 nbformat==5.11.1
 nest-asyncio2==1.7.4
-nodeenv==1.11.0
+nodeenv==1.11.1
 numpy==1.26.4
 objgraph==3.7.0
 openai==3.41.0
@@ -108,8 +108,8 @@ ptyprocess==0.7.0
 pure_eval==0.2.4
 pyarrow==26.0.0
 pycparser==3.12
-pydantic==2.14.1
-pydantic_core==2.50.1
+pydantic==2.14.2
+pydantic_core==2.50.2
 pyee==14.0.0
 Pygments==2.21.0
 pymdown-extensions==12.3
@@ -150,8 +150,8 @@ traitlets==5.16.1
 traittypes==0.2.3
 truststore==0.10.5
 types-Markdown==3.11.2.20261029
-types-PyYAML==6.0.12.20260906
-types-requests==2.33.0.20261006
+types-PyYAML==6.0.12.20261030
+types-requests==2.33.0.20261030
 typing-inspection==0.4.4
 typing_extensions==4.16.0
 tzdata==2026.6

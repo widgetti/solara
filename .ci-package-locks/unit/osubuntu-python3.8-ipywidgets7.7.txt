@@ -53,7 +53,7 @@ flask-sock==0.7.0
 folium==0.18.0
 fonttools==4.57.0
 fqdn==1.6.0
-frozendict==2.4.7
+frozendict==2.5.0
 fsspec==2025.3.0
 future==1.0.0
 greenlet==3.1.1
@@ -120,7 +120,7 @@ nbclient==0.10.1
 nbconvert==7.16.6
 nbformat==5.10.4
 nest-asyncio==1.6.0
-nodeenv==1.11.0
+nodeenv==1.11.1
 notebook==7.3.3
 notebook_shim==0.2.4
 numpy==1.24.4
