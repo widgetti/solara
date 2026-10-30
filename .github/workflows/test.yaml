@@ -98,7 +98,7 @@ jobs:
 
       - name: Upload Test artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: solara-builds
           path: |
@@ -160,7 +160,7 @@ jobs:
 
       - name: Upload Test artifacts
         if: github.event_name == 'schedule' || steps.prepare.outputs.LOCKS_EXIST == 'false'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results-code-quality-python${{ matrix.python-version }}
           path: |
@@ -170,7 +170,7 @@ jobs:
 
       - name: Upload CI package locks
         if: steps.install_no_lock.outputs.HAS_DIFF == 'true' || steps.prepare.outputs.LOCKS_EXIST == 'false'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ci-package-locks-code-quality-python${{ matrix.python-version }}
           path: ./**/${{ env.LOCK_FILE_LOCATION }}
@@ -343,7 +343,7 @@ jobs:
 
       - name: Upload Test artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results-pyinstaller-os${{ matrix.os }}-python${{ matrix.python-version }}
           path: |
@@ -354,7 +354,7 @@ jobs:
 
       - name: Upload CI package locks
         if: steps.install_no_lock.outputs.HAS_DIFF == 'true' || steps.prepare.outputs.LOCKS_EXIST == 'false'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ci-package-locks-pyinstaller-os${{ matrix.os }}-python${{ matrix.python-version }}
           path: ./**/${{ env.LOCK_FILE_LOCATION }}
@@ -471,7 +471,7 @@ jobs:
 
       - name: Upload Test artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results-integration-os${{ matrix.os }}-python${{ matrix.python-version }}-ipywidgets${{ matrix.ipywidgets_major }}
           path: |
@@ -482,7 +482,7 @@ jobs:
 
       - name: Upload CI package locks
         if: steps.install_no_lock.outputs.HAS_DIFF == 'true' || steps.prepare.outputs.LOCKS_EXIST == 'false'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ci-package-locks-integration-os${{ matrix.os }}-python${{ matrix.python-version }}-ipywidgets${{ matrix.ipywidgets_major }}
           path: ./**/${{ env.LOCK_FILE_LOCATION }}
@@ -599,7 +599,7 @@ jobs:
 
       - name: Upload Test artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results-integration-vue3-os${{ matrix.os }}-ipywidgets${{ matrix.ipywidgets_major }}
           path: |
@@ -610,7 +610,7 @@ jobs:
 
       - name: Upload CI package locks
         if: steps.install_no_lock.outputs.HAS_DIFF == 'true' || steps.prepare.outputs.LOCKS_EXIST == 'false'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ci-package-locks-integration-vue3-os${{ matrix.os }}-ipywidgets${{ matrix.ipywidgets_major }}
           path: ./**/${{ env.LOCK_FILE_LOCATION }}
@@ -709,7 +709,7 @@ jobs:
 
       - name: upload test artifacts
         if: github.event_name == 'schedule' || steps.prepare.outputs.LOCKS_EXIST == 'false'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results-unit-os${{ matrix.os }}-python${{ matrix.python }}-ipywidgets${{ matrix.ipywidgets }}
           path: |
@@ -719,7 +719,7 @@ jobs:
 
       - name: Upload CI package locks
         if: steps.install_no_lock.outputs.HAS_DIFF == 'true' || steps.prepare.outputs.LOCKS_EXIST == 'false'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ci-package-locks-unit-os${{ matrix.os }}-python${{ matrix.python }}-ipywidgets${{ matrix.ipywidgets }}
           path: ./**/${{ env.LOCK_FILE_LOCATION }}
