@@ -1,7 +1,9 @@
 <template>
   <div>
     <div v-if="gridlayout_loaded" style="padding: 0px; width: 100%;">
-       <grid-layout
+       <!-- a plain <grid-layout> tag is resolved before the v-if, when the
+            component is not registered yet, which makes Vue 3 warn -->
+       <component :is="'grid-layout'"
             v-model:layout="grid_layout"
             :col-num="col_num"
             :row-height="row_height"
@@ -14,7 +16,7 @@
             @layout-updated="onLayoutUpdated"
     >
 
-        <grid-item v-for="item in grid_layout"
+        <component :is="'grid-item'" v-for="item in grid_layout"
                    :x="item.x"
                    :y="item.y"
                    :w="item.w"
@@ -28,8 +30,8 @@
             <div v-if="items[item.i]">
               <jupyter-widget :widget="items[item.i]" :key="'child_' + item.i"></jupyter-widget>
             </div>
-        </grid-item>
-    </grid-layout>
+        </component>
+    </component>
 
     </div>
   </div>
@@ -40,7 +42,14 @@ module.exports = {
     async created() {
       this.gridlayout_loaded = false
 
-      const {GridLayout, GridItem} = (await this.import([`${this.getCdn()}/@widgetti/vue-grid-layout@2.3.13-alpha.2/dist/vue-grid-layout.umd.js`]))[0]
+      // @widgetti/vue-grid-layout is a Vue 2 build: under Vue 3 it throws
+      // "GlobalVue.use is not a function" and the grid never shows.
+      // grid-layout-plus is its Vue 3 port, with the same props and events.
+      // Its ES module build only imports "vue", which ipyvue maps in its
+      // import map. ipyvue runs this script as a blob module, which cannot
+      // resolve a relative url, so we make the url absolute.
+      const url = new URL(`${this.getCdn()}/grid-layout-plus@1.1.1/dist/grid-layout-plus.mjs`, document.baseURI).href;
+      const {GridLayout, GridItem} = await import(url);
       this.$options.components['grid-item'] = GridItem;
       this.$options.components['grid-layout'] = GridLayout;
       this.gridlayout_loaded = true;
@@ -52,35 +61,6 @@ module.exports = {
         },
         onLayoutUpdated(layout) {
           this.layout_updated(layout);
-        },
-        import(deps) {
-          return this.loadRequire().then(
-            () => {
-              if(window.jupyterVue) {
-                // in jupyterlab, we take Vue from ipyvue/jupyterVue
-                define("vue", [], () => window.jupyterVue.Vue);
-              } else {
-                define("vue", ['jupyter-vue'], jupyterVue => jupyterVue.Vue);
-              }
-              return new Promise((resolve, reject) => {
-                requirejs(deps, (...modules) => resolve(modules));
-              })
-            }
-          );
-        },
-        loadRequire() {
-          /* Needed in lab */
-          if (window.requirejs) {
-              console.log('require found');
-              return Promise.resolve()
-          }
-          return new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = `${this.getCdn()}/requirejs@2.3.6/require.js`;
-            script.onload = resolve;
-            script.onerror = reject;
-            document.head.appendChild(script);
-          });
         },
         getJupyterBaseUrl() {
           if (document.getElementsByTagName("base").length) {
@@ -105,7 +85,7 @@ module.exports = {
 </script>
 
 <style id="grid_layout">
-.vue-grid-item > div {
+.vgl-item > div {
   height: 100%;
 }
 </style>
