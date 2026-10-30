@@ -9,7 +9,7 @@ Bump it only when the assets change, which is when `packages` or the prune rules
 To bump:
 
 1. Bump `__version__` in `solara_assets2/__init__.py`.
-2. Change `content_hash` in the same file to the hash that the failing test prints.
+2. Add the new version, with the hash that the failing test prints, at the end of `content_hashes` in the same file.
 3. Change the `solara-assets2==...` pin in `packages/solara-meta/pyproject.toml`.
 
 The release CI publishes `solara-assets2` on every solara release, and skips the upload when that version is already on PyPI.
