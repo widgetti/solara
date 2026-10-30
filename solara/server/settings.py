@@ -289,7 +289,7 @@ if settings.assets.proxy:
             "Or change the SOLARA_PROXY_CACHE_DIR environment variable to a directory where you have write access."
         )
         # that's ok, the user probably doesn't have permission to create the directory
-        # in this case, we would need to install solara-assets?
+        # in this case, we would need to install solara-assets2?
         pass
 
 if telemetry.server_user_id == "not_set" and FileLock is not None:

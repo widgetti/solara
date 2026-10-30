@@ -65,7 +65,7 @@ $ pip install "solara[assets]"
 
 ### Airgapped install
 
-If you cannot install `solara` or `solara-assets` from pypi because the server is not connected to the internet, you can
+If you cannot install `solara` or `solara-assets2` from pypi because the server is not connected to the internet, you can
 follow the following steps to install Solara:
 
 ```bash

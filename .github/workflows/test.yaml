@@ -872,16 +872,14 @@ jobs:
           hatch publish
           openssl sha256 dist/*
 
-      - name: Publish solara-assets to PyPI
+      # solara-assets2 has its own version, which only changes when the assets
+      # change. Most releases ship the same version again, which we skip.
+      - name: Publish solara-assets2 to PyPI
         if: startsWith(github.event.ref, 'refs/tags/v')
-        env:
-          HATCH_INDEX_USER: __token__
-          HATCH_INDEX_AUTH: ${{ secrets.pypi_assets }}
-        run: |
-          cd packages/solara-assets
-          openssl sha256 dist/*
-          hatch publish
-          openssl sha256 dist/*
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: packages/solara-assets/dist
+          skip-existing: true
 
       - name: Publish solara-ui to PyPI
         if: startsWith(github.event.ref, 'refs/tags/v')
