@@ -3,7 +3,7 @@ requires = ["hatchling==1.26.3"]
 build-backend = "hatchling.build"
 
 [project]
-name = "solara-assets"
+name = "solara-assets2"
 authors = [{name = "Maarten A. Breddels", email = "maartenbreddels@gmail.com"}]
 license = {file = "LICENSE"}
 requires-python = ">=3.8"
@@ -18,10 +18,18 @@ dependencies = [
 Home = "https://www.github.com/widgetti/solara"
 
 [tool.hatch.version]
-path = "solara_assets/__init__.py"
+path = "solara_assets2/__init__.py"
 
 # Used to call hatch_build.py
 [tool.hatch.build.hooks.custom]
+
+[tool.hatch.build.targets.wheel]
+packages = ["solara_assets2"]
+
+# The cdn directory is downloaded when the wheel is built, the sdist does not
+# need a copy. This halves the storage we use on PyPI.
+[tool.hatch.build.targets.sdist]
+exclude = ["/cdn"]
 
 [tool.hatch.build.targets.wheel.shared-data]
 "cdn" = "share/solara/cdn"

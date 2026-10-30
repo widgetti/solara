@@ -66,7 +66,8 @@ The `release` job in the workflow only runs when:
 1. All test jobs pass (build, code-quality, test-install, integration-test, unit-test)
 2. The ref is a version tag (starts with `refs/tags/v`)
 
-Packages published: `solara`, `solara-ui`, `solara-server`, `solara-assets`, `solara-enterprise`, `solara-meta`, `pytest-ipywidgets`
+Packages published: `solara`, `solara-ui`, `solara-server`, `solara-enterprise`, `solara-meta`, `pytest-ipywidgets`.
+`solara-assets2` is only published when its own version changes, see [packages/solara-assets/RELEASE.md](packages/solara-assets/RELEASE.md).
 
 ## Step 5: Update Changelog
 
