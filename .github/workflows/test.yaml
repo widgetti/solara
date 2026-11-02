@@ -81,8 +81,11 @@ jobs:
       - name: Build solara
         run: hatch build
 
-      - name: Build solara-assets
+      - name: Build solara-assets2
         run: (cd packages/solara-assets; hatch build)
+
+      - name: Check that changed solara-assets2 content has a new version
+        run: python packages/solara-assets/check_version.py packages/solara-assets/dist/*.whl
 
       - name: Build solara-server
         run: (cd packages/solara-server; hatch build)

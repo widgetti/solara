@@ -71,7 +71,7 @@ $ pip uninstall solara-assets
 $ pip install --upgrade "solara[assets]"
 ```
 
-If you already upgraded, uninstall `solara-assets` and run `pip install --force-reinstall solara-assets2` to restore the files.
+If you already upgraded, uninstall `solara-assets` and run `pip install --force-reinstall --no-deps solara-assets2` to restore the files.
 
 ### Airgapped install
 

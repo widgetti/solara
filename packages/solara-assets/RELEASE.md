@@ -4,13 +4,13 @@ This directory builds the `solara-assets2` package.
 It replaced `solara-assets`, which hit the PyPI storage cap of 10 GB per project.
 
 `solara-assets2` has its own version, not the solara version.
-Bump it only when the assets change, which is when `packages` or the prune rules in `hatch_build.py` change.
-`tests/unit/solara_assets_test.py` fails when you forget.
+Bump it only when the wheel changes, for example when `packages` or the prune rules in `hatch_build.py` change.
+The `Check that changed solara-assets2 content has a new version` step in CI fails when the wheel differs from the wheel on PyPI with the same version.
+A release of `solara-vuetify-app` or `solara-vuetify3-app` changes `hatch_build.py`, so it always needs this bump.
 To bump:
 
 1. Bump `__version__` in `solara_assets2/__init__.py`.
-2. Add the new version, with the hash that the failing test prints, at the end of `content_hashes` in the same file.
-3. Change the `solara-assets2==...` pin in `packages/solara-meta/pyproject.toml`.
+2. Change the `solara-assets2==...` pin in `packages/solara-meta/pyproject.toml`.
 
 The release CI publishes `solara-assets2` on every solara release, and skips the upload when that version is already on PyPI.
 

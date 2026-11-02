@@ -34,6 +34,8 @@ The release script will fail if there are unreleased JavaScript package changes.
 (cd packages/solara-vuetify3-app && ./release.sh <patch|minor|major>)
 ```
 
+A JS package release changes the assets, so also bump `solara-assets2`, see [packages/solara-assets/RELEASE.md](packages/solara-assets/RELEASE.md).
+
 ## Step 3: Run the Release Script
 
 ```bash
