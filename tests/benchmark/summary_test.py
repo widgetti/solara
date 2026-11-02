@@ -131,10 +131,13 @@ def test_lazy_regex_lists_distinct_features():
         "The browser loads it on first use, which slows down that first render. "
         'Add "+jupyter-controls" to --frontend (SOLARA_FRONTEND) to preload it, for example --frontend=minimal,+katex,+jupyter-controls.',
         'solara: frontend feature "vuetify" was not preloaded, it loads now. Add "+vuetify" to --frontend (SOLARA_FRONTEND) to preload it.',
+        # a requirejs request names the module that asked
+        'solara: frontend feature "lumino" was not preloaded, it loads now for the requirejs module "@phosphor/widgets". '
+        'Add "+lumino" to --frontend (SOLARA_FRONTEND) to preload it.',
         'Add "+unknown" to --frontend, Add "+vuetify-extra" to --frontend, x+mdi +mermaid',
         "no features here",
     ]
-    assert lazy_features(texts) == ["jupyter-controls", "vue-sfc", "vuetify"]
+    assert lazy_features(texts) == ["jupyter-controls", "lumino", "vue-sfc", "vuetify"]
     assert lazy_features([]) == []
 
 

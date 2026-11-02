@@ -20,8 +20,9 @@ const internalFeatures = new Set<string>(['sanitizer']);
 let enabledNames: string[] | null = null;
 const loading = new Map<string, Promise<any>>();
 const loaded = new Map<string, any>();
-const lazyLoaded: string[] = [];
-const lazyLoadCallbacks: ((name: string) => void)[] = [];
+// the lazy loaded features, each with the AMD module that asked for it (or undefined)
+const lazyLoaded: [string, string | undefined][] = [];
+const lazyLoadCallbacks: ((name: string, module?: string) => void)[] = [];
 
 /**
  * Register a feature. weakId is require.resolveWeak(<chunk root>), which lets
@@ -68,31 +69,35 @@ export function getLoadedFeature(name: string): any {
   return loaded.get(name);
 }
 
-/** Called once per lazy loaded feature; also for lazy loads that happened before the callback was added. */
-export function onLazyLoad(callback: (name: string) => void): void {
+/**
+ * Called once per lazy loaded feature, with the AMD module that asked for it, if any (e.g. '@phosphor/widgets'
+ * for lumino); also for lazy loads that happened before the callback was added.
+ */
+export function onLazyLoad(callback: (name: string, module?: string) => void): void {
   lazyLoadCallbacks.push(callback);
-  lazyLoaded.forEach(name => callback(name));
+  lazyLoaded.forEach(([name, module]) => callback(name, module));
 }
 
-function warnLazyLoad(name: string): void {
-  if (lazyLoaded.indexOf(name) !== -1) {
+function warnLazyLoad(name: string, module?: string): void {
+  if (lazyLoaded.some(([loadedName]) => loadedName === name)) {
     return;
   }
-  lazyLoaded.push(name);
+  lazyLoaded.push([name, module]);
   console.warn(
-    `solara: frontend feature "${name}" was not preloaded, it loads now. ` +
-    `Add "+${name}" to --frontend (SOLARA_FRONTEND) to preload it.`
+    `solara: frontend feature "${name}" was not preloaded, it loads now` +
+    (module ? ` for the requirejs module "${module}"` : '') +
+    `. Add "+${name}" to --frontend (SOLARA_FRONTEND) to preload it.`
   );
   lazyLoadCallbacks.forEach(callback => {
     try {
-      callback(name);
+      callback(name, module);
     } catch (e) {
       console.error(e);
     }
   });
 }
 
-function load(name: string, warn: boolean): Promise<any> {
+function load(name: string, warn: boolean, module?: string): Promise<any> {
   let promise = loading.get(name);
   if (promise) {
     return promise;
@@ -107,7 +112,7 @@ function load(name: string, warn: boolean): Promise<any> {
     promise = Promise.resolve({});
   } else {
     if (warn && enabledNames !== null && !isEnabled(name) && !internalFeatures.has(name)) {
-      warnLazyLoad(name);
+      warnLazyLoad(name, module);
     }
     // requirements load silently: the warning names the feature that needs them
     const needs = feature.needs.map(need => load(need, false));
@@ -123,14 +128,17 @@ function load(name: string, warn: boolean): Promise<any> {
   return promise;
 }
 
-/** Returns the feature's module, loading it (and its requirements) when needed. */
-export function loadFeature(name: string): Promise<any> {
-  return load(name, true);
+/**
+ * Returns the feature's module, loading it (and its requirements) when needed.
+ * module: the AMD module that asked for it, for the warning of a lazy load.
+ */
+export function loadFeature(name: string, module?: string): Promise<any> {
+  return load(name, true, module);
 }
 
 function loadSync(name: string, missing: string[]): void {
   const feature = features[name];
-  if (!feature || loaded.has(name)) {
+  if (!feature || loaded.has(name) || missing.indexOf(name) !== -1) {
     return;
   }
   feature.needs.forEach(need => loadSync(need, missing));
@@ -144,8 +152,10 @@ function loadSync(name: string, missing: string[]): void {
     // not a chunk of this bundle (e.g. mermaid): loads on first use, without a warning
     return;
   }
-  if (!__webpack_modules__[id]) {
-    // the chunk <script> did not run (yet): it stays async
+  if (!__webpack_modules__[id] || feature.needs.some(need => missing.indexOf(need) !== -1)) {
+    // the chunk <script> did not run (yet), or a chunk it needs did not (its code uses the modules of that
+    // chunk, e.g. jupyter-controls uses Lumino of the lumino chunk): it stays async, and loads what it
+    // needs on first use
     missing.push(name);
     return;
   }
@@ -181,16 +191,24 @@ registerFeature(
   require.resolveWeak('./chunks/sanitizer'),
 );
 registerFeature(
+  'lumino',
+  () => import(/* webpackChunkName: "lumino" */ './chunks/lumino'),
+  [],
+  false,
+  require.resolveWeak('./chunks/lumino'),
+);
+// these chunks load from the lumino chunk (and run after it), so they share its modules
+registerFeature(
   'jupyter-controls',
-  () => import(/* webpackChunkName: "jupyter-controls" */ './chunks/controls'),
-  ['jupyter-css', 'sanitizer'],
+  () => load('lumino', false).then(lumino => lumino.loadControls()),
+  ['jupyter-css', 'sanitizer', 'lumino'],
   false,
   require.resolveWeak('./chunks/controls'),
 );
 registerFeature(
   'output-widget',
-  () => import(/* webpackChunkName: "output-widget" */ './chunks/output'),
-  ['jupyter-css', 'sanitizer'],
+  () => load('lumino', false).then(lumino => lumino.loadOutput()),
+  ['jupyter-css', 'sanitizer', 'lumino'],
   false,
   require.resolveWeak('./chunks/output'),
 );

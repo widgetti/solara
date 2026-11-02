@@ -64,6 +64,7 @@ FEATURES = [
     "material-icons",
     "roboto",
     "font-awesome",
+    "lumino",
     "jupyter-controls",
     "output-widget",
     "jupyter-css",
