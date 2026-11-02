@@ -1,5 +1,11 @@
 # Solara Changelog
 
+## Version 1.65.2
+
+- Bug Fix: `GridDraggable` shows its items again with ipyvue 3, which a fresh install uses. [#1270](https://github.com/widgetti/solara/pull/1270)
+- Bug Fix: `GridDraggable` items can be dragged and resized under voila with Vue 2. [#1270](https://github.com/widgetti/solara/pull/1270)
+- Packaging: `solara-assets2` 1.1.0 adds `grid-layout-plus`, so `GridDraggable` works without a CDN. [#1270](https://github.com/widgetti/solara/pull/1270)
+
 ## Version 1.65.1
 
 Version 1.65.0 was never published, because its build failed. This release includes everything planned for it.
