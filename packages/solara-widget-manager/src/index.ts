@@ -21,6 +21,7 @@ export {
   loadFeature,
   loadPreloadedFeaturesSync,
   getLoadedFeature,
-  onLazyLoad
+  onLazyLoad,
+  onMissingFeature
 } from './features';
 export { defineAmdModules } from './amd';
