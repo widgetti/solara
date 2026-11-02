@@ -223,6 +223,21 @@ def test_page_fetches_the_theme_css_from_immutable_urls(no_kernel_context, tmp_p
         assert cache_control(client, url) == IMMUTABLE
 
 
+@pytest.mark.parametrize(
+    "path, sep, expected",
+    [
+        ("@widgetti/solara-vuetify3-app@5.2.0/dist/main8.css", "/", True),
+        # Windows: StaticFiles.get_path returns an OS path
+        ("@widgetti\\solara-vuetify3-app@5.2.0\\dist\\main8.css", "\\", True),
+        ("requirejs@2.3.6\\require.js", "\\", True),
+        ("pkg@^1\\index.js", "\\", False),
+        ("pkg@1.2\\index.js", "\\", False),
+    ],
+)
+def test_cdn_proxy_exact_version_os_paths(path: str, sep: str, expected: bool):
+    assert StaticCdn._pins_exact_version(path, sep) is expected
+
+
 BIG = b"console.log('hello solara');\n" * 200
 BIG_DIGEST = hashlib.md5(BIG).hexdigest()
 

@@ -14,6 +14,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional, cast
 
+import ipyvue
 import ipywidgets as widgets
 import reacton
 from reacton.core import Element, render
@@ -23,7 +24,7 @@ import solara
 import solara.lifecycle
 from solara.util import nested_get
 
-from . import kernel_context, patch, reload, settings
+from . import frontend, kernel_context, patch, reload, settings
 from .kernel import Kernel
 from .utils import pdb_guard
 
@@ -76,6 +77,23 @@ class AppType(str, Enum):
 
 def display(*args, **kwargs):
     print("display not implemented", args, kwargs)  # noqa
+
+
+def _error_widget(text: str) -> widgets.Widget:
+    """A widget that shows an error, such as a traceback.
+
+    ipywidgets.HTML needs the jupyter-controls frontend feature, so without it we use ipyvue.Html.
+    """
+    if "jupyter-controls" in frontend.active():
+        return widgets.HTML(f"<pre>{html.escape(text)}</pre>", layout=widgets.Layout(overflow="auto"))
+    return ipyvue.Html(tag="pre", children=[text], style_="overflow: auto")
+
+
+def _error_element(text: str) -> Element:
+    """Like _error_widget, but an element, so each virtual kernel creates its own widget."""
+    if "jupyter-controls" in frontend.active():
+        return ipywidgets.HTML(value=f"<pre>{html.escape(text)}</pre>", layout=ipywidgets.Layout(overflow="auto"))
+    return ipyvue.Html.element(tag="pre", children=[text], style_="overflow: auto")
 
 
 class AppScript:
@@ -278,8 +296,7 @@ class AppScript:
                         error = "".join(traceback.format_exception(None, e, e.__traceback__))
                         print(error, file=sys.stdout, flush=True)  # noqa
 
-                        error = html.escape(error)
-                        self._first_execute_app = ipywidgets.HTML(value=f"<pre>{error}</pre>", layout=ipywidgets.Layout(overflow="auto"))
+                        self._first_execute_app = _error_element(error)
                         # We now ran the app again, might contain new imports
 
                         print("Failed to execute app, fix the error and save the file to reload")  # noqa
@@ -463,11 +480,8 @@ def load_app_widget(app_state, app_script: AppScript, pathname: str):
         error = "".join(traceback.format_exception(None, e, e.__traceback__))
         print(error, file=sys.stdout, flush=True)  # noqa
         # widget = widgets.Label(value="Error, see server logs")
-        import html
-
-        error = html.escape(error)
         with context:
-            widget = widgets.HTML(f"<pre>{error}</pre>", layout=widgets.Layout(overflow="auto"))
+            widget = _error_widget(error)
             container.children = [widget]
 
 
@@ -552,6 +566,9 @@ def solara_comm_target(comm, msg_first):
             app_name = args.get("appName") or "__default__"
             app = apps[app_name]
             context = kernel_context.get_current_context()
+            # the features the page preloaded: the server keeps building widgets for this page,
+            # also when a hot reload changes solara.server.settings.main.frontend
+            context.frontend = frontend.from_page(args.get("frontend"))
             import ipyvuetify
 
             container = ipyvuetify.Html(tag="div")
@@ -621,6 +638,9 @@ def solara_comm_target(comm, msg_first):
                 # machinery, which must not happen re-entrantly from the kernel's own message
                 # thread that is executing this handler
                 threading.Thread(target=lambda: context.close(reason="evicted"), name=f"evict-{context.id}", daemon=True).start()
+        elif method == "frontend-lazy-load":
+            # the browser loaded a frontend feature that the page did not preload
+            frontend.log_lazy_load(data.get("feature"))
         else:
             logger.error("Unknown comm method called on solara.control comm: %s", method)
 

@@ -21,6 +21,8 @@ repos:
     hooks:
       - id: codespell
         files: ^.*\.(py|md|yaml|js|ts|ipynb)$
+        # vendored minified file
+        exclude: ^solara/server/static/require\.min\.js$
         args: ["--skip=**/solara_portal/**"]
         additional_dependencies:
           - tomli

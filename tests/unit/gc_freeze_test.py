@@ -21,18 +21,30 @@ HERE = Path(__file__).parent
 APP = str(HERE / "solara_test_apps" / "single_file.py")
 
 
+def unfrozen_count() -> int:
+    """The freeze count without gc.freeze(), after an unfreeze.
+
+    It is not 0 on Python 3.12: every collection moves the immortal objects (a few
+    hundred, seen on CI) to the permanent generation, also after gc.unfreeze().
+    A collection can run at any time (automatically, or in the
+    solara-gc-after-kernel-close thread), so collect first: then only gc.freeze()
+    raises the count. Tests assert on the DELTA, not absolutes.
+    """
+    gc.unfreeze()
+    gc.collect()
+    return gc.get_freeze_count()
+
+
 @pytest.fixture
 def freeze_baseline():
     # the flag is process-global; reset it and make sure we never leave the
     # process frozen (frozen objects would be excluded from gc for other tests).
-    # Other code in the process may already have frozen objects (seen on CI:
-    # a few hundred at test start), so tests assert on the DELTA, not absolutes.
     previous_flag = solara.server.app._gc_frozen
     previous_setting = solara.server.settings.main.gc_freeze
     previous_mode = solara.server.settings.main.mode
     solara.server.app._gc_frozen = False
     try:
-        yield gc.get_freeze_count()
+        yield unfrozen_count()
     finally:
         gc.unfreeze()
         solara.server.app._gc_frozen = previous_flag
@@ -72,8 +84,8 @@ def test_gc_freeze_only_once(freeze_baseline, kernel_context, no_kernel_context)
     solara.server.settings.main.gc_freeze = None
     _init_app(no_kernel_context)
     assert gc.get_freeze_count() > freeze_baseline
-    gc.unfreeze()
+    baseline = unfrozen_count()
     # a second app init (e.g. another app on a different route) must not freeze again:
     # by then session objects can exist and freezing them would pin them forever
     _init_app(no_kernel_context)
-    assert gc.get_freeze_count() == 0
+    assert gc.get_freeze_count() == baseline

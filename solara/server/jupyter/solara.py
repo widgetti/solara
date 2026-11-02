@@ -28,7 +28,8 @@ class SolaraHandler(JupyterHandler):
             if base_url and base_url.endswith("/"):
                 jupyter_root_path = base_url[:-1]
             root_path = f"{jupyter_root_path}/solara"
-            content = server.read_root(path="", root_path=root_path, jupyter_root_path=jupyter_root_path)
+            # legacy: this page is not served by a Solara server (no /static/require.min.js, no --frontend)
+            content = server.read_root(path="", root_path=root_path, jupyter_root_path=jupyter_root_path, legacy=True)
         except Exception as e:
             logger.exception(e)
             raise tornado.web.HTTPError(500)
