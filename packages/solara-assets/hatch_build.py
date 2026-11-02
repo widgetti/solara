@@ -12,7 +12,7 @@ packages = [
     ["mermaid", "10.8.0"],
     ["codemirror", "5.65.3"],
     ["vega", "5.21.0"],
-    ["vega-lite", "5.2.1"],
+    ["vega-lite", "5.2.0"],
     ["vega-embed", "6.20.2"],
     ["@widgetti/vue-grid-layout", "2.3.13-alpha.2"],
     ["@widgetti/solara-milkdown", "6.3.0"],
