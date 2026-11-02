@@ -7,12 +7,12 @@ from hatchling.builders.hooks.plugin.interface import BuildHookInterface
 
 packages = [
     ["@widgetti/solara-vuetify-app", "10.1.2"],
-    ["@widgetti/solara-vuetify3-app", "5.2.0"],
+    ["@widgetti/solara-vuetify3-app", "5.2.1"],
     ["requirejs", "2.3.6"],
     ["mermaid", "10.8.0"],
     ["codemirror", "5.65.3"],
     ["vega", "5.21.0"],
-    ["vega-lite", "5.2.0"],
+    ["vega-lite", "5.2.1"],
     ["vega-embed", "6.20.2"],
     ["@widgetti/vue-grid-layout", "2.3.13-alpha.2"],
     ["@widgetti/solara-milkdown", "6.3.0"],
