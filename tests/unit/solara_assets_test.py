@@ -72,3 +72,10 @@ def test_check_version_main(tmp_path: Path):
     assert main_with_published(None) == 0
     assert main_with_published(same.as_uri()) == 0
     assert main_with_published(changed.as_uri()) == 1
+
+
+def test_wheel_creates_cache_directory():
+    # without this directory, solara turns off the assets proxy on a read-only prefix
+    pyproject = (assets_dir / "pyproject.toml").read_text(encoding="utf8")
+    assert '"cache_dir_placeholder" = "share/solara/cdn/.solara-assets2"' in pyproject
+    assert (assets_dir / "cache_dir_placeholder").is_file()
