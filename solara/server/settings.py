@@ -81,6 +81,9 @@ class Telemetry(BaseSettings):
 
 class Assets(BaseSettings):
     proxy_cache_dir: Path = Path(prefix + "/share/solara/cdn/")
+    # where solara-assets2 installs its files. We only read from here, and pip owns these files,
+    # so they stay apart from the cache, and from the files of the old solara-assets package.
+    preinstalled_dir: Path = Path(prefix + "/share/solara-assets2/cdn/")
     fontawesome_enabled: bool = True
     fontawesome_path: str = "/font-awesome@4.5.0/css/font-awesome.min.css"
     extra_locations: List[str] = []

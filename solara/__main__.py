@@ -604,6 +604,7 @@ def staticbuild():
 
     from .server import settings
 
+    copytree(settings.assets.preinstalled_dir, target_dir / "_solara/cdn/")
     copytree(settings.assets.proxy_cache_dir, target_dir / "_solara/cdn/")
 
     static_dir_target = target_dir / "static"

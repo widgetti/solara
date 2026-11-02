@@ -32,7 +32,7 @@ packages = ["solara_assets2"]
 exclude = ["/cdn"]
 
 [tool.hatch.build.targets.wheel.shared-data]
-"cdn" = "share/solara/cdn"
+"cdn" = "share/solara-assets2/cdn"
 
 [tool.black]
 line-length = 160

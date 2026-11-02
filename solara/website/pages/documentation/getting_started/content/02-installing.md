@@ -64,14 +64,7 @@ $ pip install "solara[assets]"
 ```
 
 The assets used to be in the `solara-assets` package, and are now in `solara-assets2`.
-Both packages install the same files, so if you have `solara-assets` installed, remove it before you upgrade:
-
-```
-$ pip uninstall solara-assets
-$ pip install --upgrade "solara[assets]"
-```
-
-If you already upgraded, uninstall `solara-assets` and run `pip install --force-reinstall --no-deps solara-assets2==VERSION` to restore the files, where `pip show solara-assets2` shows the `VERSION` you have installed.
+If you still have `solara-assets` installed, you can safely remove it with `pip uninstall solara-assets`.
 
 ### Airgapped install
 
