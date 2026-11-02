@@ -43,7 +43,7 @@ brotli = [
 ]
 
 assets = [
-    "solara-assets2==1.0.0"
+    "solara-assets2==1.1.0"
 ]
 
 documentation = [
