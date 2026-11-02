@@ -856,6 +856,12 @@ jobs:
       # solara-assets2 has its own version, which only changes when the assets
       # change. Most releases ship the same version again, which we skip.
       # We publish it before solara-meta, which pins it.
+      # The build job ran this check before the tests, we repeat it because
+      # another release can have published this version since then.
+      - name: Check that changed solara-assets2 content has a new version
+        if: startsWith(github.event.ref, 'refs/tags/v')
+        run: python packages/solara-assets/check_version.py packages/solara-assets/dist/*.whl
+
       - name: Publish solara-assets2 to PyPI
         if: startsWith(github.event.ref, 'refs/tags/v')
         uses: pypa/gh-action-pypi-publish@release/v1

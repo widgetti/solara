@@ -1,5 +1,7 @@
 import ast
 import importlib.util
+import io
+import json
 import re
 import unittest.mock
 import zipfile
@@ -40,6 +42,16 @@ def test_check_version_compares_file_hashes(tmp_path: Path):
     _write_wheel(tmp_path / "changed.whl", f"a.js,sha256=zzz,1\nc.js,sha256=ccc,1\n{record_name},,\n")
     changed = check_version.wheel_files(tmp_path / "changed.whl")
     assert check_version.differences(changed, published) == ["a.js", "b.js", "c.js"]
+
+    # RECORD is a csv file, so a path with a comma is quoted
+    _write_wheel(tmp_path / "comma.whl", f'"a,b.js",sha256=aaa,1\n{record_name},,\n')
+    assert check_version.wheel_files(tmp_path / "comma.whl") == {"a,b.js": "sha256=aaa"}
+
+
+def test_check_version_without_published_wheel():
+    response = io.BytesIO(json.dumps({"urls": [{"packagetype": "sdist", "url": "https://example.com/a.tar.gz"}]}).encode())
+    with unittest.mock.patch("urllib.request.urlopen", return_value=response):
+        assert check_version.published_wheel_url("1.0.0") is None
 
 
 def test_check_version_main(tmp_path: Path):
