@@ -12,6 +12,12 @@ import solara.server.settings
 from solara.server.cdn_helper import get_cdn_url, get_data, get_from_cache, get_preinstalled_path, put_in_cache, get_path
 
 
+@pytest.fixture(autouse=True)
+def no_preinstalled_assets(tmp_path: Path, monkeypatch):
+    # the tests should not depend on solara-assets2 being installed
+    monkeypatch.setattr(solara.server.settings.assets, "preinstalled_dir", tmp_path / "no-preinstalled")
+
+
 def norm(path):
     # this is what starlette does
     return os.path.normpath(os.path.join(*path.split("/")))

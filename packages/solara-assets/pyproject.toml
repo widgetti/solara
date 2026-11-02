@@ -11,7 +11,8 @@ requires-python = ">=3.8"
 classifiers = ["License :: OSI Approved :: MIT License"]
 dynamic = ["version", "description"]
 dependencies = [
-    "solara",
+    # older versions of solara do not look in the directory where we install
+    "solara>1.64.1",
 ]
 
 [project.urls]
@@ -33,6 +34,10 @@ exclude = ["/cdn"]
 
 [tool.hatch.build.targets.wheel.shared-data]
 "cdn" = "share/solara-assets2/cdn"
+# Solara turns off the assets proxy when it cannot create its cache directory, for instance
+# when root installs solara and another user runs it. So pip has to create that directory,
+# or the server would not serve the files we install.
+"cache_dir_placeholder" = "share/solara/cdn/.solara-assets2"
 
 [tool.black]
 line-length = 160
