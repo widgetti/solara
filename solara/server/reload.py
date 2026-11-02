@@ -117,6 +117,10 @@ else:
                 else:
                     logger.debug("Ignore file modification: %s", event.src_path)
 
+        def on_attrib(self, event):
+            # watchdog >= 7 reports a timestamp-only change, such as `touch`, here and not in on_modified
+            self.on_modified(event)
+
         def _handle_possible_change(self, path: str):
             # we are on the watchdog dispatcher thread: an escaping exception kills that thread
             # and hot-reload silently stops working, so never raise here
