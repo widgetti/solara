@@ -24,7 +24,7 @@ def test_grid_draggable(ipywidgets_runner, page_session: playwright.sync_api.Pag
         @solara.component
         def Page():
             with solara.Column():
-                solara.Text(f"item 0 at x={layout.value[0]['x']}", classes=["test-grid-state"])
+                solara.Text(f"item 0 at x={layout.value[0]['x']} w={layout.value[0]['w']}", classes=["test-grid-state"])
                 solara.GridDraggable(
                     items=[solara.Text("grid item 0", classes=["test-grid-item-0"]), solara.Text("grid item 1", classes=["test-grid-item-1"])],
                     grid_layout=layout.value,
@@ -64,4 +64,18 @@ def test_grid_draggable(ipywidgets_runner, page_session: playwright.sync_api.Pag
     page_session.mouse.down()
     page_session.mouse.move(viewport["width"] - 10, box0["y"] + 5, steps=10)
     page_session.mouse.up()
-    expect(page_session.locator(".test-grid-state")).to_have_text("item 0 at x=8")
+    state = page_session.locator(".test-grid-state")
+    expect(state).to_have_text("item 0 at x=8 w=4")
+    page_session.wait_for_timeout(500)  # let the css transition finish
+
+    # resize item 0 to the smallest width, which is 1 column
+    handle = page_session.locator(".vue-grid-item:has(.test-grid-item-0) .vue-resizable-handle, .vgl-item:has(.test-grid-item-0) .vgl-item__resizer")
+    # in lab and notebook the handle can be below the fold, even when the text of the item is not
+    handle.scroll_into_view_if_needed()
+    box = handle.bounding_box()
+    assert box is not None
+    page_session.mouse.move(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
+    page_session.mouse.down()
+    page_session.mouse.move(10, box["y"] + box["height"] / 2, steps=10)
+    page_session.mouse.up()
+    expect(state).to_have_text("item 0 at x=8 w=1")

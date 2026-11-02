@@ -105,6 +105,15 @@ module.exports = {
 </script>
 
 <style id="grid_layout">
+/* Without these rules, the grid library calls console.warn with the element when a
+   drag or resize starts. Voila's replacement of console.warn throws on that
+   element, so the drag or resize never starts.
+   This touch-action keeps vertical scrolling and pinch zoom by touch. On Android,
+   the library still sets touch-action: none on draggable items. */
+.vue-grid-item {
+  touch-action: pan-y pinch-zoom;
+  box-sizing: border-box;
+}
 .vue-grid-item > div {
   height: 100%;
 }
