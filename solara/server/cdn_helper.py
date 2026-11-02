@@ -4,8 +4,10 @@ import pathlib
 import secrets
 import shutil
 import time
+from typing import Optional
 
 import requests
+from solara.server import settings
 from solara.server.utils import path_is_child_of
 
 import solara.settings
@@ -87,6 +89,14 @@ def get_from_cache(base_cache_dir: pathlib.Path, path):
         pass
 
 
+def get_preinstalled_path(path) -> Optional[pathlib.Path]:
+    base_dir = settings.assets.preinstalled_dir
+    preinstalled_path = base_dir / path
+    if path_is_child_of(preinstalled_path, base_dir) and preinstalled_path.is_file():
+        return preinstalled_path
+    return None
+
+
 def get_cdn_url(path):
     path = str(path)  # on windows, the path can contain a \
     return str(solara.settings.assets.cdn) + str(path).replace("\\", "/")
@@ -99,6 +109,10 @@ def get_data(base_cache_dir: pathlib.Path, path):
     content = get_from_cache(base_cache_dir, store_path)
     if content:
         return content
+
+    preinstalled_path = get_preinstalled_path(store_path)
+    if preinstalled_path is not None:
+        return preinstalled_path.read_bytes()
 
     data = fetch_from_cdn(get_cdn_url(path))
     put_in_cache(base_cache_dir, store_path, data)
@@ -121,6 +135,9 @@ def get_path(base_cache_dir: pathlib.Path, path) -> pathlib.Path:
             shutil.rmtree(cache_path)
         else:
             return cache_path
+    preinstalled_path = get_preinstalled_path(store_path)
+    if preinstalled_path is not None:
+        return preinstalled_path
     data = fetch_from_cdn(get_cdn_url(path))
     put_in_cache(base_cache_dir, store_path, data)
     assert cache_path.exists(), f"Could not write to {cache_path}"

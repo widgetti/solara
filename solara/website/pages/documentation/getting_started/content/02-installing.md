@@ -63,9 +63,12 @@ Normally, Solara fetches assets (CSS, JavaScript and fonts) from a CDN on the fl
 $ pip install "solara[assets]"
 ```
 
+The assets used to be in the `solara-assets` package, and are now in `solara-assets2`.
+If you still have `solara-assets` installed, you can safely remove it with `pip uninstall solara-assets`.
+
 ### Airgapped install
 
-If you cannot install `solara` or `solara-assets` from pypi because the server is not connected to the internet, you can
+If you cannot install `solara` or `solara-assets2` from pypi because the server is not connected to the internet, you can
 follow the following steps to install Solara:
 
 ```bash

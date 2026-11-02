@@ -21,7 +21,7 @@ packages = [
 ]
 
 
-# Per-package prune rules applied after npm pack, to keep the solara-assets
+# Per-package prune rules applied after npm pack, to keep the solara-assets2
 # wheel under PyPI's 10 GB per-project storage cap.
 # Each entry is a list of glob patterns (relative to the package root) whose
 # matching files/directories are removed. Kept intentionally conservative:
@@ -89,6 +89,6 @@ def download_cdn(cache_dir):
 
 class CustomHook(BuildHookInterface):
     def initialize(self, version, build_data):
-        if self.target_name not in ["wheel", "sdist"]:
+        if self.target_name != "wheel":
             return
         download_cdn(pathlib.Path("cdn"))

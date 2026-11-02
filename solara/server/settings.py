@@ -81,6 +81,9 @@ class Telemetry(BaseSettings):
 
 class Assets(BaseSettings):
     proxy_cache_dir: Path = Path(prefix + "/share/solara/cdn/")
+    # where solara-assets2 installs its files. We only read from here, and pip owns these files,
+    # so they stay apart from the cache, and from the files of the old solara-assets package.
+    preinstalled_dir: Path = Path(prefix + "/share/solara-assets2/cdn/")
     fontawesome_enabled: bool = True
     fontawesome_path: str = "/font-awesome@4.5.0/css/font-awesome.min.css"
     extra_locations: List[str] = []
@@ -289,7 +292,7 @@ if settings.assets.proxy:
             "Or change the SOLARA_PROXY_CACHE_DIR environment variable to a directory where you have write access."
         )
         # that's ok, the user probably doesn't have permission to create the directory
-        # in this case, we would need to install solara-assets?
+        # in this case, we would need to install solara-assets2?
         pass
 
 if telemetry.server_user_id == "not_set" and FileLock is not None:

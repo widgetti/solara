@@ -1,12 +1,21 @@
 import hashlib
 import os
 import threading
+import unittest.mock
 from pathlib import Path
 
 from pytest import TempPathFactory
 import pytest
 
-from solara.server.cdn_helper import get_cdn_url, get_data, get_from_cache, put_in_cache, get_path
+import solara.server.cdn_helper
+import solara.server.settings
+from solara.server.cdn_helper import get_cdn_url, get_data, get_from_cache, get_preinstalled_path, put_in_cache, get_path
+
+
+@pytest.fixture(autouse=True)
+def no_preinstalled_assets(tmp_path: Path, monkeypatch):
+    # the tests should not depend on solara-assets2 being installed
+    monkeypatch.setattr(solara.server.settings.assets, "preinstalled_dir", tmp_path / "no-preinstalled")
 
 
 def norm(path):
@@ -88,6 +97,39 @@ def test_cdn_url():
 def test_get_path(tmpdir):
     full_path = get_path(Path(tmpdir), path1)
     assert str(full_path).endswith("vue-grid-layout.min.js")
+
+
+@pytest.fixture
+def preinstalled_dir(tmp_path: Path, monkeypatch):
+    base_dir = tmp_path / "preinstalled"
+    (base_dir / "pkg@1.0.0").mkdir(parents=True)
+    (base_dir / "pkg@1.0.0" / "a.js").write_bytes(b"preinstalled")
+    monkeypatch.setattr(solara.server.settings.assets, "preinstalled_dir", base_dir)
+    # any attempt to use the CDN fails the test
+    monkeypatch.setattr(solara.server.cdn_helper, "fetch_from_cdn", unittest.mock.Mock(side_effect=AssertionError("should not fetch")))
+    return base_dir
+
+
+def test_preinstalled_used_without_fetch(tmp_path: Path, preinstalled_dir: Path):
+    cache_dir = tmp_path / "cache"
+    assert get_path(cache_dir, "pkg@1.0.0/a.js") == preinstalled_dir / "pkg@1.0.0" / "a.js"
+    assert get_data(cache_dir, "pkg@1.0.0/a.js") == b"preinstalled"
+    # we never write to the cache for these files
+    assert not cache_dir.exists()
+
+
+def test_cache_goes_before_preinstalled(tmp_path: Path, preinstalled_dir: Path):
+    cache_dir = tmp_path / "cache"
+    put_in_cache(cache_dir, "pkg@1.0.0/a.js", b"cached")
+    assert get_path(cache_dir, "pkg@1.0.0/a.js") == cache_dir / "pkg@1.0.0" / "a.js"
+    assert get_data(cache_dir, "pkg@1.0.0/a.js") == b"cached"
+
+
+def test_preinstalled_stays_in_its_directory(tmp_path: Path, preinstalled_dir: Path):
+    (tmp_path / "secret.js").write_bytes(b"secret")
+    assert get_preinstalled_path("../secret.js") is None
+    assert get_preinstalled_path("pkg@1.0.0") is None  # a directory
+    assert get_preinstalled_path("pkg@1.0.0/missing.js") is None
 
 
 def test_get_data(tmp_path_factory):
