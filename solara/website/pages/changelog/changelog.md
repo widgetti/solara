@@ -1,5 +1,20 @@
 # Solara Changelog
 
+## Version 1.65.1
+
+Version 1.65.0 was never published, because its build failed. This release includes everything planned for it.
+
+- Feature: Select a range of files in the file browser with Shift-click. [#1205](https://github.com/widgetti/solara/pull/1205)
+- Bug Fix: Hot reload works again with watchdog 7 when a file only gets a new timestamp. [#1271](https://github.com/widgetti/solara/pull/1271)
+- Bug Fix: A binary send from the event loop no longer drops the websocket. [#1261](https://github.com/widgetti/solara/pull/1261)
+- Bug Fix: The reconnect loop stops when the session cookie is lost. [#1264](https://github.com/widgetti/solara/pull/1264)
+- Bug Fix: A stopped websocket portal counts as a closed websocket. [#1260](https://github.com/widgetti/solara/pull/1260)
+- Bug Fix: Widget messages sent after the page is hidden are dropped instead of raising an error. [#1258](https://github.com/widgetti/solara/pull/1258)
+- Bug Fix: A close beacon for an unknown page no longer fails with a `KeyError`. [#1247](https://github.com/widgetti/solara/pull/1247)
+- Packaging: `solara[assets]` installs again. The assets moved to the new `solara-assets2` package, because `solara-assets` reached the PyPI storage limit. [#1269](https://github.com/widgetti/solara/pull/1269)
+  `solara-assets2` installs in `share/solara-assets2/cdn` instead of `share/solara/cdn`. If you use that directory directly, for example to serve it with nginx, update the path.
+  If you still have `solara-assets` installed, you can safely remove it.
+
 ## Version 1.64.1
 
 - Bug Fix: Clicking a download link no longer disconnects the app. [#1253](https://github.com/widgetti/solara/pull/1253)
