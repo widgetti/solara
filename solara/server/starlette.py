@@ -538,7 +538,7 @@ class _StreamResponse(Response):
                 await send_message({"type": "http.response.start", "status": 200, "headers": headers.raw})
 
             try:
-                with streaming._producer_context(claimed.context):
+                with kernel_context._use_stream_context(claimed.context):
                     if not streaming._live(token, claimed):
                         return
                     iterator = claimed.factory()
