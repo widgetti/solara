@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import asyncio
 import secrets
 import threading
@@ -16,8 +14,8 @@ _PATH = "/_solara/api/streams"
 _TTL = 60.0
 _LIMIT = 8
 _lock = threading.Lock()
-_streams: Dict[str, _Stream] = {}
-_connection_owner: ContextVar[Optional[_Owner]] = ContextVar("stream_connection_owner", default=None)
+_streams: Dict[str, "_Stream"] = {}
+_connection_owner: "ContextVar[Optional[_Owner]]" = ContextVar("stream_connection_owner", default=None)
 
 
 def _principal(user: Optional[dict]) -> Tuple[bool, Optional[Tuple[str, str, str]]]:
@@ -39,7 +37,7 @@ class _Owner:
 
 @dataclass
 class _Stream:
-    context: kernel_context.VirtualKernelContext
+    context: "kernel_context.VirtualKernelContext"
     owner: _Owner
     factory: Callable[[], AsyncGenerator[bytes, None]]
     media_type: str
@@ -79,7 +77,7 @@ def _revoke(owner: _Owner) -> None:
             stream.cancel()
 
 
-def _configure(context: kernel_context.VirtualKernelContext, root_path: str, user: Optional[dict]) -> Optional[_Owner]:
+def _configure(context: "kernel_context.VirtualKernelContext", root_path: str, user: Optional[dict]) -> Optional[_Owner]:
     principal = _principal(user)
     with _lock:
         if context._teardown_done or context.closed_event.is_set():
@@ -93,7 +91,7 @@ def _configure(context: kernel_context.VirtualKernelContext, root_path: str, use
         return owner
 
 
-def _clear(context: kernel_context.VirtualKernelContext, closing: bool = False) -> None:
+def _clear(context: "kernel_context.VirtualKernelContext", closing: bool = False) -> None:
     with _lock:
         owner = context._stream_owner
         if owner is not None:
@@ -190,7 +188,7 @@ def _release(token: str) -> None:
 
 
 @contextmanager
-def _producer_context(context: kernel_context.VirtualKernelContext) -> Iterator[None]:
+def _producer_context(context: "kernel_context.VirtualKernelContext") -> Iterator[None]:
     context_id = kernel_context.async_context_id
     assert context_id is not None
     previous_id = context_id.set(uuid4().hex)
