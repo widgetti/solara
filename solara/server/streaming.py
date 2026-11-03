@@ -2,11 +2,9 @@ import asyncio
 import secrets
 import threading
 import time
-from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
-from typing import AsyncGenerator, Callable, Dict, Iterator, Optional, Set, Tuple
-from uuid import uuid4
+from typing import AsyncGenerator, Callable, Dict, Optional, Set, Tuple
 
 from . import kernel_context, settings
 
@@ -110,7 +108,8 @@ def register_stream(factory: Callable[[], AsyncGenerator[bytes, None]], *, media
 
     The owning browser session gets a same-origin URL. An authorized GET starts
     the async generator factory on the HTTP event loop with the kernel context
-    available. Open loop-bound upstream clients inside the generator and close
+    available to the generator and its async child tasks until the stream ends.
+    Open loop-bound upstream clients inside the generator and close
     them in an async context manager or finally block. The generator must
     cooperate with cancellation. Keep widget updates on the kernel connection.
 
@@ -185,21 +184,3 @@ def _live(token: str, stream: _Stream) -> bool:
 def _release(token: str) -> None:
     with _lock:
         _forget(token)
-
-
-@contextmanager
-def _producer_context(context: "kernel_context.VirtualKernelContext") -> Iterator[None]:
-    context_id = kernel_context.async_context_id
-    assert context_id is not None
-    previous_id = context_id.set(uuid4().hex)
-    previous_stack = kernel_context.async_stack.set((None,))
-    key = kernel_context.get_current_thread_key()
-    kernel_context._stream_context_keys.add(key)
-    kernel_context.current_context[key] = context
-    try:
-        yield
-    finally:
-        kernel_context.current_context.pop(key, None)
-        kernel_context._stream_context_keys.remove(key)
-        kernel_context.async_stack.reset(previous_stack)
-        context_id.reset(previous_id)

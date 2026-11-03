@@ -173,6 +173,9 @@ async def test_stream_cancellation(make_kernel, action, first_chunk):
     cleaned = asyncio.Event()
     messages: List[Message] = []
 
+    async def read_kernel_id():
+        return solara.get_kernel_id(ipython_fallback=False)
+
     async def produce():
         try:
             if first_chunk:
@@ -181,7 +184,7 @@ async def test_stream_cancellation(make_kernel, action, first_chunk):
             await asyncio.Event().wait()
         finally:
             await asyncio.sleep(0)
-            assert solara.get_kernel_id() == context.id
+            assert await asyncio.gather(read_kernel_id()) == [context.id]
             cleaned.set()
 
     url = register(context, produce)
@@ -328,6 +331,10 @@ async def test_stream_context_isolation(make_kernel, monkeypatch, threaded):
     both_started = asyncio.Event()
     seen = set()
 
+    async def read_context():
+        await asyncio.sleep(0)
+        return solara.get_kernel_id(ipython_fallback=False), value.value
+
     async def produce():
         kernel_id = solara.get_kernel_id()
         seen.add(kernel_id)
@@ -336,6 +343,7 @@ async def test_stream_context_isolation(make_kernel, monkeypatch, threaded):
         await both_started.wait()
         assert solara.get_kernel_id() == kernel_id
         assert value.value == kernel_id
+        assert await asyncio.gather(read_context()) == [(kernel_id, kernel_id)]
         yield kernel_id.encode()
 
     for context in (first, second):
@@ -351,6 +359,37 @@ async def test_stream_context_isolation(make_kernel, monkeypatch, threaded):
     baseline = kernel_context.current_context.copy()
     await asyncio.gather(read(first), read(second))
     assert kernel_context.current_context == baseline
+
+
+async def test_stream_child_scopes_are_local_and_expire(make_kernel):
+    owner, other = make_kernel(), make_kernel()
+    entered = asyncio.Event()
+    sibling_read = asyncio.Event()
+    released = asyncio.Event()
+
+    async def override():
+        async with other:
+            entered.set()
+            await sibling_read.wait()
+            assert solara.get_kernel_id(ipython_fallback=False) == other.id
+        with kernel_context.without_context():
+            assert not kernel_context.has_current_context()
+        assert solara.get_kernel_id(ipython_fallback=False) == owner.id
+
+    async def sibling():
+        await entered.wait()
+        assert solara.get_kernel_id(ipython_fallback=False) == owner.id
+        sibling_read.set()
+
+    async def late_child():
+        await released.wait()
+        return kernel_context.has_current_context()
+
+    with kernel_context._use_stream_context(owner):
+        await asyncio.wait_for(asyncio.gather(override(), sibling()), 2)
+        child = asyncio.create_task(late_child())
+    released.set()
+    assert not await asyncio.wait_for(child, 2)
 
 
 @pytest.mark.parametrize("first_chunk", [False, True])
