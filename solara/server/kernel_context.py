@@ -29,7 +29,7 @@ from ipywidgets import DOMWidget, Widget
 import solara.server.settings
 import solara.util
 
-from . import kernel, websocket
+from . import kernel, streaming, websocket
 from .. import lifecycle
 from .kernel import Kernel, WebsocketStreamWrapper
 from .utils import redact_id
@@ -140,6 +140,7 @@ class VirtualKernelContext:
     _on_close_callbacks: List[Callable[[], None]] = dataclasses.field(default_factory=list)
     lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
     event_loop: asyncio.AbstractEventLoop = dataclasses.field(default_factory=_get_or_create_event_loop)
+    _stream_owner: Optional["streaming._Owner"] = dataclasses.field(default=None, init=False, repr=False, compare=False)
 
     def __post_init__(self):
         with self:
@@ -149,6 +150,7 @@ class VirtualKernelContext:
                     self.on_close(cleanup)
 
     def restart(self):
+        streaming._clear(self)
         # should we do this, or maybe close the context and create a new one?
         with self:
             for f in reversed(self._on_close_callbacks):
@@ -246,6 +248,7 @@ class VirtualKernelContext:
                 self.close_reason = reason
                 run_teardown = True
         if run_teardown:
+            streaming._clear(self, closing=True)
             self._teardown_persistence(reason)
         with self, self.lock:
             for key in self.page_status:
@@ -294,8 +297,8 @@ class VirtualKernelContext:
             # TODO: Think about what to do with those Threads
             _contexts = current_context.copy()
             for key, _ctx in _contexts.items():
-                if _ctx is self:
-                    del current_context[key]
+                if _ctx is self and key not in _stream_context_keys:
+                    current_context.pop(key, None)
             self.closed_event.set()
         # only when the kernel rendered an app: a bare context holds nothing worth a full
         # collection, and a gc storm from many short-lived contexts (e.g. the unit test
@@ -610,6 +613,7 @@ def _schedule_gc_after_kernel_close():
 
 # maps from thread key to VirtualKernelContext, if VirtualKernelContext is None, it exists, but is not set as current
 current_context: Dict[str, Optional[VirtualKernelContext]] = {}
+_stream_context_keys: Set[str] = set()
 
 
 def create_dummy_context():
