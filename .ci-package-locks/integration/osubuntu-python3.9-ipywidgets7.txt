@@ -189,7 +189,7 @@ rfc3987-syntax==1.1.0
 rich==15.0.0
 rich-click==1.9.9
 rpds-py==0.27.1
-ruff==0.17.3
+ruff==0.17.4
 Send2Trash==2.1.0
 simple-websocket==1.1.0
 simplejson==4.2.0
@@ -219,10 +219,10 @@ uri-template==1.3.0
 urllib3==2.6.3
 uv==0.13.7
 uvicorn==0.39.0
-vaex-core==4.19.0
+vaex-core==4.20.0
 vaex-hdf5==0.15.0
-vaex-jupyter==0.9.0
-vaex-viz==0.6.0
+vaex-jupyter==0.9.1
+vaex-viz==0.6.1
 vega-datasets==0.9.0
 virtualenv==21.15.5
 voila==0.3.8

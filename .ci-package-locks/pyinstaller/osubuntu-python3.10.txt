@@ -23,7 +23,7 @@ bqplot-image-gl==1.10.2
 branca==0.8.2
 brotli==1.2.1
 bump2version==1.0.1
-cachetools==7.2.8
+cachetools==7.3.0
 certifi==2026.10.23
 cffi==2.1.1
 cfgv==3.5.0
@@ -83,7 +83,7 @@ jedi==0.20.1
 Jinja2==3.1.6
 jiter==0.18.0
 json5==0.17.3
-jsonpointer==3.8
+jsonpointer==3.10
 jsonschema==4.26.0
 jsonschema-specifications==2025.9.1
 jupyter-events==0.12.1
@@ -186,7 +186,7 @@ rfc3987-syntax==1.1.0
 rich==15.0.0
 rich-click==1.9.9
 rpds-py==0.30.0
-ruff==0.17.3
+ruff==0.17.4
 Send2Trash==2.1.0
 simple-websocket==1.1.0
 simplejson==4.2.0
@@ -218,8 +218,8 @@ uv==0.13.7
 uvicorn==0.54.0
 vaex-core==4.20.0
 vaex-hdf5==0.15.0
-vaex-jupyter==0.9.0
-vaex-viz==0.6.0
+vaex-jupyter==0.9.1
+vaex-viz==0.6.1
 vega-datasets==0.9.0
 virtualenv==21.15.5
 watchdog==6.0.0
