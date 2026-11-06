@@ -104,9 +104,10 @@ More macOS traps (measured):
 
 ```python
 import psutil
+
 p = psutil.Process()
-p.memory_info().rss          # OK on Linux; macOS: trends unreliable
-p.memory_full_info().uss     # Linux only in practice
+p.memory_info().rss  # OK on Linux; macOS: trends unreliable
+p.memory_full_info().uss  # Linux only in practice
 ```
 
 ```bash
@@ -208,7 +209,8 @@ Once the protocol says "memory grows", use these to find where.
 
 ```python
 import tracemalloc
-tracemalloc.start(10)                      # keep 10 stack frames per allocation
+
+tracemalloc.start(10)  # keep 10 stack frames per allocation
 snap1 = tracemalloc.take_snapshot()
 # ... one or more workload cycles ...
 snap2 = tracemalloc.take_snapshot()
@@ -227,8 +229,8 @@ shows up as 0 bytes. C extensions that allocate outside the Python allocator
 import sys, gc
 from collections import Counter
 
-sys.getallocatedblocks()   # live allocations Python knows about
-sys._debugmallocstats()    # pymalloc arena/pool stats: how full are the arenas?
+sys.getallocatedblocks()  # live allocations Python knows about
+sys._debugmallocstats()  # pymalloc arena/pool stats: how full are the arenas?
 # writes to C-level stderr: contextlib.redirect_stderr CANNOT capture it,
 # redirect fd 2 instead (python app.py 2>stats.txt)
 

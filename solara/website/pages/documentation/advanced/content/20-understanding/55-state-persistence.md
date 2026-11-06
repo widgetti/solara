@@ -107,7 +107,7 @@ user's state to another on restore.
 
 ```python
 def make_query_state():
-    return solara.reactive("", persist=True)   # raises: no stable per-instance key
+    return solara.reactive("", persist=True)  # raises: no stable per-instance key
 ```
 
 The error names the definition site and shows the correct per-instance fix:
@@ -248,9 +248,7 @@ solara.state.register_codec(
     lambda blob: shapely.from_wkb(blob),
 )
 
-area = solara.reactive(
-    DEFAULT_AREA, persist=solara.PersistConfig(key="myapp.area", serializer="geo")
-)
+area = solara.reactive(DEFAULT_AREA, persist=solara.PersistConfig(key="myapp.area", serializer="geo"))
 ```
 
 ### The `pickle` codec
@@ -302,13 +300,15 @@ success and is still wrong**.
 
 ```python
 # WRONG
-continent = solara.reactive("")                      # not persisted (looks harmless)
+continent = solara.reactive("")  # not persisted (looks harmless)
+
 
 @solara.lab.computed
-def country_options() -> list[str]:                  # derived: recomputed on the new kernel
-    return countries_in(continent.value)             # continent == "" -> []
+def country_options() -> list[str]:  # derived: recomputed on the new kernel
+    return countries_in(continent.value)  # continent == "" -> []
 
-country = solara.reactive("", persist=True, key="geo.country")   # persisted leaf into a non-persisted set
+
+country = solara.reactive("", persist=True, key="geo.country")  # persisted leaf into a non-persisted set
 ```
 
 After a failover `continent` is back at `""`, `country_options` recomputes to `[]`, and the
@@ -330,6 +330,7 @@ instance may also see newer data). A decision ladder:
    ```python
    city_id = solara.reactive(None, persist=True, key="geo.city_id")
 
+
    @solara.lab.computed
    def country() -> str | None:
        return city_lookup(city_id.value).country if city_id.value is not None else None
@@ -349,11 +350,12 @@ instance may also see newer data). A decision ladder:
    continent = solara.reactive("", persist=True, key="geo.continent")
    country = solara.reactive("", persist=True, key="geo.country")
 
+
    @solara.component
    def CountrySelect():
-       options = country_options.value              # recomputed from the restored continent
+       options = country_options.value  # recomputed from the restored continent
        if country.value and country.value not in options:
-           country.set("")                          # orphaned by restore or a data change: reset
+           country.set("")  # orphaned by restore or a data change: reset
        ...
    ```
 
@@ -409,7 +411,7 @@ def charge():
     payment.charge(
         order_id=order_id.value,
         idempotency_key=order_id.value,  # stable across a re-run -> charged at most once
-        fencing_epoch=epoch,             # lets the payment service reject an older instance
+        fencing_epoch=epoch,  # lets the payment service reject an older instance
     )
 ```
 
