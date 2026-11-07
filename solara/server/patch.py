@@ -35,9 +35,8 @@ ipykernel_version_major = int(ipykernel.__version__.split(".")[0])
 class _NoopEvents:
     """Stands in for IPython's EventManager, which the pyplot interface of matplotlib uses.
 
-    A MagicMock did this before, but get_ipython() creates a FakeIPython on every call (for instance for every
-    widget message), and a MagicMock is a large reference cycle, so each call left garbage that only the
-    garbage collector could free. This object has no state, so one shared instance is enough.
+    A MagicMock did this before, but a MagicMock is a large reference cycle, so every FakeIPython left garbage that
+    only the garbage collector could free. This object has no state, so one shared instance is enough.
     """
 
     def register(self, *args, **kwargs):
@@ -204,8 +203,10 @@ get_ipython_original = IPython.get_ipython
 def get_ipython():
     if kernel_context.has_current_context():
         context = kernel_context.get_current_context()
-        our_fake_ipython = FakeIPython(context)
-        return our_fake_ipython
+        # one per context: get_ipython() is called often, for instance for every widget message
+        if context._fake_ipython is None:
+            context._fake_ipython = FakeIPython(context)
+        return context._fake_ipython
     else:
         return get_ipython_original()
 

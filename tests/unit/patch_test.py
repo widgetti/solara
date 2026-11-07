@@ -121,3 +121,17 @@ def test_fake_ipython_leaves_no_cyclic_garbage(no_kernel_context):
         assert gc.collect() == 0
     finally:
         gc.enable()
+
+
+def test_get_ipython_reuses_one_fake_ipython_per_context(no_kernel_context):
+    from solara.server import patch
+
+    kernel1 = kernel.Kernel()
+    context = kernel_context.VirtualKernelContext(id="fake-ipython-reuse-1", kernel=kernel1, session_id="session-1")
+    with context:
+        first = patch.get_ipython()
+        assert isinstance(first, patch.FakeIPython)
+        assert patch.get_ipython() is first
+    context.close()
+    # the FakeIPython references the context, so close drops it to break that cycle
+    assert context._fake_ipython is None
