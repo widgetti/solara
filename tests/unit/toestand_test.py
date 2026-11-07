@@ -1944,3 +1944,25 @@ def test_discarded_singleton_preserves_shared_explicit_key(no_kernel_context, mo
         assert permanent.value is value
     assert calls == 1
     context.close()
+
+
+@pytest.mark.parametrize("cls", [solara.toestand.Singleton, solara.toestand.Computed])
+def test_unregistered_singleton_and_computed_are_freed_without_gc(cls, kernel_context):
+    import gc
+    import weakref
+
+    instance = cls(lambda: 1)
+    assert instance.value == 1
+    # what an unmount or a kernel close does: drop the on_kernel_start registrations
+    instance._on_kernel_start_cleanup()
+    if isinstance(instance, solara.toestand.Computed):
+        instance._auto_subscriber._on_kernel_start_cleanup()
+    ref = weakref.ref(instance)
+    gc.collect()
+    gc.disable()
+    try:
+        del instance
+        # the reset closure holds the instance weakly, so reference counting alone frees it
+        assert ref() is None
+    finally:
+        gc.enable()

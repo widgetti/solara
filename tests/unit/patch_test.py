@@ -135,3 +135,24 @@ def test_get_ipython_reuses_one_fake_ipython_per_context(no_kernel_context):
     context.close()
     # the FakeIPython references the context, so close drops it to break that cycle
     assert context._fake_ipython is None
+
+
+def test_context_aware_thread_leaves_no_stale_context_entries(no_kernel_context):
+    import threading
+
+    import solara.server.app  # noqa: F401 - importing applies the threading patch
+
+    kernel1 = kernel.Kernel()
+    context = kernel_context.VirtualKernelContext(id="thread-dummy-1", kernel=kernel1, session_id="session-1")
+    seen = []
+    with context:
+        thread = threading.Thread(target=lambda: seen.append(kernel_context.get_current_context()))
+    keys_before = set(kernel_context.current_context)
+    thread.start()
+    thread.join()
+    # the thread still runs in its kernel context
+    assert seen == [context]
+    # and it leaves no stale current_context["Dummy-..."] entries behind
+    assert [key for key in set(kernel_context.current_context) - keys_before if "Dummy" in key] == []
+    with context:
+        context.close()

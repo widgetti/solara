@@ -507,14 +507,21 @@ class TaskThreaded(Task[P, R]):
         self._current_cancel_event = cancel_event = threading.Event()
         self._last_progress = None
 
+        # the closures are stored on self, so they hold self weakly to avoid a reference cycle
+        self_ref = weakref.ref(self)
+
         def retry():
-            self(*args, **kwargs)
+            s = self_ref()
+            if s is not None:
+                s(*args, **kwargs)
 
         def cancel():
             cancel_event.set()
             if threading.current_thread() == current_thread:
                 raise solara.util.CancelledError()
-            self._current_cancel_event = None
+            s = self_ref()
+            if s is not None:
+                s._current_cancel_event = None
 
         self._retry = retry
         self._cancel = cancel

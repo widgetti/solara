@@ -900,10 +900,15 @@ class Singleton(Reactive[S]):
     def __init__(self, factory: Callable[[], S], key=None):
         super().__init__(KernelStoreFactory(factory, key=key))
 
-        # reset on kernel restart (e.g. hot reload)
+        # reset on kernel restart (e.g. hot reload). The closure holds self weakly: self keeps the
+        # registration, so a strong reference would make a cycle that only the garbage collector frees.
+        self_ref = weakref.ref(self)
+
         def reset():
             def cleanup():
-                self._storage.clear()
+                s = self_ref()
+                if s is not None:
+                    s._storage.clear()
 
             return cleanup
 
@@ -933,10 +938,16 @@ class Computed(Reactive[S]):
                     "use_memo for values derived inside a component.",
                 )
         self.f = f
+        # The closures below are stored on self (directly or through its stores), so they hold self
+        # weakly: a strong reference would make a cycle that only the garbage collector can free.
+        self_ref = weakref.ref(self)
 
         def on_change(*ignore):
-            with self._auto_subscriber.value:
-                self.set(f())
+            s = self_ref()
+            if s is None:
+                return
+            with s._auto_subscriber.value:
+                s.set(f())
 
         import functools
 
@@ -944,7 +955,9 @@ class Computed(Reactive[S]):
 
         @functools.wraps(f)
         def factory():
-            v = self._auto_subscriber.value
+            s = self_ref()
+            assert s is not None, "a Computed's store outlived the Computed"
+            v = s._auto_subscriber.value
             with v:
                 return f()
 
@@ -956,7 +969,9 @@ class Computed(Reactive[S]):
         # and unregister at kernel close for kernel-created instances.
         def reset():
             def cleanup():
-                self._storage.clear()
+                s = self_ref()
+                if s is not None:
+                    s._storage.clear()
 
             return cleanup
 
