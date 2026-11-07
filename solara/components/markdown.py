@@ -139,7 +139,9 @@ module.exports = {
             let href = a.attributes['href'].value;
             if(href.startsWith("./")) {
                 // TODO: should we really do this?
-                href = location.pathname + href.substr(1);
+                // the router takes paths relative to the root path
+                const rootPath = (window.solara && solara.rootPath) || "";
+                href = location.pathname.slice(rootPath.length) + href.substr(1);
                 a.attributes['href'].href = href;
             }
             let authLink = href.startsWith("/_solara/auth/");
