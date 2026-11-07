@@ -100,3 +100,24 @@ def test_showtraceback_logs_exception_with_exc_info(no_kernel_context, caplog):
     assert record.exc_info[0] is ValueError
     assert "some app error" in "".join(traceback.format_exception(*record.exc_info))
     context.close()
+
+
+def test_fake_ipython_leaves_no_cyclic_garbage(no_kernel_context):
+    import gc
+
+    from solara.server import patch
+
+    kernel1 = kernel.Kernel()
+    context = kernel_context.VirtualKernelContext(id="fake-ipython-gc-1", kernel=kernel1, session_id="session-1")
+    # matplotlib's pyplot calls these on get_ipython().events
+    patch.FakeIPython(context).events.register("post_execute", lambda: None)
+
+    gc.collect()
+    gc.disable()
+    try:
+        for _ in range(10):
+            patch.FakeIPython(context)
+        # get_ipython() makes a FakeIPython per call, so one must be freed by reference counting alone
+        assert gc.collect() == 0
+    finally:
+        gc.enable()

@@ -7,7 +7,6 @@ import traceback
 import warnings
 from pathlib import Path
 from typing import Any, Dict, MutableMapping
-from unittest import mock
 
 import ipykernel.kernelbase
 import IPython.display
@@ -33,6 +32,27 @@ ipywidget_version_major = int(ipywidgets.__version__.split(".")[0])
 ipykernel_version_major = int(ipykernel.__version__.split(".")[0])
 
 
+class _NoopEvents:
+    """Stands in for IPython's EventManager, which the pyplot interface of matplotlib uses.
+
+    A MagicMock did this before, but get_ipython() creates a FakeIPython on every call (for instance for every
+    widget message), and a MagicMock is a large reference cycle, so each call left garbage that only the
+    garbage collector could free. This object has no state, so one shared instance is enough.
+    """
+
+    def register(self, *args, **kwargs):
+        pass
+
+    def unregister(self, *args, **kwargs):
+        pass
+
+    def trigger(self, *args, **kwargs):
+        pass
+
+
+_noop_events = _NoopEvents()
+
+
 class FakeIPython:
     def __init__(self, context: kernel_context.VirtualKernelContext):
         self.context = context
@@ -40,7 +60,7 @@ class FakeIPython:
         self.display_pub = self.kernel.shell.display_pub
         # needed for the pyplot interface of matplotlib
         # (although we don't really support it)
-        self.events = mock.MagicMock()
+        self.events = _noop_events
         self.user_ns: Dict[Any, Any] = {}
         self.custom_exceptions = ()
 
