@@ -6,6 +6,6 @@ nodeenv==1.12.0
 packaging==26.3
 platformdirs==4.14.5
 pre_commit==4.7.0
-python-discovery==1.9.4
+python-discovery==1.9.5
 PyYAML==6.0.3
-virtualenv==21.15.5
+virtualenv==21.15.6
