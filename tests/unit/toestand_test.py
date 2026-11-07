@@ -1944,3 +1944,187 @@ def test_discarded_singleton_preserves_shared_explicit_key(no_kernel_context, mo
         assert permanent.value is value
     assert calls == 1
     context.close()
+
+
+def _run_in_threads(context, **targets):
+    """Run each target in a thread named after its keyword, in the given kernel context."""
+    errors = []
+
+    def run(target):
+        try:
+            with context:
+                target()
+        except BaseException as error:
+            errors.append(error)
+
+    threads = [threading.Thread(target=run, args=(target,), name=name) for name, target in targets.items()]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=20)
+        assert not thread.is_alive()
+    if errors:
+        raise errors[0]
+
+
+def test_computed_concurrent_recompute_does_not_leak_reactive_watch(kernel_context):
+    # https://github.com/widgetti/solara/issues/1256
+    # t2 enters the same context manager as t1 with the watch of `outer`, and t1 exits first
+    x = Reactive(0)
+    t1_inside_inner = threading.Event()
+    t2_inside_inner = threading.Event()
+    t1_exited_inner = threading.Event()
+    t2_recomputed_x = threading.Event()
+
+    @solara.lab.computed
+    def inner():
+        value = x.value
+        name = threading.current_thread().name
+        if name == "t1":
+            t1_inside_inner.set()
+            assert t2_inside_inner.wait(5)
+        elif name == "t2":
+            t2_inside_inner.set()
+            assert t1_exited_inner.wait(5)
+        return value
+
+    class Row:
+        """A value that never compares equal to another instance, like a fresh ORM row."""
+
+    @solara.lab.computed
+    def outer():
+        if threading.current_thread().name == "t2" and not t2_recomputed_x.is_set():
+            t2_recomputed_x.set()
+            x.set(x.peek() + 1)  # recomputes inner on t2, while t2's watch is the one of outer
+        inner.value
+        return Row()
+
+    assert isinstance(outer.value, Row)
+    watch_after_recompute = []
+
+    def t1():
+        x.set(1)
+        t1_exited_inner.set()
+        watch_after_recompute.append(toestand.thread_local.reactive_watch)
+        outer.value
+        # with the watch of outer leaked into this thread, outer subscribes to itself, and
+        # since it never compares equal, this set would never stop firing (RecursionError)
+        x.set(100)
+
+    def t2():
+        assert t1_inside_inner.wait(5)
+        cast(toestand.Computed, outer)._auto_subscriber.value.on_change()
+
+    _run_in_threads(kernel_context, t1=t1, t2=t2)
+    assert watch_after_recompute == [None]
+
+
+def test_auto_subscribe_concurrent_runs_restore_their_own_thread(kernel_context):
+    manager = toestand.AutoSubscribeContextManager(lambda: None)
+    t1_inside = threading.Event()
+    t2_inside = threading.Event()
+    t1_exited = threading.Event()
+    t2_used: Set[toestand.ValueBase] = set()
+    t2_watch = unittest.mock.Mock()
+    restored = {}
+
+    def t1():
+        with manager:
+            t1_inside.set()
+            assert t2_inside.wait(5)
+        restored["t1"] = (toestand.thread_local.reactive_used, toestand.thread_local.reactive_watch)
+        t1_exited.set()
+
+    def t2():
+        toestand.thread_local.reactive_used = t2_used
+        toestand.thread_local.reactive_watch = t2_watch
+        assert t1_inside.wait(5)
+        with manager:
+            t2_inside.set()
+            assert t1_exited.wait(5)
+        restored["t2"] = (toestand.thread_local.reactive_used, toestand.thread_local.reactive_watch)
+
+    _run_in_threads(kernel_context, t1=t1, t2=t2)
+    assert restored["t1"] == (None, None)
+    assert restored["t2"][0] is t2_used
+    assert restored["t2"][1] is t2_watch
+
+
+def test_auto_subscribe_reentrant_run_restores_outer_state():
+    manager = toestand.AutoSubscribeContextManager(lambda: None)
+    used: Set[toestand.ValueBase] = set()
+    watch = unittest.mock.Mock()
+    toestand.thread_local.reactive_used = used
+    toestand.thread_local.reactive_watch = watch
+    try:
+        with manager:
+            inner_used = toestand.thread_local.reactive_used
+            with manager:
+                pass
+            assert toestand.thread_local.reactive_used is inner_used
+            assert toestand.thread_local.reactive_watch == manager.add
+        assert toestand.thread_local.reactive_used is used
+        assert toestand.thread_local.reactive_watch is watch
+        assert toestand.thread_local.auto_subscribe_stack == []
+    finally:
+        toestand.thread_local.reactive_used = None
+        toestand.thread_local.reactive_watch = None
+
+
+def test_auto_subscribe_concurrent_runs_share_subscriptions(kernel_context):
+    on_change = unittest.mock.Mock()
+    manager = toestand.AutoSubscribeContextManager(on_change)
+    x = Reactive(1)
+    y = Reactive(2)
+    t1_read = threading.Event()
+    t2_read = threading.Event()
+    t1_exited = threading.Event()
+
+    def t1():
+        with manager:
+            x.value
+            t1_read.set()
+            assert t2_read.wait(5)
+        t1_exited.set()
+
+    def t2():
+        assert t1_read.wait(5)
+        with manager:
+            x.value
+            y.value
+            t2_read.set()
+            assert t1_exited.wait(5)
+            # t1 did not read y, but this run did and is still in progress
+            assert _listener_count(y, kernel_context.id) == 1
+
+    _run_in_threads(kernel_context, t1=t1, t2=t2)
+    # both runs read x, but there should only be one subscription
+    assert _listener_count(x, kernel_context.id) == 1
+    assert _listener_count(y, kernel_context.id) == 1
+    x.value = 10
+    assert on_change.call_count == 1
+
+    # a later run that only reads x removes what the previous runs did read
+    with manager:
+        x.value
+    assert _listener_count(x, kernel_context.id) == 1
+    assert _listener_count(y, kernel_context.id) == 0
+
+    manager.unsubscribe_all()
+    assert _listener_count(x, kernel_context.id) == 0
+
+
+def test_auto_subscribe_root_covers_field():
+    on_change = unittest.mock.Mock()
+    manager = toestand.AutoSubscribeContextManager(on_change)
+    root = Reactive(Bears(type="brown", count=1))
+    count = Ref(root.fields.count)
+
+    with manager:
+        assert count.value == 1
+        assert root.value.count == 1
+    assert list(manager.subscribed) == [root]
+
+    root.value = Bears(type="brown", count=2)
+    assert on_change.call_count == 1
+    manager.unsubscribe_all()
