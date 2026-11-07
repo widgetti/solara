@@ -132,6 +132,9 @@ class VirtualKernelContext:
     _last_kernel_cull_task: "Optional[asyncio.Future[None]]" = None
     _last_kernel_cull_future: "Optional[concurrent.futures.Future[None]]" = None
     closed_event: threading.Event = dataclasses.field(default_factory=threading.Event)
+    # the FakeIPython that get_ipython() returns for this context, made on first use (see patch.py).
+    # It references this context, so close() drops it to break that cycle.
+    _fake_ipython: Optional[Any] = None
     # guards persistence teardown so concurrent closes (cull vs page-close vs superseded) run it
     # exactly once, WITHOUT waiting on self.lock (teardown does backend I/O that must stay
     # off-lock, §5.3). A plain lock + flag rather than the racy outside-lock closed_event check.
@@ -283,6 +286,7 @@ class VirtualKernelContext:
             # gc.collect()
             self.kernel.close()
             self.kernel = None  # type: ignore
+            self._fake_ipython = None
             # Only remove our OWN slot: a reconnect that raced this close (it treats a closing
             # context as absent, see initialize_virtual_kernel) may have already installed a fresh
             # context under this id. Deleting unconditionally would drop the replacement.
