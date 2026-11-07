@@ -369,8 +369,11 @@ def _WidgetContextAwareThread__bootstrap(self):
         display_in_reacton_hook = shell.display_in_reacton_hook
         display_pub.register_hook(display_in_reacton_hook)
     try:
-        context = self.current_context or solara.util.nullcontext()
-        with pdb_guard(), context:
+        # No `with self.current_context:` here: threading has not registered this thread yet, so
+        # get_current_thread_key() would create a throw-away _DummyThread on enter and another on exit,
+        # and leave a stale current_context["Dummy-N..."] entry behind for every started thread.
+        # set_context_for_thread() above already maps this thread to its context.
+        with pdb_guard():
             Thread__bootstrap(self)
     finally:
         current_context = self.current_context

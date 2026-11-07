@@ -1015,3 +1015,24 @@ def test_cancel_after_context_close_is_a_noop(monkeypatch):
         never_started.cancel()
     with pytest.raises(RuntimeError, match="never started"):
         never_started.retry()
+
+
+def test_task_threaded_is_freed_without_gc(kernel_context):
+    import gc
+
+    task = solara.tasks.TaskThreaded(lambda: 1, key="freed-without-gc")
+    task()
+    finished = task._last_finished_event
+    assert finished is not None
+    assert finished.wait(5)
+    del finished
+    # let the worker thread finish and drop its references
+    time.sleep(0.2)
+    gc.collect()
+    gc.disable()
+    try:
+        del task
+        # the retry and cancel closures hold the task weakly, so reference counting alone frees it
+        assert gc.collect() == 0
+    finally:
+        gc.enable()
