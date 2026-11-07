@@ -1,4 +1,5 @@
 import subprocess
+import time
 from pathlib import Path
 
 import playwright.sync_api
@@ -39,3 +40,46 @@ def test_run_widget(page_session: playwright.sync_api.Page):
         if errs:
             raise ValueError("Expected no errors in solara server output") from e
         raise
+
+
+def test_run_restart_dir_and_exclude(tmp_path: Path):
+    watched = tmp_path / "watched"
+    watched.mkdir()
+    excluded_file = watched / "excluded.py"
+    excluded_file.write_text("# before\n")
+    watched_file = watched / "changed.py"
+    watched_file.write_text("# before\n")
+    app = tmp_path / "app.py"
+    app.write_text('import solara\n\n\n@solara.component\ndef Page():\n    solara.Text("Hello")\n')
+
+    port = get_free_port()
+    args = [
+        "solara",
+        "run",
+        f"--port={port}",
+        "--no-open",
+        "--no-check-version",
+        "--auto-restart",
+        "--log-level-uvicorn=info",
+        f"--restart-dir={watched}",
+        "--restart-exclude=excluded.py",
+        str(app),
+    ]
+    output = tmp_path / "output.txt"
+    with output.open("w") as output_file:
+        popen = subprocess.Popen(args, cwd=tmp_path, stdout=output_file, stderr=subprocess.STDOUT)
+        try:
+            solara.server.server.wait_ready(f"http://localhost:{port}", timeout=30)
+            # the excluded file changes first, so that a restart caused by it would be logged first
+            excluded_file.write_text("# after\n")
+            watched_file.write_text("# after\n")
+            deadline = time.time() + 30
+            while "changed.py" not in output.read_text() and time.time() < deadline:
+                time.sleep(0.1)
+        finally:
+            # not kill: the reloader should get the chance to stop the server process it started
+            popen.terminate()
+            popen.wait(timeout=30)
+    text = output.read_text()
+    assert "changed.py" in text, text
+    assert "excluded.py" not in text, text

@@ -156,7 +156,7 @@ if "SOLARA_MODE" in os.environ:
     "--restart-dir",
     "restart_dirs",
     multiple=True,
-    help="Set restart directories explicitly, instead of using the current working directory.",
+    help="Also restart the server when Python files in this directory change. Can be given multiple times.",
     type=click.Path(exists=True),
 )
 @click.option(
@@ -334,7 +334,7 @@ def run(
         # that for all dependencies of the server, but these are changing most often
         # during development
         # We exclude the website, that will be handled by solara/server/reload.py
-        reload_dirs = [str(solara_root), str(Path(solara.__file__).parent)]
+        reload_dirs.append(str(solara_root))
         try:
             import solara_enterprise
 
@@ -342,9 +342,9 @@ def run(
             del solara_enterprise
         except ImportError:
             pass
-        reload_excludes = restart_excludes if restart_excludes else []
+        reload_excludes = list(restart_excludes if restart_excludes else [])
         del restart_excludes
-        reload_excludes = [str(solara_root / "website"), str(solara_root / "template")]
+        reload_excludes.extend([str(solara_root / "website"), str(solara_root / "template")])
         app_path = Path(app)
         if app_path.exists():
             # if app is not a child of the current working directory
