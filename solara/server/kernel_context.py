@@ -29,7 +29,7 @@ from ipywidgets import DOMWidget, Widget
 import solara.server.settings
 import solara.util
 
-from . import kernel, websocket
+from . import kernel, streaming, websocket
 from .. import lifecycle
 from .kernel import Kernel, WebsocketStreamWrapper
 from .utils import redact_id
@@ -58,6 +58,54 @@ if typing.TYPE_CHECKING:
     async_stack = contextvars.ContextVar[Union[Tuple[Union[None, "VirtualKernelContext"], ...], None]](name="async_stack", default=None)
 else:
     async_stack = contextvars.ContextVar("async_stack", default=None)
+
+
+@dataclasses.dataclass
+class _StreamContext:
+    context: Optional["VirtualKernelContext"]
+
+
+_StreamBinding = Tuple[_StreamContext, Tuple[Optional["VirtualKernelContext"], ...]]
+if typing.TYPE_CHECKING:
+    _stream_binding = contextvars.ContextVar[Optional[_StreamBinding]]("stream_binding", default=None)
+else:
+    _stream_binding = contextvars.ContextVar("stream_binding", default=None)
+
+
+@contextlib.contextmanager
+def _use_stream_context(context: "VirtualKernelContext"):
+    root = _StreamContext(context)
+    token = _stream_binding.set((root, ()))
+    try:
+        yield
+    finally:
+        root.context = None
+        _stream_binding.reset(token)
+
+
+def _push_stream_context(context: Optional["VirtualKernelContext"]) -> bool:
+    binding = _stream_binding.get()
+    if binding is None:
+        return False
+    root, overrides = binding
+    _stream_binding.set((root, overrides + (context,)))
+    return True
+
+
+def _pop_stream_context() -> bool:
+    binding = _stream_binding.get()
+    if binding is None:
+        return False
+    root, overrides = binding
+    _stream_binding.set((root, overrides[:-1]))
+    return True
+
+
+def _stream_context(binding: _StreamBinding) -> Optional["VirtualKernelContext"]:
+    root, overrides = binding
+    if root.context is None:
+        return None
+    return overrides[-1] if overrides else root.context
 
 
 class PageStatus(enum.Enum):
@@ -140,6 +188,7 @@ class VirtualKernelContext:
     _on_close_callbacks: List[Callable[[], None]] = dataclasses.field(default_factory=list)
     lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
     event_loop: asyncio.AbstractEventLoop = dataclasses.field(default_factory=_get_or_create_event_loop)
+    _stream_owner: Optional["streaming._Owner"] = dataclasses.field(default=None, init=False, repr=False, compare=False)
 
     def __post_init__(self):
         with self:
@@ -149,6 +198,7 @@ class VirtualKernelContext:
                     self.on_close(cleanup)
 
     def restart(self):
+        streaming._clear(self)
         # should we do this, or maybe close the context and create a new one?
         with self:
             for f in reversed(self._on_close_callbacks):
@@ -163,6 +213,8 @@ class VirtualKernelContext:
         self._on_close_callbacks.append(f)
 
     async def __aenter__(self):
+        if _push_stream_context(self):
+            return
         stack = async_stack.get()
         if stack is None:
             stack = ()
@@ -172,6 +224,8 @@ class VirtualKernelContext:
         current_context[new_key] = self
 
     async def __aexit__(self, *args):
+        if _pop_stream_context():
+            return
         key = get_current_thread_key()
         assert local.kernel_context_stack is not None
         stack = async_stack.get()
@@ -180,6 +234,8 @@ class VirtualKernelContext:
         async_stack.set(stack[:-1])
 
     def __enter__(self):
+        if _push_stream_context(self):
+            return
         if local.kernel_context_stack is None:
             local.kernel_context_stack = []
         key = get_current_thread_key()
@@ -187,6 +243,8 @@ class VirtualKernelContext:
         current_context[key] = self
 
     def __exit__(self, *args):
+        if _pop_stream_context():
+            return
         key = get_current_thread_key()
         assert local.kernel_context_stack is not None
         current_context[key] = local.kernel_context_stack.pop()
@@ -246,6 +304,7 @@ class VirtualKernelContext:
                 self.close_reason = reason
                 run_teardown = True
         if run_teardown:
+            streaming._clear(self, closing=True)
             self._teardown_persistence(reason)
         with self, self.lock:
             for key in self.page_status:
@@ -288,14 +347,15 @@ class VirtualKernelContext:
             # context under this id. Deleting unconditionally would drop the replacement.
             if contexts.get(self.id) is self:
                 del contexts[self.id]
-            del current_context[get_current_thread_key()]
+            if _stream_binding.get() is None:
+                del current_context[get_current_thread_key()]
             # We saw in memleak_test that there are sometimes other entries in current_context
             # In which _DummyThread's reference this context, so we remove those references too
             # TODO: Think about what to do with those Threads
             _contexts = current_context.copy()
             for key, _ctx in _contexts.items():
                 if _ctx is self:
-                    del current_context[key]
+                    current_context.pop(key, None)
             self.closed_event.set()
         # only when the kernel rendered an app: a bare context holds nothing worth a full
         # collection, and a gc storm from many short-lived contexts (e.g. the unit test
@@ -313,8 +373,8 @@ class VirtualKernelContext:
         except:  # noqa
             pass
         del contexts[self.id]
-        key = get_current_thread_key()
-        del current_context[key]
+        if _stream_binding.get() is None:
+            del current_context[get_current_thread_key()]
 
     def state_save(self, state_directory: os.PathLike):
         path = Path(state_directory) / f"{self.id}.pickle"
@@ -675,11 +735,20 @@ def clear_context_for_thread(thread: threading.Thread):
 
 
 def has_current_context() -> bool:
+    binding = _stream_binding.get()
+    if binding is not None:
+        return _stream_context(binding) is not None
     thread_key = get_current_thread_key()
     return (thread_key in current_context) and (current_context[thread_key] is not None)
 
 
 def get_current_context() -> VirtualKernelContext:
+    binding = _stream_binding.get()
+    if binding is not None:
+        context = _stream_context(binding)
+        if context is None:
+            raise RuntimeError("No kernel context is bound to this stream task")
+        return context
     thread_key = get_current_thread_key()
     if thread_key not in current_context:
         raise RuntimeError(
@@ -696,12 +765,26 @@ def get_current_context() -> VirtualKernelContext:
 
 
 def set_current_context(context: Optional[VirtualKernelContext]):
+    binding = _stream_binding.get()
+    if binding is not None:
+        root, overrides = binding
+        _stream_binding.set((root, overrides[:-1] + (context,)))
+        return
     thread_key = get_current_thread_key()
     current_context[thread_key] = context
 
 
 @contextlib.contextmanager
 def without_context():
+    binding = _stream_binding.get()
+    if binding is not None:
+        root, overrides = binding
+        token = _stream_binding.set((root, overrides + (None,)))
+        try:
+            yield
+        finally:
+            _stream_binding.reset(token)
+        return
     context = None
     try:
         context = get_current_context()
