@@ -1,5 +1,12 @@
 # Solara Changelog
 
+## Version 1.66.2
+
+Version 1.66.1 was tagged but never published. This release includes its fix.
+
+- Bug Fix: `get_ipython()` no longer creates a `MagicMock` on every call, and it reuses one `FakeIPython` per kernel context. A server under load makes far less garbage. [#1279](https://github.com/widgetti/solara/pull/1279)
+- Bug Fix: `Singleton`, `Computed` and threaded tasks no longer form reference cycles, so reference counting frees them without the garbage collector. A thread start no longer leaves a stale `current_context` entry. [#1280](https://github.com/widgetti/solara/pull/1280)
+
 ## Version 1.66.0
 
 - Feature: `solara.lab.app_mounted` turns True once the browser shows the app. A component can render its skeleton first, and load its data after the loading screen is gone. [#1275](https://github.com/widgetti/solara/pull/1275)
