@@ -21,6 +21,7 @@ from typing import (
     ContextManager,
     Dict,
     Generic,
+    List,
     Optional,
     Set,
     Tuple,
@@ -56,6 +57,10 @@ class ThreadLocal(threading.local):
     # True while solara-internal machinery subscribes: those owners guarantee cleanup,
     # so the subscription-leak warning must not fire for them
     managed_subscribe: bool = False
+
+    def __init__(self):
+        # what each running auto-subscribe context manager restores on exit, innermost last
+        self.auto_subscribe_stack: List[Tuple[Optional[Set["ValueBase"]], Optional[Callable[["ValueBase"], None]]]] = []
 
 
 thread_local = ThreadLocal()
@@ -1213,74 +1218,71 @@ class AutoSubscribeContextManagerBase:
     # so we want to save, and restore the current reactive_used
     reactive_used: Optional[Set[ValueBase]] = None
     subscribed: Dict[ValueBase, Callable]
-    subscribed_previous_run: Dict[ValueBase, Callable]
     on_change: Callable[[], None]
-    previous_reactive_watch: Optional[Callable[["ValueBase"], None]] = None
 
     def __init__(self):
         self.subscribed = {}
-        self.subscribed_previous_run = {}
         self.on_change = lambda: None
-
-    def unsubscribe_previous(self):
-        removed = set(self.subscribed_previous_run or set()) - set(self.subscribed)
-        if removed:
-            for reactive in removed:
-                unsubscribe = self.subscribed_previous_run[reactive]
-                unsubscribe()
-                del self.subscribed_previous_run[reactive]
+        # A Computed has one instance that all threads share, and it can recompute on several
+        # threads at once. What a thread has to restore lives on that thread (see
+        # ThreadLocal.auto_subscribe_stack), the rest is shared and guarded by this lock.
+        self._lock = threading.Lock()
+        # the reactive_used set of each run in progress
+        self._runs: List[Set[ValueBase]] = []
 
     def unsubscribe_all(self):
         """Unsubscribe everything: the owner's end-of-life cleanup (unmount or kernel close)."""
-        seen: Set[int] = set()
-        for subscriptions in (self.subscribed, self.subscribed_previous_run):
-            for unsubscribe in subscriptions.values():
-                # the same unsubscribe closure can sit in both dicts
-                if id(unsubscribe) not in seen:
-                    seen.add(id(unsubscribe))
-                    unsubscribe()
-            subscriptions.clear()
+        with self._lock:
+            subscribed = self.subscribed
+            self.subscribed = {}
+        for unsubscribe in subscribed.values():
+            unsubscribe()
 
     def add(self, reactive: ValueBase):
         relevant_reactive = reactive
-        if isinstance(reactive, ValueSubField):
-            root = reactive._root
-            if root in self.subscribed or root in self.subscribed_previous_run:
-                # we already subscribed to this reactive's root
-                return
-            else:
-                # we are subscribing to this reactive's root
-                pass
+        with self._lock:
+            if isinstance(reactive, ValueSubField):
+                root = reactive._root
+                if root in self.subscribed:
+                    # we already subscribed to this reactive's root
+                    return
+                else:
+                    # we are subscribing to this reactive's root
+                    pass
 
-        # TODO: we could see if we are the root of any of the subscribed fields,
-        # and remove that field.
-        if relevant_reactive not in self.subscribed:
-            if relevant_reactive not in self.subscribed_previous_run:
+            # TODO: we could see if we are the root of any of the subscribed fields,
+            # and remove that field.
+            if relevant_reactive not in self.subscribed:
                 with _managed_subscription():
                     unsubscribe = relevant_reactive.subscribe_change(lambda *args: self.on_change())
                 self.subscribed[relevant_reactive] = unsubscribe
-            else:
-                self.subscribed[relevant_reactive] = self.subscribed_previous_run[relevant_reactive]
 
     def __enter__(self):
-        self.subscribed = {}
-        self.reactive_used_before = thread_local.reactive_used
-        self.previous_reactive_watch = thread_local.reactive_watch
+        thread_local.auto_subscribe_stack.append((thread_local.reactive_used, thread_local.reactive_watch))
         thread_local.reactive_watch = self.add
-        self.reactive_used = thread_local.reactive_used = set()
+        reactive_used: Set[ValueBase] = set()
+        self.reactive_used = thread_local.reactive_used = reactive_used
+        with self._lock:
+            self._runs.append(reactive_used)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        thread_local.reactive_used = self.reactive_used_before
-        thread_local.reactive_watch = self.previous_reactive_watch
-        self.unsubscribe_previous()
-        self.subscribed_previous_run = self.subscribed.copy()
-        # Clear saved references to avoid preventing garbage collection.
-        # Without this, a Computed's AutoSubscribeContextManager retains
-        # previous_reactive_watch (a bound method from the component's
-        # AutoSubscribeContextManagerReacton), which transitively keeps
-        # the _RenderContext alive through closure cells.
-        self.previous_reactive_watch = None
-        self.reactive_used_before = None
+        reactive_used = thread_local.reactive_used
+        assert reactive_used is not None
+        thread_local.reactive_used, thread_local.reactive_watch = thread_local.auto_subscribe_stack.pop()
+        with self._lock:
+            self._runs = [run for run in self._runs if run is not reactive_used]
+            # what a run still in progress read so far may not be dropped, it would lose its
+            # subscription. The last run to finish removes what it did not read itself.
+            still_used = reactive_used.union(*self._runs)
+            removed = [
+                reactive
+                for reactive in self.subscribed
+                # a subscription to the root also covers its fields
+                if reactive not in still_used or (isinstance(reactive, ValueSubField) and reactive._root in still_used)
+            ]
+            unsubscribes = [self.subscribed.pop(reactive) for reactive in removed]
+        for unsubscribe in unsubscribes:
+            unsubscribe()
 
 
 class Context:
