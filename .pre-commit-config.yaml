@@ -38,9 +38,9 @@ repos:
         name: mypy (ipyvuetify 1)
         pass_filenames: false
         args: [--explicit-package-bases, .]
-        additional_dependencies: [types-requests, types-markdown, types-PyYAML, types-filelock, types-cachetools, types-redis, types-python-dateutil, types-pycurl, "reacton @ git+https://github.com/widgetti/reacton.git@6526c42f458f95e5125356ec09cde8411646d899", types-six, types-decorator, ipython, ipykernel]
+        additional_dependencies: [types-requests, types-markdown, types-PyYAML, types-filelock, types-cachetools, types-redis, types-python-dateutil, types-pycurl, reacton==1.11.1, types-six, types-decorator, ipython, ipykernel]
       - id: mypy
         name: mypy (ipyvuetify 3)
         pass_filenames: false
         args: [--config-file=mypy-v3.ini, --explicit-package-bases, .]
-        additional_dependencies: [types-requests, types-markdown, types-PyYAML, types-filelock, types-cachetools, types-redis, types-python-dateutil, types-pycurl, "reacton @ git+https://github.com/widgetti/reacton.git@6526c42f458f95e5125356ec09cde8411646d899", ipyvue==3.0.0a9, ipyvuetify==3.0.0a5, types-six, types-decorator, ipython, ipykernel]
+        additional_dependencies: [types-requests, types-markdown, types-PyYAML, types-filelock, types-cachetools, types-redis, types-python-dateutil, types-pycurl, reacton==1.11.1, ipyvue==3.0.0a9, ipyvuetify==3.0.0a5, types-six, types-decorator, ipython, ipykernel]

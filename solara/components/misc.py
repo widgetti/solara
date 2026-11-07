@@ -2,6 +2,7 @@ import warnings
 from typing import Any, Callable, Dict, List, Union
 
 import reacton
+import reacton.core
 import reacton.ipyvuetify as v
 import solara
 import solara.widgets
@@ -126,7 +127,7 @@ def IconButton(icon_name: str = None, on_click: Callable[[], None] = None, child
 
 
 @solara.component
-def HTML(tag="div", unsafe_innerHTML=None, style: str = None, classes: List[str] = [], attributes=None, class_: str = None):
+def HTML(tag="div", unsafe_innerHTML=None, style: Union[str, Dict[str, str], None] = None, classes: List[str] = [], attributes=None, class_: str = None):
     """Render an HTML tag with optional raw HTML text inside.
 
     # Arguments
@@ -214,7 +215,9 @@ def Row(children=[], gap="12px", justify="start", margin: int = 0, classes: List
 
 
 @solara.component
-def Column(children=[], gap="12px", align="stretch", margin: int = 0, classes: List[str] = [], style: Union[str, Dict[str, str], None] = None):
+def Column(
+    children=[], gap="12px", align="stretch", margin: int = 0, classes: List[str] = [], style: Union[str, Dict[str, Union[str, int, float]], None] = None
+):
     """Lays out children in a column on top of each other, with the given gap between them.
 
     See also [Row](/documentation/components/layout/row).

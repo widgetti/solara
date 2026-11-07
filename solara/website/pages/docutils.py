@@ -2,7 +2,7 @@ import inspect
 
 import solara
 from solara.alias import rw
-from solara.components import Markdown
+from solara.components import Markdown, MarkdownIt
 
 
 @solara.component
@@ -26,7 +26,7 @@ def Sample(code, component):
 def IncludeComponent(component, pre="", highlight=[], **kwargs):
     code = inspect.getsource(component.f)
     with rw.VBox(layout={"padding": "20px", "max_width": "1024px", "border": "1px #333 solid"}) as main:
-        Markdown(
+        MarkdownIt(
             f"""
 ```python
 {pre}{code}
