@@ -20,6 +20,7 @@ from reacton.core import Element, render
 from reacton import ipywidgets
 
 import solara
+import solara.lab
 import solara.lifecycle
 from solara.util import nested_get
 
@@ -566,6 +567,10 @@ def solara_comm_target(comm, msg_first):
                 logger.exception(msg)
                 raise RuntimeError(msg) from e
             comm.send({"method": "finished", "widget_id": context.container._model_id})
+            # A threaded server wrote "finished" before send returned, so this render runs after the
+            # browser dropped its loader. Without threads the send only queues, and the data render
+            # still goes first, as before.
+            solara.lab.app_mounted.set(True)
         elif method == "app-status":
             context = kernel_context.get_current_context()
             # if there is no container, we never ran the app
@@ -603,6 +608,7 @@ def solara_comm_target(comm, msg_first):
                 load_themes(theme_dict, current_theme.dark_effective)
                 load_app_widget(context.state, app, path)
                 comm.send({"method": "finished"})
+                solara.lab.app_mounted.set(True)
         elif method == "evict":
             # Dev/test-only kernel eviction, the server half of solara.debug.simulateFailover()
             # (§6.4). It arrives over the kernel's own websocket, so unlike the HTTP evict route
