@@ -94,7 +94,7 @@ Version 1.65.0 was never published, because its build failed. This release inclu
 
 ## Version 1.61.0
 
-   * Feature: Support ipyvuetify 3 / Vuetify 3 next to ipyvuetify 1, selected by the installed ipyvuetify version (`solara.util.IPYVUETIFY_V3`). ipyvuetify 3 is a prerelease, so `pip install solara` keeps installing ipyvuetify 1 and that code path is unchanged. [84b45547](https://github.com/widgetti/solara/commit/84b45547)
+   * Feature: Support ipyvuetify 3 / Vuetify 3 next to ipyvuetify 1, selected by the installed ipyvuetify version (`solara.util.IPYVUETIFY_V3`). ipyvuetify 3 was a prerelease when this version came out. Since ipyvuetify 3.0.0, `pip install solara` installs ipyvuetify 3. [84b45547](https://github.com/widgetti/solara/commit/84b45547)
    * Feature: Run the unit tests and the integration tests on ipyvuetify 3 in CI. [767c539b](https://github.com/widgetti/solara/commit/767c539b)
    * Bug Fix: Keep the configured theme colors in per-kernel themes. [f819327a](https://github.com/widgetti/solara/commit/f819327a)
    * Bug Fix: `solara.Style` could raise while cleaning up its stylesheet; it now finds the stylesheet by a marker instead of an element id, at the cost of scanning the document's style tags on unmount. [efea3911](https://github.com/widgetti/solara/commit/efea3911)
