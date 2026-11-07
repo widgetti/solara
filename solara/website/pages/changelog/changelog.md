@@ -1,5 +1,11 @@
 # Solara Changelog
 
+## Version 1.66.0
+
+- Feature: `solara.lab.app_mounted` turns True once the browser shows the app. A component can render its skeleton first, and load its data after the loading screen is gone. [#1275](https://github.com/widgetti/solara/pull/1275)
+- Feature: solara.dev publishes an intersphinx inventory, so Sphinx projects can link to the Solara API docs. [#1274](https://github.com/widgetti/solara/pull/1274)
+- Bug Fix: With `SOLARA_SERVER_SYNC_WS_WRITE`, a client that reads slowly no longer stalls the server, and a write after a disconnect can no longer reach another socket. [#1262](https://github.com/widgetti/solara/pull/1262)
+
 ## Version 1.65.2
 
 - Bug Fix: `GridDraggable` shows its items again with ipyvue 3, which a fresh install uses. [#1270](https://github.com/widgetti/solara/pull/1270)
