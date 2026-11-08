@@ -3,7 +3,7 @@ import io
 import sys
 from binascii import b2a_base64
 from threading import local
-from unittest.mock import Mock
+import typing
 
 import reacton.patch_display
 from IPython.core.displaypub import DisplayPublisher
@@ -179,6 +179,54 @@ class SolaraDisplayPublisher(DisplayPublisher):
             return False
 
 
+class NoHistoryManager:
+    """A history manager that stores nothing: a solara server runs no notebook cells.
+
+    We used unittest.mock.Mock() before, but a Mock records every call and makes a child
+    Mock per attribute that points back at its parent: reference cycles that only the
+    cycle gc frees, for every kernel. This class has the attributes and methods that
+    IPython's InteractiveShell and its magics use.
+    """
+
+    session_number = 0
+
+    def __init__(self):
+        self.input_hist_parsed: typing.List[str] = [""]
+        self.input_hist_raw: typing.List[str] = [""]
+        self.output_hist: typing.Dict[int, object] = {}
+        self.output_hist_reprs: typing.Dict[int, str] = {}
+        self.outputs: typing.Dict[int, typing.List[object]] = {}
+        self.exceptions: typing.Dict[int, object] = {}
+        self.dir_hist: typing.List[str] = []
+
+    def store_inputs(self, *args, **kwargs) -> None:
+        pass
+
+    def store_output(self, *args, **kwargs) -> None:
+        pass
+
+    def reset(self, *args, **kwargs) -> None:
+        pass
+
+    def end_session(self, *args, **kwargs) -> None:
+        pass
+
+    def writeout_cache(self, *args, **kwargs) -> None:
+        pass
+
+    def get_range(self, *args, **kwargs) -> typing.Iterator[typing.Tuple[int, int, str]]:
+        return iter(())
+
+    def get_range_by_str(self, *args, **kwargs) -> typing.Iterator[typing.Tuple[int, int, str]]:
+        return iter(())
+
+    def get_tail(self, *args, **kwargs) -> typing.Iterator[typing.Tuple[int, int, str]]:
+        return iter(())
+
+    def search(self, *args, **kwargs) -> typing.Iterator[typing.Tuple[int, int, str]]:
+        return iter(())
+
+
 class SolaraInteractiveShell(InteractiveShell):
     display_pub_class = Type(SolaraDisplayPublisher)
     history_manager = Any()  # type: ignore
@@ -203,7 +251,7 @@ class SolaraInteractiveShell(InteractiveShell):
         pass  # avoid consuming memory
 
     def init_history(self):
-        self.history_manager = Mock()  # type: ignore
+        self.history_manager = NoHistoryManager()  # type: ignore
 
     def init_display_formatter(self):
         super().init_display_formatter()
