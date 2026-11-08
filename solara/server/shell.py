@@ -281,9 +281,20 @@ class SolaraInteractiveShell(InteractiveShell):
         """
         # each Magics instance keeps its magic functions as bound methods of itself (we assign
         # new dicts, and never mutate the old ones, in case they are shared)
-        if self.magics_manager is not None:
-            for magics in self.magics_manager.registry.values():
+        magics_manager = self.magics_manager
+        if magics_manager is not None:
+            for magics in list(magics_manager.registry.values()):
                 magics.magics = {magic_kind: {} for magic_kind in magics.magics}
+            # the manager's own table holds aliases that reference the shell and, in IPython >= 9.18,
+            # LazyMagic stand-ins that reference the manager; there the registry is also a dict
+            # subclass that references the manager
+            magics_manager.magics = {magic_kind: {} for magic_kind in magics_manager.magics}
+            magics_manager.registry = {}
+        # IPython < 9: the object inspector's code parser has the inspector as its traitlets parent
+        inspector = getattr(self, "inspector", None)
+        parser = getattr(inspector, "parser", None)
+        if parser is not None and getattr(parser, "parent", None) is inspector:
+            parser.parent = None
         # each formatter has its DisplayFormatter as traitlets parent, which holds the formatters
         display_formatter = self.display_formatter
         if display_formatter is not None:
