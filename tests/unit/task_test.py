@@ -1,6 +1,7 @@
 import asyncio
 import gc
 import logging
+import sysconfig
 import threading
 import time
 import weakref
@@ -1036,3 +1037,33 @@ def test_task_threaded_is_freed_without_gc(kernel_context):
         assert gc.collect() == 0
     finally:
         gc.enable()
+
+
+@pytest.mark.skipif(
+    not sysconfig.get_config_var("Py_GIL_DISABLED"),
+    reason="a threading.local is only a reference cycle on the free-threaded build",
+)
+def test_task_threaded_makes_no_thread_local_cycles(kernel_context):
+    def run_one(i):
+        task = solara.tasks.TaskThreaded(lambda: 1, key=f"no-thread-local-{i}")
+        task()
+        finished = task._last_finished_event
+        thread = task._current_thread
+        assert finished is not None and thread is not None
+        assert finished.wait(5)
+        thread.join(5)
+
+    run_one(0)  # the first call fills caches
+    gc.collect()
+    gc.disable()
+    try:
+        for i in range(1, 4):
+            run_one(i)
+        gc.set_debug(gc.DEBUG_SAVEALL)
+        gc.collect()
+        local_types = [type(obj).__name__ for obj in gc.garbage if type(obj).__name__ == "_local"]
+    finally:
+        gc.set_debug(0)
+        gc.garbage.clear()
+        gc.enable()
+    assert local_types == []

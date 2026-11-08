@@ -209,7 +209,6 @@ class SharedStore(ValueBase[S]):
     def __init__(self, value: S, equals: Callable[[Any, Any], bool] = solara.util.equals_extra, unwrap=lambda x: x):
         # since a set can trigger events, which can trigger new updates, we need a recursive lock
         self._lock = threading.RLock()
-        self.local = threading.local()
         self.equals = equals
 
         self._value = value

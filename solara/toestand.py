@@ -422,7 +422,6 @@ class KernelStore(ValueBase[S], ABC):
         # is per-instance (per reactive, shared across kernels) -- intentionally coarser than the
         # lock, to bound log volume.
         self._init_lock_warning_time: Optional[float] = None
-        self.local = threading.local()
 
     @property
     def lock(self):
