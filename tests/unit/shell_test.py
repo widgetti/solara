@@ -23,3 +23,56 @@ def test_shell(no_kernel_context):
         IPython.display.display("test1")
         assert ws1.send.call_count == 1
         assert ws2.send.call_count == 1
+
+
+def test_shell_history_manager_makes_no_cyclic_garbage():
+    import gc
+
+    from solara.server.shell import NoHistoryManager, SolaraInteractiveShell
+
+    shell = SolaraInteractiveShell()
+    history_manager = shell.history_manager  # type: ignore[has-type]
+    assert isinstance(history_manager, NoHistoryManager)
+    gc.collect()
+    gc.disable()
+    try:
+        gc.set_debug(gc.DEBUG_SAVEALL)
+        # what IPython does with it when it resets, stores a cell and looks back
+        history_manager.reset(new_session=False)
+        history_manager.store_inputs(1, "x = 1")
+        history_manager.store_output(1)
+        assert list(history_manager.get_tail(10)) == []
+        assert list(history_manager.get_range_by_str("1-2")) == []
+        history_manager.end_session()
+        del history_manager
+        gc.collect()
+        garbage = sorted(type(obj).__name__ for obj in gc.garbage)
+    finally:
+        gc.set_debug(0)
+        gc.garbage.clear()
+        gc.enable()
+    assert garbage == []
+
+
+def test_shell_creation_leaves_no_cyclic_garbage():
+    import gc
+
+    from solara.server.shell import SolaraInteractiveShell
+
+    SolaraInteractiveShell()  # the first shell fills module level caches
+    gc.collect()
+    gc.disable()
+    try:
+        gc.set_debug(gc.DEBUG_SAVEALL)
+        shell = SolaraInteractiveShell()
+        gc.collect()
+        garbage = sorted(type(obj).__name__ for obj in gc.garbage)
+    finally:
+        gc.set_debug(0)
+        gc.garbage.clear()
+        gc.enable()
+    assert garbage == []
+    magics_manager = shell.magics_manager
+    assert magics_manager is not None
+    assert magics_manager.registry["ScriptMagics"].script_magics == []
+    assert "script" in magics_manager.magics["cell"]
