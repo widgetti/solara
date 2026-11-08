@@ -476,6 +476,18 @@ class TaskAsyncio(Task[P, R]):
         await runner()
 
 
+class _TaskThread(threading.Thread):
+    """The thread that runs one call of a TaskThreaded, with the cancel event of that call.
+
+    The event used to live in a threading.local on the task. On the free-threaded build
+    (3.13t, 3.14t), a threading.local is a reference cycle that only the cycle gc frees,
+    one per task. The task makes a new thread for each call anyway, so the thread can
+    carry the event.
+    """
+
+    cancel_event: Optional[threading.Event] = None
+
+
 class TaskThreaded(Task[P, R]):
     _current_cancel_event: Optional[threading.Event] = None
     _current_thread: Optional[threading.Thread] = None
@@ -488,7 +500,6 @@ class TaskThreaded(Task[P, R]):
         self.__qualname__ = function.__qualname__
         self.function = function
         self.lock = threading.Lock()
-        self._local = threading.local()
 
     def cancel(self) -> None:
         if self._cancel:
@@ -528,14 +539,16 @@ class TaskThreaded(Task[P, R]):
 
         with self.lock:
             previous_thread = self._current_thread
-            self._current_thread = current_thread = threading.Thread(
+            self._current_thread = current_thread = _TaskThread(
                 target=lambda: self._run(_last_finished_event, previous_thread, cancel_event, args, kwargs), daemon=False
             )
+            current_thread.cancel_event = cancel_event
         self._result.value = TaskResult[R](latest=self._last_value, _state=TaskState.STARTING)
         current_thread.start()
 
     def is_current(self):
-        cancel_event = getattr(self._local, "cancel_event", None)
+        thread = threading.current_thread()
+        cancel_event = thread.cancel_event if isinstance(thread, _TaskThread) else None
         if cancel_event is not None and cancel_event.is_set():
             return False
         if self._current_thread is None:
@@ -559,7 +572,6 @@ class TaskThreaded(Task[P, R]):
         self._start_event.wait()
         intrusive_cancel = False
         wait_on_previous = False
-        self._local.cancel_event = cancel_event
 
         def runner():
             if wait_on_previous:
