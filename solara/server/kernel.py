@@ -377,9 +377,17 @@ class Kernel(ipykernel.kernelbase.Kernel):
             # so we remove the circular reference by setting the comm_manager to None
             self.comm_manager = None  # type: ignore
             self.session.parent = None  # type: ignore
+            # ipykernel >= 7 makes _parent_ident a LazyDict of lambdas that reference this kernel,
+            # a cycle. It is only kept for backward compatibility, ipykernel itself does not read it.
+            self._parent_ident = {"shell": b"", "control": b""}
 
             self.shell.display_pub.session = None  # type: ignore
             self.shell.display_pub.pub_socket = None  # type: ignore
+            try:
+                self.shell._break_reference_cycles()
+            except Exception:
+                # the cycle gc will free the shell, continue the cleanup
+                logger.exception("Error breaking reference cycles in the shell, not fatal")
             del self.shell.__dict__
             self.shell = None  # type: ignore
             self.session.websockets.clear()

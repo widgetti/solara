@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+from typing import List
 from unittest.mock import Mock
 
 import pytest
@@ -159,3 +160,83 @@ def test_reconnect_with_other_session_id_raises_session_id_mismatch(no_kernel_co
     finally:
         for live_context in list(kernel_context.contexts.values()):
             live_context.close()
+
+
+def _open_use_and_close_kernel(id: str) -> None:
+    import IPython.display
+
+    from solara.server import kernel as kernel_mod
+    from solara.server.kernel_context import VirtualKernelContext
+
+    context = VirtualKernelContext(id=id, kernel=kernel_mod.Kernel(), session_id=f"{id}-session")
+    with context:
+        # display creates the formatters that are made on first use
+        IPython.display.display("text")
+        IPython.display.display(IPython.display.HTML("<b>html</b>"))
+    with context:
+        context.close()
+
+
+def test_closed_kernel_is_freed_without_gc(no_kernel_context):
+    # A closed kernel that is part of a reference cycle waits for the cycle gc, which pauses
+    # all threads. Refcounting should free the kernel and its shell as soon as it is closed.
+    import gc
+
+    _open_use_and_close_kernel("gc-warmup")  # the first kernel fills module level caches
+    gc.collect()
+    gc.disable()
+    try:
+        gc.set_debug(gc.DEBUG_SAVEALL)
+        _open_use_and_close_kernel("gc-check")
+        gc.collect()
+        garbage = sorted(f"{type(obj).__module__}.{type(obj).__qualname__}" for obj in gc.garbage)
+    finally:
+        gc.set_debug(0)
+        gc.garbage.clear()
+        gc.enable()
+    assert garbage == []
+
+
+def test_late_display_and_print_after_kernel_close(no_kernel_context):
+    # A thread of a kernel can outlive it: it can display or print after the kernel closed,
+    # and it unregisters its display hook when it ends.
+    import threading
+
+    import IPython.display
+
+    from solara.server import kernel as kernel_mod
+    from solara.server.kernel_context import VirtualKernelContext
+
+    context = VirtualKernelContext(id="late-display", kernel=kernel_mod.Kernel(), session_id="late-display-session")
+    closed = threading.Event()
+    errors: List[BaseException] = []
+
+    def run():
+        closed.wait(5)
+        try:
+            IPython.display.display("late")
+            print("late")  # noqa: T201
+        except BaseException as e:  # noqa: B036
+            errors.append(e)
+
+    thread_errors: List[BaseException] = []
+    excepthook_original = threading.excepthook
+
+    def excepthook(args):
+        if args.exc_value is not None:
+            thread_errors.append(args.exc_value)
+
+    threading.excepthook = excepthook
+    try:
+        with context:
+            thread = threading.Thread(target=run)
+            thread.start()
+        with context:
+            context.close()
+        closed.set()
+        thread.join(5)
+    finally:
+        threading.excepthook = excepthook_original
+    assert not thread.is_alive()
+    assert errors == []
+    assert thread_errors == []

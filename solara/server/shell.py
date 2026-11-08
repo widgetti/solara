@@ -7,6 +7,7 @@ import typing
 
 import reacton.patch_display
 from IPython.core.displaypub import DisplayPublisher
+from IPython.core.formatters import PlainTextFormatter
 from IPython.core.interactiveshell import InteractiveShell, InteractiveShellABC
 from jupyter_client.session import Session, extract_header
 from traitlets import Any, CBytes, Dict, Instance, Type, default
@@ -262,6 +263,41 @@ class SolaraInteractiveShell(InteractiveShell):
 
     def init_history(self):
         self.history_manager = NoHistoryManager()  # type: ignore
+
+    def init_completer(self):
+        # IPython's IPCompleter keeps bound methods of itself, a reference cycle that only the
+        # cycle gc frees, for every kernel. A solara server never completes code (our Kernel
+        # does not use the shell for complete_request), so we do not create it.
+        pass
+
+    def _break_reference_cycles(self):
+        """Break the reference cycles inside the parts of this shell, called when its kernel closes.
+
+        The kernel then deletes the __dict__ of this shell, which breaks the cycles between the
+        shell and its parts (they reference the shell as their traitlets parent). The parts also
+        have cycles of their own, which we break here, so refcounting frees the closed shell
+        without the cycle gc. Only the kernel and this shell reach these parts, so no late caller
+        (for instance a thread that displays after its kernel closed) uses them.
+        """
+        # each Magics instance keeps its magic functions as bound methods of itself (we assign
+        # new dicts, and never mutate the old ones, in case they are shared)
+        if self.magics_manager is not None:
+            for magics in self.magics_manager.registry.values():
+                magics.magics = {magic_kind: {} for magic_kind in magics.magics}
+        # each formatter has its DisplayFormatter as traitlets parent, which holds the formatters
+        display_formatter = self.display_formatter
+        if display_formatter is not None:
+            formatters = list(display_formatter.formatters.values())
+            for name in ["ipython_display_formatter", "mimebundle_formatter"]:
+                # these are made on first use, do not make them now
+                if display_formatter.trait_has_value(name):
+                    formatters.append(getattr(display_formatter, name))
+            for formatter in formatters:
+                if formatter.parent is display_formatter:
+                    formatter.parent = None
+                # the float printers of the text/plain formatter are lambdas that reference it
+                if isinstance(formatter, PlainTextFormatter) and formatter.trait_has_value("type_printers"):
+                    formatter.type_printers = {}
 
     def init_display_formatter(self):
         super().init_display_formatter()
