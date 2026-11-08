@@ -181,7 +181,7 @@ pywin32==312
 pywinpty==3.0.3
 PyYAML==6.0.3
 pyzmq==27.3.0
-reacton==1.11.1
+reacton==1.11.2
 redis==7.0.1
 referencing==0.36.2
 regex==2026.1.15
