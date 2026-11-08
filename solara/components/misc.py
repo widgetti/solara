@@ -116,6 +116,21 @@ def Div(children=[], classes: List[str] = [], style: Union[str, Dict[str, str], 
 
 
 @solara.component
+def Scrollable(children=[], max_height: str = "500px", classes: List[str] = [], style: Union[str, Dict[str, str], None] = None):
+    """Render children in a vertically scrollable container.
+
+    ## Arguments
+
+     * `children`: List of children to render in the container.
+     * `max_height`: Maximum height of the container as a CSS value.
+     * `classes`: List of CSS classes to apply to the container.
+     * `style`: Additional CSS style to apply to the container.
+    """
+    style_flat = f"max-height: {max_height}; overflow-y: auto;" + solara.util._flatten_style(style)
+    return Div(children=children, classes=classes, style=style_flat)
+
+
+@solara.component
 def Preformatted(text, **kwargs):
     return v.Html(tag="pre", children=[text], **kwargs)
 
