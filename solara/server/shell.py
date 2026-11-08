@@ -10,6 +10,7 @@ from IPython.core.displaypub import DisplayPublisher
 from IPython.core.interactiveshell import InteractiveShell, InteractiveShellABC
 from jupyter_client.session import Session, extract_header
 from traitlets import Any, CBytes, Dict, Instance, Type, default
+from traitlets.config import Config
 
 
 def encode_images(obj):
@@ -233,7 +234,16 @@ class SolaraInteractiveShell(InteractiveShell):
     display_pub: SolaraDisplayPublisher
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        # IPython's ScriptMagics builds an argparse parser for each interpreter it finds
+        # (%%bash, %%sh, %%python3, ...), for every shell, and formatting their help makes
+        # reference cycles: about 370 objects per kernel for the cycle gc. A solara server
+        # runs no notebook cells, so we generate none of them (%%script itself stays).
+        # A config passed by the caller still wins.
+        config = Config({"ScriptMagics": {"script_magics": []}})
+        user_config = kwargs.pop("config", None)
+        if user_config is not None:
+            config.merge(user_config)
+        super().__init__(*args, config=config, **kwargs)
         atexit.unregister(self.atexit_operations)
 
         if self.magics_manager:

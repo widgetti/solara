@@ -52,3 +52,27 @@ def test_shell_history_manager_makes_no_cyclic_garbage():
         gc.garbage.clear()
         gc.enable()
     assert garbage == []
+
+
+def test_shell_creation_leaves_no_cyclic_garbage():
+    import gc
+
+    from solara.server.shell import SolaraInteractiveShell
+
+    SolaraInteractiveShell()  # the first shell fills module level caches
+    gc.collect()
+    gc.disable()
+    try:
+        gc.set_debug(gc.DEBUG_SAVEALL)
+        shell = SolaraInteractiveShell()
+        gc.collect()
+        garbage = sorted(type(obj).__name__ for obj in gc.garbage)
+    finally:
+        gc.set_debug(0)
+        gc.garbage.clear()
+        gc.enable()
+    assert garbage == []
+    magics_manager = shell.magics_manager
+    assert magics_manager is not None
+    assert magics_manager.registry["ScriptMagics"].script_magics == []
+    assert "script" in magics_manager.magics["cell"]
