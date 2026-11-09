@@ -140,7 +140,7 @@ pydantic==2.14.3
 pydantic_core==2.50.4
 pyee==14.0.0
 Pygments==2.21.0
-pymdown-extensions==12.3
+pymdown-extensions==13.0
 pyparsing==3.3.3
 pytest==9.2.0
 pytest-asyncio==1.4.1.post1
@@ -158,7 +158,7 @@ pyzmq==27.3.0
 reacton==1.11.2
 redis==8.1.0
 referencing==0.37.0
-regex==2026.11.7
+regex==2026.11.9
 requests==2.34.2
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
