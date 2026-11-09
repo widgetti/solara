@@ -1,10 +1,13 @@
 import asyncio
 import concurrent.futures
+import gc
 import logging
+import weakref
 from typing import Any, cast
 
 import anyio.from_thread
 import pytest
+import starlette.websockets
 
 from solara.server import kernel, websocket
 from solara.server.starlette import WebsocketWrapper
@@ -67,3 +70,49 @@ def test_send_from_event_loop_thread_schedules_a_task(data):
         return fake.sent
 
     assert asyncio.run(run()) == [data]
+
+
+class _DisconnectedWebSocket:
+    async def send_text(self, data):
+        raise starlette.websockets.WebSocketDisconnect()
+
+    async def send_bytes(self, data):
+        raise starlette.websockets.WebSocketDisconnect()
+
+    async def close(self):
+        raise starlette.websockets.WebSocketDisconnect()
+
+
+class _HeldByTheCaller:
+    pass
+
+
+@pytest.mark.parametrize("operation", ["send_text", "send_bytes", "close"])
+def test_disconnect_does_not_keep_the_callers_frames_alive(operation):
+    # A kernel close sends comm-close messages to a websocket that is gone. The exception must not
+    # form a reference cycle, or the traceback keeps the calling frames, and through them the render
+    # context and the kernel context, alive until the cycle gc runs.
+    args = {"send_text": ("hi",), "send_bytes": (b"hi",), "close": ()}[operation]
+
+    async def create():
+        return WebsocketWrapper(cast(Any, _DisconnectedWebSocket()), portal)
+
+    def caller(held):
+        try:
+            getattr(ws, operation)(*args)
+        except websocket.WebSocketDisconnect:
+            return True
+        return False
+
+    with anyio.from_thread.start_blocking_portal() as portal:
+        ws = portal.call(create)
+        held = _HeldByTheCaller()
+        held_ref = weakref.ref(held)
+        gc.collect()
+        gc.disable()
+        try:
+            assert caller(held)
+            del held
+            assert held_ref() is None
+        finally:
+            gc.enable()

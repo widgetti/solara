@@ -129,6 +129,21 @@ class WebsocketDebugInfo:
     closed = 0
 
 
+_DISCONNECTED = object()
+
+
+async def _disconnect_as_value(func, *args):
+    # An exception raised here would cross the thread inside the portal's Future. anyio's call frame
+    # holds that Future and the Future holds the exception, so the exception references itself through
+    # its traceback. The caller's thread re-raises that same object, which adds the whole calling stack
+    # to it: a kernel close sends comm-close messages to a websocket that is gone, so the render context
+    # and the kernel context stayed alive until the cycle gc ran, for every closed page.
+    try:
+        await func(*args)
+    except websocket.WebSocketDisconnect:
+        return _DISCONNECTED
+
+
 class WebsocketWrapper(websocket.WebsocketWrapper):
     ws: starlette.websockets.WebSocket
 
@@ -210,7 +225,8 @@ class WebsocketWrapper(websocket.WebsocketWrapper):
     def _portal_call(self, func, *args):
         assert self.portal is not None
         try:
-            return self.portal.call(func, *args)
+            if self.portal.call(_disconnect_as_value, func, *args) is _DISCONNECTED:
+                raise websocket.WebSocketDisconnect()
         except RuntimeError as e:
             # The websocket handler stops the portal when it exits. Another thread (e.g. the
             # close beacon shutting down the kernel) can still hold this websocket from a copy of
