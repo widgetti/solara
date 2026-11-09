@@ -10,6 +10,7 @@ object as normal dict, e.g.:
 
 ```python
 import solara
+
 solara.cache.storage["my-key"] = expensive_function_call()
 assert "my-key" in solara.cache.storage
 ```
@@ -48,6 +49,7 @@ The [cachetools](https://cachetools.readthedocs.io/) project has some caching ty
 ```python
 import cachetools
 import solara
+
 solara.cache.storage = cachetools.FIFOCache(maxsize=100)
 ```
 
@@ -63,9 +65,11 @@ This can be set using code:
 
 ```python
 import solara
+
 solara.cache.configure("memory-size")
 # or more explicit
 import solara_enterprise.cache.memory_size
+
 solara.cache.storage = solara_enterprise.cache.memory_size.MemorySize(
     max_size="1GB"  # already the default
 )
@@ -88,11 +92,14 @@ This can be set using code:
 
 ```python
 import solara
+
 solara.cache.configure("disk")
 # or more explicit
 import solara_enterprise.cache.disk
+
 solara.cache.storage = solara_enterprise.cache.disk.Disk(
-    max_size="10GB", path="/home/maarten/.solara/cache"  # already the default
+    max_size="10GB",
+    path="/home/maarten/.solara/cache",  # already the default
 )
 ```
 
@@ -111,9 +118,11 @@ This can be set using code:
 
 ```python
 import solara
+
 solara.cache.configure("redis")
 # or more explicit
 import solara_enterprise.cache.redis
+
 # optionally pass in a redis.Client object
 solara.cache.storage = solara_enterprise.cache.redis.Redis()
 ```
@@ -129,17 +138,17 @@ We can chain a few caches to get a multilevel cache. This allows us to get the b
 
 ```python
 import solara
+
 solara.cache.configure("memory,disk,redis")
 # or more explicit
 import solara_enterprise.cache.multi_level
 import solara_enterprise.cache.disk
 import solara_enterprise.cache.redis
+
 l1 = solara.cache.Memory()
 l2 = solara_enterprise.cache.disk.Disk()
 l3 = solara_enterprise.cache.redis.Redis()
-solara.cache.storage = solara_enterprise.cache.multi_level.MultiLevel(
-    l1, l2, l3
-)
+solara.cache.storage = solara_enterprise.cache.multi_level.MultiLevel(l1, l2, l3)
 ```
 
 Or configured using an environment variable:

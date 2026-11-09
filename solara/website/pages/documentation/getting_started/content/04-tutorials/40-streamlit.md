@@ -126,6 +126,7 @@ def square(name):
     x_squared = x**2
     st.markdown(f"{name}: {x} squared = {x_squared}")
 
+
 square("x")
 square("y")
 ```
