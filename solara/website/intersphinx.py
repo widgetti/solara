@@ -12,11 +12,14 @@ Run this after adding or moving an API page:
 
 import ast
 import importlib
+import inspect
 import re
 import types
 import zlib
 from pathlib import Path
 from typing import List, NamedTuple, Optional
+
+import reacton.core
 
 HERE = Path(__file__).parent
 PAGES = HERE / "pages"
@@ -32,9 +35,24 @@ HEADER = b"""# Sphinx inventory version 2
 NAME_PREFIXES = {"auth": "solara_enterprise.auth"}
 
 
+# objects that a page explains in its text, without an apidoc call
+DOCUMENTED_IN_TEXT = {
+    "solara.FigurePlotly": "documentation/components/viz/plotly",
+    "solara.PivotTableCard": "documentation/components/data/pivot_table",
+    "solara.PivotTableView": "documentation/components/data/pivot_table",
+    "solara.Reactive": "documentation/api/utilities/reactive",
+    "solara.Result": "documentation/api/hooks/use_thread",
+    "solara.ResultState": "documentation/api/hooks/use_thread",
+    "solara.lab.Task": "documentation/components/lab/task",
+    "solara.lab.cookies": "documentation/components/lab/cookies_headers#cookies",
+    "solara.lab.headers": "documentation/components/lab/cookies_headers#headers",
+    "solara.lab.theme": "documentation/components/lab/theming#themes",
+}
+
+
 class Entry(NamedTuple):
     name: str
-    role: str  # "function" or "class" in the "py" domain
+    role: str  # "function", "class" or "data" in the "py" domain
     uri: str
 
 
@@ -70,6 +88,14 @@ def _resolve(name: str):
     return obj
 
 
+def _role(obj) -> str:
+    if isinstance(obj, type):
+        return "class"
+    if inspect.isroutine(obj) or isinstance(obj, reacton.core.Component):
+        return "function"
+    return "data"
+
+
 def _names_and_role(name: str):
     """Return all names for the object, the public one first, and its role."""
     if name.endswith(".f"):  # a component, apidoc wants the wrapped function
@@ -89,7 +115,7 @@ def _names_and_role(name: str):
     module, qualname = getattr(target, "__module__", None), getattr(target, "__qualname__", None)
     if module and qualname and module.startswith("solara"):
         names.append(f"{module}.{qualname}")
-    role = "class" if isinstance(obj, type) else "function"
+    role = _role(obj)
     unique = list(dict.fromkeys(names))
     return unique, role
 
@@ -130,6 +156,9 @@ def collect_entries(pages: Path = PAGES) -> List[Entry]:
             anchor = _anchor(source, names[0].rsplit(".", 1)[-1]) if len(targets) > 1 else ""
             for name in names:
                 entries.append(Entry(name, role, page + anchor))
+    for target, uri in DOCUMENTED_IN_TEXT.items():
+        names, role = _names_and_role(target)
+        entries.extend(Entry(name, role, uri) for name in names)
     return sorted(set(entries))
 
 

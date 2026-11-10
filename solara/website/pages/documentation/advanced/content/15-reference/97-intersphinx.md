@@ -73,7 +73,18 @@ names all link to the same page:
 
 Components (for example `solara.Button`) and functions use the `py:function` role, so use `:func:` for them.
 Classes (for example `solara.Route`) use the `py:class` role, so use `:class:` for them.
+Objects such as `solara.lab.cookies` use the `py:data` role, so use `:data:` for them.
 `:py:obj:` matches either one.
+
+Solara also re-exports names from [Reacton](https://reacton.solara.dev/), such as `solara.use_ref`. The Solara inventory does not list these names.
+Add the [Reacton](https://reacton.solara.dev/) inventory and link to `reacton.use_ref` instead:
+
+```python
+intersphinx_mapping = {
+    "solara": ("https://solara.dev/", "https://solara.dev/static/public/objects.inv"),
+    "reacton": ("https://reacton.solara.dev/en/latest/", None),
+}
+```
 
 To see all names in the inventory, run:
 

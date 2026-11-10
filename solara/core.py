@@ -24,6 +24,28 @@ def component(obj: Callable[P, None], mime_bundle: Dict[str, Any] = ...) -> Call
 def component(
     obj: Union[Callable[P, None], FuncT, None] = None, mime_bundle: Dict[str, Any] = reacton.core.mime_bundle_default
 ) -> Union[Callable[[FuncT], FuncT], FuncT, Callable[P, reacton.core.Element]]:
+    """Turn a function into a Solara component.
+
+    A call to a component does not run its function. The call creates an element, and Solara runs the function when it renders the element.
+    Read [the introduction to components](/documentation/getting_started/fundamentals/components) to learn more.
+
+    ## Example
+
+    ```python
+    import solara
+
+
+    @solara.component
+    def Page():
+        solara.Button("Click me")
+    ```
+
+    ## Arguments
+
+     * `obj`: The function to turn into a component. Leave it out to give options, for example `@solara.component(mime_bundle=...)`.
+     * `mime_bundle`: The output that a frontend shows when it cannot display widgets.
+    """
+
     def wrapper(obj: Union[Callable[P, None], FuncT]) -> FuncT:
         try:
             validate_hooks.HookValidator(obj).run()

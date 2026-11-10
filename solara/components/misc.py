@@ -97,12 +97,56 @@ def ui_slider(value=1, label="", min=0, max=100, key=None, tick_labels=None, thu
 
 @solara.component
 def Text(text, style: Union[str, Dict[str, str], None] = None, classes: List[str] = []):
+    """Show plain text in a `<span>` element.
+
+    For formatted text, use [Markdown](/documentation/components/output/markdown).
+
+    ## Example
+
+    ```solara
+    import solara
+
+
+    @solara.component
+    def Page():
+        solara.Text("Hello world", style={"color": "green"})
+    ```
+
+    ## Arguments
+
+     * `text`: The text to show.
+     * `style`: CSS style to apply, as a string or a dictionary.
+     * `classes`: List of CSS classes to apply.
+    """
     style_flat = solara.util._flatten_style(style)
     return v.Html(tag="span", class_=_combine_classes(classes), style_=style_flat, children=[text])
 
 
 @solara.component
 def Div(children=[], classes: List[str] = [], style: Union[str, Dict[str, str], None] = None, **kwargs):
+    """Put children in a `<div>` element.
+
+    For a layout, prefer [Row](/documentation/components/layout/row) or [Column](/documentation/components/layout/column).
+
+    ## Example
+
+    ```solara
+    import solara
+
+
+    @solara.component
+    def Page():
+        with solara.Div(style={"border": "1px solid gray", "padding": "8px"}):
+            solara.Text("Inside a div")
+    ```
+
+    ## Arguments
+
+     * `children`: The elements to put in the div.
+     * `classes`: List of CSS classes to apply.
+     * `style`: CSS style to apply, as a string or a dictionary.
+     * `**kwargs`: Other arguments for the underlying `ipyvuetify.Html` widget.
+    """
     style_flat = solara.util._flatten_style(style)
     classes = classes.copy()
     kwargs = kwargs.copy()
