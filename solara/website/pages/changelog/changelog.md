@@ -1,5 +1,13 @@
 # Solara Changelog
 
+## Version 1.66.3
+
+- Bug Fix: `SOLARA_CHECK_HOOKS=raise` now raises an error on an invalid hook use, as the docs say. Before, this setting silently turned the check off. [#1285](https://github.com/widgetti/solara/pull/1285)
+- Bug Fix: The intersphinx inventory now lists common names such as `solara.component`, `solara.Reactive`, and `solara.Text`. `solara.component`, `solara.Text`, and `solara.Div` have new API pages. [#1288](https://github.com/widgetti/solara/pull/1288)
+- Bug Fix: Reference counting now frees a closed kernel and its IPython shell, so they do not wait for the cycle garbage collector. [#1282](https://github.com/widgetti/solara/pull/1282) [#1284](https://github.com/widgetti/solara/pull/1284)
+- Bug Fix: A websocket disconnect during kernel close no longer keeps the closed kernel alive until the cycle garbage collector runs. [#1286](https://github.com/widgetti/solara/pull/1286)
+- Bug Fix: On the free-threaded Python builds, solara no longer makes a reference cycle for each task and each reactive store. [#1283](https://github.com/widgetti/solara/pull/1283)
+
 ## Version 1.66.2
 
 Version 1.66.1 was tagged but never published. This release includes its fix.
