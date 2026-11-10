@@ -120,7 +120,9 @@ class HookValidator(ast.NodeVisitor):
             for node in self._root_function_scope.body:
                 self.visit(node)
         except HookValidationError as e:
-            if solara.settings.main.check_hooks == "error":
+            # "raise" is the documented value (see solara.settings), "error" is
+            # what this check compared against before and is kept for compatibility
+            if solara.settings.main.check_hooks in ("raise", "error"):
                 raise e
             elif solara.settings.main.check_hooks == "warn":
                 warnings.warn(str(e))

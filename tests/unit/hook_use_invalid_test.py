@@ -1,5 +1,6 @@
 import pytest
 import contextlib
+import warnings
 import solara.settings
 
 import solara
@@ -10,7 +11,7 @@ import solara.validate_hooks
 @contextlib.contextmanager
 def hook_check_raise():
     prev = solara.settings.main.check_hooks
-    solara.settings.main.check_hooks = "error"
+    solara.settings.main.check_hooks = "raise"
     try:
         yield
     finally:
@@ -25,6 +26,39 @@ def hook_check_warn():
         yield
     finally:
         solara.settings.main.check_hooks = prev
+
+
+@contextlib.contextmanager
+def hook_check(value):
+    prev = solara.settings.main.check_hooks
+    solara.settings.main.check_hooks = value
+    try:
+        yield
+    finally:
+        solara.settings.main.check_hooks = prev
+
+
+@pytest.mark.parametrize("value", ["raise", "error"])
+def test_hook_check_setting_raises(value):
+    # "raise" is the documented value, "error" is what the validator used to check for
+    with hook_check(value), pytest.raises(HookValidationError):
+
+        @solara.component
+        def Page():
+            for i in range(10):
+                solara.use_state(1)
+            solara.Text("Done")
+
+
+def test_hook_check_setting_off():
+    with hook_check("off"), warnings.catch_warnings():
+        warnings.simplefilter("error")
+
+        @solara.component
+        def Page():
+            for i in range(10):
+                solara.use_state(1)
+            solara.Text("Done")
 
 
 def test_hooks_noqa_regex():
