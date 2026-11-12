@@ -188,7 +188,7 @@ rich==15.0.0
 rich-click==1.9.9
 rpds-py==0.30.0
 ruff==0.17.4
-Send2Trash==2.1.0
+Send2Trash==2.2.0
 simple-websocket==1.1.0
 simplejson==4.3.0
 six==1.17.0
