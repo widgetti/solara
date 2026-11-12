@@ -76,6 +76,11 @@ def _get_current_task():
         return None
 
 
+def _retrieve_exception(future: asyncio.Future) -> None:
+    if not future.cancelled():
+        future.exception()
+
+
 class TaskState(Enum):
     NOTCALLED = 1
     STARTING = 2
@@ -334,6 +339,11 @@ class TaskAsyncio(Task[P, R]):
             call_event_loop = running_loop
 
         self.current_future = future = call_event_loop.create_future()
+        # A failed call's exception is reported through the task's `.exception`/`.error`,
+        # and nothing in Solara awaits this future, so mark the exception as retrieved.
+        # Otherwise asyncio logs "Future exception was never retrieved" when the future
+        # is garbage collected. Code that does await the future still gets the exception.
+        future.add_done_callback(_retrieve_exception)
 
         if self.run_in_thread:
             thread_event_loop = asyncio.new_event_loop()
