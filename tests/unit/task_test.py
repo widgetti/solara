@@ -873,6 +873,45 @@ def test_task_async_future_receives_exception(monkeypatch):
             holder["context"].close()
 
 
+def test_task_failed_future_exception_is_retrieved():
+    # A failed call is reported through the task's .exception/.error, so its future
+    # must not make asyncio log "Future exception was never retrieved" once it is
+    # garbage collected (gh-1287). Run in a subprocess: the futures can stay
+    # referenced until the interpreter exits, which is when asyncio logs this.
+    import subprocess
+    import sys
+    import textwrap
+
+    code = textwrap.dedent(
+        """
+        import asyncio, gc
+        import solara.lab
+        import solara.server.app  # noqa: F401
+        from solara.server import kernel, kernel_context
+
+        @solara.lab.task
+        async def fail():
+            raise ValueError("handled through fail.error")
+
+        async def main():
+            ctx = kernel_context.VirtualKernelContext(id="k", kernel=kernel.Kernel(), session_id="s")
+            with ctx:
+                fail()
+                await asyncio.sleep(0.2)
+                fail()  # replaces the first call's future
+                await asyncio.sleep(0.2)
+                assert fail.error
+            gc.collect()
+            await asyncio.sleep(0.1)
+
+        asyncio.run(main())
+        """
+    )
+    result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=120)
+    assert result.returncode == 0, result.stderr
+    assert "never retrieved" not in result.stderr
+
+
 @pytest.mark.parametrize("fail", [False, True])
 def test_task_finishing_after_future_cancelled_is_not_an_error(fail, caplog, monkeypatch):
     # A page close or shutdown can cancel the pending future while the task thread's
