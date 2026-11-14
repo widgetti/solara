@@ -133,7 +133,7 @@ notebook==6.5.4
 notebook_shim==0.2.4
 numpy==1.26.4
 objgraph==3.7.0
-openai==3.50.0
+openai==3.51.0
 overrides==7.7.0
 packaging==26.3
 pandas==2.3.3

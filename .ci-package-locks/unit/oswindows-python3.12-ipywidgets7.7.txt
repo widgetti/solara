@@ -114,7 +114,7 @@ notebook==7.6.5
 notebook_shim==0.2.4
 numpy==1.26.4
 objgraph==3.7.0
-openai==3.50.0
+openai==3.51.0
 packaging==26.3
 pandas==3.0.6
 pandocfilters==1.5.1
@@ -124,7 +124,7 @@ pillow==13.0.0
 pipx==1.18.12
 pixelmatch==0.4.0
 platformdirs==4.14.3
-playwright==1.65.1
+playwright==1.65.2
 plotly==7.1.0
 pluggy==1.7.0
 polars==2.1.0
