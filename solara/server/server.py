@@ -20,7 +20,7 @@ import solara.server.settings
 from solara.lab import cookies as solara_cookies
 from solara.lab import headers as solara_headers
 
-from . import app, jupytertools, patch, settings, websocket
+from . import app, jupytertools, patch, settings, streaming, websocket
 from .kernel import Kernel, deserialize_binary_message
 from .kernel_context import initialize_virtual_kernel
 
@@ -132,6 +132,8 @@ async def app_loop(
     kernel_id: str,
     page_id: str,
     user: dict = None,
+    *,
+    stream_root_path: Optional[str] = None,
 ):
     context = initialize_virtual_kernel(session_id, kernel_id, ws)
     if context is None:
@@ -151,6 +153,8 @@ async def app_loop(
 
     kernel = context.kernel
     connection = context.page_connect(page_id)
+    stream_owner = streaming._configure(context, stream_root_path, user) if stream_root_path is not None else None
+    stream_binding = streaming._connection_owner.set(stream_owner)
     try:
         with run_context, context:
             if user:
@@ -203,6 +207,7 @@ async def app_loop(
                         f" widget: created: {created_widgets_count} closed: {close_widgets_count}"
                     )
     finally:
+        streaming._connection_owner.reset(stream_binding)
         context.page_disconnect(page_id, connection)
 
 

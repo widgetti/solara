@@ -67,7 +67,7 @@ import solara.settings
 from solara.server.threaded import ServerBase
 
 from . import app as appmod
-from . import compress, kernel_context, server, settings, telemetry, websocket
+from . import compress, kernel_context, server, settings, streaming, telemetry, websocket
 from .cdn_helper import cdn_url_path, get_path
 
 os.environ["SERVER_SOFTWARE"] = "solara/" + str(solara.__version__)
@@ -424,7 +424,10 @@ async def _kernel_connection(ws: starlette.websockets.WebSocket):
                 headers_dict[k] = [v]
             else:
                 headers_dict[k].append(v)
-        await server.app_loop(ws_wrapper, ws.cookies, headers_dict, session_id, kernel_id, page_id, user)
+        root_path = settings.main.root_path
+        if root_path is None:
+            root_path = ws.scope.get("root_path", "")
+        await server.app_loop(ws_wrapper, ws.cookies, headers_dict, session_id, kernel_id, page_id, user, stream_root_path=root_path)
 
     def websocket_thread_runner(ws_wrapper: WebsocketWrapper, portal: anyio.from_thread.BlockingPortal):
         async def run_wrapper():
@@ -475,6 +478,144 @@ async def _kernel_connection(ws: starlette.websockets.WebSocket):
                 await ws.close()
         except:  # noqa
             pass
+
+
+def _stream_not_found() -> Response:
+    return Response("Not Found", status_code=404, headers={"Cache-Control": "no-store"})
+
+
+class _StreamResponse(Response):
+    def __init__(self, request: Request, user: Optional[dict]):
+        super().__init__()
+        self.request = request
+        self.user = user
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        token = self.request.path_params["token"]
+        started = completed = disconnected = failed = False
+        loop = asyncio.get_running_loop()
+        producer: Optional[asyncio.Task] = None
+        cleanup_deadline: Optional[asyncio.TimerHandle] = None
+        cancelled = False
+        finalizing = False
+
+        def cancel_producer() -> None:
+            nonlocal cancelled, cleanup_deadline
+            if not cancelled and producer is not None and not producer.done():
+                cancelled = True
+                if not finalizing:
+                    producer.cancel()
+                    cleanup_deadline = loop.call_later(5, producer.cancel)
+
+        def cancel_from_kernel() -> None:
+            try:
+                loop.call_soon_threadsafe(cancel_producer)
+            except RuntimeError:
+                if not loop.is_closed():
+                    raise
+
+        stream = streaming._claim(token, server.get_session_id_cookie(self.request.cookies), self.user, cancel_from_kernel)
+        if stream is None:
+            await _stream_not_found()(scope, receive, send)
+            return
+
+        class ClientDisconnected(Exception):
+            pass
+
+        async def send_message(message: Message) -> None:
+            try:
+                await send(message)
+            except OSError:
+                raise ClientDisconnected from None
+
+        async def watch_disconnect() -> None:
+            nonlocal disconnected
+            while (await receive())["type"] != "http.disconnect":
+                pass
+            disconnected = True
+
+        async def produce(claimed: streaming._Stream) -> None:
+            nonlocal started, completed, disconnected, failed, finalizing
+            headers = Headers(
+                headers={
+                    "Content-Type": claimed.media_type,
+                    "Content-Encoding": "identity",
+                    "Cache-Control": "no-store, no-transform",
+                    "X-Accel-Buffering": "no",
+                    "X-Content-Type-Options": "nosniff",
+                    "Cross-Origin-Resource-Policy": "same-origin",
+                    "Content-Security-Policy": "sandbox; default-src 'none'",
+                }
+            )
+
+            async def start() -> None:
+                nonlocal started
+                started = True
+                await send_message({"type": "http.response.start", "status": 200, "headers": headers.raw})
+
+            try:
+                with kernel_context._use_stream_context(claimed.context):
+                    if not streaming._live(token, claimed):
+                        return
+                    iterator = claimed.factory()
+                    try:
+                        async for chunk in iterator:
+                            if cancelled:
+                                return
+                            if not isinstance(chunk, bytes):
+                                raise TypeError("Stream chunks must be bytes")
+                            if chunk:
+                                if not started:
+                                    await start()
+                                await send_message({"type": "http.response.body", "body": chunk, "more_body": True})
+                    finally:
+                        finalizing = True
+                        try:
+                            with anyio.move_on_after(5, shield=True):
+                                await iterator.aclose()
+                        finally:
+                            finalizing = False
+                if cancelled:
+                    return
+                if not started:
+                    await start()
+                await send_message({"type": "http.response.body", "body": b"", "more_body": False})
+                completed = True
+            except ClientDisconnected:
+                disconnected = True
+            except Exception as error:
+                failed = True
+                logger.error("Solara stream producer failed (%s)", type(error).__name__)
+
+        producer = asyncio.create_task(produce(stream))
+        watcher = asyncio.create_task(watch_disconnect())
+        try:
+            try:
+                await asyncio.wait((producer, watcher), return_when=asyncio.FIRST_COMPLETED)
+            finally:
+                cancel_producer()
+                watcher.cancel()
+                with anyio.CancelScope(shield=True):
+                    await asyncio.gather(producer, watcher, return_exceptions=True)
+        finally:
+            if cleanup_deadline is not None:
+                cleanup_deadline.cancel()
+            streaming._release(token)
+        if completed or disconnected:
+            return
+        if started:
+            raise RuntimeError("Solara stream interrupted")
+        if failed:
+            await Response("Internal Server Error", status_code=500, headers={"Cache-Control": "no-store"})(scope, receive, send)
+        else:
+            await _stream_not_found()(scope, receive, send)
+
+
+async def _read_stream(request: Request) -> Response:
+    if request.method != "GET":
+        return _stream_not_found()
+    user = get_user(request) if has_auth_support and "session" in request.scope else None
+    return _StreamResponse(request, user)
 
 
 def close(request: Request):
@@ -1165,6 +1306,7 @@ routes = [
     WebSocketRoute("/jupyter/api/kernels/{kernel_id}/{name}", endpoint=kernel_connection),
     Route("/", endpoint=root),
     Route("/{fullpath}", endpoint=root),
+    Route(f"{streaming._PATH}/{{token}}", endpoint=_read_stream),
     Route("/_solara/api/close/{kernel_id}", endpoint=close, methods=["POST"]),
     # dev/test-only, fail-closed (§6.4): the handler returns 404 unless explicitly enabled
     Route("/_solara/api/evict/{kernel_id}", endpoint=evict, methods=["POST"]),
