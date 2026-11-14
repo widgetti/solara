@@ -40,9 +40,15 @@ class _Location(_LocationBase):
 
 class Router:
     search: Optional[str]
+    hash: Optional[str]
 
     def __init__(self, path: str, routes: List[solara.Route], set_path: Callable[[str], None] = None):
         # see https://developer.mozilla.org/en-US/docs/Web/API/Location for anatomy/nomenclature
+        # the fragment starts at the first '#', and anything after it (including a '?') belongs to it
+        if "#" in path:
+            path, self.hash = path.split("#", 1)
+        else:
+            self.hash = None
         if "?" in path:
             self.path, self.search = path.split("?", 1)
         else:
@@ -110,6 +116,7 @@ def use_router() -> Router:
      * `path` - the current pathname (e.g. `/fruit/banana`)
      * `parts` - the current pathname split into parts (e.g. `['fruit', 'banana']`)
      * `search` - the query parameters string (e.g. `color=yellow`).
+     * `hash` - the fragment identifier, without the leading `#` (e.g. `section`).
      * `push(path: str)` - navigate to path (e.g. `router.push('/fruit/banana')`)
 
     ## Typical usage:
