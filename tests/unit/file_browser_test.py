@@ -437,7 +437,8 @@ def test_file_browser_multiple_does_not_select_parent(tmp_path: Path):
 
 def test_file_browser_multiple_requires_path_directory(tmp_path: Path):
     with pytest.raises(TypeError, match="directory"):
-        solara.render_fixed(solara.FileBrowserMultiple(str(tmp_path)), handle_error=False)
+        # the test passes a str on purpose, to check the runtime TypeError
+        solara.render_fixed(solara.FileBrowserMultiple(str(tmp_path)), handle_error=False)  # type: ignore[arg-type]
 
 
 def test_file_browser_multiple_frontend_selection(tmp_path: Path):
