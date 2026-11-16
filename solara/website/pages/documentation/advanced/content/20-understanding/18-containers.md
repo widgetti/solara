@@ -94,7 +94,6 @@ Here we are using the top-level Row as a context manager (with the name `main`).
 Context managers are a Python language feature, there are two ways to use them:
 
 ```python
-
 with some_anonymous_context_manager():
     print("some code")
 
