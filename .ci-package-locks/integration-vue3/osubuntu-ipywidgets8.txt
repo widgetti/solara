@@ -11,7 +11,7 @@ ast_serialize==0.13.1
 asttokens==3.0.2
 async-timeout==5.0.1
 attrs==26.1.0
-Authlib==1.9.6
+Authlib==1.9.8
 babel==2.18.0
 backports.asyncio.runner==1.2.0
 beautifulsoup4==4.15.0
