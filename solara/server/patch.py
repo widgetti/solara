@@ -99,6 +99,10 @@ class FakeIPython:
         # proplot requires this
         pass
 
+    def register_magic_function(self, func, magic_kind="line", magic_name=None):
+        # libraries such as mermaid-py register cell magics on import, magics never run in solara
+        pass
+
     def set_custom_exc(self, exc_tuple, handler):
         # make dask work
         pass

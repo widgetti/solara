@@ -137,6 +137,25 @@ def test_get_ipython_reuses_one_fake_ipython_per_context(no_kernel_context):
     assert context._fake_ipython is None
 
 
+def test_get_ipython_accepts_magic_registration(no_kernel_context):
+    from IPython.core.magic import register_cell_magic
+
+    from solara.server import patch
+
+    # register_cell_magic looks up get_ipython in the caller's namespace
+    get_ipython = patch.get_ipython  # noqa: F841
+
+    kernel1 = kernel.Kernel()
+    context = kernel_context.VirtualKernelContext(id="fake-ipython-magic-1", kernel=kernel1, session_id="session-1")
+    with context:
+        # what a library like mermaid-py does on import
+        @register_cell_magic
+        def mermaid(line, cell):
+            return cell
+
+    context.close()
+
+
 def test_context_aware_thread_leaves_no_stale_context_entries(no_kernel_context):
     import threading
 
