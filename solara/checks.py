@@ -132,7 +132,29 @@ def getcmdline(pid):
     elif sys.platform == "darwin":
         return subprocess.check_output(["ps", "-o", "command=", "-p", str(pid)]).split(b"\n")[0].split(b" ")[0].decode("utf-8")
     elif sys.platform == "win32":
-        return subprocess.check_output(["wmic", "process", "get", "commandline", "/format:list"]).split(b"\n")[0].split(b" ")[0].decode("utf-8")
+        import ctypes
+        from ctypes import wintypes
+
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+        kernel32.OpenProcess.restype = wintypes.HANDLE
+        kernel32.QueryFullProcessImageNameW.argtypes = [wintypes.HANDLE, wintypes.DWORD, wintypes.LPWSTR, ctypes.POINTER(wintypes.DWORD)]
+        kernel32.QueryFullProcessImageNameW.restype = wintypes.BOOL
+        kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+        kernel32.CloseHandle.restype = wintypes.BOOL
+
+        # PROCESS_QUERY_LIMITED_INFORMATION is enough to read the executable path.
+        handle = kernel32.OpenProcess(0x1000, False, pid)
+        if not handle:
+            raise ctypes.WinError(ctypes.get_last_error())
+        try:
+            size = wintypes.DWORD(32768)
+            path = ctypes.create_unicode_buffer(size.value)
+            if not kernel32.QueryFullProcessImageNameW(handle, 0, path, ctypes.byref(size)):
+                raise ctypes.WinError(ctypes.get_last_error())
+            return path.value
+        finally:
+            kernel32.CloseHandle(handle)
     else:
         raise ValueError(f"Unsupported platform: {sys.platform}")
 
