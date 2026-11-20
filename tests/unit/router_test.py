@@ -44,8 +44,10 @@ def test_router():
     assert solara.routing.Router("/doesnotexist", routes).path_routes == []
 
     assert solara.routing.Router("?a=1", routes).path_routes == [routes[0]]
-    assert solara.routing.Router("?a=1", routes).search == "a=1"
+    assert solara.routing.Router("?a=1", routes).query == "a=1"
+    assert solara.routing.Router("/fruit?b=1&c=3", routes).query == "b=1&c=3"
     assert solara.routing.Router("/fruit?b=1&c=3", routes).path_routes == [routes[1]]
+    assert solara.routing.Router("/fruit", routes).query is None
 
     # non-existing routes, as leafs are fine, since they can do 'subrouting'
     assert solara.routing.Router("/fruit/kiwi/sub", routes).path_routes == [routes[1], routes[1].children[0]]
