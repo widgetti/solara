@@ -58,6 +58,9 @@ class MainSettings(BaseSettings):
     # TODO: also change default_container in solara/components/__init__.py
     default_container: Optional[str] = "Column"
     allow_global_context: bool = True
+    # SOLARA_VUE_BUNDLE: the .mjs built from `solara vue-bundle`, relative to the
+    # served public dir (e.g. vue/app.mjs); solara server only, production only
+    vue_bundle: Optional[str] = None
 
     class Config:
         env_prefix = "solara_"
