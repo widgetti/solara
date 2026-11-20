@@ -10,7 +10,7 @@ from solara.util import IPYVUETIFY_V3
 @solara.component
 def Button(
     label: str = None,
-    on_click: Callable[[], None] = None,
+    on_click: Callable[[], object] = None,
     icon_name: str = None,
     children: list = [],
     disabled=False,

@@ -7,7 +7,7 @@ from solara.util import _combine_classes
 
 @solara.component
 def Card(
-    title: Optional[str] = None,
+    title: Union[str, solara.Element, None] = None,
     subtitle: Optional[str] = None,
     elevation: int = 2,
     margin=2,
