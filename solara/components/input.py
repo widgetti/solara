@@ -16,6 +16,7 @@ def use_change(el: reacton.core.Element, on_value: Callable[[Any], Any], enabled
     """Trigger a callback when a blur events occurs or the enter key is pressed."""
     on_value_ref = solara.use_ref(on_value)
     on_value_ref.current = on_value
+    events = tuple(update_events)
 
     def add_events():
         def on_change(widget, event, data):
@@ -24,17 +25,17 @@ def use_change(el: reacton.core.Element, on_value: Callable[[Any], Any], enabled
 
         widget = cast(ipyvue.VueWidget, solara.get_widget(el))
         if enabled:
-            for event in update_events:
+            for event in events:
                 widget.on_event(event, on_change)
 
         def cleanup():
             if enabled:
-                for event in update_events:
+                for event in events:
                     widget.on_event(event, on_change, remove=True)
 
         return cleanup
 
-    solara.use_effect(add_events, [enabled])
+    solara.use_effect(add_events, [enabled, events])
 
 
 @overload
