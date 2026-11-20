@@ -74,3 +74,27 @@ __doc__ += "# FileDrop"
 __doc__ += apidoc(solara.FileDrop.f)  # type: ignore
 __doc__ += "# FileDropMultiple"
 __doc__ += apidoc(solara.FileDropMultiple.f)  # type: ignore
+__doc__ += """# Customization Example
+
+```solara
+import solara
+
+@solara.component
+def CustomHoverIndicator():
+    style = {"height": "100%", "width": "100%", "align-items": "center", "border": "2px dashed limegreen", "opacity": "0.85"}
+    with solara.Row(justify="center", style=style):
+        solara.HTML(tag="h3", unsafe_innerHTML="Drop file here")
+        solara.SpinnerSolara()
+
+@solara.component
+def Page():
+    number_of_files = solara.use_reactive(1)
+
+    with solara.FileDropMultiple(file_hover_indicator=CustomHoverIndicator()):
+        with solara.Card("Upload your file(s) here"):
+            solara.InputInt("Number of files", value=number_of_files)
+            for i in range(number_of_files.value):
+                solara.InputText("File name")
+
+```
+"""
