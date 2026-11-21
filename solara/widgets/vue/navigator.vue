@@ -77,7 +77,9 @@ modules.export = {
       this.hash = window.location.hash;
     },
     makeFullRelativeUrl() {
-      const url = new URL(this.location, window.location.origin + solara.rootPath);
+      // this.location is relative to the root path, also when it starts with a /
+      const path = this.location.startsWith("/") ? this.location : "/" + this.location;
+      const url = new URL(solara.rootPath.replace(/\/$/, "") + path, window.location.origin);
       return url.pathname + url.search + this.hash;
     },
     navigateToHash(hash) {
@@ -96,7 +98,6 @@ modules.export = {
         window.location = newUrl;
         return
       }
-      const pathnameNew = newUrl.pathname
       const pathnameOld = window.location.pathname
       // if we use the back navigation, this watch will trigger,
       // but we don't want to push the history
@@ -112,8 +113,9 @@ modules.export = {
         document.documentElement.scrollTop
       );
       if (oldLocation != this.location) {
-        window.history.pushState({ top: 0 }, null, this.makeFullRelativeUrl());
-        if (pathnameNew != pathnameOld) {
+        const fullUrl = this.makeFullRelativeUrl();
+        window.history.pushState({ top: 0 }, null, fullUrl);
+        if (new URL(fullUrl, window.location.origin).pathname != pathnameOld) {
           // we scroll to the top only when we change page, not when we change
           // the search string
           window.scrollTo(0, 0);

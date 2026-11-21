@@ -39,7 +39,10 @@ def Link(
 
     """
     path = solara.resolve_path(path_or_route, level=0)
-    attributes = {"href": path}
+    # the click handler below navigates within the app, the href is what the browser uses
+    # for e.g. opening the link in a new tab, and needs to include the root path
+    router = solara.use_router()
+    attributes = {"href": router.root_path.rstrip("/") + path}
     if nofollow:
         attributes["rel"] = "nofollow"
     style_flat = solara.util._flatten_style(style)
