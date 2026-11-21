@@ -7,5 +7,5 @@ packaging==26.3
 platformdirs==4.14.8
 pre_commit==4.7.0
 python-discovery==1.9.6
-PyYAML==6.0.3
-virtualenv==21.15.9
+PyYAML==6.0.4
+virtualenv==21.15.11

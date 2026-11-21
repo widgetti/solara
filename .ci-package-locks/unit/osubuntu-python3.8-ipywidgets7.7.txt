@@ -24,7 +24,7 @@ branca==0.8.2
 brotli==1.2.1
 bump2version==1.0.1
 cachetools==5.5.2
-certifi==2026.10.23
+certifi==2026.11.20
 cffi==1.17.1
 cfgv==3.4.0
 charset-normalizer==3.5.2
@@ -38,7 +38,7 @@ cryptography==47.0.0
 cycler==0.12.1
 dask==2023.5.0
 debugpy==1.8.21
-decorator==5.3.1
+decorator==5.3.2
 defusedxml==0.7.1
 diskcache==5.6.3
 distlib==0.4.4
