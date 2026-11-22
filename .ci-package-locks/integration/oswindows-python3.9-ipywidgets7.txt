@@ -227,11 +227,11 @@ vaex-hdf5==0.15.0
 vaex-jupyter==0.9.1
 vaex-viz==0.6.1
 vega-datasets==0.9.0
-virtualenv==21.15.11
+virtualenv==21.15.12
 voila==0.3.8
 watchdog==6.0.0
 watchfiles==1.1.1
-wcwidth==0.9.4
+wcwidth==0.9.5
 webcolors==24.11.1
 webencodings==0.5.1
 websocket-client==1.9.0

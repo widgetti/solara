@@ -32,7 +32,7 @@ distlib==0.4.4
 executing==2.3.0
 fakeredis==2.40.0
 fastjsonschema==2.22.3
-filelock==4.2.12
+filelock==4.3.0
 Flask==3.1.3
 flask-sock==0.7.0
 folium==1.0.0
@@ -148,8 +148,8 @@ tornado==6.6.1
 traitlets==5.16.1
 traittypes==0.2.3
 truststore==0.10.5
-types-Markdown==3.11.3.20261108
-types-PyYAML==6.0.12.20261113
+types-Markdown==3.11.3.20261122
+types-PyYAML==6.0.12.20261122
 types-requests==2.33.0.20261030
 typing-inspection==0.4.5
 typing_extensions==4.16.0
@@ -158,10 +158,10 @@ urllib3==2.8.0
 uv==0.13.9
 uvicorn==0.54.0
 vega-datasets==0.9.0
-virtualenv==21.15.11
+virtualenv==21.15.12
 watchdog==7.1.1
 watchfiles==1.3.0
-wcwidth==0.9.4
+wcwidth==0.9.5
 websockets==17.4
 Werkzeug==3.1.9
 widgetsnbextension==4.0.16

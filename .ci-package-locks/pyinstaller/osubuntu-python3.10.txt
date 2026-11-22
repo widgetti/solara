@@ -207,8 +207,8 @@ tornado==6.5.10
 traitlets==5.16.1
 traittypes==0.2.3
 truststore==0.10.5
-types-Markdown==3.11.3.20261108
-types-PyYAML==6.0.12.20261113
+types-Markdown==3.11.3.20261122
+types-PyYAML==6.0.12.20261122
 types-requests==2.33.0.20261030
 typing_extensions==4.16.0
 tzdata==2026.6
@@ -221,10 +221,10 @@ vaex-hdf5==0.15.0
 vaex-jupyter==0.9.1
 vaex-viz==0.6.1
 vega-datasets==0.9.0
-virtualenv==21.15.11
+virtualenv==21.15.12
 watchdog==6.0.0
 watchfiles==1.3.0
-wcwidth==0.9.4
+wcwidth==0.9.5
 webcolors==25.10.0
 webencodings==0.6.1
 websocket-client==1.9.2
