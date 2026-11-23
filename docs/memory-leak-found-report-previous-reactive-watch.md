@@ -96,10 +96,11 @@ The breakthrough was using `objgraph.find_backref_chain()`:
 
 ```python
 import objgraph
+
 chain = objgraph.find_backref_chain(rc_ref(), objgraph.is_proper_module, max_depth=20)
 for i, item in enumerate(chain):
     type_name = type(item).__name__
-    if hasattr(item, '__name__'):
+    if hasattr(item, "__name__"):
         type_name += f" ({item.__name__})"
     print(f"  [{i:2d}] {type_name}")
 ```
@@ -133,6 +134,7 @@ import solara
 import solara.server.kernel
 import solara.server.kernel_context
 
+
 def _scoped_render(component_el):
     widget, rc = solara.render_fixed(component_el, handle_error=False)
     rc_ref = weakref.ref(rc)
@@ -140,13 +142,13 @@ def _scoped_render(component_el):
     del widget, rc
     return rc_ref
 
+
 kernel = solara.server.kernel.Kernel()
-kc = solara.server.kernel_context.VirtualKernelContext(
-    id=str(uuid.uuid4()), kernel=kernel, session_id="s1"
-)
+kc = solara.server.kernel_context.VirtualKernelContext(id=str(uuid.uuid4()), kernel=kernel, session_id="s1")
 with kc:
     # Any component that reads a @slab.computed value
     from your_app import ComponentThatReadsComputed
+
     rc_ref = _scoped_render(ComponentThatReadsComputed())
     for _ in range(20):
         gc.collect()
