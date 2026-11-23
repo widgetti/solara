@@ -27,7 +27,7 @@ cachetools==7.3.3
 certifi==2026.11.20
 cffi==2.1.1
 cfgv==3.5.0
-charset-normalizer==3.5.2
+charset-normalizer==3.5.3
 click==8.5.1
 cloudpickle==3.1.3
 codespell==2.4.3
@@ -44,7 +44,7 @@ distlib==0.4.4
 exceptiongroup==1.3.2
 execnet==2.1.2
 executing==2.3.0
-fakeredis==2.40.0
+fakeredis==2.41.0
 fastjsonschema==2.22.3
 filelock==4.1.0
 Flask==3.1.3
