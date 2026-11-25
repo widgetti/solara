@@ -11,7 +11,7 @@ asttokens==3.0.2
 async-timeout==5.0.1
 attrs==26.1.0
 Authlib==1.6.12
-babel==2.18.0
+babel==2.19.0
 backports.asyncio.runner==1.2.0
 beautifulsoup4==4.15.0
 blake3==1.0.10
@@ -170,7 +170,7 @@ pytest-retry==1.7.0
 pytest-timeout==2.4.0
 pytest-xdist==3.8.0
 python-dateutil==3.0.0
-python-discovery==1.9.6
+python-discovery==1.9.7
 python-dotenv==1.2.1
 python-json-logger==4.0.0
 python-slugify==8.0.4
@@ -220,14 +220,14 @@ typing_extensions==4.16.0
 tzdata==2026.6
 uri-template==1.3.0
 urllib3==2.6.3
-uv==0.13.9
+uv==0.13.10
 uvicorn==0.39.0
 vaex-core==4.17.1
 vaex-hdf5==0.15.0
 vaex-jupyter==0.9.1
 vaex-viz==0.6.1
 vega-datasets==0.9.0
-virtualenv==21.15.12
+virtualenv==21.15.13
 voila==0.3.8
 watchdog==6.0.0
 watchfiles==1.1.1
