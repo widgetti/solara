@@ -18,6 +18,8 @@ def AppIcon(open=False, on_click=None, **kwargs):
     def click(*ignore):
         on_click()
 
+    if IPYVUETIFY_V3:
+        kwargs.setdefault("children", [v.Icon(children=[kwargs.get("icon") or "mdi-menu"])])
     icon = v.AppBarNavIcon(**kwargs)
     v.use_event(icon, "click", click)
     return icon
@@ -297,13 +299,14 @@ def AppLayout(
         with v.Html(tag="div") as main:
             if show_app_bar or use_drawer:
                 if IPYVUETIFY_V3:
-                    app_bar = v.AppBar(color=color, theme="dark" if toolbar_dark else None, v_slots=v_slots)
+                    # Embedded toolbars stay in the notebook flow and have no app layout parent.
+                    app_bar = v.Toolbar(color=color, theme="dark" if toolbar_dark else None, v_slots=v_slots)
                 else:
                     app_bar = v.AppBar(color=color, dark=toolbar_dark, v_slots=v_slots)
                 with app_bar:
                     if use_drawer:
-                        icon = AppIcon(sidebar_open, on_click=lambda: set_sidebar_open(not sidebar_open), v_on="x.on")
                         if IPYVUETIFY_V3:
+                            icon = v.AppBarNavIcon(children=[v.Icon(children=["mdi-menu"])], v_bind="x.props")  # type: ignore[call-arg]
                             menu = v.Menu(
                                 location="bottom end",
                                 offset="8",
@@ -311,6 +314,7 @@ def AppLayout(
                                 close_on_content_click=False,
                             )
                         else:
+                            icon = AppIcon(sidebar_open, on_click=lambda: set_sidebar_open(not sidebar_open), v_on="x.on")
                             menu = v.Menu(
                                 offset_y=True,
                                 nudge_left="50px",
@@ -411,6 +415,9 @@ def AppLayout(
             else:
                 dialog_element = v.Dialog(v_model=True, children=[], fullscreen=True, hide_overlay=True, persistent=True, no_click_animation=True)
             with dialog_element as dialog:
+                if IPYVUETIFY_V3:
+                    # A fullscreen notebook has no surrounding app to provide the layout context.
+                    main = v.Layout(children=[main], style_="height: 100vh; width: 100%;")
                 v.Sheet(class_="overflow-y-auto overflow-x-auto", children=[main])
                 pass
             return dialog

@@ -1,5 +1,9 @@
 # Solara Changelog
 
+## Unreleased
+
+- Bug Fix: With ipyvuetify 3, embedded notebook layouts show their toolbar again, the sidebar menu opens, and fullscreen has a working layout and exit button. Sidebar launchers show their menu icon. [#1292](https://github.com/widgetti/solara/issues/1292) [#1294](https://github.com/widgetti/solara/issues/1294) [#1295](https://github.com/widgetti/solara/issues/1295)
+
 ## Version 1.66.3
 
 - Bug Fix: `SOLARA_CHECK_HOOKS=raise` now raises an error on an invalid hook use, as the docs say. Before, this setting silently turned the check off. [#1285](https://github.com/widgetti/solara/pull/1285)
