@@ -24,7 +24,7 @@ bqplot-image-gl==1.10.2
 branca==0.8.2
 brotli==1.2.1
 bump2version==1.0.1
-cachetools==7.3.3
+cachetools==7.3.4
 certifi==2026.11.20
 cffi==2.1.1
 cfgv==3.5.0
@@ -129,7 +129,7 @@ notebook==6.5.4
 notebook_shim==0.2.4
 numpy==1.26.4
 objgraph==3.7.0
-openai==3.59.0
+openai==3.60.0
 overrides==7.7.0
 packaging==26.4
 pandas==2.3.3
