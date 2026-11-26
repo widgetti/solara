@@ -38,7 +38,7 @@ If no `Page` component is found in your main script or module, Solara will assum
 
 For example
 
-```python
+```{.python pycafe-link}
 import solara
 from solara.website.pages.examples.utilities import calculator
 
@@ -67,7 +67,7 @@ If you do define a `Page` component, you are fully responsible for how routing i
 
 An example route definition could be something like this:
 
-```python
+```{.python pycafe-link}
 import solara
 
 routes = [
@@ -121,7 +121,7 @@ Each call to `use_route` will return the current route (if there is a match to t
 
 Now the `MyFirstLevelChildComponent` component is responsible for rendering the second level navigation:
 
-```python
+```{.python pycafe-link}
 @solara.component
 def MyFirstLevelChildComponent():
     level = solara.use_route_level()  # returns 1
@@ -139,7 +139,7 @@ def MyFirstLevelChildComponent():
 
 And the `MySecondLevelChildComponent` component is responsible for rendering the third level navigation:
 
-```python
+```{.python pycafe-link}
 @solara.component
 def MySecondLevelChildComponent():
     level = solara.use_route_level()  # returns 2
@@ -170,7 +170,7 @@ Often, your render logic needs some extra data on what to display. For instance,
 which requires you to have a label, and know which component to add.
 For this purposed we added `label: str` and the `component' attributes, so you can defines routes likes:
 
-```python
+```{.python pycafe-link}
 routes = [
     solara.Route("/", component=Home, label="What is Solara ☀️?"),
     solara.Route("docs", component=docs.App, label="Docs", children=docs.routes),
@@ -207,7 +207,7 @@ def resolve_path(path_or_route: Union[str, solara.Route], level=0) -> str:
 
 We can pass this full URL to the [`solara.Link`](/documentation/components/advanced/link) component, e.g. like:
 
-```python
+```{.python pycafe-link}
 @solara.component
 def LinkToIpywidgets():
     route_ipywidgets = routes.children[1].children[0].children[1]
@@ -239,7 +239,7 @@ html {
 
 If you want to do routing fully manually, you can use the [`solara.use_router`](/documentation/api/routing/use_router) hook, and use the `.path` attribute.
 
-```python
+```{.python pycafe-link}
 import solara
 
 

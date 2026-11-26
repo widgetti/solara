@@ -37,7 +37,7 @@ In application controlled mode, the application is responsible for checking if a
 
 Here's an example of how to implement OAuth in application controlled mode:
 
-```solara
+```{.python pycafe-link}
 import solara
 from solara_enterprise import auth
 
