@@ -1,5 +1,9 @@
 # Solara Changelog
 
+## Unreleased
+
+- Bug Fix: Windows Jupyter widget diagnostics discover the selected process executable without requiring WMIC. Executable paths containing spaces and Unicode are preserved. [#1296](https://github.com/widgetti/solara/issues/1296)
+
 ## Version 1.66.3
 
 - Bug Fix: `SOLARA_CHECK_HOOKS=raise` now raises an error on an invalid hook use, as the docs say. Before, this setting silently turned the check off. [#1285](https://github.com/widgetti/solara/pull/1285)
