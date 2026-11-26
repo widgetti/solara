@@ -2,6 +2,7 @@ from typing import Optional
 from unittest.mock import MagicMock
 
 import ipyvuetify as vw
+import pytest
 
 import solara
 
@@ -16,6 +17,30 @@ def test_input_int_typing():
         pass
 
     solara.InputInt("label", 42, optional=True, on_value=on_value2)
+
+
+def test_input_text_update_events_change_after_render():
+    on_value = MagicMock()
+    update_events = ["focusout"]
+    _, rc = solara.render(solara.InputText("label", value="", on_value=on_value, update_events=update_events), handle_error=False)
+    input = rc.find(vw.TextField)
+
+    input.widget.v_model = "first"
+    input.widget.fire_event("focusout")
+    on_value.assert_called_once_with("first")
+
+    update_events = ["keyup.enter"]
+    rc.render(solara.InputText("label", value="", on_value=on_value, update_events=update_events))
+    input = rc.find(vw.TextField)
+    input.widget.v_model = "second"
+    with pytest.raises(ValueError, match="focusout"):
+        input.widget.fire_event("focusout")
+    on_value.assert_called_once_with("first")
+
+    input.widget.fire_event("keyup.enter")
+    assert on_value.call_count == 2
+    assert on_value.call_args.args == ("second",)
+    rc.close()
 
 
 def test_input_int_optional():
