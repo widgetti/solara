@@ -47,6 +47,24 @@ def test_router():
     assert solara.routing.Router("?a=1", routes).search == "a=1"
     assert solara.routing.Router("/fruit?b=1&c=3", routes).path_routes == [routes[1]]
 
+    # the fragment (hash) is not part of the path or the search string
+    router = solara.routing.Router("/fruit/kiwi?a=1#section", routes)
+    assert router.path == "/fruit/kiwi"
+    assert router.search == "a=1"
+    assert router.hash == "section"
+    assert router.path_routes == [routes[1], routes[1].children[0]]
+    router = solara.routing.Router("/fruit/kiwi#section", routes)
+    assert router.path == "/fruit/kiwi"
+    assert router.search is None
+    assert router.hash == "section"
+    assert router.path_routes == [routes[1], routes[1].children[0]]
+    # a '?' after the '#' belongs to the fragment, not to the search string
+    router = solara.routing.Router("/fruit#section?a=1", routes)
+    assert router.path == "/fruit"
+    assert router.search is None
+    assert router.hash == "section?a=1"
+    assert solara.routing.Router("/fruit?a=1", routes).hash is None
+
     # non-existing routes, as leafs are fine, since they can do 'subrouting'
     assert solara.routing.Router("/fruit/kiwi/sub", routes).path_routes == [routes[1], routes[1].children[0]]
     assert solara.routing.Router("/fruit/kiwi/sub", routes).possible_match
