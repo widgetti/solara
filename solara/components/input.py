@@ -3,6 +3,7 @@ from typing import Any, Callable, Optional, TypeVar, Union, cast, overload, List
 import ipyvue
 import ipyvuetify as vw
 import reacton
+import reacton.core
 from typing_extensions import Literal
 
 import solara

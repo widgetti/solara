@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List, Union, cast
+from typing import Callable, Dict, List, cast
 
 import yaml
 import markdown
@@ -16,7 +16,7 @@ def MarkdownWithMetadata(content: str, unsafe_solara_execute=True):
     cleanups = solara.use_ref(cast(List[Callable[[], None]], []))
     if "---" in content:
         pre_content, raw_metadata, post_content = content.split("---")
-        metadata: Dict[str, Union[str, List[str]]] = yaml.safe_load(raw_metadata)
+        metadata: Dict[str, str] = yaml.safe_load(raw_metadata)
 
         if len(pre_content) == 0:
             content = post_content

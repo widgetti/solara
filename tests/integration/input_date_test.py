@@ -1,6 +1,6 @@
 import datetime as dt
 import re
-from typing import List
+from typing import Optional, Tuple
 from unittest.mock import MagicMock
 
 from playwright.sync_api import Page, expect
@@ -99,11 +99,12 @@ def test_input_date_range(solara_test, page_session: Page):
 
     @solara.component
     def Page():
-        def update_value(value: List[dt.date]):
+        def update_value(value: Tuple[Optional[dt.date], Optional[dt.date]]):
             on_value(value)
             set_value(value)
 
-        value, set_value = solara.use_state([date, date2])
+        initial: Tuple[Optional[dt.date], Optional[dt.date]] = (date, date2)
+        value, set_value = solara.use_state(initial)
         InputDateRange(value=value, label="label", on_value=update_value, classes=["test-class"])
 
     solara.display(Page())
