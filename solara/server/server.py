@@ -519,12 +519,16 @@ def versioned_url(url: str) -> str:
     The same url is used for the modulepreload hint in the page and the
     Module widget, so the preload always hits the cache; the static file
     handlers send long-lived cache headers when the hash matches (see starlette.py).
-    Urls with an existing query string and external urls pass through.
+    Urls with an existing query string keep it. Solara's urls get the
+    deployment root path (e.g. /myapp); external urls pass through unchanged.
     """
-    if not url.startswith(_PUBLIC_PREFIX) or "?" in url:
+    if not url.startswith(_PUBLIC_PREFIX):
         return url
-    digest = public_url_content_hash(url[len(_PUBLIC_PREFIX) :])
-    return f"{url}?v={digest}" if digest else url
+    if "?" not in url:
+        digest = public_url_content_hash(url[len(_PUBLIC_PREFIX) :])
+        if digest:
+            url = f"{url}?v={digest}"
+    return (settings.main.root_path or "").rstrip("/") + url
 
 
 def get_nbextensions_directories() -> List[Path]:

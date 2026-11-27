@@ -202,3 +202,22 @@ def test_module_widget_and_page_share_versioned_url(virtual_context, tmp_path: P
     # preloaded response is a cache hit
     assert widget.url == esm_vue.get_module_urls()[0]
     assert "?v=" in widget.url
+
+
+def test_versioned_url_root_path(clean_esm_state, tmp_path: Path, monkeypatch):
+    from solara.server import server, settings
+
+    public = tmp_path / "public"
+    public.mkdir()
+    (public / "bundle.mjs").write_text("export default 1")
+    monkeypatch.setattr(server, "public_directories", lambda: [public])
+    monkeypatch.setattr(settings.main, "root_path", "/myapp")
+    monkeypatch.setattr(server, "_content_hash_cache", {})
+
+    # solara's own urls get the deployment root path, the hash still comes
+    # from the file behind the unprefixed path
+    assert server.versioned_url("/static/public/bundle.mjs").startswith("/myapp/static/public/bundle.mjs?v=")
+    assert server.versioned_url("/static/public/bundle.mjs?v=1") == "/myapp/static/public/bundle.mjs?v=1"
+    # external and protocol-relative urls stay as they are
+    assert server.versioned_url("https://cdn.example/x.mjs") == "https://cdn.example/x.mjs"
+    assert server.versioned_url("//cdn.example/x.mjs") == "//cdn.example/x.mjs"
