@@ -10,6 +10,7 @@ After `solara` is imported, every widget class has an extra `.element(...)` meth
 
 ```python
 import ipywidgets
+
 button_element = ipywidgets.Button.element(description="Click me")
 ```
 
