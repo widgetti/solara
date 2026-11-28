@@ -33,7 +33,7 @@ def _widget_from_signature(
             event_name = name[6:]
             event_name_full = name  # LLM's are quick stubborn in wanting to call `event_foo` instead of `foo`
 
-            def event_handler(self, data, buffers=None, event_name=event_name, param=param):
+            def event_handler(self, data, buffers=None, event_name=event_name, event_name_full=event_name_full, param=param):
                 callback = self._event_callbacks.get(event_name, param.default)
                 if not callback:
                     # support 'event_foo'
